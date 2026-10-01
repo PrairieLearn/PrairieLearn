@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { Component, type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   type CellKeyDownArgs,
@@ -42,6 +43,25 @@ interface SpreadsheetRow {
   inputs: Record<string, string>;
   results: Record<string, string>;
   errors: Record<string, boolean>;
+}
+
+interface CellPosition {
+  row: number;
+  column: number;
+}
+
+interface CellRange {
+  anchor: CellPosition;
+  focus: CellPosition;
+}
+
+function isCellInRange(range: CellRange | null, row: number, column: number) {
+  if (!range) return false;
+  const firstRow = Math.min(range.anchor.row, range.focus.row);
+  const lastRow = Math.max(range.anchor.row, range.focus.row);
+  const firstColumn = Math.min(range.anchor.column, range.focus.column);
+  const lastColumn = Math.max(range.anchor.column, range.focus.column);
+  return row >= firstRow && row <= lastRow && column >= firstColumn && column <= lastColumn;
 }
 
 function displayInput(input: SpreadsheetCellInput | null | undefined): string {
@@ -139,26 +159,45 @@ function CellEditor({
   onClose,
   onDraftChange,
   onCancel,
+  initialValue,
+  onInitialValueApplied,
 }: RenderEditCellProps<SpreadsheetRow> & {
   onDraftChange: (value: string) => void;
   onCancel: () => void;
+  initialValue?: string;
+  onInitialValueApplied: () => void;
 }) {
-  const value = row.inputs[column.key] ?? '';
+  const [value, setValue] = useState(initialValue ?? row.inputs[column.key]);
+  const initialValueAppliedRef = useRef(false);
+
+  // Relay the key that opened the editor into React Data Grid's draft row.
+  useEffect(() => {
+    if (initialValue === undefined || initialValueAppliedRef.current) return;
+    initialValueAppliedRef.current = true;
+    onDraftChange(initialValue);
+    onRowChange({
+      ...row,
+      inputs: { ...row.inputs, [column.key]: initialValue },
+    });
+    onInitialValueApplied();
+  }, [column.key, initialValue, onDraftChange, onInitialValueApplied, onRowChange, row]);
+
   return (
     <input
       className="form-control form-control-sm h-100 rounded-0"
       aria-label={`Edit cell ${column.key}${row.rowIndex + 1}`}
       value={value}
       onChange={(event) => {
-        onDraftChange(event.currentTarget.value);
+        const nextValue = event.currentTarget.value;
+        setValue(nextValue);
+        onDraftChange(nextValue);
         onRowChange({
           ...row,
-          inputs: { ...row.inputs, [column.key]: event.currentTarget.value },
+          inputs: { ...row.inputs, [column.key]: nextValue },
         });
       }}
       onBlur={() => onClose(true)}
       onKeyDown={(event) => {
-        if (event.key === 'Enter') onClose(true);
         if (event.key === 'Escape') {
           onCancel();
           onClose(false);
@@ -230,7 +269,8 @@ function SpreadsheetEditor({
   const [rawSubmission, setRawSubmission] = useState(initialStateRef.current.submission);
   const [evaluation, setEvaluation] = useState(initialStateRef.current.evaluation);
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
-  const [activeCell, setActiveCell] = useState<{ row: number; column: number } | null>(null);
+  const [activeCell, setActiveCell] = useState<CellPosition | null>(null);
+  const [selectedRange, setSelectedRange] = useState<CellRange | null>(null);
   const [formulaText, setFormulaText] = useState('');
   const [announcement, setAnnouncement] = useState(initialStateRef.current.error);
   const [past, setPast] = useState<SpreadsheetRawSubmission[]>([]);
@@ -240,6 +280,11 @@ function SpreadsheetEditor({
   const skipFormulaBlurRef = useRef(false);
   const rawSubmissionRef = useRef(rawSubmission);
   const committedSubmissionRef = useRef(rawSubmission);
+  const dragAnchorRef = useRef<CellPosition | null>(null);
+  const dragFocusRef = useRef<CellPosition | null>(null);
+  const didDragRangeRef = useRef(false);
+  const suppressActiveAnnouncementRef = useRef(false);
+  const initialEditValueRef = useRef<(CellPosition & { value: string }) | null>(null);
 
   const sheet = config.template.sheets[activeSheetIndex];
   const instructionsId = `pl-spreadsheet-instructions-${options.uuid}`;
@@ -381,6 +426,31 @@ function SpreadsheetEditor({
     gridRef.current?.setActivePosition({ idx: targetColumn + 1, rowIdx: targetRow });
   }
 
+  function selectCell(position: CellPosition, shouldFocus = true) {
+    setSelectedRange({ anchor: position, focus: position });
+    gridRef.current?.setActivePosition(
+      { idx: position.column + 1, rowIdx: position.row },
+      { shouldFocus },
+    );
+  }
+
+  function getTabTarget(position: CellPosition, backwards: boolean): CellPosition | null {
+    const offset = backwards ? -1 : 1;
+    const index = position.row * sheet.columns + position.column + offset;
+    if (index < 0 || index >= sheet.rows * sheet.columns) return null;
+    return {
+      row: Math.floor(index / sheet.columns),
+      column: index % sheet.columns,
+    };
+  }
+
+  function getVerticalTarget(position: CellPosition, upwards: boolean): CellPosition {
+    return {
+      row: Math.max(0, Math.min(sheet.rows - 1, position.row + (upwards ? -1 : 1))),
+      column: position.column,
+    };
+  }
+
   const rows: SpreadsheetRow[] = Array.from({ length: sheet.rows }, (_, rowIndex) => {
     const inputs: Record<string, string> = {};
     const results: Record<string, string> = {};
@@ -415,12 +485,22 @@ function SpreadsheetEditor({
         resizable: true,
         editable: (row) => isCellEditable(sheet, row.rowIndex, columnIndex),
         cellClass: (row) =>
-          isCellEditable(sheet, row.rowIndex, columnIndex)
-            ? undefined
-            : 'pl-spreadsheet-cell-readonly',
+          clsx({
+            'pl-spreadsheet-cell-readonly': !isCellEditable(sheet, row.rowIndex, columnIndex),
+            'pl-spreadsheet-cell-selected': isCellInRange(selectedRange, row.rowIndex, columnIndex),
+          }),
         renderEditCell: (props) => (
           <CellEditor
             {...props}
+            initialValue={
+              initialEditValueRef.current?.row === props.row.rowIndex &&
+              initialEditValueRef.current.column === columnIndex
+                ? initialEditValueRef.current.value
+                : undefined
+            }
+            onInitialValueApplied={() => {
+              initialEditValueRef.current = null;
+            }}
             onDraftChange={(value) => updateDraft(props.row.rowIndex, columnIndex, value)}
             onCancel={cancelDraft}
           />
@@ -486,6 +566,69 @@ function SpreadsheetEditor({
     return () => observer.disconnect();
   }, []);
 
+  // Track range selection outside React Data Grid, which only exposes a single active cell.
+  useEffect(() => {
+    function cellAtPoint(clientX: number, clientY: number): CellPosition | null {
+      const element = document.elementFromPoint(clientX, clientY);
+      const cell = element?.closest<HTMLElement>('[role="gridcell"]');
+      const editor = editorRef.current;
+      if (!cell || !editor?.contains(cell)) return null;
+      const row = cell.parentElement;
+      const ariaRowIndex = Number(row?.getAttribute('aria-rowindex'));
+      const ariaColumnIndex = Number(cell.getAttribute('aria-colindex'));
+      const position = { row: ariaRowIndex - 2, column: ariaColumnIndex - 2 };
+      if (
+        !Number.isInteger(position.row) ||
+        !Number.isInteger(position.column) ||
+        position.row < 0 ||
+        position.row >= sheet.rows ||
+        position.column < 0 ||
+        position.column >= sheet.columns
+      ) {
+        return null;
+      }
+      return position;
+    }
+
+    function handleMouseMove(event: MouseEvent) {
+      const anchor = dragAnchorRef.current;
+      if (!anchor) return;
+      event.preventDefault();
+      const focus = cellAtPoint(event.clientX, event.clientY);
+      if (!focus) return;
+      const previousFocus = dragFocusRef.current;
+      if (previousFocus?.row === focus.row && previousFocus.column === focus.column) return;
+      dragFocusRef.current = focus;
+      didDragRangeRef.current = focus.row !== anchor.row || focus.column !== anchor.column;
+      setSelectedRange({ anchor, focus });
+      gridRef.current?.setActivePosition(
+        { idx: focus.column + 1, rowIdx: focus.row },
+        { shouldFocus: false },
+      );
+    }
+
+    function handleMouseUp() {
+      if (!dragAnchorRef.current) return;
+      const focus = dragFocusRef.current;
+      dragAnchorRef.current = null;
+      dragFocusRef.current = null;
+      if (didDragRangeRef.current && focus) {
+        gridRef.current?.setActivePosition(
+          { idx: focus.column + 1, rowIdx: focus.row },
+          { shouldFocus: true },
+        );
+      }
+      didDragRangeRef.current = false;
+    }
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [sheet.columns, sheet.rows]);
+
   function handleRowsChange(nextRows: SpreadsheetRow[], data: RowsChangeData<SpreadsheetRow>) {
     if (data.column.key === '__row') return;
     const localRowIndex = data.indexes[0];
@@ -529,18 +672,94 @@ function SpreadsheetEditor({
       }
       return;
     }
-    if (args.mode !== 'ACTIVE' || event.key !== 'Tab' || !args.column) return;
-    const firstCell = args.rowIdx === 0 && args.column.idx === 1 && event.shiftKey;
-    const lastCell =
-      args.rowIdx === rows.length - 1 && args.column.idx === columns.length - 1 && !event.shiftKey;
-    if (firstCell || lastCell) event.preventGridDefault();
+    if (!args.column || args.column.key === '__row') return;
+
+    const position = { row: args.rowIdx, column: args.column.idx - 1 };
+    if (args.mode === 'ACTIVE' && event.key === 'F2') {
+      event.preventGridDefault();
+      return;
+    }
+
+    if (
+      args.mode === 'ACTIVE' &&
+      event.key.length === 1 &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      isCellEditable(sheet, position.row, position.column)
+    ) {
+      event.preventDefault();
+      event.preventGridDefault();
+      initialEditValueRef.current = { ...position, value: event.key };
+      args.setActivePosition({ idx: args.column.idx, rowIdx: args.rowIdx }, { enableEditor: true });
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      event.preventGridDefault();
+      if (args.mode === 'EDIT') args.onClose(true, false);
+      const target = getVerticalTarget(position, event.shiftKey);
+      suppressActiveAnnouncementRef.current =
+        args.mode === 'EDIT' && (target.row !== position.row || target.column !== position.column);
+      selectCell(target);
+      return;
+    }
+
+    if (event.key === 'Tab') {
+      const target = getTabTarget(position, event.shiftKey);
+      if (!target) {
+        // Let the browser move focus out of the grid at either boundary.
+        event.preventGridDefault();
+        return;
+      }
+      event.preventDefault();
+      event.preventGridDefault();
+      if (args.mode === 'EDIT') args.onClose(true, false);
+      suppressActiveAnnouncementRef.current = args.mode === 'EDIT';
+      selectCell(target);
+      return;
+    }
+
+    if (
+      args.mode === 'ACTIVE' &&
+      event.shiftKey &&
+      ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
+    ) {
+      event.preventDefault();
+      event.preventGridDefault();
+      const target = {
+        row: Math.max(
+          0,
+          Math.min(
+            sheet.rows - 1,
+            position.row + (event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0),
+          ),
+        ),
+        column: Math.max(
+          0,
+          Math.min(
+            sheet.columns - 1,
+            position.column + (event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0),
+          ),
+        ),
+      };
+      const anchor = selectedRange?.anchor ?? position;
+      gridRef.current?.setActivePosition(
+        { idx: target.column + 1, rowIdx: target.row },
+        { shouldFocus: true },
+      );
+      setSelectedRange({ anchor, focus: target });
+    }
   }
 
   return (
     <div ref={editorRef} className="pl-spreadsheet-editor">
       <p id={instructionsId} className="visually-hidden">
-        Click a cell or use arrow keys and Enter or F2 to edit, Escape to cancel, and Tab to leave
-        the grid at its boundaries. Read-only cells are announced.
+        Click a cell to select it, start typing to replace its contents, or double-click to edit its
+        existing contents. Drag or hold Shift with an arrow key to select a range. Use Enter and
+        Shift+Enter to move vertically, Tab and Shift+Tab to move horizontally, and Escape to cancel
+        editing. Tab leaves the grid at its boundaries. Read-only cells are announced.
       </p>
       <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
         <button
@@ -648,6 +867,7 @@ function SpreadsheetEditor({
               onClick={() => {
                 setActiveSheetIndex(index);
                 setActiveCell(null);
+                setSelectedRange(null);
                 setFormulaText('');
                 setAnnouncement(`Opened sheet ${candidate.name}.`);
               }}
@@ -659,6 +879,7 @@ function SpreadsheetEditor({
                   config.template.sheets.length;
                 setActiveSheetIndex(nextIndex);
                 setActiveCell(null);
+                setSelectedRange(null);
                 setFormulaText('');
                 const tabs =
                   event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
@@ -682,8 +903,14 @@ function SpreadsheetEditor({
         rowKeyGetter={(row) => row.rowIndex}
         onRowsChange={handleRowsChange}
         onFill={handleFill}
-        onCellClick={({ column, setActivePosition }) => {
-          if (column.key !== '__row') setActivePosition(true);
+        onCellMouseDown={({ rowIdx, column }, event) => {
+          if (event.button !== 0 || column.key === '__row') return;
+          const position = { row: rowIdx, column: column.idx - 1 };
+          const anchor = event.shiftKey && selectedRange ? selectedRange.anchor : position;
+          dragAnchorRef.current = anchor;
+          dragFocusRef.current = position;
+          didDragRangeRef.current = false;
+          setSelectedRange({ anchor, focus: position });
         }}
         onCellCopy={({ row, column }, event) => {
           if (column.key === '__row') return;
@@ -705,11 +932,17 @@ function SpreadsheetEditor({
           const parsedColumn = parseCellAddress(`${column.key}1`);
           if (!parsedColumn) return;
           const sourceRow = rows[rowIdx].rowIndex;
-          setActiveCell({ row: sourceRow, column: parsedColumn.column });
+          const position = { row: sourceRow, column: parsedColumn.column };
+          setActiveCell(position);
+          if (!dragAnchorRef.current) setSelectedRange({ anchor: position, focus: position });
           const address = cellAddress(sourceRow, parsedColumn.column);
           setFormulaText(
             displayInput(finalInput(config, committedSubmissionRef.current, sheet.name, address)),
           );
+          if (suppressActiveAnnouncementRef.current) {
+            suppressActiveAnnouncementRef.current = false;
+            return;
+          }
           const editable = isCellEditable(sheet, sourceRow, parsedColumn.column);
           const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
           const issue = evaluation.issues[sheet.name]?.[address];
@@ -737,6 +970,31 @@ function SpreadsheetEditor({
 }
 
 onDocumentReady(() => {
+  observe('.js-pl-spreadsheet-formula-toggle', {
+    constructor: HTMLInputElement,
+    initialize(toggle) {
+      const readOnlySpreadsheet = toggle.closest('.pl-spreadsheet-read-only');
+      if (!readOnlySpreadsheet) return;
+
+      const values = readOnlySpreadsheet.querySelectorAll<HTMLElement>(
+        '[data-spreadsheet-view="values"]',
+      );
+      const formulas = readOnlySpreadsheet.querySelectorAll<HTMLElement>(
+        '[data-spreadsheet-view="formulas"]',
+      );
+
+      function updateView() {
+        values.forEach((value) => (value.hidden = toggle.checked));
+        formulas.forEach((formula) => (formula.hidden = !toggle.checked));
+      }
+
+      toggle.checked = false;
+      updateView();
+      toggle.addEventListener('change', updateView);
+      return { remove: () => toggle.removeEventListener('change', updateView) };
+    },
+  });
+
   observe('.pl-spreadsheet-root', {
     constructor: HTMLDivElement,
     initialize(element) {

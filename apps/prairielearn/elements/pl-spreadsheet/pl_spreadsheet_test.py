@@ -225,6 +225,11 @@ def test_prepare_csv_keeps_hidden_source_cells_server_only(tmp_path: Path) -> No
     table = spreadsheet._table_data(config, None)[0]
     assert [column["name"] for column in table["columns"]] == ["A", "B"]
     assert [row["number"] for row in table["rows"]] == [1, 2]
+    assert table["rows"][1]["cells"][1] == {
+        "address": "B2",
+        "value": "=A2*2",
+        "formula": "=A2*2",
+    }
 
 
 def test_prepare_rejects_visible_formula_references_outside_student_range(
@@ -484,7 +489,12 @@ def test_render_editable_and_read_only_views(element_directory: None) -> None:
     read_only_html = spreadsheet.render(ELEMENT_HTML, data)
     assert "<caption>Inputs</caption>" in read_only_html
     assert '<th scope="col">A</th>' in read_only_html
-    assert 'aria-label="Cell B2">6</td>' in read_only_html
+    assert '<span data-spreadsheet-view="values">6</span>' in read_only_html
+    assert (
+        '<span data-spreadsheet-view="formulas" hidden>=A2*2</span>' in read_only_html
+    )
+    assert 'role="switch"' in read_only_html
+    assert 'aria-label="Show formulas for Budget model"' in read_only_html
 
     data["panel"] = "answer"
     answer_html = spreadsheet.render(ELEMENT_HTML, data)

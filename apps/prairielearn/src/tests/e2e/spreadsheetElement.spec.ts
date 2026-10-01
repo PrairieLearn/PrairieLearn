@@ -11,13 +11,48 @@ async function editCell(grid: Locator, address: string, value: string) {
   const cell = grid.getByRole('gridcell', {
     name: new RegExp(`^${address}, editable`),
   });
-  await cell.click();
+  await cell.dblclick();
   const editor = grid.getByRole('textbox', { name: `Edit cell ${address}` });
   await expect(editor).toBeVisible();
   await editor.press('ControlOrMeta+A');
   await editor.fill(value);
   await editor.press('Enter');
 }
+
+test('uses spreadsheet-style click and typing behavior', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
+  const b2CellEditor = grid.getByRole('textbox', { name: 'Edit cell B2' });
+
+  await b2.click();
+  await expect(b2).toBeFocused();
+  await expect(b2CellEditor).toHaveCount(0);
+
+  await b2.press('F2');
+  await expect(b2CellEditor).toHaveCount(0);
+
+  await b2.press('9');
+  await expect(b2CellEditor).toHaveValue('9');
+  await b2CellEditor.press('Enter');
+  await expect(b2).toContainText('9');
+  await expect(grid.getByRole('gridcell', { name: /^B3, editable/ })).toBeFocused();
+
+  await b2.dblclick();
+  await expect(b2CellEditor).toHaveValue('9');
+});
 
 test('supports accessible local editing and trusted submission', async ({
   page,
@@ -104,18 +139,42 @@ test('supports accessible local editing and trusted submission', async ({
   expect(xlsxOptions).not.toContain('=XlsxSummary!B1=22');
 
   const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
-  await b2.click();
+  await b2.dblclick();
   const b2CellEditor = grid.getByRole('textbox', { name: 'Edit cell B2' });
   const b2FormulaBar = parameterDemo.getByLabel('Formula for B2');
   await b2CellEditor.fill('30');
   await expect(b2FormulaBar).toHaveValue('1');
   await b2CellEditor.press('Enter');
-  await expect(b2FormulaBar).toHaveValue('30');
+  await expect(b2).toContainText('30');
 
+  await b2.click();
+  await expect(b2FormulaBar).toHaveValue('30');
   await b2FormulaBar.fill('31');
   await expect(b2).toContainText('30');
   await b2FormulaBar.press('Enter');
   await expect(b2).toContainText('31');
+
+  await b2.press('Enter');
+  const b3 = grid.getByRole('gridcell', { name: /^B3, editable/ });
+  await expect(b3).toBeFocused();
+  await b3.press('Shift+Enter');
+  await expect(b2).toBeFocused();
+  await b2.press('Tab');
+  const c2 = grid.getByRole('gridcell', { name: /^C2, editable/ });
+  await expect(c2).toBeFocused();
+  await c2.press('Shift+Tab');
+  await expect(b2).toBeFocused();
+
+  const d3 = grid.getByRole('gridcell', { name: /^D3, editable/ });
+  const b2Box = await b2.boundingBox();
+  const d3Box = await d3.boundingBox();
+  if (!b2Box || !d3Box) throw new Error('Expected spreadsheet cells to have bounding boxes');
+  await page.mouse.move(b2Box.x + b2Box.width / 2, b2Box.y + b2Box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(d3Box.x + d3Box.width / 2, d3Box.y + d3Box.height / 2);
+  await page.mouse.up();
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(6);
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
 
   await editCell(grid, 'B2', '3');
   await editCell(grid, 'C2', '4');
@@ -130,9 +189,7 @@ test('supports accessible local editing and trusted submission', async ({
 
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.evaluate(() => navigator.clipboard.writeText('7'));
-  const b3 = grid.getByRole('gridcell', { name: /^B3, editable/ });
   await b3.click();
-  await grid.getByRole('textbox', { name: 'Edit cell B3' }).press('Escape');
   const formulaBar = parameterDemo.getByLabel('Formula for B3');
   await formulaBar.fill('17');
   await expect(rawAnswer).toHaveValue(/"B3":17/);
@@ -140,7 +197,7 @@ test('supports accessible local editing and trusted submission', async ({
   await expect(rawAnswer).not.toHaveValue(/"B3"/);
 
   await b3.click();
-  await grid.getByRole('textbox', { name: 'Edit cell B3' }).press('ControlOrMeta+V');
+  await b3.press('ControlOrMeta+V');
   await expect(rawAnswer).toHaveValue(/"B3":7/);
   await parameterDemo.getByRole('button', { name: 'Undo' }).click();
   await expect(rawAnswer).not.toHaveValue(/"B3"/);
@@ -177,8 +234,7 @@ test('supports accessible local editing and trusted submission', async ({
 
   const lastCell = grid.getByRole('gridcell', { name: /^D4, editable/ });
   await lastCell.click();
-  await grid.getByRole('textbox', { name: 'Edit cell D4' }).press('Escape');
-  await grid.getByRole('gridcell', { name: /^D4, editable/ }).press('Tab');
+  await lastCell.press('Tab');
   expect(await grid.evaluate((element) => element.contains(document.activeElement))).toBe(false);
 
   await page.addScriptTag({ content: axe.source });
@@ -195,7 +251,21 @@ test('supports accessible local editing and trusted submission', async ({
   await expect(submissionTable).toBeVisible();
   await expect(submissionTable.getByRole('columnheader', { name: 'D' })).toBeVisible();
   await expect(submissionTable.getByRole('rowheader', { name: '2' })).toBeVisible();
-  await expect(submissionTable.getByRole('cell', { name: 'Cell D2' })).toHaveText('12');
+  const submissionD2 = submissionTable.getByRole('cell', { name: 'Cell D2' });
+  const submissionD2Value = submissionD2.getByText('12', { exact: true });
+  const submissionD2Formula = submissionD2.getByText('=B2*C2', { exact: true });
+  await expect(submissionD2Value).toBeVisible();
+  await expect(submissionD2Formula).toBeHidden();
+  const formulaToggle = page.getByRole('switch', {
+    name: 'Show formulas for Spreadsheet test',
+  });
+  await expect(formulaToggle).not.toBeChecked();
+  await formulaToggle.check();
+  await expect(submissionD2Value).toBeHidden();
+  await expect(submissionD2Formula).toBeVisible();
+  await formulaToggle.uncheck();
+  await expect(submissionD2Value).toBeVisible();
+  await expect(submissionD2Formula).toBeHidden();
   await page.addScriptTag({ content: axe.source });
   const readOnlyAccessibilityResults = await page.evaluate(async () => {
     return await window.axe.run('[data-testid="submission-block"] .pl-spreadsheet', {
@@ -226,7 +296,7 @@ test('persists active formula drafts and rejected formulas', async ({ page, cour
   });
   const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
 
-  await grid.getByRole('gridcell', { name: /^D2, editable/ }).click();
+  await grid.getByRole('gridcell', { name: /^D2, editable/ }).dblclick();
   const editor = grid.getByRole('textbox', { name: 'Edit cell D2' });
   await editor.fill('=1/0');
   await expect(rawAnswer).toHaveValue(/[=]1\/0/);
@@ -238,13 +308,15 @@ test('persists active formula drafts and rejected formulas', async ({ page, cour
   await page.getByRole('button', { name: /Save & Grade/ }).click();
 
   const submissionTable = page.getByRole('table', { name: 'Inputs', exact: true }).first();
-  await expect(submissionTable.getByRole('cell', { name: 'Cell D2' })).toHaveText('#DIV/0!');
+  await expect(
+    submissionTable.getByRole('cell', { name: 'Cell D2' }).getByText('#DIV/0!', { exact: true }),
+  ).toBeVisible();
   await expect(rawAnswer).toHaveValue(/[=]1\/0/);
 
   const currentGrid = parameterDemo.getByRole('grid', {
     name: 'Spreadsheet test, sheet Inputs',
   });
-  await currentGrid.getByRole('gridcell', { name: /^D2, editable/ }).click();
+  await currentGrid.getByRole('gridcell', { name: /^D2, editable/ }).dblclick();
   const rejectedEditor = currentGrid.getByRole('textbox', { name: 'Edit cell D2' });
   await rejectedEditor.fill('=RAND()');
   await page.getByRole('button', { name: /Save & Grade/ }).click();
@@ -257,7 +329,7 @@ test('persists active formula drafts and rejected formulas', async ({ page, cour
 
   await page.reload();
   await expect(rawAnswer).toHaveValue(/[=]RAND\(\)/);
-  await parameterDemo.getByRole('gridcell', { name: /^D2, editable, #ERROR!/ }).click();
+  await parameterDemo.getByRole('gridcell', { name: /^D2, editable, #ERROR!/ }).dblclick();
   await expect(parameterDemo.getByRole('textbox', { name: 'Edit cell D2' })).toHaveValue('=RAND()');
 });
 

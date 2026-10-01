@@ -1071,6 +1071,14 @@ def _result_value(cell: dict[str, Any]) -> str:
     return str(value)
 
 
+def _display_input_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    return str(value)
+
+
 def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
     snapshot_sheets = {}
     if isinstance(snapshot, dict):
@@ -1091,10 +1099,15 @@ def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
                 address = f"{_column_name(column_index)}{row_index + 1}"
                 snapshot_cell = snapshot_cells.get(address)
                 if isinstance(snapshot_cell, dict):
-                    display = _result_value(snapshot_cell)
+                    value = _result_value(snapshot_cell)
+                    formula = _display_input_value(_input_value(snapshot_cell))
                 else:
-                    display = str(template_cells.get(address, ""))
-                cells.append({"address": address, "display": display})
+                    value = formula = _display_input_value(template_cells.get(address))
+                cells.append({
+                    "address": address,
+                    "value": value,
+                    "formula": formula,
+                })
             rows.append({"number": row_index + 1, "cells": cells})
         table_sheets.append({
             "name": sheet.get("name", "Spreadsheet"),
