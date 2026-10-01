@@ -56,7 +56,7 @@
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.2",
-    "dependency-cruiser": "^17.4.3",
+    "dependency-cruiser": "^18.4.0",
     "eslint": "^10.11.0",
     "fast-glob": "^3.3.3",
     "fs-extra": "^11.4.1",
