@@ -42,7 +42,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/he": "^1.2.3",
-    "@types/node": "^24.19.0",
+    "@types/node": "^26.6.3",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.2",
     "undici": "^8.11.2",

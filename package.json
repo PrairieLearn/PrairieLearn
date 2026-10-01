@@ -53,7 +53,7 @@
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tree-sitter-htmlmustache": "^1.4.3",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.19.0",
+    "@types/node": "^26.6.3",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.2",
     "dependency-cruiser": "^17.4.3",

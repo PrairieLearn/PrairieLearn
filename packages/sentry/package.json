@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.19.0",
+    "@types/node": "^26.6.3",
     "@typescript/native": "npm:typescript@^7.0.2"
   }
 }
