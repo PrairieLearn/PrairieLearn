@@ -20,8 +20,8 @@ export const toolDefinitions = (development: boolean) => [
   ...(development ? hostToolDefinitions : []),
   ...Object.values(tools).map((tool) => tool.definition),
 ];
-export function toolResult(text: string): DynamicToolCallResponse {
-  return { success: true, contentItems: [{ type: 'inputText', text }] };
+export function toolResult(text: string, success = true): DynamicToolCallResponse {
+  return { success, contentItems: [{ type: 'inputText', text }] };
 }
 
 export function isPreparedTool(name: string) {

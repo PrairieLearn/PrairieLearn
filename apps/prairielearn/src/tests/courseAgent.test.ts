@@ -3,12 +3,12 @@ import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { proposalContent } from '@prairielearn/course-agent-contract';
+import { type ToolOutcome, proposalContent } from '@prairielearn/course-agent-contract';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-
 import * as agentEvents from '../ee/lib/course-agent/events.js';
-import { authorize, prepare } from '../ee/lib/course-agent/service.js';
+import * as agentProvider from '../ee/lib/course-agent/provider.js';
+import { authorize, prepare, snapshot } from '../ee/lib/course-agent/service.js';
 import { admit, estimatedCost, recordUsage } from '../ee/lib/course-agent/usage.js';
 import { config } from '../lib/config.js';
 import {
@@ -203,6 +203,14 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
     course_role: 'Owner',
     authn_user_id: user.id,
   });
+  const originalProvider = agentProvider.createCloudflareProvider;
+  const providerMock = vi
+    .spyOn(agentProvider, 'createCloudflareProvider')
+    .mockImplementation((...args) => ({
+      ...originalProvider(...args),
+      getSnapshot: async () => ({ messages: [], revision: 0 }),
+      deliverToolResult: async () => {},
+    }));
   const fetcher = vi
     .spyOn(globalThis, 'fetch')
     .mockResolvedValue(new Response(null, { status: 404 }));
@@ -240,6 +248,7 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
     expect(String(url)).toContain('/repos/org/course/');
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer fake-shared-client-token');
   } finally {
+    providerMock.mockRestore();
     fetcher.mockRestore();
     notify.mockRestore();
   }
@@ -298,4 +307,111 @@ it('uses shared AI prices, preserves recorded rates, and leaves unsupported mode
     executions: { [unknown]: { ...snapshot.executions[id], model: 'unsupported-fixture-model' } },
   });
   expect((await selectOptionalExecution(conversation.id, unknown))?.estimated_cost).toBeNull();
+});
+
+it('returns failed schema validation to the agent, retries delivery, and only exposes valid approvals', async () => {
+  const { conversation, scope, user } = await setupConversation();
+  await insertCoursePermissionsByUserUid({
+    course_id: scope.course_id,
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: user.id,
+  });
+  const fetcher = vi
+    .spyOn(globalThis, 'fetch')
+    .mockImplementation(async () => Response.json({ truncated: false, tree: [] }));
+  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
+  const delivery = vi
+    .fn<(input: ToolOutcome, signal: AbortSignal) => Promise<void>>()
+    .mockRejectedValueOnce(new Error('Delivery interrupted'))
+    .mockResolvedValue(undefined);
+  const originalProvider = agentProvider.createCloudflareProvider;
+  const providerMock = vi
+    .spyOn(agentProvider, 'createCloudflareProvider')
+    .mockImplementation((...args) => ({
+      ...originalProvider(...args),
+      getSnapshot: async () => ({ messages: [], revision: 0 }),
+      deliverToolResult: delivery,
+    }));
+  const id = randomUUID();
+  const baseSha = 'a'.repeat(40),
+    proposedSha = 'b'.repeat(40);
+  const files = [
+    {
+      path: 'courseInstances/Fall2026/infoCourseInstance.json',
+      previousMode: '000000',
+      mode: '100644',
+      content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', accessRules: [] }),
+    },
+  ];
+  const tool = {
+    id,
+    sequence: 1,
+    name: 'push_sync',
+    args: {
+      id,
+      baseSha,
+      proposedSha,
+      files,
+      diff: '',
+      status: 'pending',
+      digest: createHash('sha256')
+        .update(proposalContent(baseSha, proposedSha, files))
+        .digest('hex'),
+    },
+  };
+  try {
+    await withConfig(
+      { isEnterprise: true, courseAgent: settings, githubClientToken: 'fake-shared-client-token' },
+      async () => {
+        await expect(prepare(scope, conversation, tool)).rejects.toThrow('Delivery interrupted');
+        const failed = (await selectOptionalProposal(conversation.id, id))!;
+        expect(failed.prepared).toBe(false);
+        expect(failed.decision).toBeNull();
+        expect(failed.error).toContain('accessRules');
+        expect(failed.outcome).toContain('Code change request failed');
+        expect((await snapshot(conversation, { messages: [], revision: 0 })).approvals).toEqual([]);
+        await expect(
+          reserveOperation(conversation, randomUUID(), { kind: 'message' }, 0),
+        ).rejects.toThrow('pending proposal');
+        await prepare(scope, conversation, tool);
+        expect(fetcher).toHaveBeenCalledOnce();
+        expect(delivery.mock.calls[1][0]).toMatchObject({
+          id,
+          success: false,
+          display: { name: 'push_sync', value: { error: failed.error } },
+        });
+        expect((await selectOptionalProposal(conversation.id, id))!.delivered).toBe(true);
+        expect(await reserveOperation(conversation, randomUUID(), { kind: 'message' }, 0)).toBe(1);
+        const validId = randomUUID();
+        const validFiles = [
+          {
+            ...files[0],
+            content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', allowAccess: [] }),
+          },
+        ];
+        await prepare(scope, conversation, {
+          ...tool,
+          id: validId,
+          sequence: 2,
+          args: {
+            ...tool.args,
+            id: validId,
+            files: validFiles,
+            digest: createHash('sha256')
+              .update(proposalContent(baseSha, proposedSha, validFiles))
+              .digest('hex'),
+          },
+        });
+        const state = await snapshot(conversation, { messages: [], revision: 0 });
+        expect(state.approvals).toHaveLength(1);
+        expect(state.approvals[0].id).toBe(validId);
+        expect(delivery).toHaveBeenCalledTimes(2);
+      },
+    );
+  } finally {
+    providerMock.mockRestore();
+    fetcher.mockRestore();
+    notify.mockRestore();
+  }
 });

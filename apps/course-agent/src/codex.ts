@@ -43,7 +43,7 @@ export interface CodexState {
   steering?: Record<string, { sandboxId: string; threadId: string; accepted: boolean }>;
   pendingTool?: PendingTool;
   toolSequence?: number;
-  toolReceipts?: Record<string, string>;
+  toolReceipts?: Record<string, string | { result: string; success: boolean }>;
   sandbox?: {
     id: string;
     phase:

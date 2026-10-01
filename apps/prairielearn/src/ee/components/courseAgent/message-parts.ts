@@ -22,6 +22,29 @@ type TranscriptPart =
 /** Keep durable code changes at their request marker as their decision changes. */
 export function buildTranscript(messages: UIMessage[], approvals: ApprovalDisplay[]) {
   const placed = new Set<string>();
+  const failures = new Map(
+    messages.flatMap((message) =>
+      message.parts.flatMap((part) => {
+        const id = toolMarkerId(part, 'data-tool-display');
+        if (
+          !id ||
+          !('data' in part) ||
+          !part.data ||
+          typeof part.data !== 'object' ||
+          !('value' in part.data)
+        ) {
+          return [];
+        }
+        const value = part.data.value;
+        return value &&
+          typeof value === 'object' &&
+          'error' in value &&
+          typeof value.error === 'string'
+          ? [[id, value.error] as const]
+          : [];
+      }),
+    ),
+  );
   const requested = new Set(
     messages.flatMap((message) =>
       message.parts.flatMap((part) => {
@@ -41,6 +64,21 @@ export function buildTranscript(messages: UIMessage[], approvals: ApprovalDispla
         if (approval && !placed.has(marker)) {
           parts.push({ kind: 'code-change', approval });
           placed.add(marker);
+        } else if (failures.has(marker) && !placed.has(marker)) {
+          parts.push({
+            kind: 'tools',
+            parts: [
+              {
+                type: 'dynamic-tool',
+                toolName: 'push_sync',
+                toolCallId: marker,
+                state: 'output-error',
+                input: {},
+                errorText: failures.get(marker)!,
+              },
+            ],
+          });
+          placed.add(marker);
         }
         continue;
       }
@@ -50,7 +88,10 @@ export function buildTranscript(messages: UIMessage[], approvals: ApprovalDispla
         if (
           (part.type === 'tool-push_sync' ||
             ('toolName' in part && part.toolName === 'push_sync')) &&
-          message.parts.some((p) => toolMarkerId(p, 'data-tool'))
+          message.parts.some((p) => {
+            const id = toolMarkerId(p, 'data-tool');
+            return id && (approvals.some((approval) => approval.id === id) || failures.has(id));
+          })
         ) {
           continue;
         }

@@ -129,12 +129,14 @@ export interface PendingTool {
   name: string;
   args: unknown;
   result?: string;
+  resultSuccess?: boolean;
   prepared?: boolean;
   error?: string;
 }
 export const toolOutcomeSchema = z.object({
   id: z.uuid(),
   result: z.string().min(1).max(2000),
+  success: z.boolean().optional(),
   display: z.object({ name: z.string(), value: z.json() }).optional(),
 });
 export type ToolOutcome = z.infer<typeof toolOutcomeSchema>;
@@ -149,6 +151,7 @@ export class ChatError extends Error {
 
 export const approvalOutcomeSchema = approvalDecisionSchema.extend({
   result: z.string().min(1).max(2000),
+  success: z.boolean().optional(),
 });
 
 export const hostToolCallSchema = z.object({

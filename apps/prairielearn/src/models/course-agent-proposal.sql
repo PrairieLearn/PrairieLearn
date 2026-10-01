@@ -77,3 +77,13 @@ FROM
   job_sequences
 WHERE
   id = $id;
+
+-- BLOCK fail_preparation
+UPDATE course_agent_proposals
+SET
+  prepared = false,
+  error = $error,
+  outcome = $outcome
+WHERE
+  id = $id
+  AND decision IS NULL;

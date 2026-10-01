@@ -107,6 +107,38 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     await c.request('cleanup', {});
     expect((await c.request('diagnostics')).state).toBe('absent');
   });
+  it('delivers a failed native tool result and releases the gate without an approval decision', async () => {
+    const c = conversation();
+    const socket = await c.host();
+    try {
+      await c.send();
+      await c.request('test/approval', {});
+      await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
+      const pending = (await c.request('snapshot')).pendingTool;
+      const error = 'Unrecognized key: accessRules. Correct the file and submit a new proposal.';
+      const result = {
+        type: 'host-tool-result',
+        id: pending.id,
+        outcome: {
+          id: pending.id,
+          result: error,
+          success: false,
+          display: { name: 'push_sync', value: { error } },
+        },
+      };
+      socket.send(JSON.stringify(result));
+      await expect
+        .poll(async () => (await c.request('test/status')).toolResults?.[0]?.success)
+        .toBe(false);
+      await expect.poll(async () => (await c.request('snapshot')).blocked).toBe(false);
+      expect((await c.request('test/status')).toolResults[0].contentItems[0].text).toBe(error);
+      socket.send(JSON.stringify(result));
+      await c.request('cancel', {});
+      expect((await c.request('test/status')).toolResults).toHaveLength(1);
+    } finally {
+      socket.close();
+    }
+  });
   it('retains the pending tool across suspension and delivers a cold hidden continuation exactly once', async () => {
     const c = conversation();
     const socket = await c.host();

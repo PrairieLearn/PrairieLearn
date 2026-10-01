@@ -53,6 +53,9 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(page.getByRole('button', { name: 'Conversation', exact: true })).not.toHaveText(
     'New conversation',
   );
+  await expect(page.getByRole('button', { name: 'Conversation', exact: true })).toHaveText(
+    /\d{1,2}:\d{2} (AM|PM)/,
+  );
   await expect(page.getByText('Working…', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toHaveCount(0);
@@ -125,7 +128,7 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeVisible();
 });
 
-test('denial after sandbox shutdown remains durable and resumes through a hidden continuation', async ({
+test('failed preparation returns a native tool error and never displays an approval request', async ({
   page,
   courseInstance,
 }) => {
@@ -164,25 +167,22 @@ test('denial after sandbox shutdown remains durable and resumes through a hidden
   };
   const approval = await fetch(`${root}/test/approval`, { method: 'POST', headers, body: '{}' });
   expect(approval.ok).toBe(true);
-  await expect(page.getByText('Code change · Review requested', { exact: true })).toBeVisible();
-  await page.getByLabel('Message', { exact: true }).fill('Wait for approval');
-  await expect(page.getByRole('button', { name: /^(Send|Steer)$/ })).toBeDisabled();
-  const expire = await fetch(`${root}/test/advance`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ milliseconds: 10 * 60_000 + 1000 }),
-  });
-  expect(expire.ok).toBe(true);
-  await page.getByRole('button', { name: 'Reject', exact: true }).click();
-  await expect(page.getByText('Code change · Rejected', { exact: true })).toBeVisible();
-  await expect(
-    page.getByText('The user denied this proposal. Nothing was published.', { exact: true }),
-  ).toHaveCount(0);
+  await expect(page.getByText('Code change request', { exact: true })).toBeVisible();
+  await expect(page.getByText('Preparation failed.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Approve and sync', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Code change · Review requested', { exact: true })).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const response = await fetch(`${root}/test/status`, { headers });
+      const state = await response.json();
+      return state.toolResults?.[0]?.success;
+    })
+    .toBe(false);
   await page.getByLabel('Message', { exact: true }).fill('Next request');
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled({
     timeout: 20000,
   });
   await page.reload();
-  await expect(page.getByText('Code change · Rejected', { exact: true })).toBeVisible();
-  await expect(page.getByText(/push_sync result for operation/)).toHaveCount(0);
+  await expect(page.getByText('Code change request', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Approve and sync', exact: true })).toHaveCount(0);
 });

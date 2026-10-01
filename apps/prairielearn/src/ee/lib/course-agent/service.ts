@@ -176,19 +176,39 @@ export async function prepare(
         throw new Error('Proposal identity changed.');
       }
       if (row.prepared || row.decision !== null) return;
-      try {
-        const pending = job(conversation, row);
-        await publisher(conversation).prepare(pending);
-        await proposals.prepareProposal(row.id, pending.approval, true, null);
-      } catch (error) {
-        await proposals.prepareProposal(
-          row.id,
-          row.payload,
-          false,
-          error instanceof PublishRejected
-            ? error.message
-            : 'Proposal validation failed. Retry preparation after checking repository access.',
+      if (!row.outcome) {
+        try {
+          const pending = job(conversation, row);
+          await publisher(conversation).prepare(pending);
+          await proposals.prepareProposal(row.id, pending.approval, true, null);
+          return;
+        } catch (error) {
+          await proposals.failProposalPreparation(
+            row.id,
+            error instanceof PublishRejected
+              ? error.message.slice(0, 1800)
+              : 'Preparation failed. Check repository access and retry the code change request.',
+          );
+          row = (await proposals.selectOptionalProposal(conversation.id, tool.id))!;
+        }
+      }
+      if (!row.delivered && row.outcome) {
+        const chat = await provider(scope, conversation);
+        const state = await chat.getSnapshot(AbortSignal.timeout(10000));
+        if (state.pendingTool?.id === tool.id) {
+          await recordUsage(conversation, state);
+          await admitResult(conversation, tool.id, state);
+        }
+        await chat.deliverToolResult(
+          {
+            id: tool.id,
+            result: row.outcome,
+            success: false,
+            display: { name: 'push_sync', value: { error: row.error } },
+          },
+          AbortSignal.timeout(120000),
         );
+        await proposals.saveProposalProgress(row.id, { delivered: true, error: row.error });
       }
     },
   );
@@ -197,8 +217,9 @@ export async function prepare(
 export async function snapshot(conversation: CourseAgentConversation, value: ChatSnapshot) {
   const rows = await proposals.selectProposals(conversation.id);
   const operations = await selectConversationOperations(conversation.id);
-  const current = rows.find((r) => !r.delivered) ?? rows.at(-1);
-  const approvals = rows.map((r) => ({
+  const prepared = rows.filter((row) => row.prepared);
+  const current = prepared.find((r) => !r.delivered) ?? prepared.at(-1);
+  const approvals = prepared.map((r) => ({
     ...approvalDisplaySchema.parse(r.payload),
     digest: r.digest,
     status:
@@ -259,7 +280,7 @@ export async function complete(
       if (row?.digest !== input.digest) {
         throw new TRPCError({ code: 'CONFLICT', message: 'The reviewed proposal changed.' });
       }
-      if (input.approved && !row.prepared) {
+      if (!row.prepared) {
         throw new TRPCError({ code: 'CONFLICT', message: 'Retry preparation before approving.' });
       }
       await proposals.decideProposal(

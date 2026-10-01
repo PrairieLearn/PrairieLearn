@@ -12,10 +12,10 @@ import {
   type ChatSnapshot,
   sendRequestSchema,
 } from '@prairielearn/course-agent-contract';
-import { formatDate } from '@prairielearn/formatter';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
+import { formatCourseAgentDate } from '../../../lib/course-agent-date.js';
 import type { CourseAgentPanelState } from '../../../lib/course-agent-panel.js';
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/course/context.js';
@@ -644,7 +644,7 @@ function Transcript({
               typeof metadata === 'object' &&
               'created_at' in metadata &&
               typeof metadata.created_at === 'string' ? (
-              <> · {formatDate(new Date(metadata.created_at), timezone, { includeTz: false })}</>
+              <> · {formatCourseAgentDate(new Date(metadata.created_at), timezone, false)}</>
             ) : null;
           })()}
         </div>
@@ -716,6 +716,7 @@ function toolState(part: UIMessage['parts'][number]): 'streaming' | 'success' | 
 function toolTitle(part: UIMessage['parts'][number]) {
   const running = toolState(part) === 'streaming';
   const name = 'toolName' in part ? String(part.toolName) : part.type.replace(/^tool-/, '');
+  if (name === 'push_sync') return 'Code change request';
   if (name === 'command_execution') {
     const input = 'input' in part ? part.input : undefined;
     const command =

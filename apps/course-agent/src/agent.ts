@@ -526,9 +526,11 @@ export class Chat extends AIChatAgent<Env, CodexState> {
 
   /** Deliver the persisted decision to a waiting tool, or resume Codex after sandbox suspension. */
   private async deliverToolResult(input: ToolOutcome) {
+    const success = input.success !== false;
     const receipt = this.state.toolReceipts?.[input.id];
     if (receipt !== undefined) {
-      if (receipt !== input.result) {
+      const saved = typeof receipt === 'string' ? { result: receipt, success: true } : receipt;
+      if (saved.result !== input.result || saved.success !== success) {
         throw new ChatError(409, 'A different tool result was already delivered.');
       }
       return;
@@ -537,7 +539,10 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     if (!tool || tool.id !== input.id) {
       throw new ChatError(409, 'Tool request is no longer current.');
     }
-    if (tool.result && tool.result !== input.result) {
+    if (
+      tool.result &&
+      (tool.result !== input.result || (tool.resultSuccess !== false) !== success)
+    ) {
       throw new ChatError(409, 'Tool result changed.');
     }
     if (input.display) {
@@ -559,7 +564,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     }
     this.setState({
       ...this.state,
-      pendingTool: { ...tool, result: input.result },
+      pendingTool: { ...tool, result: input.result, resultSuccess: success },
     });
     if (
       this.state.sandbox &&
@@ -578,7 +583,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         },
       });
       await this.interaction();
-      this.resolveToolResult(toolResult(input.result));
+      this.resolveToolResult(toolResult(input.result, success));
       this.resolveToolResult = undefined;
     } else {
       // The old RPC no longer exists. Only a resolved gate may resume with an internal continuation.
@@ -595,7 +600,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     this.setState({
       ...this.state,
       pendingTool: undefined,
-      toolReceipts: { [input.id]: input.result },
+      toolReceipts: { [input.id]: { result: input.result, success } },
     });
   }
 

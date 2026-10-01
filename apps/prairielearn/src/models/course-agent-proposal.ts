@@ -37,6 +37,8 @@ export const prepareProposal = (
   prepared: boolean,
   error: string | null,
 ) => execute(sql.prepare, { id, payload: JSON.stringify(payload), prepared, error });
+export const failProposalPreparation = (id: string, error: string) =>
+  execute(sql.fail_preparation, { id, error, outcome: `Code change request failed: ${error}` });
 export const saveProposalProgress = (
   id: string,
   input: Partial<

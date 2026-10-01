@@ -108,11 +108,17 @@ export class CodexEvents {
       if (completed) {
         this.tools.delete(id);
         this.completedTools.add(id);
-        this.write({
-          type: 'tool-output-available',
-          toolCallId: id,
-          output: item.contentItems,
-        });
+        if (item.success === false) {
+          this.write({
+            type: 'tool-output-error',
+            toolCallId: id,
+            errorText: (item.contentItems ?? [])
+              .flatMap((content) => (content.type === 'inputText' ? [content.text] : []))
+              .join('\n'),
+          });
+        } else {
+          this.write({ type: 'tool-output-available', toolCallId: id, output: item.contentItems });
+        }
       }
       return;
     }

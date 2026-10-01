@@ -6,9 +6,9 @@ import {
   approvalDecisionSchema,
   sendRequestSchema,
 } from '@prairielearn/course-agent-contract';
-import { formatDate } from '@prairielearn/formatter';
 import { IdSchema } from '@prairielearn/zod';
 
+import { formatCourseAgentDate } from '../../lib/course-agent-date.js';
 import { CourseAgentPanelStateSchema } from '../../lib/course-agent-panel.js';
 import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -67,7 +67,7 @@ export const courseAgentRouter = t.router({
           title:
             conversation.title === 'New conversation'
               ? conversation.title
-              : formatDate(conversation.created_at, ctx.course.display_timezone),
+              : formatCourseAgentDate(conversation.created_at, ctx.course.display_timezone),
           running,
           finishedAt: finished_at?.toISOString() ?? null,
         }),
@@ -87,7 +87,7 @@ export const courseAgentRouter = t.router({
       const { admit, recordUsage } = await import('../../ee/lib/course-agent/usage.js');
       await recordUsage(c, await chat.getSnapshot(AbortSignal.timeout(10000)));
       await admit(c, input.message);
-      const title = formatDate(c.created_at, ctx.course.display_timezone);
+      const title = formatCourseAgentDate(c.created_at, ctx.course.display_timezone);
       await nameConversation(c.id, title);
       const { observe } = await import('../../ee/lib/course-agent/observer.js');
       await observe(c, chat, (tool) => ctx.service.prepare(ctx.scope, c, tool));

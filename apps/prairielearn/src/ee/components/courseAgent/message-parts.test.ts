@@ -123,3 +123,72 @@ it('uses the durable card instead of a static push-sync tool row after suspensio
   );
   expect(entries[0].parts).toEqual([{ kind: 'code-change', approval }]);
 });
+
+it('shows validation failures as tool errors without an approval card or duplicate native row', () => {
+  const entries = buildTranscript(
+    [
+      {
+        id: 'request',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-push_sync',
+            toolCallId: 'native',
+            state: 'output-error',
+            input: {},
+            errorText: 'old stream error',
+          },
+          { type: 'data-tool', data: { id: 'invalid', name: 'push_sync' } },
+        ],
+      },
+      {
+        id: 'result',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'data-tool-display',
+            data: {
+              id: 'invalid',
+              name: 'push_sync',
+              value: { error: 'Unrecognized key: accessRules' },
+            },
+          },
+        ],
+      },
+    ],
+    [],
+  );
+  expect(entries).toHaveLength(1);
+  expect(entries[0].parts).toEqual([
+    {
+      kind: 'tools',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolName: 'push_sync',
+          toolCallId: 'invalid',
+          state: 'output-error',
+          input: {},
+          errorText: 'Unrecognized key: accessRules',
+        },
+      ],
+    },
+  ]);
+});
+
+it('keeps the native request visible as a tool while preparation is pending', () => {
+  const entries = buildTranscript(
+    [
+      {
+        id: 'request',
+        role: 'assistant',
+        parts: [
+          { type: 'tool-push_sync', toolCallId: 'native', state: 'input-available', input: {} },
+          { type: 'data-tool', data: { id: 'pending', name: 'push_sync' } },
+        ],
+      },
+    ],
+    [],
+  );
+  expect(entries[0].parts).toMatchObject([{ kind: 'tools', parts: [{ toolCallId: 'native' }] }]);
+});
