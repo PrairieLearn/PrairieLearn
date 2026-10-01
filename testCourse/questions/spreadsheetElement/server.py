@@ -1,10 +1,8 @@
-from typing import Any
-
 import pandas as pd
 import prairielearn as pl
 
 
-def generate(data: dict[str, Any]) -> None:
+def generate(data: pl.QuestionData) -> None:
     data["params"]["workbook"] = {
         "schema_version": 1,
         "sheets": [
@@ -51,7 +49,7 @@ def generate(data: dict[str, Any]) -> None:
     }
 
 
-def grade(data: dict[str, Any]) -> None:
+def grade(data: pl.QuestionData) -> None:
     workbook = pl.SpreadsheetBook(data["submitted_answers"]["model"])
     inputs = workbook["Summary"].range("Inputs!B2:D2")
     line_total = inputs["D2"]
@@ -68,17 +66,24 @@ def grade(data: dict[str, Any]) -> None:
     csv_workbook = pl.SpreadsheetBook(data["submitted_answers"]["csv_model"])
     csv_budget = csv_workbook["CsvBudget"]
     csv_workbook_correct = (
-        csv_budget["B2"].value == 3
-        and csv_budget["C2"].value == 4
-        and csv_budget["D2"].formula == "=B2*C2"
+        csv_budget.cell("B2").value == 3
+        and csv_budget.cell("C2").value == 4
+        and csv_budget.cell("D2").formula == "=B2*C2"
         and csv_workbook.outputs["is_correct"].value is True
     )
 
     tsv_workbook = pl.SpreadsheetBook(data["submitted_answers"]["tsv_model"])
     tsv_workbook_correct = (
-        tsv_workbook["Rates"]["D2"].value == 10
-        and tsv_workbook["RateSummary"]["B1"].value == 22
+        tsv_workbook["Rates"].cell("D2").value == 10
+        and tsv_workbook["RateSummary"].cell("B1").value == 22
         and tsv_workbook.outputs["is_correct"].value is True
+    )
+
+    xlsx_workbook = pl.SpreadsheetBook(data["submitted_answers"]["xlsx_model"])
+    xlsx_workbook_correct = (
+        xlsx_workbook["XlsxInputs"].cell("D2").value == 10
+        and xlsx_workbook["XlsxSummary"].cell("B1").value == 22
+        and xlsx_workbook.outputs["is_correct"].value is True
     )
 
     data["partial_scores"]["model"] = {
@@ -91,6 +96,10 @@ def grade(data: dict[str, Any]) -> None:
     }
     data["partial_scores"]["tsv_model"] = {
         "score": int(tsv_workbook_correct),
+        "weight": 1,
+    }
+    data["partial_scores"]["xlsx_model"] = {
+        "score": int(xlsx_workbook_correct),
         "weight": 1,
     }
     pl.set_weighted_score_data(data)

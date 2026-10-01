@@ -52,6 +52,9 @@ test('supports accessible local editing and trusted submission', async ({
   const tsvDemo = page.getByRole('region', {
     name: 'TSV sources combined as a sheetbook',
   });
+  const xlsxDemo = page.getByRole('region', {
+    name: 'XLSX workbook with a private worksheet',
+  });
   const grid = parameterDemo.getByRole('grid', {
     name: 'Spreadsheet test, sheet Inputs',
   });
@@ -78,11 +81,28 @@ test('supports accessible local editing and trusted submission', async ({
     name: 'TSV rate workbook, sheet Rates',
   });
   await expect(tsvGrid).toBeVisible();
-  await expect(tsvDemo.getByRole('tab', { name: 'Rates' })).toHaveAttribute(
+  await expect(tsvDemo.getByRole('tab', { name: 'Rates', exact: true })).toHaveAttribute(
     'aria-selected',
     'true',
   );
   await expect(tsvDemo.getByRole('tab', { name: 'RateSummary' })).toBeVisible();
+  const tsvOptions = await tsvDemo
+    .locator('.pl-spreadsheet-root')
+    .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
+  expect(tsvOptions).not.toContain('SERVER_ONLY_TSV');
+  expect(tsvOptions).not.toContain('=B1=22');
+
+  const xlsxGrid = xlsxDemo.getByRole('grid', {
+    name: 'XLSX workbook, sheet XlsxInputs',
+  });
+  await expect(xlsxGrid).toBeVisible();
+  await expect(xlsxDemo.getByRole('tab', { name: 'XlsxSummary' })).toBeVisible();
+  await expect(xlsxDemo.getByRole('tab', { name: 'XlsxChecks' })).toHaveCount(0);
+  const xlsxOptions = await xlsxDemo
+    .locator('.pl-spreadsheet-root')
+    .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
+  expect(xlsxOptions).not.toContain('SERVER_ONLY_XLSX');
+  expect(xlsxOptions).not.toContain('=XlsxSummary!B1=22');
 
   await editCell(grid, 'B2', '3');
   await editCell(grid, 'C2', '4');
@@ -146,7 +166,7 @@ test('supports accessible local editing and trusted submission', async ({
 
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByText(/100%/).first()).toBeVisible();
-  const submissionTable = page.getByRole('table', { name: 'Inputs' });
+  const submissionTable = page.getByRole('table', { name: 'Inputs', exact: true });
   await expect(submissionTable).toBeVisible();
   await expect(submissionTable.getByRole('columnheader', { name: 'D' })).toBeVisible();
   await expect(submissionTable.getByRole('rowheader', { name: '2' })).toBeVisible();
