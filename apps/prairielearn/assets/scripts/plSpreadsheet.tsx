@@ -249,6 +249,7 @@ function SpreadsheetEditor({
     nextSubmission: SpreadsheetRawSubmission,
     message: string,
     recordHistory = true,
+    formulaCell = activeCell,
   ) {
     const previousSubmission = committedSubmissionRef.current;
     if (recordHistory) {
@@ -259,6 +260,18 @@ function SpreadsheetEditor({
     rawSubmissionRef.current = nextSubmission;
     setRawSubmission(nextSubmission);
     syncHiddenInput(hiddenInput, nextSubmission);
+    if (formulaCell) {
+      setFormulaText(
+        displayInput(
+          finalInput(
+            config,
+            nextSubmission,
+            sheet.name,
+            cellAddress(formulaCell.row, formulaCell.column),
+          ),
+        ),
+      );
+    }
     try {
       const nextEvaluation = evaluateSpreadsheetForEditor(config, nextSubmission);
       setEvaluation(nextEvaluation);
@@ -314,8 +327,10 @@ function SpreadsheetEditor({
     }
     const address = cellAddress(row, column);
     const input = parseEditorInput(inputText);
-    if (Object.is(input, finalInput(config, committedSubmissionRef.current, sheet.name, address))) {
+    const committedInput = finalInput(config, committedSubmissionRef.current, sheet.name, address);
+    if (Object.is(input, committedInput)) {
       cancelDraft();
+      setFormulaText(displayInput(committedInput));
       return;
     }
     applySubmission(
@@ -327,6 +342,8 @@ function SpreadsheetEditor({
         input,
       }),
       `${address}: ${message}`,
+      true,
+      { row, column },
     );
   }
 

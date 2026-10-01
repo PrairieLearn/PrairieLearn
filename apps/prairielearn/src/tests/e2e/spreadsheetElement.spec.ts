@@ -103,6 +103,20 @@ test('supports accessible local editing and trusted submission', async ({
   expect(xlsxOptions).not.toContain('SERVER_ONLY_XLSX');
   expect(xlsxOptions).not.toContain('=XlsxSummary!B1=22');
 
+  const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
+  await b2.click();
+  const b2CellEditor = grid.getByRole('textbox', { name: 'Edit cell B2' });
+  const b2FormulaBar = parameterDemo.getByLabel('Formula for B2');
+  await b2CellEditor.fill('30');
+  await expect(b2FormulaBar).toHaveValue('1');
+  await b2CellEditor.press('Enter');
+  await expect(b2FormulaBar).toHaveValue('30');
+
+  await b2FormulaBar.fill('31');
+  await expect(b2).toContainText('30');
+  await b2FormulaBar.press('Enter');
+  await expect(b2).toContainText('31');
+
   await editCell(grid, 'B2', '3');
   await editCell(grid, 'C2', '4');
   await editCell(grid, 'D2', '=1/0');
