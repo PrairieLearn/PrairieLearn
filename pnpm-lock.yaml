@@ -492,8 +492,8 @@ importers:
         specifier: ^3.1141.0
         version: 3.1141.0(@aws-sdk/client-s3@3.1141.0)
       '@cortex-js/compute-engine':
-        specifier: ^0.102.0
-        version: 0.102.0
+        specifier: ^0.139.0
+        version: 0.139.0
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -3072,6 +3072,9 @@ packages:
   '@arnog/colors@0.5.0':
     resolution: {integrity: sha512-NB7yqrO7qvInsqJdqz6C6mDU+2oiKmbBbk3czMS0E7KkGxLRy538tEHCsB5TKqmaxxXpi6/U120TnGl8NsDePg==}
 
+  '@arnog/colors@0.7.1':
+    resolution: {integrity: sha512-uEXGib4QnvKNMv30pROfEfuE/7odwMXc66YVGbyedKNQK/gKGDZ8gcOxJ7iu824eUZVQ/ATbxr8C/G2YaDUE7A==}
+
   '@asamuzakjp/css-color@7.1.2':
     resolution: {integrity: sha512-99DHAnXDB5z6EEK+9GMpVI7Mw4oxj97dY5bpOzMnjADQWxI8rN6TvTduuFLUhUMlS7/CfVZ06tcZsus6cltnNw==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
@@ -3366,9 +3369,9 @@ packages:
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
     engines: {node: '>=0.1.90'}
 
-  '@cortex-js/compute-engine@0.102.0':
-    resolution: {integrity: sha512-TSTxCjiLjFcEqCgcJN5e2pUulH91aYNllnPy3d/TPJ+cHcBm8eFG2eg2mDuFwkENjXhUUbjSLsGbWMZD4b5cAQ==}
-    engines: {node: '>=21.7.3', npm: '>=10.5.0'}
+  '@cortex-js/compute-engine@0.139.0':
+    resolution: {integrity: sha512-/bwQMSl647Zrvo1acmnIPWAIu04K7xb0ApiuhmVVehtFFkLBlBmcR2vEuFbl7B32qX1leLlKYrIgHy7Vtu/d+A==}
+    engines: {node: '>=22.3.0', npm: '>=10.5.0'}
     hasBin: true
 
   '@cortex-js/compute-engine@0.58.0':
@@ -11075,6 +11078,8 @@ snapshots:
 
   '@arnog/colors@0.5.0': {}
 
+  '@arnog/colors@0.7.1': {}
+
   '@asamuzakjp/css-color@7.1.2':
     dependencies:
       '@csstools/css-calc': 3.4.1(@csstools/css-parser-algorithms@4.0.1(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
@@ -11630,9 +11635,9 @@ snapshots:
 
   '@colors/colors@1.6.0': {}
 
-  '@cortex-js/compute-engine@0.102.0':
+  '@cortex-js/compute-engine@0.139.0':
     dependencies:
-      '@arnog/colors': 0.5.0
+      '@arnog/colors': 0.7.1
       complex-esm: 2.1.1-esm1
 
   '@cortex-js/compute-engine@0.58.0':

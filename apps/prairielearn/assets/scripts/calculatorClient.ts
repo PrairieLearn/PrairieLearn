@@ -18,7 +18,7 @@ import {
   parseCalculatorExpression,
 } from '../../src/lib/client/calculatorRestrictions.js';
 
-import { configureCalculatorInput, guardCalculatorInput } from './calculatorInput.js';
+import { configureCalculatorInput, guardCalculatorInput } from './lib/calculatorInput.js';
 
 interface DrawerElements {
   drawer: HTMLElement;
