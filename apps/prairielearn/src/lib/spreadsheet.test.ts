@@ -2,7 +2,9 @@ import { assert, describe, it } from 'vitest';
 
 import {
   type SpreadsheetElementConfig,
+  SpreadsheetElementConfigSchema,
   type SpreadsheetGradingConfig,
+  SpreadsheetGradingConfigSchema,
   type SpreadsheetRawSubmission,
   SpreadsheetSubmissionError,
   evaluateSpreadsheet,
@@ -155,6 +157,47 @@ describe('evaluateSpreadsheet', () => {
     assert.throws(
       () => evaluateSpreadsheet(makeConfig(), makeSubmission(), invalidOutput),
       /outside sheet Checks/,
+    );
+  });
+
+  it('validates the sheet-name blocklist', () => {
+    for (const name of [
+      "Bob's Data",
+      '预算 Данные بيانات',
+      '😀'.repeat(31),
+      'Sheet?-,/\\|`~.@#$%^&*()+;=',
+    ]) {
+      const config = makeConfig();
+      config.template.sheets[0].name = name;
+      assert.isTrue(SpreadsheetElementConfigSchema.safeParse(config).success);
+      evaluateSpreadsheet(config, makeSubmission()).engine.destroy();
+    }
+
+    for (const name of [
+      'Input!',
+      'Input:',
+      'Input<',
+      'Input>',
+      'Input{',
+      'Input}',
+      'Input[',
+      'Input]',
+      'Input\0',
+      ' Input',
+      '😀'.repeat(32),
+    ]) {
+      const config = makeConfig();
+      config.template.sheets[0].name = name;
+      assert.isFalse(SpreadsheetElementConfigSchema.safeParse(config).success);
+      assert.throws(() => evaluateSpreadsheet(config, makeSubmission()), /not allowed/);
+    }
+
+    const gradingConfig = makeGradingConfig();
+    gradingConfig.sheets[0].name = 'Check{';
+    assert.isFalse(SpreadsheetGradingConfigSchema.safeParse(gradingConfig).success);
+    assert.throws(
+      () => evaluateSpreadsheet(makeConfig(), makeSubmission(), gradingConfig),
+      /not allowed/,
     );
   });
 

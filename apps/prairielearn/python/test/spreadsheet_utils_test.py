@@ -3,6 +3,7 @@ from typing import Any, cast
 
 import prairielearn as pl
 import pytest
+from prairielearn import spreadsheet_utils
 
 
 def snapshot() -> dict[str, Any]:
@@ -80,6 +81,133 @@ def snapshot() -> dict[str, Any]:
     }
 
 
+@pytest.mark.parametrize(
+    ("address", "expected"),
+    [
+        ("a1", ("A1", 0, 0)),
+        ("aa10", ("AA10", 9, 26)),
+        ("zZ99", ("ZZ99", 98, 701)),
+    ],
+)
+def test_normalized_address_accepts_case_insensitive_columns(
+    address: str, expected: tuple[str, int, int]
+) -> None:
+    assert spreadsheet_utils._normalized_address(address) == expected
+
+
+def test_ranges_report_shape_and_containment() -> None:
+    local_range = spreadsheet_utils._LocalRange(
+        spreadsheet_utils._LocalAddress(row=1, column=2),
+        spreadsheet_utils._LocalAddress(row=3, column=5),
+    )
+
+    assert local_range.shape == (3, 4)
+    assert spreadsheet_utils._LocalAddress(row=1, column=2) in local_range
+    assert spreadsheet_utils._LocalAddress(row=3, column=5) in local_range
+    assert spreadsheet_utils._LocalAddress(row=0, column=2) not in local_range
+    assert spreadsheet_utils._LocalAddress(row=3, column=6) not in local_range
+    assert (
+        spreadsheet_utils._LocalRange(
+            spreadsheet_utils._LocalAddress(row=2, column=3),
+            spreadsheet_utils._LocalAddress(row=3, column=5),
+        )
+        in local_range
+    )
+
+    qualified_range = spreadsheet_utils._QualifiedRange(local_range, "Inputs")
+    assert qualified_range.shape == (3, 4)
+    assert (
+        spreadsheet_utils._QualifiedAddress(
+            spreadsheet_utils._LocalAddress(row=2, column=4), "Inputs"
+        )
+        in qualified_range
+    )
+    assert spreadsheet_utils._LocalAddress(row=2, column=4) in qualified_range
+    assert (
+        spreadsheet_utils._QualifiedAddress(
+            spreadsheet_utils._LocalAddress(row=2, column=4), "Other"
+        )
+        not in qualified_range
+    )
+    assert (
+        spreadsheet_utils._LocalRange(
+            spreadsheet_utils._LocalAddress(row=2, column=3),
+            spreadsheet_utils._LocalAddress(row=3, column=5),
+        )
+        in qualified_range
+    )
+    assert spreadsheet_utils._QualifiedRange(local_range, "Inputs") in qualified_range
+    assert (
+        spreadsheet_utils._QualifiedRange(local_range, "Other") not in qualified_range
+    )
+
+
+def test_range_intersections() -> None:
+    local_range = spreadsheet_utils._LocalRange(
+        spreadsheet_utils._LocalAddress(row=1, column=2),
+        spreadsheet_utils._LocalAddress(row=4, column=5),
+    )
+    overlapping = spreadsheet_utils._LocalRange(
+        spreadsheet_utils._LocalAddress(row=3, column=1),
+        spreadsheet_utils._LocalAddress(row=5, column=3),
+    )
+    expected_local = spreadsheet_utils._LocalRange(
+        spreadsheet_utils._LocalAddress(row=3, column=2),
+        spreadsheet_utils._LocalAddress(row=4, column=3),
+    )
+    disjoint = spreadsheet_utils._LocalRange(
+        spreadsheet_utils._LocalAddress(row=5, column=2),
+        spreadsheet_utils._LocalAddress(row=6, column=5),
+    )
+
+    assert local_range.intersection(overlapping) == expected_local
+    assert local_range.intersection(disjoint) is None
+
+    qualified_range = spreadsheet_utils._QualifiedRange(local_range, "Inputs")
+    expected_qualified = spreadsheet_utils._QualifiedRange(expected_local, "Inputs")
+    assert qualified_range.intersection(overlapping) == expected_qualified
+    assert (
+        qualified_range.intersection(
+            spreadsheet_utils._QualifiedRange(overlapping, "Inputs")
+        )
+        == expected_qualified
+    )
+    assert (
+        qualified_range.intersection(
+            spreadsheet_utils._QualifiedRange(overlapping, "Other")
+        )
+        is None
+    )
+    assert (
+        local_range.intersection(
+            spreadsheet_utils._QualifiedRange(overlapping, "Other")
+        )
+        == expected_local
+    )
+
+
+def test_sparse_cells_data_contains_valid_cells() -> None:
+    cells = spreadsheet_utils._SparseCellsData(
+        name="Input Data", rows=3, columns=4, addressed_data={}
+    )
+
+    assert spreadsheet_utils._LocalAddress(row=0, column=0) in cells
+    assert spreadsheet_utils._LocalAddress(row=2, column=3) in cells
+    assert spreadsheet_utils._LocalAddress(row=3, column=3) not in cells
+    assert (
+        spreadsheet_utils._QualifiedAddress(
+            spreadsheet_utils._LocalAddress(row=2, column=3), "Input Data"
+        )
+        in cells
+    )
+    assert (
+        spreadsheet_utils._QualifiedAddress(
+            spreadsheet_utils._LocalAddress(row=2, column=3), "Other"
+        )
+        not in cells
+    )
+
+
 def test_queries_cells_formulas_and_outputs() -> None:
     workbook = snapshot()
 
@@ -90,6 +218,7 @@ def test_queries_cells_formulas_and_outputs() -> None:
     assert pl.get_spreadsheet_cell(workbook, "Inputs", "A2") is None
     assert pl.get_spreadsheet_result(workbook, "Inputs", "A2") == {"type": "empty"}
     assert pl.get_spreadsheet_value(workbook, "Inputs", "B1") == 6
+    assert pl.get_spreadsheet_value(workbook, "Inputs", "C1") is None
     assert pl.get_spreadsheet_formula(workbook, "Inputs", "B1") == "=A1*2"
     assert pl.get_spreadsheet_formula(workbook, "Inputs", "A1") is None
     assert pl.get_spreadsheet_grading_output(workbook, "total") == {
@@ -112,10 +241,6 @@ def test_query_errors_are_explicit() -> None:
     workbook.pop("grading")
     with pytest.raises(KeyError, match="does not contain private grading outputs"):
         pl.get_spreadsheet_grading_output(workbook, "total")
-    with pytest.raises(pl.SpreadsheetCellError) as exc_info:
-        pl.get_spreadsheet_value(workbook, "Inputs", "C1")
-    assert exc_info.value.error_type == "DIV_BY_ZERO"
-    assert exc_info.value.error_value == "#DIV/0!"
 
 
 def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
@@ -142,6 +267,8 @@ def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
     assert not cell.is_empty
     assert not cell.is_formula
     assert not cell.is_error
+    assert cell.error_type is None
+    assert cell.error_value is None
 
     empty = inputs["A2"]
     assert isinstance(empty, pl.SpreadsheetCellView)
@@ -149,6 +276,16 @@ def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
     assert empty.result == {"type": "empty"}
     assert empty.value is None
     assert empty.is_empty
+    assert not empty.is_error
+    assert empty.error_type is None
+    assert empty.error_value is None
+
+    error = inputs.cell("C1")
+    assert error.value is None
+    assert not error.is_empty
+    assert error.is_error
+    assert error.error_type == "DIV_BY_ZERO"
+    assert error.error_value == "#DIV/0!"
 
 
 def test_spreadsheet_validates_and_copies_snapshot_at_construction() -> None:
@@ -195,7 +332,7 @@ def test_spreadsheet_wrapper_views_are_frozen_slots_dataclasses() -> None:
 
     set_attribute = setattr
     with pytest.raises(FrozenInstanceError):
-        set_attribute(sheet, "name", "Other")
+        set_attribute(sheet, "book", workbook)
 
 
 def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
@@ -204,9 +341,12 @@ def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
 
     other_range = inputs.range("'Input Data'!A1:B2")
     assert other_range.sheet is workbook["Input Data"]
-    assert other_range.address == "A1:B2"
-    assert other_range.qualified_address == "'Input Data'!A1:B2"
+    assert other_range.range_address == "A1:B2"
+    assert other_range.qualified_range_address == "'Input Data'!A1:B2"
     assert other_range.shape == (2, 2)
+    assert not hasattr(other_range, "range")
+    assert not hasattr(other_range, "start")
+    assert not hasattr(other_range, "end")
     assert other_range.values == ((10, None), (None, 15))
     assert other_range["B2"].value == 15
     assert other_range["'Input Data'!A1"].value == 10
@@ -276,6 +416,7 @@ def test_spreadsheet_range_projections_queries_and_indexing() -> None:
         ({"type": "empty"}, {"type": "empty"}),
     )
     assert cell_range.values == ((3, 6), (None, None))
+    assert inputs.range("B1:C2").values == ((6, None), (None, None))
     assert cell_range.formulas == ((None, "=A1*2"), (None, None))
     assert tuple(
         cell.address for cell in cell_range.query(lambda cell: cell.is_formula)
@@ -310,6 +451,14 @@ def test_spreadsheet_cell_formula_matching() -> None:
     with pytest.raises(pl.SpreadsheetFormulaParseError):
         formula.matches_formula("not-a-formula", structural=True)
 
+    invalid_snapshot = snapshot()
+    invalid_snapshot["sheets"][0]["cells"]["B1"] = {
+        "input": {"type": "formula", "value": "=named_expression"},
+        "result": {"type": "error", "value": "#NAME?", "error_type": "NAME"},
+    }
+    invalid_formula = pl.SpreadsheetBook(invalid_snapshot)["Inputs"].cell("B1")
+    assert not invalid_formula.matches_formula("=A1*2", structural=True)
+
 
 def test_spreadsheet_output_views() -> None:
     workbook = pl.SpreadsheetBook(snapshot())
@@ -319,20 +468,26 @@ def test_spreadsheet_output_views() -> None:
     assert total.name == "total"
     assert total.result == {"type": "number", "value": 6}
     assert total.value == 6
+    assert not total.is_empty
     assert not total.is_error
     assert total.error_type is None
     assert total.error_value is None
 
     failed = workbook.outputs["failed_check"]
+    assert failed.value is None
+    assert not failed.is_empty
     assert failed.is_error
     assert failed.error_type == "NA"
     assert failed.error_value == "#N/A"
-    with pytest.raises(pl.SpreadsheetOutputError) as exc_info:
-        _ = failed.value
-    assert isinstance(exc_info.value, pl.SpreadsheetResultError)
-    assert exc_info.value.output_name == "failed_check"
-    assert exc_info.value.error_type == "NA"
-    assert exc_info.value.error_value == "#N/A"
+
+    empty_snapshot = snapshot()
+    empty_snapshot["grading"]["outputs"]["empty_check"] = {"type": "empty"}
+    empty = pl.SpreadsheetBook(empty_snapshot).outputs["empty_check"]
+    assert empty.value is None
+    assert empty.is_empty
+    assert not empty.is_error
+    assert empty.error_type is None
+    assert empty.error_value is None
 
     without_outputs = snapshot()
     without_outputs.pop("grading")

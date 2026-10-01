@@ -141,6 +141,42 @@ def test_prepare_normalizes_private_grading_config(element_directory: None) -> N
     assert grader["sheets"][0]["cells"]["A1"] == "=Inputs!B2"
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Bob's Data",
+        "预算 Данные بيانات",
+        "😀" * 31,
+        "Sheet?-,/\\|`~.@#$%^&*()+;=",
+    ],
+)
+def test_sheet_name_blocklist_accepts_other_characters(name: str) -> None:
+    assert spreadsheet._normalize_sheet_name(name, "Sheet 1") == name
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Input!",
+        "Input:",
+        "Input<",
+        "Input>",
+        "Input{",
+        "Input}",
+        "Input[",
+        "Input]",
+        "Input\0",
+        " Input",
+        "a" * 32,
+    ],
+)
+def test_sheet_name_blocklist_rejects_unsafe_characters_and_long_names(
+    name: str,
+) -> None:
+    with pytest.raises(ValueError, match="not allowed"):
+        spreadsheet._normalize_sheet_name(name, "Sheet 1")
+
+
 def test_private_grader_hash_changes_with_configuration(
     element_directory: None,
 ) -> None:
@@ -162,6 +198,10 @@ def test_private_grader_hash_changes_with_configuration(
     ("mutate", "message"),
     [
         (lambda value: value["sheets"][0].update(name="inputs"), "conflicts"),
+        (
+            lambda value: value["sheets"][0].update(name="Check{"),
+            "not allowed",
+        ),
         (lambda value: value["sheets"][0].update(rows=1001), "rows must be between"),
         (
             lambda value: value["sheets"][0]["cells"].update({"A1": "=RAND()"}),
@@ -202,6 +242,10 @@ def test_prepare_rejects_oversized_private_grading_config(
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
+        (
+            lambda value: value["sheets"][0].update(name="Input["),
+            "not allowed",
+        ),
         (lambda value: value["sheets"][0].update(rows=1001), "rows must be between"),
         (
             lambda value: value["sheets"][0]["cells"].update({"D1": 1}),

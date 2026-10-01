@@ -53,9 +53,10 @@ def generate(data):
 
 ## Workbook template
 
-The template must have `schema_version: 1` and one or more sheets. Sheet names
-must be unique without regard to case, at most 31 characters, and may not contain
-`\\`, `/`, `*`, `?`, `:`, `[` or `]`.
+The template must have `schema_version: 1` and one or more sheets. Sheet names must
+be unique without regard to case, contain 1 to 31 Unicode characters, and have no
+leading or trailing whitespace. They may not contain `!`, `:`, `<`, `>`, `{`, `}`,
+`[`, `]`, or the null character (`\0`). All other Unicode characters are allowed.
 
 Each sheet contains:
 
@@ -145,9 +146,9 @@ def generate(data):
 ```
 
 Private sheets may reference student sheets and other private sheets, but cannot
-replace student cells or reuse a student sheet name. They use the same formula
-policy and independently receive the workbook limits below. A private workbook may
-export at most 100 named outputs.
+replace student cells or reuse a student sheet name. They use the same sheet-name
+and formula policies and independently receive the workbook limits below. A private
+workbook may export at most 100 named outputs.
 
 The private workbook definition is server-owned and is not included in the editor,
 submission display, or normalized answer. The answer contains only its hash and
@@ -207,23 +208,29 @@ Excel-style quoted names and escaped apostrophes are supported, for example
 `sheet["'Input Data'!A2:D9"]` and `sheet["'Bob''s Data'!A1"]`.
 
 Cell views expose `input`, `result`, `value`, `formula`, and `formula_ast`, together
-with `is_empty`, `is_formula`, and `is_error`. Range views provide rectangular
-`inputs`, `results`, `values`, and `formulas` projections, row-major iteration, and
-predicate-based `query()` methods. The views are read-only and do not recalculate
-the snapshot.
+with `is_empty`, `is_formula`, `is_error`, `error_type`, and `error_value`. Output
+views expose the same result-state properties. Spreadsheet calculation errors are
+normal result states: `value` is `None` for both empty and error results, while
+`is_empty`, `is_error`, and the error properties distinguish them. Range views
+provide rectangular `inputs`, `results`, `values`, and `formulas` projections,
+row-major iteration, and predicate-based `query()` methods. The views are read-only
+and do not recalculate the snapshot.
 
 The functional API remains available for lower-level access:
 `get_spreadsheet_cell()` returns the complete typed cell,
 `get_spreadsheet_result()` returns its typed result,
-`get_spreadsheet_value()` returns a scalar or `None`, and
-`get_spreadsheet_grading_output()` returns a typed private output. Scalar access
-raises `SpreadsheetCellError` or `SpreadsheetOutputError` for spreadsheet errors
-so they cannot be mistaken for text.
+`get_spreadsheet_value()` returns a scalar or `None` for an empty or error result,
+and `get_spreadsheet_grading_output()` returns a typed private output. Invalid
+references and malformed snapshots still raise exceptions because they indicate a
+grading-code or internal-data error rather than a student calculation result.
 
 Formula ASTs have their own `schema_version`. They normalize function names and
 operators while preserving grouping, sheet names, ranges, and absolute-reference
 flags. HyperFormula remains authoritative for validation and calculation; the AST
-is an inspection tool for question-defined structural grading.
+is an inspection tool for question-defined structural grading. Structural
+`matches_formula()` calls return `False` when the student's formula cannot be
+represented by the AST, while an invalid expected formula raises
+`SpreadsheetFormulaParseError`.
 
 `parse_spreadsheet_formula()` returns a frozen, slot-based `FormulaAst` dataclass
 with `schema_version`, the exact original `formula`, and a `root` node. Access these

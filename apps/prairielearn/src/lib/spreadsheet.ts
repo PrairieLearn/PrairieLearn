@@ -98,15 +98,21 @@ const CellInputSchema = z.union([
   z.boolean(),
 ]);
 const RawCellInputSchema = CellInputSchema.nullable();
+const BLOCKED_SHEET_NAME_CHARACTERS = new Set(['!', ':', '<', '>', '{', '}', '[', ']', '\0']);
+
+function isValidSheetName(name: string): boolean {
+  const characters = [...name];
+  return (
+    characters.length > 0 &&
+    characters.length <= 31 &&
+    name.trim() === name &&
+    !characters.some((character) => BLOCKED_SHEET_NAME_CHARACTERS.has(character))
+  );
+}
 
 const SpreadsheetSheetTemplateSchema = z
   .object({
-    name: z
-      .string()
-      .min(1)
-      .max(31)
-      .regex(/^[^\\/*?:[\]]+$/)
-      .refine((name) => name.trim() === name),
+    name: z.string().refine(isValidSheetName),
     rows: z.number().int().min(1).max(SPREADSHEET_MAX_ROWS),
     columns: z.number().int().min(1).max(SPREADSHEET_MAX_COLUMNS),
     cells: z.record(z.string(), CellInputSchema),
@@ -139,12 +145,7 @@ export type SpreadsheetElementConfig = z.infer<typeof SpreadsheetElementConfigSc
 
 const SpreadsheetGradingSheetSchema = z
   .object({
-    name: z
-      .string()
-      .min(1)
-      .max(31)
-      .regex(/^[^\\/*?:[\]]+$/)
-      .refine((name) => name.trim() === name),
+    name: z.string().refine(isValidSheetName),
     rows: z.number().int().min(1).max(SPREADSHEET_MAX_ROWS),
     columns: z.number().int().min(1).max(SPREADSHEET_MAX_COLUMNS),
     cells: z.record(z.string(), CellInputSchema),
@@ -374,6 +375,11 @@ function validateTemplate(template: SpreadsheetTemplate): void {
   const sheetNames = new Set<string>();
 
   for (const sheet of template.sheets) {
+    if (!isValidSheetName(sheet.name)) {
+      throw new SpreadsheetSubmissionError(
+        `Sheet ${sheet.name} must have a non-empty name of at most 31 characters without leading or trailing whitespace. The characters !, :, <, >, {, }, [, ], and null are not allowed.`,
+      );
+    }
     if (sheet.rows < 1 || sheet.rows > SPREADSHEET_MAX_ROWS) {
       throw new SpreadsheetSubmissionError(
         `Sheet ${sheet.name} must contain 1 to ${SPREADSHEET_MAX_ROWS} rows.`,
@@ -456,6 +462,11 @@ function validateGradingConfig(
   const gradingSheetNames = new Set<string>();
 
   for (const sheet of config.sheets) {
+    if (!isValidSheetName(sheet.name)) {
+      throw new Error(
+        `Private grading sheet ${sheet.name} must have a non-empty name of at most 31 characters without leading or trailing whitespace. The characters !, :, <, >, {, }, [, ], and null are not allowed.`,
+      );
+    }
     const foldedName = sheet.name.toLocaleLowerCase('en-US');
     if (publicSheetNames.has(foldedName)) {
       throw new Error(`Private grading sheet ${sheet.name} conflicts with a student sheet.`);
