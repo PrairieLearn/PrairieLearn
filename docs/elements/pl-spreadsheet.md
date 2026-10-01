@@ -150,7 +150,10 @@ comments, charts, or macros.
 The public `prairielearn` Python library exposes:
 
 ```python
-sheet = pl.dataframe_to_spreadsheet_sheet(
+import prairielearn.spreadsheet_utils as psp
+
+
+sheet = psp.dataframe_to_spreadsheet_sheet(
     dataframe,
     name="Inputs",
     start_cell="C5",
@@ -158,12 +161,12 @@ sheet = pl.dataframe_to_spreadsheet_sheet(
     include_index=False,
     editable_ranges=("C5:F20",),
 )
-book = pl.dataframes_to_spreadsheet_book({"Inputs": dataframe})
+book = psp.dataframes_to_spreadsheet_book({"Inputs": dataframe})
 
-book = pl.read_spreadsheet("workbook.xlsx")
-csv_book = pl.read_spreadsheet_csv("workbook.csv", sheet_name="Inputs")
-tsv_book = pl.read_spreadsheet_tsv("workbook.tsv", sheet_name="Inputs")
-xlsx_book = pl.read_spreadsheet_xlsx("workbook.xlsx")
+book = psp.read_spreadsheet("workbook.xlsx")
+csv_book = psp.read_spreadsheet_csv("workbook.csv", sheet_name="Inputs")
+tsv_book = psp.read_spreadsheet_tsv("workbook.tsv", sheet_name="Inputs")
+xlsx_book = psp.read_spreadsheet_xlsx("workbook.xlsx")
 ```
 
 The helpers return plain dictionaries in the versioned sheet/book schema. By
@@ -175,14 +178,19 @@ raise an actionable exception. CSV and TSV are read headerless without automatic
 NA conversion. XLSX formulas are loaded as formulas. The same workbook, formula,
 text, and payload limits apply after ingest.
 
-`SpreadsheetAddress`, `SpreadsheetAddressRange`, `SpreadsheetQualifiedAddress`,
-`SpreadsheetQualifiedAddressRange`, `SpreadsheetAddressSpace`, and
-`SpreadsheetAddressSpaces` are public immutable coordinate types. Ranges support
-A1 parsing, containment, and intersection. Address spaces provide checked
-source-to-student and student-to-source conversion for cells and ranges.
-`rebase_spreadsheet_formula()` rewrites source-coordinate formula references into
-the corresponding student-local address spaces and rejects references outside
-those spaces.
+The module is designed to be imported as `psp`. Its most frequently used JSON
+types are the concise unions `psp.Input`, `psp.Result`, and `psp.Value`, with
+concrete variants such as `psp.NumberInput`, `psp.FormulaInput`, and
+`psp.ErrorResult`. `psp.Snapshot`, `psp.SnapshotCell`, `psp.SourceBook`, and
+`psp.SourceSheet` describe the complete persisted and ingest structures.
+
+`psp.Address`, `psp.AddressRange`, `psp.QualifiedAddress`,
+`psp.QualifiedAddressRange`, `psp.AddressSpace`, and `psp.AddressSpaceMap` are
+public immutable coordinate types. Ranges support A1 parsing, containment, and
+intersection. Address spaces provide checked source-to-student and
+student-to-source conversion for cells and ranges. `psp.rebase_spreadsheet_formula()`
+rewrites source-coordinate formula references into the corresponding student-local
+address spaces and rejects references outside those spaces.
 
 ## Grading snapshots
 
@@ -266,8 +274,8 @@ workbook may export at most 100 named outputs.
 
 Private sheet formulas and `pl-spreadsheet-output` declarations use authoritative
 source-workbook coordinates. Grading code that reads the normalized student
-snapshot uses A1-based student-local coordinates. `SpreadsheetAddressSpace` can
-translate between those two coordinate systems when a rubric needs both.
+snapshot uses A1-based student-local coordinates. `psp.AddressSpace` can translate
+between those two coordinate systems when a rubric needs both.
 
 Each output may set `"required": True` to reject the submission during parsing
 when that output evaluates to a typed `empty` or `error` result. The option
@@ -297,15 +305,16 @@ configuration is an authoring error.
 ### Grading in `server.py`
 
 `pl-spreadsheet` does not assign a score. Wrap the submitted snapshot with
-`pl.SpreadsheetBook` to inspect cells and private outputs, then set `score` or
+`psp.Book` to inspect cells and private outputs, then set `score` or
 `partial_scores` in the question's `grade()` function:
 
 ```python title="server.py"
 import prairielearn as pl
+import prairielearn.spreadsheet_utils as psp
 
 
 def grade(data):
-    workbook = pl.SpreadsheetBook(data["submitted_answers"]["model"])
+    workbook = psp.Book(data["submitted_answers"]["model"])
     budget = workbook["Budget"]
     formula_cell = budget.cell("D2")
 
@@ -323,12 +332,14 @@ def grade(data):
 ```
 
 Use `sheet.cell("D2")` or `sheet.range("A2:D9")` when the expected return type is
-known. `workbook["Budget"]` returns a read-only `pl.Spreadsheet`; indexing that sheet
+known. `workbook["Budget"]` returns a read-only `psp.Sheet`; indexing that sheet
 remains available when either cell or range is acceptable. A sheet retains its
 parent workbook, so a qualified reference such as
 `summary.range("Budget!A2:D9")` resolves to the `Budget` sheet.
 Excel-style quoted names and escaped apostrophes are supported, for example
 `sheet["'Input Data'!A2:D9"]` and `sheet["'Bob''s Data'!A1"]`.
+
+The corresponding view types are `psp.Cell`, `psp.CellRange`, and `psp.Output`.
 
 Cell views expose `input`, `result`, `value`, `formula`, and `formula_ast`, together
 with `is_empty`, `is_formula`, `is_error`, `error_type`, and `error_value`. Output
@@ -345,10 +356,10 @@ from the normalized snapshot; use the public address-space helpers only when
 authoring or grading code must relate local cells back to a known source range.
 
 The functional API remains available for lower-level access:
-`get_spreadsheet_cell()` returns the complete typed cell,
-`get_spreadsheet_result()` returns its typed result,
-`get_spreadsheet_value()` returns a scalar or `None` for an empty or error result,
-and `get_spreadsheet_grading_output()` returns a typed private output. Invalid
+`psp.get_spreadsheet_cell()` returns the complete typed cell,
+`psp.get_spreadsheet_result()` returns its typed result,
+`psp.get_spreadsheet_value()` returns a scalar or `None` for an empty or error
+result, and `psp.get_spreadsheet_grading_output()` returns a typed private output. Invalid
 references and malformed snapshots still raise exceptions because they indicate a
 grading-code or internal-data error rather than a student calculation result.
 
@@ -358,9 +369,9 @@ flags. HyperFormula remains authoritative for validation and calculation; the AS
 is an inspection tool for question-defined structural grading. Structural
 `matches_formula()` calls return `False` when the student's formula cannot be
 represented by the AST, while an invalid expected formula raises
-`SpreadsheetFormulaParseError`.
+`psp.FormulaParseError`.
 
-`parse_spreadsheet_formula()` returns a frozen, slot-based `FormulaAst` dataclass
+`psp.parse_spreadsheet_formula()` returns a frozen, slot-based `psp.FormulaAst` dataclass
 with `schema_version`, the exact original `formula`, and a `root` node. Access these
 with attributes such as `ast.formula` and `ast.root`. Nodes form this discriminated
 union of frozen dataclasses:

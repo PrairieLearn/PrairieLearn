@@ -1,4 +1,5 @@
 import prairielearn as pl
+import prairielearn.spreadsheet_utils as psp
 
 
 def generate(data):
@@ -58,7 +59,7 @@ def generate(data):
 def grade(data):
     # External graders read this same object from
     # data["submitted_answers"]["model"] in /grade/data/data.json.
-    workbook = pl.SpreadsheetBook(data["submitted_answers"]["model"])
+    workbook = psp.Book(data["submitted_answers"]["model"])
     inputs = workbook["Summary"].range("Inputs!B2:D2")
     line_total = inputs["D2"]
 
@@ -74,12 +75,12 @@ def grade(data):
     ]
     score = sum(checks) / len(checks)
     data["partial_scores"]["model"] = {"score": score, "weight": 1}
-    inventory = pl.SpreadsheetBook(data["submitted_answers"]["inventory"])
+    inventory = psp.Book(data["submitted_answers"]["inventory"])
     data["partial_scores"]["inventory"] = {
         "score": int(inventory.outputs["is_correct"].value is True),
         "weight": 1,
     }
-    labor = pl.SpreadsheetBook(data["submitted_answers"]["labor"])
+    labor = psp.Book(data["submitted_answers"]["labor"])
     data["partial_scores"]["labor"] = {
         "score": int(labor.outputs["is_correct"].value is True),
         "weight": 1,

@@ -11,6 +11,7 @@ from typing import Any
 import chevron
 import lxml.html
 import prairielearn as pl
+import prairielearn.spreadsheet_utils as psp
 
 SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 
@@ -135,9 +136,9 @@ def _parse_address(address: str) -> tuple[int, int] | None:
     return int(match.group(2)) - 1, _column_index(match.group(1))
 
 
-def _parse_range(range_text: str) -> pl.SpreadsheetAddressRange | None:
+def _parse_range(range_text: str) -> psp.AddressRange | None:
     try:
-        return pl.SpreadsheetAddressRange.from_a1(range_text)
+        return psp.AddressRange.from_a1(range_text)
     except (TypeError, ValueError):
         return None
 
@@ -263,9 +264,9 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
 
         raw_student_range = raw_sheet.get("student_range")
         if raw_student_range is None:
-            student_range = pl.SpreadsheetAddressRange(
-                pl.SpreadsheetAddress(row=0, column=0),
-                pl.SpreadsheetAddress(row=rows - 1, column=columns - 1),
+            student_range = psp.AddressRange(
+                psp.Address(row=0, column=0),
+                psp.Address(row=rows - 1, column=columns - 1),
             )
         elif not isinstance(raw_student_range, str):
             raise TypeError(f'Sheet "{name}" student_range must be a string.')
@@ -638,14 +639,14 @@ def _source_path(child: lxml.html.HtmlElement, data: pl.QuestionData) -> pathlib
     return file_path
 
 
-def _formula_nodes(node: pl.FormulaAstNode) -> list[pl.FormulaAstNode]:
-    if isinstance(node, pl.FormulaFunctionNode):
+def _formula_nodes(node: psp.FormulaAstNode) -> list[psp.FormulaAstNode]:
+    if isinstance(node, psp.FormulaFunctionNode):
         return list(node.arguments)
-    if isinstance(node, pl.FormulaUnaryNode | pl.FormulaPostfixNode):
+    if isinstance(node, psp.FormulaUnaryNode | psp.FormulaPostfixNode):
         return [node.operand]
-    if isinstance(node, pl.FormulaBinaryNode):
+    if isinstance(node, psp.FormulaBinaryNode):
         return [node.left, node.right]
-    if isinstance(node, pl.FormulaGroupNode):
+    if isinstance(node, psp.FormulaGroupNode):
         return [node.expression]
     return []
 
@@ -660,7 +661,7 @@ def _reference_sheet_name(current_sheet: str, *sheet_names: str | None) -> str:
 def _validate_visible_formula_references(
     template: dict[str, Any], source_sheets: list[dict[str, Any]]
 ) -> None:
-    public_ranges: dict[str, tuple[str, pl.SpreadsheetAddressRange]] = {}
+    public_ranges: dict[str, tuple[str, psp.AddressRange]] = {}
     for sheet in template.get("sheets", []):
         student_range = _parse_range(
             sheet.get(
@@ -675,8 +676,8 @@ def _validate_visible_formula_references(
 
     def validate_reference(
         current_sheet: str,
-        start: pl.FormulaReferenceEndpoint,
-        end: pl.FormulaReferenceEndpoint | None = None,
+        start: psp.FormulaReferenceEndpoint,
+        end: psp.FormulaReferenceEndpoint | None = None,
     ) -> None:
         endpoints = (start,) if end is None else (start, end)
         sheet_name = _reference_sheet_name(
@@ -689,32 +690,32 @@ def _validate_visible_formula_references(
                 f'Formula in student-visible sheet "{current_sheet}" references a non-visible sheet.'
             )
         student_range = public[1]
-        if isinstance(start, pl.FormulaCellReference):
-            cell_end = end if isinstance(end, pl.FormulaCellReference) else start
-            referenced = pl.SpreadsheetAddressRange(
-                pl.SpreadsheetAddress(
+        if isinstance(start, psp.FormulaCellReference):
+            cell_end = end if isinstance(end, psp.FormulaCellReference) else start
+            referenced = psp.AddressRange(
+                psp.Address(
                     row=min(start.row, cell_end.row) - 1,
                     column=min(
                         _column_index(start.column), _column_index(cell_end.column)
                     ),
                 ),
-                pl.SpreadsheetAddress(
+                psp.Address(
                     row=max(start.row, cell_end.row) - 1,
                     column=max(
                         _column_index(start.column), _column_index(cell_end.column)
                     ),
                 ),
             )
-        elif isinstance(start, pl.FormulaColumnReference):
-            column_end = end if isinstance(end, pl.FormulaColumnReference) else start
-            referenced = pl.SpreadsheetAddressRange(
-                pl.SpreadsheetAddress(
+        elif isinstance(start, psp.FormulaColumnReference):
+            column_end = end if isinstance(end, psp.FormulaColumnReference) else start
+            referenced = psp.AddressRange(
+                psp.Address(
                     row=0,
                     column=min(
                         _column_index(start.column), _column_index(column_end.column)
                     ),
                 ),
-                pl.SpreadsheetAddress(
+                psp.Address(
                     row=source["rows"] - 1,
                     column=max(
                         _column_index(start.column), _column_index(column_end.column)
@@ -722,14 +723,14 @@ def _validate_visible_formula_references(
                 ),
             )
         else:
-            row_end = end if isinstance(end, pl.FormulaRowReference) else start
-            if not isinstance(start, pl.FormulaRowReference) or not isinstance(
-                row_end, pl.FormulaRowReference
+            row_end = end if isinstance(end, psp.FormulaRowReference) else start
+            if not isinstance(start, psp.FormulaRowReference) or not isinstance(
+                row_end, psp.FormulaRowReference
             ):
                 raise TypeError("Spreadsheet formula range endpoints are incompatible.")
-            referenced = pl.SpreadsheetAddressRange(
-                pl.SpreadsheetAddress(row=min(start.row, row_end.row) - 1, column=0),
-                pl.SpreadsheetAddress(
+            referenced = psp.AddressRange(
+                psp.Address(row=min(start.row, row_end.row) - 1, column=0),
+                psp.Address(
                     row=max(start.row, row_end.row) - 1,
                     column=source["columns"] - 1,
                 ),
@@ -743,17 +744,17 @@ def _validate_visible_formula_references(
         for value in sheet.get("cells", {}).values():
             if not isinstance(value, str) or not value.startswith("="):
                 continue
-            ast = pl.parse_spreadsheet_formula(value)
+            ast = psp.parse_spreadsheet_formula(value)
             pending = [ast.root]
             while pending:
                 node = pending.pop()
-                if isinstance(node, pl.FormulaReferenceNode):
+                if isinstance(node, psp.FormulaReferenceNode):
                     validate_reference(sheet["name"], node.reference)
                 elif isinstance(
                     node,
-                    pl.FormulaCellRangeNode
-                    | pl.FormulaColumnRangeNode
-                    | pl.FormulaRowRangeNode,
+                    psp.FormulaCellRangeNode
+                    | psp.FormulaColumnRangeNode
+                    | psp.FormulaRowRangeNode,
                 ):
                     validate_reference(sheet["name"], node.start, node.end)
                 else:
@@ -765,7 +766,7 @@ def _student_relative_template(
 ) -> tuple[dict[str, Any], list[dict[str, str]]]:
     """Crop source-coordinate sheets into A1-relative student worksheets."""
     _validate_visible_formula_references(source_template, source_sheets)
-    address_spaces = pl.SpreadsheetAddressSpaces({
+    address_spaces = psp.AddressSpaceMap({
         sheet["name"]: sheet.get(
             "student_range",
             f"A1:{_column_name(sheet['columns'] - 1)}{sheet['rows']}",
@@ -782,7 +783,7 @@ def _student_relative_template(
         for source_address, value in sheet["cells"].items():
             student_address = address_space.to_student_address(source_address).address
             cells[student_address] = (
-                pl.rebase_spreadsheet_formula(
+                psp.rebase_spreadsheet_formula(
                     value,
                     current_sheet=name,
                     address_spaces=address_spaces,
@@ -814,7 +815,7 @@ def _prepare_file_template(
 ) -> tuple[dict[str, Any], list[dict[str, str]], dict[str, Any] | None]:
     data_children = element.xpath("./pl-spreadsheet-data")
     output_children = element.xpath("./pl-spreadsheet-output")
-    loaded: dict[pathlib.Path, pl.SpreadsheetSourceBook] = {}
+    loaded: dict[pathlib.Path, psp.SourceBook] = {}
     added_files: set[pathlib.Path] = set()
     source_sheets: list[dict[str, Any]] = []
     source_by_name: dict[str, dict[str, Any]] = {}
@@ -835,7 +836,7 @@ def _prepare_file_template(
         file_path = _source_path(child, data)
         sheet_name = pl.get_string_attrib(child, "sheet-name")
         if file_path not in loaded:
-            loaded[file_path] = pl.read_spreadsheet(file_path, sheet_name=sheet_name)
+            loaded[file_path] = psp.read_spreadsheet(file_path, sheet_name=sheet_name)
         source = loaded[file_path]
         source_file_sheets = source.get("sheets", [])
         if not isinstance(source_file_sheets, list):
