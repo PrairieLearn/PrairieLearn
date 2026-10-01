@@ -463,13 +463,15 @@ submission payload.
 
 ## Interaction and saved work
 
-Clicking an editable cell opens its editor immediately. The editor also supports
-keyboard navigation, direct formula-bar editing, copy/paste, relative-reference
-fill down/right, and undo/redo. The sheet tabs and fill controls are keyboard
-accessible. Editable and read-only cells are distinguished with text and
-accessibility state, not color alone. Submission and manual-grading views use native
-HTML tables. These tables show calculated values by default and provide a
-Values/Formulas switch for viewing every cell's original input.
+Single-clicking a cell selects it without opening the editor. Double-click an
+editable cell to edit its existing contents, or select it and start typing to
+replace its contents. The editor also supports keyboard navigation, direct
+formula-bar editing, copy/paste, relative-reference fill down/right, and undo/redo.
+The sheet tabs and fill controls are keyboard accessible. Editable and read-only
+cells are distinguished with text and accessibility state, not color alone.
+Submission and manual-grading views use native HTML tables. These tables show
+calculated values by default and provide a Values/Formulas switch for viewing every
+cell's original input.
 
 The editor displays spreadsheet errors such as `#DIV/0!`, `#CYCLE!`, `#REF!`, and
 `#ERROR!` in their cells while retaining the entered formula in the cell editor and

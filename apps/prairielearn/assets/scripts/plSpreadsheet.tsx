@@ -168,6 +168,7 @@ function CellEditor({
   onInitialValueApplied: () => void;
 }) {
   const [value, setValue] = useState(initialValue ?? row.inputs[column.key]);
+  const inputRef = useRef<HTMLInputElement>(null);
   const initialValueAppliedRef = useRef(false);
   const initialValueRef = useRef(row.inputs[column.key] ?? '');
   const canceledRef = useRef(false);
@@ -184,8 +185,18 @@ function CellEditor({
     onInitialValueApplied();
   }, [column.key, initialValue, onDraftChange, onInitialValueApplied, onRowChange, row]);
 
+  // Keep continuous typing in the editor after a character opens it from the active cell.
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    const cursorPosition = input.value.length;
+    input.setSelectionRange(cursorPosition, cursorPosition);
+  }, []);
+
   return (
     <input
+      ref={inputRef}
       className="form-control form-control-sm h-100 rounded-0"
       aria-label={`Edit cell ${column.key}${row.rowIndex + 1}`}
       value={value}

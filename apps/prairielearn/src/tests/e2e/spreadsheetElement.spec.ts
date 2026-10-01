@@ -43,12 +43,18 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
   await expect(b2).toBeFocused();
   await expect(b2CellEditor).toHaveCount(0);
 
+  await b2.click();
+  await expect(b2CellEditor).toHaveCount(0);
+
   await b2.press('F2');
   await expect(b2CellEditor).toHaveCount(0);
 
   await b2.press('9');
   await expect(b2CellEditor).toHaveValue('9');
-  await expect(rawAnswer).toHaveValue(/"B2":9/);
+  await expect(b2CellEditor).toBeFocused();
+  await page.keyboard.type('87');
+  await expect(b2CellEditor).toHaveValue('987');
+  await expect(rawAnswer).toHaveValue(/"B2":987/);
   await b2CellEditor.press('Escape');
   await expect(b2).toContainText('1');
   await expect(b2FormulaBar).toHaveValue('1');
@@ -56,12 +62,14 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
 
   await b2.press('9');
   await expect(b2CellEditor).toHaveValue('9');
+  await page.keyboard.type('87');
+  await expect(b2CellEditor).toHaveValue('987');
   await b2CellEditor.press('Enter');
-  await expect(b2).toContainText('9');
+  await expect(b2).toContainText('987');
   await expect(grid.getByRole('gridcell', { name: /^B3, editable/ })).toBeFocused();
 
   await b2.dblclick();
-  await expect(b2CellEditor).toHaveValue('9');
+  await expect(b2CellEditor).toHaveValue('987');
 });
 
 test('supports accessible local editing and trusted submission', async ({
