@@ -8,7 +8,7 @@
     "directory": "packages/bind-mount"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.15.0"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,7 +19,7 @@
   "dependencies": {
     "bindings": "^1.5.0",
     "nan": "^2.29.0",
-    "node-gyp": "^12.4.0"
+    "node-gyp": "^13.0.2"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
