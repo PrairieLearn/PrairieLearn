@@ -4,13 +4,14 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export interface StudentGradebookTableRow {
   assessment_id: string;
-  assessment_instance_id: string;
+  assessment_instance_id: string | null;
   assessment_group_work: boolean;
   title: string;
   assessment_set_heading: string;
   assessment_set_color: string;
   label: string;
   assessment_instance_score_perc: number | null;
+  not_started: boolean;
   show_closed_assessment_score: boolean;
   start_new_set: boolean;
 }
@@ -93,7 +94,9 @@ export function StudentGradebook({
                         )}
                       </td>
                       <td className="text-center align-middle">
-                        {row.show_closed_assessment_score ? (
+                        {row.not_started ? (
+                          <span className="text-muted">Not started</span>
+                        ) : row.show_closed_assessment_score ? (
                           <Scorebar
                             score={row.assessment_instance_score_perc}
                             className="mx-auto"
