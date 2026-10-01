@@ -19,6 +19,6 @@
       "type": "string"
     }
   },
-  "required": ["answers-name", "params-name"],
+  "required": ["answers-name"],
   "additionalProperties": false
 }

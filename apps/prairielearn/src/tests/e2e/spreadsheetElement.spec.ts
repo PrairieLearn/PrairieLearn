@@ -127,6 +127,75 @@ test('supports accessible local editing and trusted submission', async ({
   expect(thirdPartyRequests).toEqual([]);
 });
 
+test('keeps file-backed grading cells outside the student range private', async ({
+  page,
+  courseInstance,
+}) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetFileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', {
+    name: 'File-backed spreadsheet test, sheet Inputs',
+  });
+  await expect(grid.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
+  await expect(grid.getByRole('columnheader', { name: 'C', exact: true })).toBeVisible();
+  await expect(grid.getByRole('columnheader', { name: 'A', exact: true })).toHaveCount(0);
+  await expect(grid.getByRole('columnheader', { name: 'D', exact: true })).toHaveCount(0);
+
+  const decodedOptions = await page
+    .locator('.pl-spreadsheet-root')
+    .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
+  expect(decodedOptions).not.toContain('HIDDEN_SENTINEL');
+  expect(decodedOptions).not.toContain('=C2=6');
+  const elementHtml = await page
+    .locator('.pl-spreadsheet')
+    .evaluate((element) => element.outerHTML);
+  expect(elementHtml).not.toContain('HIDDEN_SENTINEL');
+  expect(elementHtml).not.toContain('=C2=6');
+
+  await editCell(grid, 'B2', '3');
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+  await expect(rawAnswer).toHaveValue(/"B2":3/);
+  await expect(rawAnswer).not.toHaveValue(/A1|D2|HIDDEN_SENTINEL/);
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(page.getByText(/100%/).first()).toBeVisible();
+
+  const submissionTable = page.getByRole('table', { name: 'Inputs' });
+  await expect(submissionTable.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
+  await expect(submissionTable.getByRole('columnheader', { name: 'C', exact: true })).toBeVisible();
+  await expect(submissionTable.getByRole('columnheader', { name: 'A', exact: true })).toHaveCount(
+    0,
+  );
+  await expect(submissionTable.getByRole('columnheader', { name: 'D', exact: true })).toHaveCount(
+    0,
+  );
+  await expect(submissionTable).not.toContainText('HIDDEN_SENTINEL');
+});
+
+test('rejects a file-backed formula that references a hidden cell', async ({
+  page,
+  courseInstance,
+}) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetFileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', {
+    name: 'File-backed spreadsheet test, sheet Inputs',
+  });
+  await editCell(grid, 'B2', '=D2');
+  await expect(page.getByRole('status')).toContainText('outside declared student ranges');
+});
+
 declare global {
   interface Window {
     axe: typeof axe;

@@ -1,0 +1,18 @@
+<pl-question-panel>
+  <p>Enter 3 in B2. The visible formula should calculate 6.</p>
+</pl-question-panel>
+
+<pl-spreadsheet answers-name="model" aria-label="File-backed spreadsheet test">
+  <pl-spreadsheet-data
+    source-file="workbook.csv"
+    sheet-name="Inputs"
+    student-range="B2:C3"
+    editable-ranges="B2:B3"
+  ></pl-spreadsheet-data>
+  <pl-spreadsheet-output
+    name="is_correct"
+    sheet-name="Inputs"
+    cell="D2"
+    required="true"
+  ></pl-spreadsheet-output>
+</pl-spreadsheet>

@@ -25,6 +25,23 @@ ALLOW_BLANK_ELEMENT_HTML = """
 ></pl-spreadsheet>
 """
 
+FILE_ELEMENT_HTML = """
+<pl-spreadsheet answers-name="model" aria-label="CSV budget">
+  <pl-spreadsheet-data
+    source-file="workbook.csv"
+    sheet-name="Inputs"
+    student-range="B2:C3"
+    editable-ranges="B2:B3"
+  ></pl-spreadsheet-data>
+  <pl-spreadsheet-output
+    name="score"
+    sheet-name="Inputs"
+    cell="D2"
+    required="true"
+  ></pl-spreadsheet-output>
+</pl-spreadsheet>
+"""
+
 
 def template() -> dict[str, Any]:
     return {
@@ -81,6 +98,17 @@ def prepare_data(**overrides: Any) -> dict[str, Any]:
     return data
 
 
+def file_question_data(question_path: Path, **overrides: Any) -> dict[str, Any]:
+    data = question_data(
+        options={
+            "question_path": str(question_path),
+            "server_files_course_path": str(question_path),
+        },
+        **overrides,
+    )
+    return data
+
+
 def snapshot(
     data: dict[str, Any], *, include_editable_input: bool = True
 ) -> dict[str, Any]:
@@ -129,6 +157,21 @@ def test_prepare_persists_normalized_versioned_config(element_directory: None) -
     assert data["answers_names"] == {"model": True}
 
 
+def test_prepare_requires_exactly_one_source_mode(element_directory: None) -> None:
+    with pytest.raises(ValueError, match=r"either.*params-name"):
+        spreadsheet.prepare(
+            '<pl-spreadsheet answers-name="model"></pl-spreadsheet>', question_data()
+        )
+
+    conflicting_html = ELEMENT_HTML.replace(
+        "</pl-spreadsheet>",
+        '<pl-spreadsheet-data source-file="workbook.csv" sheet-name="Inputs" '
+        'student-range="A1:B2"></pl-spreadsheet-data></pl-spreadsheet>',
+    )
+    with pytest.raises(ValueError, match="cannot be combined"):
+        spreadsheet.prepare(conflicting_html, question_data())
+
+
 def test_prepare_normalizes_private_grading_config(element_directory: None) -> None:
     data = question_data(correct_answers={"model": grading_config()})
 
@@ -144,6 +187,58 @@ def test_prepare_normalizes_private_grading_config(element_directory: None) -> N
     }
     assert grader["outputs"]["is_correct"] == {"sheet": "Checks", "cell": "A2"}
     assert grader["sheets"][0]["cells"]["A1"] == "=Inputs!B2"
+
+
+def test_prepare_csv_keeps_hidden_source_cells_server_only(tmp_path: Path) -> None:
+    (tmp_path / "workbook.csv").write_text(
+        "HIDDEN_SENTINEL,,,\n,2,=B2*2,=C2=4\n,3,=B3*2,=SUM(C2:C3)\n"
+    )
+    data = file_question_data(tmp_path)
+
+    spreadsheet.prepare(FILE_ELEMENT_HTML, data)
+
+    config = data["params"]["_pl_spreadsheet_v1"]["model"]
+    public_sheet = config["template"]["sheets"][0]
+    assert public_sheet == {
+        "name": "Inputs",
+        "rows": 3,
+        "columns": 3,
+        "cells": {"B2": "2", "C2": "=B2*2", "B3": "3", "C3": "=B3*2"},
+        "editable_ranges": ["B2:B3"],
+        "student_range": "B2:C3",
+    }
+    assert "HIDDEN_SENTINEL" not in json.dumps(config)
+    assert "=C2=4" not in json.dumps(config)
+    grader = data["correct_answers"]["model"]
+    assert grader["source_sheets"][0]["cells"]["A1"] == "HIDDEN_SENTINEL"
+    assert grader["source_sheets"][0]["cells"]["D2"] == "=C2=4"
+    assert grader["outputs"] == {
+        "score": {"sheet": "Inputs", "cell": "D2", "required": True}
+    }
+
+    table = spreadsheet._table_data(config, None)[0]
+    assert [column["name"] for column in table["columns"]] == ["B", "C"]
+    assert [row["number"] for row in table["rows"]] == [2, 3]
+
+
+def test_prepare_rejects_visible_formula_references_outside_student_range(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "workbook.csv").write_text(",,\n,2,=A1\n")
+    data = file_question_data(tmp_path)
+
+    with pytest.raises(ValueError, match="outside declared student ranges"):
+        spreadsheet.prepare(FILE_ELEMENT_HTML.replace('cell="D2"', 'cell="A1"'), data)
+
+
+def test_prepare_rejects_source_path_traversal(tmp_path: Path) -> None:
+    data = file_question_data(tmp_path)
+    element_html = FILE_ELEMENT_HTML.replace(
+        'source-file="workbook.csv"', 'source-file="../workbook.csv"'
+    )
+
+    with pytest.raises(ValueError, match="may not leave"):
+        spreadsheet.prepare(element_html, data)
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "cell": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "required": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "sheet-name": {
+      "type": "string"
+    }
+  },
+  "required": ["cell", "name", "sheet-name"],
+  "additionalProperties": false
+}

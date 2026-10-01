@@ -1,8 +1,13 @@
+import datetime
 from dataclasses import FrozenInstanceError, is_dataclass
+from pathlib import Path
 from typing import Any, cast
 
+import numpy as np
+import pandas as pd
 import prairielearn as pl
 import pytest
+from openpyxl import Workbook
 from prairielearn import spreadsheet_utils
 
 
@@ -96,113 +101,236 @@ def test_normalized_address_accepts_case_insensitive_columns(
 
 
 def test_ranges_report_shape_and_containment() -> None:
-    local_range = spreadsheet_utils._LocalRange(
-        spreadsheet_utils._LocalAddress(row=1, column=2),
-        spreadsheet_utils._LocalAddress(row=3, column=5),
+    local_range = spreadsheet_utils.SpreadsheetAddressRange(
+        spreadsheet_utils.SpreadsheetAddress(row=1, column=2),
+        spreadsheet_utils.SpreadsheetAddress(row=3, column=5),
     )
 
     assert local_range.shape == (3, 4)
-    assert spreadsheet_utils._LocalAddress(row=1, column=2) in local_range
-    assert spreadsheet_utils._LocalAddress(row=3, column=5) in local_range
-    assert spreadsheet_utils._LocalAddress(row=0, column=2) not in local_range
-    assert spreadsheet_utils._LocalAddress(row=3, column=6) not in local_range
+    assert spreadsheet_utils.SpreadsheetAddress(row=1, column=2) in local_range
+    assert spreadsheet_utils.SpreadsheetAddress(row=3, column=5) in local_range
+    assert spreadsheet_utils.SpreadsheetAddress(row=0, column=2) not in local_range
+    assert spreadsheet_utils.SpreadsheetAddress(row=3, column=6) not in local_range
     assert (
-        spreadsheet_utils._LocalRange(
-            spreadsheet_utils._LocalAddress(row=2, column=3),
-            spreadsheet_utils._LocalAddress(row=3, column=5),
+        spreadsheet_utils.SpreadsheetAddressRange(
+            spreadsheet_utils.SpreadsheetAddress(row=2, column=3),
+            spreadsheet_utils.SpreadsheetAddress(row=3, column=5),
         )
         in local_range
     )
 
-    qualified_range = spreadsheet_utils._QualifiedRange(local_range, "Inputs")
+    qualified_range = spreadsheet_utils.SpreadsheetQualifiedAddressRange(
+        local_range, "Inputs"
+    )
     assert qualified_range.shape == (3, 4)
     assert (
-        spreadsheet_utils._QualifiedAddress(
-            spreadsheet_utils._LocalAddress(row=2, column=4), "Inputs"
+        spreadsheet_utils.SpreadsheetQualifiedAddress(
+            spreadsheet_utils.SpreadsheetAddress(row=2, column=4), "Inputs"
         )
         in qualified_range
     )
-    assert spreadsheet_utils._LocalAddress(row=2, column=4) in qualified_range
+    assert spreadsheet_utils.SpreadsheetAddress(row=2, column=4) in qualified_range
     assert (
-        spreadsheet_utils._QualifiedAddress(
-            spreadsheet_utils._LocalAddress(row=2, column=4), "Other"
+        spreadsheet_utils.SpreadsheetQualifiedAddress(
+            spreadsheet_utils.SpreadsheetAddress(row=2, column=4), "Other"
         )
         not in qualified_range
     )
     assert (
-        spreadsheet_utils._LocalRange(
-            spreadsheet_utils._LocalAddress(row=2, column=3),
-            spreadsheet_utils._LocalAddress(row=3, column=5),
+        spreadsheet_utils.SpreadsheetAddressRange(
+            spreadsheet_utils.SpreadsheetAddress(row=2, column=3),
+            spreadsheet_utils.SpreadsheetAddress(row=3, column=5),
         )
         in qualified_range
     )
-    assert spreadsheet_utils._QualifiedRange(local_range, "Inputs") in qualified_range
     assert (
-        spreadsheet_utils._QualifiedRange(local_range, "Other") not in qualified_range
+        spreadsheet_utils.SpreadsheetQualifiedAddressRange(local_range, "Inputs")
+        in qualified_range
+    )
+    assert (
+        spreadsheet_utils.SpreadsheetQualifiedAddressRange(local_range, "Other")
+        not in qualified_range
     )
 
 
 def test_range_intersections() -> None:
-    local_range = spreadsheet_utils._LocalRange(
-        spreadsheet_utils._LocalAddress(row=1, column=2),
-        spreadsheet_utils._LocalAddress(row=4, column=5),
+    local_range = spreadsheet_utils.SpreadsheetAddressRange(
+        spreadsheet_utils.SpreadsheetAddress(row=1, column=2),
+        spreadsheet_utils.SpreadsheetAddress(row=4, column=5),
     )
-    overlapping = spreadsheet_utils._LocalRange(
-        spreadsheet_utils._LocalAddress(row=3, column=1),
-        spreadsheet_utils._LocalAddress(row=5, column=3),
+    overlapping = spreadsheet_utils.SpreadsheetAddressRange(
+        spreadsheet_utils.SpreadsheetAddress(row=3, column=1),
+        spreadsheet_utils.SpreadsheetAddress(row=5, column=3),
     )
-    expected_local = spreadsheet_utils._LocalRange(
-        spreadsheet_utils._LocalAddress(row=3, column=2),
-        spreadsheet_utils._LocalAddress(row=4, column=3),
+    expected_local = spreadsheet_utils.SpreadsheetAddressRange(
+        spreadsheet_utils.SpreadsheetAddress(row=3, column=2),
+        spreadsheet_utils.SpreadsheetAddress(row=4, column=3),
     )
-    disjoint = spreadsheet_utils._LocalRange(
-        spreadsheet_utils._LocalAddress(row=5, column=2),
-        spreadsheet_utils._LocalAddress(row=6, column=5),
+    disjoint = spreadsheet_utils.SpreadsheetAddressRange(
+        spreadsheet_utils.SpreadsheetAddress(row=5, column=2),
+        spreadsheet_utils.SpreadsheetAddress(row=6, column=5),
     )
 
     assert local_range.intersection(overlapping) == expected_local
     assert local_range.intersection(disjoint) is None
 
-    qualified_range = spreadsheet_utils._QualifiedRange(local_range, "Inputs")
-    expected_qualified = spreadsheet_utils._QualifiedRange(expected_local, "Inputs")
+    qualified_range = spreadsheet_utils.SpreadsheetQualifiedAddressRange(
+        local_range, "Inputs"
+    )
+    expected_qualified = spreadsheet_utils.SpreadsheetQualifiedAddressRange(
+        expected_local, "Inputs"
+    )
     assert qualified_range.intersection(overlapping) == expected_qualified
     assert (
         qualified_range.intersection(
-            spreadsheet_utils._QualifiedRange(overlapping, "Inputs")
+            spreadsheet_utils.SpreadsheetQualifiedAddressRange(overlapping, "Inputs")
         )
         == expected_qualified
     )
     assert (
         qualified_range.intersection(
-            spreadsheet_utils._QualifiedRange(overlapping, "Other")
+            spreadsheet_utils.SpreadsheetQualifiedAddressRange(overlapping, "Other")
         )
         is None
     )
     assert (
         local_range.intersection(
-            spreadsheet_utils._QualifiedRange(overlapping, "Other")
+            spreadsheet_utils.SpreadsheetQualifiedAddressRange(overlapping, "Other")
         )
         == expected_local
     )
 
 
-def test_sparse_cells_data_contains_valid_cells() -> None:
-    cells = spreadsheet_utils._SparseCellsData(
-        name="Input Data", rows=3, columns=4, addressed_data={}
+def test_address_ranges_parse_and_translate_relative_coordinates() -> None:
+    cell_range = pl.SpreadsheetAddressRange.from_a1("D5:B3")
+
+    assert cell_range.address == "B3:D5"
+    assert cell_range.shape == (3, 3)
+    assert cell_range.to_source(pl.SpreadsheetAddress(1, 2)).address == "D4"
+    assert cell_range.to_relative(pl.SpreadsheetAddress.from_a1("C5")) == (
+        pl.SpreadsheetAddress(2, 1)
+    )
+    with pytest.raises(ValueError, match="outside"):
+        cell_range.to_source(pl.SpreadsheetAddress(3, 0))
+
+
+def test_dataframe_conversion_is_sparse_json_safe_and_offset() -> None:
+    dataframe = pd.DataFrame(
+        [[np.int64(2), "=C3*2"], [pd.NA, np.float64(3.5)]],
+        columns=["quantity", "formula"],
+        index=["first", "second"],
     )
 
-    assert spreadsheet_utils._LocalAddress(row=0, column=0) in cells
-    assert spreadsheet_utils._LocalAddress(row=2, column=3) in cells
-    assert spreadsheet_utils._LocalAddress(row=3, column=3) not in cells
+    sheet = pl.dataframe_to_spreadsheet_sheet(dataframe, name="Inputs", start_cell="C3")
+    assert sheet == {
+        "name": "Inputs",
+        "rows": 4,
+        "columns": 4,
+        "cells": {"C3": 2, "D3": "=C3*2", "D4": 3.5},
+        "editable_ranges": [],
+    }
+
+    labeled = pl.dataframe_to_spreadsheet_sheet(
+        dataframe,
+        start_cell="B2",
+        include_columns=True,
+        include_index=True,
+        editable_ranges=("C3:D4",),
+    )
+    assert labeled["cells"] == {
+        "C2": "quantity",
+        "D2": "formula",
+        "B3": "first",
+        "B4": "second",
+        "C3": 2,
+        "D3": "=C3*2",
+        "D4": 3.5,
+    }
+    assert labeled.get("editable_ranges") == ["C3:D4"]
+
+
+@pytest.mark.parametrize(
+    "value", [float("inf"), 1 + 2j, {"nested": True}, datetime.date(2024, 1, 1)]
+)
+def test_dataframe_conversion_rejects_non_json_cell_values(value: object) -> None:
+    with pytest.raises((TypeError, ValueError), match="Spreadsheet value"):
+        pl.dataframe_to_spreadsheet_sheet(pd.DataFrame([[value]]))
+
+
+def test_dataframe_conversion_rejects_requested_multi_index_labels() -> None:
+    columns = pd.DataFrame(
+        [[1]], columns=pd.MultiIndex.from_tuples([("group", "value")])
+    )
+    index = pd.DataFrame([[1]], index=pd.MultiIndex.from_tuples([("group", "row")]))
+
+    with pytest.raises(TypeError, match="column labels"):
+        pl.dataframe_to_spreadsheet_sheet(columns, include_columns=True)
+    with pytest.raises(TypeError, match="index labels"):
+        pl.dataframe_to_spreadsheet_sheet(index, include_index=True)
+
+
+def test_dataframe_book_rejects_case_insensitive_sheet_collisions() -> None:
+    frames = {"Inputs": pd.DataFrame([[1]]), "inputs": pd.DataFrame([[2]])}
+
+    with pytest.raises(ValueError, match="duplicated"):
+        pl.dataframes_to_spreadsheet_book(frames)
+
+
+def test_public_file_readers_load_csv_tsv_and_xlsx(tmp_path: Path) -> None:
+    csv_path = tmp_path / "input.csv"
+    csv_path.write_text("2,=A1*2\n,NA\n")
+    tsv_path = tmp_path / "input.tsv"
+    tsv_path.write_text("2\t=A1*2\n\tNA\n")
+
+    for source, reader in (
+        (csv_path, pl.read_spreadsheet_csv),
+        (tsv_path, pl.read_spreadsheet_tsv),
+    ):
+        book = reader(source, sheet_name="Inputs")
+        assert book["sheets"][0]["cells"] == {
+            "A1": "2",
+            "B1": "=A1*2",
+            "B2": "NA",
+        }
+
+    xlsx_path = tmp_path / "input.xlsx"
+    workbook = Workbook()
+    inputs = workbook.active
+    assert inputs is not None
+    inputs.title = "Inputs"
+    inputs["A1"] = 2
+    inputs["B1"] = "=A1*2"
+    checks = workbook.create_sheet("Checks")
+    checks["A1"] = "=Inputs!B1=4"
+    workbook.save(xlsx_path)
+
+    book = pl.read_spreadsheet(xlsx_path)
+    assert [sheet["name"] for sheet in book["sheets"]] == ["Inputs", "Checks"]
+    assert book["sheets"][0]["cells"]["B1"] == "=A1*2"
+    assert book["sheets"][1]["cells"]["A1"] == "=Inputs!B1=4"
+
+
+def test_sparse_cells_data_contains_valid_cells() -> None:
+    cells = spreadsheet_utils._SparseCellsData(
+        name="Input Data",
+        rows=3,
+        columns=4,
+        visible_range=pl.SpreadsheetAddressRange.from_a1("A1:D3"),
+        addressed_data={},
+    )
+
+    assert spreadsheet_utils.SpreadsheetAddress(row=0, column=0) in cells
+    assert spreadsheet_utils.SpreadsheetAddress(row=2, column=3) in cells
+    assert spreadsheet_utils.SpreadsheetAddress(row=3, column=3) not in cells
     assert (
-        spreadsheet_utils._QualifiedAddress(
-            spreadsheet_utils._LocalAddress(row=2, column=3), "Input Data"
+        spreadsheet_utils.SpreadsheetQualifiedAddress(
+            spreadsheet_utils.SpreadsheetAddress(row=2, column=3), "Input Data"
         )
         in cells
     )
     assert (
-        spreadsheet_utils._QualifiedAddress(
-            spreadsheet_utils._LocalAddress(row=2, column=3), "Other"
+        spreadsheet_utils.SpreadsheetQualifiedAddress(
+            spreadsheet_utils.SpreadsheetAddress(row=2, column=3), "Other"
         )
         not in cells
     )
@@ -288,6 +416,33 @@ def test_spreadsheet_wrapper_addresses_cells_and_sheets() -> None:
     assert error.error_value == "#DIV/0!"
 
 
+def test_spreadsheet_wrapper_constrains_offset_student_range() -> None:
+    offset_snapshot = snapshot()
+    sheet = offset_snapshot["sheets"][0]
+    sheet["student_range"] = "B1:C2"
+    sheet["cells"].pop("A1")
+
+    inputs = pl.SpreadsheetBook(offset_snapshot)["Inputs"]
+    assert inputs.shape == (2, 2)
+    assert tuple(cell.address for cell in inputs) == ("B1", "C1", "B2", "C2")
+    assert tuple(
+        cell.address for cell in inputs.query(lambda cell: cell.is_formula)
+    ) == (
+        "B1",
+        "C1",
+    )
+    assert inputs.cell("B1").value == 6
+    with pytest.raises(ValueError, match="outside the sheet"):
+        inputs["A1"]
+    with pytest.raises(ValueError, match="outside the sheet"):
+        pl.get_spreadsheet_cell(offset_snapshot, "Inputs", "A1")
+
+    forged_snapshot = snapshot()
+    forged_snapshot["sheets"][0]["student_range"] = "B1:C2"
+    with pytest.raises(ValueError, match="outside the student range"):
+        pl.SpreadsheetBook(forged_snapshot)
+
+
 def test_spreadsheet_validates_and_copies_snapshot_at_construction() -> None:
     invalid_input = snapshot()
     invalid_input["sheets"][0]["cells"]["A1"]["input"] = {
@@ -347,7 +502,7 @@ def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
     assert not hasattr(other_range, "range")
     assert not hasattr(other_range, "start")
     assert not hasattr(other_range, "end")
-    assert other_range.values == ((10, None), (None, 15))
+    assert other_range.values == ((10, None), (None, 15))  # ruff: ignore[pandas-use-of-dot-values]
     assert other_range["B2"].value == 15
     assert other_range["'Input Data'!A1"].value == 10
 
@@ -415,8 +570,8 @@ def test_spreadsheet_range_projections_queries_and_indexing() -> None:
         ({"type": "number", "value": 3}, {"type": "number", "value": 6}),
         ({"type": "empty"}, {"type": "empty"}),
     )
-    assert cell_range.values == ((3, 6), (None, None))
-    assert inputs.range("B1:C2").values == ((6, None), (None, None))
+    assert cell_range.values == ((3, 6), (None, None))  # ruff: ignore[pandas-use-of-dot-values]
+    assert inputs.range("B1:C2").values == ((6, None), (None, None))  # ruff: ignore[pandas-use-of-dot-values]
     assert cell_range.formulas == ((None, "=A1*2"), (None, None))
     assert tuple(
         cell.address for cell in cell_range.query(lambda cell: cell.is_formula)
