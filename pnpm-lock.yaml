@@ -207,7 +207,6 @@ overrides:
   typescript-cp>typescript: npm:@typescript/typescript6@^6.0.2
   cosmiconfig>typescript: npm:@typescript/typescript6@^6.0.2
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
-  '@prairielearn/tree-sitter-htmlmustache@1.4.3>web-tree-sitter': ^0.27.0
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
   dependency-cruiser>acorn: ^8.16.0
@@ -217,8 +216,6 @@ overrides:
   jsdoc-type-pratt-parser>@types/node: ^24
   linkinator>marked: ^18
   markdownlint-cli2>smol-toml: ^1
-  css-tree@3.2.1>mdn-data: 2.29.0
-  stylelint-scss@6.14.0>mdn-data: 2.29.0
   notebookjs>jsdom: '*'
 
 importers:
@@ -1170,8 +1167,8 @@ importers:
         specifier: ^8.3.1
         version: 8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)
       web-tree-sitter:
-        specifier: ^0.27.0
-        version: 0.27.0
+        specifier: ^0.26.13
+        version: 0.26.13
       winston:
         specifier: ^3.19.0
         version: 3.19.0
@@ -8800,6 +8797,9 @@ packages:
   mdast-util-to-string@4.0.0:
     resolution: {integrity: sha512-0H44vDimn51F0YwvxSJSm0eCDOJTRlmN0R1yBh4HLj9wiV1Dn0QoXGbvFAWj2hSItVTlCmBF1hqKlIyUBVFLPg==}
 
+  mdn-data@2.27.1:
+    resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
+
   mdn-data@2.29.0:
     resolution: {integrity: sha512-pVxQFCcaYUEAH853+v7yoI/qzhxXSq1bTb9obMYGYAN1c3Hen+XDCEvr296XhstrwlSTNgOR7mCSD4JPjbJe5A==}
 
@@ -10745,8 +10745,8 @@ packages:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
     engines: {node: '>= 8'}
 
-  web-tree-sitter@0.27.0:
-    resolution: {integrity: sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg==}
+  web-tree-sitter@0.26.13:
+    resolution: {integrity: sha512-5bUZ7vbQ1kcondet96wzP974+JfCZDeQ7bTpacICm2nnvHpa5cO0ByRsoMcAhUP+743vpkb4m0BFlVSm+Ye9VA==}
 
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
@@ -13027,7 +13027,7 @@ snapshots:
       chalk: 5.6.2
       editorconfig: 3.0.2
       vscode-languageserver-textdocument: 1.0.12
-      web-tree-sitter: 0.27.0
+      web-tree-sitter: 0.26.13
       zod: 4.6.5
     optionalDependencies:
       node-gyp-build: 4.8.4
@@ -14987,7 +14987,7 @@ snapshots:
 
   css-tree@3.2.1:
     dependencies:
-      mdn-data: 2.29.0
+      mdn-data: 2.27.1
       source-map-js: 1.2.1
 
   css-what@6.2.2: {}
@@ -17177,6 +17177,8 @@ snapshots:
   mdast-util-to-string@4.0.0:
     dependencies:
       '@types/mdast': 4.0.4
+
+  mdn-data@2.27.1: {}
 
   mdn-data@2.29.0: {}
 
@@ -19401,7 +19403,7 @@ snapshots:
 
   web-streams-polyfill@3.3.3: {}
 
-  web-tree-sitter@0.27.0: {}
+  web-tree-sitter@0.26.13: {}
 
   webidl-conversions@8.0.1: {}
 

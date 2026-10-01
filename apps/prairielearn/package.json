@@ -259,7 +259,7 @@
     "unzipper": "^0.12.5",
     "use-stick-to-bottom": "^1.1.6",
     "vite": "^8.3.1",
-    "web-tree-sitter": "^0.27.0",
+    "web-tree-sitter": "^0.26.13",
     "winston": "^3.19.0",
     "xml-formatter": "^3.7.0",
     "xml2js": "^0.6.2",
