@@ -89,7 +89,8 @@ Test with a disposable course repository you intend to modify.
 PL uses `config.githubClientToken` to validate proposals and publish approved changes through GitHub APIs;
 only the existing Course Sync operation accesses PL's normal course checkout.
 
-Prices are configured by exact model name as dollars per million tokens, e.g.
+Prices default to PL’s shared `costPerMillionTokens` configuration, using the exact model name.
+Optional `courseAgent.pricing` overrides use dollars per million tokens, e.g.
 `"pricing": { "your-model": { "input": 1, "cachedInput": 0.1, "output": 5 } }`.
 These numbers illustrate the config shape; supply current prices for the chosen model.
 Unreported usage and unpriced models display **Unknown**. Estimated costs exclude Cloudflare,

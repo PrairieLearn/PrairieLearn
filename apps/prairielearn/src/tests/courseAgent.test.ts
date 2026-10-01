@@ -6,15 +6,17 @@ import { z } from 'zod';
 import { proposalContent } from '@prairielearn/course-agent-contract';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
+
 import * as agentEvents from '../ee/lib/course-agent/events.js';
 import { authorize, prepare } from '../ee/lib/course-agent/service.js';
 import { admit, estimatedCost, recordUsage } from '../ee/lib/course-agent/usage.js';
+import { config } from '../lib/config.js';
 import {
   createConversation,
   reserveOperation,
   selectConversation,
 } from '../models/course-agent-conversation.js';
-import { selectOptionalExecution } from '../models/course-agent-execution.js';
+import { insertExecution, selectOptionalExecution } from '../models/course-agent-execution.js';
 import {
   decideProposal,
   insertProposal,
@@ -241,4 +243,59 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
     fetcher.mockRestore();
     notify.mockRestore();
   }
+});
+
+it('uses shared AI prices, preserves recorded rates, and leaves unsupported models unknown', async () => {
+  const { conversation } = await setupConversation();
+  const id = randomUUID();
+  await insertExecution(conversation.id, id);
+  const snapshot = {
+    messages: [],
+    revision: 0,
+    executions: {
+      [id]: {
+        status: 'completed' as const,
+        model: 'gpt-6-astra',
+        input: 1000,
+        cached: 200,
+        output: 100,
+      },
+    },
+  };
+  await withConfig(
+    {
+      courseAgent: { ...settings, pricing: {} },
+      costPerMillionTokens: {
+        ...config.costPerMillionTokens,
+        'gpt-6-astra': { input: 2, cachedInput: 0.5, cacheWrite: 0, output: 10 },
+      },
+    },
+    async () => {
+      await recordUsage(conversation, snapshot);
+      expect((await selectOptionalExecution(conversation.id, id))?.estimated_cost).toBeCloseTo(
+        0.0027,
+      );
+    },
+  );
+  await withConfig(
+    {
+      courseAgent: {
+        ...settings,
+        pricing: { 'gpt-6-astra': { input: 20, cachedInput: 5, output: 100 } },
+      },
+    },
+    async () => {
+      await recordUsage(conversation, snapshot);
+      expect((await selectOptionalExecution(conversation.id, id))?.estimated_cost).toBeCloseTo(
+        0.0027,
+      );
+    },
+  );
+  const unknown = randomUUID();
+  await insertExecution(conversation.id, unknown);
+  await recordUsage(conversation, {
+    ...snapshot,
+    executions: { [unknown]: { ...snapshot.executions[id], model: 'unsupported-fixture-model' } },
+  });
+  expect((await selectOptionalExecution(conversation.id, unknown))?.estimated_cost).toBeNull();
 });

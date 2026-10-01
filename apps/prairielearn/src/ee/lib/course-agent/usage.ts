@@ -32,7 +32,12 @@ export async function recordUsage(conversation: CourseAgentConversation, snapsho
     if (!existing) continue;
     const price =
       (existing.pricing as { input: number; cachedInput: number; output: number } | null) ??
-      config.courseAgent?.pricing[value.model];
+      config.courseAgent?.pricing[value.model] ??
+      (
+        config.costPerMillionTokens as Partial<
+          Record<string, { input: number; cachedInput: number; output: number }>
+        >
+      )[value.model];
     await executions.saveExecution({
       conversation_id: conversation.id,
       operation_id: id,
