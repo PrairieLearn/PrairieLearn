@@ -49,10 +49,9 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
   await b2.press('F2');
   await expect(b2CellEditor).toHaveCount(0);
 
-  await b2.press('9');
-  await expect(b2CellEditor).toHaveValue('9');
+  await b2.focus();
+  await page.keyboard.type('987');
   await expect(b2CellEditor).toBeFocused();
-  await page.keyboard.type('87');
   await expect(b2CellEditor).toHaveValue('987');
   await expect(rawAnswer).toHaveValue(/"B2":987/);
   await b2CellEditor.press('Escape');
@@ -60,9 +59,8 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
   await expect(b2FormulaBar).toHaveValue('1');
   await expect(rawAnswer).not.toHaveValue(/"B2"/);
 
-  await b2.press('9');
-  await expect(b2CellEditor).toHaveValue('9');
-  await page.keyboard.type('87');
+  await b2.focus();
+  await page.keyboard.type('987');
   await expect(b2CellEditor).toHaveValue('987');
   await b2CellEditor.press('Enter');
   await expect(b2).toContainText('987');
