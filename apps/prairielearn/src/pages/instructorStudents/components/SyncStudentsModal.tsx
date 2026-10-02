@@ -163,9 +163,19 @@ export function SyncStudentsModal({
       case 'csv-file': {
         let text: string;
         try {
-          text = await csvFile[0].text();
+          const bytes = new Uint8Array(await csvFile[0].arrayBuffer());
+          if (
+            (bytes[0] === 0xff && bytes[1] === 0xfe) ||
+            (bytes[0] === 0xfe && bytes[1] === 0xff)
+          ) {
+            throw new TypeError('Unsupported UTF-16 encoding');
+          }
+          text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
         } catch {
-          setError('csvFile', { message: 'Could not read this file. Select the CSV file again.' });
+          setError('csvFile', {
+            message:
+              'Could not read this file as UTF-8. Save it as a UTF-8 CSV file and try again.',
+          });
           return;
         }
         if (text.trim() === '') {
