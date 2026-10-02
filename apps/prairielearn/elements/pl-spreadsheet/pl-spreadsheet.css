@@ -48,6 +48,8 @@
   background-color: transparent;
   border-color: transparent;
   color: var(--bs-body-color);
+  /* Keeps tile backgrounds behind the text but inside the overlay. */
+  isolation: isolate;
 }
 
 .pl-spreadsheet-formula-popup {
@@ -82,6 +84,95 @@
 .pl-spreadsheet-tok-error {
   color: var(--bs-danger-text-emphasis);
   text-decoration: underline wavy;
+}
+
+/*
+ * Tiles and holes are drawn with absolutely positioned pseudo-elements so that they never
+ * move the text. A tile's edges show what fits next to it: values have rounded ends,
+ * ranges have bracket ends, and operators have notched ends that values slot into.
+ */
+.pl-spreadsheet-tile-value,
+.pl-spreadsheet-tile-range,
+.pl-spreadsheet-tile-operator,
+.pl-spreadsheet-tile-shard,
+.pl-spreadsheet-hole {
+  position: relative;
+}
+
+.pl-spreadsheet-tile-value::before,
+.pl-spreadsheet-tile-range::before,
+.pl-spreadsheet-tile-operator::before,
+.pl-spreadsheet-tile-shard::before {
+  position: absolute;
+  inset: 0.1em 0;
+  z-index: -1;
+  content: '';
+}
+
+.pl-spreadsheet-tile-value::before {
+  border-radius: 0.5em;
+  background-color: color-mix(in srgb, currentcolor 10%, transparent);
+}
+
+.pl-spreadsheet-tile-range::before {
+  border-inline: 2px solid color-mix(in srgb, currentcolor 55%, transparent);
+  background-color: color-mix(in srgb, currentcolor 10%, transparent);
+}
+
+.pl-spreadsheet-tile-operator::before {
+  inset: 0.1em -0.2em;
+  background-color: color-mix(in srgb, var(--bs-secondary-color) 14%, transparent);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.25em) 50%, 100% 100%, 0 100%, 0.25em 50%);
+}
+
+.pl-spreadsheet-tile-shard::before {
+  border-radius: 0.2em;
+  background-color: color-mix(in srgb, var(--bs-secondary-color) 10%, transparent);
+}
+
+.pl-spreadsheet-tile-shard.is-active::before {
+  background-color: var(--bs-primary-bg-subtle);
+}
+
+.pl-spreadsheet-hole::after {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0.7em;
+  height: 1.1em;
+  transform: translate(-50%, -50%);
+  border: 1.5px dashed var(--bs-secondary-color);
+  border-radius: 0.5em;
+  content: '';
+}
+
+.pl-spreadsheet-hole-range::after {
+  border-radius: 0;
+  border-inline-style: solid;
+}
+
+/* With no space between the two values, the operator hole sits above the gap like a caret. */
+.pl-spreadsheet-hole-operator::after {
+  width: 0.4em;
+  height: 0.4em;
+  transform: translate(-50%, -190%) rotate(45deg);
+  border-radius: 0;
+}
+
+.pl-spreadsheet-hole-delimiter::after {
+  width: 0.25em;
+  transform: translate(0.05em, -50%);
+  border-left: none;
+  border-radius: 0 50% 50% 0;
+}
+
+.pl-spreadsheet-hole.is-current::after {
+  border-style: solid;
+  border-color: var(--bs-primary);
+}
+
+.pl-spreadsheet-hole-delimiter.is-current::after {
+  border-left: none;
 }
 
 .pl-spreadsheet-editor {

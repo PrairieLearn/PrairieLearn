@@ -17,6 +17,10 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { run } from '@prairielearn/run';
 
 import {
+  closeTrailingParentheses,
+  describeFirstHole,
+} from '../../src/lib/client/spreadsheetFormula/editModel.js';
+import {
   formulaReferences,
   tokenizeFormula,
 } from '../../src/lib/client/spreadsheetFormula/lexer.js';
@@ -342,6 +346,7 @@ function SpreadsheetEditor({
     message: string,
     recordHistory = true,
     formulaCell = activeCell,
+    missing = '',
   ) {
     const previousSubmission = committedSubmissionRef.current;
     if (recordHistory) {
@@ -387,7 +392,8 @@ function SpreadsheetEditor({
         }
         if (calculationError) break;
       }
-      setAnnouncement(editorError || calculationError || message);
+      // A missing part of the formula explains its calculation error better than the error.
+      setAnnouncement(editorError || missing || calculationError || message);
     } catch (error) {
       setAnnouncement(
         error instanceof Error ? error.message : 'The spreadsheet could not be recalculated.',
@@ -430,7 +436,8 @@ function SpreadsheetEditor({
       return;
     }
     const address = cellAddress(row, column);
-    const input = parseEditorInput(inputText);
+    const formulaText = closeTrailingParentheses(inputText);
+    const input = parseEditorInput(formulaText);
     const committedInput = finalInput(config, committedSubmissionRef.current, sheet.name, address);
     if (Object.is(input, committedInput)) {
       cancelDraft({ row, column });
@@ -447,6 +454,10 @@ function SpreadsheetEditor({
       `${address}: ${message}`,
       true,
       { row, column },
+      run(() => {
+        const missing = describeFirstHole(formulaText);
+        return missing ? `${address}: ${missing}` : '';
+      }),
     );
   }
 
@@ -885,7 +896,8 @@ function SpreadsheetEditor({
         editing. Tab leaves the grid at its boundaries. Read-only cells are announced. While typing
         a formula in the formula bar, use the Up and Down arrow keys to choose a suggested function
         and Enter or Tab to insert it. Where the formula expects a value, click or drag across
-        cells, or use the arrow keys and Shift with the arrow keys, to insert a cell reference.
+        cells, or use the arrow keys and Shift with the arrow keys, to insert a cell reference. Tab
+        and Shift+Tab move between the missing parts of a formula.
       </p>
       <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
         <button

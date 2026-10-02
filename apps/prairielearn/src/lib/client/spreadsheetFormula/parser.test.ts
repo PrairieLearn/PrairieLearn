@@ -80,6 +80,11 @@ describe('parseFormula', () => {
     expect(parse('=1)+2')).toMatchObject({ tree: '(1 + 2)', holes: [], complete: false });
     expect(parse('=FOO(1)').complete).toBe(false);
     expect(parse('=foo').complete).toBe(false);
+    expect(parse('=SUM(A1 # B1, 2)')).toMatchObject({
+      tree: 'SUM((A1 □operator B1), 2)',
+      holes: [['operator', 9]],
+      complete: false,
+    });
   });
 
   it('uses phantoms to keep deleted parentheses and operators in place', () => {

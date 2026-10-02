@@ -149,6 +149,12 @@ class Parser {
     for (;;) {
       const token = this.peek();
       if (!token) return left;
+      if (token.kind === 'error') {
+        // Skip a stray character so it does not break up the structure around it.
+        this.problems += 1;
+        this.consume();
+        continue;
+      }
       if (token.kind === 'operator' && token.text === '%') {
         if (PERCENT_BINDING_POWER < minBindingPower) return left;
         left = { kind: 'postfix', operator: this.consume(), operand: left };

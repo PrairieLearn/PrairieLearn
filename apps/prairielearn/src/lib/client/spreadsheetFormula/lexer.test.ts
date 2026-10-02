@@ -23,7 +23,7 @@ describe('tokenizeFormula', () => {
   });
 
   it('recognizes sheet-qualified and open-ended references', () => {
-    expect(kinds("Inputs!A1+'My sheet'!B2:C3+A:C+1:3+B2:B")).toEqual([
+    expect(kinds("Inputs!A1+'My sheet'!B2:C3+A:C+1:3+B2:B+Inputs!A1:Hidden!A9")).toEqual([
       ['ref', 'Inputs!A1'],
       ['operator', '+'],
       ['range', "'My sheet'!B2:C3"],
@@ -33,6 +33,8 @@ describe('tokenizeFormula', () => {
       ['range', '1:3'],
       ['operator', '+'],
       ['range', 'B2:B'],
+      ['operator', '+'],
+      ['range', 'Inputs!A1:Hidden!A9'],
     ]);
   });
 
