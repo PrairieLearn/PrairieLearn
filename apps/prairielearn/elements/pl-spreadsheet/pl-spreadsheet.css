@@ -30,6 +30,16 @@
   min-width: 0;
 }
 
+/* One line is always reserved so the grid stays put as errors appear and disappear. */
+.pl-spreadsheet-value-error {
+  grid-column: 2;
+  min-height: 1.25rem;
+  margin-top: -0.25rem;
+  color: var(--bs-danger-text-emphasis);
+  font-size: 0.875em;
+  line-height: 1.25rem;
+}
+
 /* The real input keeps focus and handles typing, but the tile view draws it. */
 .pl-spreadsheet-formula-input > input {
   position: absolute;
@@ -95,11 +105,11 @@
   }
 }
 
+/* Suggestions and hints open below the reserved error line so both stay readable. */
 .pl-spreadsheet-formula-popup {
-  top: 100%;
+  top: calc(100% + 1.25rem);
   left: 0;
   max-width: 100%;
-  margin-top: 0.125rem;
 }
 
 .pl-spreadsheet-formula-popup .dropdown-item {
@@ -401,6 +411,49 @@
   font-weight: 600;
 }
 
+/* Sized like the editor's grid, so a submitted sheet looks like the one that was edited. */
+.pl-spreadsheet-table {
+  width: auto;
+  font-size: 14px;
+}
+
+.pl-spreadsheet-table > :not(caption) > * > * {
+  height: 35px;
+  padding: 0 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.pl-spreadsheet-table > :not(caption) > * > :not(:first-child) {
+  min-width: 96px;
+}
+
+.pl-spreadsheet-table > :not(caption) > * > :first-child {
+  width: 56px;
+  color: var(--bs-secondary-color);
+}
+
+.pl-spreadsheet-table .pl-spreadsheet-cell-readonly {
+  --bs-table-bg: var(--bs-secondary-bg);
+}
+
+/*
+ * Values and formulas share one grid area, and the one not shown is only made invisible,
+ * so each column keeps the width of its widest content in either view.
+ */
+.pl-spreadsheet-table-cell {
+  display: grid;
+}
+
+.pl-spreadsheet-table-cell > * {
+  grid-area: 1 / 1;
+}
+
+.pl-spreadsheet-read-only:not(.is-showing-formulas) [data-spreadsheet-view='formulas'],
+.pl-spreadsheet-read-only.is-showing-formulas [data-spreadsheet-view='values'] {
+  visibility: hidden;
+}
+
 @media (forced-colors: active) {
   .pl-spreadsheet-piece::before,
   .pl-spreadsheet-piece::after {
@@ -439,6 +492,11 @@
 
   .pl-spreadsheet-cell-readonly {
     border: 2px dashed GrayText;
+  }
+
+  .pl-spreadsheet-table .table-danger {
+    outline: 2px solid Mark;
+    outline-offset: -2px;
   }
 
   .pl-spreadsheet-cell-error {

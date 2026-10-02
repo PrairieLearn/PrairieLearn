@@ -7,7 +7,6 @@ import {
   DataGrid,
   type DataGridHandle,
   type FillEvent,
-  type RenderEditCellProps,
   type RowsChangeData,
 } from 'react-data-grid';
 import { createRoot } from 'react-dom/client';
@@ -184,74 +183,23 @@ function resultText(result: SpreadsheetSnapshotCell | undefined) {
   return String(result.result.value);
 }
 
-function focusCellEditor(input: HTMLInputElement | null) {
-  if (!input) return;
-  input.focus();
-  const cursorPosition = input.value.length;
-  input.setSelectionRange(cursorPosition, cursorPosition);
+/** Hands any editor the grid opens over to the formula bar, where all editing happens. */
+function RedirectToFormulaBar({ onRedirect }: { onRedirect: () => void }) {
+  // The grid only opens an editor through paths not intercepted in handleCellKeyDown.
+  useEffect(onRedirect, [onRedirect]);
+  return null;
 }
 
-function CellEditor({
-  row,
-  column,
-  onRowChange,
-  onClose,
-  onDraftChange,
-  onCancel,
-  initialValue,
-  onInitialValueApplied,
-}: RenderEditCellProps<SpreadsheetRow> & {
-  onDraftChange: (value: string) => void;
-  onCancel: () => void;
-  initialValue?: string;
-  onInitialValueApplied: () => void;
-}) {
-  const [value, setValue] = useState(initialValue ?? row.inputs[column.key]);
-  const initialValueAppliedRef = useRef(false);
-  const initialValueRef = useRef(row.inputs[column.key] ?? '');
-  const canceledRef = useRef(false);
-
-  // Relay the key that opened the editor into React Data Grid's draft row.
-  useEffect(() => {
-    if (initialValue === undefined || initialValueAppliedRef.current) return;
-    initialValueAppliedRef.current = true;
-    onDraftChange(initialValue);
-    onRowChange({
-      ...row,
-      inputs: { ...row.inputs, [column.key]: initialValue },
-    });
-    onInitialValueApplied();
-  }, [column.key, initialValue, onDraftChange, onInitialValueApplied, onRowChange, row]);
-
-  return (
-    <input
-      ref={focusCellEditor}
-      className="form-control form-control-sm h-100 rounded-0"
-      aria-label={`Edit cell ${column.key}${row.rowIndex + 1}`}
-      value={value}
-      onChange={(event) => {
-        const nextValue = event.currentTarget.value;
-        setValue(nextValue);
-        onDraftChange(nextValue);
-        onRowChange({
-          ...row,
-          inputs: { ...row.inputs, [column.key]: nextValue },
-        });
-      }}
-      onBlur={() => onClose(!canceledRef.current)}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-          canceledRef.current = true;
-          setValue(initialValueRef.current);
-          onCancel();
-          onClose(false);
-        }
-      }}
-    />
-  );
-}
+const ERROR_DESCRIPTIONS: Partial<Record<string, string>> = {
+  DIV_BY_ZERO: 'Division by zero.',
+  NAME: 'Unknown function or name.',
+  VALUE: 'A value has the wrong type.',
+  NUM: 'A number is invalid or out of range.',
+  NA: 'A value is not available.',
+  CYCLE: 'The formula depends on its own value.',
+  REF: 'A reference is invalid.',
+  ERROR: 'The formula could not be understood.',
+};
 
 class SpreadsheetErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -314,6 +262,9 @@ function SpreadsheetEditor({
 
   const [rawSubmission, setRawSubmission] = useState(initialStateRef.current.submission);
   const [evaluation, setEvaluation] = useState(initialStateRef.current.evaluation);
+  // The evaluation of the uncommitted formula bar text, so cells show live values.
+  const [draftEvaluation, setDraftEvaluation] = useState<SpreadsheetEditorEvaluation | null>(null);
+  const draftFrameRef = useRef<number | null>(null);
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
   const [activeCell, setActiveCell] = useState<CellPosition | null>(null);
   const [selectedRange, setSelectedRange] = useState<CellRange | null>(null);
@@ -331,7 +282,8 @@ function SpreadsheetEditor({
   const dragFocusRef = useRef<CellPosition | null>(null);
   const didDragRangeRef = useRef(false);
   const suppressActiveAnnouncementRef = useRef(false);
-  const initialEditValueRef = useRef<(CellPosition & { value: string }) | null>(null);
+  // Whether formula bar editing started from the grid, so Enter and Tab return there.
+  const editOriginRef = useRef<'grid' | 'bar'>('bar');
   const formulaInputRef = useRef<FormulaInputHandle>(null);
   // The corners of the reference most recently pointed at from the formula bar.
   const pointerRef = useRef<CellRange | null>(null);
@@ -340,6 +292,7 @@ function SpreadsheetEditor({
   const sheet = config.template.sheets[activeSheetIndex];
   const instructionsId = `pl-spreadsheet-instructions-${options.uuid}`;
   const errorId = `pl-spreadsheet-error-${options.uuid}`;
+  const valueErrorId = `pl-spreadsheet-value-error-${options.uuid}`;
 
   function applySubmission(
     nextSubmission: SpreadsheetRawSubmission,
@@ -348,6 +301,7 @@ function SpreadsheetEditor({
     formulaCell = activeCell,
     missing = '',
   ) {
+    clearDraftEvaluation();
     const previousSubmission = committedSubmissionRef.current;
     if (recordHistory) {
       setPast((history) => [...history.slice(-99), previousSubmission]);
@@ -392,13 +346,34 @@ function SpreadsheetEditor({
         }
         if (calculationError) break;
       }
-      // A missing part of the formula explains its calculation error better than the error.
-      setAnnouncement(editorError || missing || calculationError || message);
+      // A missing part of an incomplete formula explains its errors better than they do.
+      setAnnouncement(missing || editorError || calculationError || message);
     } catch (error) {
       setAnnouncement(
         error instanceof Error ? error.message : 'The spreadsheet could not be recalculated.',
       );
     }
+  }
+
+  /** Evaluates the latest draft once per frame, so fast typing does not queue evaluations. */
+  function scheduleDraftEvaluation() {
+    if (draftFrameRef.current !== null) return;
+    draftFrameRef.current = requestAnimationFrame(() => {
+      draftFrameRef.current = null;
+      const draft = rawSubmissionRef.current;
+      if (draft === committedSubmissionRef.current) return;
+      try {
+        setDraftEvaluation(evaluateSpreadsheetForEditor(config, draft));
+      } catch {
+        // A draft that cannot be evaluated keeps showing the previous values until it can.
+      }
+    });
+  }
+
+  function clearDraftEvaluation() {
+    if (draftFrameRef.current !== null) cancelAnimationFrame(draftFrameRef.current);
+    draftFrameRef.current = null;
+    setDraftEvaluation(null);
   }
 
   function updateDraft(row: number, column: number, inputText: string) {
@@ -411,9 +386,11 @@ function SpreadsheetEditor({
     });
     rawSubmissionRef.current = nextSubmission;
     syncHiddenInput(hiddenInput, nextSubmission);
+    scheduleDraftEvaluation();
   }
 
   function cancelDraft(formulaCell = activeCell) {
+    clearDraftEvaluation();
     rawSubmissionRef.current = committedSubmissionRef.current;
     syncHiddenInput(hiddenInput, committedSubmissionRef.current);
     if (formulaCell) {
@@ -495,6 +472,41 @@ function SpreadsheetEditor({
     gridRef.current?.setActivePosition({ idx: targetColumn + 1, rowIdx: targetRow });
   }
 
+  /**
+   * Moves editing of the active cell to the formula bar, replacing its contents with
+   * `replaceWith` when a key was typed, and flashes the bar so the jump is noticed.
+   */
+  function beginEdit(position: CellPosition, replaceWith?: string) {
+    const address = cellAddress(position.row, position.column);
+    if (!isCellEditable(sheet, position.row, position.column)) {
+      setAnnouncement(`Cell ${address} is read-only.`);
+      return;
+    }
+    editOriginRef.current = 'grid';
+    const text =
+      replaceWith ??
+      displayInput(finalInput(config, committedSubmissionRef.current, sheet.name, address));
+    setFormulaText(text);
+    if (replaceWith !== undefined) updateDraft(position.row, position.column, replaceWith);
+    formulaInputRef.current?.focusAt(text.length);
+    formulaInputRef.current?.flash();
+  }
+
+  /** Commits the formula bar and, if editing started in the grid, moves to `target`. */
+  function finishEdit(target: CellPosition | null) {
+    if (!activeCell) return;
+    skipFormulaBlurRef.current = true;
+    commitCell(activeCell.row, activeCell.column, formulaText);
+    if (editOriginRef.current === 'grid' && target) {
+      // Keep the announcement of what the commit left missing.
+      suppressActiveAnnouncementRef.current = true;
+      selectCell(target);
+    } else {
+      focusActiveCell();
+    }
+    editOriginRef.current = 'bar';
+  }
+
   /** The formula bar always edits the active cell, so setActivePosition would not move focus. */
   function focusActiveCell() {
     editorRef.current
@@ -535,6 +547,7 @@ function SpreadsheetEditor({
     };
   }
 
+  const shownEvaluation = draftEvaluation ?? evaluation;
   const rows: SpreadsheetRow[] = Array.from({ length: sheet.rows }, (_, rowIndex) => {
     const inputs: Record<string, string> = {};
     const results: Record<string, string> = {};
@@ -543,7 +556,7 @@ function SpreadsheetEditor({
       const columnName = cellAddress(0, column).replace(/1$/, '');
       const address = cellAddress(rowIndex, column);
       inputs[columnName] = displayInput(finalInput(config, rawSubmission, sheet.name, address));
-      const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
+      const snapshotCell = getSnapshotCell(shownEvaluation, activeSheetIndex, address);
       results[columnName] = resultText(snapshotCell);
       errors[columnName] = snapshotCell?.result.type === 'error';
     }
@@ -612,26 +625,19 @@ function SpreadsheetEditor({
             },
             referenceCellClass(row.rowIndex, columnIndex),
           ),
-        renderEditCell: (props) => (
-          <CellEditor
-            {...props}
-            initialValue={
-              initialEditValueRef.current?.row === props.row.rowIndex &&
-              initialEditValueRef.current.column === columnIndex
-                ? initialEditValueRef.current.value
-                : undefined
-            }
-            onInitialValueApplied={() => {
-              initialEditValueRef.current = null;
+        // Paste and fill need an editor; editing itself happens in the formula bar.
+        renderEditCell: ({ row, onClose }) => (
+          <RedirectToFormulaBar
+            onRedirect={() => {
+              onClose(false, false);
+              beginEdit({ row: row.rowIndex, column: columnIndex });
             }}
-            onDraftChange={(value) => updateDraft(props.row.rowIndex, columnIndex, value)}
-            onCancel={() => cancelDraft({ row: props.row.rowIndex, column: columnIndex })}
           />
         ),
         renderCell: ({ row }) => {
           const address = `${columnName}${row.rowIndex + 1}`;
           const editable = isCellEditable(sheet, row.rowIndex, columnIndex);
-          const issue = evaluation.issues[sheet.name]?.[address];
+          const issue = shownEvaluation.issues[sheet.name]?.[address];
           return (
             <span
               className={row.errors[columnName] ? 'pl-spreadsheet-cell-error' : undefined}
@@ -668,6 +674,15 @@ function SpreadsheetEditor({
 
   // Release HyperFormula resources when this dynamically rendered element is removed.
   useEffect(() => () => evaluation.engine.destroy(), [evaluation]);
+  useEffect(() => () => draftEvaluation?.engine.destroy(), [draftEvaluation]);
+
+  // Drop a draft evaluation still scheduled when the element is removed.
+  useEffect(
+    () => () => {
+      if (draftFrameRef.current !== null) cancelAnimationFrame(draftFrameRef.current);
+    },
+    [],
+  );
 
   // React Data Grid does not expose a cell-role hook, so keep virtualized row-number cells semantic.
   useEffect(() => {
@@ -810,7 +825,16 @@ function SpreadsheetEditor({
 
     const position = { row: args.rowIdx, column: args.column.idx - 1 };
     if (args.mode === 'ACTIVE' && event.key === 'F2') {
+      event.preventDefault();
       event.preventGridDefault();
+      beginEdit(position);
+      return;
+    }
+
+    if (args.mode === 'ACTIVE' && (event.key === 'Delete' || event.key === 'Backspace')) {
+      event.preventDefault();
+      event.preventGridDefault();
+      commitCell(position.row, position.column, '', 'Cell cleared.');
       return;
     }
 
@@ -824,8 +848,7 @@ function SpreadsheetEditor({
     ) {
       event.preventDefault();
       event.preventGridDefault();
-      initialEditValueRef.current = { ...position, value: event.key };
-      args.setActivePosition({ idx: args.column.idx, rowIdx: args.rowIdx }, { enableEditor: true });
+      beginEdit(position, event.key);
       return;
     }
 
@@ -887,17 +910,32 @@ function SpreadsheetEditor({
     }
   }
 
+  const activeValueError = run(() => {
+    if (!activeCell) return '';
+    const address = cellAddress(activeCell.row, activeCell.column);
+    // An incomplete formula also fails reference checks, but what is missing says more.
+    const missing = formulaText.startsWith('=') ? describeFirstHole(formulaText) : null;
+    if (missing) return missing;
+    const issue = shownEvaluation.issues[sheet.name]?.[address];
+    if (issue) return issue.message;
+    const result = getSnapshotCell(shownEvaluation, activeSheetIndex, address)?.result;
+    if (result?.type !== 'error') return '';
+    return `${result.value} ${ERROR_DESCRIPTIONS[result.error_type] ?? 'The formula could not be calculated.'}`;
+  });
+
   return (
     <div ref={editorRef} className="pl-spreadsheet-editor">
       <p id={instructionsId} className="visually-hidden">
-        Click a cell to select it, start typing to replace its contents, or double-click to edit its
-        existing contents. Drag or hold Shift with an arrow key to select a range. Use Enter and
-        Shift+Enter to move vertically, Tab and Shift+Tab to move horizontally, and Escape to cancel
-        editing. Tab leaves the grid at its boundaries. Read-only cells are announced. While typing
-        a formula in the formula bar, use the Up and Down arrow keys to choose a suggested function
-        and Enter or Tab to insert it. Where the formula expects a value, click or drag across
-        cells, or use the arrow keys and Shift with the arrow keys, to insert a cell reference. Tab
-        and Shift+Tab move between the missing parts of a formula.
+        Click a cell to select it. Start typing to replace its contents, or double-click or press F2
+        to edit its existing contents; either moves you to the formula bar, and Enter or Tab saves
+        and returns to the grid. Delete or Backspace clears a cell. Drag or hold Shift with an arrow
+        key to select a range. Use Enter and Shift+Enter to move vertically, Tab and Shift+Tab to
+        move horizontally, and Escape to cancel editing. Tab leaves the grid at its boundaries.
+        Read-only cells are announced. While typing a formula in the formula bar, use the Up and
+        Down arrow keys to choose a suggested function and Enter or Tab to insert it. Where the
+        formula expects a value, click or drag across cells, or use the arrow keys and Shift with
+        the arrow keys, to insert a cell reference. Tab and Shift+Tab move between the missing parts
+        of a formula.
       </p>
       <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
         <button
@@ -945,7 +983,7 @@ function SpreadsheetEditor({
               ? `Formula for ${cellAddress(activeCell.row, activeCell.column)}`
               : 'Formula bar'
           }
-          aria-describedby={instructionsId}
+          aria-describedby={`${instructionsId} ${valueErrorId}`}
           disabled={!activeCell || !isCellEditable(sheet, activeCell.row, activeCell.column)}
           value={formulaText}
           onValueChange={(value) => {
@@ -956,6 +994,7 @@ function SpreadsheetEditor({
           onFocus={() => setFormulaFocused(true)}
           onBlur={() => {
             setFormulaFocused(false);
+            editOriginRef.current = 'bar';
             if (skipFormulaBlurRef.current) {
               skipFormulaBlurRef.current = false;
             } else if (activeCell) {
@@ -984,17 +1023,23 @@ function SpreadsheetEditor({
               pointAt(pointingTarget, { anchor: event.shiftKey ? pointer.anchor : focus, focus });
             } else if (event.key === 'Enter' && activeCell) {
               event.preventDefault();
-              skipFormulaBlurRef.current = true;
-              commitCell(activeCell.row, activeCell.column, formulaText);
-              focusActiveCell();
+              finishEdit(getVerticalTarget(activeCell, event.shiftKey));
+            } else if (event.key === 'Tab' && activeCell && editOriginRef.current === 'grid') {
+              event.preventDefault();
+              finishEdit(getTabTarget(activeCell, event.shiftKey));
             } else if (event.key === 'Escape' && activeCell) {
               event.preventDefault();
               skipFormulaBlurRef.current = true;
               cancelDraft();
               focusActiveCell();
+              editOriginRef.current = 'bar';
             }
           }}
         />
+        {/* Space is always reserved so the grid does not move as errors come and go. */}
+        <div id={valueErrorId} className="pl-spreadsheet-value-error">
+          {activeValueError}
+        </div>
       </div>
       {config.template.sheets.length > 1 && (
         <div className="pl-spreadsheet-sheet-tabs" role="tablist" aria-label="Workbook sheets">
@@ -1116,6 +1161,11 @@ function SpreadsheetEditor({
           }
         }}
         onCellKeyDown={handleCellKeyDown}
+        onCellDoubleClick={({ rowIdx, column }, event) => {
+          if (column.key === '__row') return;
+          event.preventGridDefault();
+          beginEdit({ row: rowIdx, column: column.idx - 1 });
+        }}
       />
       <div id={errorId} className="visually-hidden" role="status" aria-live="polite">
         {announcement}
@@ -1131,17 +1181,8 @@ onDocumentReady(() => {
       const readOnlySpreadsheet = toggle.closest('.pl-spreadsheet-read-only');
       if (!readOnlySpreadsheet) return;
 
-      const values = readOnlySpreadsheet.querySelectorAll<HTMLElement>(
-        '[data-spreadsheet-view="values"]',
-      );
-      const formulas = readOnlySpreadsheet.querySelectorAll<HTMLElement>(
-        '[data-spreadsheet-view="formulas"]',
-      );
-
-      function updateView() {
-        values.forEach((value) => (value.hidden = toggle.checked));
-        formulas.forEach((formula) => (formula.hidden = !toggle.checked));
-      }
+      const updateView = () =>
+        readOnlySpreadsheet.classList.toggle('is-showing-formulas', toggle.checked);
 
       toggle.checked = false;
       updateView();
