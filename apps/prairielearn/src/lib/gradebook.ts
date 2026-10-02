@@ -108,7 +108,10 @@ async function getGradebookRows({
       reqDate,
       auth,
     });
-    // Unstarted assessments are listed only if currently available to the student.
+    // Unstarted assessments are listed only if currently available to the student. Unlike the
+    // Assessments page, this deliberately omits ones that are only visible before release
+    // (`beforeRelease.listed`): the gradebook reports work the student can act on or has done, and a
+    // student can't start those yet.
     return rows.filter((row) => row.assessment_instance || row.authorized);
   }
 

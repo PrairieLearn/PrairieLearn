@@ -11,7 +11,6 @@ export interface StudentGradebookTableRow {
   assessment_set_color: string;
   label: string;
   assessment_instance_score_perc: number | null;
-  not_started: boolean;
   show_closed_assessment_score: boolean;
   start_new_set: boolean;
 }
@@ -94,7 +93,7 @@ export function StudentGradebook({
                         )}
                       </td>
                       <td className="text-center align-middle">
-                        {row.not_started ? (
+                        {row.assessment_instance_id == null ? (
                           <span className="text-muted">Not started</span>
                         ) : row.show_closed_assessment_score ? (
                           <Scorebar

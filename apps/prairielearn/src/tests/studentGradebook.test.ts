@@ -5,12 +5,19 @@ import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
-import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { type AuthUser, getOrCreateUser } from './utils/auth.js';
 
 const TITLE = 'Test disabling real-time grading and withholding grades';
+
+// The user that the `pl_test_user=test_student` cookie authenticates as.
+const student: AuthUser = {
+  uid: 'student@example.com',
+  name: 'Student User',
+  uin: '000000001',
+};
 
 describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, function () {
   const siteUrl = `http://localhost:${config.serverPort}`;
@@ -31,15 +38,8 @@ describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, f
       tid: 'exam9-disableRealTimeGradingWithholdGrades',
     });
     context.assessmentUrl = `${courseInstanceBaseUrl}/assessment/${id}/`;
-  });
 
-  afterAll(helperServer.after);
-
-  test('create and enroll the student', async () => {
-    // Visiting the home page creates the test_student user.
-    const response = await helperClient.fetchCheerio(`${siteUrl}/pl`, { headers });
-    assert.isTrue(response.ok);
-    const user = await selectUserByUid('student@example.com');
+    const user = await getOrCreateUser(student);
     await ensureUncheckedEnrollment({
       userId: user.id,
       courseInstance: await selectCourseInstanceById('1'),
@@ -48,6 +48,8 @@ describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, f
       actionDetail: 'implicit_joined',
     });
   });
+
+  afterAll(helperServer.after);
 
   test('shows an available, unstarted assessment as "Not started"', async () => {
     const response = await helperClient.fetchCheerio(gradebookUrl, { headers });
@@ -66,7 +68,7 @@ describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, f
     assert.lengthOf(response.$(`tr:contains("${TITLE}")`), 0);
   });
 
-  test('no longer says "Not started" once the assessment is started', async () => {
+  test('shows the score instead of "Not started" once the assessment is started', async () => {
     const page = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
     helperClient.extractAndSaveCSRFToken(context, page.$, 'form');
     const started = await helperClient.fetchCheerio(context.assessmentUrl, {
@@ -83,5 +85,9 @@ describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, f
     const row = response.$(`tr:contains("${TITLE}")`);
     assert.lengthOf(row, 1);
     assert.lengthOf(row.find('td:contains("Not started")'), 0);
+    // The instance is still open, so its score is shown (the withholding applies once it closes).
+    const scorebar = row.find('[data-testid="scorebar"]');
+    assert.lengthOf(scorebar, 1);
+    assert.equal(scorebar.text().trim(), '0%');
   });
 });
