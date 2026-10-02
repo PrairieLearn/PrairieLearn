@@ -404,10 +404,7 @@ test('keeps file-backed grading cells outside the student range private', async 
   await expect(submissionTable).not.toContainText('HIDDEN_SENTINEL');
 });
 
-test('rejects a file-backed formula that references a hidden cell', async ({
-  page,
-  courseInstance,
-}) => {
+test('rejects file-backed formulas that reach hidden cells', async ({ page, courseInstance }) => {
   const question = await selectQuestionByQid({
     qid: 'spreadsheetFileElement',
     course_id: courseInstance.course_id,
@@ -419,8 +416,23 @@ test('rejects a file-backed formula that references a hidden cell', async ({
   const grid = page.getByRole('grid', {
     name: 'File-backed spreadsheet test, sheet Inputs',
   });
-  await editCell(grid, 'A1', '=C1');
-  await expect(page.getByRole('status')).toContainText('outside declared student ranges');
+  for (const formula of [
+    '=C1',
+    '=VLOOKUP(2,A1:C2,3,FALSE)',
+    '=INDEX(A:A,1)',
+    '=IFERROR(MATCH(0,Inputs!A1:Hidden!A9,0),0)',
+  ]) {
+    await editCell(grid, 'A1', formula);
+    await expect(page.getByRole('status')).toContainText('outside declared student ranges');
+  }
+
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(
+    page.getByText('cannot reference cells outside declared student ranges').first(),
+  ).toBeVisible();
+  // The instructor preview's debug panels show the private grading data, so only
+  // check the question and submission content that students also see.
+  await expect(page.locator('.question-container')).not.toContainText('HIDDEN_SENTINEL');
 });
 
 declare global {
