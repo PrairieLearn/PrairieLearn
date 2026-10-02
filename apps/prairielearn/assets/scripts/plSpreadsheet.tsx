@@ -515,15 +515,17 @@ function SpreadsheetEditor({
 
   /** Fills the cells from `source` (exclusive) to `target` along a single row or column. */
   function fillLine(source: CellPosition, target: CellPosition) {
-    const rowStep = Math.sign(target.row - source.row);
-    const columnStep = Math.sign(target.column - source.column);
+    const end = clampPosition(target, sheet);
+    const rowDistance = Math.abs(end.row - source.row);
+    const columnDistance = Math.abs(end.column - source.column);
+    // Fill along whichever single row or column the target lies furthest along.
+    const rowStep = rowDistance >= columnDistance ? Math.sign(end.row - source.row) : 0;
+    const columnStep = rowDistance >= columnDistance ? 0 : Math.sign(end.column - source.column);
+    const count = Math.max(rowDistance, columnDistance);
     const edits = [];
-    for (
-      let row = source.row + rowStep, column = source.column + columnStep;
-      Math.abs(row - source.row) <= Math.abs(target.row - source.row) &&
-      Math.abs(column - source.column) <= Math.abs(target.column - source.column);
-      row += rowStep, column += columnStep
-    ) {
+    for (let step = 1; step <= count; step += 1) {
+      const row = source.row + rowStep * step;
+      const column = source.column + columnStep * step;
       edits.push({
         row,
         column,
