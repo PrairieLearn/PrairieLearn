@@ -524,6 +524,7 @@
   position: fixed;
   inset: 1rem;
   z-index: 1055;
+  height: auto;
   min-height: 0;
   overflow: hidden;
   border-radius: var(--bs-border-radius-lg);

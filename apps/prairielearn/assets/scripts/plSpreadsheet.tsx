@@ -796,17 +796,25 @@ function SpreadsheetEditor({
         editor.querySelector<HTMLElement>('.pl-spreadsheet-popup-close')?.focus();
       }
     };
+    // Listening on the document runs after React's handlers, so Escape first leaves any
+    // edit in progress (which prevents the default), and only then closes the popup.
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      closePopup();
+    };
     document.addEventListener('focusin', keepFocusInside);
+    document.addEventListener('keydown', closeOnEscape);
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('focusin', keepFocusInside);
-      // The expand button is rendered again by the time this cleanup runs.
-      expandButtonRef.current?.focus();
+      document.removeEventListener('keydown', closeOnEscape);
     };
   }, [expanded]);
 
   function closePopup() {
     setExpanded(false);
+    expandButtonRef.current?.focus();
   }
 
   // Track range selection outside React Data Grid, which only exposes a single active cell.
@@ -1030,7 +1038,11 @@ function SpreadsheetEditor({
 
   return (
     <>
-      {expanded && <div className="pl-spreadsheet-popup-backdrop" onClick={closePopup} />}
+      {expanded && (
+        // Keyboard users close the popup with Escape or its close button instead.
+        // eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions
+        <div className="pl-spreadsheet-popup-backdrop" onClick={closePopup} />
+      )}
       <div
         ref={editorRef}
         className={clsx('pl-spreadsheet-editor', expanded && 'is-expanded')}
@@ -1132,18 +1144,19 @@ function SpreadsheetEditor({
           >
             Fill right
           </button>
-          {!expanded && (
-            <button
-              ref={expandButtonRef}
-              type="button"
-              className="btn btn-sm btn-outline-secondary ms-auto"
-              aria-label="Open spreadsheet full screen"
-              title="Open full screen"
-              onClick={() => setExpanded(true)}
-            >
-              <i className="bi bi-arrows-fullscreen" aria-hidden="true" />
-            </button>
-          )}
+          <button
+            ref={expandButtonRef}
+            type="button"
+            className="btn btn-sm btn-outline-secondary ms-auto"
+            aria-label={expanded ? 'Exit full screen' : 'Open spreadsheet full screen'}
+            title={expanded ? 'Exit full screen' : 'Open full screen'}
+            onClick={() => setExpanded(!expanded)}
+          >
+            <i
+              className={clsx('bi', expanded ? 'bi-fullscreen-exit' : 'bi-arrows-fullscreen')}
+              aria-hidden="true"
+            />
+          </button>
         </div>
         <div className="pl-spreadsheet-formula-bar">
           <label htmlFor={`${instructionsId}-formula`}>
