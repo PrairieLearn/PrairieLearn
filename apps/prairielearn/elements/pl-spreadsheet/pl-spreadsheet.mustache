@@ -28,6 +28,12 @@
 
   {{#read_only}}
     <div class="card-body pl-spreadsheet-read-only">
+      {{#reference_answer}}
+        <p class="mb-3">
+          Highlighted cells show a reference solution. Other formulas that produce the same
+          results may also be correct.
+        </p>
+      {{/reference_answer}}
       {{#sheets}}
         <section class="mb-4" aria-label="Sheet {{name}}">
           <div class="table-responsive">
@@ -44,7 +50,10 @@
                   <tr>
                     <th scope="row">{{number}}</th>
                     {{#cells}}
-                      <td aria-label="Cell {{address}}">
+                      <td
+                        aria-label="Cell {{address}}{{#answer_cell}}, reference solution{{/answer_cell}}"
+                        {{#answer_cell}}class="table-success"{{/answer_cell}}
+                      >
                         <span data-spreadsheet-view="values">{{value}}</span>
                         <span data-spreadsheet-view="formulas" hidden>{{formula}}</span>
                       </td>

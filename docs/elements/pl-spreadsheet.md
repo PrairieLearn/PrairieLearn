@@ -504,6 +504,15 @@ and outputs.
   error type, and empty matches only empty. Pass `compare_outputs=True` to also
   compare every named output between the two workbooks.
 
+When a variant is created, PrairieLearn also evaluates the reference workbook on the
+template (keeping any template values in parameter cells) and stores the result with
+the private grading workbook. The answer panel renders that workbook read-only, with
+the reference cells highlighted and the same values/formulas toggle as submitted
+answers. It is shown only when the question's correct answer is visible. A reference
+solution that cannot be evaluated is reported as a question error when the variant
+is created. Without a reference solution, the answer panel explains that grading is
+defined by the question.
+
 With a reference solution, `outputs` may be empty. Reference formulas, test-case
 inputs, and parameter declarations never leave the server. The normalized answer
 adds only the recalculated outputs, the typed comparisons, and a summary:

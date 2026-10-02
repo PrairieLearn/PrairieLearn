@@ -25,7 +25,11 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
-import { getSpreadsheetLogMetadata, normalizeSpreadsheetAnswers } from '../lib/spreadsheet.js';
+import {
+  addSpreadsheetReferenceAnswers,
+  getSpreadsheetLogMetadata,
+  normalizeSpreadsheetAnswers,
+} from '../lib/spreadsheet.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -904,11 +908,24 @@ export async function prepare(
         context,
       );
 
+      let trueAnswer = resultData.correct_answers;
+      if (!courseIssues.some((issue) => issue.fatal)) {
+        try {
+          trueAnswer = addSpreadsheetReferenceAnswers({
+            params: resultData.params,
+            correctAnswers: resultData.correct_answers,
+          });
+        } catch (err) {
+          if (!(err instanceof Error)) throw err;
+          courseIssues.push(new CourseIssueError(err.message, { cause: err, fatal: true }));
+        }
+      }
+
       return {
         courseIssues,
         data: {
           params: resultData.params,
-          true_answer: resultData.correct_answers,
+          true_answer: trueAnswer,
         },
       };
     });

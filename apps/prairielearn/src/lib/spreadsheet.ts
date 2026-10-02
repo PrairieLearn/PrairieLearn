@@ -153,6 +153,40 @@ export const SpreadsheetElementConfigSchema = z
 
 export type SpreadsheetElementConfig = z.infer<typeof SpreadsheetElementConfigSchema>;
 
+const SnapshotInputSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('number'), value: z.number() }).strict(),
+  z.object({ type: z.literal('string'), value: z.string() }).strict(),
+  z.object({ type: z.literal('boolean'), value: z.boolean() }).strict(),
+  z.object({ type: z.literal('formula'), value: z.string() }).strict(),
+]);
+
+export const SpreadsheetSnapshotResultSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('empty') }).strict(),
+  z.object({ type: z.literal('number'), value: z.number() }).strict(),
+  z.object({ type: z.literal('string'), value: z.string() }).strict(),
+  z.object({ type: z.literal('boolean'), value: z.boolean() }).strict(),
+  z
+    .object({
+      type: z.literal('error'),
+      value: z.string(),
+      error_type: z.string(),
+    })
+    .strict(),
+]);
+
+const SpreadsheetSnapshotCellSchema = z
+  .object({ input: SnapshotInputSchema, result: SpreadsheetSnapshotResultSchema })
+  .strict();
+
+const SpreadsheetSnapshotSheetSchema = z
+  .object({
+    name: z.string(),
+    rows: z.number().int(),
+    columns: z.number().int(),
+    cells: z.record(z.string(), SpreadsheetSnapshotCellSchema),
+  })
+  .strict();
+
 const SpreadsheetGradingSheetSchema = z
   .object({
     name: z.string().refine(isValidSheetName),
@@ -243,6 +277,12 @@ export const SpreadsheetGradingConfigSchema = z
       .optional(),
     test_cases: z.array(SpreadsheetTestCaseSchema).max(SPREADSHEET_MAX_TEST_CASES).optional(),
     reference: SpreadsheetReferenceSchema.optional(),
+    // The reference workbook evaluated on the template, added when the variant is
+    // prepared and used only to render the answer panel.
+    answer: z
+      .object({ sheets: z.array(SpreadsheetSnapshotSheetSchema) })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine(
@@ -265,31 +305,6 @@ export const SpreadsheetRawSubmissionSchema = z
   .strict();
 
 export type SpreadsheetRawSubmission = z.infer<typeof SpreadsheetRawSubmissionSchema>;
-
-const SnapshotInputSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('number'), value: z.number() }).strict(),
-  z.object({ type: z.literal('string'), value: z.string() }).strict(),
-  z.object({ type: z.literal('boolean'), value: z.boolean() }).strict(),
-  z.object({ type: z.literal('formula'), value: z.string() }).strict(),
-]);
-
-export const SpreadsheetSnapshotResultSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('empty') }).strict(),
-  z.object({ type: z.literal('number'), value: z.number() }).strict(),
-  z.object({ type: z.literal('string'), value: z.string() }).strict(),
-  z.object({ type: z.literal('boolean'), value: z.boolean() }).strict(),
-  z
-    .object({
-      type: z.literal('error'),
-      value: z.string(),
-      error_type: z.string(),
-    })
-    .strict(),
-]);
-
-const SpreadsheetSnapshotCellSchema = z
-  .object({ input: SnapshotInputSchema, result: SpreadsheetSnapshotResultSchema })
-  .strict();
 
 type SpreadsheetSnapshotResult = z.infer<typeof SpreadsheetSnapshotResultSchema>;
 
@@ -321,16 +336,7 @@ export const SpreadsheetSnapshotSchema = z
         configuration_version: z.literal(SPREADSHEET_CONFIGURATION_VERSION),
       })
       .strict(),
-    sheets: z.array(
-      z
-        .object({
-          name: z.string(),
-          rows: z.number().int(),
-          columns: z.number().int(),
-          cells: z.record(z.string(), SpreadsheetSnapshotCellSchema),
-        })
-        .strict(),
-    ),
+    sheets: z.array(SpreadsheetSnapshotSheetSchema),
     grading: z
       .object({
         schema_version: z.literal(2),
@@ -764,7 +770,11 @@ function validateGradingConfig(
   config: SpreadsheetGradingConfig,
   template: SpreadsheetTemplate,
 ): void {
-  if (new TextEncoder().encode(JSON.stringify(config)).byteLength > SPREADSHEET_MAX_PAYLOAD_BYTES) {
+  const { answer: _answer, ...authoredConfig } = config;
+  if (
+    new TextEncoder().encode(JSON.stringify(authoredConfig)).byteLength >
+    SPREADSHEET_MAX_PAYLOAD_BYTES
+  ) {
     throw new Error(
       `Private spreadsheet grading workbooks must be at most ${SPREADSHEET_MAX_PAYLOAD_BYTES} bytes.`,
     );
@@ -1511,11 +1521,11 @@ function resultsMatch(
  * reference inputs fill their editable cells and declared parameter cells keep the
  * student's values, so both workbooks see identical inputs.
  */
-function buildReferenceSheetData(
+function buildReferenceSubmission(
   config: SpreadsheetElementConfig,
   gradingConfig: SpreadsheetGradingConfig,
   merged: Record<string, Record<string, SpreadsheetCellInput>>,
-): Record<string, RawCellContent[][]> {
+): SpreadsheetRawSubmission {
   const sheets: SpreadsheetRawSubmission['sheets'] = {};
   const setInput = (cell: ResolvedSourceCell, input: SpreadsheetCellInput | null) => {
     if (!cell.student) return;
@@ -1535,11 +1545,18 @@ function buildReferenceSheetData(
       cell.input,
     );
   }
-  const referenceMerged = mergeSubmission(config, {
-    schema_version: 2,
-    template_hash: config.template_hash,
-    sheets,
-  });
+  return { schema_version: 2, template_hash: config.template_hash, sheets };
+}
+
+function buildReferenceSheetData(
+  config: SpreadsheetElementConfig,
+  gradingConfig: SpreadsheetGradingConfig,
+  merged: Record<string, Record<string, SpreadsheetCellInput>>,
+): Record<string, RawCellContent[][]> {
+  const referenceMerged = mergeSubmission(
+    config,
+    buildReferenceSubmission(config, gradingConfig, merged),
+  );
   return Object.fromEntries(
     config.template.sheets.map((sheet) => [
       sheet.name,
@@ -1734,6 +1751,53 @@ function evaluateSpreadsheetInternal(
     engine.destroy();
     throw error;
   }
+}
+
+/**
+ * Evaluates each element's reference solution against the template so that the
+ * answer panel can render it. Invalid reference solutions are authoring errors.
+ */
+export function addSpreadsheetReferenceAnswers({
+  params,
+  correctAnswers,
+}: {
+  params: Record<string, unknown>;
+  correctAnswers: Record<string, unknown>;
+}): Record<string, unknown> {
+  const rawConfigs = params._pl_spreadsheet_v2;
+  if (rawConfigs == null || typeof rawConfigs !== 'object' || Array.isArray(rawConfigs)) {
+    return correctAnswers;
+  }
+
+  const result = { ...correctAnswers };
+  for (const [answerName, rawConfig] of Object.entries(rawConfigs)) {
+    const rawGradingConfig = correctAnswers[answerName];
+    if (rawGradingConfig === undefined) continue;
+    const config = SpreadsheetElementConfigSchema.parse(rawConfig);
+    const gradingConfig = SpreadsheetGradingConfigSchema.parse(rawGradingConfig);
+    if (!gradingConfig.reference) continue;
+    validateGradingConfig(gradingConfig, config.template);
+
+    const templateInputs = Object.fromEntries(
+      config.template.sheets.map((sheet) => [sheet.name, { ...sheet.cells }]),
+    );
+    let evaluation: SpreadsheetEvaluation;
+    try {
+      evaluation = evaluateSpreadsheet(
+        config,
+        buildReferenceSubmission(config, gradingConfig, templateInputs),
+      );
+    } catch (error) {
+      if (!(error instanceof SpreadsheetSubmissionError)) throw error;
+      throw new Error(
+        `The spreadsheet reference solution for "${answerName}" is invalid: ${error.message}`,
+        { cause: error },
+      );
+    }
+    evaluation.engine.destroy();
+    result[answerName] = { ...gradingConfig, answer: { sheets: evaluation.snapshot.sheets } };
+  }
+  return result;
 }
 
 export function normalizeSpreadsheetAnswers({

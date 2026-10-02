@@ -1475,7 +1475,11 @@ def _display_input_value(value: Any) -> str:
     return str(value)
 
 
-def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
+def _table_data(
+    config: dict[str, Any],
+    snapshot: Any,
+    answer_cells: dict[str, set[str]] | None = None,
+) -> list[dict[str, Any]]:
     snapshot_sheets = {}
     if isinstance(snapshot, dict):
         for sheet in snapshot.get("sheets", []):
@@ -1486,6 +1490,7 @@ def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
     template = config.get("template", {})
     for sheet in template.get("sheets", []):
         snapshot_sheet = snapshot_sheets.get(sheet.get("name"), {})
+        sheet_answer_cells = (answer_cells or {}).get(sheet.get("name"), set())
         snapshot_cells = snapshot_sheet.get("cells", {})
         template_cells = sheet.get("cells", {})
         rows = []
@@ -1499,11 +1504,14 @@ def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
                     formula = _display_input_value(_input_value(snapshot_cell))
                 else:
                     value = formula = _display_input_value(template_cells.get(address))
-                cells.append({
+                cell: dict[str, Any] = {
                     "address": address,
                     "value": value,
                     "formula": formula,
-                })
+                }
+                if address in sheet_answer_cells:
+                    cell["answer_cell"] = True
+                cells.append(cell)
             rows.append({"number": row_index + 1, "cells": cells})
         table_sheets.append({
             "name": sheet.get("name", "Spreadsheet"),
@@ -1514,6 +1522,26 @@ def _table_data(config: dict[str, Any], snapshot: Any) -> list[dict[str, Any]]:
             "rows": rows,
         })
     return table_sheets
+
+
+def _reference_answer_cells(grading_config: dict[str, Any]) -> dict[str, set[str]]:
+    """Return the student-relative addresses of reference cells, by student sheet."""
+    overlays = {
+        overlay["source_sheet"]: overlay
+        for overlay in grading_config.get("student_overlays", [])
+    }
+    answer_cells: dict[str, set[str]] = {}
+    for cell in grading_config.get("reference", {}).get("cells", []):
+        overlay = overlays.get(cell["sheet"])
+        source_range = _parse_range(overlay["source_range"]) if overlay else None
+        position = _parse_address(cell["cell"])
+        if overlay is None or source_range is None or position is None:
+            continue
+        answer_cells.setdefault(overlay["student_sheet"], set()).add(
+            f"{_column_name(position[1] - source_range.start_column)}"
+            f"{position[0] - source_range.start_row + 1}"
+        )
+    return answer_cells
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -1533,7 +1561,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     }
 
     if data["panel"] == "answer":
-        render_data["answer"] = True
+        grading_config = data["correct_answers"].get(answer_name)
+        answer = (
+            grading_config.get("answer") if isinstance(grading_config, dict) else None
+        )
+        if isinstance(grading_config, dict) and isinstance(answer, dict):
+            render_data.update({
+                "read_only": True,
+                "reference_answer": True,
+                "sheets": _table_data(
+                    config, answer, _reference_answer_cells(grading_config)
+                ),
+            })
+        else:
+            render_data["answer"] = True
     elif data["panel"] == "question" and data["editable"]:
         initial_submission = json.dumps(
             {
