@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import prairielearn.spreadsheet_utils as psp
 import pytest
-from openpyxl import Workbook
+from formualizer import Workbook
 
 
 def snapshot() -> psp.Snapshot:
@@ -16,8 +16,8 @@ def snapshot() -> psp.Snapshot:
         "schema_version": 2,
         "template_hash": "template-hash",
         "engine": {
-            "name": "hyperformula",
-            "version": "3.4.0",
+            "name": "formualizer",
+            "version": "0.9.3",
             "configuration_version": 2,
         },
         "sheets": [
@@ -416,20 +416,26 @@ def test_public_file_readers_load_csv_tsv_and_xlsx(tmp_path: Path) -> None:
         }
 
     xlsx_path = tmp_path / "input.xlsx"
+    # New workbooks always start with a sheet named Sheet1.
     workbook = Workbook()
-    inputs = workbook.active
-    assert inputs is not None
-    inputs.title = "Inputs"
-    inputs["A1"] = 2
-    inputs["B1"] = "=A1*2"
-    checks = workbook.create_sheet("Checks")
-    checks["A1"] = "=Inputs!B1=4"
-    workbook.save(xlsx_path)
+    workbook.set_value("Sheet1", 1, 1, 2)
+    workbook.set_value("Sheet1", 1, 2, 2.5)
+    workbook.set_formula("Sheet1", 1, 3, "=A1*2")
+    workbook.set_formula("Sheet1", 4, 5, "=SUM(A1:C1)")
+    workbook.add_sheet("Checks")
+    workbook.set_formula("Checks", 1, 1, "=Sheet1!C1=4")
+    xlsx_path.write_bytes(workbook.to_xlsx_bytes())
 
     book = psp.read_spreadsheet(xlsx_path)
-    assert [sheet["name"] for sheet in book["sheets"]] == ["Inputs", "Checks"]
-    assert book["sheets"][0]["cells"]["B1"] == "=A1*2"
-    assert book["sheets"][1]["cells"]["A1"] == "=Inputs!B1=4"
+    assert [sheet["name"] for sheet in book["sheets"]] == ["Sheet1", "Checks"]
+    assert book["sheets"][0]["cells"] == {
+        "A1": 2,
+        "B1": 2.5,
+        "C1": "=A1*2",
+        "E4": "=SUM(A1:C1)",
+    }
+    assert (book["sheets"][0]["rows"], book["sheets"][0]["columns"]) == (4, 5)
+    assert book["sheets"][1]["cells"] == {"A1": "=Sheet1!C1=4"}
 
 
 def test_sparse_cells_data_contains_valid_cells() -> None:

@@ -133,8 +133,8 @@ def snapshot(
         "schema_version": 2,
         "template_hash": config["template_hash"],
         "engine": {
-            "name": "hyperformula",
-            "version": "3.4.0",
+            "name": "formualizer",
+            "version": "0.9.3",
             "configuration_version": 2,
         },
         "sheets": [{"name": "Inputs", "rows": 3, "columns": 3, "cells": cells}],

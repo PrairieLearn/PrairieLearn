@@ -259,8 +259,8 @@ Python code runs. It assigns a score only when the question defines a
   "schema_version": 2,
   "template_hash": "…",
   "engine": {
-    "name": "hyperformula",
-    "version": "3.4.0",
+    "name": "formualizer",
+    "version": "0.9.3",
     "configuration_version": 2
   },
   "sheets": [
@@ -420,7 +420,7 @@ grading-code or internal-data error rather than a student calculation result.
 
 Formula ASTs have their own `schema_version`. They normalize function names and
 operators while preserving grouping, sheet names, ranges, and absolute-reference
-flags. HyperFormula remains authoritative for validation and calculation; the AST
+flags. The calculation engine remains authoritative for validation and calculation; the AST
 is an inspection tool for question-defined structural grading. Structural
 `matches_formula()` calls return `False` when the student's formula cannot be
 represented by the AST, while an invalid expected formula raises
@@ -688,9 +688,10 @@ are:
 
 Arithmetic and comparison operators are also supported. Volatile functions such as
 `RAND`, `RANDBETWEEN`, `NOW`, and `TODAY`, array formulas, named expressions,
-external references, and functions outside the list are rejected. See
-[HyperFormula's known limitations](https://hyperformula.handsontable.com/docs/guide/known-limitations.html)
-for other engine compatibility details.
+external references, and functions outside the list are rejected. A formula whose
+result would spill into neighboring cells, such as `=A1:A3*2`, evaluates to
+`#VALUE!`. Criteria in functions such as `COUNTIF` and `SUMIFS` support the `*`
+and `?` wildcards, as in Excel.
 
 ## Limits
 
@@ -761,8 +762,9 @@ With group assessments, saved answers use the ordinary PrairieLearn group
 submission. A teammate sees the latest successfully saved spreadsheet after
 reloading. Simultaneous editing is not supported; the last successful save wins.
 
-The client bundle uses locally served React Data Grid 7.0.0-beta.61 (MIT) and
-HyperFormula 3.4.0 in its GPLv3 mode. It makes no third-party network requests.
+The client bundle uses locally served React Data Grid 7.0.0-beta.61 (MIT) and the
+Formualizer 0.9.3 calculation engine (MIT OR Apache-2.0), which the browser loads
+as a WebAssembly module. It makes no third-party network requests.
 
 ## Example implementation
 

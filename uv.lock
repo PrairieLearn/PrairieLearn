@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.13.*"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -345,6 +345,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/73/aa/28e40b8d6809a9b5075350a86779163f074d2b617c15d22343fce81918db/fonttools-4.61.1-cp313-cp313-win32.whl", hash = "sha256:4d7092bb38c53bbc78e9255a59158b150bcdc115a1e3b3ce0b5f267dc35dd63c", size = 2267821, upload-time = "2025-12-12T17:30:38.478Z" },
     { url = "https://files.pythonhosted.org/packages/1a/59/453c06d1d83dc0951b69ef692d6b9f1846680342927df54e9a1ca91c6f90/fonttools-4.61.1-cp313-cp313-win_amd64.whl", hash = "sha256:21e7c8d76f62ab13c9472ccf74515ca5b9a761d1bde3265152a6dc58700d895b", size = 2318169, upload-time = "2025-12-12T17:30:40.951Z" },
     { url = "https://files.pythonhosted.org/packages/c7/4e/ce75a57ff3aebf6fc1f4e9d508b8e5810618a33d900ad6c19eb30b290b97/fonttools-4.61.1-py3-none-any.whl", hash = "sha256:17d2bf5d541add43822bcf0c43d7d847b160c9bb01d15d5007d84e2217aaa371", size = 1148996, upload-time = "2025-12-12T17:31:21.03Z" },
+]
+
+[[package]]
+name = "formualizer"
+version = "0.9.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5b/be/af53c09a55d4f018a492d41f48413466bc7152a7717adcc767879f823834/formualizer-0.9.3.tar.gz", hash = "sha256:3d27562fff1310de5fc99699bf667a98cabf32fd7207e53e5c6c9bea8d94cf4c", size = 2330231, upload-time = "2026-09-11T13:11:27.81Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/f2/1029a9897809735817b4df657ce85700209b13f8c13ec81dbabb34b0ec1b/formualizer-0.9.3-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:4ba6254619eebcddb44a6c43dc3325d651a3556fee4897778edbf42b2a053ee7", size = 8175028, upload-time = "2026-09-11T13:11:14.449Z" },
+    { url = "https://files.pythonhosted.org/packages/af/e7/16c9cdbf243dafb3c780524cbfd651e79def90522cc163e0972cae1cc17d/formualizer-0.9.3-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:20cc1c0830192efea0462862151a19bfca4c12a23f242839e2fa43ecc3bca1e6", size = 7779412, upload-time = "2026-09-11T13:11:16.341Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/08/8ca2c2968b8c5300df4a7a7f57b1112514fd79c8d5fcd9daa0b31cc25894/formualizer-0.9.3-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8f4baba9b7ec73a4b8bca19231655c38d1ec71dcbc37be3e95cc2c129461a06c", size = 8094745, upload-time = "2026-09-11T13:11:18.074Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/8b/04d9689fb7f6fcb866634e67cd52cf50563aa8a2cd13d6ee7ef7f0c7bc8d/formualizer-0.9.3-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:13202ca184d005a8a676792beb0b6fe09b3aaac926e51594d6f04421a5e8cac5", size = 8559805, upload-time = "2026-09-11T13:11:20.071Z" },
+    { url = "https://files.pythonhosted.org/packages/81/88/3e804dbaccafe9f20872841b224d36600399c5b88fb9be1d513589bfa219/formualizer-0.9.3-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:e1e6437d5d279fb7e0c77b6d6626bd2e652920cc249975cd239f486b9e86024f", size = 8318087, upload-time = "2026-09-11T13:11:22.119Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/79/1a3735cc6223779f6fac859e49150d52398b70e2fb32d5162296c92750ad/formualizer-0.9.3-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:f78fd9e654b87671ebf3cf0c19b9639d3784ecd74c442e836f5aca56bfb23d8c", size = 8756966, upload-time = "2026-09-11T13:11:24.045Z" },
+    { url = "https://files.pythonhosted.org/packages/35/d3/1601c35f27ad7b277fe268d86ba681f75693cfbc2840798483d94266e96d/formualizer-0.9.3-cp310-abi3-win_amd64.whl", hash = "sha256:13b3ee7c30f694055b549f5909832891518bc7335b69f94f8e9c48ab03380d32", size = 8010104, upload-time = "2026-09-11T13:11:26.232Z" },
 ]
 
 [[package]]
@@ -1043,12 +1058,14 @@ wheels = [
 name = "prairielearn"
 version = "0.0.0"
 source = { virtual = "." }
+default-groups = "all"
 dependencies = [
     { name = "ansi2html" },
     { name = "automata-lib" },
     { name = "chevron" },
     { name = "coloraide" },
     { name = "faker" },
+    { name = "formualizer" },
     { name = "jinja2" },
     { name = "jsonschema" },
     { name = "lxml" },
@@ -1121,6 +1138,7 @@ requires-dist = [
     { name = "chevron", specifier = "==0.14.0" },
     { name = "coloraide", specifier = "==8.12.1" },
     { name = "faker", specifier = "==40.39.0" },
+    { name = "formualizer", specifier = "==0.9.3" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "jsonschema", specifier = "==4.26.0" },
     { name = "lxml", specifier = "==6.1.3" },

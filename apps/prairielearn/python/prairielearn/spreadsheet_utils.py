@@ -16,7 +16,6 @@ from typing import (
     Any,
     Literal,
     NotRequired,
-    Protocol,
     TypedDict,
     cast,
     overload,
@@ -24,7 +23,14 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from openpyxl.formula import Tokenizer
+from formualizer import (
+    Token,
+    Tokenizer,
+    TokenSubType,
+    TokenType,
+    Workbook,
+    load_workbook,
+)
 
 if TYPE_CHECKING:
     import os
@@ -221,7 +227,7 @@ class SnapshotCell(TypedDict):
 class SnapshotEngine(TypedDict):
     """Calculation-engine identity persisted with a normalized snapshot."""
 
-    name: Literal["hyperformula"]
+    name: Literal["formualizer"]
     version: str
     configuration_version: int
 
@@ -462,12 +468,6 @@ class FormulaAst:
 
 class FormulaParseError(ValueError):
     """Raised when a formula cannot be represented by the grading AST."""
-
-
-class _FormulaToken(Protocol):
-    value: str
-    type: str
-    subtype: str
 
 
 _CELL_ADDRESS_RE = re.compile(r"^([A-Z]+)([1-9][0-9]*)$")
@@ -721,15 +721,13 @@ def _parse_reference(text: str) -> FormulaReferenceNode | FormulaRangeNode:
 class _FormulaParser:
     """Stateful recursive-descent parser for tokenized spreadsheet formulas."""
 
-    tokens: list[_FormulaToken]
+    tokens: list[Token]
     position: int = field(default=0, init=False)
 
     def __post_init__(self) -> None:
         """Discard whitespace tokens before parsing."""
         self.tokens = [
-            token
-            for token in self.tokens
-            if token.type not in {"WSPACE", "WHITE-SPACE"}
+            token for token in self.tokens if token.token_type != TokenType.Whitespace
         ]
 
     def parse(self) -> FormulaAstNode:
@@ -742,12 +740,12 @@ class _FormulaParser:
             )
         return result
 
-    def _current(self) -> _FormulaToken | None:
+    def _current(self) -> Token | None:
         if self.position >= len(self.tokens):
             return None
         return self.tokens[self.position]
 
-    def _take(self) -> _FormulaToken:
+    def _take(self) -> Token:
         token = self._current()
         if token is None:
             raise FormulaParseError("Unexpected end of spreadsheet formula.")
@@ -764,7 +762,7 @@ class _FormulaParser:
             token = self._current()
             if (
                 token is None
-                or token.type != "OPERATOR-INFIX"
+                or token.token_type != TokenType.OpInfix
                 or token.value not in operators
             ):
                 return result
@@ -797,7 +795,7 @@ class _FormulaParser:
         token = self._current()
         if (
             token is not None
-            and token.type == "OPERATOR-PREFIX"
+            and token.token_type == TokenType.OpPrefix
             and token.value in {"+", "-"}
         ):
             operator = self._take().value
@@ -811,28 +809,35 @@ class _FormulaParser:
         result = self._parse_primary()
         while True:
             token = self._current()
-            if token is None or token.type != "OPERATOR-POSTFIX" or token.value != "%":
+            if (
+                token is None
+                or token.token_type != TokenType.OpPostfix
+                or token.value != "%"
+            ):
                 return result
             self._take()
             result = FormulaPostfixNode(operator="%", operand=result)
 
     def _parse_primary(self) -> FormulaAstNode:
         token = self._take()
-        if token.type == "PAREN" and token.subtype == "OPEN":
+        if token.token_type == TokenType.Paren and token.subtype == TokenSubType.Open:
             expression = self._parse_comparison()
             close = self._take()
-            if close.type != "PAREN" or close.subtype != "CLOSE":
+            if (
+                close.token_type != TokenType.Paren
+                or close.subtype != TokenSubType.Close
+            ):
                 raise FormulaParseError("Unclosed spreadsheet formula group.")
             return FormulaGroupNode(expression=expression)
-        if token.type == "FUNC" and token.subtype == "OPEN":
+        if token.token_type == TokenType.Func and token.subtype == TokenSubType.Open:
             return self._parse_function(token)
-        if token.type != "OPERAND":
+        if token.token_type != TokenType.Operand:
             raise FormulaParseError(
                 f'Unexpected token "{token.value}" in spreadsheet formula.'
             )
-        if token.subtype == "RANGE":
+        if token.subtype == TokenSubType.Range:
             return _parse_reference(token.value)
-        if token.subtype == "NUMBER":
+        if token.subtype == TokenSubType.Number:
             try:
                 number = float(token.value)
             except ValueError as exc:
@@ -843,21 +848,25 @@ class _FormulaParser:
                 raise FormulaParseError("Spreadsheet number literals must be finite.")
             number_value: int | float = int(number) if number.is_integer() else number
             return FormulaLiteralNode(value_type="number", value=number_value)
-        if token.subtype == "TEXT":
+        if token.subtype == TokenSubType.Text:
             string_value = token.value[1:-1].replace('""', '"')
             return FormulaLiteralNode(value_type="string", value=string_value)
-        if token.subtype == "LOGICAL":
+        if token.subtype == TokenSubType.Logical:
             return FormulaLiteralNode(
                 value_type="boolean", value=token.value.upper() == "TRUE"
             )
-        if token.subtype == "ERROR":
+        if token.subtype == TokenSubType.Error:
             return FormulaLiteralNode(value_type="error", value=token.value.upper())
         raise FormulaParseError(f'Unsupported spreadsheet operand "{token.value}".')
 
-    def _parse_function(self, opening: _FormulaToken) -> FormulaFunctionNode:
+    def _parse_function(self, opening: Token) -> FormulaFunctionNode:
         arguments: list[FormulaAstNode] = []
         token = self._current()
-        if token is not None and token.type == "FUNC" and token.subtype == "CLOSE":
+        if (
+            token is not None
+            and token.token_type == TokenType.Func
+            and token.subtype == TokenSubType.Close
+        ):
             self._take()
             return FormulaFunctionNode(
                 name=opening.value[:-1].upper(), arguments=tuple(arguments)
@@ -867,19 +876,25 @@ class _FormulaParser:
             token = self._current()
             if token is None:
                 raise FormulaParseError("Unclosed spreadsheet function call.")
-            if token.type == "SEP" and token.subtype == "ARG":
+            if token.token_type == TokenType.Sep and token.subtype == TokenSubType.Arg:
                 arguments.append(FormulaEmptyNode())
                 self._take()
                 continue
-            if token.type == "FUNC" and token.subtype == "CLOSE":
+            if (
+                token.token_type == TokenType.Func
+                and token.subtype == TokenSubType.Close
+            ):
                 arguments.append(FormulaEmptyNode())
                 self._take()
                 break
             arguments.append(self._parse_comparison())
             token = self._take()
-            if token.type == "FUNC" and token.subtype == "CLOSE":
+            if (
+                token.token_type == TokenType.Func
+                and token.subtype == TokenSubType.Close
+            ):
                 break
-            if token.type != "SEP" or token.subtype != "ARG":
+            if token.token_type != TokenType.Sep or token.subtype != TokenSubType.Arg:
                 raise FormulaParseError(
                     f'Unexpected token "{token.value}" in spreadsheet function call.'
                 )
@@ -894,8 +909,8 @@ class _FormulaParser:
 def parse_spreadsheet_formula(formula: str) -> FormulaAst:
     """Parse exact formula text into the versioned grading AST.
 
-    This helper is intended for structural grading. HyperFormula remains authoritative
-    for validating and calculating submitted formulas.
+    This helper is intended for structural grading. The calculation engine remains
+    authoritative for validating and calculating submitted formulas.
 
     Returns:
         A versioned AST that includes the exact original formula.
@@ -906,7 +921,7 @@ def parse_spreadsheet_formula(formula: str) -> FormulaAst:
     if not isinstance(formula, str) or not formula.startswith("="):
         raise FormulaParseError('Spreadsheet formulas must start with "=".')
     try:
-        tokens = cast(list[_FormulaToken], Tokenizer(formula).items)
+        tokens = Tokenizer(formula).tokens()
         root = _FormulaParser(tokens).parse()
     except FormulaParseError:
         raise
@@ -1331,10 +1346,13 @@ def rebase_spreadsheet_formula(
         else AddressSpaceMap(address_spaces)
     )
     try:
-        tokens = cast(list[_FormulaToken], Tokenizer(formula).items)
+        tokens = Tokenizer(formula).tokens()
         rendered: list[str] = ["="]
         for token in tokens:
-            if token.type == "OPERAND" and token.subtype == "RANGE":
+            if (
+                token.token_type == TokenType.Operand
+                and token.subtype == TokenSubType.Range
+            ):
                 rendered.append(
                     _rebase_formula_reference(
                         _parse_reference(token.value), spaces, current_sheet
@@ -1390,12 +1408,12 @@ def shift_formula(formula: str, *, rows: int = 0, columns: int = 0) -> str:
     if not isinstance(formula, str) or not formula.startswith("="):
         raise FormulaParseError('Spreadsheet formulas must start with "=".')
     try:
-        tokens = cast(list[_FormulaToken], Tokenizer(formula).items)
+        tokens = Tokenizer(formula).tokens()
     except Exception as exc:
         raise FormulaParseError("The spreadsheet formula could not be parsed.") from exc
     rendered: list[str] = ["="]
     for token in tokens:
-        if token.type != "OPERAND" or token.subtype != "RANGE":
+        if token.token_type != TokenType.Operand or token.subtype != TokenSubType.Range:
             rendered.append(token.value)
             continue
         reference = _parse_reference(token.value)
@@ -2251,18 +2269,56 @@ def read_spreadsheet_tsv(
     return dataframes_to_spreadsheet_book({sheet_name: dataframe})
 
 
+# One past the largest sheet that pl-spreadsheet accepts, so that scanning this far
+# finds every cell of an acceptable sheet and at least one cell of an oversized one.
+_XLSX_SCAN_ROWS = 1001
+_XLSX_SCAN_COLUMNS = 101
+
+
+def _xlsx_value_extent(workbook: Workbook, name: str) -> tuple[int, int]:
+    """Return how many rows and columns a worksheet's values span.
+
+    The engine reports this extent for open-ended ranges. It ignores cells that only
+    hold formulas, so it cannot replace scanning, but it keeps values beyond the
+    scanned area in the sheet's shape so that oversized sheets are still rejected.
+    """
+    quoted_name = "'" + name.replace("'", "''") + "'"
+    extent = [0, 0]
+    for index, area in enumerate([f"{quoted_name}!A:XFD", f"{quoted_name}!1:1048576"]):
+        resolved = workbook.range_page(area, limit=1).resolved
+        if resolved is not None:
+            end = Address.from_a1(resolved.rsplit(":", 1)[1])
+            extent[index] = end.row + 1 if index == 0 else end.column + 1
+    return extent[0], extent[1]
+
+
 def read_spreadsheet_xlsx(source: str | os.PathLike[str]) -> SourceBook:
     """Read all XLSX worksheets, preserving formula text, into a sheetbook."""
-    frames = pd.read_excel(
-        source,
-        sheet_name=None,
-        header=None,
-        keep_default_na=False,
-        engine="openpyxl",
-        engine_kwargs={"data_only": False},
-    )
-    if not isinstance(frames, dict):
-        raise TypeError("The XLSX spreadsheet reader returned an invalid sheetbook.")
+    workbook = load_workbook(str(source))
+    frames: dict[str, pd.DataFrame] = {}
+    for name in workbook.sheet_names:
+        cells: dict[tuple[int, int], object] = {}
+        for row in range(1, _XLSX_SCAN_ROWS + 1):
+            for column in range(1, _XLSX_SCAN_COLUMNS + 1):
+                formula = workbook.get_formula(name, row, column)
+                value = (
+                    f"={formula}"
+                    if formula is not None
+                    else workbook.get_value(name, row, column)
+                )
+                # XLSX stores every number as a float; keep whole numbers as ints,
+                # as they would be in a CSV source.
+                if isinstance(value, float) and value.is_integer():
+                    value = int(value)
+                if value is not None:
+                    cells[row - 1, column - 1] = value
+        value_rows, value_columns = _xlsx_value_extent(workbook, name)
+        rows = max([value_rows, *(row + 1 for row, _ in cells)])
+        columns = max([value_columns, *(column + 1 for _, column in cells)])
+        frames[name] = pd.DataFrame([
+            [cells.get((row, column), "") for column in range(columns)]
+            for row in range(rows)
+        ])
     return dataframes_to_spreadsheet_book(frames)
 
 

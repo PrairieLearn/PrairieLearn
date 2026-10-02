@@ -1,5 +1,6 @@
-import { assert, describe, it } from 'vitest';
+import { assert, beforeAll, describe, it } from 'vitest';
 
+import { loadSpreadsheetEngine } from './spreadsheet-engine-node.js';
 import {
   SPREADSHEET_INTERNAL_SHEET_PREFIX,
   type SpreadsheetElementConfig,
@@ -22,6 +23,8 @@ import {
   toSourceAddress,
   toSourceRange,
 } from './spreadsheet.js';
+
+beforeAll(loadSpreadsheetEngine);
 
 function makeConfig(): SpreadsheetElementConfig {
   return {
@@ -223,7 +226,6 @@ function gradePricing(
     makeSubmission(sheets),
     gradingConfig,
   );
-  evaluation.engine.destroy();
   return { grading: evaluation.snapshot.grading!, serialized: JSON.stringify(evaluation.snapshot) };
 }
 
@@ -292,7 +294,6 @@ describe('evaluateSpreadsheet', () => {
       input: { type: 'formula', value: '=Inputs!A2*Inputs!B2' },
       result: { type: 'number', value: 15 },
     });
-    evaluation.engine.destroy();
   });
 
   it('normalizes calculation errors without rejecting the submission', () => {
@@ -303,7 +304,6 @@ describe('evaluateSpreadsheet', () => {
     assert.equal(result.type, 'error');
     if (result.type !== 'error') assert.fail('Expected an error result.');
     assert.equal(result.value, '#CYCLE!');
-    evaluation.engine.destroy();
   });
 
   it('returns calculation errors for display without reporting editor issues', () => {
@@ -317,7 +317,48 @@ describe('evaluateSpreadsheet', () => {
       result: { type: 'error', value: '#DIV/0!', error_type: 'DIV_BY_ZERO' },
     });
     assert.deepEqual(evaluation.issues, {});
-    evaluation.engine.destroy();
+  });
+
+  it('calculates with number-like and boolean text from file sources', () => {
+    const config = makeConfig();
+    Object.assign(config.template.sheets[0].cells, { A2: '2', B2: '4.5', C2: 'true', A3: '1e3x' });
+    const { snapshot } = evaluateSpreadsheet(config, makeSubmission({ Inputs: { B3: '=A2*B2' } }));
+
+    const cells = snapshot.sheets[0].cells;
+    assert.deepEqual(cells.A2, {
+      input: { type: 'string', value: '2' },
+      result: { type: 'number', value: 2 },
+    });
+    assert.deepEqual(cells.C2.result, { type: 'boolean', value: true });
+    assert.deepEqual(cells.A3.result, { type: 'string', value: '1e3x' });
+    assert.deepEqual(cells.B3.result, { type: 'number', value: 9 });
+  });
+
+  it('reports array results that would spill as #VALUE!', () => {
+    const evaluation = evaluateSpreadsheetForEditor(
+      makeConfig(),
+      makeSubmission({ Inputs: { A3: '=A2:B2*2', A4: '=SUM(A3:B3)' } }),
+    );
+
+    const cells = evaluation.snapshot.sheets[0].cells;
+    assert.deepEqual(cells.A3.result, { type: 'error', value: '#VALUE!', error_type: 'VALUE' });
+    assert.deepEqual(cells.A4.result, { type: 'error', value: '#VALUE!', error_type: 'VALUE' });
+    assert.isUndefined(cells.B3);
+  });
+
+  it('reports references to sheets that do not exist as editor issues', () => {
+    for (const formula of ['=Missing!A1', "='No such sheet'!A1:B2", '=Données!A1', '=Sheet1!A1']) {
+      const evaluation = evaluateSpreadsheetForEditor(
+        makeConfig(),
+        makeSubmission({ Inputs: { A3: formula } }),
+      );
+      assert.equal(evaluation.snapshot.sheets[0].cells.A3.result.type, 'error', formula);
+      assert.match(
+        evaluation.issues.Inputs!.A3!.message,
+        /outside declared student ranges/,
+        formula,
+      );
+    }
   });
 
   it('preserves invalid formulas and reports cell-addressed editor issues', () => {
@@ -352,7 +393,6 @@ describe('evaluateSpreadsheet', () => {
         result: { type: 'error', value, error_type: errorType },
       });
       assert.match(evaluation.issues.Inputs!.A2!.message, message);
-      evaluation.engine.destroy();
       assert.throws(() =>
         evaluateSpreadsheet(makeConfig(), makeSubmission({ Inputs: { A2: formula } })),
       );
@@ -370,7 +410,6 @@ describe('evaluateSpreadsheet', () => {
       result: { type: 'error', value: '#REF!', error_type: 'REF' },
     });
     assert.match(evaluation.issues.Inputs!.A1!.message, /outside declared student ranges/);
-    evaluation.engine.destroy();
     assert.throws(
       () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=C1' } })),
       /outside declared student ranges/,
@@ -400,7 +439,6 @@ describe('evaluateSpreadsheet', () => {
     const serialized = JSON.stringify(evaluation.snapshot);
     assert.notInclude(serialized, 'Checks');
     assert.notInclude(serialized, '=PRODUCT(Inputs!A2,Inputs!B2)');
-    evaluation.engine.destroy();
   });
 
   it('clears and overlays student ranges onto authoritative source sheets', () => {
@@ -420,7 +458,6 @@ describe('evaluateSpreadsheet', () => {
     });
     assert.notInclude(JSON.stringify(evaluation.snapshot), 'HIDDEN_SENTINEL');
     assert.notInclude(JSON.stringify(evaluation.snapshot), 'ISBLANK');
-    evaluation.engine.destroy();
   });
 
   it('bridges student-local formulas into source-coordinate grading cells', () => {
@@ -435,7 +472,6 @@ describe('evaluateSpreadsheet', () => {
       value: true,
     });
     assert.notInclude(JSON.stringify(evaluation.snapshot), SPREADSHEET_INTERNAL_SHEET_PREFIX);
-    evaluation.engine.destroy();
   });
 
   it('rejects forged edits and formula references outside the student address space', () => {
@@ -473,10 +509,7 @@ describe('evaluateSpreadsheet', () => {
         evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(B:B)' } })),
       /outside declared student ranges/,
     );
-    evaluateSpreadsheet(
-      makeOffsetConfig(),
-      makeSubmission({ Inputs: { A1: '=SUM(B1:B2)' } }),
-    ).engine.destroy();
+    evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(B1:B2)' } }));
   });
 
   it('rejects required private outputs that are empty or contain an error', () => {
@@ -544,7 +577,7 @@ describe('evaluateSpreadsheet', () => {
       config.template.sheets[0].name = name;
       config.template.sheets[1].cells.B1 = '=1';
       assert.isTrue(SpreadsheetElementConfigSchema.safeParse(config).success);
-      evaluateSpreadsheet(config, makeSubmission()).engine.destroy();
+      evaluateSpreadsheet(config, makeSubmission());
     }
 
     for (const name of [
@@ -583,7 +616,6 @@ describe('evaluateSpreadsheet', () => {
       type: 'number',
       value: 0,
     });
-    evaluation.engine.destroy();
   });
 
   it('rejects edits to locked cells', () => {
@@ -630,16 +662,14 @@ describe('evaluateSpreadsheet', () => {
   });
 
   it('adjusts relative references when filling a cell', () => {
-    const evaluation = evaluateSpreadsheet(makeConfig(), makeSubmission({ Inputs: { A2: '=A3' } }));
-    assert.equal(
-      getRelativeFillInput(
-        evaluation.engine,
-        { sheet: 0, row: 1, col: 0 },
-        { sheet: 0, row: 1, col: 1 },
-      ),
-      '=B3',
-    );
-    evaluation.engine.destroy();
+    const fill = (input: string | number, rowOffset: number, columnOffset: number) =>
+      getRelativeFillInput(input, { rowOffset, columnOffset });
+    assert.equal(fill('=A3', 0, 1), '=B3');
+    assert.equal(fill('=SUM($A1:B$2)*Inputs!C3', 2, 1), '=SUM($A3:C$2)*Inputs!D5');
+    assert.equal(fill("='My sheet'!A1+B:B", 1, 1), "='My sheet'!B2+C:C");
+    assert.equal(fill('="A1"&A1', 1, 0), '="A1"&A2');
+    assert.equal(fill('=A1+1', -1, 0), '=#REF!+1');
+    assert.equal(fill(4, 1, 0), 4);
   });
 
   it('enforces workbook and formula limits', () => {
@@ -741,14 +771,12 @@ describe('adversarial student formulas', () => {
       makeSubmission({ Inputs: { A2: formula } }),
       makeAttackGradingConfig(),
     );
-    evaluation.engine.destroy();
     return evaluation.snapshot;
   }
 
   it('rejects lookups and addressing that reach outside the student range', () => {
     const attacks = [
       '=VLOOKUP(1,A1:C2,3,FALSE)',
-      '=VLOOKUP(2,B1:B2,2,FALSE)',
       '=HLOOKUP(1,A1:B3,3,FALSE)',
       '=MATCH(31337,A:A,0)',
       '=INDEX(A:A,1)',
@@ -780,7 +808,8 @@ describe('adversarial student formulas', () => {
   });
 
   it('keeps out-of-bounds lookup indexes inside the student range', () => {
-    const attacks = [
+    const errors = [
+      '=VLOOKUP(2,B1:B2,2,FALSE)',
       '=INDEX(B1:B2,3)',
       '=INDEX(B1:B2,0)',
       '=INDEX(B1:B2,-1)',
@@ -788,18 +817,29 @@ describe('adversarial student formulas', () => {
       '=INDEX(A1:B1,2,1)',
       '=INDEX(A1:B1,0,3)',
       '=INDEX(B1:B2,"3")',
-      '=SUM(INDEX(B1:B2,0,0))',
+    ];
+    for (const formula of errors) {
+      const snapshot = evaluateAttack(formula);
+      assert.equal(snapshot.grading!.outputs.attack.type, 'error', formula);
+      assert.notMatch(JSON.stringify(snapshot), /SENTINEL|31337/, formula);
+    }
+    // The engine resizes ranges of different shapes instead of returning #VALUE!, but
+    // student formulas only run on a mirror of the student range, so the cells they
+    // reach past it are empty.
+    const mismatchedShapes = [
       '=SUMIF(B1:B2,">0",B2)',
       '=SUMIFS(B2,B1:B2,">0")',
       '=AVERAGEIF(B1:B2,">0",B2)',
       '=COUNTIFS(B1:B2,">0",B2,">0")',
       '=SUMPRODUCT(B1:B2,A1:B1)',
     ];
-    for (const formula of attacks) {
-      const snapshot = evaluateAttack(formula);
-      assert.equal(snapshot.grading!.outputs.attack.type, 'error', formula);
-      assert.notMatch(JSON.stringify(snapshot), /SENTINEL|31337/, formula);
+    for (const formula of mismatchedShapes) {
+      assert.notMatch(JSON.stringify(evaluateAttack(formula)), /SENTINEL|31337/, formula);
     }
+    // As in Excel, a zero row and column select the whole range.
+    const snapshot = evaluateAttack('=SUM(INDEX(B1:B2,0,0))');
+    assert.deepEqual(snapshot.grading!.outputs.attack, { type: 'number', value: 5 });
+    assert.notMatch(JSON.stringify(snapshot), /SENTINEL|31337/);
   });
 
   it('rejects functions hidden inside quoted sheet names', () => {
@@ -815,10 +855,7 @@ describe('adversarial student formulas', () => {
         new RegExp(`Function ${functionName} is not supported`),
       );
     }
-    evaluateSpreadsheet(
-      config,
-      makeSubmission({ 'Q"1': { A2: '=\'Q"1\'!B1&"!"&"Secret!A1"' } }),
-    ).engine.destroy();
+    evaluateSpreadsheet(config, makeSubmission({ 'Q"1': { A2: '=\'Q"1\'!B1&"!"&"Secret!A1"' } }));
   });
 
   it('rejects unsupported functions disguised with prefixes or identifier characters', () => {
@@ -875,7 +912,6 @@ describe('spreadsheet test cases', () => {
       makeSubmission({ Inputs: { A1: 3 } }),
       gradingConfig,
     );
-    evaluation.engine.destroy();
 
     assert.deepEqual(evaluation.snapshot.grading?.outputs.doubled, { type: 'number', value: 6 });
     assert.deepEqual(

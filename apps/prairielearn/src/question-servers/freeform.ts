@@ -25,6 +25,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { loadSpreadsheetEngine } from '../lib/spreadsheet-engine-node.js';
 import {
   addSpreadsheetReferenceAnswers,
   getSpreadsheetLogMetadata,
@@ -910,6 +911,7 @@ export async function prepare(
 
       let trueAnswer = resultData.correct_answers;
       if (!courseIssues.some((issue) => issue.fatal)) {
+        if (resultData.params._pl_spreadsheet_v2 != null) loadSpreadsheetEngine();
         try {
           trueAnswer = addSpreadsheetReferenceAnswers({
             params: resultData.params,
@@ -1664,6 +1666,7 @@ export async function parse(
     const correctAnswers = variant.true_answer ?? {};
     let submittedAnswers: Record<string, unknown>;
     try {
+      if (params._pl_spreadsheet_v2 != null) loadSpreadsheetEngine();
       submittedAnswers = normalizeSpreadsheetAnswers({
         params,
         correctAnswers,

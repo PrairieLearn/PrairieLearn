@@ -1,13 +1,12 @@
-import {
-  DetailedCellError,
-  ErrorType,
-  HyperFormula,
-  type RawCellContent,
-  type SimpleCellAddress,
-} from 'hyperformula';
 import * as z from 'zod/v4';
 
-export const SPREADSHEET_ENGINE_VERSION = '3.4.0';
+import {
+  type SpreadsheetEngineResult,
+  SpreadsheetEngineWorkbook,
+  rewriteFormulaReferences,
+} from './spreadsheet-engine.js';
+
+export const SPREADSHEET_ENGINE_VERSION = '0.9.3';
 export const SPREADSHEET_CONFIGURATION_VERSION = 2;
 export const SPREADSHEET_MAX_SHEETS = 10;
 export const SPREADSHEET_MAX_ROWS = 1000;
@@ -331,7 +330,7 @@ export const SpreadsheetSnapshotSchema = z
     template_hash: z.string(),
     engine: z
       .object({
-        name: z.literal('hyperformula'),
+        name: z.literal('formualizer'),
         version: z.literal(SPREADSHEET_ENGINE_VERSION),
         configuration_version: z.literal(SPREADSHEET_CONFIGURATION_VERSION),
       })
@@ -378,7 +377,6 @@ const SpreadsheetSubmissionErrorSchema = z
 
 export interface SpreadsheetEvaluation {
   snapshot: SpreadsheetSnapshot;
-  engine: HyperFormula;
 }
 
 export interface SpreadsheetEditorCellIssue {
@@ -393,19 +391,18 @@ export interface SpreadsheetEditorEvaluation extends SpreadsheetEvaluation {
 
 export class SpreadsheetSubmissionError extends Error {}
 
+/** Returns the input that filling `input` by the given offset produces, adjusting relative references. */
 export function getRelativeFillInput(
-  engine: HyperFormula,
-  source: SimpleCellAddress,
-  target: SimpleCellAddress,
+  input: SpreadsheetCellInput | null,
+  { rowOffset, columnOffset }: { rowOffset: number; columnOffset: number },
 ): SpreadsheetCellInput | null {
-  const input = engine.getFillRangeData(
-    { start: source, end: source },
-    { start: target, end: target },
-  )[0]?.[0];
-  if (input instanceof Date) {
-    throw new SpreadsheetSubmissionError('Date-valued cell inputs are not supported.');
-  }
-  return input ?? null;
+  if (typeof input !== 'string' || !input.startsWith('=')) return input;
+  return rewriteFormulaReferences(input, {
+    rowOffset,
+    columnOffset,
+    maxRows: SPREADSHEET_MAX_ROWS,
+    maxColumns: SPREADSHEET_MAX_COLUMNS,
+  });
 }
 
 export function columnIndexToName(column: number): string {
@@ -645,8 +642,9 @@ export function isCellEditable(
   });
 }
 
-// Mirrors HyperFormula's identifier characters so that every name the engine could
-// parse as a function or unquoted sheet name is seen as one whole token.
+// Treats accented letters as identifier characters too, so that a function or
+// unquoted sheet name is always seen as one whole token and cannot be split to hide
+// a call from the allowlist.
 const IDENTIFIER_CHARACTER = /[A-Za-zÀ-ʯ0-9_.]/;
 
 /**
@@ -1209,32 +1207,26 @@ function snapshotInput(input: SpreadsheetCellInput) {
   return { type: 'string' as const, value: input };
 }
 
-function snapshotResult(value: ReturnType<HyperFormula['getCellValue']>) {
-  if (value instanceof DetailedCellError) {
-    return { type: 'error' as const, value: value.value, error_type: value.type };
+function snapshotResult(result: SpreadsheetEngineResult): SpreadsheetSnapshotResult {
+  if (result.type === 'number' && !Number.isFinite(result.value)) {
+    return { type: 'error', value: '#NUM!', error_type: 'NUM' };
   }
-  if (value === null) return { type: 'empty' as const };
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      return { type: 'error' as const, value: '#NUM!', error_type: 'NUM' };
-    }
-    return { type: 'number' as const, value };
-  }
-  if (typeof value === 'boolean') return { type: 'boolean' as const, value };
-  if (value.length > SPREADSHEET_MAX_TEXT_LENGTH) {
+  if (result.type === 'string' && result.value.length > SPREADSHEET_MAX_TEXT_LENGTH) {
     throw new SpreadsheetSubmissionError(
       `Spreadsheet results must be at most ${SPREADSHEET_MAX_TEXT_LENGTH} characters.`,
     );
   }
-  return { type: 'string' as const, value };
+  return result;
 }
+
+type SheetRows = (SpreadsheetCellInput | null)[][];
 
 function buildSheetRows(
   rows: number,
   columns: number,
   cells: Record<string, SpreadsheetCellInput>,
-): RawCellContent[][] {
-  const data: RawCellContent[][] = Array.from({ length: rows }, () =>
+): SheetRows {
+  const data: SheetRows = Array.from({ length: rows }, () =>
     Array.from({ length: columns }, () => null),
   );
   for (const [address, input] of Object.entries(cells)) {
@@ -1245,17 +1237,52 @@ function buildSheetRows(
   return data;
 }
 
-const HYPERFORMULA_CONFIG = {
-  language: 'enGB',
-  licenseKey: 'gpl-v3',
-  maxRows: SPREADSHEET_MAX_ROWS,
-  maxColumns: SPREADSHEET_MAX_COLUMNS,
-  nullDate: { year: 1899, month: 12, day: 30 },
-  undoLimit: 100,
-  useArrayArithmetic: false,
-  useRegularExpressions: false,
-  useWildcards: false,
-} as const;
+/**
+ * Resolves sheet names written in formulas to their names in the engine. The engine
+ * never sees an author's or student's sheet names, so a formula can only reach the
+ * sheets that this resolver exposes.
+ */
+function sheetResolver(engineSheetNames: ReadonlyMap<string, string>) {
+  const folded = new Map(
+    [...engineSheetNames].map(([name, engineName]) => [
+      name.toLocaleLowerCase('en-US'),
+      engineName,
+    ]),
+  );
+  return (name: string) => folded.get(name.toLocaleLowerCase('en-US')) ?? null;
+}
+
+/** Rewrites each formula in `rows` to refer to sheets by their engine names. */
+function toEngineRows(rows: SheetRows, resolveSheet: (name: string) => string | null): SheetRows {
+  return rows.map((values) =>
+    values.map((input) =>
+      typeof input === 'string' && input.startsWith('=')
+        ? rewriteFormulaReferences(input, {
+            resolveSheet,
+            maxRows: SPREADSHEET_MAX_ROWS,
+            maxColumns: SPREADSHEET_MAX_COLUMNS,
+          })
+        : input,
+    ),
+  );
+}
+
+function setSheetRows(workbook: SpreadsheetEngineWorkbook, sheet: string, rows: SheetRows): void {
+  for (const [row, values] of rows.entries()) {
+    for (const [column, input] of values.entries()) {
+      if (input !== null) workbook.setInput(sheet, row, column, input);
+    }
+  }
+}
+
+function studentEngineSheetNames(template: SpreadsheetTemplate): Map<string, string> {
+  return new Map(
+    template.sheets.map((sheet, index) => [
+      sheet.name,
+      `${SPREADSHEET_INTERNAL_SHEET_PREFIX}${index}`,
+    ]),
+  );
+}
 
 function setSpreadsheetEditorIssue(
   issues: SpreadsheetEditorEvaluation['issues'],
@@ -1271,43 +1298,31 @@ function setSpreadsheetEditorIssue(
 }
 
 function validateStudentFormulaReferences(
-  engine: HyperFormula,
+  workbook: SpreadsheetEngineWorkbook,
   template: SpreadsheetTemplate,
-  studentSheetData: Record<string, RawCellContent[][]>,
+  studentSheetData: Record<string, SheetRows>,
   {
-    issues,
     engineSheetNames,
+    issues,
   }: {
+    /** Maps template sheet names to their names in `workbook`. */
+    engineSheetNames: ReadonlyMap<string, string>;
     issues?: SpreadsheetEditorEvaluation['issues'];
-    /** Maps template sheet names to their names in `engine`, if they were renamed. */
-    engineSheetNames?: Map<string, string>;
-  } = {},
+  },
 ): void {
-  const engineSheetName = (name: string) => engineSheetNames?.get(name) ?? name;
-  const templateBySheetId = new Map<number, SpreadsheetTemplate['sheets'][number]>();
-  for (const sheet of template.sheets) {
-    const sheetId = engine.getSheetId(engineSheetName(sheet.name));
-    if (sheetId !== undefined) templateBySheetId.set(sheetId, sheet);
-  }
+  const templateByEngineName = new Map(
+    template.sheets.map((sheet) => [engineSheetNames.get(sheet.name), sheet]),
+  );
   const visibleSheetNames = new Set(template.sheets.map((sheet) => sheet.name.toLowerCase()));
 
-  function outsideStudentRange(): never;
   function outsideStudentRange(
     sheetName: string,
     address: string,
-    result?: DetailedCellError,
-  ): void;
-
-  function outsideStudentRange(
-    sheetName?: string,
-    address?: string,
-    result?: DetailedCellError,
+    result?: Extract<SpreadsheetSnapshotResult, { type: 'error' }>,
   ): void {
     const message =
       'Student-visible formulas cannot reference cells outside declared student ranges.';
-    if (!issues || !sheetName || !address) {
-      throw new SpreadsheetSubmissionError(message);
-    }
+    if (!issues) throw new SpreadsheetSubmissionError(message);
     setSpreadsheetEditorIssue(
       issues,
       sheetName,
@@ -1315,44 +1330,36 @@ function validateStudentFormulaReferences(
       {
         message,
         value: result?.value ?? '#REF!',
-        error_type: result?.type ?? 'REF',
+        error_type: result?.error_type ?? 'REF',
       },
-      result?.type === ErrorType.REF,
+      result?.error_type === 'REF',
     );
   }
 
   for (const sheet of template.sheets) {
-    const sheetId = engine.getSheetId(engineSheetName(sheet.name)) ?? outsideStudentRange();
+    const engineSheetName = engineSheetNames.get(sheet.name);
+    if (engineSheetName === undefined) throw new Error(`Student sheet ${sheet.name} is missing.`);
+    const readResult = workbook.readSheet(engineSheetName);
     for (const [row, values] of studentSheetData[sheet.name].entries()) {
       for (const [col, input] of values.entries()) {
         if (typeof input !== 'string' || !input.startsWith('=')) continue;
         const address = cellAddress(row, col);
-        // HyperFormula reports no precedents for some invalid references, such as
-        // ranges spanning two sheets, so sheet names are also checked lexically.
+        // References to sheets that do not exist never reach the engine, so they
+        // are rejected lexically instead.
         if (
           scanFormula(input).sheetNames.some((name) => !visibleSheetNames.has(name.toLowerCase()))
         ) {
           outsideStudentRange(sheet.name, address);
         }
-        const result = engine.getCellValue({ sheet: sheetId, row, col });
-        if (result instanceof DetailedCellError && ['NAME', 'ERROR', 'REF'].includes(result.type)) {
+        // A formula the engine cannot parse or resolve reports no precedents, so it
+        // cannot be shown to stay inside the student range.
+        const result = snapshotResult(readResult(row, col));
+        if (result.type === 'error' && ['NAME', 'ERROR'].includes(result.error_type)) {
           outsideStudentRange(sheet.name, address, result);
         }
-        const precedents = engine.getCellPrecedents({ sheet: sheetId, row, col });
-        for (const precedent of precedents) {
-          const start = 'start' in precedent ? precedent.start : precedent;
-          const end = 'end' in precedent ? precedent.end : precedent;
-          const targetSheet = templateBySheetId.get(start.sheet);
-          if (
-            !targetSheet ||
-            end.sheet !== start.sheet ||
-            !isRangeContained(sheetRange(targetSheet), {
-              startRow: start.row,
-              endRow: end.row,
-              startColumn: start.col,
-              endColumn: end.col,
-            })
-          ) {
+        for (const precedent of workbook.precedents(engineSheetName, row, col)) {
+          const targetSheet = precedent && templateByEngineName.get(precedent.sheet);
+          if (!targetSheet || !isRangeContained(sheetRange(targetSheet), precedent)) {
             outsideStudentRange(sheet.name, address);
           }
         }
@@ -1385,89 +1392,85 @@ function mustResolveSourceCell(
 function runGradingWorkbook(
   config: SpreadsheetGradingConfig,
   template: SpreadsheetTemplate,
-  studentSheetData: Record<string, RawCellContent[][]>,
+  studentSheetData: Record<string, SheetRows>,
   { checkRequired }: { checkRequired: boolean },
 ): GradingRun[] {
   const sourceSheets = config.source_sheets;
-  const sourceSheetData: Record<string, RawCellContent[][]> = Object.fromEntries(
-    sourceSheets.map((sheet) => [
-      sheet.name,
-      buildSheetRows(sheet.rows, sheet.columns, sheet.cells),
-    ]),
-  );
-  const engine = HyperFormula.buildFromSheets(studentSheetData, HYPERFORMULA_CONFIG);
+  const privateSheets = [...sourceSheets, ...config.sheets];
+  const studentNames = studentEngineSheetNames(template);
+  // Private sheets get engine names of their own, so student formulas, which only
+  // resolve student sheet names, can never reach them.
+  const privateNames = new Map([
+    ...sourceSheets.map((sheet, index) => [sheet.name, `__PL_SOURCE_${index}`] as const),
+    ...config.sheets.map((sheet, index) => [sheet.name, `__PL_GRADING_${index}`] as const),
+  ]);
+  const engineName = (names: ReadonlyMap<string, string>, sheetName: string) => {
+    const name = names.get(sheetName);
+    if (name === undefined) throw new Error(`Spreadsheet sheet ${sheetName} is missing.`);
+    return name;
+  };
+
+  const resolveStudentSheet = sheetResolver(studentNames);
+  const resolvePrivateSheet = sheetResolver(privateNames);
+  const engineSheets = [
+    ...template.sheets.map((sheet) => ({
+      name: engineName(studentNames, sheet.name),
+      rows: sheet.rows,
+      columns: sheet.columns,
+      inputs: toEngineRows(studentSheetData[sheet.name], resolveStudentSheet),
+    })),
+    ...privateSheets.map((sheet) => ({
+      name: engineName(privateNames, sheet.name),
+      rows: sheet.rows,
+      columns: sheet.columns,
+      inputs: toEngineRows(
+        buildSheetRows(sheet.rows, sheet.columns, sheet.cells),
+        resolvePrivateSheet,
+      ),
+    })),
+  ];
+  // The engine inputs of every cell, kept so that test cases can restore the cells they change.
+  const engineInputs = new Map(engineSheets.map((sheet) => [sheet.name, sheet.inputs]));
+
+  for (const overlay of config.student_overlays) {
+    const sourceRange = parseRange(overlay.source_range);
+    if (!sourceRange) throw new Error(`Student overlay for ${overlay.student_sheet} is invalid.`);
+    const sourceRows = engineInputs.get(engineName(privateNames, overlay.source_sheet))!;
+    const studentName = engineName(studentNames, overlay.student_sheet);
+    for (const [row, values] of studentSheetData[overlay.student_sheet].entries()) {
+      for (const [column, input] of values.entries()) {
+        sourceRows[sourceRange.startRow + row][sourceRange.startColumn + column] =
+          typeof input === 'string' && input.startsWith('=')
+            ? `=${studentName}!${cellAddress(row, column)}`
+            : input;
+      }
+    }
+  }
+
+  const workbook = new SpreadsheetEngineWorkbook();
   try {
-    validateStudentFormulaReferences(engine, template, studentSheetData);
-
-    const internalSheetNames = new Map<string, string>();
-    for (const [index, sheet] of template.sheets.entries()) {
-      const sheetId = engine.getSheetId(sheet.name);
-      if (sheetId === undefined) throw new Error(`Student sheet ${sheet.name} is missing.`);
-      const internalName = `${SPREADSHEET_INTERNAL_SHEET_PREFIX}${index}`;
-      engine.renameSheet(sheetId, internalName);
-      internalSheetNames.set(sheet.name, internalName);
-    }
-
-    for (const overlay of config.student_overlays) {
-      const sourceRange = parseRange(overlay.source_range);
-      const sourceRows = sourceSheetData[overlay.source_sheet];
-      const studentRows = studentSheetData[overlay.student_sheet];
-      const internalName = internalSheetNames.get(overlay.student_sheet);
-      if (!sourceRange || !internalName) {
-        throw new Error(`Student overlay for ${overlay.student_sheet} is invalid.`);
-      }
-      for (const [row, values] of studentRows.entries()) {
-        for (const [column, input] of values.entries()) {
-          sourceRows[sourceRange.startRow + row][sourceRange.startColumn + column] =
-            typeof input === 'string' && input.startsWith('=')
-              ? `=${internalName}!${cellAddress(row, column)}`
-              : input;
-        }
-      }
-    }
-
-    for (const sheet of sourceSheets) {
-      engine.addSheet(sheet.name);
-    }
-    for (const sheet of config.sheets) {
-      engine.addSheet(sheet.name);
-    }
-    for (const sheet of sourceSheets) {
-      const sheetId = engine.getSheetId(sheet.name);
-      if (sheetId === undefined) throw new Error(`Private source sheet ${sheet.name} is missing.`);
-      engine.setSheetContent(sheetId, sourceSheetData[sheet.name]);
-    }
-    for (const sheet of config.sheets) {
-      const sheetId = engine.getSheetId(sheet.name);
-      if (sheetId === undefined) throw new Error(`Private grading sheet ${sheet.name} is missing.`);
-      engine.setSheetContent(sheetId, buildSheetRows(sheet.rows, sheet.columns, sheet.cells));
-    }
-    // Student formulas were validated before any private sheet existed. Check them
-    // again now that private names can resolve, in case a reference bound late.
-    validateStudentFormulaReferences(engine, template, studentSheetData, {
-      engineSheetNames: internalSheetNames,
+    for (const sheet of engineSheets) workbook.addSheet(sheet.name, sheet.rows, sheet.columns);
+    for (const sheet of engineSheets) setSheetRows(workbook, sheet.name, sheet.inputs);
+    workbook.evaluate();
+    validateStudentFormulaReferences(workbook, template, studentSheetData, {
+      engineSheetNames: studentNames,
     });
 
-    const getSheetId = (name: string) => {
-      const sheetId = engine.getSheetId(name);
-      if (sheetId === undefined) throw new Error(`Spreadsheet sheet ${name} is missing.`);
-      return sheetId;
-    };
-    const readResult = (sheetName: string, address: SpreadsheetCellAddress) =>
-      snapshotResult(
-        engine.getCellValue({
-          sheet: getSheetId(sheetName),
-          row: address.row,
-          col: address.column,
-        }),
-      );
     const comparedCells = (config.reference?.cells ?? []).map((cell) =>
       mustResolveSourceCell(config, template, cell.sheet, cell.cell),
     );
 
     const readRun = (): GradingRun => {
+      const readers = new Map(
+        privateSheets.map((sheet) => [
+          sheet.name,
+          workbook.readSheet(engineName(privateNames, sheet.name)),
+        ]),
+      );
+      const readResult = (sheetName: string, address: SpreadsheetCellAddress) =>
+        snapshotResult(readers.get(sheetName)!(address.row, address.column));
       // Enforce result limits for all populated grading cells, not only exported outputs.
-      for (const sheet of [...sourceSheets, ...config.sheets]) {
+      for (const sheet of privateSheets) {
         for (const address of Object.keys(sheet.cells)) {
           const parsedAddress = parseCellAddress(address);
           if (!parsedAddress) continue;
@@ -1507,45 +1510,33 @@ function runGradingWorkbook(
       // student range, the student-relative cell that student formulas read.
       const overrides = testCase.inputs.flatMap((input) => {
         const cell = mustResolveSourceCell(config, template, input.sheet, input.cell);
-        const targets: SimpleCellAddress[] = [
-          {
-            sheet: getSheetId(cell.sourceSheet.name),
-            row: cell.address.row,
-            col: cell.address.column,
-          },
+        const targets = [
+          { sheet: engineName(privateNames, cell.sourceSheet.name), ...cell.address },
         ];
         if (cell.student) {
-          const internalName = internalSheetNames.get(cell.student.sheet.name);
-          if (!internalName) {
-            throw new Error(`Student sheet ${cell.student.sheet.name} is missing.`);
-          }
           targets.push({
-            sheet: getSheetId(internalName),
-            row: cell.student.address.row,
-            col: cell.student.address.column,
+            sheet: engineName(studentNames, cell.student.sheet.name),
+            ...cell.student.address,
           });
         }
-        return targets.map((address) => ({ address, value: input.value }));
+        return targets.map((target) => ({ ...target, value: input.value }));
       });
-      const originals = overrides.map(({ address }) => ({
-        address,
-        value: engine.getCellSerialized(address),
-      }));
-      engine.batch(() => {
-        for (const { address, value } of overrides) engine.setCellContents(address, [[value]]);
-      });
+      for (const { sheet, row, column, value } of overrides) {
+        workbook.setInput(sheet, row, column, value);
+      }
+      const replaced = workbook.evaluate();
       try {
         return readRun();
       } finally {
-        engine.batch(() => {
-          for (const { address, value } of originals) engine.setCellContents(address, [[value]]);
-        });
+        for (const { sheet, row, column } of [...overrides, ...replaced]) {
+          workbook.setInput(sheet, row, column, engineInputs.get(sheet)![row][column]);
+        }
       }
     });
 
     return [base, ...caseRuns];
   } finally {
-    engine.destroy();
+    workbook.destroy();
   }
 }
 
@@ -1607,7 +1598,7 @@ function buildReferenceSheetData(
   config: SpreadsheetElementConfig,
   gradingConfig: SpreadsheetGradingConfig,
   merged: Record<string, Record<string, SpreadsheetCellInput>>,
-): Record<string, RawCellContent[][]> {
+): Record<string, SheetRows> {
   const referenceMerged = mergeSubmission(
     config,
     buildReferenceSubmission(config, gradingConfig, merged),
@@ -1624,7 +1615,7 @@ function evaluateGrading(
   config: SpreadsheetElementConfig,
   gradingConfig: SpreadsheetGradingConfig,
   merged: Record<string, Record<string, SpreadsheetCellInput>>,
-  studentSheetData: Record<string, RawCellContent[][]>,
+  studentSheetData: Record<string, SheetRows>,
 ): NonNullable<SpreadsheetSnapshot['grading']> {
   validateGradingConfig(gradingConfig, config.template);
   const studentRuns = runGradingWorkbook(gradingConfig, config.template, studentSheetData, {
@@ -1732,27 +1723,37 @@ function evaluateSpreadsheetInternal(
     );
   }
   const merged = mergeSubmission(config, submission, issues);
-  const sheetData: Record<string, RawCellContent[][]> = {};
+  const sheetData: Record<string, SheetRows> = {};
   for (const sheet of config.template.sheets) {
     sheetData[sheet.name] = buildSheetRows(sheet.rows, sheet.columns, merged[sheet.name]);
   }
 
-  const engine = HyperFormula.buildFromSheets(sheetData, HYPERFORMULA_CONFIG);
-
+  const engineSheetNames = studentEngineSheetNames(config.template);
+  const resolveSheet = sheetResolver(engineSheetNames);
+  const workbook = new SpreadsheetEngineWorkbook();
   try {
-    validateStudentFormulaReferences(engine, config.template, sheetData, { issues });
-    const sheets = config.template.sheets.map((sheet, sheetIndex) => {
+    for (const sheet of config.template.sheets) {
+      workbook.addSheet(engineSheetNames.get(sheet.name)!, sheet.rows, sheet.columns);
+    }
+    for (const sheet of config.template.sheets) {
+      setSheetRows(
+        workbook,
+        engineSheetNames.get(sheet.name)!,
+        toEngineRows(sheetData[sheet.name], resolveSheet),
+      );
+    }
+    workbook.evaluate();
+    validateStudentFormulaReferences(workbook, config.template, sheetData, {
+      engineSheetNames,
+      issues,
+    });
+    const sheets = config.template.sheets.map((sheet) => {
+      const readResult = workbook.readSheet(engineSheetNames.get(sheet.name)!);
       const cells: Record<string, z.infer<typeof SpreadsheetSnapshotCellSchema>> = {};
       for (const [address, input] of Object.entries(merged[sheet.name])) {
         const parsedAddress = parseCellAddress(address);
         if (!parsedAddress) continue;
-        let result = snapshotResult(
-          engine.getCellValue({
-            sheet: sheetIndex,
-            row: parsedAddress.row,
-            col: parsedAddress.column,
-          }),
-        );
+        let result = snapshotResult(readResult(parsedAddress.row, parsedAddress.column));
         const issue = issues?.[sheet.name]?.[address];
         if (issue) {
           result = {
@@ -1787,7 +1788,7 @@ function evaluateSpreadsheetInternal(
       schema_version: 2,
       template_hash: config.template_hash,
       engine: {
-        name: 'hyperformula',
+        name: 'formualizer',
         version: SPREADSHEET_ENGINE_VERSION,
         configuration_version: SPREADSHEET_CONFIGURATION_VERSION,
       },
@@ -1801,10 +1802,9 @@ function evaluateSpreadsheetInternal(
         `Spreadsheet submissions must be at most ${SPREADSHEET_MAX_PAYLOAD_BYTES} bytes.`,
       );
     }
-    return { snapshot, engine };
-  } catch (error) {
-    engine.destroy();
-    throw error;
+    return { snapshot };
+  } finally {
+    workbook.destroy();
   }
 }
 
@@ -1849,7 +1849,6 @@ export function addSpreadsheetReferenceAnswers({
         { cause: error },
       );
     }
-    evaluation.engine.destroy();
     result[answerName] = { ...gradingConfig, answer: { sheets: evaluation.snapshot.sheets } };
   }
   return result;
@@ -1904,12 +1903,11 @@ export function normalizeSpreadsheetAnswers({
       if (!parsedSubmission.success) {
         throw new SpreadsheetSubmissionError('The spreadsheet answer has an invalid structure.');
       }
-      const { snapshot, engine } = evaluateSpreadsheet(
+      const { snapshot } = evaluateSpreadsheet(
         config,
         parsedSubmission.data,
         parsedGradingConfig?.data,
       );
-      engine.destroy();
       normalizedAnswers[answerName] = snapshot;
     } catch (error) {
       if (!(error instanceof SpreadsheetSubmissionError)) throw error;

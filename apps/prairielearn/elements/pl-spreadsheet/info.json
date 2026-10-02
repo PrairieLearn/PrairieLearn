@@ -4,5 +4,10 @@
     "compiledScripts": ["plSpreadsheet.tsx"],
     "nodeModulesStyles": ["react-data-grid/lib/styles.css"],
     "elementStyles": ["pl-spreadsheet-theme.css", "pl-spreadsheet.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {
+      "formualizer/pkg/formualizer_wasm_bg.wasm": "formualizer/pkg/formualizer_wasm_bg.wasm"
+    }
   }
 }
