@@ -109,6 +109,59 @@ test('highlights formulas in the formula bar', async ({ page, courseInstance }) 
   await expect(highlight).toHaveAttribute('aria-hidden', 'true');
 });
 
+test('inserts references by pointing at cells', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const cell = (address: string) =>
+    grid.getByRole('gridcell', { name: new RegExp(`^${address}, `) });
+  const formulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await cell('B2').click();
+  await formulaBar.fill('=SUM(');
+  await grid.scrollIntoViewIfNeeded();
+  const c2Box = await cell('C2').boundingBox();
+  const d3Box = await cell('D3').boundingBox();
+  if (!c2Box || !d3Box) throw new Error('Expected spreadsheet cells to have bounding boxes');
+  await page.mouse.move(c2Box.x + c2Box.width / 2, c2Box.y + c2Box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(d3Box.x + d3Box.width / 2, d3Box.y + d3Box.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(formulaBar).toHaveValue('=SUM(C2:D3');
+  await expect(formulaBar).toBeFocused();
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(4);
+
+  await cell('A2').click();
+  await expect(formulaBar).toHaveValue('=SUM(A2');
+
+  await formulaBar.pressSequentially(')+');
+  await formulaBar.press('ArrowDown');
+  await formulaBar.press('ArrowRight');
+  await formulaBar.press('Shift+ArrowDown');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+C3:C4');
+
+  await formulaBar.pressSequentially('*2');
+  await formulaBar.press('ArrowLeft');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+C3:C4*2');
+
+  await formulaBar.press('Enter');
+  await expect(cell('B2')).toBeFocused();
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(0);
+  await expect(rawAnswer).toHaveValue(/"B2":"=SUM\(A2\)\+C3:C4\*2"/);
+});
+
 test('suggests functions in the formula bar', async ({ page, courseInstance }) => {
   const question = await selectQuestionByQid({
     qid: 'spreadsheetElement',

@@ -715,6 +715,15 @@ Submission and manual-grading views use native HTML tables. These tables show
 calculated values by default and provide a Values/Formulas switch for viewing every
 cell's original input.
 
+The formula bar colors formulas as students type, giving each distinct cell
+reference its own color and outlining the referenced cells in the grid in the same
+color. Typing a function name lists matching supported functions, which can be
+chosen with the arrow keys and Enter or Tab. Inside a function call, a hint shows
+its arguments with the current one in bold. Wherever a formula expects a value, such
+as after `=`, `(`, `,`, or an operator, clicking a cell or dragging across cells
+inserts a reference, as in Google Sheets or Excel. The arrow keys, and Shift with the
+arrow keys, do the same from the keyboard.
+
 The editor displays spreadsheet errors such as `#DIV/0!`, `#CYCLE!`, `#REF!`, and
 `#ERROR!` in their cells while retaining the entered formula in the cell editor and
 formula bar. Save and Grade includes the latest text even if the editor is still

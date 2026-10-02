@@ -2,7 +2,9 @@ import clsx from 'clsx';
 import {
   type InputHTMLAttributes,
   type KeyboardEvent,
+  type Ref,
   useId,
+  useImperativeHandle,
   useLayoutEffect,
   useRef,
   useState,
@@ -16,6 +18,7 @@ import {
   formulaReferences,
   tokenizeFormula,
 } from '../../../src/lib/client/spreadsheetFormula/lexer.js';
+import { isPointingPosition } from '../../../src/lib/client/spreadsheetFormula/references.js';
 import {
   type FormulaSignatureHint,
   applyCompletion,
@@ -76,8 +79,26 @@ function SignatureHint({ hint }: { hint: FormulaSignatureHint }) {
   );
 }
 
+export interface FormulaInputHandle {
+  /**
+   * Where a reference pointed at in the grid should be written, or null if the caret is
+   * not in point mode. `continuing` is set when it would replace the reference that was
+   * just pointed at, so clicking another cell or dragging further swaps it.
+   */
+  pointingTarget(): { start: number; end: number; continuing: boolean } | null;
+  /** Replaces the text from `start` to `end` with `reference` and moves the caret after it. */
+  writeReference(start: number, end: number, reference: string): void;
+}
+
+interface PointedSpan {
+  start: number;
+  end: number;
+  value: string;
+}
+
 /**
- * A formula bar input that highlights formulas and suggests functions. The text is drawn
+ * A formula bar input that highlights formulas, suggests functions, and accepts
+ * references pointed at in the grid. The text is drawn
  * by an `aria-hidden` overlay laid exactly over a native input whose own text is
  * transparent, so editing, selection, IME, and assistive technology all keep using the
  * real input.
@@ -90,16 +111,23 @@ export function FormulaInput({
   onKeyDown,
   onFocus,
   onBlur,
+  ref,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onScroll' | 'onSelect'> & {
   value: string;
   onValueChange: (value: string) => void;
   onAnnounce: (message: string) => void;
+  ref?: Ref<FormulaInputHandle>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const pendingCaretRef = useRef<number | null>(null);
   const lastHintAnnouncementRef = useRef('');
+  // The latest value, which runs ahead of `value` while a drag writes several references
+  // before the parent re-renders.
+  const latestValueRef = useRef(value);
+  const pointedSpanRef = useRef<PointedSpan | null>(null);
+  const [pointedSpan, setPointedSpan] = useState<PointedSpan | null>(null);
   const listId = useId();
   const [focused, setFocused] = useState(false);
   const [caret, setCaret] = useState<number | null>(null);
@@ -114,6 +142,11 @@ export function FormulaInput({
     ? `${completion.start}:${value.slice(completion.start, caret!)}`
     : '';
   const activeIndex = active.key === completionKey ? active.index : 0;
+  const pointing =
+    focused &&
+    caret !== null &&
+    ((pointedSpan?.value === value && pointedSpan.end === caret) ||
+      isPointingPosition(value, caret));
 
   function syncScroll() {
     if (inputRef.current && overlayRef.current) {
@@ -142,12 +175,42 @@ export function FormulaInput({
   // Place the caret after an accepted suggestion once its text is rendered, then keep the
   // overlay aligned, since the input scrolls to show the caret without firing an event.
   useLayoutEffect(() => {
+    latestValueRef.current = value;
     if (pendingCaretRef.current !== null) {
       inputRef.current?.setSelectionRange(pendingCaretRef.current, pendingCaretRef.current);
       pendingCaretRef.current = null;
     }
     syncScroll();
   });
+
+  useImperativeHandle(ref, () => ({
+    pointingTarget() {
+      const input = inputRef.current;
+      if (!input || document.activeElement !== input) return null;
+      const current = latestValueRef.current;
+      const caretPosition =
+        pendingCaretRef.current ??
+        (input.selectionStart === input.selectionEnd ? input.selectionStart : null);
+      if (caretPosition === null) return null;
+      const span = pointedSpanRef.current;
+      if (span?.value === current && span.end === caretPosition) {
+        return { start: span.start, end: span.end, continuing: true };
+      }
+      if (!isPointingPosition(current, caretPosition)) return null;
+      return { start: caretPosition, end: caretPosition, continuing: false };
+    },
+    writeReference(start, end, reference) {
+      const current = latestValueRef.current;
+      const next = current.slice(0, start) + reference + current.slice(end);
+      const span = { start, end: start + reference.length, value: next };
+      latestValueRef.current = next;
+      pointedSpanRef.current = span;
+      pendingCaretRef.current = span.end;
+      setPointedSpan(span);
+      setCaret(span.end);
+      onValueChange(next);
+    },
+  }));
 
   function accept(signature: FormulaFunctionSignature) {
     if (!completion) return;
@@ -182,7 +245,13 @@ export function FormulaInput({
   }
 
   return (
-    <div className={clsx('pl-spreadsheet-formula-input', highlighted && 'is-highlighted')}>
+    <div
+      className={clsx(
+        'pl-spreadsheet-formula-input',
+        highlighted && 'is-highlighted',
+        pointing && 'is-pointing',
+      )}
+    >
       <input
         ref={inputRef}
         {...props}
@@ -194,6 +263,7 @@ export function FormulaInput({
         aria-controls={completion ? listId : undefined}
         aria-activedescendant={completion ? `${listId}-${activeIndex}` : undefined}
         onChange={(event) => {
+          latestValueRef.current = event.currentTarget.value;
           onValueChange(event.currentTarget.value);
           syncCaret();
         }}

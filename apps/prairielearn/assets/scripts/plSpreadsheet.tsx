@@ -14,7 +14,16 @@ import { createRoot } from 'react-dom/client';
 import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { run } from '@prairielearn/run';
 
+import {
+  formulaReferences,
+  tokenizeFormula,
+} from '../../src/lib/client/spreadsheetFormula/lexer.js';
+import {
+  formatReference,
+  resolveReference,
+} from '../../src/lib/client/spreadsheetFormula/references.js';
 import {
   type SpreadsheetCellInput,
   type SpreadsheetEditorEvaluation,
@@ -29,7 +38,7 @@ import {
   parseCellAddress,
 } from '../../src/lib/spreadsheet.js';
 
-import { FormulaInput } from './lib/spreadsheetFormulaInput.js';
+import { FormulaInput, type FormulaInputHandle } from './lib/spreadsheetFormulaInput.js';
 
 interface SpreadsheetOptions {
   uuid: string;
@@ -57,6 +66,13 @@ interface CellRange {
   focus: CellPosition;
 }
 
+const ARROW_OFFSETS: Partial<Record<string, CellPosition>> = {
+  ArrowUp: { row: -1, column: 0 },
+  ArrowDown: { row: 1, column: 0 },
+  ArrowLeft: { row: 0, column: -1 },
+  ArrowRight: { row: 0, column: 1 },
+};
+
 function isCellInRange(range: CellRange | null, row: number, column: number) {
   if (!range) return false;
   const firstRow = Math.min(range.anchor.row, range.focus.row);
@@ -64,6 +80,16 @@ function isCellInRange(range: CellRange | null, row: number, column: number) {
   const firstColumn = Math.min(range.anchor.column, range.focus.column);
   const lastColumn = Math.max(range.anchor.column, range.focus.column);
   return row >= firstRow && row <= lastRow && column >= firstColumn && column <= lastColumn;
+}
+
+function clampPosition(
+  position: CellPosition,
+  sheet: { rows: number; columns: number },
+): CellPosition {
+  return {
+    row: Math.max(0, Math.min(sheet.rows - 1, position.row)),
+    column: Math.max(0, Math.min(sheet.columns - 1, position.column)),
+  };
 }
 
 function displayInput(input: SpreadsheetCellInput | null | undefined): string {
@@ -288,6 +314,7 @@ function SpreadsheetEditor({
   const [activeCell, setActiveCell] = useState<CellPosition | null>(null);
   const [selectedRange, setSelectedRange] = useState<CellRange | null>(null);
   const [formulaText, setFormulaText] = useState('');
+  const [formulaFocused, setFormulaFocused] = useState(false);
   const [announcement, setAnnouncement] = useState(initialStateRef.current.error);
   const [past, setPast] = useState<SpreadsheetRawSubmission[]>([]);
   const [future, setFuture] = useState<SpreadsheetRawSubmission[]>([]);
@@ -301,6 +328,10 @@ function SpreadsheetEditor({
   const didDragRangeRef = useRef(false);
   const suppressActiveAnnouncementRef = useRef(false);
   const initialEditValueRef = useRef<(CellPosition & { value: string }) | null>(null);
+  const formulaInputRef = useRef<FormulaInputHandle>(null);
+  // The corners of the reference most recently pointed at from the formula bar.
+  const pointerRef = useRef<CellRange | null>(null);
+  const pointingDragRef = useRef(false);
 
   const sheet = config.template.sheets[activeSheetIndex];
   const instructionsId = `pl-spreadsheet-instructions-${options.uuid}`;
@@ -453,6 +484,21 @@ function SpreadsheetEditor({
     gridRef.current?.setActivePosition({ idx: targetColumn + 1, rowIdx: targetRow });
   }
 
+  /** The formula bar always edits the active cell, so setActivePosition would not move focus. */
+  function focusActiveCell() {
+    editorRef.current
+      ?.querySelector<HTMLElement>('[role="gridcell"][aria-selected="true"]')
+      ?.focus();
+  }
+
+  /** Writes the reference spanned by `pointer` into the formula bar's point-mode target. */
+  function pointAt(target: { start: number; end: number }, pointer: CellRange) {
+    pointerRef.current = pointer;
+    const reference = formatReference(pointer.anchor, pointer.focus);
+    formulaInputRef.current?.writeReference(target.start, target.end, reference);
+    setAnnouncement(`Inserted reference ${reference}.`);
+  }
+
   function selectCell(position: CellPosition, shouldFocus = true) {
     setSelectedRange({ anchor: position, focus: position });
     gridRef.current?.setActivePosition(
@@ -493,6 +539,38 @@ function SpreadsheetEditor({
     return { rowIndex, inputs, results, errors };
   });
 
+  const pointedRanges = run(() => {
+    if (!formulaFocused || !formulaText.startsWith('=')) return [];
+    return formulaReferences(tokenizeFormula(formulaText.slice(1))).flatMap((reference) => {
+      const resolved = resolveReference(reference.token.text, sheet);
+      if (!resolved || (resolved.sheetName !== null && resolved.sheetName !== sheet.name)) {
+        return [];
+      }
+      return [{ range: resolved.range, colorIndex: reference.colorIndex }];
+    });
+  });
+
+  function referenceCellClass(row: number, column: number) {
+    // Later references are drawn over earlier ones.
+    const reference = pointedRanges
+      .filter(
+        ({ range }) =>
+          row >= range.startRow &&
+          row <= range.endRow &&
+          column >= range.startColumn &&
+          column <= range.endColumn,
+      )
+      .at(-1);
+    if (!reference) return undefined;
+    const { range, colorIndex } = reference;
+    return clsx(`pl-spreadsheet-ref-cell pl-spreadsheet-ref-fill-${colorIndex}`, {
+      'pl-spreadsheet-ref-top': row === range.startRow,
+      'pl-spreadsheet-ref-bottom': row === range.endRow,
+      'pl-spreadsheet-ref-left': column === range.startColumn,
+      'pl-spreadsheet-ref-right': column === range.endColumn,
+    });
+  }
+
   const columns: readonly Column<SpreadsheetRow>[] = [
     {
       key: '__row',
@@ -512,10 +590,17 @@ function SpreadsheetEditor({
         resizable: true,
         editable: (row) => isCellEditable(sheet, row.rowIndex, columnIndex),
         cellClass: (row) =>
-          clsx({
-            'pl-spreadsheet-cell-readonly': !isCellEditable(sheet, row.rowIndex, columnIndex),
-            'pl-spreadsheet-cell-selected': isCellInRange(selectedRange, row.rowIndex, columnIndex),
-          }),
+          clsx(
+            {
+              'pl-spreadsheet-cell-readonly': !isCellEditable(sheet, row.rowIndex, columnIndex),
+              'pl-spreadsheet-cell-selected': isCellInRange(
+                selectedRange,
+                row.rowIndex,
+                columnIndex,
+              ),
+            },
+            referenceCellClass(row.rowIndex, columnIndex),
+          ),
         renderEditCell: (props) => (
           <CellEditor
             {...props}
@@ -618,6 +703,16 @@ function SpreadsheetEditor({
     }
 
     function handleMouseMove(event: MouseEvent) {
+      if (pointingDragRef.current) {
+        event.preventDefault();
+        const focus = cellAtPoint(event.clientX, event.clientY);
+        const pointer = pointerRef.current;
+        const target = formulaInputRef.current?.pointingTarget();
+        if (!focus || !pointer || !target?.continuing) return;
+        if (pointer.focus.row === focus.row && pointer.focus.column === focus.column) return;
+        pointAt(target, { anchor: pointer.anchor, focus });
+        return;
+      }
       const anchor = dragAnchorRef.current;
       if (!anchor) return;
       event.preventDefault();
@@ -635,6 +730,7 @@ function SpreadsheetEditor({
     }
 
     function handleMouseUp() {
+      pointingDragRef.current = false;
       if (!dragAnchorRef.current) return;
       const focus = dragFocusRef.current;
       dragAnchorRef.current = null;
@@ -788,7 +884,8 @@ function SpreadsheetEditor({
         Shift+Enter to move vertically, Tab and Shift+Tab to move horizontally, and Escape to cancel
         editing. Tab leaves the grid at its boundaries. Read-only cells are announced. While typing
         a formula in the formula bar, use the Up and Down arrow keys to choose a suggested function
-        and Enter or Tab to insert it.
+        and Enter or Tab to insert it. Where the formula expects a value, click or drag across
+        cells, or use the arrow keys and Shift with the arrow keys, to insert a cell reference.
       </p>
       <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
         <button
@@ -829,6 +926,7 @@ function SpreadsheetEditor({
           {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
         </label>
         <FormulaInput
+          ref={formulaInputRef}
           id={`${instructionsId}-formula`}
           aria-label={
             activeCell
@@ -843,7 +941,9 @@ function SpreadsheetEditor({
             if (activeCell) updateDraft(activeCell.row, activeCell.column, value);
           }}
           onAnnounce={setAnnouncement}
+          onFocus={() => setFormulaFocused(true)}
           onBlur={() => {
+            setFormulaFocused(false);
             if (skipFormulaBlurRef.current) {
               skipFormulaBlurRef.current = false;
             } else if (activeCell) {
@@ -851,22 +951,35 @@ function SpreadsheetEditor({
             }
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && activeCell) {
+            const offset = ARROW_OFFSETS[event.key];
+            const pointingTarget =
+              offset && activeCell && !event.altKey && !event.ctrlKey && !event.metaKey
+                ? formulaInputRef.current?.pointingTarget()
+                : null;
+            if (offset && activeCell && pointingTarget) {
+              event.preventDefault();
+              const pointer =
+                pointingTarget.continuing && pointerRef.current
+                  ? pointerRef.current
+                  : { anchor: activeCell, focus: activeCell };
+              const focus = clampPosition(
+                {
+                  row: pointer.focus.row + offset.row,
+                  column: pointer.focus.column + offset.column,
+                },
+                sheet,
+              );
+              pointAt(pointingTarget, { anchor: event.shiftKey ? pointer.anchor : focus, focus });
+            } else if (event.key === 'Enter' && activeCell) {
               event.preventDefault();
               skipFormulaBlurRef.current = true;
               commitCell(activeCell.row, activeCell.column, formulaText);
-              gridRef.current?.setActivePosition({
-                idx: activeCell.column + 1,
-                rowIdx: activeCell.row,
-              });
+              focusActiveCell();
             } else if (event.key === 'Escape' && activeCell) {
               event.preventDefault();
               skipFormulaBlurRef.current = true;
               cancelDraft();
-              gridRef.current?.setActivePosition({
-                idx: activeCell.column + 1,
-                rowIdx: activeCell.row,
-              });
+              focusActiveCell();
             }
           }}
         />
@@ -923,6 +1036,19 @@ function SpreadsheetEditor({
         onCellMouseDown={({ rowIdx, column }, event) => {
           if (event.button !== 0 || column.key === '__row') return;
           const position = { row: rowIdx, column: column.idx - 1 };
+          const pointingTarget = formulaInputRef.current?.pointingTarget();
+          if (pointingTarget) {
+            // Keep focus and the active cell on the formula being edited.
+            event.preventDefault();
+            event.preventGridDefault();
+            pointingDragRef.current = true;
+            const anchor =
+              event.shiftKey && pointingTarget.continuing && pointerRef.current
+                ? pointerRef.current.anchor
+                : position;
+            pointAt(pointingTarget, { anchor, focus: position });
+            return;
+          }
           const anchor = event.shiftKey && selectedRange ? selectedRange.anchor : position;
           dragAnchorRef.current = anchor;
           dragFocusRef.current = position;
