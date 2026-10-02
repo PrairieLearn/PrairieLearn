@@ -1853,6 +1853,16 @@ def _first_editable_cell(config: dict[str, Any]) -> tuple[str, str]:
     raise ValueError("The spreadsheet has no editable cell.")
 
 
+def _editable_template_cells(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    sheets: dict[str, dict[str, Any]] = {}
+    for sheet in config.get("template", {}).get("sheets", []):
+        for address, value in sheet["cells"].items():
+            position = _parse_address(address)
+            if position is not None and _cell_is_editable(sheet, *position):
+                sheets.setdefault(sheet["name"], {})[address] = value
+    return sheets
+
+
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name, config = _get_config(element, data)
@@ -1864,12 +1874,18 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     if isinstance(grading_config, dict) and "reference" in grading_config:
         _test_reference(element, data, answer_name, config, grading_config)
         return
-    sheet_name, address = _first_editable_cell(config)
+    # Without a reference, the element cannot know a correct answer. Resubmitting
+    # the starting values keeps formulas and required outputs evaluating the way
+    # they do in the unedited workbook; placeholder text could turn them into errors.
+    sheets = _editable_template_cells(config)
+    if not sheets:
+        sheet_name, address = _first_editable_cell(config)
+        sheets = {sheet_name: {address: f"Test {data['test_type']}"}}
     data["raw_submitted_answers"][answer_name] = json.dumps(
         {
             "schema_version": 2,
             "template_hash": config.get("template_hash", ""),
-            "sheets": {sheet_name: {address: f"Test {data['test_type']}"}},
+            "sheets": sheets,
         },
         separators=(",", ":"),
     )

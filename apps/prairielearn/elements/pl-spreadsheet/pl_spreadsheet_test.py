@@ -586,7 +586,21 @@ def test_generates_deterministic_test_submissions(
         assert "model" in data["format_errors"]
     else:
         decoded = json.loads(raw)
-        assert decoded["sheets"]["Inputs"]["A2"] == f"Test {test_type}"
+        assert decoded["sheets"] == {"Inputs": {"A2": 2}}
+
+
+def test_test_submission_falls_back_to_placeholder_for_blank_template(
+    element_directory: None,
+) -> None:
+    blank_template = template()
+    blank_template["sheets"][0]["cells"] = {"A1": "Quantity"}
+    data = prepare_data(params={"workbook": blank_template})
+    data["test_type"] = "correct"
+
+    spreadsheet.test(ELEMENT_HTML, data)
+
+    decoded = json.loads(data["raw_submitted_answers"]["model"])
+    assert decoded["sheets"] == {"Inputs": {"A2": "Test correct"}}
 
 
 def reference_grading_config(**overrides: Any) -> dict[str, Any]:
