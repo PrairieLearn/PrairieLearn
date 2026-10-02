@@ -411,6 +411,58 @@ test('fills a row or column by dragging the fill handle', async ({ page, courseI
   await expect(rawAnswer).toHaveValue(/"B3":"=B2\*10"/);
 });
 
+test('pops a spreadsheet out to fill the window', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+  const openButton = parameterDemo.getByRole('button', { name: 'Open spreadsheet full screen' });
+  const popup = page.getByRole('dialog', { name: 'Spreadsheet test' });
+  const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
+
+  await openButton.click();
+  await expect(popup).toBeVisible();
+  const viewport = page.viewportSize();
+  const box = await popup.boundingBox();
+  expect(box?.x).toBeGreaterThan(0);
+  expect(box?.width).toBeGreaterThan((viewport?.width ?? 0) - 64);
+  expect(box?.height).toBeGreaterThan((viewport?.height ?? 0) - 64);
+
+  // Edits made in the popup are kept when it closes.
+  await editCell(grid, 'B2', '42');
+  await popup.getByRole('button', { name: 'Close full-screen spreadsheet' }).click();
+  await expect(popup).toBeHidden();
+  await expect(openButton).toBeFocused();
+  await expect(b2).toContainText('42');
+  await expect(rawAnswer).toHaveValue(/"B2":42/);
+
+  await openButton.click();
+  await page.mouse.click(4, 4);
+  await expect(popup).toBeHidden();
+
+  // Escape leaves an edit in progress before it closes the popup.
+  await openButton.click();
+  await b2.click();
+  await page.keyboard.type('7');
+  await page.keyboard.press('Escape');
+  await expect(popup).toBeVisible();
+  await expect(b2).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(popup).toBeHidden();
+  await expect(b2).toContainText('42');
+});
+
 test('supports accessible local editing and trusted submission', async ({
   page,
   context,
