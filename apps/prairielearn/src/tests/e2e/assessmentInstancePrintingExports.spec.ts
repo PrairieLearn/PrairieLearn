@@ -150,6 +150,57 @@ test('describes printable exports and serves each linked format', async ({
   }
 });
 
+test('prints details content in visible boxes and preserves it in Word', async ({
+  page,
+  courseInstance,
+}) => {
+  const { paperUrl } = await createPrintableExam(courseInstance, 'exam26-printingDetails');
+  await page.goto(`${paperUrl}/preview?paper_size=Letter`);
+  await waitForPrintablePage(page);
+
+  const boxes = page.locator('.pagedjs_page .printing-question .printing-details');
+  await expect(boxes).toHaveCount(2);
+  await expect(page.locator('.pagedjs_page .printing-question details')).toHaveCount(0);
+  await expect(boxes.first().getByText('Reference values')).toBeVisible();
+  await expect(boxes.first().getByText('The values are one and two.')).toBeVisible();
+  await expect(boxes.last().getByText('Count both values.')).toBeVisible();
+  const figurePage = await page
+    .getByText('Reference figure')
+    .evaluate((element) =>
+      Number(element.closest('.pagedjs_page')?.getAttribute('data-page-number')),
+    );
+  const detailsPage = await boxes
+    .first()
+    .evaluate((element) =>
+      Number(element.closest('.pagedjs_page')?.getAttribute('data-page-number')),
+    );
+  expect(detailsPage).toBeGreaterThan(figurePage);
+  expect(
+    await boxes.first().evaluate((element) => ({
+      background: getComputedStyle(element).backgroundColor,
+      border: getComputedStyle(element).borderTopStyle,
+    })),
+  ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
+
+  const response = await page.request.get(`${paperUrl}/docx?paper_size=Letter`, {
+    timeout: 120_000,
+  });
+  expect(response.status()).toBe(200);
+  const archive = await unzipper.Open.buffer(await response.body());
+  const documentFile = archive.files.find((file) => file.path === 'word/document.xml');
+  expect(documentFile).toBeDefined();
+  const documentXml = (await documentFile!.buffer()).toString();
+  for (const text of [
+    'Reference values',
+    'The values are one and two.',
+    'Additional context',
+    'Count both values.',
+  ]) {
+    expect(documentXml).toContain(text);
+  }
+  expect(documentXml.match(/<w:shd w:fill="F7F7F7"\/>/g)).toHaveLength(2);
+});
+
 test('rejects invalid print query parameters', async ({ page, courseInstance }) => {
   const { paperUrl } = await createPrintableExam(courseInstance, 'exam1-automaticTestSuite');
 
@@ -201,7 +252,7 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
   await expect(
     responseHints.filter({ hasText: /^(symbolic expression|asymptotic expression|integer)$/i }),
   ).toHaveCount(0);
-  expect(await responseHints.allTextContents()).toContain('number (3 sig figs)');
+  expect(await responseHints.allTextContents()).toContain('3 significant figures');
   expect(await responseHints.allTextContents()).toContain('symbolic expression (blank is allowed)');
   const displayQuestion = questions.filter({
     has: page.locator('[data-print-answer-name="number_block"]'),

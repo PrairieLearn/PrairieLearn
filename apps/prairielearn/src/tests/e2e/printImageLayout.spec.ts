@@ -196,7 +196,53 @@ for (const element of ['pl-multiple-choice', 'pl-checkbox'] as const) {
   });
 }
 
-test('reports an impossible block size without removing text or images', async ({
+test('moves a question that outgrows its requested block to the next page', async ({
+  page,
+  imageQuestion,
+}) => {
+  const preview = await imageQuestion(
+    '<pl-question-panel><p>Keep this question on the first page.</p></pl-question-panel><pl-integer-input answers-name="value" correct-answer="1"></pl-integer-input>',
+  );
+  await page.addInitScript(() => {
+    Reflect.set(window, '__PL_PRINT_CAPTURE_SOURCE__', (source: HTMLElement) => {
+      const measure = document.createElement('div');
+      measure.className = 'exam-print-page-measure';
+      source.append(measure);
+      const pageHeight = measure.getBoundingClientRect().height;
+      measure.remove();
+
+      const questions = source.querySelectorAll<HTMLElement>('.printing-question');
+      for (const [index, question] of questions.entries()) {
+        const targetHeight = pageHeight * 0.5 + (index === 0 ? -30 : 30);
+        question.style.paddingTop = `${targetHeight - question.getBoundingClientRect().height}px`;
+      }
+    });
+  });
+
+  await page.goto(`${preview}?paper_size=Letter&block_size=half`);
+  await waitForPrintablePage(page);
+  const questions = page.getByRole('region', { name: /^Question [12]$/ });
+  await expect(questions).toHaveCount(2);
+  const layout = await questions.evaluateAll((elements) =>
+    elements.map((element) => ({
+      page: element.closest('.pagedjs_page')?.getAttribute('data-page-number'),
+      measuredHeight: Number((element as HTMLElement).dataset.printMeasuredHeight),
+      reservedHeight: Number((element as HTMLElement).dataset.printReservedHeight),
+      actualHeight: element.getBoundingClientRect().height,
+      pageOverflow:
+        element.getBoundingClientRect().bottom -
+        element.closest('.pagedjs_page')!.querySelector('.pagedjs_area')!.getBoundingClientRect()
+          .bottom,
+    })),
+  );
+  expect(Number(layout[1].page)).toBe(Number(layout[0].page) + 1);
+  expect(layout[1].measuredHeight).toBeGreaterThan(layout[0].reservedHeight);
+  expect(layout[1].reservedHeight).toBeCloseTo(layout[1].measuredHeight, 1);
+  expect(layout[1].actualHeight).toBeCloseTo(layout[1].measuredHeight, 1);
+  expect(layout[1].pageOverflow).toBeLessThanOrEqual(1);
+});
+
+test('flows content that outgrows a page without removing text or images', async ({
   page,
   imageQuestion,
 }) => {
@@ -214,13 +260,7 @@ test('reports an impossible block size without removing text or images', async (
     `${preview}?exclude_question=2&paper_size=Letter&block_size=half`,
   );
   expect(response!.ok()).toBe(true);
-  await expect(page.locator(':root')).toHaveAttribute('data-print-status', 'error', {
-    timeout: 120_000,
-  });
-  await expect(page.locator(':root')).toHaveAttribute(
-    'data-print-error-code',
-    'question-block-size-overflow',
-  );
+  await waitForPrintablePage(page);
   await expect(page.getByText('Printed instruction 40 must remain readable.')).toHaveCount(1);
   const images = page.locator('img[alt^="Image choice "]');
   await expect(images).toHaveCount(2);

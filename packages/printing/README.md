@@ -126,9 +126,9 @@ only included questions and fills down the available cover space before wrapping
 
 Automatic blocks are measured at the final printable width after asynchronous question content,
 MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an
-exact fraction of the printable content height, including the question's internal spacing. If a
-question's content is taller than its requested block, pagination fails with an error instead of
-clipping the question.
+exact fraction of the printable content height, including the question's internal spacing, when
+the content fits. Taller content uses its measured height and moves to the next page or flows
+across pages when needed.
 
 For example, this gives every question automatic sizing except Questions 2 and 5:
 
