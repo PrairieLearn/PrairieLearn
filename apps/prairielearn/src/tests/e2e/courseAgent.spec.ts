@@ -378,5 +378,18 @@ test('failed preparation returns a native tool error and never displays an appro
     await expect(
       page.getByText(state === 'starting' ? 'Working…' : 'Starting agent…', { exact: true }),
     ).toHaveCount(0);
+    const creator = page.getByRole('button', { name: 'New conversation', exact: true });
+    if (state === 'starting') {
+      await expect(creator).toBeDisabled();
+    } else {
+      await expect(creator).toBeEnabled();
+    }
+    await page.getByRole('button', { name: 'Conversation', exact: true }).click();
+    const createItem = page.getByRole('button', { name: 'New conversation', exact: true }).first();
+    if (state === 'starting') {
+      await expect(createItem).toBeDisabled();
+    } else {
+      await expect(createItem).toBeEnabled();
+    }
   }
 });

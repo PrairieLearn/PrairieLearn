@@ -155,64 +155,75 @@ function Panel({
           </Button>
         </div>
         <div className="d-flex flex-column flex-grow-1 p-3 overflow-hidden">
-          <div className="d-flex gap-2 mb-3 course-agent-picker">
-            <Dropdown className="flex-grow-1">
-              <Dropdown.Toggle
-                variant="light"
-                className="course-agent-selector w-100 d-flex justify-content-between align-items-center text-start"
-                aria-label="Conversation"
-              >
-                {current?.title ?? panel.title}
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="w-100 course-agent-conversations" align={{ sm: 'start' }}>
-                <Dropdown.Item
-                  active={!panel.selected}
-                  onClick={() => changePanel({ selected: '', title: 'New conversation' })}
-                >
-                  New conversation
-                </Dropdown.Item>
-                {conversations.data?.map((c) => (
-                  <Dropdown.Item
-                    key={c.id}
-                    active={c.id === panel.selected}
-                    onClick={() => changePanel({ selected: c.id, title: c.title })}
-                  >
-                    <span className="d-flex align-items-center justify-content-between gap-2">
-                      {c.title}
-                      {c.running || sending === c.id ? (
-                        <span
-                          className="spinner-border spinner-border-sm"
-                          role="status"
-                          aria-label="Working"
-                        />
-                      ) : c.finishedAt && readPanelState(`${key}:read:${c.id}`) !== c.finishedAt ? (
-                        <span
-                          className="course-agent-unread bg-primary"
-                          aria-label="New response"
-                        />
-                      ) : null}
-                    </span>
-                  </Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown>
-            <Button
-              variant="outline-primary"
-              aria-label="New conversation"
-              title="New conversation"
-              onClick={() => changePanel({ selected: '', title: 'New conversation' })}
-            >
-              <i className="bi bi-plus-lg" aria-hidden="true" />
-            </Button>
-          </div>
-          <AppErrorAlert
-            error={getAppError<CourseAgentError['List' | 'Panel']>(
-              conversations.error ?? settings.error,
-            )}
-            render={{ UNKNOWN: ({ message }) => message }}
-          />
           <Conversation
             key={panel.selected || 'new'}
+            renderPicker={(startingAgent) => (
+              <>
+                <div className="d-flex gap-2 mb-3 course-agent-picker">
+                  <Dropdown className="flex-grow-1">
+                    <Dropdown.Toggle
+                      variant="light"
+                      className="course-agent-selector w-100 d-flex justify-content-between align-items-center text-start"
+                      aria-label="Conversation"
+                    >
+                      {current?.title ?? panel.title}
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu
+                      className="w-100 course-agent-conversations"
+                      align={{ sm: 'start' }}
+                    >
+                      <Dropdown.Item
+                        as="button"
+                        active={!panel.selected}
+                        disabled={startingAgent}
+                        onClick={() => changePanel({ selected: '', title: 'New conversation' })}
+                      >
+                        New conversation
+                      </Dropdown.Item>
+                      {conversations.data?.map((c) => (
+                        <Dropdown.Item
+                          key={c.id}
+                          active={c.id === panel.selected}
+                          onClick={() => changePanel({ selected: c.id, title: c.title })}
+                        >
+                          <span className="d-flex align-items-center justify-content-between gap-2">
+                            {c.title}
+                            {c.running || sending === c.id ? (
+                              <span
+                                className="spinner-border spinner-border-sm"
+                                role="status"
+                                aria-label="Working"
+                              />
+                            ) : c.finishedAt &&
+                              readPanelState(`${key}:read:${c.id}`) !== c.finishedAt ? (
+                              <span
+                                className="course-agent-unread bg-primary"
+                                aria-label="New response"
+                              />
+                            ) : null}
+                          </span>
+                        </Dropdown.Item>
+                      ))}
+                    </Dropdown.Menu>
+                  </Dropdown>
+                  <Button
+                    variant="outline-primary"
+                    disabled={startingAgent}
+                    aria-label="New conversation"
+                    title="New conversation"
+                    onClick={() => changePanel({ selected: '', title: 'New conversation' })}
+                  >
+                    <i className="bi bi-plus-lg" aria-hidden="true" />
+                  </Button>
+                </div>
+                <AppErrorAlert
+                  error={getAppError<CourseAgentError['List' | 'Panel']>(
+                    conversations.error ?? settings.error,
+                  )}
+                  render={{ UNKNOWN: ({ message }) => message }}
+                />
+              </>
+            )}
             courseId={courseId}
             id={panel.selected}
             storageKey={`${key}:${panel.selected || 'new'}`}
@@ -241,6 +252,7 @@ function Conversation({
   timezone,
   onCreated,
   onSending,
+  renderPicker,
 }: {
   courseId: string;
   id: string;
@@ -249,6 +261,7 @@ function Conversation({
   timezone: string;
   onCreated: (id: string, title: string) => void;
   onSending: (id: string) => void;
+  renderPicker: (startingAgent: boolean) => ReactNode;
 }) {
   const trpc = useTRPC();
   const base = `/pl/course/${courseId}/course-agent/${id}`;
@@ -409,6 +422,7 @@ function Conversation({
     create.error ?? send.error ?? cancel.error ?? decision.error ?? prepare.error ?? cleanup.error;
   return (
     <>
+      {renderPicker(startingAgent)}
       {failure && (
         <Alert
           variant="warning"
