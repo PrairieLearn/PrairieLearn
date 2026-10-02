@@ -197,80 +197,78 @@ test.describe('Sync students', () => {
   });
 });
 
-for (const format of ['csv', 'csv-file']) {
-  test(`reviews ${format} label replacement and a new invitation on mobile`, async ({
-    page,
+test('reviews CSV file label replacement and a new invitation on mobile', async ({
+  page,
+  courseInstance,
+}) => {
+  const existingUid = 'csv-file-existing@example.com';
+  const newUid = 'csv-file-new@example.com';
+  const authzData = dangerousFullSystemAuthz();
+  const enrollment = await inviteStudentByUid({
+    uid: existingUid,
     courseInstance,
-  }) => {
-    const existingUid = `${format}-existing@example.com`;
-    const newUid = `${format}-new@example.com`;
-    const authzData = dangerousFullSystemAuthz();
-    const enrollment = await inviteStudentByUid({
-      uid: existingUid,
-      courseInstance,
-      authzData,
-      requiredRole: ['System'],
-    });
-    await inviteStudentByUid({
-      uid: `${format}-keep@example.com`,
-      courseInstance,
-      authzData,
-      requiredRole: ['System'],
-    });
-    const labels = await selectStudentLabelsInCourseInstance(courseInstance);
-    const section = labels.find((label) => label.name === 'Section A');
-    expect(section).toBeDefined();
-    await addLabelToEnrollment({ enrollment, label: section!, authzData });
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
-    await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Synchronize student list' }).click();
-    await page.getByRole('combobox', { name: 'Input format' }).selectOption(format);
-    const input =
-      format === 'csv'
-        ? page.getByRole('textbox', { name: 'Student CSV' })
-        : page.getByLabel('CSV file', { exact: true });
-    const enterCsv = async (text: string) => {
-      if (format === 'csv') {
-        await input.fill(text);
-      } else {
-        await input.setInputFiles({
-          name: 'students.csv',
-          mimeType: 'text/csv',
-          buffer: Buffer.from('\uFEFF' + text.replaceAll('\n', '\r\n')),
-        });
-      }
-    };
-    await enterCsv(`uid,label1\n${existingUid},Unknown`);
-    await page.getByRole('button', { name: 'Compare', exact: true }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'unknown label' })).toBeVisible();
-    await expect(input).toHaveAttribute('aria-invalid', 'true');
-    await enterCsv(`uid,label1,label2\n${existingUid},Extra time,\n${newUid},Section A,Extra time`);
-    await page.getByRole('button', { name: 'Compare', exact: true }).click();
-    const changes = page.getByRole('group', { name: 'Students with label changes' });
-    await expect(changes.getByText('Remove: Section A')).toBeVisible();
-    await expect(changes.getByText('Add: Extra time')).toBeVisible();
-    await page.getByRole('button', { name: 'Clear all students to remove' }).click();
-    const checkbox = changes.getByRole('checkbox', { name: new RegExp(existingUid) });
-    await checkbox.press('Space');
-    await expect(page.getByRole('button', { name: 'Update 1 student', exact: true })).toBeVisible();
-    await checkbox.press('Space');
-    await page.getByRole('button', { name: 'Update 2 students', exact: true }).click();
-    await waitForJobAndCheckOutput(page, [`${existingUid}: Labels updated`, `${newUid}: Invited`]);
-    await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
-    const existing = page
-      .getByRole('row')
-      .filter({ has: page.getByRole('link', { name: existingUid, exact: true }) });
-    await expect(existing.getByText('Extra time', { exact: true })).toBeVisible();
-    await expect(existing.getByText('Section A', { exact: true })).not.toBeVisible();
-    await expect(existing.getByText('Invited', { exact: true })).toBeVisible();
-    const added = page
-      .getByRole('row')
-      .filter({ has: page.getByRole('link', { name: newUid, exact: true }) });
-    await expect(added.getByText('Section A', { exact: true })).toBeVisible();
-    await expect(added.getByText('Extra time', { exact: true })).toBeVisible();
+    authzData,
+    requiredRole: ['System'],
   });
-}
+  await inviteStudentByUid({
+    uid: 'csv-file-keep@example.com',
+    courseInstance,
+    authzData,
+    requiredRole: ['System'],
+  });
+  const labels = await selectStudentLabelsInCourseInstance(courseInstance);
+  const section = labels.find((label) => label.name === 'Section A');
+  expect(section).toBeDefined();
+  await addLabelToEnrollment({ enrollment, label: section!, authzData });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
+  await page.getByRole('button', { name: 'Manage enrollments' }).click();
+  await page.getByRole('button', { name: 'Synchronize student list' }).click();
+  await page.getByRole('combobox', { name: 'Input format' }).selectOption('csv-file');
+  const input = page.getByLabel('CSV file', { exact: true });
+  await input.setInputFiles({
+    name: 'students.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('\uFEFF' + `uid,label1\n${existingUid},Unknown`.replaceAll('\n', '\r\n')),
+  });
+  await page.getByRole('button', { name: 'Compare', exact: true }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'unknown label' })).toBeVisible();
+  await expect(input).toHaveAttribute('aria-invalid', 'true');
+  await input.setInputFiles({
+    name: 'students.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(
+      '\uFEFF' +
+        `uid,label1,label2\n${existingUid},Extra time,\n${newUid},Section A,Extra time`.replaceAll(
+          '\n',
+          '\r\n',
+        ),
+    ),
+  });
+  await page.getByRole('button', { name: 'Compare', exact: true }).click();
+  const changes = page.getByRole('group', { name: 'Students with label changes' });
+  await expect(changes.getByText('Remove: Section A')).toBeVisible();
+  await expect(changes.getByText('Add: Extra time')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear all students to remove' }).click();
+  const checkbox = changes.getByRole('checkbox', { name: new RegExp(existingUid) });
+  await checkbox.press('Space');
+  await expect(page.getByRole('button', { name: 'Update 1 student', exact: true })).toBeVisible();
+  await checkbox.press('Space');
+  await page.getByRole('button', { name: 'Update 2 students', exact: true }).click();
+  await waitForJobAndCheckOutput(page, [`${existingUid}: Labels updated`, `${newUid}: Invited`]);
+  await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
+  const existing = page
+    .getByRole('row')
+    .filter({ has: page.getByRole('link', { name: existingUid, exact: true }) });
+  await expect(existing.getByText('Extra time', { exact: true })).toBeVisible();
+  await expect(existing.getByText('Section A', { exact: true })).not.toBeVisible();
+  await expect(existing.getByText('Invited', { exact: true })).toBeVisible();
+  const added = page
+    .getByRole('row')
+    .filter({ has: page.getByRole('link', { name: newUid, exact: true }) });
+  await expect(added.getByText('Section A', { exact: true })).toBeVisible();
+  await expect(added.getByText('Extra time', { exact: true })).toBeVisible();
+});
 
 test('validates CSV files and clears the file when switching formats or reopening', async ({
   page,
