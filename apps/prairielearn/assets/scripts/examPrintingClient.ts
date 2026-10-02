@@ -7,7 +7,6 @@ import {
   encodePrintPageIdentity,
 } from '../../src/lib/client/print-page-code.js';
 import {
-  QuestionBlockSizeOverflowError,
   parsePrintBlockSize,
   planPrintQuestionPages,
 } from '../../src/lib/client/print-question-layout.js';
@@ -293,6 +292,43 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
   }
 }
 
+function materializePrintableDetails(source: HTMLElement): void {
+  const detailsBlocks = [
+    ...source.querySelectorAll<HTMLDetailsElement>('.printing-question details'),
+  ];
+  for (const details of detailsBlocks.reverse()) {
+    const box = document.createElement('div');
+    for (const attribute of details.attributes) {
+      if (attribute.name !== 'open') box.setAttribute(attribute.name, attribute.value);
+    }
+    box.classList.add('printing-details');
+    const summary = details.querySelector(':scope > summary');
+    if (summary) {
+      const heading = document.createElement('div');
+      for (const attribute of summary.attributes) {
+        heading.setAttribute(attribute.name, attribute.value);
+      }
+      heading.classList.add('printing-details-heading');
+      heading.append(...summary.childNodes);
+      summary.replaceWith(heading);
+    }
+    box.append(...details.childNodes);
+    details.replaceWith(box);
+    const caption = box.parentElement;
+    const figure = caption?.parentElement;
+    if (
+      caption?.tagName === 'FIGCAPTION' &&
+      figure?.tagName === 'FIGURE' &&
+      caption.children.length === 1 &&
+      caption.textContent.trim() === box.textContent.trim()
+    ) {
+      // A tall figure can split its caption before the details box, so paginate the box separately.
+      figure.after(box);
+      caption.remove();
+    }
+  }
+}
+
 function measurePrintablePage(source: HTMLElement): { width: number; height: number } {
   const measure = document.createElement('div');
   measure.className = 'exam-print-page-measure';
@@ -304,7 +340,7 @@ function measurePrintablePage(source: HTMLElement): { width: number; height: num
 
 function keepPrintableGroupsTogether(source: HTMLElement, pageHeight: number): void {
   for (const group of source.querySelectorAll<HTMLElement>(
-    '.question-body .card, .printing-order-blocks, .printing-order-choice-group, .sketchresponse, .pl-drawing-container, .printing-subsection, .pl-order-blocks-answer-container, .printing-excalidraw',
+    '.question-body .card, .printing-details, .printing-order-blocks, .printing-order-choice-group, .sketchresponse, .pl-drawing-container, .printing-subsection, .pl-order-blocks-answer-container, .printing-excalidraw',
   )) {
     if (group.getBoundingClientRect().height < pageHeight - 48) {
       group.classList.add('printing-keep-together');
@@ -381,8 +417,6 @@ interface PrintLayout {
   plannedPageAllowsFlow: boolean[];
 }
 
-const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
-
 function layoutQuestions(source: HTMLElement): PrintLayout {
   const questionsContainer = source.querySelector<HTMLElement>('.exam-questions');
   if (!questionsContainer) throw new Error('Printable question container is missing');
@@ -427,7 +461,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
       question.dataset.printPlannedPage = String(pageIndex + 1);
       question.dataset.printPlannedSlot = String(slotIndex + 1);
       question.dataset.printAllowsFlow = String(plannedQuestion.allowsFlow);
-      if (plannedQuestion.blockSize !== 'auto') {
+      if (plannedQuestion.blockSize !== 'auto' && !plannedQuestion.allowsFlow) {
         question.style.setProperty(
           '--printing-question-block-height',
           `${plannedQuestion.reservedHeight}px`,
@@ -525,6 +559,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   if (!source || !output) throw new Error('Printable exam containers are missing');
 
   await Promise.all([waitForLegacyQuestions(source), ...extraReadinessPromises]);
+  materializePrintableDetails(source);
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);
@@ -590,9 +625,6 @@ window.__PL_PRINT_READY__ = paginateExam().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   document.documentElement.dataset.printStatus = 'error';
   document.documentElement.dataset.printError = message;
-  if (error instanceof QuestionBlockSizeOverflowError) {
-    document.documentElement.dataset.printErrorCode = QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE;
-  }
   const status = document.querySelector('#exam-print-status');
   if (status) status.textContent = `Unable to paginate this exam: ${message}`;
   throw error;

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  QuestionBlockSizeOverflowError,
-  parsePrintBlockSize,
-  planPrintQuestionPages,
-} from './print-question-layout.js';
+import { parsePrintBlockSize, planPrintQuestionPages } from './print-question-layout.js';
 
 describe('parsePrintBlockSize', () => {
   it('defaults absent values to auto', () => {
@@ -87,24 +83,34 @@ describe('planPrintQuestionPages', () => {
     expect(pages[0].questions).toHaveLength(3);
   });
 
-  it('rejects an explicit block that is shorter than its content', () => {
-    const plan = () =>
-      planPrintQuestionPages({
-        pageHeight: 900,
-        questions: [
-          {
-            id: 'assessment-question-4',
-            label: 'Question 4',
-            naturalHeight: 451,
-            blockSize: 'half',
-          },
-        ],
-      });
+  it('moves a question past a full requested block when its content needs more space', () => {
+    const pages = planPrintQuestionPages({
+      pageHeight: 900,
+      questions: [
+        { id: 'Question 1', naturalHeight: 400, blockSize: 'half' },
+        { id: 'Question 2', naturalHeight: 501, blockSize: 'half' },
+      ],
+    });
 
-    expect(plan).toThrow(QuestionBlockSizeOverflowError);
-    expect(plan).toThrow(
-      'Question 4 needs 451px, but the requested half print block provides 450px. Use auto or a larger block size.',
-    );
+    expect(pages.map((page) => page.questions.map((question) => question.id))).toEqual([
+      ['Question 1'],
+      ['Question 2'],
+    ]);
+    expect(pages.map((page) => page.reservedHeight)).toEqual([450, 501]);
+    expect(pages.map((page) => page.allowsFlow)).toEqual([false, false]);
+  });
+
+  it('allows an explicit block to flow when its content exceeds a page', () => {
+    const pages = planPrintQuestionPages({
+      pageHeight: 900,
+      questions: [{ id: 'Question 1', naturalHeight: 1_000, blockSize: 'half' }],
+    });
+
+    expect(pages[0]).toMatchObject({
+      reservedHeight: 1_000,
+      allowsFlow: true,
+      questions: [{ reservedHeight: 1_000, allowsFlow: true }],
+    });
   });
 
   it('isolates an oversized question so subpart page breaks cannot split adjacent questions', () => {
