@@ -1287,22 +1287,6 @@ def test_book_maps_source_addresses_to_student_cells() -> None:
         psp.Book(snapshot()).student_cell("Inputs!D5")
 
 
-def reference_question_data(
-    spreadsheet_snapshot: psp.Snapshot,
-) -> dict[str, Any]:
-    return {
-        "submitted_answers": {"model": spreadsheet_snapshot},
-        "correct_answers": {
-            "model": {
-                **private_grading_config(),
-                "student_overlays": [student_overlay("A1:C3")],
-            }
-        },
-        "partial_scores": {"other": {"score": 1, "weight": 1}},
-        "format_errors": {},
-    }
-
-
 def set_reference_cells(
     spreadsheet_snapshot: psp.Snapshot,
     cells: dict[str, list[bool]],
@@ -1327,41 +1311,3 @@ def test_reference_cell_score_requires_every_run_to_match() -> None:
         )
     )
     assert book.reference.cell_score() == pytest.approx(0.5)
-
-
-@pytest.mark.parametrize(
-    ("cells", "score", "feedback"),
-    [
-        (
-            {"Inputs!A1": [True, True, True], "Inputs!B1": [True, True, True]},
-            1,
-            "All answer cells match the reference solution on your worksheet and on every hidden test case.",
-        ),
-        (
-            {"Inputs!A1": [True, True, True], "Inputs!B1": [False, True, True]},
-            0.5,
-            "1 of 2 answer cells match the reference solution. For example, Inputs!B1 does not calculate the expected value.",
-        ),
-        (
-            {"Inputs!B1": [True, False, True], "Inputs!A1": [True, True, False]},
-            0,
-            "0 of 2 answer cells match the reference solution. For example, Inputs!B1 is correct for the values shown but not for every hidden test case.",
-        ),
-        (
-            {"Inputs!A1": [True, True, False]},
-            0,
-            "0 of 1 answer cells match the reference solution. For example, Inputs!A1 is correct for the values shown but not when the hidden test cases change the data.",
-        ),
-    ],
-)
-def test_grade_reference_scores_cells_and_explains_the_first_mismatch(
-    cells: dict[str, list[bool]], score: float, feedback: str
-) -> None:
-    data = reference_question_data(set_reference_cells(graded_snapshot(), cells))
-
-    psp.grade_reference(cast(Any, data), "model", weight=2)
-
-    partial_score = data["partial_scores"]["model"]
-    assert (partial_score["score"], partial_score["weight"]) == (score, 2)
-    assert partial_score["feedback"].startswith(feedback)
-    assert data["score"] == pytest.approx((1 + 2 * score) / 3)

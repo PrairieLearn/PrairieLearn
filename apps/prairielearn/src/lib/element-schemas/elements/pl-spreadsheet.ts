@@ -1,6 +1,6 @@
 import * as z from 'zod/v4';
 
-import { booleanFormat, numberFormat } from '../helpers.js';
+import { booleanFormat, integerFormat, numberFormat } from '../helpers.js';
 import type { ElementSchemaModule } from '../types.js';
 
 const plSpreadsheetAttributesSchema = z
@@ -10,6 +10,7 @@ const plSpreadsheetAttributesSchema = z
     'aria-label': z.string().optional(),
     height: z.string().optional(),
     'params-name': z.string().optional(),
+    weight: integerFormat().optional(),
   })
   .strict();
 

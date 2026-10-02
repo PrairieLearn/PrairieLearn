@@ -556,6 +556,7 @@ def test_generates_deterministic_test_submissions(
     raw = data["raw_submitted_answers"]["model"]
     if test_type == "invalid":
         assert raw == "not valid json"
+        assert "model" in data["format_errors"]
     else:
         decoded = json.loads(raw)
         assert decoded["sheets"]["Inputs"]["A2"] == f"Test {test_type}"
@@ -845,3 +846,151 @@ def test_render_submission_shows_score_and_feedback(element_directory: None) -> 
     data["panel"] = "question"
     data["editable"] = False
     assert "1 of 2 answer cells match." not in spreadsheet.render(ELEMENT_HTML, data)
+
+
+WEIGHTED_ELEMENT_HTML = ELEMENT_HTML.replace(
+    'height="500px"', 'height="500px" weight="2"'
+)
+
+
+def number_comparison(*, match: bool) -> dict[str, Any]:
+    return {
+        "student": {"type": "number", "value": 6},
+        "reference": {"type": "number", "value": 6 if match else 15},
+        "match": match,
+    }
+
+
+def reference_snapshot(
+    data: dict[str, Any], matches: list[bool], *, answer: dict[str, Any]
+) -> dict[str, Any]:
+    submission = snapshot(data)
+    submission["sheets"][0]["cells"]["A3"] = answer
+    grader = data["correct_answers"]["model"]
+    submission["grading"] = {
+        "schema_version": 2,
+        "grader_hash": grader["grader_hash"],
+        "outputs": {},
+        "cases": [
+            {"name": case["name"], "outputs": {}} for case in grader["test_cases"]
+        ],
+        "reference": {
+            "cells": {
+                "Inputs!A3": {
+                    "base": number_comparison(match=matches[0]),
+                    "cases": [number_comparison(match=m) for m in matches[1:]],
+                }
+            },
+            "summary": {"matched": sum(matches), "total": len(matches)},
+        },
+    }
+    return submission
+
+
+FORMULA_ANSWER = {
+    "input": {"type": "formula", "value": "=A2*2"},
+    "result": {"type": "number", "value": 6},
+}
+TYPED_ANSWER = {
+    "input": {"type": "number", "value": 6},
+    "result": {"type": "number", "value": 6},
+}
+
+
+@pytest.mark.parametrize(
+    ("matches", "answer", "score", "feedback"),
+    [
+        (
+            [True, True, True],
+            FORMULA_ANSWER,
+            1,
+            "All answer cells match the reference solution on your worksheet and on every hidden test case.",
+        ),
+        (
+            [False, True, True],
+            FORMULA_ANSWER,
+            0,
+            "0 of 1 answer cells match the reference solution. For example, A3 does not calculate the expected value.",
+        ),
+        (
+            [True, False, True],
+            FORMULA_ANSWER,
+            0,
+            "0 of 1 answer cells match the reference solution. For example, A3 is correct for the values shown but not for every hidden test case.",
+        ),
+        (
+            [True, True, False],
+            TYPED_ANSWER,
+            0,
+            "0 of 1 answer cells match the reference solution. For example, A3 is correct for the values shown but not when the hidden test cases change the data.",
+        ),
+    ],
+)
+def test_grade_scores_reference_cells_and_explains_the_first_mismatch(
+    matches: list[bool],
+    answer: dict[str, Any],
+    score: float,
+    feedback: str,
+    element_directory: None,
+) -> None:
+    data = question_data(correct_answers={"model": reference_grading_config()})
+    spreadsheet.prepare(WEIGHTED_ELEMENT_HTML, data)
+    data["submitted_answers"]["model"] = reference_snapshot(
+        data, matches, answer=answer
+    )
+
+    spreadsheet.grade(WEIGHTED_ELEMENT_HTML, data)
+
+    partial_score = data["partial_scores"]["model"]
+    assert (partial_score["score"], partial_score["weight"]) == (score, 2)
+    assert partial_score["feedback"].startswith(feedback)
+
+
+def test_grade_leaves_questions_without_a_reference_to_the_question(
+    element_directory: None,
+) -> None:
+    data = prepare_data(correct_answers={"model": grading_config()})
+    data["submitted_answers"]["model"] = snapshot(data)
+
+    spreadsheet.grade(ELEMENT_HTML, data)
+
+    assert data["partial_scores"] == {}
+
+
+@pytest.mark.parametrize(
+    ("test_type", "answer", "score", "feedback"),
+    [
+        (
+            "correct",
+            "=A2*3",
+            1,
+            "All answer cells match the reference solution on your worksheet and on every hidden test case.",
+        ),
+        (
+            "incorrect",
+            "Incorrect",
+            0,
+            "0 of 1 answer cells match the reference solution. For example, A3 does not calculate the expected value.",
+        ),
+    ],
+)
+def test_reference_test_submissions_predict_their_grade(
+    test_type: str,
+    answer: str,
+    score: int,
+    feedback: str,
+    element_directory: None,
+) -> None:
+    data = question_data(correct_answers={"model": reference_grading_config()})
+    spreadsheet.prepare(WEIGHTED_ELEMENT_HTML, data)
+    data["test_type"] = test_type
+
+    spreadsheet.test(WEIGHTED_ELEMENT_HTML, data)
+
+    raw = json.loads(data["raw_submitted_answers"]["model"])
+    assert raw["sheets"] == {"Inputs": {"A3": answer}}
+    assert data["partial_scores"]["model"] == {
+        "score": score,
+        "weight": 2,
+        "feedback": feedback,
+    }

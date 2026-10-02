@@ -1,3 +1,4 @@
+import prairielearn as pl
 import prairielearn.spreadsheet_utils as psp
 
 
@@ -122,6 +123,5 @@ def grade(data):
         "score": int(labor.outputs["is_correct"].value is True),
         "weight": 1,
     }
-    # Credits each line total that matches the reference in every hidden case, and
-    # recomputes the question score from all partial scores.
-    psp.grade_reference(data, "order")
+    # pl-spreadsheet grades "order" against its reference solution on its own.
+    pl.set_weighted_score_data(data)

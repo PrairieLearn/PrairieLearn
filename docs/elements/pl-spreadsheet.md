@@ -49,6 +49,7 @@ def generate(data):
 | `allow-blank`  | boolean  | `false`         | Whether every editable cell may be empty. A cell containing a formula is not empty.                                       |
 | `aria-label`   | string   | `"Spreadsheet"` | Accessible name shown in the element header and announced for the grid.                                                   |
 | `height`       | CSS size | `"500px"`       | Editor height. Accepts a non-negative number with `px`, `rem`, `em`, `vh`, `vw`, `vmin`, `vmax`, or `%`.                  |
+| `weight`       | integer  | 1               | Weight of this element's score when it grades against a [reference solution](#hidden-test-cases-and-reference-solutions). |
 
 ## Workbook template
 
@@ -249,8 +250,9 @@ raises `ValueError`.
 ## Grading snapshots
 
 `pl-spreadsheet` validates and evaluates the complete workbook before the question's
-Python code runs. It does not assign a score. `data["submitted_answers"][answers_name]`
-contains a versioned snapshot like this:
+Python code runs. It assigns a score only when the question defines a
+[reference solution](#hidden-test-cases-and-reference-solutions).
+`data["submitted_answers"][answers_name]` contains a versioned snapshot like this:
 
 ```json
 {
@@ -356,9 +358,9 @@ configuration is an authoring error.
 
 ### Grading in `server.py`
 
-`pl-spreadsheet` does not assign a score. Wrap the submitted snapshot with
-`psp.Book` to inspect cells and private outputs, then set `score` or
-`partial_scores` in the question's `grade()` function:
+Without a reference solution, `pl-spreadsheet` does not assign a score. Wrap the
+submitted snapshot with `psp.Book` to inspect cells and private outputs, then set
+`score` or `partial_scores` in the question's `grade()` function:
 
 ```python title="server.py"
 import prairielearn as pl
@@ -504,8 +506,8 @@ def grade(data):
     data["score"] = workbook.reference.score()
 ```
 
-Most reference-graded questions need only a reference solution, test cases, and a
-per-cell score. Private sheets and outputs may then be omitted, and
+Most reference-graded questions need only a reference solution and test cases, and
+no `grade()` function at all. Private sheets and outputs may then be omitted, and
 `psp.fill_formula()` writes a column of reference formulas from the first one:
 
 ```python title="server.py"
@@ -517,19 +519,21 @@ def generate(data):
         rtol=0,
         atol=1e-6,
     )
-
-
-def grade(data):
-    psp.grade_reference(data, "model")
 ```
 
-`psp.grade_reference(data, answers_name, weight=1)` gives each reference cell
-equal credit when it matches the reference on the submitted inputs and on every
-test case. The feedback names the first mismatching cell, in the student's
+When a reference solution is defined, `pl-spreadsheet` grades the answer itself.
+Each reference cell earns equal credit when it matches the reference on the
+submitted inputs and on every test case, and the element's partial score uses its
+`weight` attribute. The feedback names the first mismatching cell, in the student's
 coordinates, and says whether it calculates the wrong value, uses a typed value that
 does not change with the test cases, or uses a formula that does not generalize.
-`pl-spreadsheet` shows the feedback and a score badge with the submission. The
-question score is then recomputed with `pl.set_weighted_score_data()`.
+`pl-spreadsheet` shows the feedback and a score badge with the submission. A
+question's `grade()` function runs afterward, so it may replace this partial score,
+as in the custom rubric above, or set `data["score"]` directly.
+
+The element's `test()` submits the reference solution as a correct answer and text
+that matches no reference result as an incorrect one, so question testing works
+without a `test()` function in `server.py`.
 
 Every address uses authoritative source-workbook coordinates, like private sheets
 and outputs.

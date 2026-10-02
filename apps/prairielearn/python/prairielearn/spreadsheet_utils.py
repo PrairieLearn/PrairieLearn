@@ -26,9 +26,6 @@ import numpy as np
 import pandas as pd
 from openpyxl.formula import Tokenizer
 
-from prairielearn.grading_utils import grade_answer_parameterized
-from prairielearn.question_utils import QuestionData, set_weighted_score_data
-
 if TYPE_CHECKING:
     import os
 
@@ -121,7 +118,6 @@ __all__ = [
     "get_spreadsheet_grading_output",
     "get_spreadsheet_result",
     "get_spreadsheet_value",
-    "grade_reference",
     "parse_spreadsheet_formula",
     "random_cases",
     "read_spreadsheet",
@@ -3343,63 +3339,3 @@ def _validated_reference(value: object, cases: tuple[Case, ...]) -> Reference:
         matched=matched,
         total=total,
     )
-
-
-def _reference_score_and_feedback(book: Book) -> tuple[float, str]:
-    reference = book.reference
-    score = reference.cell_score()
-    if score == 1:
-        if book.cases:
-            return score, (
-                "All answer cells match the reference solution on your worksheet and "
-                "on every hidden test case."
-            )
-        return score, "All answer cells match the reference solution."
-
-    passed = sum(series.all_match for series in reference.values())
-    feedback = (
-        f"{passed} of {len(reference)} answer cells match the reference solution."
-    )
-    address, mismatch = next(
-        (address, series.first_mismatch)
-        for address, series in reference.items()
-        if series.first_mismatch is not None
-    )
-    cell = book.student_cell(address)
-    location = cell.qualified_address if len(book.sheet_names) > 1 else cell.address
-    if mismatch.case is None:
-        feedback += f" For example, {location} does not calculate the expected value."
-    elif cell.is_formula:
-        feedback += (
-            f" For example, {location} is correct for the values shown but not for "
-            "every hidden test case. Check that the formula works for other data too."
-        )
-    else:
-        feedback += (
-            f" For example, {location} is correct for the values shown but not when "
-            "the hidden test cases change the data. Use a formula that refers to the "
-            "data cells rather than a typed value."
-        )
-    return score, feedback
-
-
-def grade_reference(data: QuestionData, answers_name: str, *, weight: int = 1) -> None:
-    """Grade a ``pl-spreadsheet`` answer against its reference solution.
-
-    Call this from a question's ``grade()`` function. Each reference cell earns equal
-    credit when it matches the reference on the submitted inputs and on every hidden
-    test case. The feedback names the first mismatching cell in the student's
-    coordinates and suggests whether a typed value or a formula that does not
-    generalize is the cause. ``pl-spreadsheet`` shows the feedback with the
-    submission. The question score is then recomputed from all partial scores.
-    """
-    grading = data["correct_answers"][answers_name]
-    grade_answer_parameterized(
-        data,
-        answers_name,
-        lambda submission: _reference_score_and_feedback(
-            Book(submission, grading=grading)
-        ),
-        weight=weight,
-    )
-    set_weighted_score_data(data)
