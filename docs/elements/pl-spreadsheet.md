@@ -532,8 +532,11 @@ question's `grade()` function runs afterward, so it may replace this partial sco
 as in the custom rubric above, or set `data["score"]` directly.
 
 The element's `test()` submits the reference solution as a correct answer and text
-that matches no reference result as an incorrect one, so question testing works
-without a `test()` function in `server.py`.
+that matches no reference result as an incorrect one. Without a reference solution,
+it submits the workbook's starting values, so formulas and required outputs evaluate
+as they do in the unedited workbook. If the question's `grade()` function changes
+the score or grades other cells, add a `test()` function to `server.py` that edits
+`data["raw_submitted_answers"]` and sets the expected `partial_scores` or `score`.
 
 Every address uses authoritative source-workbook coordinates, like private sheets
 and outputs.
