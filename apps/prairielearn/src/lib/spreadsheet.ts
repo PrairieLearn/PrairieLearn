@@ -645,34 +645,68 @@ export function isCellEditable(
   });
 }
 
-function formulaWithoutStrings(formula: string): string {
-  let result = '';
-  let inString = false;
-  for (let index = 0; index < formula.length; index += 1) {
+// Mirrors HyperFormula's identifier characters so that every name the engine could
+// parse as a function or unquoted sheet name is seen as one whole token.
+const IDENTIFIER_CHARACTER = /[A-Za-zÀ-ʯ0-9_.]/;
+
+/**
+ * Blanks string literals and quoted sheet names so that their contents cannot hide
+ * function calls from the allowlist, and collects every sheet name the formula
+ * qualifies a reference with.
+ */
+function scanFormula(formula: string): { source: string; sheetNames: string[] } {
+  let source = '';
+  const sheetNames: string[] = [];
+  let quotedSheetName: string | null = null;
+  let index = 0;
+  while (index < formula.length) {
     const character = formula[index];
-    if (character === '"') {
-      if (inString && formula[index + 1] === '"') {
-        index += 1;
-      } else {
-        inString = !inString;
+    if (character === '"' || character === "'") {
+      // Both quote styles escape an embedded quote by doubling it.
+      let value = '';
+      let end = index + 1;
+      while (end < formula.length) {
+        if (formula[end] === character) {
+          if (formula[end + 1] !== character) break;
+          end += 1;
+        }
+        value += formula[end];
+        end += 1;
       }
-      result += ' ';
-    } else {
-      result += inString ? ' ' : character;
+      end = Math.min(end + 1, formula.length);
+      quotedSheetName = character === "'" ? value : null;
+      source += ' '.repeat(end - index);
+      index = end;
+      continue;
     }
+    if (character === '!') {
+      if (quotedSheetName !== null) {
+        sheetNames.push(quotedSheetName);
+      } else {
+        let start = source.length;
+        while (start > 0 && IDENTIFIER_CHARACTER.test(source[start - 1])) start -= 1;
+        sheetNames.push(source.slice(start));
+      }
+    }
+    quotedSheetName = null;
+    source += character;
+    index += 1;
   }
-  return result;
+  return { source, sheetNames };
 }
 
 export function validateFormula(formula: string): string | null {
   if (formula.length > SPREADSHEET_MAX_FORMULA_LENGTH) {
     return `Formulas must be at most ${SPREADSHEET_MAX_FORMULA_LENGTH} characters.`;
   }
-  const source = formulaWithoutStrings(formula);
-  if (source.includes('[') || source.includes(']') || source.includes('{')) {
+  const { source, sheetNames } = scanFormula(formula);
+  if (
+    /[[\]{]/.test(source) ||
+    sheetNames.some((name) => name.includes('[') || name.includes(']'))
+  ) {
     return 'External references, structured references, and array formulas are not supported.';
   }
-  const functions = source.matchAll(/\b([A-Z][A-Z0-9.]*)\s*\(/gi);
+  const functions = source.matchAll(/(?<![A-Za-zÀ-ʯ0-9_.])([A-Za-zÀ-ʯ0-9_.]+)\s*\(/g);
   for (const match of functions) {
     const functionName = match[1].toUpperCase();
     if (!SPREADSHEET_ALLOWED_FUNCTIONS.has(functionName)) {
@@ -1240,13 +1274,22 @@ function validateStudentFormulaReferences(
   engine: HyperFormula,
   template: SpreadsheetTemplate,
   studentSheetData: Record<string, RawCellContent[][]>,
-  issues?: SpreadsheetEditorEvaluation['issues'],
+  {
+    issues,
+    engineSheetNames,
+  }: {
+    issues?: SpreadsheetEditorEvaluation['issues'];
+    /** Maps template sheet names to their names in `engine`, if they were renamed. */
+    engineSheetNames?: Map<string, string>;
+  } = {},
 ): void {
+  const engineSheetName = (name: string) => engineSheetNames?.get(name) ?? name;
   const templateBySheetId = new Map<number, SpreadsheetTemplate['sheets'][number]>();
   for (const sheet of template.sheets) {
-    const sheetId = engine.getSheetId(sheet.name);
+    const sheetId = engine.getSheetId(engineSheetName(sheet.name));
     if (sheetId !== undefined) templateBySheetId.set(sheetId, sheet);
   }
+  const visibleSheetNames = new Set(template.sheets.map((sheet) => sheet.name.toLowerCase()));
 
   function outsideStudentRange(): never;
   function outsideStudentRange(
@@ -1279,11 +1322,18 @@ function validateStudentFormulaReferences(
   }
 
   for (const sheet of template.sheets) {
-    const sheetId = engine.getSheetId(sheet.name) ?? outsideStudentRange();
+    const sheetId = engine.getSheetId(engineSheetName(sheet.name)) ?? outsideStudentRange();
     for (const [row, values] of studentSheetData[sheet.name].entries()) {
       for (const [col, input] of values.entries()) {
         if (typeof input !== 'string' || !input.startsWith('=')) continue;
         const address = cellAddress(row, col);
+        // HyperFormula reports no precedents for some invalid references, such as
+        // ranges spanning two sheets, so sheet names are also checked lexically.
+        if (
+          scanFormula(input).sheetNames.some((name) => !visibleSheetNames.has(name.toLowerCase()))
+        ) {
+          outsideStudentRange(sheet.name, address);
+        }
         const result = engine.getCellValue({ sheet: sheetId, row, col });
         if (result instanceof DetailedCellError && ['NAME', 'ERROR', 'REF'].includes(result.type)) {
           outsideStudentRange(sheet.name, address, result);
@@ -1392,6 +1442,11 @@ function runGradingWorkbook(
       if (sheetId === undefined) throw new Error(`Private grading sheet ${sheet.name} is missing.`);
       engine.setSheetContent(sheetId, buildSheetRows(sheet.rows, sheet.columns, sheet.cells));
     }
+    // Student formulas were validated before any private sheet existed. Check them
+    // again now that private names can resolve, in case a reference bound late.
+    validateStudentFormulaReferences(engine, template, studentSheetData, {
+      engineSheetNames: internalSheetNames,
+    });
 
     const getSheetId = (name: string) => {
       const sheetId = engine.getSheetId(name);
@@ -1685,7 +1740,7 @@ function evaluateSpreadsheetInternal(
   const engine = HyperFormula.buildFromSheets(sheetData, HYPERFORMULA_CONFIG);
 
   try {
-    validateStudentFormulaReferences(engine, config.template, sheetData, issues);
+    validateStudentFormulaReferences(engine, config.template, sheetData, { issues });
     const sheets = config.template.sheets.map((sheet, sheetIndex) => {
       const cells: Record<string, z.infer<typeof SpreadsheetSnapshotCellSchema>> = {};
       for (const [address, input] of Object.entries(merged[sheet.name])) {

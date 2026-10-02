@@ -676,6 +676,166 @@ describe('evaluateSpreadsheet', () => {
   });
 });
 
+describe('adversarial student formulas', () => {
+  const HIDDEN_NUMBER = 31337;
+
+  // The student sees Inputs!B2:C3 as A1:B2. Every source cell around that range,
+  /** a private grading sheet, and an undeclared source sheet hold hidden values. */
+  function makeAttackConfig(): SpreadsheetElementConfig {
+    return {
+      schema_version: 2,
+      template_hash: 'template-hash',
+      template: {
+        schema_version: 2,
+        sheets: [
+          {
+            name: 'Inputs',
+            rows: 2,
+            columns: 2,
+            cells: { A1: 1, B1: 2, B2: 3 },
+            editable_ranges: ['A1:A2'],
+          },
+        ],
+      },
+    };
+  }
+
+  function makeAttackGradingConfig(): SpreadsheetGradingConfig {
+    const hiddenNeighbors = ['A1', 'B1', 'C1', 'D1', 'A2', 'D2', 'A3', 'D3', 'A4', 'B4', 'C4'];
+    return {
+      schema_version: 2,
+      grader_hash: 'attack-grader',
+      source_sheets: [
+        {
+          name: 'Inputs',
+          rows: 4,
+          columns: 4,
+          cells: {
+            ...Object.fromEntries(hiddenNeighbors.map((address) => [address, HIDDEN_NUMBER])),
+            D4: 'HIDDEN_SENTINEL',
+            B2: 1,
+            C2: 2,
+            C3: 3,
+          },
+        },
+        { name: 'Vault', rows: 2, columns: 2, cells: { A1: 'VAULT_SENTINEL', B1: HIDDEN_NUMBER } },
+      ],
+      student_overlays: [
+        { student_sheet: 'Inputs', source_sheet: 'Inputs', source_range: 'B2:C3' },
+      ],
+      sheets: [
+        {
+          name: 'Secret',
+          rows: 2,
+          columns: 2,
+          cells: { A1: 'PRIVATE_SENTINEL', B1: HIDDEN_NUMBER },
+        },
+      ],
+      outputs: { attack: { sheet: 'Inputs', cell: 'B3' } },
+    };
+  }
+
+  function evaluateAttack(formula: string) {
+    const evaluation = evaluateSpreadsheet(
+      makeAttackConfig(),
+      makeSubmission({ Inputs: { A2: formula } }),
+      makeAttackGradingConfig(),
+    );
+    evaluation.engine.destroy();
+    return evaluation.snapshot;
+  }
+
+  it('rejects lookups and addressing that reach outside the student range', () => {
+    const attacks = [
+      '=VLOOKUP(1,A1:C2,3,FALSE)',
+      '=VLOOKUP(2,B1:B2,2,FALSE)',
+      '=HLOOKUP(1,A1:B3,3,FALSE)',
+      '=MATCH(31337,A:A,0)',
+      '=INDEX(A:A,1)',
+      '=INDEX(1:1,1)',
+      '=SUM(A1:INDEX(A:A,5))',
+      '=SUM(INDEX(A1:B2,1,1):C3)',
+      '=SUMIF(A1:A2,">0",C1:C2)',
+      '=SUMPRODUCT(A1:A2,C1:C2)',
+      '=COUNTIFS(A1:A2,">0",B1:B5,">0")',
+      '=IFERROR(Secret!B1,0)',
+      "=IFERROR('secret'!B1,0)",
+      '=IFERROR(Vault!B1,0)',
+      '=IFERROR(INDEX(Secret!A:B,1,2),0)',
+      '=IFNA(MATCH(31337,Vault!B:B,0),0)',
+      `=IFERROR(${SPREADSHEET_INTERNAL_SHEET_PREFIX}0!A1,0)`,
+      '=IFERROR(Inputs!A1:Secret!B1,0)',
+      '=IFERROR(SUM(Secret!A1:Inputs!B2),0)',
+      '=IFERROR(COUNTA(Inputs!B1:Vault!B2),0)',
+      "=IFERROR(SUM(Inputs!A1:'Secret'!B2),0)",
+    ];
+    for (const formula of attacks) {
+      assert.throws(
+        () => evaluateAttack(formula),
+        /outside declared student ranges/,
+        undefined,
+        formula,
+      );
+    }
+  });
+
+  it('keeps out-of-bounds lookup indexes inside the student range', () => {
+    const attacks = [
+      '=INDEX(B1:B2,3)',
+      '=INDEX(B1:B2,0)',
+      '=INDEX(B1:B2,-1)',
+      '=INDEX(B1:B2,1,2)',
+      '=INDEX(A1:B1,2,1)',
+      '=INDEX(A1:B1,0,3)',
+      '=INDEX(B1:B2,"3")',
+      '=SUM(INDEX(B1:B2,0,0))',
+      '=SUMIF(B1:B2,">0",B2)',
+      '=SUMIFS(B2,B1:B2,">0")',
+      '=AVERAGEIF(B1:B2,">0",B2)',
+      '=COUNTIFS(B1:B2,">0",B2,">0")',
+      '=SUMPRODUCT(B1:B2,A1:B1)',
+    ];
+    for (const formula of attacks) {
+      const snapshot = evaluateAttack(formula);
+      assert.equal(snapshot.grading!.outputs.attack.type, 'error', formula);
+      assert.notMatch(JSON.stringify(snapshot), /SENTINEL|31337/, formula);
+    }
+  });
+
+  it('rejects functions hidden inside quoted sheet names', () => {
+    const config = makeAttackConfig();
+    config.template.sheets[0].name = 'Q"1';
+    for (const [formula, functionName] of [
+      ['=\'Q"1\'!B1+SHEETS()+LEN("")', 'SHEETS'],
+      ['=\'Q"1\'!B1&SHEET("Secret")&LEN("")', 'SHEET'],
+      ['=\'Q"1\'!B1+SUM(OFFSET(A1,0,2))+LEN("")', 'OFFSET'],
+    ]) {
+      assert.throws(
+        () => evaluateSpreadsheet(config, makeSubmission({ 'Q"1': { A2: formula } })),
+        new RegExp(`Function ${functionName} is not supported`),
+      );
+    }
+    evaluateSpreadsheet(
+      config,
+      makeSubmission({ 'Q"1': { A2: '=\'Q"1\'!B1&"!"&"Secret!A1"' } }),
+    ).engine.destroy();
+  });
+
+  it('rejects unsupported functions disguised with prefixes or identifier characters', () => {
+    for (const [formula, functionName] of [
+      ['=_xlfn.OFFSET(A1,0,2)', '_XLFN.OFFSET'],
+      ['=IFERROR(SHEETS_(),0)', 'SHEETS_'],
+      ['=IFERROR(ÀSHEETS(),0)', 'ÀSHEETS'],
+      ['=offset (A1,0,2)', 'OFFSET'],
+    ]) {
+      assert.throws(
+        () => evaluateSpreadsheet(makeAttackConfig(), makeSubmission({ Inputs: { A2: formula } })),
+        new RegExp(`Function ${functionName} is not supported`),
+      );
+    }
+  });
+});
+
 describe('spreadsheet test cases', () => {
   it('recomputes outputs with overridden parameters and restores them between cases', () => {
     const { grading } = gradePricing({ Inputs: { C2: 1, D2: '=A2*B2-C2' } });

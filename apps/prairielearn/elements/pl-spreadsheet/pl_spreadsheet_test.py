@@ -1,5 +1,6 @@
 import importlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -240,6 +241,32 @@ def test_prepare_rejects_visible_formula_references_outside_student_range(
 
     with pytest.raises(ValueError, match="outside declared student ranges"):
         spreadsheet.prepare(FILE_ELEMENT_HTML.replace('cell="D2"', 'cell="A1"'), data)
+
+
+@pytest.mark.parametrize(
+    ("formula", "message"),
+    [
+        ('=\'Q"1\'!B1+SHEETS()+LEN("")', "unsupported function SHEETS"),
+        ('=\'Q"1\'!B1+SUM(OFFSET(A1,0,2))+LEN("")', "unsupported function OFFSET"),
+        ("=_xlfn.OFFSET(A1,0,2)", "unsupported function _XLFN.OFFSET"),
+        ("=IFERROR(SHEETS_(),0)", "unsupported function SHEETS_"),
+        ("=offset (A1,0,2)", "unsupported function OFFSET"),
+        ("='[other.xlsx]Sheet1'!A1", "external, structured, or array"),
+    ],
+)
+def test_validate_formula_rejects_disguised_functions(
+    formula: str, message: str
+) -> None:
+    with pytest.raises(ValueError, match=re.escape(message)):
+        spreadsheet._validate_formula(formula, "Inputs!A1")
+
+
+@pytest.mark.parametrize(
+    "formula",
+    ['=\'Q"1\'!B1&"!"', "='It''s'!A1+SUM(B1:B2)", '="SHEETS()"&LEN("(")'],
+)
+def test_validate_formula_accepts_quoted_text(formula: str) -> None:
+    spreadsheet._validate_formula(formula, "Inputs!A1")
 
 
 def test_prepare_rejects_source_path_traversal(tmp_path: Path) -> None:

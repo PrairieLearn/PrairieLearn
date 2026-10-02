@@ -46,7 +46,11 @@ CSS_SIZE_RE = re.compile(
     r"^(?:0|(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em|vh|vw|vmin|vmax|%))$",
     re.IGNORECASE,
 )
-FUNCTION_RE = re.compile(r"\b([A-Z][A-Z0-9.]*)\s*\(", re.IGNORECASE)
+# Mirrors HyperFormula's identifier characters so that every name the engine could
+# parse as a function is checked as one whole token.
+FUNCTION_RE = re.compile(
+    r"(?<![A-Za-z\u00C0-\u02AF0-9_.])([A-Za-z\u00C0-\u02AF0-9_.]+)\s*\("
+)
 
 ALLOWED_FUNCTIONS = {
     "ABS",
@@ -154,23 +158,44 @@ def _parse_range(
         return None
 
 
-def _strip_formula_strings(formula: str) -> str:
+def _strip_formula_strings(formula: str) -> tuple[str, list[str]]:
+    """
+    Blank string literals and quoted sheet names so that their contents cannot hide
+    function calls.
+
+    Returns:
+        The blanked formula and the quoted sheet names it contains.
+    """
     result: list[str] = []
-    in_string = False
+    quoted_sheet_names: list[str] = []
+    quoted: list[str] = []
+    quote: str | None = None
     index = 0
     while index < len(formula):
         character = formula[index]
-        if character == '"':
-            if in_string and index + 1 < len(formula) and formula[index + 1] == '"':
+        if quote is None:
+            if character in "\"'":
+                quote = character
+                quoted = []
+                result.append(" ")
+            else:
+                result.append(character)
+        elif character == quote:
+            # Both quote styles escape an embedded quote by doubling it.
+            if index + 1 < len(formula) and formula[index + 1] == quote:
+                quoted.append(quote)
                 result.extend((" ", " "))
                 index += 2
                 continue
-            in_string = not in_string
+            if quote == "'":
+                quoted_sheet_names.append("".join(quoted))
+            quote = None
             result.append(" ")
         else:
-            result.append(" " if in_string else character)
+            quoted.append(character)
+            result.append(" ")
         index += 1
-    return "".join(result)
+    return "".join(result), quoted_sheet_names
 
 
 def _validate_formula(formula: str, location: str) -> None:
@@ -178,8 +203,10 @@ def _validate_formula(formula: str, location: str) -> None:
         raise ValueError(
             f"Formula in {location} exceeds the {MAX_FORMULA_LENGTH}-character limit."
         )
-    source = _strip_formula_strings(formula)
-    if any(character in source for character in "[{}]"):
+    source, quoted_sheet_names = _strip_formula_strings(formula)
+    if any(character in source for character in "[{}]") or any(
+        "[" in name or "]" in name for name in quoted_sheet_names
+    ):
         raise ValueError(
             f"Formula in {location} uses an external, structured, or array reference, which is not supported."
         )
