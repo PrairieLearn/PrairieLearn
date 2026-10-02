@@ -1,3 +1,5 @@
+import json
+
 import prairielearn as pl
 import prairielearn.spreadsheet_utils as psp
 
@@ -124,4 +126,30 @@ def grade(data):
         "weight": 1,
     }
     # pl-spreadsheet grades "order" against its reference solution on its own.
+    pl.set_weighted_score_data(data)
+
+
+def test(data):
+    if data["test_type"] == "invalid":
+        return
+    # pl-spreadsheet submits the reference solution for "order" and the starting
+    # values elsewhere. The CSV and TSV workbooks start correct, and the starting
+    # "model" workbook passes only its formula and error-output checks.
+    if data["test_type"] == "correct":
+        submission = json.loads(data["raw_submitted_answers"]["model"])
+        submission["sheets"]["Inputs"].update({"B2": 3, "C2": 4})
+        data["raw_submitted_answers"]["model"] = json.dumps(submission)
+        data["partial_scores"]["model"] = {
+            "score": 1,
+            "weight": 1,
+            "feedback": "The inputs, formula structure, and private grading outputs are correct.",
+        }
+    else:
+        data["partial_scores"]["model"] = {
+            "score": 3 / 8,
+            "weight": 1,
+            "feedback": "Check the inputs, formula, and calculated line total.",
+        }
+    for name in ["inventory", "labor"]:
+        data["partial_scores"][name] = {"score": 1, "weight": 1}
     pl.set_weighted_score_data(data)

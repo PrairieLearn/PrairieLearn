@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd
 import prairielearn as pl
 import prairielearn.spreadsheet_utils as psp
@@ -91,4 +93,20 @@ def grade(data: pl.QuestionData) -> None:
         "score": int(xlsx_workbook_correct),
         "weight": 1,
     }
+    pl.set_weighted_score_data(data)
+
+
+def test(data: pl.ElementTestData) -> None:
+    if data["test_type"] == "invalid":
+        return
+    # The file-backed workbooks start with correct values, and pl-spreadsheet
+    # resubmits those, so only the parameter workbook needs a correct answer.
+    correct = data["test_type"] == "correct"
+    if correct:
+        submission = json.loads(data["raw_submitted_answers"]["model"])
+        submission["sheets"]["Inputs"].update({"B2": 3, "C2": 4, "D2": "=B2*C2"})
+        data["raw_submitted_answers"]["model"] = json.dumps(submission)
+    data["partial_scores"]["model"] = {"score": int(correct), "weight": 1}
+    for name in ["csv_model", "tsv_model", "xlsx_model"]:
+        data["partial_scores"][name] = {"score": 1, "weight": 1}
     pl.set_weighted_score_data(data)

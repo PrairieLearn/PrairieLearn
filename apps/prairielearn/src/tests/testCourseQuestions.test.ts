@@ -14,6 +14,8 @@ const qidsTestCourse = [
   'prairieDrawFigure',
   'orderBlocks',
   'sketchTest',
+  'spreadsheetElement',
+  'spreadsheetFileElement',
 ];
 
 describe('Auto-test questions in testCourse', { timeout: 60_000 }, function () {
