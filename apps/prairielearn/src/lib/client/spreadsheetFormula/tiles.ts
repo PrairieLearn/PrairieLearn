@@ -3,7 +3,9 @@
 // notches on both sides that values slot into, and a call is split into shards (`SUM(`,
 // `,`, `)`) whose notches face the arguments between them. Holes are hollow tiles shaped
 // like what belongs in them. The leading `=` is a prefix tile whose operand is the whole
-// expression, like tylr's `let … in` tile and its body.
+// expression, like tylr's `let … in` tile and its body. Like rainbow parentheses, the
+// shards of each call or group (and its name and `)` holes) share a color that cycles
+// with nesting depth, so matching parentheses are easy to pair up.
 
 import { type FormulaToken, formulaReferences } from './lexer.js';
 import { type FormulaHole, type FormulaStructure } from './parser.js';
@@ -13,11 +15,19 @@ export type TileEdge = 'convex' | 'concave' | 'flat';
 export type TileSort =
   'number' | 'string' | 'operator' | 'shard' | 'reference' | 'error' | 'formula';
 
+/** The number of colors that nested calls and groups cycle through. */
+export const NESTING_COLORS = 3;
+
 interface PieceEdges {
   left: TileEdge;
   right: TileEdge;
   /** Whether this piece's left edge interlocks with the previous piece's right edge. */
   joined: boolean;
+  /**
+   * For shards and the holes standing in for them, the nesting depth of their call or
+   * group modulo `NESTING_COLORS`.
+   */
+  nestingColor: number | null;
 }
 
 export type FormulaPiece =
@@ -69,6 +79,21 @@ export function layoutFormula(structure: FormulaStructure): FormulaPiece[] {
   for (const [index, container] of structure.containers.entries()) {
     for (const shard of container.shards) containerOf.set(shard, index);
   }
+  const containerOfHole = new Map<FormulaHole, number>();
+  for (const [index, container] of structure.containers.entries()) {
+    for (const hole of container.holes) containerOfHole.set(hole, index);
+  }
+  // A container lies inside each one whose span contains its start.
+  const nestingColors = structure.containers.map(
+    (container) =>
+      structure.containers.filter(
+        (other) =>
+          other !== container && other.start <= container.start && container.start < other.end,
+      ).length % NESTING_COLORS,
+  );
+  const nestingColorOf = (container: number | undefined | null) =>
+    container == null ? null : nestingColors[container];
+
   const colors = new Map(
     formulaReferences(structure.tokens).map((reference) => [reference.token, reference.colorIndex]),
   );
@@ -96,6 +121,7 @@ export function layoutFormula(structure: FormulaStructure): FormulaPiece[] {
     container: null,
     colorIndex: null,
     joined: false,
+    nestingColor: null,
   });
 
   let holeIndex = 0;
@@ -104,7 +130,13 @@ export function layoutFormula(structure: FormulaStructure): FormulaPiece[] {
     for (; holeIndex < structure.holes.length; holeIndex += 1) {
       const hole = structure.holes[holeIndex];
       if (hole.position > position) return;
-      push({ kind: 'hole', hole, ...holeEdges(hole), joined: false });
+      push({
+        kind: 'hole',
+        hole,
+        ...holeEdges(hole),
+        joined: false,
+        nestingColor: nestingColorOf(containerOfHole.get(hole)),
+      });
     }
   }
 
@@ -167,6 +199,7 @@ export function layoutFormula(structure: FormulaStructure): FormulaPiece[] {
     }
 
     const last = tileTokens.at(-1)!;
+    const tileContainer = containerOf.get(last) ?? container;
     push({
       kind: 'tile',
       start: token.start,
@@ -175,9 +208,10 @@ export function layoutFormula(structure: FormulaStructure): FormulaPiece[] {
       sort,
       left,
       right,
-      container: containerOf.get(last) ?? container,
+      container: tileContainer,
       colorIndex: colors.get(token) ?? null,
       joined: false,
+      nestingColor: nestingColorOf(tileContainer),
     });
     previousSignificant = last;
   }

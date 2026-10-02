@@ -49,6 +49,8 @@ interface FormulaContainer {
   end: number;
   /** The function name, parentheses, and commas that make up the tile. */
   shards: FormulaToken[];
+  /** Holes standing in for a shard: a group's optional name, or a missing `)`. */
+  holes: FormulaHole[];
 }
 
 export interface FormulaPhantom {
@@ -228,30 +230,38 @@ class Parser {
   }
 
   /** Consumes the closing parenthesis, or records a delimiter hole where it is missing. */
-  private parseClose(): { close: FormulaToken | null; end: number } {
+  private parseClose(): { close: FormulaToken | null; end: number; hole: FormulaHole | null } {
     if (this.peek()?.kind === 'rparen') {
       const close = this.consume();
-      if (close.text === '') {
-        this.holes.push({ kind: 'delimiter', position: close.start });
-      } else {
+      if (close.text !== '') {
         this.closePositions.push(close.start);
+        return { close, end: close.end, hole: null };
       }
-      return { close, end: close.end };
+      const hole: FormulaHole = { kind: 'delimiter', position: close.start };
+      this.holes.push(hole);
+      return { close, end: close.end, hole };
     }
     // After any trailing whitespace and argument holes, i.e. where the `)` would be typed.
-    this.holes.push({ kind: 'delimiter', position: this.peekStart() });
-    return { close: null, end: this.length };
+    const hole: FormulaHole = { kind: 'delimiter', position: this.peekStart() };
+    this.holes.push(hole);
+    return { close: null, end: this.length, hole };
   }
 
   private parseGroup(open: FormulaToken): FormulaNode {
-    this.holes.push({ kind: 'name', position: open.start, optional: true });
+    const nameHole: FormulaHole = { kind: 'name', position: open.start, optional: true };
+    this.holes.push(nameHole);
     const next = this.peek();
     const inner =
       !next || next.kind === 'rparen' || next.kind === 'comma'
         ? this.hole({ kind: 'operand', position: this.peekStart() })
         : this.parseExpression(0);
-    const { close, end } = this.parseClose();
-    this.containers.push({ start: open.start, end, shards: close ? [open, close] : [open] });
+    const { close, end, hole } = this.parseClose();
+    this.containers.push({
+      start: open.start,
+      end,
+      shards: close ? [open, close] : [open],
+      holes: hole ? [nameHole, hole] : [nameHole],
+    });
     return { kind: 'group', inner, close };
   }
 
@@ -294,9 +304,9 @@ class Parser {
         });
       }
     }
-    const { close, end } = this.parseClose();
+    const { close, end, hole } = this.parseClose();
     if (close) shards.push(close);
-    this.containers.push({ start: name.start, end, shards });
+    this.containers.push({ start: name.start, end, shards, holes: hole ? [hole] : [] });
     return { kind: 'call', name, signature, args, close };
   }
 }

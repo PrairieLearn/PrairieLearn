@@ -225,6 +225,23 @@
   --pl-spreadsheet-tile-text: var(--pl-spreadsheet-shard-text);
 }
 
+/* Shards and their name and `)` holes take the color of their nesting depth. */
+.pl-spreadsheet-nesting-1 {
+  --pl-spreadsheet-shard-fill: var(--pl-spreadsheet-nesting-1-fill);
+  --pl-spreadsheet-shard-stroke: var(--pl-spreadsheet-nesting-1-stroke);
+  --pl-spreadsheet-shard-text: var(--pl-spreadsheet-nesting-1-text);
+  --pl-spreadsheet-shard-active-fill: var(--pl-spreadsheet-nesting-1-active-fill);
+  --pl-spreadsheet-shard-active-stroke: var(--pl-spreadsheet-nesting-1-active-stroke);
+}
+
+.pl-spreadsheet-nesting-2 {
+  --pl-spreadsheet-shard-fill: var(--pl-spreadsheet-nesting-2-fill);
+  --pl-spreadsheet-shard-stroke: var(--pl-spreadsheet-nesting-2-stroke);
+  --pl-spreadsheet-shard-text: var(--pl-spreadsheet-nesting-2-text);
+  --pl-spreadsheet-shard-active-fill: var(--pl-spreadsheet-nesting-2-active-fill);
+  --pl-spreadsheet-shard-active-stroke: var(--pl-spreadsheet-nesting-2-active-stroke);
+}
+
 .pl-spreadsheet-tile-shard.is-active {
   --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-shard-active-fill);
   --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-shard-active-stroke);

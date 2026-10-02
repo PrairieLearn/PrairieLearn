@@ -137,6 +137,7 @@ export function FormulaTiles({
       `pl-spreadsheet-left-${piece.left}`,
       `pl-spreadsheet-right-${piece.right}`,
       piece.joined && 'is-joined',
+      piece.nestingColor !== null && `pl-spreadsheet-nesting-${piece.nestingColor}`,
     ];
     if (piece.kind === 'hole') {
       const { hole } = piece;

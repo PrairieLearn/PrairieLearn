@@ -43,6 +43,35 @@ describe('layoutFormula', () => {
     expect(layout('=1 + 2')).toBe('<=[+<1> ]+[ <2>');
   });
 
+  it('cycles the colors of nested calls and groups by depth', () => {
+    const colors = layoutFormula(parseFormula('=SUM((ABS((1))),(')!)
+      .filter((piece) => piece.kind !== 'gap' && piece.nestingColor !== null)
+      .map((piece) => {
+        if (piece.kind === 'gap') throw new Error('unreachable');
+        const text =
+          piece.kind === 'tile'
+            ? piece.tokens.map((token) => token.text).join('')
+            : `{${piece.hole.kind}}`;
+        return `${text}${piece.nestingColor}`;
+      });
+    expect(colors).toEqual([
+      'SUM(0',
+      '{name}1',
+      '(1',
+      'ABS(2',
+      '{name}0',
+      '(0',
+      ')0',
+      ')2',
+      ')1',
+      ',0',
+      '{name}1',
+      '(1',
+      '{delimiter}1',
+      '{delimiter}0',
+    ]);
+  });
+
   it('marks shards outside any call as errors', () => {
     const pieces = layoutFormula(parseFormula('=1)')!);
     expect(pieces.at(-1)).toMatchObject({ kind: 'tile', sort: 'error' });
