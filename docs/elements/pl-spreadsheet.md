@@ -290,7 +290,8 @@ def generate(data):
 ```
 
 Private sheets may reference student sheets and other private sheets, but cannot
-replace student cells or reuse a student sheet name. They use the same sheet-name
+replace student cells or reuse a student sheet name. (Hidden test cases, described
+below, temporarily override declared parameter cells.) They use the same sheet-name
 and formula policies and independently receive the workbook limits below. A private
 workbook may export at most 100 named outputs.
 
@@ -430,6 +431,167 @@ External graders receive the same object at
 the documented JSON directly, including exact formula inputs and named private
 outputs.
 
+## Hidden test cases and reference solutions
+
+A private workbook evaluated only on the student's own inputs cannot tell `=B2*C2`
+from a typed `12`. Hidden test cases recalculate the workbook with different
+parameter values, and a reference solution supplies the expected formula for each
+editable answer cell. PrairieLearn evaluates the student's workbook and the reference
+workbook on the submitted inputs and on every test case, then stores typed
+comparisons.
+
+```python title="server.py"
+import prairielearn.spreadsheet_utils as psp
+
+
+def generate(data):
+    # Define data["params"]["workbook"] with editable cells in Order!C2:C3.
+    data["correct_answers"]["model"] = psp.create_spreadsheet(
+        {"Checks": {"A1": "=SUM(Order!C2:C3)"}},
+        outputs={"grand_total": "Checks!A1"},
+        test_cases=[
+            {"name": "zero quantity", "inputs": {"Order!A2": 0}},
+            *psp.random_cases(10, {"Order!A2": (1, 20), "Order!B2": (0.5, 99.5)}),
+        ],
+        reference={
+            "Order!C2": "=A2*B2",
+            "Order!C3": {"value": "=A3*B3", "rtol": 1e-6},
+        },
+    )
+
+
+def grade(data):
+    workbook = psp.Book(
+        data["submitted_answers"]["model"],
+        grading=data["correct_answers"]["model"],
+    )
+    total = workbook.reference["Order!C2"]
+    if not total.all_match and (mismatch := total.first_mismatch) and mismatch.case:
+        data["feedback"]["model"] = (
+            f"Your total is {mismatch.student_value} when the inputs are "
+            f"{mismatch.case.inputs}; expected {mismatch.reference_value}."
+        )
+    data["score"] = workbook.reference.score()
+```
+
+Every address uses authoritative source-workbook coordinates, like private sheets
+and outputs.
+
+- **Test cases** override cells, recalculate, read every named output, and then
+  restore the original contents before the next case. A case may override locked
+  constant cells, cells outside the student range in a source sheet, and editable
+  cells declared in `parameters`. Cells where students enter formulas are never
+  overridden. Override values must be constants (`None` clears a cell). A workbook
+  may define at most 50 test cases with at most 100 inputs each.
+- **`psp.random_cases(count, inputs)`** generates cases from Python's `random`
+  module, which PrairieLearn seeds for each variant. Each input is a `(low, high)`
+  tuple (`randint` for two integers, otherwise `uniform`), any other non-string
+  sequence (`choice`), or a zero-argument callable.
+- **`parameters`** lists editable ranges that hold inputs rather than answers, such
+  as `["Order!A2:A20"]`. The reference workbook keeps the student's values in these
+  cells, and test cases may override them.
+- **`reference`** maps each editable answer cell to a formula or constant. Reference
+  formulas follow the same function policy and student-range boundary as student
+  formulas, so a student can always write an equivalent formula. They are evaluated
+  exactly as if they were submitted. A reference that fails validation is an
+  authoring error. Calculation errors in reference results, such as `#DIV/0!` for a
+  zero quantity, are compared like any other result.
+- **Matching** is typed. Numbers match when
+  `abs(student - reference) <= atol + rtol * abs(reference)`, with defaults of
+  `rtol=1e-2` and `atol=1e-8` (like `pl-number-input`). Set `rtol`, `atol`, or both
+  per cell, or for the whole reference with the `rtol` and `atol` keyword arguments
+  of `create_spreadsheet()`. Strings and booleans must match exactly, errors match by
+  error type, and empty matches only empty. Pass `compare_outputs=True` to also
+  compare every named output between the two workbooks.
+
+With a reference solution, `outputs` may be empty. Reference formulas, test-case
+inputs, and parameter declarations never leave the server. The normalized answer
+adds only the recalculated outputs, the typed comparisons, and a summary:
+
+```json
+{
+  "grading": {
+    "schema_version": 2,
+    "grader_hash": "…",
+    "outputs": { "grand_total": { "type": "number", "value": 33.5 } },
+    "cases": [
+      {
+        "name": "zero quantity",
+        "outputs": { "grand_total": { "type": "number", "value": 20 } }
+      }
+    ],
+    "reference": {
+      "cells": {
+        "Order!C2": {
+          "base": {
+            "student": { "type": "number", "value": 13.5 },
+            "reference": { "type": "number", "value": 13.5 },
+            "match": true
+          },
+          "cases": [
+            {
+              "student": { "type": "number", "value": 13.5 },
+              "reference": { "type": "number", "value": 0 },
+              "match": false
+            }
+          ]
+        }
+      },
+      "summary": { "matched": 1, "total": 2 }
+    }
+  }
+}
+```
+
+`psp.Book` exposes these as `workbook.cases` (each `psp.Case` has a `name`,
+typed `outputs`, and `value(output_name)`) and `workbook.reference`, a mapping from
+source address to `psp.ComparisonSeries`. A series provides `base`, `cases`,
+`all_match`, `match_rate`, and `first_mismatch`. Each `psp.Comparison` provides
+typed `student` and `reference` results, `student_value`, `reference_value`,
+`match`, and the `case` that produced it (`None` for the submitted inputs).
+`workbook.reference.outputs` holds output comparisons, and
+`workbook.reference.score()` returns the fraction of all comparisons that match. Pass
+`grading=data["correct_answers"][answers_name]` to also populate each case's
+`inputs`. PrairieLearn verifies that its `grader_hash` matches the snapshot.
+
+File-backed questions can declare reference cells and parameters in HTML:
+
+```html title="question.html"
+<pl-spreadsheet answers-name="model">
+  <pl-spreadsheet-data
+    source-file="order.csv"
+    sheet-name="Order"
+    student-range="A1:C3"
+    editable-ranges="C2:C3"
+  ></pl-spreadsheet-data>
+  <pl-spreadsheet-reference
+    sheet-name="Order"
+    cell="C2"
+    formula="=A2*B2"
+  ></pl-spreadsheet-reference>
+  <pl-spreadsheet-reference
+    sheet-name="Order"
+    cell="C3"
+    formula="=A3*B3"
+    rtol="1e-6"
+  ></pl-spreadsheet-reference>
+</pl-spreadsheet>
+```
+
+| Element                    | Attribute    | Required | Description                                          |
+| -------------------------- | ------------ | -------- | ---------------------------------------------------- |
+| `pl-spreadsheet-reference` | `sheet-name` | yes      | Source sheet containing the editable answer cell.    |
+|                            | `cell`       | yes      | Source-coordinate address of the answer cell.        |
+|                            | `formula`    | yes      | Reference formula in source coordinates.             |
+|                            | `rtol`       | no       | Relative tolerance for numbers; defaults to `1e-2`.  |
+|                            | `atol`       | no       | Absolute tolerance for numbers; defaults to `1e-8`.  |
+| `pl-spreadsheet-parameter` | `sheet-name` | yes      | Source sheet containing the editable input cells.    |
+|                            | `range`      | yes      | Source-coordinate range of editable parameter cells. |
+
+These children also work with `params-name`, and they merge with any `reference` or
+`parameters` set in `data["correct_answers"]`. Test cases are authored only in
+Python.
+
 ## Formula behavior
 
 Formulas use English function names, `.` for decimals, `,` for argument separators,
@@ -458,8 +620,11 @@ A workbook is limited to 10 sheets, 1,000 rows and 100 columns per sheet, 10,000
 total addressable cells, 2,500 populated cells, and 1,000 formulas. Each formula may
 contain at most 2 KiB; text and string results may contain at most 32 KiB. Both raw
 and normalized submissions are limited to 1 MiB. A private grading workbook has an
-independent copy of these limits; only its named outputs count toward the normalized
-submission payload.
+independent copy of these limits; only its named outputs, test-case outputs, and
+reference comparisons count toward the normalized submission payload. A workbook may
+define at most 50 test cases, 100 parameter ranges, and 500 reference cells, and may
+export at most 5,000 results. Each output counts once per run and each comparison
+counts twice, across the submitted inputs and every test case.
 
 ## Interaction and saved work
 
