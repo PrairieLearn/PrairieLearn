@@ -1161,6 +1161,10 @@ function SpreadsheetEditor({
           </button>
         </div>
         <div className="pl-spreadsheet-formula-bar">
+          {/* Space is always reserved so the formula bar does not move as errors come and go. */}
+          <div id={valueErrorId} className="pl-spreadsheet-value-error" title={activeValueError}>
+            {activeValueError}
+          </div>
           <label htmlFor={`${instructionsId}-formula`}>
             {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
           </label>
@@ -1224,50 +1228,7 @@ function SpreadsheetEditor({
               }
             }}
           />
-          {/* Space is always reserved so the grid does not move as errors come and go. */}
-          <div id={valueErrorId} className="pl-spreadsheet-value-error" title={activeValueError}>
-            {activeValueError}
-          </div>
         </div>
-        {config.template.sheets.length > 1 && (
-          <div className="pl-spreadsheet-sheet-tabs" role="tablist" aria-label="Workbook sheets">
-            {config.template.sheets.map((candidate, index) => (
-              <button
-                key={candidate.name}
-                type="button"
-                className={`btn btn-sm ${index === activeSheetIndex ? 'btn-dark' : 'btn-outline-dark'}`}
-                role="tab"
-                aria-selected={index === activeSheetIndex}
-                tabIndex={index === activeSheetIndex ? 0 : -1}
-                onClick={() => {
-                  setActiveSheetIndex(index);
-                  setActiveCell(null);
-                  setSelectedRange(null);
-                  setFormulaText('');
-                  setAnnouncement(`Opened sheet ${candidate.name}.`);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-                  const offset = event.key === 'ArrowRight' ? 1 : -1;
-                  const nextIndex =
-                    (activeSheetIndex + offset + config.template.sheets.length) %
-                    config.template.sheets.length;
-                  setActiveSheetIndex(nextIndex);
-                  setActiveCell(null);
-                  setSelectedRange(null);
-                  setFormulaText('');
-                  const tabs =
-                    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
-                      '[role="tab"]',
-                    );
-                  tabs?.[nextIndex]?.focus();
-                }}
-              >
-                {candidate.name}
-              </button>
-            ))}
-          </div>
-        )}
         <DataGrid
           ref={gridRef}
           className="rdg-light pl-spreadsheet-grid"
@@ -1355,6 +1316,45 @@ function SpreadsheetEditor({
             beginEdit({ row: rowIdx, column: column.idx - 1 });
           }}
         />
+        {config.template.sheets.length > 1 && (
+          <div className="pl-spreadsheet-sheet-tabs" role="tablist" aria-label="Workbook sheets">
+            {config.template.sheets.map((candidate, index) => (
+              <button
+                key={candidate.name}
+                type="button"
+                className="pl-spreadsheet-sheet-tab"
+                role="tab"
+                aria-selected={index === activeSheetIndex}
+                tabIndex={index === activeSheetIndex ? 0 : -1}
+                onClick={() => {
+                  setActiveSheetIndex(index);
+                  setActiveCell(null);
+                  setSelectedRange(null);
+                  setFormulaText('');
+                  setAnnouncement(`Opened sheet ${candidate.name}.`);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                  const offset = event.key === 'ArrowRight' ? 1 : -1;
+                  const nextIndex =
+                    (activeSheetIndex + offset + config.template.sheets.length) %
+                    config.template.sheets.length;
+                  setActiveSheetIndex(nextIndex);
+                  setActiveCell(null);
+                  setSelectedRange(null);
+                  setFormulaText('');
+                  const tabs =
+                    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                      '[role="tab"]',
+                    );
+                  tabs?.[nextIndex]?.focus();
+                }}
+              >
+                {candidate.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div id={errorId} className="visually-hidden" role="status" aria-live="polite">
           {announcement}
         </div>
