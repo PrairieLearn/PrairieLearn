@@ -22,6 +22,14 @@ type TranscriptPart =
 /** Keep durable code changes at their request marker as their decision changes. */
 export function buildTranscript(messages: UIMessage[], approvals: ApprovalDisplay[]) {
   const placed = new Set<string>();
+  const steering = new Map(
+    messages.filter(isVisibleMessage).flatMap((message) =>
+      message.parts.flatMap((part) => {
+        const value = steeringMarker(part);
+        return value ? [[value.id, value] as const] : [];
+      }),
+    ),
+  );
   const failures = new Map(
     messages.flatMap((message) =>
       message.parts.flatMap((part) => {
@@ -55,8 +63,43 @@ export function buildTranscript(messages: UIMessage[], approvals: ApprovalDispla
   );
   const entries: { id: string; role: UIMessage['role']; parts: TranscriptPart[] }[] = [];
   for (const message of messages) {
-    const parts: TranscriptPart[] = [];
+    if (message.role === 'user' && steering.has(message.id)) continue;
+    let parts: TranscriptPart[] = [];
+    let entryId = message.id;
+
+    function flush() {
+      if (parts.length > 0) entries.push({ id: entryId, role: message.role, parts });
+      parts = [];
+    }
     for (const part of message.parts) {
+      const correction = isVisibleMessage(message) ? steeringMarker(part) : undefined;
+      if (correction) {
+        flush();
+        if (!placed.has(correction.id)) {
+          const user = messages.find(
+            (candidate) => candidate.id === correction.id && candidate.role === 'user',
+          );
+          entries.push({
+            id: correction.id,
+            role: 'user',
+            parts: [
+              {
+                kind: 'part',
+                part: {
+                  type: 'text',
+                  text:
+                    user?.parts
+                      .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+                      .join('\n') || correction.text,
+                },
+              },
+            ],
+          });
+          placed.add(correction.id);
+        }
+        entryId = `${message.id}:after:${correction.id}`;
+        continue;
+      }
       const marker = toolMarkerId(part, 'data-tool') ?? toolMarkerId(part, 'data-tool-display');
       if (marker) {
         if (part.type === 'data-tool-display' && requested.has(marker)) continue;
@@ -106,7 +149,7 @@ export function buildTranscript(messages: UIMessage[], approvals: ApprovalDispla
         parts.push({ kind: 'part', part });
       }
     }
-    if (parts.length > 0) entries.push({ id: message.id, role: message.role, parts });
+    flush();
   }
   // Snapshot updates can arrive before the stream's marker. Never hide an actionable request.
   for (const approval of approvals) {
@@ -129,5 +172,24 @@ function toolMarkerId(part: UIMessage['parts'][number], type: string) {
     'id' in part.data &&
     typeof part.data.id === 'string'
     ? part.data.id
+    : undefined;
+}
+
+function steeringMarker(part: UIMessage['parts'][number]) {
+  if (
+    part.type !== 'data-steering' ||
+    !('data' in part) ||
+    !part.data ||
+    typeof part.data !== 'object'
+  ) {
+    return undefined;
+  }
+  const data = part.data;
+  return 'id' in data &&
+    typeof data.id === 'string' &&
+    'text' in data &&
+    typeof data.text === 'string' &&
+    data.text.trim()
+    ? { id: data.id, text: data.text }
     : undefined;
 }

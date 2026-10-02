@@ -59,6 +59,9 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(page.getByText('Working…', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toHaveCount(0);
+  await composer.fill('Use a different approach.');
+  await composer.press('Enter');
+  await expect(page.getByText('Use a different approach.', { exact: true })).toHaveCount(1);
   const conversationTitle = await page
     .getByRole('button', { name: 'Conversation', exact: true })
     .innerText();
@@ -79,10 +82,15 @@ test('conversation and unsent draft persist across course pages', async ({
   expect(menu!.x).toBeCloseTo(selector!.x, 0);
   expect(menu!.width).toBeCloseTo(selector!.width, 0);
   await page.getByRole('button', { name: conversationTitle, exact: false }).click();
+  await expect(page.getByText('Use a different approach.', { exact: true })).toHaveCount(1);
+  const history = await page.getByRole('complementary', { name: 'Course agent' }).innerText();
+  expect(history.indexOf('Use a different approach.')).toBeGreaterThan(history.indexOf('Started.'));
+  expect(history.indexOf('Use a different approach.')).toBeLessThan(history.indexOf('Finished.'));
   await composer.fill('Keep this draft.');
   await page.getByRole('link', { name: 'Questions', exact: true }).click();
   await expect(page).toHaveURL(`/pl/course/${courseId}/course_admin/questions`);
   await expect(composer).toHaveValue('Keep this draft.');
+  await expect(page.getByText('Use a different approach.', { exact: true })).toHaveCount(1);
   await expect(page.getByText('Please inspect the course.', { exact: true })).toBeVisible();
   await expect(page.getByText('Finished.', { exact: false })).toBeVisible({ timeout: 20000 });
   await page.reload();
@@ -176,7 +184,7 @@ test('failed preparation returns a native tool error and never displays an appro
   expect(approval.ok).toBe(true);
   await expect(page.getByText('Code change request', { exact: true })).toBeVisible();
   await expect(page.getByText('Preparation failed.', { exact: false })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Approve and sync', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Approve', exact: true })).toHaveCount(0);
   await expect(page.getByText('Code change · Review requested', { exact: true })).toHaveCount(0);
   await expect
     .poll(async () => {
@@ -203,7 +211,7 @@ test('failed preparation returns a native tool error and never displays an appro
   await page.screenshot({ path: testInfo.outputPath('course-agent-loading.png'), fullPage: true });
   release();
   await expect(page.getByText('Code change request', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Approve and sync', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Approve', exact: true })).toHaveCount(0);
   await page.unroute('**/course-agent/*/events');
   const proposal = {
     id: '00000000-0000-4000-8000-000000000001',
@@ -216,7 +224,7 @@ test('failed preparation returns a native tool error and never displays an appro
   await page.route('**/course-agent/*/events', (route) =>
     route.fulfill({
       contentType: 'text/event-stream',
-      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], revision: 0, blocked: true, approval: proposal, approvals: [proposal], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
+      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], revision: 0, blocked: true, approval: proposal, approvals: [proposal, { ...proposal, id: 'approved', status: 'approved' }, { ...proposal, id: 'denied', status: 'denied' }], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
     }),
   );
   await page.reload();
@@ -229,8 +237,15 @@ test('failed preparation returns a native tool error and never displays an appro
     'title',
     'Act on the code change request before sending a message.',
   );
+  await expect(page.getByText('Review requested', { exact: true })).toBeVisible();
+  await expect(page.getByText('Approved', { exact: true })).toBeVisible();
+  await expect(page.getByText('Denied', { exact: true })).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath('course-agent-review-states.png'),
+    animations: 'disabled',
+  });
   await expect(page.getByText('+hello', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'View changes', exact: true }).click();
+  await page.getByRole('button', { name: 'View changes', exact: true }).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByText('+hello', { exact: true })).toBeVisible();
   await page.screenshot({

@@ -192,3 +192,62 @@ it('keeps the native request visible as a tool while preparation is pending', ()
   );
   expect(entries[0].parts).toMatchObject([{ kind: 'tools', parts: [{ toolCallId: 'native' }] }]);
 });
+
+it('splits an assistant response around steering bubbles and omits their appended copies', () => {
+  const entries = buildTranscript(
+    [
+      {
+        id: 'assistant',
+        role: 'assistant',
+        parts: [
+          { type: 'text', text: 'Before' },
+          { type: 'data-steering', data: { id: 'first', text: 'Change the name' } },
+          { type: 'text', text: 'Between' },
+          { type: 'data-steering', data: { id: 'second', text: 'Remove online' } },
+          { type: 'text', text: 'After' },
+        ],
+      },
+      { id: 'first', role: 'user', parts: [{ type: 'text', text: 'Change the name' }] },
+      { id: 'second', role: 'user', parts: [{ type: 'text', text: 'Remove online' }] },
+    ],
+    [],
+  );
+  expect(entries.map((entry) => entry.role)).toEqual([
+    'assistant',
+    'user',
+    'assistant',
+    'user',
+    'assistant',
+  ]);
+  expect(entries.map((entry) => entry.parts)).toEqual(
+    ['Before', 'Change the name', 'Between', 'Remove online', 'After'].map((text) => [
+      { kind: 'part', part: { type: 'text', text } },
+    ]),
+  );
+  expect(new Set(entries.map((entry) => entry.id)).size).toBe(5);
+});
+
+it('renders steering immediately before its persisted user message arrives', () => {
+  const assistant = {
+    id: 'assistant',
+    role: 'assistant' as const,
+    parts: [
+      { type: 'data-steering' as const, data: { id: 'steer', text: 'Use a different approach' } },
+      { type: 'text' as const, text: 'Understood' },
+    ],
+  };
+  const live = buildTranscript([assistant], []);
+  const saved = buildTranscript(
+    [
+      assistant,
+      { id: 'steer', role: 'user', parts: [{ type: 'text', text: 'Use a different approach' }] },
+    ],
+    [],
+  );
+  expect(live).toEqual(saved);
+  expect(live[0]).toMatchObject({
+    id: 'steer',
+    role: 'user',
+    parts: [{ kind: 'part', part: { text: 'Use a different approach' } }],
+  });
+});
