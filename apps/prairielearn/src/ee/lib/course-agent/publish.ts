@@ -272,6 +272,85 @@ export class Publisher {
     );
   }
 
+  /** Undo only this publication with a new commit, fenced against concurrent branch changes. */
+  async rollback(job: Publication, publishedSha: string): Promise<string> {
+    const root = `/repos/${this.destination.repository}`;
+    const ref = (await this.request(
+      `${root}/git/ref/heads/${encodeURIComponent(this.destination.branch)}`,
+    )) as { object: { sha: string } };
+    const head = (await this.request(`${root}/git/commits/${ref.object.sha}`)) as {
+      message: string;
+      parents: { sha: string }[];
+      tree: { sha: string };
+    };
+    const base = (await this.request(`${root}/git/commits/${job.approval.baseSha}`)) as {
+      tree: { sha: string };
+    };
+    const headline = `Revert failed course-agent change ${job.id}`;
+    const body = `Publication: ${publishedSha}`;
+    if (
+      head.message.trimEnd() === `${headline}\n\n${body}` &&
+      head.parents.length === 1 &&
+      head.parents[0].sha === publishedSha &&
+      head.tree.sha === base.tree.sha
+    ) {
+      return ref.object.sha;
+    }
+    if (ref.object.sha !== publishedSha) {
+      throw new PublishRejected(
+        'Rollback could not proceed: the branch has newer commits. No later changes were overwritten.',
+      );
+    }
+    const tree = (await this.request(`${root}/git/trees/${job.approval.baseSha}?recursive=1`)) as {
+      truncated: boolean;
+      tree: { path: string; sha: string }[];
+    };
+    if (tree.truncated) {
+      throw new PublishRejected(
+        'Rollback tree exceeds supported limits. Operator recovery is required.',
+      );
+    }
+    const additions: { path: string; contents: string }[] = [];
+    const deletions: { path: string }[] = [];
+    for (const file of job.approval.files) {
+      const previous = tree.tree.find((entry) => entry.path === file.path);
+      if (previous) {
+        const blob = (await this.request(`${root}/git/blobs/${previous.sha}`)) as {
+          encoding: string;
+          content: string;
+        };
+        if (blob.encoding !== 'base64') {
+          throw new PublishRejected('Unsupported rollback blob encoding.');
+        }
+        additions.push({ path: file.path, contents: blob.content.replaceAll('\n', '') });
+      } else {
+        deletions.push({ path: file.path });
+      }
+    }
+    const result = (await this.request('/graphql', {
+      query:
+        'mutation($input:CreateCommitOnBranchInput!){createCommitOnBranch(input:$input){commit{oid}}}',
+      variables: {
+        input: {
+          branch: {
+            repositoryNameWithOwner: this.destination.repository,
+            branchName: this.destination.branch,
+          },
+          expectedHeadOid: publishedSha,
+          message: { headline, body },
+          fileChanges: { additions, deletions },
+        },
+      },
+    })) as { errors?: unknown; data?: { createCommitOnBranch?: { commit: { oid: string } } } };
+    if (result.errors || !result.data?.createCommitOnBranch) {
+      throw new ChatError(
+        502,
+        'Rollback is unconfirmed. Retry completion to reconcile before continuing.',
+      );
+    }
+    return result.data.createCommitOnBranch.commit.oid;
+  }
+
   private message(job: Publication) {
     return `Approved course-agent change ${job.id}\n\nProposal: ${job.approval.digest}`;
   }
