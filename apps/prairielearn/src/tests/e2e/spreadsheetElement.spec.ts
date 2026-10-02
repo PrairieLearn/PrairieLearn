@@ -409,6 +409,19 @@ test('fills a row or column by dragging the fill handle', async ({ page, courseI
   await dragFill('D3', 'B3');
   await expect(rawAnswer).toHaveValue(/"C3":"=C2\*10"/);
   await expect(rawAnswer).toHaveValue(/"B3":"=B2\*10"/);
+  await undo.click();
+
+  // A drag that returns to where it started fills nothing.
+  await cell('D2').click();
+  const beforeDrag = await rawAnswer.inputValue();
+  await grid.locator('.rdg-cell-drag-handle').hover();
+  await page.mouse.down();
+  await cell('D4').hover();
+  await cell('D2').hover();
+  await page.mouse.up();
+  await expect(rawAnswer).toHaveValue(beforeDrag);
+  await cell('B4').click();
+  await expect(cell('B4')).toBeFocused();
 });
 
 test('pops a spreadsheet out to fill the window', async ({ page, courseInstance }) => {
