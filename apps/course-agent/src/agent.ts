@@ -1,7 +1,13 @@
 import { AIChatAgent } from '@cloudflare/ai-chat';
 import { getSandbox } from '@cloudflare/sandbox';
 import type { Connection, ConnectionContext, WSMessage } from 'agents';
-import { type UIMessageChunk, createUIMessageStream, createUIMessageStreamResponse } from 'ai';
+import {
+  type UIMessage,
+  type UIMessageChunk,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  readUIMessageStream,
+} from 'ai';
 
 import {
   ChatError,
@@ -173,6 +179,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
   private chatTask?: Promise<void>;
   private acceptance?: { resolve(): void; reject(error: unknown): void };
   private turnInProgress = false;
+  private streamedMessage?: UIMessage;
   // Capture has no resumable work; a DO restart must not preserve an in-flight lock.
   private toolPreparing = false;
   private recovery?: Promise<void>;
@@ -263,7 +270,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     if (request.method === 'GET' && path.endsWith('/snapshot')) {
       return Response.json(
         {
-          messages: this.messages,
+          messages: this.snapshotMessages(),
           executions: this.state.executions ?? {},
           revision: 0, // PL supplies its authoritative admission revision.
           blocked: !!this.state.pendingTool || this.toolPreparing,
@@ -335,6 +342,29 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     }
   }
 
+  private createObservedStream(options: Parameters<typeof createUIMessageStream>[0]) {
+    const stream = createUIMessageStream(options);
+    const runId = this.state.run?.id;
+    const [response, observation] = stream.tee();
+    this.ctx.waitUntil(
+      (async () => {
+        for await (const message of readUIMessageStream({ stream: observation })) {
+          if (this.state.run?.id === runId) this.streamedMessage = message;
+        }
+      })(),
+    );
+    return response;
+  }
+
+  private snapshotMessages() {
+    const streamed = this.streamedMessage;
+    if (!streamed) return this.messages;
+    const saved = this.messages.some((message) => message.id === streamed.id);
+    return saved
+      ? this.messages.map((message) => (message.id === streamed.id ? streamed : message))
+      : [...this.messages, streamed];
+  }
+
   private async saveSteering(input: SendRequest) {
     this.setState({
       ...this.state,
@@ -354,7 +384,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       },
     });
     await this.persistMessages([
-      ...this.messages,
+      ...this.snapshotMessages(),
       { id: input.id, role: 'user', parts: [{ type: 'text', text: input.text }] },
     ]);
     await this.interaction();
@@ -1164,8 +1194,9 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       this.turnInProgress = false;
       throw error;
     }
+    this.streamedMessage = undefined;
     return createUIMessageStreamResponse({
-      stream: createUIMessageStream({
+      stream: this.createObservedStream({
         onError: messageOf,
         execute: async ({ writer }) => {
           const write = (chunk: UIMessageChunk) => writer.write(chunk);

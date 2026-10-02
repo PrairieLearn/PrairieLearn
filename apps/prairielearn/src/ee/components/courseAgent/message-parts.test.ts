@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 
 import type { ApprovalDisplay } from '@prairielearn/course-agent-contract';
 
-import { buildTranscript, isVisibleMessage } from './message-parts.js';
+import { buildTranscript, isVisibleMessage, mergeSnapshotMessages } from './message-parts.js';
 
 it('hides native recovery input but preserves ordinary user messages', () => {
   expect(
@@ -250,4 +250,38 @@ it('renders steering immediately before its persisted user message arrives', () 
     role: 'user',
     parts: [{ kind: 'part', part: { text: 'Use a different approach' } }],
   });
+});
+
+it('keeps snapshot tools visible while replay crosses a steering marker', () => {
+  const saved = {
+    id: 'response',
+    role: 'assistant' as const,
+    parts: [
+      { type: 'text' as const, text: 'Before' },
+      {
+        type: 'dynamic-tool' as const,
+        toolName: 'command_execution',
+        toolCallId: 'command',
+        state: 'output-available' as const,
+        input: {},
+        output: 'done',
+      },
+      { type: 'data-steering' as const, data: { id: 'steer', text: 'Do more' } },
+      { type: 'text' as const, text: 'After' },
+    ],
+  };
+  expect(mergeSnapshotMessages([saved], [{ ...saved, parts: saved.parts.slice(0, 1) }])).toEqual([
+    saved,
+  ]);
+  const replay = {
+    ...saved,
+    parts: saved.parts.map((part) =>
+      part.type === 'dynamic-tool'
+        ? { ...part, state: 'input-available' as const, output: undefined }
+        : part,
+    ),
+  };
+  expect(mergeSnapshotMessages([saved], [replay])).toEqual([saved]);
+  const updated = { ...saved, parts: [...saved.parts, { type: 'text' as const, text: 'More' }] };
+  expect(mergeSnapshotMessages([saved], [updated])).toEqual([updated]);
 });

@@ -26,7 +26,7 @@ import { ChatMessage } from '../ai/ChatMessage.js';
 import { MemoizedMarkdown } from '../ai/MemoizedMarkdown.js';
 import { ReasoningSummary } from '../ai/ReasoningSummary.js';
 
-import { buildTranscript } from './message-parts.js';
+import { buildTranscript, mergeSnapshotMessages } from './message-parts.js';
 import { readPanelState, savePanelState, usePanelState } from './panelState.js';
 
 export function CourseAgentPanel({
@@ -400,6 +400,7 @@ function Conversation({
       },
     });
   }
+  const transcriptMessages = mergeSnapshotMessages(snapshot.messages, messages);
   const mutationError =
     create.error ?? send.error ?? cancel.error ?? decision.error ?? prepare.error ?? cleanup.error;
   return (
@@ -469,14 +470,14 @@ function Conversation({
             userName={userName}
             timezone={timezone}
             messages={
-              optimistic && !messages.some((m) => m.id === optimistic.id)
-                ? [...messages, optimistic]
-                : messages
+              optimistic && !transcriptMessages.some((m) => m.id === optimistic.id)
+                ? [...transcriptMessages, optimistic]
+                : transcriptMessages
             }
             approvals={snapshot.approvals ?? []}
             renderCodeChange={(approval) => (
               <section
-                className="d-flex align-items-center flex-wrap gap-2 my-2 p-2 border rounded bg-body w-100"
+                className="d-flex align-items-center flex-wrap gap-3 my-2 p-2 border rounded bg-body w-100"
                 aria-label="Code change"
               >
                 <span
@@ -507,64 +508,58 @@ function Conversation({
                       ? 'Approved'
                       : 'Denied'}
                 </span>
-                {approval.status === 'pending' && (
-                  <span className="text-muted" aria-hidden="true">
-                    ·
-                  </span>
-                )}
-                <ChangeDiff diff={approval.diff} />
-
-                {snapshot.approval?.id === approval.id && (
-                  <>
-                    {snapshot.publication?.error && (
-                      <span className="text-danger w-100 order-last small">
-                        {snapshot.blocked
-                          ? snapshot.publication.error
-                          : 'Course sync failed; the agent was notified.'}
-                      </span>
-                    )}
-                    {approval.status === 'pending' ? (
-                      <>
-                        <Button
-                          size="sm"
-                          className="ms-auto"
-                          disabled={
-                            decision.isPending || snapshot.publication?.status === 'invalid'
-                          }
-                          onClick={() => decide(approval, true)}
-                        >
-                          Approve
-                        </Button>{' '}
-                        <Button
-                          size="sm"
-                          variant="outline-secondary"
-                          disabled={decision.isPending}
-                          onClick={() => decide(approval, false)}
-                        >
-                          Deny
-                        </Button>
-                        {snapshot.publication?.status === 'invalid' && (
+                <div className="ms-auto d-flex align-items-center flex-wrap gap-3">
+                  {snapshot.approval?.id === approval.id && (
+                    <>
+                      {approval.status === 'pending' ? (
+                        <>
                           <Button
-                            variant="link"
-                            onClick={() =>
-                              prepare.mutate({ conversationId: id, operationId: approval.id })
+                            size="sm"
+                            disabled={
+                              decision.isPending || snapshot.publication?.status === 'invalid'
                             }
+                            onClick={() => decide(approval, true)}
                           >
-                            Retry preparation
+                            Approve
+                          </Button>{' '}
+                          <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            disabled={decision.isPending}
+                            onClick={() => decide(approval, false)}
+                          >
+                            Deny
                           </Button>
-                        )}
-                      </>
-                    ) : (
-                      snapshot.blocked && (
-                        <Button
-                          disabled={decision.isPending}
-                          onClick={() => decide(approval, approval.status === 'approved')}
-                        >
-                          Retry completion
-                        </Button>
-                      )
-                    )}
-                  </>
+                          {snapshot.publication?.status === 'invalid' && (
+                            <Button
+                              variant="link"
+                              onClick={() =>
+                                prepare.mutate({ conversationId: id, operationId: approval.id })
+                              }
+                            >
+                              Retry preparation
+                            </Button>
+                          )}
+                        </>
+                      ) : (
+                        snapshot.blocked &&
+                        !decision.isPending &&
+                        (snapshot.publication?.error || decision.error) && (
+                          <Button onClick={() => decide(approval, approval.status === 'approved')}>
+                            Retry completion
+                          </Button>
+                        )
+                      )}
+                    </>
+                  )}
+                  <ChangeDiff diff={approval.diff} />
+                </div>
+                {snapshot.approval?.id === approval.id && snapshot.publication?.error && (
+                  <span className="text-danger w-100 small">
+                    {snapshot.blocked
+                      ? snapshot.publication.error
+                      : 'Course sync failed; the agent was notified.'}
+                  </span>
                 )}
               </section>
             )}

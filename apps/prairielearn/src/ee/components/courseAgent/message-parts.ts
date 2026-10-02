@@ -19,6 +19,33 @@ type TranscriptPart =
   | { kind: 'tools'; parts: UIMessage['parts'] }
   | { kind: 'code-change'; approval: ApprovalDisplay };
 
+/** Keep the complete snapshot visible until the resumed stream catches up to it. */
+export function mergeSnapshotMessages(snapshot: UIMessage[], streamed: UIMessage[]) {
+  return [
+    ...snapshot.map((saved) => {
+      const incoming = streamed.find((message) => message.id === saved.id);
+      if (!incoming || incoming.parts.length < saved.parts.length) return saved;
+      const caughtUp = saved.parts.every((part, index) => {
+        const next = incoming.parts[index];
+        if (part.type !== next.type) return false;
+        if (part.type === 'text' || part.type === 'reasoning') {
+          return (
+            'text' in next && typeof next.text === 'string' && next.text.length >= part.text.length
+          );
+        }
+        if ('state' in part && typeof part.state === 'string' && part.state.startsWith('output-')) {
+          return (
+            'state' in next && typeof next.state === 'string' && next.state.startsWith('output-')
+          );
+        }
+        return true;
+      });
+      return caughtUp ? { ...incoming, metadata: saved.metadata ?? incoming.metadata } : saved;
+    }),
+    ...streamed.filter((message) => !snapshot.some((saved) => saved.id === message.id)),
+  ];
+}
+
 /** Keep durable code changes at their request marker as their decision changes. */
 export function buildTranscript(messages: UIMessage[], approvals: ApprovalDisplay[]) {
   const placed = new Set<string>();

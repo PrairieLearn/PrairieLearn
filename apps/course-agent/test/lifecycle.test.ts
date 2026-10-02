@@ -75,6 +75,29 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     const latest = (await c.request('test/state')).checkpoint;
     expect(objects).toContain(`backups/${latest.backup.id}/data.sqsh`);
   });
+  it('includes live tools and steering in snapshots before the turn finishes', async () => {
+    const c = conversation();
+    await c.send();
+    await expect
+      .poll(async () =>
+        (await c.request('snapshot')).messages.some((message: { parts: { type: string }[] }) =>
+          message.parts.some((part) => part.type === 'dynamic-tool'),
+        ),
+      )
+      .toBe(true);
+    const id = randomUUID();
+    expect((await c.rawMessage({ id, text: 'Continue checking.', expectedRevision: 0 })).ok).toBe(
+      true,
+    );
+    await expect
+      .poll(async () =>
+        (await c.request('snapshot')).messages.some((message: { parts: { type: string }[] }) =>
+          message.parts.some((part) => part.type === 'data-steering'),
+        ),
+      )
+      .toBe(true);
+    await c.request('cancel', {});
+  });
   it('reconciles a lost steering acknowledgment without submitting steering twice', async () => {
     const c = conversation();
     await c.send();

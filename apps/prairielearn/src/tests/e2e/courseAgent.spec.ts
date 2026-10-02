@@ -69,6 +69,25 @@ test('conversation and unsent draft persist across course pages', async ({
   await composer.press('Enter');
   await expect(page.getByText('Keep counting.', { exact: true })).toHaveCount(1);
   await expect(page.getByText('Started.', { exact: true })).toHaveCount(1);
+  let releaseReplay!: () => void;
+  const replayGate = new Promise<void>((resolve) => {
+    releaseReplay = resolve;
+  });
+  let replayContinued!: () => void;
+  const replayContinuation = new Promise<void>((resolve) => {
+    replayContinued = resolve;
+  });
+  await page.route('**/course-agent/*/stream', async (route) => {
+    await replayGate;
+    await route.continue();
+    replayContinued();
+  });
+  await page.reload();
+  await expect(page.getByText(/^(Running|Command): sleep 8$/)).toBeVisible();
+  await expect(page.getByText('Keep counting.', { exact: true })).toHaveCount(1);
+  releaseReplay();
+  await replayContinuation;
+  await page.unroute('**/course-agent/*/stream');
   const conversationTitle = await page
     .getByRole('button', { name: 'Conversation', exact: true })
     .innerText();
@@ -251,6 +270,15 @@ test('failed preparation returns a native tool error and never displays an appro
   await expect(page.getByText('Review requested', { exact: true })).toBeVisible();
   await expect(page.getByText('Approved', { exact: true })).toBeVisible();
   await expect(page.getByText('Denied', { exact: true })).toBeVisible();
+  const approvedBar = page
+    .getByRole('region', { name: 'Code change', exact: true })
+    .filter({ has: page.getByText('Approved', { exact: true }) });
+  const barBounds = await approvedBar.boundingBox();
+  const viewBounds = await approvedBar
+    .getByRole('button', { name: 'View changes', exact: true })
+    .boundingBox();
+  expect(viewBounds!.x + viewBounds!.width).toBeCloseTo(barBounds!.x + barBounds!.width - 9, 0);
+
   await expect(
     page.getByText('We couldn’t finish cleaning up the workspace.', { exact: true }),
   ).toBeVisible();
@@ -276,4 +304,21 @@ test('failed preparation returns a native tool error and never displays an appro
   });
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  for (const status of ['approved', 'denied']) {
+    await page.unroute('**/course-agent/*/events');
+    const approval = { ...proposal, status };
+    await page.route('**/course-agent/*/events', (route) =>
+      route.fulfill({
+        contentType: 'text/event-stream',
+        body: `data: ${JSON.stringify({ messages: [], revision: 0, blocked: true, approval, approvals: [approval], publication: { status: 'publishing', repository: 'example/course', branch: 'main' } })}\n\n`,
+      }),
+    );
+    await page.reload();
+    await expect(
+      page.getByText(status === 'approved' ? 'Approved' : 'Denied', { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Retry completion', exact: true })).toHaveCount(
+      0,
+    );
+  }
 });
