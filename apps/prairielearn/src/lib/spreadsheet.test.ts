@@ -8,6 +8,7 @@ import {
   SpreadsheetGradingConfigSchema,
   type SpreadsheetRawSubmission,
   SpreadsheetSubmissionError,
+  addSpreadsheetReferenceAnswers,
   createSpreadsheetAddressSpace,
   evaluateSpreadsheet,
   evaluateSpreadsheetForEditor,
@@ -950,6 +951,68 @@ describe('spreadsheet reference solutions', () => {
         assert.notInstanceOf(error, SpreadsheetSubmissionError);
         assert.match((error as Error).message, message);
       }
+    }
+  });
+});
+
+describe('addSpreadsheetReferenceAnswers', () => {
+  const params = { _pl_spreadsheet_v2: { model: makePricingConfig() } };
+
+  it('evaluates the reference workbook on the template for the answer panel', () => {
+    const correctAnswers = addSpreadsheetReferenceAnswers({
+      params,
+      correctAnswers: {
+        model: makePricingGradingConfig({ reference: PRICING_REFERENCE }),
+        other: 42,
+      },
+    });
+
+    const gradingConfig = SpreadsheetGradingConfigSchema.parse(correctAnswers.model);
+    assert.deepEqual(gradingConfig.answer?.sheets[0].cells.D2, {
+      input: { type: 'formula', value: '=A2*B2-C2' },
+      result: { type: 'number', value: 12 },
+    });
+    assert.deepEqual(gradingConfig.answer?.sheets[0].cells.A2, {
+      input: { type: 'number', value: 3 },
+      result: { type: 'number', value: 3 },
+    });
+    assert.equal(correctAnswers.other, 42);
+
+    const normalized = normalizeSpreadsheetAnswers({
+      params,
+      correctAnswers,
+      submittedAnswers: {
+        model: JSON.stringify(makeSubmission({ Inputs: { C2: 1, D2: '=B2*A2-C2' } })),
+      },
+    });
+    const serialized = JSON.stringify(normalized.model);
+    assert.include(serialized, '"matched":3');
+    assert.notInclude(serialized, 'A2*B2-C2');
+  });
+
+  it('leaves grading configs without a reference unchanged', () => {
+    const correctAnswers = { model: makePricingGradingConfig() };
+    assert.deepEqual(addSpreadsheetReferenceAnswers({ params, correctAnswers }), correctAnswers);
+    assert.deepEqual(
+      addSpreadsheetReferenceAnswers({ params: {}, correctAnswers }),
+      correctAnswers,
+    );
+  });
+
+  it('reports invalid reference solutions as authoring errors', () => {
+    const reference = {
+      ...PRICING_REFERENCE,
+      cells: [{ sheet: 'Inputs', cell: 'D2', input: '=NOSUCH(A2)' }],
+    };
+    try {
+      addSpreadsheetReferenceAnswers({
+        params,
+        correctAnswers: { model: makePricingGradingConfig({ reference }) },
+      });
+      assert.fail('Expected the reference solution to be rejected');
+    } catch (error) {
+      assert.notInstanceOf(error, SpreadsheetSubmissionError);
+      assert.match((error as Error).message, /reference solution for "model" is invalid/);
     }
   });
 });

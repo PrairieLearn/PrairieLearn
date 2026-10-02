@@ -725,3 +725,60 @@ def test_prepare_reference_children_create_a_grading_config(
     )
     with pytest.raises(ValueError, match="is duplicated"):
         spreadsheet.prepare(duplicated, question_data())
+
+
+def test_render_answer_panel_shows_the_evaluated_reference_workbook(
+    element_directory: None,
+) -> None:
+    data = prepare_data(correct_answers={"model": reference_grading_config()})
+    data["panel"] = "answer"
+    assert "grading is defined by the question" in spreadsheet.render(
+        ELEMENT_HTML, data
+    )
+
+    data["correct_answers"]["model"]["answer"] = {
+        "sheets": [
+            {
+                "name": "Inputs",
+                "rows": 3,
+                "columns": 3,
+                "cells": {
+                    "A2": {
+                        "input": {"type": "number", "value": 2},
+                        "result": {"type": "number", "value": 2},
+                    },
+                    "A3": {
+                        "input": {"type": "formula", "value": "=A2*3"},
+                        "result": {"type": "number", "value": 6},
+                    },
+                },
+            }
+        ]
+    }
+    rendered = html.fromstring(spreadsheet.render(ELEMENT_HTML, data))
+
+    assert "Highlighted cells show a reference solution" in rendered.text_content()
+    answer_cell = rendered.xpath('//td[@class="table-success"]')
+    assert [cell.get("aria-label") for cell in answer_cell] == [
+        "Cell A3, reference solution"
+    ]
+    assert answer_cell[0].xpath('.//span[@data-spreadsheet-view="values"]/text()') == [
+        "6"
+    ]
+    assert answer_cell[0].xpath(
+        './/span[@data-spreadsheet-view="formulas"]/text()'
+    ) == ["=A2*3"]
+    assert "Checks" not in rendered.text_content()
+
+
+def test_reference_answer_cells_use_student_coordinates() -> None:
+    assert spreadsheet._reference_answer_cells({
+        "student_overlays": [
+            {
+                "student_sheet": "Inputs",
+                "source_sheet": "Inputs",
+                "source_range": "B2:C3",
+            }
+        ],
+        "reference": {"cells": [{"sheet": "Inputs", "cell": "C3", "input": "=A1"}]},
+    }) == {"Inputs": {"B2"}}
