@@ -87,6 +87,16 @@ describe('parseFormula', () => {
     });
   });
 
+  it('offers an optional function name before a bare group', () => {
+    expect(parse('=(A1+B1)*2')).toEqual({
+      tree: '(((A1 + B1)) * 2)',
+      holes: [['name', 1]],
+      complete: true,
+    });
+    expect(parseFormula('=(A1+B1)')?.holes[0].optional).toBe(true);
+    expect(parse('=SU(A1+B1)').tree).toBe('SU((A1 + B1))');
+  });
+
   it('uses phantoms to keep deleted parentheses and operators in place', () => {
     expect(parse('=SUM(A1+B1', [{ kind: 'close', position: 7 }])).toMatchObject({
       tree: '(SUM(A1⟩ + B1)',

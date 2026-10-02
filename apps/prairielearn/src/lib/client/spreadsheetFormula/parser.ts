@@ -11,7 +11,7 @@ import {
 } from './functions.js';
 import { type FormulaToken, formulaTokens } from './lexer.js';
 
-type FormulaHoleKind = 'operand' | 'argument' | 'operator' | 'delimiter';
+type FormulaHoleKind = 'operand' | 'argument' | 'operator' | 'delimiter' | 'name';
 
 export interface FormulaHole {
   kind: FormulaHoleKind;
@@ -20,6 +20,11 @@ export interface FormulaHole {
   /** For argument holes, the function and the argument it expects, if known. */
   functionName?: string;
   argument?: FormulaArgument | null;
+  /**
+   * Set on the function-name hole before a bare group's `(`, which may be filled to turn
+   * the group into a call but is never missing.
+   */
+  optional?: boolean;
 }
 
 export type FormulaNode =
@@ -238,6 +243,7 @@ class Parser {
   }
 
   private parseGroup(open: FormulaToken): FormulaNode {
+    this.holes.push({ kind: 'name', position: open.start, optional: true });
     const next = this.peek();
     const inner =
       !next || next.kind === 'rparen' || next.kind === 'comma'
@@ -336,6 +342,6 @@ export function parseFormula(
     containers: parser.containers,
     operatorPositions: parser.operatorPositions,
     closePositions: parser.closePositions,
-    complete: parser.holes.length === 0 && parser.problems === 0,
+    complete: parser.holes.every((hole) => hole.optional) && parser.problems === 0,
   };
 }
