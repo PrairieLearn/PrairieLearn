@@ -304,6 +304,48 @@ test('failed preparation returns a native tool error and never displays an appro
   });
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  const pendingBar = page
+    .getByRole('region', { name: 'Code change', exact: true })
+    .filter({ has: page.getByText('Review requested', { exact: true }) });
+  const view = await pendingBar
+    .getByRole('button', { name: 'View changes', exact: true })
+    .boundingBox();
+  const approve = await pendingBar
+    .getByRole('button', { name: 'Approve', exact: true })
+    .boundingBox();
+  const deny = await pendingBar.getByRole('button', { name: 'Deny', exact: true }).boundingBox();
+  expect(view!.x).toBeLessThan(approve!.x);
+  expect(approve!.x).toBeLessThan(deny!.x);
+  for (const action of ['Approve', 'Deny']) {
+    let releaseDecision!: () => void;
+    const decisionGate = new Promise<void>((resolve) => {
+      releaseDecision = resolve;
+    });
+    await page.route('**/trpc/courseAgent.decide', async (route) => {
+      await decisionGate;
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ result: { data: { json: null } } }),
+      });
+    });
+    await pendingBar.getByRole('button', { name: action, exact: true }).click();
+    const loadingAction = action === 'Approve' ? 'Approving…' : 'Denying…';
+    await expect(
+      pendingBar.getByRole('button', { name: loadingAction, exact: true }),
+    ).toBeDisabled();
+    await expect(
+      pendingBar.getByRole('button', {
+        name: action === 'Approve' ? 'Deny' : 'Approve',
+        exact: true,
+      }),
+    ).toBeDisabled();
+    await pendingBar.getByRole('button', { name: 'View changes', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+    releaseDecision();
+    await expect(pendingBar.getByRole('button', { name: action, exact: true })).toBeEnabled();
+    await page.unroute('**/trpc/courseAgent.decide');
+  }
   for (const status of ['approved', 'denied']) {
     await page.unroute('**/course-agent/*/events');
     const approval = { ...proposal, status };
@@ -320,5 +362,21 @@ test('failed preparation returns a native tool error and never displays an appro
     await expect(page.getByRole('button', { name: 'Retry completion', exact: true })).toHaveCount(
       0,
     );
+  }
+  for (const state of ['starting', 'waiting_for_agent']) {
+    await page.unroute('**/course-agent/*/events');
+    await page.route('**/course-agent/*/events', (route) =>
+      route.fulfill({
+        contentType: 'text/event-stream',
+        body: `data: ${JSON.stringify({ messages: [], revision: 0, blocked: false, approvals: [], diagnostics: { state } })}\n\n`,
+      }),
+    );
+    await page.reload();
+    await expect(
+      page.getByText(state === 'starting' ? 'Starting agent…' : 'Working…', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(state === 'starting' ? 'Working…' : 'Starting agent…', { exact: true }),
+    ).toHaveCount(0);
   }
 });

@@ -4,7 +4,7 @@ import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Dropdown, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import {
@@ -287,7 +287,11 @@ function Conversation({
     (send.isPending ||
       create.isPending ||
       busy ||
-      snapshot.diagnostics?.state === 'waiting_for_agent');
+      ['starting', 'waiting_for_agent'].includes(snapshot.diagnostics?.state ?? ''));
+  const startingAgent =
+    snapshot.diagnostics?.state === 'starting' ||
+    create.isPending ||
+    (send.isPending && (!snapshot.diagnostics || snapshot.diagnostics.state === 'absent'));
   const pendingRef = useRef<{ id: string; text: string; expectedRevision: number } | null>(null);
   // Stream observation is re-established after navigation; closing it never stops native execution.
   useEffect(() => {
@@ -475,98 +479,136 @@ function Conversation({
                 : transcriptMessages
             }
             approvals={snapshot.approvals ?? []}
-            renderCodeChange={(approval) => (
-              <section
-                className="d-flex align-items-center flex-wrap gap-3 my-2 p-2 border rounded bg-body w-100"
-                aria-label="Code change"
-              >
-                <span
-                  className={clsx(
-                    'd-inline-flex align-items-center gap-1',
-                    approval.status === 'pending'
-                      ? ''
-                      : approval.status === 'approved'
-                        ? 'text-success'
-                        : 'text-danger',
-                  )}
+            renderCodeChange={(approval) => {
+              const deciding = decision.isPending && decision.variables.decision.id === approval.id;
+              return (
+                <section
+                  className="d-flex align-items-center flex-wrap gap-3 my-2 p-2 border rounded bg-body w-100"
+                  aria-label="Code change"
                 >
-                  <i
+                  <span
                     className={clsx(
-                      'bi',
-                      approval.status === 'pending' && 'text-warning',
+                      'd-inline-flex align-items-center gap-1',
                       approval.status === 'pending'
-                        ? 'bi-exclamation-circle-fill'
+                        ? ''
                         : approval.status === 'approved'
-                          ? 'bi-check-lg'
-                          : 'bi-x-lg',
+                          ? 'text-success'
+                          : 'text-danger',
                     )}
-                    aria-hidden="true"
-                  />
-                  {approval.status === 'pending'
-                    ? 'Review requested'
-                    : approval.status === 'approved'
-                      ? 'Approved'
-                      : 'Denied'}
-                </span>
-                <div className="ms-auto d-flex align-items-center flex-wrap gap-3">
-                  {snapshot.approval?.id === approval.id && (
-                    <>
-                      {approval.status === 'pending' ? (
-                        <>
-                          <Button
-                            size="sm"
-                            disabled={
-                              decision.isPending || snapshot.publication?.status === 'invalid'
-                            }
-                            onClick={() => decide(approval, true)}
-                          >
-                            Approve
-                          </Button>{' '}
-                          <Button
-                            size="sm"
-                            variant="outline-secondary"
-                            disabled={decision.isPending}
-                            onClick={() => decide(approval, false)}
-                          >
-                            Deny
-                          </Button>
-                          {snapshot.publication?.status === 'invalid' && (
-                            <Button
-                              variant="link"
-                              onClick={() =>
-                                prepare.mutate({ conversationId: id, operationId: approval.id })
-                              }
-                            >
-                              Retry preparation
-                            </Button>
-                          )}
-                        </>
-                      ) : (
-                        snapshot.blocked &&
-                        !decision.isPending &&
-                        (snapshot.publication?.error || decision.error) && (
-                          <Button onClick={() => decide(approval, approval.status === 'approved')}>
-                            Retry completion
-                          </Button>
-                        )
+                  >
+                    <i
+                      className={clsx(
+                        'bi',
+                        approval.status === 'pending' && 'text-warning',
+                        approval.status === 'pending'
+                          ? 'bi-exclamation-circle-fill'
+                          : approval.status === 'approved'
+                            ? 'bi-check-lg'
+                            : 'bi-x-lg',
                       )}
-                    </>
-                  )}
-                  <ChangeDiff diff={approval.diff} />
-                </div>
-                {snapshot.approval?.id === approval.id && snapshot.publication?.error && (
-                  <span className="text-danger w-100 small">
-                    {snapshot.blocked
-                      ? snapshot.publication.error
-                      : 'Course sync failed; the agent was notified.'}
+                      aria-hidden="true"
+                    />
+                    {approval.status === 'pending'
+                      ? 'Review requested'
+                      : approval.status === 'approved'
+                        ? 'Approved'
+                        : 'Denied'}
                   </span>
-                )}
-              </section>
-            )}
+                  <div className="ms-auto d-flex align-items-center flex-wrap gap-2">
+                    <ChangeDiff diff={approval.diff} />
+                    {(snapshot.approval?.id === approval.id || deciding) && (
+                      <>
+                        {approval.status === 'pending' || deciding ? (
+                          <>
+                            <span className="text-muted mx-1" aria-hidden="true">
+                              ·
+                            </span>
+                            <Button
+                              size="sm"
+                              disabled={
+                                decision.isPending || snapshot.publication?.status === 'invalid'
+                              }
+                              onClick={() => decide(approval, true)}
+                            >
+                              {deciding && decision.variables.decision.approved ? (
+                                <>
+                                  <Spinner
+                                    animation="border"
+                                    size="sm"
+                                    className="me-1"
+                                    aria-hidden="true"
+                                  />
+                                  Approving…
+                                </>
+                              ) : (
+                                'Approve'
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="text-body text-decoration-none"
+                              disabled={decision.isPending}
+                              onClick={() => decide(approval, false)}
+                            >
+                              {deciding && !decision.variables.decision.approved ? (
+                                <>
+                                  <Spinner
+                                    animation="border"
+                                    size="sm"
+                                    className="me-1"
+                                    aria-hidden="true"
+                                  />
+                                  Denying…
+                                </>
+                              ) : (
+                                'Deny'
+                              )}
+                            </Button>
+                            {snapshot.publication?.status === 'invalid' && (
+                              <Button
+                                variant="link"
+                                onClick={() =>
+                                  prepare.mutate({ conversationId: id, operationId: approval.id })
+                                }
+                              >
+                                Retry preparation
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          snapshot.blocked &&
+                          !decision.isPending &&
+                          (snapshot.publication?.error || decision.error) && (
+                            <Button
+                              onClick={() => decide(approval, approval.status === 'approved')}
+                            >
+                              Retry completion
+                            </Button>
+                          )
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {snapshot.approval?.id === approval.id && snapshot.publication?.error && (
+                    <span className="text-danger w-100 small">
+                      {snapshot.blocked
+                        ? snapshot.publication.error
+                        : 'Course sync failed; the agent was notified.'}
+                    </span>
+                  )}
+                </section>
+              );
+            }}
           />
         )}
         <div role="status" aria-live="polite" className="px-3 pb-3">
-          {working && <ActivityStatus state="streaming" statusText="Working…" />}
+          {working && (
+            <ActivityStatus
+              state="streaming"
+              statusText={startingAgent ? 'Starting agent…' : 'Working…'}
+            />
+          )}
         </div>
       </div>
       <Modal
