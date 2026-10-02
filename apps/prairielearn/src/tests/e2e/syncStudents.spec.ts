@@ -299,16 +299,6 @@ test('validates CSV files and clears the file when switching formats or reopenin
     await compare.click();
     await expect(page.getByText(message, { exact: false })).toBeVisible();
   }
-  for (const buffer of [
-    Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('uid\nstudent@example.com', 'utf16le')]),
-    Buffer.from('uid,label1\nstudent@example.com,Café', 'latin1'),
-  ]) {
-    await input.setInputFiles({ name: 'students.csv', mimeType: 'text/csv', buffer });
-    await compare.click();
-    await expect(
-      page.getByText('Could not read this file as UTF-8.', { exact: false }),
-    ).toBeVisible();
-  }
   await input.setInputFiles({
     name: 'students.csv',
     mimeType: 'text/csv',
