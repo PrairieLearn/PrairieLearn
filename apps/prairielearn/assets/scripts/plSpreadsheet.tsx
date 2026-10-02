@@ -95,6 +95,33 @@ function clampPosition(
   };
 }
 
+/** The sheet cell under a viewport point, if it is a cell of the grid in `editor`. */
+function cellAtPoint(
+  editor: HTMLElement | null,
+  sheet: { rows: number; columns: number },
+  clientX: number,
+  clientY: number,
+): CellPosition | null {
+  const element = document.elementFromPoint(clientX, clientY);
+  const cell = element?.closest<HTMLElement>('[role="gridcell"]');
+  if (!cell || !editor?.contains(cell)) return null;
+  const row = cell.parentElement;
+  const ariaRowIndex = Number(row?.getAttribute('aria-rowindex'));
+  const ariaColumnIndex = Number(cell.getAttribute('aria-colindex'));
+  const position = { row: ariaRowIndex - 2, column: ariaColumnIndex - 2 };
+  if (
+    !Number.isInteger(position.row) ||
+    !Number.isInteger(position.column) ||
+    position.row < 0 ||
+    position.row >= sheet.rows ||
+    position.column < 0 ||
+    position.column >= sheet.columns
+  ) {
+    return null;
+  }
+  return position;
+}
+
 function displayInput(input: SpreadsheetCellInput | null | undefined): string {
   if (input == null) return '';
   if (typeof input === 'boolean') return input ? 'TRUE' : 'FALSE';
@@ -281,6 +308,7 @@ function SpreadsheetEditor({
   const dragAnchorRef = useRef<CellPosition | null>(null);
   const dragFocusRef = useRef<CellPosition | null>(null);
   const didDragRangeRef = useRef(false);
+  const fillDragRef = useRef<{ source: CellPosition; target: CellPosition } | null>(null);
   const suppressActiveAnnouncementRef = useRef(false);
   // Whether formula bar editing started from the grid, so Enter and Tab return there.
   const editOriginRef = useRef<'grid' | 'bar'>('bar');
@@ -288,6 +316,8 @@ function SpreadsheetEditor({
   // The corners of the reference most recently pointed at from the formula bar.
   const pointerRef = useRef<CellRange | null>(null);
   const pointingDragRef = useRef(false);
+  const [expanded, setExpanded] = useState(false);
+  const expandButtonRef = useRef<HTMLButtonElement>(null);
 
   const sheet = config.template.sheets[activeSheetIndex];
   const instructionsId = `pl-spreadsheet-instructions-${options.uuid}`;
@@ -456,19 +486,70 @@ function SpreadsheetEditor({
     applySubmission(next, 'Redid the spreadsheet change.', false);
   }
 
+  /** Commits several cells as one change, skipping read-only and unchanged cells. */
+  function commitCells(
+    edits: { row: number; column: number; input: SpreadsheetCellInput | null }[],
+    message: string,
+  ) {
+    let nextSubmission = committedSubmissionRef.current;
+    let changed = false;
+    for (const { row, column, input } of edits) {
+      const address = cellAddress(row, column);
+      if (
+        !isCellEditable(sheet, row, column) ||
+        Object.is(input, finalInput(config, nextSubmission, sheet.name, address))
+      ) {
+        continue;
+      }
+      nextSubmission = updateOverride({
+        config,
+        rawSubmission: nextSubmission,
+        sheetName: sheet.name,
+        address,
+        input,
+      });
+      changed = true;
+    }
+    if (changed) applySubmission(nextSubmission, message);
+  }
+
+  /** Fills the cells from `source` (exclusive) to `target` along a single row or column. */
+  function fillLine(source: CellPosition, target: CellPosition) {
+    const rowStep = Math.sign(target.row - source.row);
+    const columnStep = Math.sign(target.column - source.column);
+    const edits = [];
+    for (
+      let row = source.row + rowStep, column = source.column + columnStep;
+      Math.abs(row - source.row) <= Math.abs(target.row - source.row) &&
+      Math.abs(column - source.column) <= Math.abs(target.column - source.column);
+      row += rowStep, column += columnStep
+    ) {
+      edits.push({
+        row,
+        column,
+        input: getRelativeFillInput(
+          evaluation.engine,
+          { sheet: activeSheetIndex, row: source.row, col: source.column },
+          { sheet: activeSheetIndex, row, col: column },
+        ),
+      });
+    }
+    if (edits.length === 0) return;
+    const first = edits[0];
+    const last = edits[edits.length - 1];
+    const range =
+      first === last
+        ? cellAddress(first.row, first.column)
+        : `${cellAddress(first.row, first.column)}:${cellAddress(last.row, last.column)}`;
+    commitCells(edits, `${range}: filled from ${cellAddress(source.row, source.column)}.`);
+  }
+
   function fillTo(targetRow: number, targetColumn: number) {
     if (!activeCell || !isCellEditable(sheet, targetRow, targetColumn)) {
       setAnnouncement('The target cell is read-only or outside the sheet.');
       return;
     }
-    const sourceAddress = {
-      sheet: activeSheetIndex,
-      row: activeCell.row,
-      col: activeCell.column,
-    };
-    const targetAddress = { sheet: activeSheetIndex, row: targetRow, col: targetColumn };
-    const input = getRelativeFillInput(evaluation.engine, sourceAddress, targetAddress);
-    commitCell(targetRow, targetColumn, displayInput(input), 'filled from the active cell.');
+    fillLine(activeCell, { row: targetRow, column: targetColumn });
     gridRef.current?.setActivePosition({ idx: targetColumn + 1, rowIdx: targetRow });
   }
 
@@ -704,34 +785,38 @@ function SpreadsheetEditor({
     return () => observer.disconnect();
   }, []);
 
+  // While popped out, keep the page behind from scrolling and keep focus inside the popup.
+  useEffect(() => {
+    if (!expanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const keepFocusInside = (event: FocusEvent) => {
+      const editor = editorRef.current;
+      if (editor && event.target instanceof Node && !editor.contains(event.target)) {
+        editor.querySelector<HTMLElement>('.pl-spreadsheet-popup-close')?.focus();
+      }
+    };
+    document.addEventListener('focusin', keepFocusInside);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('focusin', keepFocusInside);
+      // The expand button is rendered again by the time this cleanup runs.
+      expandButtonRef.current?.focus();
+    };
+  }, [expanded]);
+
+  function closePopup() {
+    setExpanded(false);
+  }
+
   // Track range selection outside React Data Grid, which only exposes a single active cell.
   useEffect(() => {
-    function cellAtPoint(clientX: number, clientY: number): CellPosition | null {
-      const element = document.elementFromPoint(clientX, clientY);
-      const cell = element?.closest<HTMLElement>('[role="gridcell"]');
-      const editor = editorRef.current;
-      if (!cell || !editor?.contains(cell)) return null;
-      const row = cell.parentElement;
-      const ariaRowIndex = Number(row?.getAttribute('aria-rowindex'));
-      const ariaColumnIndex = Number(cell.getAttribute('aria-colindex'));
-      const position = { row: ariaRowIndex - 2, column: ariaColumnIndex - 2 };
-      if (
-        !Number.isInteger(position.row) ||
-        !Number.isInteger(position.column) ||
-        position.row < 0 ||
-        position.row >= sheet.rows ||
-        position.column < 0 ||
-        position.column >= sheet.columns
-      ) {
-        return null;
-      }
-      return position;
-    }
+    const bounds = { rows: sheet.rows, columns: sheet.columns };
 
     function handleMouseMove(event: MouseEvent) {
       if (pointingDragRef.current) {
         event.preventDefault();
-        const focus = cellAtPoint(event.clientX, event.clientY);
+        const focus = cellAtPoint(editorRef.current, bounds, event.clientX, event.clientY);
         const pointer = pointerRef.current;
         const target = formulaInputRef.current?.pointingTarget();
         if (!focus || !pointer || !target?.continuing) return;
@@ -742,7 +827,7 @@ function SpreadsheetEditor({
       const anchor = dragAnchorRef.current;
       if (!anchor) return;
       event.preventDefault();
-      const focus = cellAtPoint(event.clientX, event.clientY);
+      const focus = cellAtPoint(editorRef.current, bounds, event.clientX, event.clientY);
       if (!focus) return;
       const previousFocus = dragFocusRef.current;
       if (previousFocus?.row === focus.row && previousFocus.column === focus.column) return;
@@ -780,11 +865,31 @@ function SpreadsheetEditor({
 
   function handleRowsChange(nextRows: SpreadsheetRow[], data: RowsChangeData<SpreadsheetRow>) {
     if (data.column.key === '__row') return;
-    const localRowIndex = data.indexes[0];
     const parsedColumn = parseCellAddress(`${data.column.key}1`);
     if (!parsedColumn) return;
-    const row = nextRows[localRowIndex];
-    commitCell(row.rowIndex, parsedColumn.column, row.inputs[data.column.key]);
+    if (data.indexes.length === 1) {
+      const row = nextRows[data.indexes[0]];
+      commitCell(row.rowIndex, parsedColumn.column, row.inputs[data.column.key]);
+      return;
+    }
+    // Double-clicking the fill handle fills the rest of the column at once.
+    commitCells(
+      data.indexes.map((index) => ({
+        row: nextRows[index].rowIndex,
+        column: parsedColumn.column,
+        input: parseEditorInput(nextRows[index].inputs[data.column.key]),
+      })),
+      'Filled the rest of the column from the active cell.',
+    );
+  }
+
+  /** The end of a fill handle drag from `source`, kept to the row or column it moves along most. */
+  function fillTarget(source: CellPosition, clientX: number, clientY: number) {
+    const cell = cellAtPoint(editorRef.current, sheet, clientX, clientY);
+    if (!cell) return null;
+    return Math.abs(cell.row - source.row) >= Math.abs(cell.column - source.column)
+      ? { row: cell.row, column: source.column }
+      : { row: source.row, column: cell.column };
   }
 
   function handleFill(event: FillEvent<SpreadsheetRow>): SpreadsheetRow {
@@ -924,252 +1029,322 @@ function SpreadsheetEditor({
   });
 
   return (
-    <div ref={editorRef} className="pl-spreadsheet-editor">
-      <p id={instructionsId} className="visually-hidden">
-        Click a cell to select it. Start typing to replace its contents, or double-click or press F2
-        to edit its existing contents; either moves you to the formula bar, and Enter or Tab saves
-        and returns to the grid. Delete or Backspace clears a cell. Drag or hold Shift with an arrow
-        key to select a range. Use Enter and Shift+Enter to move vertically, Tab and Shift+Tab to
-        move horizontally, and Escape to cancel editing. Tab leaves the grid at its boundaries.
-        Read-only cells are announced. While typing a formula in the formula bar, use the Up and
-        Down arrow keys to choose a suggested function and Enter or Tab to insert it. Where the
-        formula expects a value, click or drag across cells to insert a cell reference; right after
-        that, the arrow keys move the reference and Shift with the arrow keys resizes it. Tab and
-        Shift+Tab move between the missing parts of a formula.
-      </p>
-      <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary"
-          disabled={past.length === 0}
-          onClick={undo}
-        >
-          Undo
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary"
-          disabled={future.length === 0}
-          onClick={redo}
-        >
-          Redo
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary"
-          disabled={!activeCell || activeCell.row >= sheet.rows - 1}
-          onClick={() => activeCell && fillTo(activeCell.row + 1, activeCell.column)}
-        >
-          Fill down
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary"
-          disabled={!activeCell || activeCell.column >= sheet.columns - 1}
-          onClick={() => activeCell && fillTo(activeCell.row, activeCell.column + 1)}
-        >
-          Fill right
-        </button>
-      </div>
-      <div className="pl-spreadsheet-formula-bar">
-        <label htmlFor={`${instructionsId}-formula`}>
-          {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
-        </label>
-        <FormulaInput
-          ref={formulaInputRef}
-          id={`${instructionsId}-formula`}
-          aria-label={
-            activeCell
-              ? `Formula for ${cellAddress(activeCell.row, activeCell.column)}`
-              : 'Formula bar'
+    <>
+      {expanded && <div className="pl-spreadsheet-popup-backdrop" onClick={closePopup} />}
+      <div
+        ref={editorRef}
+        className={clsx('pl-spreadsheet-editor', expanded && 'is-expanded')}
+        role={expanded ? 'dialog' : undefined}
+        aria-modal={expanded ? true : undefined}
+        aria-label={expanded ? options.aria_label : undefined}
+        onPointerDownCapture={(event) => {
+          if (
+            event.button !== 0 ||
+            !activeCell ||
+            !(event.target instanceof Element) ||
+            !event.target.classList.contains('rdg-cell-drag-handle')
+          ) {
+            return;
           }
-          aria-describedby={`${instructionsId} ${valueErrorId}`}
-          disabled={!activeCell || !isCellEditable(sheet, activeCell.row, activeCell.column)}
-          value={formulaText}
-          onValueChange={(value) => {
-            setFormulaText(value);
-            if (activeCell) updateDraft(activeCell.row, activeCell.column, value);
-          }}
-          onAnnounce={setAnnouncement}
-          onFocus={() => setFormulaFocused(true)}
-          onBlur={() => {
-            setFormulaFocused(false);
-            editOriginRef.current = 'bar';
-            if (skipFormulaBlurRef.current) {
-              skipFormulaBlurRef.current = false;
-            } else if (activeCell) {
-              commitCell(activeCell.row, activeCell.column, formulaText);
+          // React Data Grid's fill handle only fills down a column, so drive it here instead.
+          event.preventDefault();
+          event.stopPropagation();
+          event.target.setPointerCapture(event.pointerId);
+          fillDragRef.current = { source: activeCell, target: activeCell };
+        }}
+        onPointerMove={(event) => {
+          const drag = fillDragRef.current;
+          if (!drag) return;
+          const target = fillTarget(drag.source, event.clientX, event.clientY);
+          if (!target || (target.row === drag.target.row && target.column === drag.target.column)) {
+            return;
+          }
+          drag.target = target;
+          setSelectedRange({ anchor: drag.source, focus: target });
+          gridRef.current?.scrollToCell({ idx: target.column + 1, rowIdx: target.row });
+        }}
+        onPointerUp={() => {
+          const drag = fillDragRef.current;
+          if (!drag) return;
+          fillDragRef.current = null;
+          fillLine(drag.source, drag.target);
+        }}
+        onLostPointerCapture={() => {
+          const drag = fillDragRef.current;
+          if (!drag) return;
+          fillDragRef.current = null;
+          setSelectedRange({ anchor: drag.source, focus: drag.source });
+        }}
+      >
+        {expanded && (
+          <div className="pl-spreadsheet-popup-header">
+            <span>{options.aria_label}</span>
+            <button
+              type="button"
+              className="btn-close pl-spreadsheet-popup-close"
+              aria-label="Close full-screen spreadsheet"
+              onClick={closePopup}
+            />
+          </div>
+        )}
+        <p id={instructionsId} className="visually-hidden">
+          Click a cell to select it. Start typing to replace its contents, or double-click or press
+          F2 to edit its existing contents; either moves you to the formula bar, and Enter or Tab
+          saves and returns to the grid. Delete or Backspace clears a cell. Drag or hold Shift with
+          an arrow key to select a range. Use Enter and Shift+Enter to move vertically, Tab and
+          Shift+Tab to move horizontally, and Escape to cancel editing. Tab leaves the grid at its
+          boundaries. Read-only cells are announced. While typing a formula in the formula bar, use
+          the Up and Down arrow keys to choose a suggested function and Enter or Tab to insert it.
+          Where the formula expects a value, click or drag across cells to insert a cell reference;
+          right after that, the arrow keys move the reference and Shift with the arrow keys resizes
+          it. Tab and Shift+Tab move between the missing parts of a formula.
+        </p>
+        <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={past.length === 0}
+            onClick={undo}
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={future.length === 0}
+            onClick={redo}
+          >
+            Redo
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={!activeCell || activeCell.row >= sheet.rows - 1}
+            onClick={() => activeCell && fillTo(activeCell.row + 1, activeCell.column)}
+          >
+            Fill down
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={!activeCell || activeCell.column >= sheet.columns - 1}
+            onClick={() => activeCell && fillTo(activeCell.row, activeCell.column + 1)}
+          >
+            Fill right
+          </button>
+          {!expanded && (
+            <button
+              ref={expandButtonRef}
+              type="button"
+              className="btn btn-sm btn-outline-secondary ms-auto"
+              aria-label="Open spreadsheet full screen"
+              title="Open full screen"
+              onClick={() => setExpanded(true)}
+            >
+              <i className="bi bi-arrows-fullscreen" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        <div className="pl-spreadsheet-formula-bar">
+          <label htmlFor={`${instructionsId}-formula`}>
+            {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
+          </label>
+          <FormulaInput
+            ref={formulaInputRef}
+            id={`${instructionsId}-formula`}
+            aria-label={
+              activeCell
+                ? `Formula for ${cellAddress(activeCell.row, activeCell.column)}`
+                : 'Formula bar'
             }
-          }}
-          onKeyDown={(event) => {
-            const offset = ARROW_OFFSETS[event.key];
-            // Right after pointing at cells, the arrow keys adjust that reference; after
-            // typing, they move the caret as usual.
-            const pointingTarget =
-              offset && !event.altKey && !event.ctrlKey && !event.metaKey
-                ? formulaInputRef.current?.pointingTarget()
-                : null;
-            const pointer = pointingTarget?.continuing ? pointerRef.current : null;
-            if (offset && pointingTarget && pointer) {
-              event.preventDefault();
-              const focus = clampPosition(
-                {
-                  row: pointer.focus.row + offset.row,
-                  column: pointer.focus.column + offset.column,
-                },
-                sheet,
-              );
-              pointAt(pointingTarget, { anchor: event.shiftKey ? pointer.anchor : focus, focus });
-            } else if (event.key === 'Enter' && activeCell) {
-              event.preventDefault();
-              finishEdit(getVerticalTarget(activeCell, event.shiftKey));
-            } else if (event.key === 'Tab' && activeCell && editOriginRef.current === 'grid') {
-              event.preventDefault();
-              finishEdit(getTabTarget(activeCell, event.shiftKey));
-            } else if (event.key === 'Escape' && activeCell) {
-              event.preventDefault();
-              skipFormulaBlurRef.current = true;
-              cancelDraft();
-              focusActiveCell();
+            aria-describedby={`${instructionsId} ${valueErrorId}`}
+            disabled={!activeCell || !isCellEditable(sheet, activeCell.row, activeCell.column)}
+            value={formulaText}
+            onValueChange={(value) => {
+              setFormulaText(value);
+              if (activeCell) updateDraft(activeCell.row, activeCell.column, value);
+            }}
+            onAnnounce={setAnnouncement}
+            onFocus={() => setFormulaFocused(true)}
+            onBlur={() => {
+              setFormulaFocused(false);
               editOriginRef.current = 'bar';
+              if (skipFormulaBlurRef.current) {
+                skipFormulaBlurRef.current = false;
+              } else if (activeCell) {
+                commitCell(activeCell.row, activeCell.column, formulaText);
+              }
+            }}
+            onKeyDown={(event) => {
+              const offset = ARROW_OFFSETS[event.key];
+              // Right after pointing at cells, the arrow keys adjust that reference; after
+              // typing, they move the caret as usual.
+              const pointingTarget =
+                offset && !event.altKey && !event.ctrlKey && !event.metaKey
+                  ? formulaInputRef.current?.pointingTarget()
+                  : null;
+              const pointer = pointingTarget?.continuing ? pointerRef.current : null;
+              if (offset && pointingTarget && pointer) {
+                event.preventDefault();
+                const focus = clampPosition(
+                  {
+                    row: pointer.focus.row + offset.row,
+                    column: pointer.focus.column + offset.column,
+                  },
+                  sheet,
+                );
+                pointAt(pointingTarget, { anchor: event.shiftKey ? pointer.anchor : focus, focus });
+              } else if (event.key === 'Enter' && activeCell) {
+                event.preventDefault();
+                finishEdit(getVerticalTarget(activeCell, event.shiftKey));
+              } else if (event.key === 'Tab' && activeCell && editOriginRef.current === 'grid') {
+                event.preventDefault();
+                finishEdit(getTabTarget(activeCell, event.shiftKey));
+              } else if (event.key === 'Escape' && activeCell) {
+                event.preventDefault();
+                skipFormulaBlurRef.current = true;
+                cancelDraft();
+                focusActiveCell();
+                editOriginRef.current = 'bar';
+              }
+            }}
+          />
+          {/* Space is always reserved so the grid does not move as errors come and go. */}
+          <div id={valueErrorId} className="pl-spreadsheet-value-error" title={activeValueError}>
+            {activeValueError}
+          </div>
+        </div>
+        {config.template.sheets.length > 1 && (
+          <div className="pl-spreadsheet-sheet-tabs" role="tablist" aria-label="Workbook sheets">
+            {config.template.sheets.map((candidate, index) => (
+              <button
+                key={candidate.name}
+                type="button"
+                className={`btn btn-sm ${index === activeSheetIndex ? 'btn-dark' : 'btn-outline-dark'}`}
+                role="tab"
+                aria-selected={index === activeSheetIndex}
+                tabIndex={index === activeSheetIndex ? 0 : -1}
+                onClick={() => {
+                  setActiveSheetIndex(index);
+                  setActiveCell(null);
+                  setSelectedRange(null);
+                  setFormulaText('');
+                  setAnnouncement(`Opened sheet ${candidate.name}.`);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                  const offset = event.key === 'ArrowRight' ? 1 : -1;
+                  const nextIndex =
+                    (activeSheetIndex + offset + config.template.sheets.length) %
+                    config.template.sheets.length;
+                  setActiveSheetIndex(nextIndex);
+                  setActiveCell(null);
+                  setSelectedRange(null);
+                  setFormulaText('');
+                  const tabs =
+                    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                      '[role="tab"]',
+                    );
+                  tabs?.[nextIndex]?.focus();
+                }}
+              >
+                {candidate.name}
+              </button>
+            ))}
+          </div>
+        )}
+        <DataGrid
+          ref={gridRef}
+          className="rdg-light pl-spreadsheet-grid"
+          aria-label={`${options.aria_label}, sheet ${sheet.name}`}
+          aria-describedby={instructionsId}
+          columns={columns}
+          rows={rows}
+          rowKeyGetter={(row) => row.rowIndex}
+          onRowsChange={handleRowsChange}
+          onFill={handleFill}
+          onCellMouseDown={({ rowIdx, column }, event) => {
+            if (event.button !== 0 || column.key === '__row') return;
+            const position = { row: rowIdx, column: column.idx - 1 };
+            const pointingTarget = formulaInputRef.current?.pointingTarget();
+            if (pointingTarget) {
+              // Keep focus and the active cell on the formula being edited.
+              event.preventDefault();
+              event.preventGridDefault();
+              pointingDragRef.current = true;
+              const anchor =
+                event.shiftKey && pointingTarget.continuing && pointerRef.current
+                  ? pointerRef.current.anchor
+                  : position;
+              pointAt(pointingTarget, { anchor, focus: position });
+              return;
             }
+            const anchor = event.shiftKey && selectedRange ? selectedRange.anchor : position;
+            dragAnchorRef.current = anchor;
+            dragFocusRef.current = position;
+            didDragRangeRef.current = false;
+            setSelectedRange({ anchor, focus: position });
+          }}
+          onCellCopy={({ row, column }, event) => {
+            if (column.key === '__row') return;
+            event.clipboardData.setData('text/plain', row.inputs[column.key] ?? '');
+            event.preventDefault();
+          }}
+          onCellPaste={({ row, column }, event) => ({
+            ...row,
+            inputs: {
+              ...row.inputs,
+              [column.key]: event.clipboardData.getData('text/plain').split(/\r?\n/, 1)[0],
+            },
+          })}
+          onActivePositionChange={({ rowIdx, column }) => {
+            if (!column || column.key === '__row' || rowIdx < 0) {
+              setActiveCell(null);
+              return;
+            }
+            const parsedColumn = parseCellAddress(`${column.key}1`);
+            if (!parsedColumn) return;
+            const sourceRow = rows[rowIdx].rowIndex;
+            const position = { row: sourceRow, column: parsedColumn.column };
+            setActiveCell(position);
+            if (!dragAnchorRef.current) setSelectedRange({ anchor: position, focus: position });
+            const address = cellAddress(sourceRow, parsedColumn.column);
+            setFormulaText(
+              displayInput(finalInput(config, committedSubmissionRef.current, sheet.name, address)),
+            );
+            if (suppressActiveAnnouncementRef.current) {
+              suppressActiveAnnouncementRef.current = false;
+              return;
+            }
+            const editable = isCellEditable(sheet, sourceRow, parsedColumn.column);
+            const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
+            const issue = evaluation.issues[sheet.name]?.[address];
+            if (issue) {
+              setAnnouncement(
+                `${address}, ${editable ? 'editable' : 'read-only'}, contains ${issue.value}. ${issue.message}`,
+              );
+            } else if (snapshotCell?.result.type === 'error') {
+              setAnnouncement(
+                `${address}, ${editable ? 'editable' : 'read-only'}, contains ${snapshotCell.result.value}.`,
+              );
+            } else {
+              setAnnouncement(
+                `${address}, ${editable ? 'editable' : 'read-only'}, ${resultText(snapshotCell) || 'blank'}.`,
+              );
+            }
+          }}
+          onCellKeyDown={handleCellKeyDown}
+          onCellDoubleClick={({ rowIdx, column }, event) => {
+            if (column.key === '__row') return;
+            event.preventGridDefault();
+            beginEdit({ row: rowIdx, column: column.idx - 1 });
           }}
         />
-        {/* Space is always reserved so the grid does not move as errors come and go. */}
-        <div id={valueErrorId} className="pl-spreadsheet-value-error" title={activeValueError}>
-          {activeValueError}
+        <div id={errorId} className="visually-hidden" role="status" aria-live="polite">
+          {announcement}
         </div>
       </div>
-      {config.template.sheets.length > 1 && (
-        <div className="pl-spreadsheet-sheet-tabs" role="tablist" aria-label="Workbook sheets">
-          {config.template.sheets.map((candidate, index) => (
-            <button
-              key={candidate.name}
-              type="button"
-              className={`btn btn-sm ${index === activeSheetIndex ? 'btn-dark' : 'btn-outline-dark'}`}
-              role="tab"
-              aria-selected={index === activeSheetIndex}
-              tabIndex={index === activeSheetIndex ? 0 : -1}
-              onClick={() => {
-                setActiveSheetIndex(index);
-                setActiveCell(null);
-                setSelectedRange(null);
-                setFormulaText('');
-                setAnnouncement(`Opened sheet ${candidate.name}.`);
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-                const offset = event.key === 'ArrowRight' ? 1 : -1;
-                const nextIndex =
-                  (activeSheetIndex + offset + config.template.sheets.length) %
-                  config.template.sheets.length;
-                setActiveSheetIndex(nextIndex);
-                setActiveCell(null);
-                setSelectedRange(null);
-                setFormulaText('');
-                const tabs =
-                  event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
-                    '[role="tab"]',
-                  );
-                tabs?.[nextIndex]?.focus();
-              }}
-            >
-              {candidate.name}
-            </button>
-          ))}
-        </div>
-      )}
-      <DataGrid
-        ref={gridRef}
-        className="rdg-light pl-spreadsheet-grid"
-        aria-label={`${options.aria_label}, sheet ${sheet.name}`}
-        aria-describedby={instructionsId}
-        columns={columns}
-        rows={rows}
-        rowKeyGetter={(row) => row.rowIndex}
-        onRowsChange={handleRowsChange}
-        onFill={handleFill}
-        onCellMouseDown={({ rowIdx, column }, event) => {
-          if (event.button !== 0 || column.key === '__row') return;
-          const position = { row: rowIdx, column: column.idx - 1 };
-          const pointingTarget = formulaInputRef.current?.pointingTarget();
-          if (pointingTarget) {
-            // Keep focus and the active cell on the formula being edited.
-            event.preventDefault();
-            event.preventGridDefault();
-            pointingDragRef.current = true;
-            const anchor =
-              event.shiftKey && pointingTarget.continuing && pointerRef.current
-                ? pointerRef.current.anchor
-                : position;
-            pointAt(pointingTarget, { anchor, focus: position });
-            return;
-          }
-          const anchor = event.shiftKey && selectedRange ? selectedRange.anchor : position;
-          dragAnchorRef.current = anchor;
-          dragFocusRef.current = position;
-          didDragRangeRef.current = false;
-          setSelectedRange({ anchor, focus: position });
-        }}
-        onCellCopy={({ row, column }, event) => {
-          if (column.key === '__row') return;
-          event.clipboardData.setData('text/plain', row.inputs[column.key] ?? '');
-          event.preventDefault();
-        }}
-        onCellPaste={({ row, column }, event) => ({
-          ...row,
-          inputs: {
-            ...row.inputs,
-            [column.key]: event.clipboardData.getData('text/plain').split(/\r?\n/, 1)[0],
-          },
-        })}
-        onActivePositionChange={({ rowIdx, column }) => {
-          if (!column || column.key === '__row' || rowIdx < 0) {
-            setActiveCell(null);
-            return;
-          }
-          const parsedColumn = parseCellAddress(`${column.key}1`);
-          if (!parsedColumn) return;
-          const sourceRow = rows[rowIdx].rowIndex;
-          const position = { row: sourceRow, column: parsedColumn.column };
-          setActiveCell(position);
-          if (!dragAnchorRef.current) setSelectedRange({ anchor: position, focus: position });
-          const address = cellAddress(sourceRow, parsedColumn.column);
-          setFormulaText(
-            displayInput(finalInput(config, committedSubmissionRef.current, sheet.name, address)),
-          );
-          if (suppressActiveAnnouncementRef.current) {
-            suppressActiveAnnouncementRef.current = false;
-            return;
-          }
-          const editable = isCellEditable(sheet, sourceRow, parsedColumn.column);
-          const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
-          const issue = evaluation.issues[sheet.name]?.[address];
-          if (issue) {
-            setAnnouncement(
-              `${address}, ${editable ? 'editable' : 'read-only'}, contains ${issue.value}. ${issue.message}`,
-            );
-          } else if (snapshotCell?.result.type === 'error') {
-            setAnnouncement(
-              `${address}, ${editable ? 'editable' : 'read-only'}, contains ${snapshotCell.result.value}.`,
-            );
-          } else {
-            setAnnouncement(
-              `${address}, ${editable ? 'editable' : 'read-only'}, ${resultText(snapshotCell) || 'blank'}.`,
-            );
-          }
-        }}
-        onCellKeyDown={handleCellKeyDown}
-        onCellDoubleClick={({ rowIdx, column }, event) => {
-          if (column.key === '__row') return;
-          event.preventGridDefault();
-          beginEdit({ row: rowIdx, column: column.idx - 1 });
-        }}
-      />
-      <div id={errorId} className="visually-hidden" role="status" aria-live="polite">
-        {announcement}
-      </div>
-    </div>
+    </>
   );
 }
 

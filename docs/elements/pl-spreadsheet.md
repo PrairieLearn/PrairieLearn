@@ -714,7 +714,8 @@ Escape discards the edit. Delete or Backspace clears a selected cell. While a ce
 being edited, it and every cell that depends on it show their values as the student
 types, and a line below the formula bar describes any error in the selected cell's
 value. The editor also supports keyboard navigation, copy/paste,
-relative-reference fill down/right, and undo/redo.
+relative-reference fill (with the fill down/right buttons, or by dragging a cell's
+corner handle up, down, left, or right along its row or column), and undo/redo.
 The sheet tabs and fill controls are keyboard accessible. Editable and read-only
 cells are distinguished with text and accessibility state, not color alone.
 Submission and manual-grading views use native HTML tables. These tables show

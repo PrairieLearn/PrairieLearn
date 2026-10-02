@@ -357,6 +357,60 @@ test('suggests functions in the formula bar', async ({ page, courseInstance }) =
   await expect(rawAnswer).toHaveValue(/"B2":"=1\+SUMIF\(A3:B3, \\">0\\"\)\+MAX\(C2\)"/);
 });
 
+test('fills a row or column by dragging the fill handle', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+  const undo = parameterDemo.getByRole('button', { name: 'Undo' });
+  const cell = (address: string) =>
+    grid.getByRole('gridcell', { name: new RegExp(`^${address}, editable`) });
+
+  async function dragFill(from: string, to: string) {
+    await cell(from).click();
+    await grid.locator('.rdg-cell-drag-handle').dragTo(cell(to));
+  }
+
+  // The fill follows the dominant direction of the drag rather than covering C3:D4.
+  await dragFill('D2', 'C4');
+  await expect(rawAnswer).toHaveValue(/"D3":"=B3\*C3"/);
+  await expect(rawAnswer).toHaveValue(/"D4":"=B4\*C4"/);
+  await expect(rawAnswer).not.toHaveValue(/"C[34]"/);
+  // One drag is one undoable change.
+  await undo.click();
+  await expect(rawAnswer).not.toHaveValue(/"D[34]"/);
+
+  await editCell(grid, 'D4', '=B4+C4');
+  await dragFill('D4', 'D2');
+  await expect(rawAnswer).toHaveValue(/"D3":"=B3\+C3"/);
+  await expect(rawAnswer).toHaveValue(/"D2":"=B2\+C2"/);
+  await undo.click();
+  await expect(rawAnswer).not.toHaveValue(/"D3"/);
+
+  await editCell(grid, 'B3', '=B2+1');
+  await dragFill('B3', 'D3');
+  await expect(rawAnswer).toHaveValue(/"C3":"=C2\+1"/);
+  await expect(rawAnswer).toHaveValue(/"D3":"=D2\+1"/);
+  await undo.click();
+  await expect(rawAnswer).not.toHaveValue(/"[CD]3"/);
+
+  await editCell(grid, 'D3', '=D2*10');
+  await dragFill('D3', 'B3');
+  await expect(rawAnswer).toHaveValue(/"C3":"=C2\*10"/);
+  await expect(rawAnswer).toHaveValue(/"B3":"=B2\*10"/);
+});
+
 test('supports accessible local editing and trusted submission', async ({
   page,
   context,
