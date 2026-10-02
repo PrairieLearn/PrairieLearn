@@ -31,6 +31,7 @@ from typing import (
 )
 
 import sympy
+from sympy.core.assumptions import _assume_defined
 from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
@@ -155,6 +156,15 @@ def check_sympy_types(
     )
 
 
+def _is_assumptions_dict(value: Any) -> TypeGuard[AssumptionsDictT]:
+    return isinstance(value, dict) and all(
+        isinstance(variable, str)
+        and isinstance(assumptions, dict)
+        and all(a in _assume_defined for a in assumptions)
+        for variable, assumptions in value.items()
+    )
+
+
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
     """Check if the input is a valid SymPy JSON dict.
 
@@ -166,7 +176,7 @@ def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
         and json.get("_type") == "sympy"
         and isinstance(json.get("_value"), str)
         and isinstance(json.get("_variables"), list)
-        and isinstance(json.get("_assumptions", {}), dict)
+        and _is_assumptions_dict(json.get("_assumptions", {}))
         and isinstance(json.get("_custom_functions", []), list)
     )
 
