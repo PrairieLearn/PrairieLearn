@@ -225,20 +225,30 @@ test('inserts references by pointing at cells', async ({ page, courseInstance })
   await cell('A2').click();
   await expect(formulaBar).toHaveValue('=SUM(A2');
 
+  // After typing, the arrow keys move the caret even where a reference could go.
   await formulaBar.pressSequentially(')+');
-  await formulaBar.press('ArrowDown');
+  await formulaBar.press('ArrowLeft');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+');
+  expect(await formulaBar.evaluate((input: HTMLInputElement) => input.selectionStart)).toBe(8);
   await formulaBar.press('ArrowRight');
+
+  // Right after pointing, they move and resize the reference instead.
+  await cell('C3').click();
   await formulaBar.press('Shift+ArrowDown');
   await expect(formulaBar).toHaveValue('=SUM(A2)+C3:C4');
+  await formulaBar.press('ArrowRight');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+D4');
+  await formulaBar.press('Shift+ArrowLeft');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+C4:D4');
 
   await formulaBar.pressSequentially('*2');
   await formulaBar.press('ArrowLeft');
-  await expect(formulaBar).toHaveValue('=SUM(A2)+C3:C4*2');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+C4:D4*2');
 
   await formulaBar.press('Enter');
   await expect(cell('B2')).toBeFocused();
   await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(0);
-  await expect(rawAnswer).toHaveValue(/"B2":"=SUM\(A2\)\+C3:C4\*2"/);
+  await expect(rawAnswer).toHaveValue(/"B2":"=SUM\(A2\)\+C4:D4\*2"/);
 });
 
 test('shows the missing parts of a formula as holes', async ({ page, courseInstance }) => {
@@ -682,6 +692,50 @@ test('keeps file-backed grading cells outside the student range private', async 
     0,
   );
   await expect(submissionTable).not.toContainText('HIDDEN_SENTINEL');
+});
+
+test('shows submitted workbooks like the editor', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetFileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', {
+    name: 'File-backed spreadsheet test, sheet Inputs',
+  });
+  await editCell(grid, 'A1', '3');
+  await editCell(grid, 'A2', '=$A$1+2');
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+  const submission = page.getByTestId('submission-block');
+  const table = submission.getByRole('table', { name: 'Inputs' });
+  await expect(table.getByRole('cell', { name: 'Cell A2, incorrect' })).toHaveClass(
+    'table-danger',
+    {
+      timeout: GRADING_TIMEOUT,
+    },
+  );
+  await expect(table.getByRole('cell', { name: 'Cell A1', exact: true })).not.toHaveClass(
+    'table-danger',
+  );
+  await expect(table.getByRole('cell', { name: 'Cell B1', exact: true })).toHaveClass(
+    'pl-spreadsheet-cell-readonly',
+  );
+
+  const columnWidths = () =>
+    table
+      .getByRole('columnheader')
+      .evaluateAll((headers) => headers.map((header) => header.getBoundingClientRect().width));
+  const valueWidths = await columnWidths();
+  await submission.getByRole('switch', { name: /Show formulas/ }).check();
+  const formula = table.getByRole('cell', { name: 'Cell A2, incorrect' }).getByText('=$A$1+2');
+  await expect(formula).toBeVisible();
+  // The $ signs in absolute references must not start MathJax typesetting.
+  await expect(submission.locator('mjx-container')).toHaveCount(0);
+  expect(await columnWidths()).toEqual(valueWidths);
 });
 
 test('rejects file-backed formulas that reach hidden cells', async ({ page, courseInstance }) => {

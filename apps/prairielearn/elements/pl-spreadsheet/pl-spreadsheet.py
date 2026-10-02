@@ -1521,6 +1521,7 @@ def _table_data(
     config: dict[str, Any],
     snapshot: Any,
     answer_cells: dict[str, set[str]] | None = None,
+    incorrect_cells: dict[str, set[str]] | None = None,
 ) -> list[dict[str, Any]]:
     snapshot_sheets = {}
     if isinstance(snapshot, dict):
@@ -1533,6 +1534,7 @@ def _table_data(
     for sheet in template.get("sheets", []):
         snapshot_sheet = snapshot_sheets.get(sheet.get("name"), {})
         sheet_answer_cells = (answer_cells or {}).get(sheet.get("name"), set())
+        sheet_incorrect_cells = (incorrect_cells or {}).get(sheet.get("name"), set())
         snapshot_cells = snapshot_sheet.get("cells", {})
         template_cells = sheet.get("cells", {})
         rows = []
@@ -1541,18 +1543,29 @@ def _table_data(
             for column_index in range(sheet.get("columns", 1)):
                 address = f"{_column_name(column_index)}{row_index + 1}"
                 snapshot_cell = snapshot_cells.get(address)
+                is_error = False
                 if isinstance(snapshot_cell, dict):
                     value = _result_value(snapshot_cell)
                     formula = _display_input_value(_input_value(snapshot_cell))
+                    is_error = snapshot_cell.get("result", {}).get("type") == "error"
                 else:
                     value = formula = _display_input_value(template_cells.get(address))
                 cell: dict[str, Any] = {
                     "address": address,
                     "value": value,
                     "formula": formula,
+                    "error": is_error,
                 }
-                if address in sheet_answer_cells:
+                # Highlights match the editor's grid, so a cell looks the same before
+                # and after submission.
+                if address in sheet_incorrect_cells:
+                    cell["incorrect_cell"] = True
+                    cell["class_name"] = "table-danger"
+                elif address in sheet_answer_cells:
                     cell["answer_cell"] = True
+                    cell["class_name"] = "table-success"
+                elif not _cell_is_editable(sheet, row_index, column_index):
+                    cell["class_name"] = "pl-spreadsheet-cell-readonly"
                 cells.append(cell)
             rows.append({"number": row_index + 1, "cells": cells})
         table_sheets.append({
@@ -1596,6 +1609,19 @@ def _reference_answer_cells(grading_config: dict[str, Any]) -> dict[str, set[str
     for sheet_name, address, _ in _reference_student_cells(grading_config):
         answer_cells.setdefault(sheet_name, set()).add(address)
     return answer_cells
+
+
+def _incorrect_cells(snapshot: Any, grading_config: Any) -> dict[str, set[str]]:
+    """Return the student addresses of reference cells a graded submission got wrong, by sheet."""
+    if not isinstance(grading_config, dict) or "reference" not in grading_config:
+        return {}
+    book = psp.Book(snapshot, grading=grading_config)
+    incorrect: dict[str, set[str]] = {}
+    for address, series in book.reference.items():
+        if not series.all_match:
+            cell = book.student_cell(address)
+            incorrect.setdefault(cell.sheet.name, set()).add(cell.address)
+    return incorrect
 
 
 def _all_match_feedback(*, has_test_cases: bool) -> str:
@@ -1723,14 +1749,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         })
     else:
         render_data["read_only"] = True
-        render_data["sheets"] = _table_data(config, snapshot)
+        incorrect_cells: dict[str, set[str]] = {}
         if data["panel"] == "submission":
             partial_score = data["partial_scores"].get(answer_name, {})
             score = partial_score.get("score")
             if score is not None:
                 score_type, score_value = pl.determine_score_params(score)
                 render_data[score_type] = score_value
+                incorrect_cells = _incorrect_cells(
+                    snapshot, data["correct_answers"].get(answer_name)
+                )
             render_data["feedback"] = partial_score.get("feedback")
+        render_data["sheets"] = _table_data(
+            config, snapshot, incorrect_cells=incorrect_cells
+        )
 
     with open("pl-spreadsheet.mustache", encoding="utf-8") as template_file:
         return chevron.render(template_file, render_data).strip()

@@ -527,7 +527,8 @@ submitted inputs and on every test case, and the element's partial score uses it
 `weight` attribute. The feedback names the first mismatching cell, in the student's
 coordinates, and says whether it calculates the wrong value, uses a typed value that
 does not change with the test cases, or uses a formula that does not generalize.
-`pl-spreadsheet` shows the feedback and a score badge with the submission. A
+`pl-spreadsheet` shows the feedback and a score badge with the submission, and
+highlights each mismatching reference cell in red. A
 question's `grade()` function runs afterward, so it may replace this partial score,
 as in the custom rubric above, or set `data["score"]` directly.
 
@@ -726,8 +727,9 @@ color. Typing a function name lists matching supported functions, which can be
 chosen with the arrow keys and Enter or Tab. Inside a function call, a hint shows
 its arguments with the current one in bold. Wherever a formula expects a value, such
 as after `=`, `(`, `,`, or an operator, clicking a cell or dragging across cells
-inserts a reference, as in Google Sheets or Excel. The arrow keys, and Shift with the
-arrow keys, do the same from the keyboard.
+inserts a reference, as in Google Sheets or Excel. Right after pointing, the arrow
+keys move the reference and Shift with the arrow keys resizes it; once the student
+types, the arrow keys move the cursor in the formula bar as usual.
 
 The formula bar also draws the structure of a formula as interlocking tiles, in the
 style of the [tylr](https://tylr.fun) structure editor. Values have pointed ends,

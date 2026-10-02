@@ -47,7 +47,7 @@
   {{/editable}}
 
   {{#read_only}}
-    <div class="card-body pl-spreadsheet-read-only">
+    <div class="card-body pl-spreadsheet-read-only mathjax_ignore">
       {{#reference_answer}}
         <p class="mb-3">
           Highlighted cells show a reference solution. Other formulas that produce the same
@@ -71,11 +71,16 @@
                     <th scope="row">{{number}}</th>
                     {{#cells}}
                       <td
-                        aria-label="Cell {{address}}{{#answer_cell}}, reference solution{{/answer_cell}}"
-                        {{#answer_cell}}class="table-success"{{/answer_cell}}
+                        aria-label="Cell {{address}}{{#answer_cell}}, reference solution{{/answer_cell}}{{#incorrect_cell}}, incorrect{{/incorrect_cell}}"
+                        {{#class_name}}class="{{class_name}}"{{/class_name}}
                       >
-                        <span data-spreadsheet-view="values">{{value}}</span>
-                        <span data-spreadsheet-view="formulas" hidden>{{formula}}</span>
+                        <div class="pl-spreadsheet-table-cell">
+                          <span
+                            data-spreadsheet-view="values"
+                            {{#error}}class="pl-spreadsheet-cell-error"{{/error}}
+                          >{{value}}</span>
+                          <span data-spreadsheet-view="formulas">{{formula}}</span>
+                        </div>
                       </td>
                     {{/cells}}
                   </tr>

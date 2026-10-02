@@ -230,6 +230,8 @@ def test_prepare_csv_keeps_hidden_source_cells_server_only(tmp_path: Path) -> No
         "address": "B2",
         "value": "=A2*2",
         "formula": "=A2*2",
+        "error": False,
+        "class_name": "pl-spreadsheet-cell-readonly",
     }
 
 
@@ -516,9 +518,13 @@ def test_render_editable_and_read_only_views(element_directory: None) -> None:
     read_only_html = spreadsheet.render(ELEMENT_HTML, data)
     assert "<caption>Inputs</caption>" in read_only_html
     assert '<th scope="col">A</th>' in read_only_html
-    assert '<span data-spreadsheet-view="values">6</span>' in read_only_html
-    assert (
-        '<span data-spreadsheet-view="formulas" hidden>=A2*2</span>' in read_only_html
+    rendered = html.fromstring(read_only_html)
+    b2 = rendered.xpath('//td[@aria-label="Cell B2"]')[0]
+    assert b2.xpath('.//span[@data-spreadsheet-view="values"]/text()') == ["6"]
+    assert b2.xpath('.//span[@data-spreadsheet-view="formulas"]/text()') == ["=A2*2"]
+    # Formulas such as =$A$1 must not be typeset as math.
+    assert rendered.find_class("pl-spreadsheet-read-only") == rendered.find_class(
+        "mathjax_ignore"
     )
     assert 'role="switch"' in read_only_html
     assert 'aria-label="Show formulas for Budget model"' in read_only_html
@@ -887,6 +893,31 @@ def test_render_submission_shows_score_and_feedback(element_directory: None) -> 
     data["panel"] = "question"
     data["editable"] = False
     assert "1 of 2 answer cells match." not in spreadsheet.render(ELEMENT_HTML, data)
+
+
+def test_render_submission_marks_incorrect_reference_cells(
+    element_directory: None,
+) -> None:
+    data = question_data(correct_answers={"model": reference_grading_config()})
+    spreadsheet.prepare(ELEMENT_HTML, data)
+    data["panel"] = "submission"
+    data["submitted_answers"]["model"] = reference_snapshot(
+        data, [False, True, True], answer=FORMULA_ANSWER
+    )
+    spreadsheet.grade(ELEMENT_HTML, data)
+
+    rendered = html.fromstring(spreadsheet.render(ELEMENT_HTML, data))
+
+    assert [
+        cell.get("aria-label") for cell in rendered.xpath('//td[@class="table-danger"]')
+    ] == ["Cell A3, incorrect"]
+
+    data["submitted_answers"]["model"] = reference_snapshot(
+        data, [True, True, True], answer=FORMULA_ANSWER
+    )
+    spreadsheet.grade(ELEMENT_HTML, data)
+    rendered = html.fromstring(spreadsheet.render(ELEMENT_HTML, data))
+    assert rendered.xpath('//td[@class="table-danger"]') == []
 
 
 WEIGHTED_ELEMENT_HTML = ELEMENT_HTML.replace(
