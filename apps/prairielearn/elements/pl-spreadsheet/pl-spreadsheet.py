@@ -7,7 +7,7 @@ import math
 import pathlib
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import chevron
 import lxml.html
@@ -19,6 +19,7 @@ SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 DEFAULT_ARIA_LABEL = "Spreadsheet"
 DEFAULT_HEIGHT = "500px"
 DEFAULT_ALLOW_BLANK = False
+DEFAULT_WEIGHT = 1
 
 MAX_SHEETS = 10
 MAX_ROWS = 1000
@@ -1538,24 +1539,94 @@ def _table_data(
     return table_sheets
 
 
-def _reference_answer_cells(grading_config: dict[str, Any]) -> dict[str, set[str]]:
-    """Return the student-relative addresses of reference cells, by student sheet."""
+def _reference_student_cells(
+    grading_config: dict[str, Any],
+) -> list[tuple[str, str, Any]]:
+    """Return each reference cell's student sheet, student address, and input, in order."""
     overlays = {
         overlay["source_sheet"]: overlay
         for overlay in grading_config.get("student_overlays", [])
     }
-    answer_cells: dict[str, set[str]] = {}
+    student_cells: list[tuple[str, str, Any]] = []
     for cell in grading_config.get("reference", {}).get("cells", []):
         overlay = overlays.get(cell["sheet"])
         source_range = _parse_range(overlay["source_range"]) if overlay else None
         position = _parse_address(cell["cell"])
         if overlay is None or source_range is None or position is None:
             continue
-        answer_cells.setdefault(overlay["student_sheet"], set()).add(
-            f"{_column_name(position[1] - source_range.start_column)}"
-            f"{position[0] - source_range.start_row + 1}"
-        )
+        student_cells.append((
+            overlay["student_sheet"],
+            _column_name(position[1] - source_range.start_column)
+            + str(position[0] - source_range.start_row + 1),
+            cell["input"],
+        ))
+    return student_cells
+
+
+def _reference_answer_cells(grading_config: dict[str, Any]) -> dict[str, set[str]]:
+    """Return the student-relative addresses of reference cells, by student sheet."""
+    answer_cells: dict[str, set[str]] = {}
+    for sheet_name, address, _ in _reference_student_cells(grading_config):
+        answer_cells.setdefault(sheet_name, set()).add(address)
     return answer_cells
+
+
+def _all_match_feedback(*, has_test_cases: bool) -> str:
+    if has_test_cases:
+        return (
+            "All answer cells match the reference solution on your worksheet and on "
+            "every hidden test case."
+        )
+    return "All answer cells match the reference solution."
+
+
+def _mismatch_feedback(
+    passed: int,
+    total: int,
+    location: str,
+    cause: Literal["value", "formula", "typed"],
+) -> str:
+    feedback = f"{passed} of {total} answer cells match the reference solution."
+    if cause == "value":
+        return (
+            f"{feedback} For example, {location} does not calculate the expected value."
+        )
+    if cause == "formula":
+        return (
+            f"{feedback} For example, {location} is correct for the values shown but "
+            "not for every hidden test case. Check that the formula works for other "
+            "data too."
+        )
+    return (
+        f"{feedback} For example, {location} is correct for the values shown but not "
+        "when the hidden test cases change the data. Use a formula that refers to the "
+        "data cells rather than a typed value."
+    )
+
+
+def _score_reference(book: psp.Book) -> tuple[float, str]:
+    """Credit each reference cell that matches in every run, and explain a mismatch."""
+    reference = book.reference
+    if reference.cell_score() == 1:
+        return 1, _all_match_feedback(has_test_cases=bool(book.cases))
+    passed = sum(series.all_match for series in reference.values())
+    address, mismatch = next(
+        (address, series.first_mismatch)
+        for address, series in reference.items()
+        if series.first_mismatch is not None
+    )
+    cell = book.student_cell(address)
+    location = cell.qualified_address if len(book.sheet_names) > 1 else cell.address
+    cause: Literal["value", "formula", "typed"]
+    if mismatch.case is None:
+        cause = "value"
+    elif cell.is_formula:
+        cause = "formula"
+    else:
+        cause = "typed"
+    return passed / len(reference), _mismatch_feedback(
+        passed, len(reference), location, cause
+    )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -1725,6 +1796,23 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
 
 
+def grade(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    answer_name = pl.get_string_attrib(element, "answers-name")
+    grading_config = data["correct_answers"].get(answer_name)
+    # Without a reference solution, grading is defined by the question.
+    if not isinstance(grading_config, dict) or "reference" not in grading_config:
+        return
+    pl.grade_answer_parameterized(
+        data,
+        answer_name,
+        lambda submission: _score_reference(
+            psp.Book(submission, grading=grading_config)
+        ),
+        weight=pl.get_integer_attrib(element, "weight", DEFAULT_WEIGHT),
+    )
+
+
 def _first_editable_cell(config: dict[str, Any]) -> tuple[str, str]:
     for sheet in config.get("template", {}).get("sheets", []):
         ranges = sheet.get("editable_ranges", [])
@@ -1743,6 +1831,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     answer_name, config = _get_config(element, data)
     if data["test_type"] == "invalid":
         data["raw_submitted_answers"][answer_name] = "not valid json"
+        data["format_errors"][answer_name] = "The spreadsheet answer is invalid."
+        return
+    grading_config = data["correct_answers"].get(answer_name)
+    if isinstance(grading_config, dict) and "reference" in grading_config:
+        _test_reference(element, data, answer_name, config, grading_config)
         return
     sheet_name, address = _first_editable_cell(config)
     data["raw_submitted_answers"][answer_name] = json.dumps(
@@ -1753,3 +1846,45 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         },
         separators=(",", ":"),
     )
+
+
+def _test_reference(
+    element: lxml.html.HtmlElement,
+    data: pl.ElementTestData,
+    answer_name: str,
+    config: dict[str, Any],
+    grading_config: dict[str, Any],
+) -> None:
+    """Submit the reference solution, or text that matches no reference result."""
+    correct = data["test_type"] == "correct"
+    student_cells = _reference_student_cells(grading_config)
+    sheets: dict[str, dict[str, Any]] = {}
+    for sheet_name, address, value in student_cells:
+        sheets.setdefault(sheet_name, {})[address] = value if correct else "Incorrect"
+    data["raw_submitted_answers"][answer_name] = json.dumps(
+        {
+            "schema_version": 2,
+            "template_hash": config.get("template_hash", ""),
+            "sheets": sheets,
+        },
+        separators=(",", ":"),
+    )
+    if correct:
+        score = 1
+        feedback = _all_match_feedback(
+            has_test_cases=bool(grading_config.get("test_cases"))
+        )
+    else:
+        score = 0
+        sheet_name, address, _ = student_cells[0]
+        location = (
+            psp.QualifiedAddress(psp.Address.from_a1(address), sheet_name).address
+            if len(config["template"]["sheets"]) > 1
+            else address
+        )
+        feedback = _mismatch_feedback(0, len(student_cells), location, "value")
+    data["partial_scores"][answer_name] = {
+        "score": score,
+        "weight": pl.get_integer_attrib(element, "weight", DEFAULT_WEIGHT),
+        "feedback": feedback,
+    }

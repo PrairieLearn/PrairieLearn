@@ -17,6 +17,10 @@
     },
     "params-name": {
       "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
     }
   },
   "required": ["answers-name"],
