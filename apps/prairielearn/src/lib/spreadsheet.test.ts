@@ -155,6 +155,77 @@ function makeSubmission(sheets: SpreadsheetRawSubmission['sheets'] = {}): Spread
   return { schema_version: 2, template_hash: 'template-hash', sheets };
 }
 
+function makePricingConfig(): SpreadsheetElementConfig {
+  return {
+    schema_version: 2,
+    template_hash: 'template-hash',
+    template: {
+      schema_version: 2,
+      sheets: [
+        {
+          name: 'Inputs',
+          rows: 2,
+          columns: 4,
+          cells: { A1: 'Quantity', B1: 'Price', C1: 'Discount', D1: 'Total', A2: 3, B2: 4 },
+          editable_ranges: ['C2:D2'],
+        },
+      ],
+    },
+  };
+}
+
+const PRICING_REFERENCE: NonNullable<SpreadsheetGradingConfig['reference']> = {
+  cells: [{ sheet: 'Inputs', cell: 'D2', input: '=A2*B2-C2' }],
+  rtol: 1e-2,
+  atol: 1e-8,
+  compare_outputs: false,
+};
+
+function makePricingGradingConfig(
+  overrides: Partial<SpreadsheetGradingConfig> = {},
+): SpreadsheetGradingConfig {
+  return {
+    schema_version: 2,
+    grader_hash: 'pricing-grader',
+    source_sheets: [
+      {
+        name: 'Inputs',
+        rows: 2,
+        columns: 4,
+        cells: { A1: 'Quantity', B1: 'Price', C1: 'Discount', D1: 'Total', A2: 3, B2: 4 },
+      },
+    ],
+    student_overlays: [{ student_sheet: 'Inputs', source_sheet: 'Inputs', source_range: 'A1:D2' }],
+    sheets: [],
+    outputs: { total: { sheet: 'Inputs', cell: 'D2' } },
+    parameters: [{ sheet: 'Inputs', range: 'C2' }],
+    test_cases: [
+      { name: 'zero quantity', inputs: [{ sheet: 'Inputs', cell: 'A2', value: 0 }] },
+      {
+        name: 'new price',
+        inputs: [
+          { sheet: 'Inputs', cell: 'B2', value: 10 },
+          { sheet: 'Inputs', cell: 'C2', value: 5 },
+        ],
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function gradePricing(
+  sheets: SpreadsheetRawSubmission['sheets'],
+  gradingConfig: SpreadsheetGradingConfig = makePricingGradingConfig(),
+) {
+  const evaluation = evaluateSpreadsheet(
+    makePricingConfig(),
+    makeSubmission(sheets),
+    gradingConfig,
+  );
+  evaluation.engine.destroy();
+  return { grading: evaluation.snapshot.grading!, serialized: JSON.stringify(evaluation.snapshot) };
+}
+
 describe('spreadsheet ranges', () => {
   it('converts between local-grid and source coordinates', () => {
     const range = parseRange('D5:B3');
@@ -604,6 +675,285 @@ describe('evaluateSpreadsheet', () => {
   });
 });
 
+describe('spreadsheet test cases', () => {
+  it('recomputes outputs with overridden parameters and restores them between cases', () => {
+    const { grading } = gradePricing({ Inputs: { C2: 1, D2: '=A2*B2-C2' } });
+
+    assert.deepEqual(grading.outputs.total, { type: 'number', value: 11 });
+    assert.deepEqual(grading.cases, [
+      { name: 'zero quantity', outputs: { total: { type: 'number', value: -1 } } },
+      { name: 'new price', outputs: { total: { type: 'number', value: 25 } } },
+    ]);
+  });
+
+  it('exposes hardcoded values that only match the base case', () => {
+    const { grading } = gradePricing({ Inputs: { C2: 1, D2: 11 } });
+
+    assert.deepEqual(grading.outputs.total, { type: 'number', value: 11 });
+    assert.deepEqual(
+      grading.cases?.map((testCase) => testCase.outputs.total),
+      [
+        { type: 'number', value: 11 },
+        { type: 'number', value: 11 },
+      ],
+    );
+  });
+
+  it('overrides student-relative cells for offset student ranges', () => {
+    const gradingConfig: SpreadsheetGradingConfig = {
+      ...makeSourceGradingConfig(),
+      outputs: { doubled: { sheet: 'Inputs', cell: 'C2' } },
+      parameters: [{ sheet: 'Inputs', range: 'B2' }],
+      test_cases: [
+        { name: 'five', inputs: [{ sheet: 'Inputs', cell: 'B2', value: 5 }] },
+        { name: 'hidden', inputs: [{ sheet: 'Inputs', cell: 'A1', value: 'changed' }] },
+      ],
+    };
+    const evaluation = evaluateSpreadsheet(
+      makeOffsetConfig(),
+      makeSubmission({ Inputs: { A1: 3 } }),
+      gradingConfig,
+    );
+    evaluation.engine.destroy();
+
+    assert.deepEqual(evaluation.snapshot.grading?.outputs.doubled, { type: 'number', value: 6 });
+    assert.deepEqual(
+      evaluation.snapshot.grading?.cases?.map((testCase) => testCase.outputs.doubled),
+      [
+        { type: 'number', value: 10 },
+        { type: 'number', value: 6 },
+      ],
+    );
+  });
+
+  it('only overrides locked constants and declared parameter cells', () => {
+    const withInput = (sheet: string, cell: string, value: string | number) =>
+      makePricingGradingConfig({
+        test_cases: [{ name: 'case', inputs: [{ sheet, cell, value }] }],
+      });
+
+    assert.throws(
+      () => gradePricing({}, withInput('Inputs', 'D2', 1)),
+      /cannot override Inputs!D2/,
+    );
+    assert.throws(
+      () => gradePricing({}, withInput('Inputs', 'A2', '=1+1')),
+      /constant, not a formula/,
+    );
+    assert.throws(() => gradePricing({}, withInput('Inputs', 'E9', 1)), /unknown cell Inputs!E9/);
+    assert.throws(() => gradePricing({}, withInput('Private', 'A1', 1)), /unknown cell Private!A1/);
+    assert.throws(
+      () =>
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission(), {
+          ...makeSourceGradingConfig(),
+          test_cases: [{ name: 'formula', inputs: [{ sheet: 'Inputs', cell: 'C2', value: 1 }] }],
+        }),
+      /cannot override Inputs!C2/,
+    );
+    assert.throws(
+      () =>
+        gradePricing(
+          {},
+          makePricingGradingConfig({
+            test_cases: [
+              { name: 'same', inputs: [] },
+              { name: 'same', inputs: [] },
+            ],
+          }),
+        ),
+      /"same" is duplicated/,
+    );
+    assert.throws(
+      () =>
+        gradePricing(
+          {},
+          makePricingGradingConfig({ parameters: [{ sheet: 'Inputs', range: 'E1' }] }),
+        ),
+      /must be inside a student range/,
+    );
+  });
+
+  it('caps the number of exported grading results', () => {
+    const outputs = Object.fromEntries(
+      Array.from({ length: 100 }, (_, index) => [
+        `output_${index}`,
+        { sheet: 'Inputs', cell: 'D2' },
+      ]),
+    );
+    const testCases = Array.from({ length: 50 }, (_, index) => ({
+      name: `case ${index}`,
+      inputs: [],
+    }));
+    assert.throws(
+      () => gradePricing({}, makePricingGradingConfig({ outputs, test_cases: testCases })),
+      /at most 5000 results/,
+    );
+  });
+});
+
+describe('spreadsheet reference solutions', () => {
+  const referenceConfig = (reference = PRICING_REFERENCE) =>
+    makePricingGradingConfig({ reference });
+
+  it('compares student and reference results across every test case', () => {
+    const { grading, serialized } = gradePricing(
+      { Inputs: { C2: 1, D2: '=B2*A2-C2' } },
+      referenceConfig(),
+    );
+
+    assert.deepEqual(grading.reference, {
+      cells: {
+        'Inputs!D2': {
+          base: {
+            student: { type: 'number', value: 11 },
+            reference: { type: 'number', value: 11 },
+            match: true,
+          },
+          cases: [
+            {
+              student: { type: 'number', value: -1 },
+              reference: { type: 'number', value: -1 },
+              match: true,
+            },
+            {
+              student: { type: 'number', value: 25 },
+              reference: { type: 'number', value: 25 },
+              match: true,
+            },
+          ],
+        },
+      },
+      outputs: undefined,
+      summary: { matched: 3, total: 3 },
+    });
+    assert.notInclude(serialized, 'A2*B2-C2');
+  });
+
+  it('fails hardcoded values on the hidden test cases', () => {
+    const { grading } = gradePricing({ Inputs: { C2: 1, D2: 11 } }, referenceConfig());
+    const series = grading.reference!.cells['Inputs!D2'];
+
+    assert.isTrue(series.base.match);
+    assert.deepEqual(
+      series.cases.map((comparison) => comparison.match),
+      [false, false],
+    );
+    assert.deepEqual(grading.reference?.summary, { matched: 1, total: 3 });
+  });
+
+  it('accepts equivalent formulas with different anchoring', () => {
+    for (const formula of ['=$A$2*$B$2-$C$2', '=B2*A2-C2', '=PRODUCT(A2,B2)-C2']) {
+      const { grading } = gradePricing({ Inputs: { C2: 1, D2: formula } }, referenceConfig());
+      assert.deepEqual(grading.reference?.summary, { matched: 3, total: 3 }, formula);
+    }
+  });
+
+  it('compares numbers with relative and absolute tolerances', () => {
+    const nearlyEqual = { Inputs: { C2: 1, D2: '=(A2*B2-C2)*1.005' } };
+    assert.deepEqual(gradePricing(nearlyEqual, referenceConfig()).grading.reference?.summary, {
+      matched: 3,
+      total: 3,
+    });
+
+    const strict = {
+      ...PRICING_REFERENCE,
+      cells: [{ ...PRICING_REFERENCE.cells[0], rtol: 1e-6 }],
+    };
+    assert.deepEqual(
+      gradePricing(nearlyEqual, referenceConfig(strict)).grading.reference?.summary,
+      {
+        matched: 0,
+        total: 3,
+      },
+    );
+
+    const absolute = {
+      ...PRICING_REFERENCE,
+      cells: [{ ...PRICING_REFERENCE.cells[0], rtol: 0, atol: 0.5 }],
+    };
+    const offByAQuarter = { Inputs: { C2: 1, D2: '=A2*B2-C2+0.25' } };
+    assert.deepEqual(
+      gradePricing(offByAQuarter, referenceConfig(absolute)).grading.reference?.summary,
+      { matched: 3, total: 3 },
+    );
+  });
+
+  it('compares error results by error type and types strictly', () => {
+    const reference = {
+      ...PRICING_REFERENCE,
+      cells: [{ sheet: 'Inputs', cell: 'D2', input: '=B2/A2' }],
+    };
+    const dividing = gradePricing({ Inputs: { D2: '=B2/A2' } }, referenceConfig(reference));
+    assert.deepEqual(dividing.grading.reference?.cells['Inputs!D2'].cases[0], {
+      student: { type: 'error', value: '#DIV/0!', error_type: 'DIV_BY_ZERO' },
+      reference: { type: 'error', value: '#DIV/0!', error_type: 'DIV_BY_ZERO' },
+      match: true,
+    });
+
+    const guarded = gradePricing(
+      { Inputs: { D2: '=IFERROR(B2/A2,0)' } },
+      referenceConfig(reference),
+    );
+    assert.isFalse(guarded.grading.reference?.cells['Inputs!D2'].cases[0].match);
+
+    const text = gradePricing({ Inputs: { C2: 1, D2: '=TEXT(11,"0")' } }, referenceConfig());
+    assert.isFalse(text.grading.reference?.cells['Inputs!D2'].base.match);
+  });
+
+  it('keeps student parameter values in the reference workbook', () => {
+    const { grading } = gradePricing({ Inputs: { C2: 2, D2: '=A2*B2-C2' } }, referenceConfig());
+    assert.deepEqual(grading.reference?.cells['Inputs!D2'].base.reference, {
+      type: 'number',
+      value: 10,
+    });
+  });
+
+  it('optionally compares named outputs', () => {
+    const { grading } = gradePricing(
+      { Inputs: { C2: 1, D2: 11 } },
+      referenceConfig({ ...PRICING_REFERENCE, compare_outputs: true }),
+    );
+    assert.deepEqual(
+      grading.reference?.outputs?.total.cases.map((comparison) => comparison.match),
+      [false, false],
+    );
+    assert.deepEqual(grading.reference?.summary, { matched: 2, total: 6 });
+  });
+
+  it('does not require named outputs when a reference is configured', () => {
+    const { grading } = gradePricing(
+      { Inputs: { C2: 1, D2: '=A2*B2-C2' } },
+      makePricingGradingConfig({ outputs: {}, reference: PRICING_REFERENCE }),
+    );
+    assert.deepEqual(grading.outputs, {});
+    assert.deepEqual(grading.reference?.summary, { matched: 3, total: 3 });
+    assert.throws(
+      () => gradePricing({}, makePricingGradingConfig({ outputs: {} })),
+      /at least one output or a reference solution/,
+    );
+  });
+
+  it('treats invalid reference solutions as authoring errors', () => {
+    const withReference = (cell: string, input: string) =>
+      referenceConfig({ ...PRICING_REFERENCE, cells: [{ sheet: 'Inputs', cell, input }] });
+
+    for (const [cell, input, message] of [
+      ['D2', '=RAND()', /reference solution is invalid: Function RAND/],
+      ['D2', '=Z99', /reference solution is invalid: .*outside declared student ranges/],
+      ['B2', '=1', /must be editable/],
+      ['C2', '=1', /cannot also be a parameter/],
+    ] as const) {
+      try {
+        gradePricing({ Inputs: { C2: 1 } }, withReference(cell, input));
+        assert.fail(`Expected ${input} in ${cell} to be rejected`);
+      } catch (error) {
+        assert.notInstanceOf(error, SpreadsheetSubmissionError);
+        assert.match((error as Error).message, message);
+      }
+    }
+  });
+});
+
 describe('normalizeSpreadsheetAnswers', () => {
   it('replaces raw input with a trusted snapshot', () => {
     const normalized = normalizeSpreadsheetAnswers({
@@ -679,6 +1029,8 @@ describe('getSpreadsheetLogMetadata', () => {
       spreadsheet_grading_populated_cells: 0,
       spreadsheet_grading_formulas: 0,
       spreadsheet_grading_outputs: 0,
+      spreadsheet_grading_test_cases: 0,
+      spreadsheet_grading_reference_cells: 0,
     });
   });
 
@@ -699,6 +1051,8 @@ describe('getSpreadsheetLogMetadata', () => {
         spreadsheet_grading_populated_cells: 12,
         spreadsheet_grading_formulas: 7,
         spreadsheet_grading_outputs: 7,
+        spreadsheet_grading_test_cases: 0,
+        spreadsheet_grading_reference_cells: 0,
       },
     );
   });

@@ -19,6 +19,13 @@ export const SPREADSHEET_MAX_FORMULA_LENGTH = 2048;
 export const SPREADSHEET_MAX_TEXT_LENGTH = 32 * 1024;
 export const SPREADSHEET_MAX_PAYLOAD_BYTES = 1024 * 1024;
 export const SPREADSHEET_MAX_GRADING_OUTPUTS = 100;
+export const SPREADSHEET_MAX_PARAMETER_RANGES = 100;
+export const SPREADSHEET_MAX_TEST_CASES = 50;
+export const SPREADSHEET_MAX_TEST_CASE_INPUTS = 100;
+export const SPREADSHEET_MAX_REFERENCE_CELLS = 500;
+export const SPREADSHEET_MAX_GRADING_RESULTS = 5000;
+export const SPREADSHEET_DEFAULT_RTOL = 1e-2;
+export const SPREADSHEET_DEFAULT_ATOL = 1e-8;
 export const SPREADSHEET_INTERNAL_SHEET_PREFIX = '__PL_STUDENT_';
 
 export const SPREADSHEET_ALLOWED_FUNCTIONS = new Set([
@@ -171,6 +178,55 @@ const SpreadsheetStudentOverlaySchema = z
   })
   .strict();
 
+const SpreadsheetParameterSchema = z
+  .object({
+    sheet: z.string().min(1),
+    range: z.string().min(1),
+  })
+  .strict();
+
+const SpreadsheetTestCaseSchema = z
+  .object({
+    name: z.string().min(1).max(128),
+    inputs: z
+      .array(
+        z
+          .object({
+            sheet: z.string().min(1),
+            cell: z.string().min(1),
+            value: RawCellInputSchema,
+          })
+          .strict(),
+      )
+      .max(SPREADSHEET_MAX_TEST_CASE_INPUTS),
+  })
+  .strict();
+
+const ToleranceSchema = z.number().nonnegative();
+
+const SpreadsheetReferenceSchema = z
+  .object({
+    cells: z
+      .array(
+        z
+          .object({
+            sheet: z.string().min(1),
+            cell: z.string().min(1),
+            // Student-relative input, so the reference evaluates exactly like a submission.
+            input: CellInputSchema,
+            rtol: ToleranceSchema.optional(),
+            atol: ToleranceSchema.optional(),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(SPREADSHEET_MAX_REFERENCE_CELLS),
+    rtol: ToleranceSchema,
+    atol: ToleranceSchema,
+    compare_outputs: z.boolean(),
+  })
+  .strict();
+
 export const SpreadsheetGradingConfigSchema = z
   .object({
     schema_version: z.literal(2),
@@ -181,6 +237,12 @@ export const SpreadsheetGradingConfigSchema = z
     outputs: z
       .record(z.string().min(1).max(128), SpreadsheetGradingOutputSchema)
       .refine((outputs) => Object.keys(outputs).length <= SPREADSHEET_MAX_GRADING_OUTPUTS),
+    parameters: z
+      .array(SpreadsheetParameterSchema)
+      .max(SPREADSHEET_MAX_PARAMETER_RANGES)
+      .optional(),
+    test_cases: z.array(SpreadsheetTestCaseSchema).max(SPREADSHEET_MAX_TEST_CASES).optional(),
+    reference: SpreadsheetReferenceSchema.optional(),
   })
   .strict()
   .refine(
@@ -229,6 +291,25 @@ const SpreadsheetSnapshotCellSchema = z
   .object({ input: SnapshotInputSchema, result: SpreadsheetSnapshotResultSchema })
   .strict();
 
+type SpreadsheetSnapshotResult = z.infer<typeof SpreadsheetSnapshotResultSchema>;
+
+const SpreadsheetComparisonSchema = z
+  .object({
+    student: SpreadsheetSnapshotResultSchema,
+    reference: SpreadsheetSnapshotResultSchema,
+    match: z.boolean(),
+  })
+  .strict();
+
+const SpreadsheetComparisonSeriesSchema = z
+  .object({
+    base: SpreadsheetComparisonSchema,
+    cases: z.array(SpreadsheetComparisonSchema),
+  })
+  .strict();
+
+type SpreadsheetComparisonSeries = z.infer<typeof SpreadsheetComparisonSeriesSchema>;
+
 export const SpreadsheetSnapshotSchema = z
   .object({
     schema_version: z.literal(2),
@@ -255,6 +336,24 @@ export const SpreadsheetSnapshotSchema = z
         schema_version: z.literal(2),
         grader_hash: z.string(),
         outputs: z.record(z.string(), SpreadsheetSnapshotResultSchema),
+        cases: z
+          .array(
+            z
+              .object({
+                name: z.string(),
+                outputs: z.record(z.string(), SpreadsheetSnapshotResultSchema),
+              })
+              .strict(),
+          )
+          .optional(),
+        reference: z
+          .object({
+            cells: z.record(z.string(), SpreadsheetComparisonSeriesSchema),
+            outputs: z.record(z.string(), SpreadsheetComparisonSeriesSchema).optional(),
+            summary: z.object({ matched: z.number().int(), total: z.number().int() }).strict(),
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .optional(),
@@ -670,8 +769,10 @@ function validateGradingConfig(
       `Private spreadsheet grading workbooks must be at most ${SPREADSHEET_MAX_PAYLOAD_BYTES} bytes.`,
     );
   }
-  if (Object.keys(config.outputs).length === 0) {
-    throw new Error('Private spreadsheet grading workbooks must define at least one output.');
+  if (Object.keys(config.outputs).length === 0 && !config.reference) {
+    throw new Error(
+      'Private spreadsheet grading workbooks must define at least one output or a reference solution.',
+    );
   }
   let addressableCells = 0;
   let populatedCells = 0;
@@ -780,6 +881,191 @@ function validateGradingConfig(
         `Private grading output ${outputName} references a cell outside sheet ${output.sheet}.`,
       );
     }
+  }
+
+  validateTestingConfig(config, template);
+}
+
+function isFormulaInput(value: SpreadsheetCellInput | null | undefined): boolean {
+  return typeof value === 'string' && value.startsWith('=');
+}
+
+function qualifiedAddress(sheetName: string, address: SpreadsheetCellAddress): string {
+  return `${sheetName}!${cellAddress(address.row, address.column)}`;
+}
+
+interface ResolvedSourceCell {
+  sourceSheet: SpreadsheetGradingConfig['source_sheets'][number];
+  address: SpreadsheetCellAddress;
+  key: string;
+  student: {
+    sheet: SpreadsheetTemplate['sheets'][number];
+    address: SpreadsheetCellAddress;
+  } | null;
+}
+
+/**
+ * Resolves a source-coordinate cell and, when a student overlay covers it, the
+ * student-relative cell that it mirrors.
+ */
+function resolveSourceCell(
+  config: SpreadsheetGradingConfig,
+  template: SpreadsheetTemplate,
+  sheetName: string,
+  cell: string,
+): ResolvedSourceCell | null {
+  const sourceSheet = config.source_sheets.find((sheet) => sheet.name === sheetName);
+  const address = parseCellAddress(cell);
+  if (
+    !sourceSheet ||
+    !address ||
+    address.row >= sourceSheet.rows ||
+    address.column >= sourceSheet.columns
+  ) {
+    return null;
+  }
+  const key = qualifiedAddress(sheetName, address);
+  const overlay = config.student_overlays.find((candidate) => candidate.source_sheet === sheetName);
+  const sourceRange = overlay ? parseRange(overlay.source_range) : null;
+  const studentSheet = template.sheets.find((sheet) => sheet.name === overlay?.student_sheet);
+  if (
+    !sourceRange ||
+    !studentSheet ||
+    !isRangeContained(sourceRange, {
+      startRow: address.row,
+      endRow: address.row,
+      startColumn: address.column,
+      endColumn: address.column,
+    })
+  ) {
+    return { sourceSheet, address, key, student: null };
+  }
+  return {
+    sourceSheet,
+    address,
+    key,
+    student: {
+      sheet: studentSheet,
+      address: toRelativeAddress(createSpreadsheetAddressSpace(sourceRange), address),
+    },
+  };
+}
+
+function parameterCells(
+  config: SpreadsheetGradingConfig,
+  template: SpreadsheetTemplate,
+): Map<string, ResolvedSourceCell> {
+  const cells = new Map<string, ResolvedSourceCell>();
+  for (const parameter of config.parameters ?? []) {
+    const range = parseRange(parameter.range);
+    const overlay = config.student_overlays.find(
+      (candidate) => candidate.source_sheet === parameter.sheet,
+    );
+    const sourceRange = overlay ? parseRange(overlay.source_range) : null;
+    if (!range || !sourceRange || !isRangeContained(sourceRange, range)) {
+      throw new Error(
+        `Spreadsheet parameter range ${parameter.sheet}!${parameter.range} must be inside a student range.`,
+      );
+    }
+    for (let row = range.startRow; row <= range.endRow; row += 1) {
+      for (let column = range.startColumn; column <= range.endColumn; column += 1) {
+        const cell = resolveSourceCell(config, template, parameter.sheet, cellAddress(row, column));
+        if (cell) cells.set(cell.key, cell);
+      }
+    }
+  }
+  return cells;
+}
+
+/**
+ * Test cases may only override parameter cells: locked non-formula cells, cells
+ * that only exist in private source sheets, and editable cells that the author
+ * explicitly declared as parameters. Cells where students write formulas are
+ * never replaced.
+ */
+function isOverridableCell(
+  cell: ResolvedSourceCell,
+  parameters: ReadonlyMap<string, ResolvedSourceCell>,
+): boolean {
+  if (parameters.has(cell.key)) return true;
+  if (!cell.student) {
+    return !isFormulaInput(
+      cell.sourceSheet.cells[cellAddress(cell.address.row, cell.address.column)],
+    );
+  }
+  const { sheet, address } = cell.student;
+  if (isCellEditable(sheet, address.row, address.column)) return false;
+  return !isFormulaInput(sheet.cells[cellAddress(address.row, address.column)]);
+}
+
+function validateTestingConfig(
+  config: SpreadsheetGradingConfig,
+  template: SpreadsheetTemplate,
+): void {
+  const parameters = parameterCells(config, template);
+
+  const caseNames = new Set<string>();
+  for (const testCase of config.test_cases ?? []) {
+    if (caseNames.has(testCase.name)) {
+      throw new Error(`Spreadsheet test case name "${testCase.name}" is duplicated.`);
+    }
+    caseNames.add(testCase.name);
+    const inputKeys = new Set<string>();
+    for (const input of testCase.inputs) {
+      const resolved = resolveSourceCell(config, template, input.sheet, input.cell);
+      if (!resolved) {
+        throw new Error(
+          `Spreadsheet test case "${testCase.name}" references unknown cell ${input.sheet}!${input.cell}.`,
+        );
+      }
+      if (inputKeys.has(resolved.key)) {
+        throw new Error(
+          `Spreadsheet test case "${testCase.name}" sets ${resolved.key} more than once.`,
+        );
+      }
+      inputKeys.add(resolved.key);
+      if (isFormulaInput(input.value)) {
+        throw new Error(
+          `Spreadsheet test case "${testCase.name}" must set ${resolved.key} to a constant, not a formula.`,
+        );
+      }
+      if (!isOverridableCell(resolved, parameters)) {
+        throw new Error(
+          `Spreadsheet test case "${testCase.name}" cannot override ${resolved.key}. Only locked constant cells and declared parameter cells may be overridden.`,
+        );
+      }
+    }
+  }
+
+  const referenceKeys = new Set<string>();
+  for (const cell of config.reference?.cells ?? []) {
+    const resolved = resolveSourceCell(config, template, cell.sheet, cell.cell);
+    if (!resolved?.student) {
+      throw new Error(
+        `Spreadsheet reference cell ${cell.sheet}!${cell.cell} must be inside a student range.`,
+      );
+    }
+    const { sheet, address } = resolved.student;
+    if (!isCellEditable(sheet, address.row, address.column)) {
+      throw new Error(`Spreadsheet reference cell ${resolved.key} must be editable.`);
+    }
+    if (parameters.has(resolved.key)) {
+      throw new Error(`Spreadsheet reference cell ${resolved.key} cannot also be a parameter.`);
+    }
+    if (referenceKeys.has(resolved.key)) {
+      throw new Error(`Spreadsheet reference cell ${resolved.key} is duplicated.`);
+    }
+    referenceKeys.add(resolved.key);
+  }
+
+  const outputCount = Object.keys(config.outputs).length;
+  const comparisonCount =
+    referenceKeys.size + (config.reference?.compare_outputs ? outputCount : 0);
+  const results = (1 + (config.test_cases?.length ?? 0)) * (outputCount + 2 * comparisonCount);
+  if (results > SPREADSHEET_MAX_GRADING_RESULTS) {
+    throw new Error(
+      `Spreadsheet grading may export at most ${SPREADSHEET_MAX_GRADING_RESULTS} results across all test cases.`,
+    );
   }
 }
 
@@ -1015,12 +1301,33 @@ function validateStudentFormulaReferences(
   }
 }
 
-function evaluateGradingOutputs(
+interface GradingRun {
+  outputs: Record<string, SpreadsheetSnapshotResult>;
+  /** Results of reference-compared cells, keyed by qualified source address. */
+  cells: Record<string, SpreadsheetSnapshotResult>;
+}
+
+function mustResolveSourceCell(
+  config: SpreadsheetGradingConfig,
+  template: SpreadsheetTemplate,
+  sheetName: string,
+  cell: string,
+): ResolvedSourceCell {
+  const resolved = resolveSourceCell(config, template, sheetName, cell);
+  if (!resolved) throw new Error(`Spreadsheet cell ${sheetName}!${cell} is invalid.`);
+  return resolved;
+}
+
+/**
+ * Evaluates the private grading workbook against one set of student sheets.
+ * Returns the base run followed by one run per test case.
+ */
+function runGradingWorkbook(
   config: SpreadsheetGradingConfig,
   template: SpreadsheetTemplate,
   studentSheetData: Record<string, RawCellContent[][]>,
-): Record<string, z.infer<typeof SpreadsheetSnapshotResultSchema>> {
-  validateGradingConfig(config, template);
+  { checkRequired }: { checkRequired: boolean },
+): GradingRun[] {
   const sourceSheets = config.source_sheets;
   const sourceSheetData: Record<string, RawCellContent[][]> = Object.fromEntries(
     sourceSheets.map((sheet) => [
@@ -1076,44 +1383,252 @@ function evaluateGradingOutputs(
       engine.setSheetContent(sheetId, buildSheetRows(sheet.rows, sheet.columns, sheet.cells));
     }
 
-    // Enforce result limits for all populated grading cells, not only exported outputs.
-    for (const sheet of [...sourceSheets, ...config.sheets]) {
-      const sheetId = engine.getSheetId(sheet.name);
-      if (sheetId === undefined) throw new Error(`Private grading sheet ${sheet.name} is missing.`);
-      for (const address of Object.keys(sheet.cells)) {
-        const parsedAddress = parseCellAddress(address);
-        if (!parsedAddress) continue;
-        snapshotResult(
-          engine.getCellValue({
-            sheet: sheetId,
-            row: parsedAddress.row,
-            col: parsedAddress.column,
-          }),
-        );
-      }
-    }
+    const getSheetId = (name: string) => {
+      const sheetId = engine.getSheetId(name);
+      if (sheetId === undefined) throw new Error(`Spreadsheet sheet ${name} is missing.`);
+      return sheetId;
+    };
+    const readResult = (sheetName: string, address: SpreadsheetCellAddress) =>
+      snapshotResult(
+        engine.getCellValue({
+          sheet: getSheetId(sheetName),
+          row: address.row,
+          col: address.column,
+        }),
+      );
+    const comparedCells = (config.reference?.cells ?? []).map((cell) =>
+      mustResolveSourceCell(config, template, cell.sheet, cell.cell),
+    );
 
-    return Object.fromEntries(
-      Object.entries(config.outputs).map(([name, output]) => {
-        const sheetId = engine.getSheetId(output.sheet);
-        const address = parseCellAddress(output.cell);
-        if (sheetId === undefined || !address) {
-          throw new Error(`Private grading output ${name} has an invalid reference.`);
+    const readRun = (): GradingRun => {
+      // Enforce result limits for all populated grading cells, not only exported outputs.
+      for (const sheet of [...sourceSheets, ...config.sheets]) {
+        for (const address of Object.keys(sheet.cells)) {
+          const parsedAddress = parseCellAddress(address);
+          if (!parsedAddress) continue;
+          readResult(sheet.name, parsedAddress);
         }
-        const result = snapshotResult(
-          engine.getCellValue({ sheet: sheetId, row: address.row, col: address.column }),
-        );
+      }
+      return {
+        outputs: Object.fromEntries(
+          Object.entries(config.outputs).map(([name, output]) => {
+            const address = parseCellAddress(output.cell);
+            if (!address) {
+              throw new Error(`Private grading output ${name} has an invalid reference.`);
+            }
+            return [name, readResult(output.sheet, address)];
+          }),
+        ),
+        cells: Object.fromEntries(
+          comparedCells.map((cell) => [cell.key, readResult(cell.sourceSheet.name, cell.address)]),
+        ),
+      };
+    };
+
+    const base = readRun();
+    if (checkRequired) {
+      for (const [name, output] of Object.entries(config.outputs)) {
+        const result = base.outputs[name];
         if (output.required && (result.type === 'empty' || result.type === 'error')) {
           throw new SpreadsheetSubmissionError(
             `Required spreadsheet output "${name}" must not be empty or contain an error.`,
           );
         }
-        return [name, result];
-      }),
-    );
+      }
+    }
+
+    const caseRuns = (config.test_cases ?? []).map((testCase) => {
+      // A case overrides the authoritative source cell and, for cells inside a
+      // student range, the student-relative cell that student formulas read.
+      const overrides = testCase.inputs.flatMap((input) => {
+        const cell = mustResolveSourceCell(config, template, input.sheet, input.cell);
+        const targets: SimpleCellAddress[] = [
+          {
+            sheet: getSheetId(cell.sourceSheet.name),
+            row: cell.address.row,
+            col: cell.address.column,
+          },
+        ];
+        if (cell.student) {
+          const internalName = internalSheetNames.get(cell.student.sheet.name);
+          if (!internalName) {
+            throw new Error(`Student sheet ${cell.student.sheet.name} is missing.`);
+          }
+          targets.push({
+            sheet: getSheetId(internalName),
+            row: cell.student.address.row,
+            col: cell.student.address.column,
+          });
+        }
+        return targets.map((address) => ({ address, value: input.value }));
+      });
+      const originals = overrides.map(({ address }) => ({
+        address,
+        value: engine.getCellSerialized(address),
+      }));
+      engine.batch(() => {
+        for (const { address, value } of overrides) engine.setCellContents(address, [[value]]);
+      });
+      try {
+        return readRun();
+      } finally {
+        engine.batch(() => {
+          for (const { address, value } of originals) engine.setCellContents(address, [[value]]);
+        });
+      }
+    });
+
+    return [base, ...caseRuns];
   } finally {
     engine.destroy();
   }
+}
+
+function resultsMatch(
+  student: SpreadsheetSnapshotResult,
+  reference: SpreadsheetSnapshotResult,
+  { rtol, atol }: { rtol: number; atol: number },
+): boolean {
+  switch (reference.type) {
+    case 'empty':
+      return student.type === 'empty';
+    case 'number':
+      return (
+        student.type === 'number' &&
+        Math.abs(student.value - reference.value) <= atol + rtol * Math.abs(reference.value)
+      );
+    case 'string':
+      return student.type === 'string' && student.value === reference.value;
+    case 'boolean':
+      return student.type === 'boolean' && student.value === reference.value;
+    case 'error':
+      return student.type === 'error' && student.error_type === reference.error_type;
+  }
+}
+
+/**
+ * Builds the reference workbook as if the reference solution were a submission:
+ * reference inputs fill their editable cells and declared parameter cells keep the
+ * student's values, so both workbooks see identical inputs.
+ */
+function buildReferenceSheetData(
+  config: SpreadsheetElementConfig,
+  gradingConfig: SpreadsheetGradingConfig,
+  merged: Record<string, Record<string, SpreadsheetCellInput>>,
+): Record<string, RawCellContent[][]> {
+  const sheets: SpreadsheetRawSubmission['sheets'] = {};
+  const setInput = (cell: ResolvedSourceCell, input: SpreadsheetCellInput | null) => {
+    if (!cell.student) return;
+    const { sheet, address } = cell.student;
+    sheets[sheet.name] ??= {};
+    sheets[sheet.name][cellAddress(address.row, address.column)] = input;
+  };
+  for (const cell of parameterCells(gradingConfig, config.template).values()) {
+    if (!cell.student) continue;
+    const { sheet, address } = cell.student;
+    if (!isCellEditable(sheet, address.row, address.column)) continue;
+    setInput(cell, merged[sheet.name][cellAddress(address.row, address.column)] ?? null);
+  }
+  for (const cell of gradingConfig.reference?.cells ?? []) {
+    setInput(
+      mustResolveSourceCell(gradingConfig, config.template, cell.sheet, cell.cell),
+      cell.input,
+    );
+  }
+  const referenceMerged = mergeSubmission(config, {
+    schema_version: 2,
+    template_hash: config.template_hash,
+    sheets,
+  });
+  return Object.fromEntries(
+    config.template.sheets.map((sheet) => [
+      sheet.name,
+      buildSheetRows(sheet.rows, sheet.columns, referenceMerged[sheet.name]),
+    ]),
+  );
+}
+
+function evaluateGrading(
+  config: SpreadsheetElementConfig,
+  gradingConfig: SpreadsheetGradingConfig,
+  merged: Record<string, Record<string, SpreadsheetCellInput>>,
+  studentSheetData: Record<string, RawCellContent[][]>,
+): NonNullable<SpreadsheetSnapshot['grading']> {
+  validateGradingConfig(gradingConfig, config.template);
+  const studentRuns = runGradingWorkbook(gradingConfig, config.template, studentSheetData, {
+    checkRequired: true,
+  });
+  const [studentBase, ...studentCases] = studentRuns;
+  const grading: NonNullable<SpreadsheetSnapshot['grading']> = {
+    schema_version: 2,
+    grader_hash: gradingConfig.grader_hash,
+    outputs: studentBase.outputs,
+  };
+  if (gradingConfig.test_cases) {
+    grading.cases = gradingConfig.test_cases.map((testCase, index) => ({
+      name: testCase.name,
+      outputs: studentCases[index].outputs,
+    }));
+  }
+
+  const reference = gradingConfig.reference;
+  if (!reference) return grading;
+
+  // Reference failures are authoring errors, so they must not become student-facing parse errors.
+  let referenceRuns: GradingRun[];
+  try {
+    referenceRuns = runGradingWorkbook(
+      gradingConfig,
+      config.template,
+      buildReferenceSheetData(config, gradingConfig, merged),
+      { checkRequired: false },
+    );
+  } catch (error) {
+    if (!(error instanceof SpreadsheetSubmissionError)) throw error;
+    throw new Error(`The spreadsheet reference solution is invalid: ${error.message}`, {
+      cause: error,
+    });
+  }
+
+  let matched = 0;
+  let total = 0;
+  const compare = (
+    read: (run: GradingRun) => SpreadsheetSnapshotResult,
+    tolerance: { rtol: number; atol: number },
+  ): SpreadsheetComparisonSeries => {
+    const [base, ...cases] = studentRuns.map((studentRun, index) => {
+      const student = read(studentRun);
+      const expected = read(referenceRuns[index]);
+      const match = resultsMatch(student, expected, tolerance);
+      total += 1;
+      if (match) matched += 1;
+      return { student, reference: expected, match };
+    });
+    return { base, cases };
+  };
+
+  const cells = Object.fromEntries(
+    reference.cells.map((cell) => {
+      const { key } = mustResolveSourceCell(gradingConfig, config.template, cell.sheet, cell.cell);
+      return [
+        key,
+        compare((run) => run.cells[key], {
+          rtol: cell.rtol ?? reference.rtol,
+          atol: cell.atol ?? reference.atol,
+        }),
+      ];
+    }),
+  );
+  const outputs = reference.compare_outputs
+    ? Object.fromEntries(
+        Object.keys(gradingConfig.outputs).map((name) => [
+          name,
+          compare((run) => run.outputs[name], { rtol: reference.rtol, atol: reference.atol }),
+        ]),
+      )
+    : undefined;
+  grading.reference = { cells, outputs, summary: { matched, total } };
+  return grading;
 }
 
 export function evaluateSpreadsheet(
@@ -1194,11 +1709,7 @@ function evaluateSpreadsheetInternal(
     });
 
     const grading = gradingConfig
-      ? {
-          schema_version: 2 as const,
-          grader_hash: gradingConfig.grader_hash,
-          outputs: evaluateGradingOutputs(gradingConfig, config.template, sheetData),
-        }
+      ? evaluateGrading(config, gradingConfig, merged, sheetData)
       : undefined;
     const snapshot = SpreadsheetSnapshotSchema.parse({
       schema_version: 2,
@@ -1309,6 +1820,8 @@ export function getSpreadsheetLogMetadata(
     spreadsheet_grading_populated_cells: 0,
     spreadsheet_grading_formulas: 0,
     spreadsheet_grading_outputs: 0,
+    spreadsheet_grading_test_cases: 0,
+    spreadsheet_grading_reference_cells: 0,
   };
   if (rawConfigs == null || typeof rawConfigs !== 'object' || Array.isArray(rawConfigs)) {
     return metadata;
@@ -1331,6 +1844,8 @@ export function getSpreadsheetLogMetadata(
     const gradingSheets = [...gradingConfig.data.source_sheets, ...gradingConfig.data.sheets];
     metadata.spreadsheet_grading_sheets += gradingSheets.length;
     metadata.spreadsheet_grading_outputs += Object.keys(gradingConfig.data.outputs).length;
+    metadata.spreadsheet_grading_test_cases += gradingConfig.data.test_cases?.length ?? 0;
+    metadata.spreadsheet_grading_reference_cells += gradingConfig.data.reference?.cells.length ?? 0;
     for (const sheet of gradingSheets) {
       metadata.spreadsheet_grading_addressable_cells += sheet.rows * sheet.columns;
       metadata.spreadsheet_grading_populated_cells += Object.keys(sheet.cells).length;
