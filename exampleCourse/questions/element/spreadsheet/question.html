@@ -69,8 +69,26 @@
   </pl-spreadsheet>
 </section>
 
+<section aria-labelledby="reference-workbook-heading" class="mb-5">
+  <h2 id="reference-workbook-heading" class="h4">Reference-graded workbook</h2>
+  <p>
+    Fill in each line total with a formula. Typing the numbers produces the right
+    values here, but the grader also recalculates the workbook with hidden quantities
+    and prices and compares every line total with a private reference solution.
+  </p>
+  <pl-spreadsheet
+    answers-name="order"
+    params-name="order"
+    aria-label="Order totals"
+    height="260px"
+  ></pl-spreadsheet>
+</section>
+
 <pl-submission-panel>
   {{#feedback.model}}
     <div class="alert alert-info">{{feedback.model}}</div>
   {{/feedback.model}}
+  {{#feedback.order}}
+    <div class="alert alert-info">{{feedback.order}}</div>
+  {{/feedback.order}}
 </pl-submission-panel>
