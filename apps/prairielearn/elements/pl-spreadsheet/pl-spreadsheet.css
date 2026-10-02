@@ -25,6 +25,81 @@
   padding: 0 0.5rem 0.5rem;
 }
 
+.pl-spreadsheet-formula-input {
+  position: relative;
+  min-width: 0;
+}
+
+.pl-spreadsheet-formula-input.is-highlighted input {
+  color: transparent;
+  caret-color: var(--bs-body-color);
+}
+
+/*
+ * The overlay must lay out text exactly like the input beneath it, so token styles
+ * may only change color and decoration, never font weight, spacing, or box size.
+ */
+.pl-spreadsheet-formula-highlight {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: none;
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--bs-body-color);
+}
+
+.pl-spreadsheet-tok-number,
+.pl-spreadsheet-tok-boolean {
+  color: var(--bs-warning-text-emphasis);
+}
+
+.pl-spreadsheet-tok-string {
+  color: var(--bs-success-text-emphasis);
+}
+
+.pl-spreadsheet-tok-operator,
+.pl-spreadsheet-tok-comparison,
+.pl-spreadsheet-tok-lparen,
+.pl-spreadsheet-tok-rparen,
+.pl-spreadsheet-tok-comma {
+  color: var(--bs-secondary-color);
+}
+
+.pl-spreadsheet-tok-error {
+  color: var(--bs-danger-text-emphasis);
+  text-decoration: underline wavy;
+}
+
+.pl-spreadsheet-editor {
+  --pl-spreadsheet-ref-color-0: #1a5fb4;
+  --pl-spreadsheet-ref-color-1: #8e24aa;
+  --pl-spreadsheet-ref-color-2: #c2185b;
+  --pl-spreadsheet-ref-color-3: #00796b;
+  --pl-spreadsheet-ref-color-4: #3949ab;
+}
+
+.pl-spreadsheet-ref-color-0 {
+  color: var(--pl-spreadsheet-ref-color-0);
+}
+
+.pl-spreadsheet-ref-color-1 {
+  color: var(--pl-spreadsheet-ref-color-1);
+}
+
+.pl-spreadsheet-ref-color-2 {
+  color: var(--pl-spreadsheet-ref-color-2);
+}
+
+.pl-spreadsheet-ref-color-3 {
+  color: var(--pl-spreadsheet-ref-color-3);
+}
+
+.pl-spreadsheet-ref-color-4 {
+  color: var(--pl-spreadsheet-ref-color-4);
+}
+
 .pl-spreadsheet-grid {
   flex: 1;
   min-height: 10rem;
@@ -60,6 +135,14 @@
 }
 
 @media (forced-colors: active) {
+  .pl-spreadsheet-formula-highlight {
+    display: none;
+  }
+
+  .pl-spreadsheet-formula-input.is-highlighted input {
+    color: FieldText;
+  }
+
   .pl-spreadsheet-cell-readonly {
     border: 2px dashed GrayText;
   }

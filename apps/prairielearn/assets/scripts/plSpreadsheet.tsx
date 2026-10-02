@@ -29,6 +29,8 @@ import {
   parseCellAddress,
 } from '../../src/lib/spreadsheet.js';
 
+import { FormulaInput } from './lib/spreadsheetFormulaInput.js';
+
 interface SpreadsheetOptions {
   uuid: string;
   answer_name: string;
@@ -824,9 +826,8 @@ function SpreadsheetEditor({
         <label htmlFor={`${instructionsId}-formula`}>
           {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
         </label>
-        <input
+        <FormulaInput
           id={`${instructionsId}-formula`}
-          className="form-control form-control-sm"
           aria-label={
             activeCell
               ? `Formula for ${cellAddress(activeCell.row, activeCell.column)}`

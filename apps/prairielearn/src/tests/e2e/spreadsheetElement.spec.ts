@@ -74,6 +74,41 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
   await expect(b2CellEditor).toHaveValue('987');
 });
 
+test('highlights formulas in the formula bar', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const formulaBar = parameterDemo.getByLabel('Formula for B2');
+  const highlight = parameterDemo.locator('.pl-spreadsheet-formula-highlight');
+
+  await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
+  await formulaBar.fill('plain text');
+  await expect(highlight).toHaveCount(0);
+
+  await formulaBar.fill('=SUM($B$3:B4)+B3+"x"');
+  await expect(highlight).toHaveText('=SUM($B$3:B4)+B3+"x" ');
+  await expect(highlight.locator('.pl-spreadsheet-tok-function')).toHaveText('SUM');
+  await expect(highlight.locator('.pl-spreadsheet-tok-range')).toHaveClass(
+    /pl-spreadsheet-ref-color-0/,
+  );
+  await expect(highlight.locator('.pl-spreadsheet-tok-ref')).toHaveClass(
+    /pl-spreadsheet-ref-color-1/,
+  );
+  await expect(highlight.locator('.pl-spreadsheet-tok-string')).toHaveText('"x"');
+  await expect(highlight).toHaveAttribute('aria-hidden', 'true');
+});
+
 test('supports accessible local editing and trusted submission', async ({
   page,
   context,
