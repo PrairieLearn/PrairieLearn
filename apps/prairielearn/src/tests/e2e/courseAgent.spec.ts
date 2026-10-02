@@ -59,9 +59,16 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(page.getByText('Working…', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Started.', { exact: true })).toHaveCount(1);
   await composer.fill('Use a different approach.');
   await composer.press('Enter');
   await expect(page.getByText('Use a different approach.', { exact: true })).toHaveCount(1);
+  await expect(page.getByText('Started.', { exact: true })).toHaveCount(1);
+  await composer.fill('Keep counting.');
+  await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled();
+  await composer.press('Enter');
+  await expect(page.getByText('Keep counting.', { exact: true })).toHaveCount(1);
+  await expect(page.getByText('Started.', { exact: true })).toHaveCount(1);
   const conversationTitle = await page
     .getByRole('button', { name: 'Conversation', exact: true })
     .innerText();
@@ -85,7 +92,11 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(page.getByText('Use a different approach.', { exact: true })).toHaveCount(1);
   const history = await page.getByRole('complementary', { name: 'Course agent' }).innerText();
   expect(history.indexOf('Use a different approach.')).toBeGreaterThan(history.indexOf('Started.'));
-  expect(history.indexOf('Use a different approach.')).toBeLessThan(history.indexOf('Finished.'));
+  expect(history.indexOf('Use a different approach.')).toBeLessThan(
+    history.indexOf('Keep counting.'),
+  );
+  expect(history.indexOf('Keep counting.')).toBeLessThan(history.indexOf('Finished.'));
+  await expect(page.getByText('Started.', { exact: true })).toHaveCount(1);
   await composer.fill('Keep this draft.');
   await page.getByRole('link', { name: 'Questions', exact: true }).click();
   await expect(page).toHaveURL(`/pl/course/${courseId}/course_admin/questions`);
@@ -224,7 +235,7 @@ test('failed preparation returns a native tool error and never displays an appro
   await page.route('**/course-agent/*/events', (route) =>
     route.fulfill({
       contentType: 'text/event-stream',
-      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], revision: 0, blocked: true, approval: proposal, approvals: [proposal, { ...proposal, id: 'approved', status: 'approved' }, { ...proposal, id: 'denied', status: 'denied' }], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
+      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], revision: 0, diagnostics: { cleanup: { error: 'Technical cleanup failure' }, checkpointError: 'Technical checkpoint failure' }, blocked: true, approval: proposal, approvals: [proposal, { ...proposal, id: 'approved', status: 'approved' }, { ...proposal, id: 'denied', status: 'denied' }], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
     }),
   );
   await page.reload();
@@ -240,6 +251,16 @@ test('failed preparation returns a native tool error and never displays an appro
   await expect(page.getByText('Review requested', { exact: true })).toBeVisible();
   await expect(page.getByText('Approved', { exact: true })).toBeVisible();
   await expect(page.getByText('Denied', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('We couldn’t finish cleaning up the workspace.', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry cleanup', exact: true })).toBeVisible();
+  await expect(
+    page.getByText(
+      'We couldn’t save the latest file changes. Some changes may be lost if the workspace restarts.',
+      { exact: true },
+    ),
+  ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath('course-agent-review-states.png'),
     animations: 'disabled',

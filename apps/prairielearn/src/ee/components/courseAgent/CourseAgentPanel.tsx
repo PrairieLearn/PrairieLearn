@@ -270,7 +270,7 @@ function Conversation({
         prepareReconnectToStreamRequest: () => ({ api: `${base}/stream` }),
       }),
   );
-  const { messages, setMessages, status, resumeStream, stop } = useChat({ id, transport });
+  const { messages, setMessages, status, resumeStream } = useChat({ id, transport });
   const busy = status === 'streaming' || status === 'submitted';
   const busyRef = useRef(busy);
   busyRef.current = busy;
@@ -371,9 +371,11 @@ function Conversation({
         );
         savePanelState(storageKey + ':draft', '');
         onCreated(conversationId, result.title);
-      } else {
-        await stop();
-        void resumeStream();
+      } else if (!busyRef.current) {
+        busyRef.current = true;
+        void resumeStream().finally(() => {
+          busyRef.current = false;
+        });
       }
     } catch {
       setOptimistic(null);
@@ -403,10 +405,14 @@ function Conversation({
   return (
     <>
       {failure && (
-        <Alert variant="warning">
-          Conversation disconnected{' '}
+        <Alert
+          variant="warning"
+          className="d-flex align-items-center justify-content-between gap-3"
+        >
+          <span>Conversation disconnected</span>
           <Button
-            variant="link"
+            size="sm"
+            className="flex-shrink-0"
             onClick={() => {
               setConnection('connecting');
               setConnectionAttempt((value) => value + 1);
@@ -422,14 +428,26 @@ function Conversation({
         >(mutationError)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
-      {(snapshot.diagnostics?.cleanup?.error || snapshot.diagnostics?.checkpointError) && (
+      {snapshot.diagnostics?.cleanup?.error && (
+        <Alert
+          variant="warning"
+          className="d-flex align-items-center justify-content-between gap-3"
+        >
+          <span>We couldn’t finish cleaning up the workspace.</span>
+          <Button
+            size="sm"
+            className="flex-shrink-0"
+            disabled={cleanup.isPending}
+            onClick={() => cleanup.mutate({ conversationId: id })}
+          >
+            Retry cleanup
+          </Button>
+        </Alert>
+      )}
+      {snapshot.diagnostics?.checkpointError && (
         <Alert variant="warning">
-          {snapshot.diagnostics.cleanup?.error ?? snapshot.diagnostics.checkpointError}
-          {snapshot.diagnostics.cleanup?.error && (
-            <Button variant="link" onClick={() => cleanup.mutate({ conversationId: id })}>
-              Retry cleanup
-            </Button>
-          )}
+          We couldn’t save the latest file changes. Some changes may be lost if the workspace
+          restarts.
         </Alert>
       )}
       <div ref={transcriptRef} className="flex-grow-1 overflow-auto course-agent-transcript">
@@ -458,7 +476,7 @@ function Conversation({
             approvals={snapshot.approvals ?? []}
             renderCodeChange={(approval) => (
               <section
-                className="d-flex align-items-center flex-wrap gap-2 my-2"
+                className="d-flex align-items-center flex-wrap gap-2 my-2 p-2 border rounded bg-body w-100"
                 aria-label="Code change"
               >
                 <span
@@ -509,6 +527,7 @@ function Conversation({
                       <>
                         <Button
                           size="sm"
+                          className="ms-auto"
                           disabled={
                             decision.isPending || snapshot.publication?.status === 'invalid'
                           }
@@ -820,8 +839,7 @@ function ChangeDiff({ diff }: { diff: string }) {
     <>
       <Button
         variant="link"
-        className="p-0 text-decoration-none"
-        size="sm"
+        className="p-0 text-decoration-none align-baseline"
         onClick={() => setOpen(true)}
       >
         View changes
