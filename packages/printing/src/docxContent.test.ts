@@ -39,6 +39,28 @@ it('preserves response areas and matrix tables nested inside input groups', asyn
   expect(word('w\\:tbl').first().find('w\\:tr')).toHaveLength(4);
 });
 
+it('places Word response guidance below the answer line at the same left edge', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <span class="input-group"><span data-docx-width="50">Area =</span><span class="printing-response-field" data-docx-width="250"><span data-print-response-line data-docx-width="250"></span><small class="printing-response-placeholder">3 significant figures</small></span><span data-docx-width="25">m²</span></span>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const cells = word('w\\:tbl').first().find('w\\:tr').first().find('w\\:tc');
+  expect(cells).toHaveLength(3);
+  expect(cells.eq(0).find('w\\:t').text()).toBe('Area =');
+  expect(
+    cells
+      .eq(1)
+      .find('w\\:p')
+      .map((_, paragraph) => word(paragraph).find('w\\:t').text())
+      .get(),
+  ).toEqual(['____________________________', '3 significant figures']);
+  expect(cells.eq(2).find('w\\:t').text()).toBe('m²');
+});
+
 it('keeps selection options separate and preserves lettered answer references', async () => {
   const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
     <span class="printing-selection-group" data-docx-block="true">

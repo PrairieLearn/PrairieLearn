@@ -16,6 +16,34 @@ const GENERIC_RESPONSE_PLACEHOLDERS = new Set([
   'unit',
 ]);
 
+function printedResponseHint(placeholder: string): string | null {
+  const hint = placeholder.trim();
+  if (!hint || GENERIC_RESPONSE_PLACEHOLDERS.has(hint.toLowerCase())) return null;
+
+  const withUnits = /\s\+\sunit$/i.test(hint);
+  const fieldHint = withUnits ? hint.replace(/\s\+\sunit$/i, '') : hint;
+  const generated = /^(number|matrix|real or complex)\s+(\([^)]+\)|±.+)$/i.exec(fieldHint);
+  if (!generated) return hint;
+
+  const detail = generated[2].startsWith('(') ? generated[2].slice(1, -1) : generated[2];
+  const precision = /^(\d+) (?:sig figs?|significant figures?)$/i.exec(detail);
+  const decimals = /^(\d+) (?:decimal places?|digits? after decimal)$/i.exec(detail);
+  const instruction = precision
+    ? `${precision[1]} significant figure${precision[1] === '1' ? '' : 's'}`
+    : decimals
+      ? `${decimals[1]} decimal place${decimals[1] === '1' ? '' : 's'}`
+      : null;
+  if (instruction) {
+    const quantity =
+      generated[1].toLowerCase() === 'matrix' ? `${instruction} per entry` : instruction;
+    return withUnits ? `${quantity}; include units` : quantity;
+  }
+  if (detail.toLowerCase() === 'exact' || detail.startsWith('rtol=') || fieldHint.includes('±')) {
+    return withUnits ? 'Include units' : null;
+  }
+  return hint;
+}
+
 function createResponseArea(label: string): HTMLDivElement {
   return parseHTMLElement<HTMLDivElement>(
     document,
@@ -98,21 +126,25 @@ function moveResponseControlPlaceholders(source: HTMLElement): void {
   );
 
   for (const control of controls) {
-    const placeholder = (
-      control.dataset.placeholderText ??
-      control.getAttribute('placeholder') ??
-      ''
-    ).trim();
+    const placeholder = printedResponseHint(
+      control.dataset.placeholderText ?? control.getAttribute('placeholder') ?? '',
+    );
     control.removeAttribute('placeholder');
     control.removeAttribute('data-placeholder-text');
-    if (!placeholder || GENERIC_RESPONSE_PLACEHOLDERS.has(placeholder.toLowerCase())) continue;
+    if (!placeholder) continue;
 
     const helper = document.createElement('small');
     helper.className = 'printing-response-placeholder';
     helper.textContent = placeholder;
 
-    const inputGroup = control.closest<HTMLElement>('.input-group');
-    (inputGroup ?? control).before(helper);
+    if (control.tagName === 'TEXTAREA') {
+      control.after(helper);
+    } else {
+      const field = document.createElement('span');
+      field.className = 'printing-response-field';
+      control.replaceWith(field);
+      field.append(control, helper);
+    }
   }
 }
 
@@ -136,7 +168,11 @@ function replaceTextControls(source: HTMLElement): void {
     line.setAttribute('aria-label', control.getAttribute('aria-label') ?? 'Answer');
     if (control.id) line.id = control.id;
     const size = Number(control.getAttribute('size') ?? 26);
-    line.style.setProperty('--printing-response-width', `${Math.max(8, Math.min(size, 35))}ch`);
+    const width = `${Math.max(8, Math.min(size, 35))}ch`;
+    line.style.setProperty('--printing-response-width', width);
+    control
+      .closest<HTMLElement>('.printing-response-field')
+      ?.style.setProperty('--printing-response-width', width);
     control.replaceWith(line);
   }
   for (const textarea of source.querySelectorAll('textarea')) {
