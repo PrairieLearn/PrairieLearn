@@ -11,7 +11,7 @@ import {
 } from './functions.js';
 import { type FormulaToken, formulaTokens } from './lexer.js';
 
-export type FormulaHoleKind = 'operand' | 'argument' | 'operator' | 'delimiter';
+type FormulaHoleKind = 'operand' | 'argument' | 'operator' | 'delimiter';
 
 export interface FormulaHole {
   kind: FormulaHoleKind;
@@ -38,7 +38,7 @@ export type FormulaNode =
   | { kind: 'hole'; hole: FormulaHole; left?: FormulaNode; right?: FormulaNode };
 
 /** A function call or parenthesized group, drawn as one tile split into several shards. */
-export interface FormulaContainer {
+interface FormulaContainer {
   start: number;
   /** The end of the closing parenthesis, or where it is missing. */
   end: number;

@@ -3,7 +3,7 @@
 // formula bar can highlight every keystroke of a half-typed formula. The
 // concatenated token text always equals the input.
 
-export type FormulaTokenKind =
+type FormulaTokenKind =
   | 'number'
   | 'string'
   | 'boolean'
@@ -192,17 +192,17 @@ export function formulaTokens(formula: string, boundaries: number[] = []): Formu
 }
 
 /** Normalizes a `ref` or `range` token so equivalent references (`$a$1`, `A1`) compare equal. */
-export function referenceKey(token: FormulaToken): string {
+function referenceKey(token: FormulaToken): string {
   return token.text.replaceAll('$', '').toUpperCase();
 }
 
-export interface FormulaReference {
+interface FormulaReference {
   token: FormulaToken;
   key: string;
   colorIndex: number;
 }
 
-export const FORMULA_REFERENCE_COLOR_COUNT = 5;
+const FORMULA_REFERENCE_COLOR_COUNT = 5;
 
 /** Assigns each distinct reference a color, in order of first appearance, like Google Sheets. */
 export function formulaReferences(tokens: FormulaToken[]): FormulaReference[] {
