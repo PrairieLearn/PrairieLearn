@@ -1,4 +1,10 @@
+import { addPreviewPageCodes } from '@prairielearn/printing/page-code';
+
 import { fitPrintChoiceImages } from '../../src/lib/client/print-image-layout.js';
+import {
+  decodePrintPageIdentity,
+  encodePrintPageIdentity,
+} from '../../src/lib/client/print-page-code.js';
 import {
   parsePrintBlockSize,
   planPrintQuestionPages,
@@ -603,6 +609,13 @@ async function paginateExam(): Promise<{ totalPages: number }> {
     Reflect.set(window, 'ResizeObserver', resizeObserver);
   }
   validatePagedLayout(output, layout);
+  const pageIdentity = document.documentElement.dataset.printPageIdentity;
+  if (pageIdentity) {
+    const identity = decodePrintPageIdentity(pageIdentity);
+    await addPreviewPageCodes({
+      encodePage: (pageNumber) => encodePrintPageIdentity({ ...identity, pageNumber }),
+    });
+  }
   source.remove();
   document.documentElement.dataset.printStatus = 'ready';
   document.documentElement.dataset.printPageCount = String(flow.total);
