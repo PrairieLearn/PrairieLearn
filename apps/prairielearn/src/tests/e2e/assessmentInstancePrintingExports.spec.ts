@@ -150,6 +150,46 @@ for (const format of ['pdf', 'answer_key_pdf', 'docx'] as const) {
   });
 }
 
+test('prints details content in visible boxes and preserves it in Word', async ({
+  page,
+  courseInstance,
+}) => {
+  const { paperUrl } = await createPrintableExam(courseInstance, 'exam26-printingDetails');
+  await page.goto(`${paperUrl}/preview?paper_size=Letter`);
+  await waitForPrintablePage(page);
+
+  const boxes = page.locator('.pagedjs_page .printing-question .printing-details');
+  await expect(boxes).toHaveCount(2);
+  await expect(page.locator('.pagedjs_page .printing-question details')).toHaveCount(0);
+  await expect(boxes.first().getByText('Reference values')).toBeVisible();
+  await expect(boxes.first().getByText('The values are one and two.')).toBeVisible();
+  await expect(boxes.last().getByText('Count both values.')).toBeVisible();
+  expect(
+    await boxes.first().evaluate((element) => ({
+      background: getComputedStyle(element).backgroundColor,
+      border: getComputedStyle(element).borderTopStyle,
+    })),
+  ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
+
+  const response = await page.request.get(`${paperUrl}/docx?paper_size=Letter`, {
+    timeout: 120_000,
+  });
+  expect(response.status()).toBe(200);
+  const archive = await unzipper.Open.buffer(await response.body());
+  const documentFile = archive.files.find((file) => file.path === 'word/document.xml');
+  expect(documentFile).toBeDefined();
+  const documentXml = (await documentFile!.buffer()).toString();
+  for (const text of [
+    'Reference values',
+    'The values are one and two.',
+    'Additional context',
+    'Count both values.',
+  ]) {
+    expect(documentXml).toContain(text);
+  }
+  expect(documentXml.match(/<w:shd w:fill="F7F7F7"\/>/g)).toHaveLength(2);
+});
+
 test('rejects invalid print query parameters', async ({ page, courseInstance }) => {
   const user = await getConfiguredUser();
   const exam = await selectAssessmentByTid({

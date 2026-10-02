@@ -452,6 +452,42 @@ export function buildDocxContent(
     ];
   }
 
+  function details(node: HtmlElement, maxWidth: number, format: Format): Block[] {
+    const width = Math.round(maxWidth * 15);
+    const innerWidth = maxWidth - 20;
+    const summary = $(node).children('summary, .printing-details-heading').first()[0];
+    const content = node.children.filter((child) => child !== summary);
+    return [
+      new Table({
+        width: { size: width, type: WidthType.DXA },
+        columnWidths: [width],
+        borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                shading: { fill: 'F7F7F7' },
+                margins: { top: 100, bottom: 100, left: 150, right: 150 },
+                children: [
+                  ...(summary
+                    ? [
+                        paragraph(inline(summary.children, { ...format, bold: true }, innerWidth), {
+                          keepNext: true,
+                          spacing: { before: 0, after: 80 },
+                        }),
+                      ]
+                    : []),
+                  ...walk(content, format, innerWidth),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+      empty(),
+    ];
+  }
+
   function selectionOption(node: HtmlElement, maxWidth: number): Block[] {
     const control = $(node).find('input[type="checkbox"], input[type="radio"]').first();
     const key = $(node)
@@ -547,6 +583,11 @@ export function buildDocxContent(
       if (has(node, '.printing-selection-option')) {
         flush();
         blocks.push(...selectionOption(node, maxWidth));
+        continue;
+      }
+      if (node.name === 'details' || has(node, '.printing-details')) {
+        flush();
+        blocks.push(...details(node, maxWidth, format));
         continue;
       }
       if (

@@ -293,6 +293,31 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
   }
 }
 
+function materializePrintableDetails(source: HTMLElement): void {
+  const detailsBlocks = [
+    ...source.querySelectorAll<HTMLDetailsElement>('.printing-question details'),
+  ];
+  for (const details of detailsBlocks.reverse()) {
+    const box = document.createElement('div');
+    for (const attribute of details.attributes) {
+      if (attribute.name !== 'open') box.setAttribute(attribute.name, attribute.value);
+    }
+    box.classList.add('printing-details');
+    const summary = details.querySelector(':scope > summary');
+    if (summary) {
+      const heading = document.createElement('div');
+      for (const attribute of summary.attributes) {
+        heading.setAttribute(attribute.name, attribute.value);
+      }
+      heading.classList.add('printing-details-heading');
+      heading.append(...summary.childNodes);
+      summary.replaceWith(heading);
+    }
+    box.append(...details.childNodes);
+    details.replaceWith(box);
+  }
+}
+
 function measurePrintablePage(source: HTMLElement): { width: number; height: number } {
   const measure = document.createElement('div');
   measure.className = 'exam-print-page-measure';
@@ -525,6 +550,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   if (!source || !output) throw new Error('Printable exam containers are missing');
 
   await Promise.all([waitForLegacyQuestions(source), ...extraReadinessPromises]);
+  materializePrintableDetails(source);
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);

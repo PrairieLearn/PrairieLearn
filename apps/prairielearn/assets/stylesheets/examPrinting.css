@@ -576,6 +576,22 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   margin-bottom: 0.1in;
 }
 
+.printing-question .question-body .printing-details {
+  background: #f7f7f7;
+  border: 0.6pt solid #999;
+  margin-block: 0.12in;
+  padding: 0.08in 0.12in;
+}
+
+.printing-question .question-body .printing-details-heading {
+  font-weight: 700;
+  margin-bottom: 0.06in;
+}
+
+.printing-question .question-body .printing-details > :last-child {
+  margin-bottom: 0;
+}
+
 .printing-question .question-container,
 .printing-question .question-form,
 .printing-question .question-block,

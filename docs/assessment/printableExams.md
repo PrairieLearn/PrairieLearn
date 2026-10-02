@@ -22,6 +22,8 @@ You can upload PDF cover pages to place after the default cover and before the q
 
 **Review printability** flags are suggestions. Check the preview for figures, instructions, and enough room for responses. A question marked **Omitted** could not be rendered; fix it or deselect it before downloading. Downloads become available once the current preview is ready and all included questions render.
 
+Expandable `<details>` sections in questions print in full inside bordered boxes, whether they were open or closed online. Review their contents along with the rest of each question.
+
 ## Download files
 
 Open **Download** after reviewing the preview:
