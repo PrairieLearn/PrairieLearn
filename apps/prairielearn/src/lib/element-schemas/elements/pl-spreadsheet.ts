@@ -1,6 +1,6 @@
 import * as z from 'zod/v4';
 
-import { booleanFormat } from '../helpers.js';
+import { booleanFormat, numberFormat } from '../helpers.js';
 import type { ElementSchemaModule } from '../types.js';
 
 const plSpreadsheetAttributesSchema = z
@@ -32,6 +32,23 @@ const plSpreadsheetOutputAttributesSchema = z
   })
   .strict();
 
+const plSpreadsheetParameterAttributesSchema = z
+  .object({
+    range: z.string(),
+    'sheet-name': z.string(),
+  })
+  .strict();
+
+const plSpreadsheetReferenceAttributesSchema = z
+  .object({
+    atol: numberFormat().optional(),
+    cell: z.string(),
+    formula: z.string(),
+    rtol: numberFormat().optional(),
+    'sheet-name': z.string(),
+  })
+  .strict();
+
 export const element: ElementSchemaModule = {
   tag: 'pl-spreadsheet',
   schema: z.toJSONSchema(plSpreadsheetAttributesSchema, { target: 'draft-04' }),
@@ -41,6 +58,12 @@ export const element: ElementSchemaModule = {
     },
     'pl-spreadsheet-output': {
       schema: z.toJSONSchema(plSpreadsheetOutputAttributesSchema, { target: 'draft-04' }),
+    },
+    'pl-spreadsheet-parameter': {
+      schema: z.toJSONSchema(plSpreadsheetParameterAttributesSchema, { target: 'draft-04' }),
+    },
+    'pl-spreadsheet-reference': {
+      schema: z.toJSONSchema(plSpreadsheetReferenceAttributesSchema, { target: 'draft-04' }),
     },
   },
 };

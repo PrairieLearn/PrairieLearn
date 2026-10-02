@@ -559,3 +559,169 @@ def test_generates_deterministic_test_submissions(
     else:
         decoded = json.loads(raw)
         assert decoded["sheets"]["Inputs"]["A2"] == f"Test {test_type}"
+
+
+def reference_grading_config(**overrides: Any) -> dict[str, Any]:
+    config = grading_config()
+    config.update({
+        "parameters": ["Inputs!A2"],
+        "test_cases": [{"name": "five", "inputs": {"Inputs!A2": 5}}, {"inputs": {}}],
+        "reference": {"cells": {"Inputs!A3": "=A2*3"}},
+    })
+    config.update(overrides)
+    return config
+
+
+def test_prepare_normalizes_test_cases_and_reference(element_directory: None) -> None:
+    data = prepare_data(correct_answers={"model": reference_grading_config()})
+
+    grader = data["correct_answers"]["model"]
+    assert grader["parameters"] == [{"sheet": "Inputs", "range": "A2:A2"}]
+    assert grader["test_cases"] == [
+        {"name": "five", "inputs": [{"sheet": "Inputs", "cell": "A2", "value": 5}]},
+        {"name": "Case 2", "inputs": []},
+    ]
+    assert grader["reference"] == {
+        "cells": [{"sheet": "Inputs", "cell": "A3", "input": "=A2*3"}],
+        "rtol": 0.01,
+        "atol": 1e-8,
+        "compare_outputs": False,
+    }
+    assert "=A2*3" not in json.dumps(data["params"])
+
+
+def test_prepare_allows_reference_without_outputs(element_directory: None) -> None:
+    config = reference_grading_config(outputs={}, sheets=[])
+    data = prepare_data(correct_answers={"model": config})
+    assert data["correct_answers"]["model"]["outputs"] == {}
+
+    config.pop("reference")
+    with pytest.raises(ValueError, match="or a reference solution"):
+        prepare_data(correct_answers={"model": config})
+
+
+def test_grader_hash_covers_test_cases_and_reference(element_directory: None) -> None:
+    base = prepare_data(correct_answers={"model": reference_grading_config()})
+    changed_case = prepare_data(
+        correct_answers={
+            "model": reference_grading_config(test_cases=[{"inputs": {"Inputs!A2": 6}}])
+        }
+    )
+    changed_reference = prepare_data(
+        correct_answers={
+            "model": reference_grading_config(
+                reference={"cells": {"Inputs!A3": "=A2*4"}}
+            )
+        }
+    )
+    hashes = {
+        data["correct_answers"]["model"]["grader_hash"]
+        for data in (base, changed_case, changed_reference)
+    }
+    assert len(hashes) == 3
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        (
+            {"test_cases": [{"inputs": {"Inputs!A3": 1}}]},
+            "cannot override",
+        ),
+        (
+            {"test_cases": [{"inputs": {"Inputs!B2": 1}}]},
+            "cannot override",
+        ),
+        (
+            {"test_cases": [{"inputs": {"Inputs!A2": "=1+1"}}]},
+            "constant, not a formula",
+        ),
+        ({"test_cases": [{"inputs": {"Inputs!Z9": 1}}]}, "unknown cell"),
+        ({"test_cases": [{"inputs": {"A2": 1}}]}, "sheet-qualified"),
+        (
+            {"test_cases": [{"name": "same", "inputs": {}}] * 2},
+            "is duplicated",
+        ),
+        ({"parameters": ["Inputs!A2:A9"]}, "inside a student range"),
+        ({"reference": {"cells": {"Inputs!B2": "=A2"}}}, "must be editable"),
+        ({"reference": {"cells": {"Inputs!A2": "=1"}}}, "also be a parameter"),
+        ({"reference": {"cells": {"Inputs!A3": "=RAND()"}}}, "unsupported function"),
+        (
+            {"reference": {"cells": {"Inputs!A3": "=Checks!A1"}}},
+            "non-visible sheet",
+        ),
+        (
+            {"reference": {"cells": {"Inputs!A3": {"value": "=A2", "rtol": -1}}}},
+            "non-negative finite",
+        ),
+        ({"reference": {"cells": {}}}, "1 to 500 cells"),
+        (
+            {
+                "test_cases": [{"name": str(i), "inputs": {}} for i in range(50)],
+                "reference": {
+                    "cells": {"Inputs!A3": "=A2"},
+                    "compare_outputs": True,
+                },
+                "outputs": {
+                    f"output_{i}": {"sheet": "Checks", "cell": "A1"} for i in range(40)
+                },
+            },
+            "at most 5000 results",
+        ),
+    ],
+)
+def test_prepare_rejects_invalid_testing_config(
+    element_directory: None, overrides: dict[str, Any], message: str
+) -> None:
+    with pytest.raises((TypeError, ValueError), match=message):
+        prepare_data(correct_answers={"model": reference_grading_config(**overrides)})
+
+
+def test_prepare_rebases_reference_children_into_student_coordinates(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "workbook.csv").write_text(",,,\n,2,=B2*2,\n,3,,\n")
+    element_html = FILE_ELEMENT_HTML.replace(
+        "</pl-spreadsheet>",
+        """
+        <pl-spreadsheet-parameter sheet-name="Inputs" range="B2"></pl-spreadsheet-parameter>
+        <pl-spreadsheet-reference
+          sheet-name="Inputs" cell="b3" formula="=$B$2+C2" rtol="0.001"
+        ></pl-spreadsheet-reference>
+        </pl-spreadsheet>""",
+    )
+    data = file_question_data(tmp_path)
+
+    spreadsheet.prepare(element_html, data)
+
+    grader = data["correct_answers"]["model"]
+    assert grader["parameters"] == [{"sheet": "Inputs", "range": "B2:B2"}]
+    assert grader["reference"]["cells"] == [
+        {"sheet": "Inputs", "cell": "B3", "input": "=$A$1+B1", "rtol": 0.001}
+    ]
+    assert "B2+C2" not in json.dumps(data["params"])
+
+
+def test_prepare_reference_children_create_a_grading_config(
+    element_directory: None,
+) -> None:
+    element_html = ELEMENT_HTML.replace(
+        "</pl-spreadsheet>",
+        '<pl-spreadsheet-reference sheet-name="Inputs" cell="A3" formula="=A2*3">'
+        "</pl-spreadsheet-reference></pl-spreadsheet>",
+    )
+    data = question_data()
+
+    spreadsheet.prepare(element_html, data)
+
+    grader = data["correct_answers"]["model"]
+    assert grader["outputs"] == {}
+    assert grader["reference"]["cells"][0]["input"] == "=A2*3"
+
+    duplicated = element_html.replace(
+        "</pl-spreadsheet>",
+        '<pl-spreadsheet-reference sheet-name="Inputs" cell="a3" formula="=A2">'
+        "</pl-spreadsheet-reference></pl-spreadsheet>",
+    )
+    with pytest.raises(ValueError, match="is duplicated"):
+        spreadsheet.prepare(duplicated, question_data())

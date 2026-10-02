@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 import math
 import numbers
+import random
 import re
 import string
 from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -43,8 +44,12 @@ __all__ = [
     "Book",
     "BooleanInput",
     "BooleanResult",
+    "Case",
+    "CaseSpec",
     "Cell",
     "CellRange",
+    "Comparison",
+    "ComparisonSeries",
     "Definition",
     "EmptyResult",
     "ErrorResult",
@@ -77,15 +82,25 @@ __all__ = [
     "OutputSpec",
     "QualifiedAddress",
     "QualifiedAddressRange",
+    "RandomInput",
+    "Reference",
+    "ReferenceCellInput",
+    "ReferenceCellSpec",
+    "ReferenceSpec",
     "Result",
     "Sheet",
     "SheetInput",
     "SheetName",
     "SheetSpec",
     "Snapshot",
+    "SnapshotCase",
     "SnapshotCell",
+    "SnapshotComparison",
+    "SnapshotComparisonSeries",
     "SnapshotEngine",
     "SnapshotGrading",
+    "SnapshotReference",
+    "SnapshotReferenceSummary",
     "SnapshotSheet",
     "SourceBook",
     "SourceSheet",
@@ -103,6 +118,7 @@ __all__ = [
     "get_spreadsheet_result",
     "get_spreadsheet_value",
     "parse_spreadsheet_formula",
+    "random_cases",
     "read_spreadsheet",
     "read_spreadsheet_csv",
     "read_spreadsheet_tsv",
@@ -217,12 +233,51 @@ class SnapshotSheet(TypedDict):
     cells: dict[str, SnapshotCell]
 
 
+class SnapshotCase(TypedDict):
+    """Named grading outputs recomputed for one hidden test case."""
+
+    name: str
+    outputs: dict[str, Result]
+
+
+class SnapshotComparison(TypedDict):
+    """Student and reference results for one cell or output in one run."""
+
+    student: Result
+    reference: Result
+    match: bool
+
+
+class SnapshotComparisonSeries(TypedDict):
+    """Comparisons for the submitted inputs followed by every test case."""
+
+    base: SnapshotComparison
+    cases: list[SnapshotComparison]
+
+
+class SnapshotReferenceSummary(TypedDict):
+    """Number of matching comparisons across all cells, outputs, and cases."""
+
+    matched: int
+    total: int
+
+
+class SnapshotReference(TypedDict):
+    """Student-versus-reference comparisons persisted with a normalized snapshot."""
+
+    cells: dict[str, SnapshotComparisonSeries]
+    outputs: NotRequired[dict[str, SnapshotComparisonSeries]]
+    summary: SnapshotReferenceSummary
+
+
 class SnapshotGrading(TypedDict):
     """Named private grading results persisted with a normalized snapshot."""
 
     schema_version: Literal[2]
     grader_hash: str
     outputs: dict[str, Result]
+    cases: NotRequired[list[SnapshotCase]]
+    reference: NotRequired[SnapshotReference]
 
 
 class Snapshot(TypedDict):
@@ -1290,12 +1345,43 @@ type OutputInput = str | Mapping[str, object] | OutputSpec
 """Relaxed authoring input accepted for one named grading output."""
 
 
+class CaseSpec(TypedDict):
+    """Hidden test case that overrides parameter cells in source coordinates."""
+
+    name: NotRequired[str]
+    inputs: dict[str, SourceValue | None]
+
+
+class ReferenceCellSpec(TypedDict):
+    """Reference formula or value for one editable cell, with optional tolerances."""
+
+    value: SourceValue
+    rtol: NotRequired[float]
+    atol: NotRequired[float]
+
+
+type ReferenceCellInput = SourceValue | ReferenceCellSpec
+"""Relaxed authoring input accepted for one reference cell."""
+
+
+class ReferenceSpec(TypedDict):
+    """Private reference solution compared against the student's workbook."""
+
+    cells: dict[str, ReferenceCellSpec]
+    rtol: NotRequired[float]
+    atol: NotRequired[float]
+    compare_outputs: NotRequired[bool]
+
+
 class GradingBook(TypedDict):
     """Versioned private workbook definition with named grading outputs."""
 
     schema_version: Literal[2]
     sheets: list[SourceSheet]
     outputs: dict[str, OutputSpec]
+    parameters: NotRequired[list[str]]
+    test_cases: NotRequired[list[CaseSpec]]
+    reference: NotRequired[ReferenceSpec]
 
 
 type Definition = SourceBook | GradingBook
@@ -1501,6 +1587,12 @@ def create_spreadsheet(
     sheets: Mapping[SheetName, SheetInput],
     *,
     outputs: None = None,
+    parameters: None = None,
+    test_cases: None = None,
+    reference: None = None,
+    rtol: None = None,
+    atol: None = None,
+    compare_outputs: None = None,
 ) -> SourceBook: ...
 
 
@@ -1509,6 +1601,26 @@ def create_spreadsheet(
     sheets: Mapping[SheetName, SheetInput],
     *,
     outputs: Mapping[str, OutputInput],
+    parameters: Sequence[str] | None = None,
+    test_cases: Sequence[Mapping[str, object]] | None = None,
+    reference: Mapping[str, ReferenceCellInput] | None = None,
+    rtol: float | None = None,
+    atol: float | None = None,
+    compare_outputs: bool | None = None,
+) -> GradingBook: ...
+
+
+@overload
+def create_spreadsheet(
+    sheets: Mapping[SheetName, SheetInput],
+    *,
+    outputs: Mapping[str, OutputInput] | None = None,
+    parameters: Sequence[str] | None = None,
+    test_cases: Sequence[Mapping[str, object]] | None = None,
+    reference: Mapping[str, ReferenceCellInput],
+    rtol: float | None = None,
+    atol: float | None = None,
+    compare_outputs: bool | None = None,
 ) -> GradingBook: ...
 
 
@@ -1516,8 +1628,27 @@ def create_spreadsheet(
     sheets: Mapping[SheetName, SheetInput],
     *,
     outputs: Mapping[str, OutputInput] | None = None,
+    parameters: Sequence[str] | None = None,
+    test_cases: Sequence[Mapping[str, object]] | None = None,
+    reference: Mapping[str, ReferenceCellInput] | None = None,
+    rtol: float | None = None,
+    atol: float | None = None,
+    compare_outputs: bool | None = None,
 ) -> Definition:
-    """Build a versioned authoring workbook from relaxed sheet dictionaries."""
+    """Build a versioned authoring workbook from relaxed sheet dictionaries.
+
+    Passing ``outputs`` or ``reference`` builds a private grading workbook. All
+    addresses in ``parameters``, ``test_cases``, and ``reference`` use source
+    coordinates, like private sheets and outputs. ``rtol``, ``atol``, and
+    ``compare_outputs`` configure the reference comparison.
+
+    Returns:
+        A source workbook, or a private grading workbook.
+
+    Raises:
+        TypeError: If an argument has an unsupported type.
+        ValueError: If an argument has an invalid value.
+    """
     if not isinstance(sheets, Mapping):
         raise TypeError("create_spreadsheet() requires a mapping of sheets.")
     if not 1 <= len(sheets) <= 10:
@@ -1536,15 +1667,28 @@ def create_spreadsheet(
             raise TypeError(f'Spreadsheet sheet "{name}" must be a mapping.')
         normalized_sheets.append(_source_sheet_from_input(name, raw_sheet))
 
-    if outputs is None:
+    if reference is None and (
+        rtol is not None or atol is not None or compare_outputs is not None
+    ):
+        raise ValueError(
+            "Spreadsheet rtol, atol, and compare_outputs require a reference solution."
+        )
+    if outputs is None and reference is None:
+        if parameters is not None or test_cases is not None:
+            raise ValueError(
+                "Spreadsheet parameters and test cases require outputs or a reference solution."
+            )
         return {"schema_version": 2, "sheets": normalized_sheets}
-    if not isinstance(outputs, Mapping) or not 1 <= len(outputs) <= 100:
+    min_outputs = 1 if reference is None else 0
+    if outputs is not None and (
+        not isinstance(outputs, Mapping) or not min_outputs <= len(outputs) <= 100
+    ):
         raise ValueError(
             "A private spreadsheet grading workbook must contain 1 to 100 outputs."
         )
 
     normalized_outputs: dict[str, OutputSpec] = {}
-    for name, raw_output in outputs.items():
+    for name, raw_output in (outputs or {}).items():
         if not isinstance(name, str) or not name:
             raise TypeError("Spreadsheet output names must be non-empty strings.")
         if isinstance(raw_output, str):
@@ -1602,11 +1746,198 @@ def create_spreadsheet(
             output["required"] = True
         normalized_outputs[name] = output
 
-    return {
+    book: GradingBook = {
         "schema_version": 2,
         "sheets": normalized_sheets,
         "outputs": normalized_outputs,
     }
+    if parameters is not None:
+        book["parameters"] = [
+            _qualified_range_text(parameter, "Spreadsheet parameter")
+            for parameter in parameters
+        ]
+    if test_cases is not None:
+        book["test_cases"] = [
+            _case_spec(case, index) for index, case in enumerate(test_cases, start=1)
+        ]
+    if reference is not None:
+        book["reference"] = _reference_spec(
+            reference, rtol=rtol, atol=atol, compare_outputs=compare_outputs
+        )
+    return book
+
+
+def _qualified_cell_text(address: object, description: str) -> str:
+    if not isinstance(address, str):
+        raise TypeError(f"{description} address must be a string.")
+    try:
+        return QualifiedAddress.from_a1(address).address
+    except ValueError as exc:
+        raise ValueError(
+            f'{description} address "{address}" must be sheet-qualified, such as "Inputs!B2".'
+        ) from exc
+
+
+def _qualified_range_text(range_text: object, description: str) -> str:
+    if not isinstance(range_text, str) or "!" not in range_text:
+        raise ValueError(
+            f'{description} range must be sheet-qualified, such as "Inputs!B2:B5".'
+        )
+    sheet_text, local_text = range_text.rsplit("!", 1)
+    try:
+        sheet_name = QualifiedAddress.from_a1(f"{sheet_text}!A1").sheet_name
+        return QualifiedAddressRange(
+            AddressRange.from_a1(local_text), sheet_name
+        ).address
+    except ValueError as exc:
+        raise ValueError(f'{description} range "{range_text}" is invalid.') from exc
+
+
+def _case_spec(raw_case: object, index: int) -> CaseSpec:
+    if not isinstance(raw_case, Mapping) or set(raw_case) - {"name", "inputs"}:
+        raise ValueError(
+            f'Spreadsheet test case {index} must be a mapping with "inputs" and an optional "name".'
+        )
+    raw_inputs = raw_case.get("inputs")
+    if not isinstance(raw_inputs, Mapping):
+        raise TypeError(f"Spreadsheet test case {index} inputs must be a mapping.")
+    case: CaseSpec = {"inputs": {}}
+    for address, value in raw_inputs.items():
+        key = _qualified_cell_text(address, f"Spreadsheet test case {index} input")
+        if key in case["inputs"]:
+            raise ValueError(
+                f'Spreadsheet test case {index} sets "{key}" more than once.'
+            )
+        case["inputs"][key] = _json_spreadsheet_cell_value(value, key)
+    if "name" in raw_case:
+        name = raw_case["name"]
+        if not isinstance(name, str):
+            raise TypeError(f"Spreadsheet test case {index} name must be a string.")
+        case["name"] = name
+    return case
+
+
+def _reference_spec(
+    reference: Mapping[str, ReferenceCellInput],
+    *,
+    rtol: float | None,
+    atol: float | None,
+    compare_outputs: bool | None,
+) -> ReferenceSpec:
+    if not isinstance(reference, Mapping) or not reference:
+        raise ValueError(
+            "A spreadsheet reference solution must define at least one cell."
+        )
+    spec: ReferenceSpec = {"cells": {}}
+    for address, raw_cell in reference.items():
+        key = _qualified_cell_text(address, "Spreadsheet reference cell")
+        if key in spec["cells"]:
+            raise ValueError(f'Spreadsheet reference cell "{key}" is duplicated.')
+        options: Mapping[str, object] = (
+            raw_cell if isinstance(raw_cell, Mapping) else {"value": raw_cell}
+        )
+        if "value" not in options or set(options) - {"value", "rtol", "atol"}:
+            raise ValueError(
+                f'Spreadsheet reference cell "{key}" must be a value or a mapping with "value" and optional "rtol" and "atol".'
+            )
+        value = _json_spreadsheet_cell_value(options["value"], key)
+        if value is None:
+            raise ValueError(f'Spreadsheet reference cell "{key}" must not be empty.')
+        cell: ReferenceCellSpec = {"value": value}
+        if "rtol" in options:
+            cell["rtol"] = _tolerance(options["rtol"], f'Reference cell "{key}" rtol')
+        if "atol" in options:
+            cell["atol"] = _tolerance(options["atol"], f'Reference cell "{key}" atol')
+        spec["cells"][key] = cell
+    if rtol is not None:
+        spec["rtol"] = _tolerance(rtol, "Spreadsheet reference rtol")
+    if atol is not None:
+        spec["atol"] = _tolerance(atol, "Spreadsheet reference atol")
+    if compare_outputs is not None:
+        if not isinstance(compare_outputs, bool):
+            raise TypeError("Spreadsheet compare_outputs must be a boolean.")
+        spec["compare_outputs"] = compare_outputs
+    return spec
+
+
+def _tolerance(value: object, description: str) -> float:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, numbers.Real)
+        or not math.isfinite(float(value))
+        or float(value) < 0
+    ):
+        raise ValueError(f"{description} must be a non-negative finite number.")
+    return float(value)
+
+
+type RandomInput = (
+    tuple[int, int]
+    | tuple[float, float]
+    | Sequence[SourceValue]
+    | Callable[[], SourceValue | None]
+)
+"""Generator for one random test-case input: a range, choices, or a callable."""
+
+
+def random_cases(
+    count: int,
+    inputs: Mapping[str, RandomInput],
+    *,
+    name: str = "Random case {index}",
+) -> list[CaseSpec]:
+    """Generate hidden test cases from Python's ``random`` module.
+
+    PrairieLearn seeds ``random`` per variant before ``generate()``, so the cases
+    are deterministic for each variant. Each input is generated from:
+
+    - a ``(low, high)`` tuple of two numbers: ``random.randint`` when both are
+      integers, otherwise ``random.uniform``;
+    - any other non-string sequence: ``random.choice``;
+    - a zero-argument callable: its return value.
+
+    Returns:
+        A list of test cases for ``create_spreadsheet(test_cases=...)``.
+
+    Raises:
+        ValueError: If ``count`` is not between 0 and 50.
+        TypeError: If an input generator is not supported.
+    """
+    if isinstance(count, bool) or not isinstance(count, int) or not 0 <= count <= 50:
+        raise ValueError("Spreadsheet random_cases() count must be between 0 and 50.")
+    cases: list[CaseSpec] = []
+    for index in range(1, count + 1):
+        values: dict[str, SourceValue | None] = {}
+        for address, generator in inputs.items():
+            if callable(generator):
+                values[address] = generator()
+            elif (
+                isinstance(generator, tuple)
+                and len(generator) == 2
+                and all(
+                    isinstance(bound, numbers.Real) and not isinstance(bound, bool)
+                    for bound in generator
+                )
+            ):
+                low, high = generator
+                values[address] = (
+                    random.randint(int(low), int(high))
+                    if isinstance(low, numbers.Integral)
+                    and isinstance(high, numbers.Integral)
+                    else random.uniform(float(low), float(high))
+                )
+            elif (
+                isinstance(generator, Sequence)
+                and not isinstance(generator, str)
+                and generator
+            ):
+                values[address] = random.choice(generator)
+            else:
+                raise TypeError(
+                    f'Spreadsheet random input "{address}" must be a (low, high) tuple, a non-empty sequence, or a callable.'
+                )
+        cases.append({"name": name.format(index=index), "inputs": values})
+    return cases
 
 
 def dataframe_to_spreadsheet_sheet(
@@ -1914,17 +2245,26 @@ def _column_name(column: int) -> str:
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
 class Book:
-    """Read-only, spreadsheet-native view of a normalized snapshot."""
+    """Read-only, spreadsheet-native view of a normalized snapshot.
+
+    Pass the private grading configuration from ``data["correct_answers"]`` as
+    ``grading`` to expose the inputs of each hidden test case.
+    """
 
     snapshot: InitVar[Snapshot]
+    grading: InitVar[Mapping[str, object] | None] = None
     _sheets: dict[SheetName, _SparseSheet] = field(init=False)
     _sheet_views: dict[SheetName, Sheet] = field(init=False)
     _grading_outputs: dict[str, Result] = field(init=False)
     _has_grading: bool = field(init=False)
+    _reference: Reference | None = field(init=False)
     sheet_names: tuple[SheetName, ...] = field(init=False)
     outputs: Mapping[str, Output] = field(init=False)
+    cases: tuple[Case, ...] = field(init=False)
 
-    def __post_init__(self, snapshot: Snapshot) -> None:
+    def __post_init__(
+        self, snapshot: Snapshot, grading_config: Mapping[str, object] | None
+    ) -> None:
         """Validate and index the normalized snapshot."""
         validated_snapshot = _validated_snapshot(snapshot)
 
@@ -2023,6 +2363,30 @@ class Book:
         object.__setattr__(self, "_has_grading", grading is not None)
         object.__setattr__(self, "sheet_names", tuple(sheets))
         object.__setattr__(self, "outputs", _Outputs(self))
+
+        cases: tuple[Case, ...] = ()
+        reference: Reference | None = None
+        if isinstance(grading_snapshot := validated_snapshot.get("grading"), Mapping):
+            cases = _validated_cases(grading_snapshot, grading_config)
+            raw_reference = grading_snapshot.get("reference")
+            if raw_reference is not None:
+                reference = _validated_reference(raw_reference, cases)
+        object.__setattr__(self, "cases", cases)
+        object.__setattr__(self, "_reference", reference)
+
+    @property
+    def has_reference(self) -> bool:
+        """Whether the snapshot contains reference-solution comparisons."""
+        return self._reference is not None
+
+    @property
+    def reference(self) -> Reference:
+        """Student-versus-reference comparisons for the reference solution's cells."""
+        if self._reference is None:
+            raise ValueError(
+                "The spreadsheet snapshot does not contain reference comparisons."
+            )
+        return self._reference
 
     def _sheet_data(self, sheet_name: SheetName) -> _SparseSheet:
         try:
@@ -2403,3 +2767,254 @@ class _Outputs(Mapping[str, Output]):
     def __len__(self) -> int:
         """Return the number of private grading outputs."""
         return len(self._spreadsheet._grading_output_names())
+
+
+def _comparison_key(address: str) -> str:
+    if "!" not in address:
+        raise KeyError(
+            f'Spreadsheet reference address "{address}" must be sheet-qualified, such as "Inputs!D2".'
+        )
+    sheet_text, local_text = address.rsplit("!", 1)
+    try:
+        sheet_name = QualifiedAddress.from_a1(f"{sheet_text}!A1").sheet_name
+        local = Address.from_a1(local_text)
+    except ValueError:
+        raise KeyError(f'Invalid spreadsheet reference address "{address}".') from None
+    return f"{sheet_name}!{local}"
+
+
+@dataclass(frozen=True, slots=True)
+class Case:
+    """Private grading outputs recomputed for one hidden test case."""
+
+    name: str
+    outputs: Mapping[str, Result]
+    inputs: Mapping[str, SourceValue | None] | None
+    """Overridden cells keyed by source address, or ``None`` when ``Book`` was
+    created without the private grading configuration."""
+
+    def value(self, output_name: str) -> Value:
+        """Return the plain value of a named output in this case."""
+        return _spreadsheet_result_value(self.outputs[output_name])
+
+
+@dataclass(frozen=True, slots=True)
+class Comparison:
+    """Student and reference results for one cell or output in one run."""
+
+    student: Result
+    reference: Result
+    match: bool
+    case: Case | None
+    """The hidden test case, or ``None`` for the student's submitted inputs."""
+
+    @property
+    def student_value(self) -> Value:
+        """The student's plain value, or ``None`` for empty and error results."""
+        return _spreadsheet_result_value(self.student)
+
+    @property
+    def reference_value(self) -> Value:
+        """The reference plain value, or ``None`` for empty and error results."""
+        return _spreadsheet_result_value(self.reference)
+
+
+@dataclass(frozen=True, slots=True)
+class ComparisonSeries:
+    """Comparisons for the submitted inputs followed by every hidden test case."""
+
+    base: Comparison
+    cases: tuple[Comparison, ...]
+
+    @property
+    def comparisons(self) -> tuple[Comparison, ...]:
+        """The base comparison followed by every test-case comparison."""
+        return (self.base, *self.cases)
+
+    @property
+    def all_match(self) -> bool:
+        """Whether the student matches the reference in every run."""
+        return all(comparison.match for comparison in self.comparisons)
+
+    @property
+    def match_rate(self) -> float:
+        """The fraction of runs in which the student matches the reference."""
+        comparisons = self.comparisons
+        return sum(comparison.match for comparison in comparisons) / len(comparisons)
+
+    @property
+    def first_mismatch(self) -> Comparison | None:
+        """The first run in which the student differs from the reference."""
+        return next(
+            (comparison for comparison in self.comparisons if not comparison.match),
+            None,
+        )
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class Reference(Mapping[str, ComparisonSeries]):
+    """Reference-solution comparisons keyed by source-coordinate cell address."""
+
+    _cells: dict[str, ComparisonSeries]
+    outputs: Mapping[str, ComparisonSeries]
+    """Comparisons of named outputs, when the author enabled ``compare_outputs``."""
+    matched: int
+    total: int
+
+    def __getitem__(self, address: str) -> ComparisonSeries:
+        """Return the comparisons for a sheet-qualified reference cell."""
+        key = _comparison_key(address)
+        try:
+            return self._cells[key]
+        except KeyError:
+            raise KeyError(
+                f'"{address}" is not a spreadsheet reference cell.'
+            ) from None
+
+    def __iter__(self) -> Iterator[str]:
+        """Iterate over reference cell addresses."""
+        return iter(self._cells)
+
+    def __len__(self) -> int:
+        """Return the number of reference cells."""
+        return len(self._cells)
+
+    def score(self) -> float:
+        """Return the fraction of all comparisons that match, from 0 to 1."""
+        return self.matched / self.total if self.total else 0.0
+
+
+def _private_case_inputs(
+    grading: Mapping[str, object], grader_hash: object
+) -> list[dict[str, SourceValue | None]]:
+    if grading.get("grader_hash") != grader_hash:
+        raise ValueError(
+            "The private spreadsheet grading configuration does not match this snapshot."
+        )
+    raw_cases = grading.get("test_cases", [])
+    if not isinstance(raw_cases, list):
+        raise TypeError("The private spreadsheet test cases are invalid.")
+    case_inputs: list[dict[str, SourceValue | None]] = []
+    for raw_case in raw_cases:
+        if not isinstance(raw_case, Mapping) or not isinstance(
+            raw_inputs := raw_case.get("inputs"), list
+        ):
+            raise TypeError("The private spreadsheet test cases are invalid.")
+        inputs: dict[str, SourceValue | None] = {}
+        for raw_input in raw_inputs:
+            if not isinstance(raw_input, Mapping):
+                raise TypeError("The private spreadsheet test cases are invalid.")
+            value = raw_input.get("value")
+            if value is not None and not isinstance(value, bool | int | float | str):
+                raise TypeError("The private spreadsheet test cases are invalid.")
+            inputs[f"{raw_input.get('sheet')}!{raw_input.get('cell')}"] = value
+        case_inputs.append(inputs)
+    return case_inputs
+
+
+def _validated_cases(
+    grading_snapshot: Mapping[str, object], grading: Mapping[str, object] | None
+) -> tuple[Case, ...]:
+    raw_cases = grading_snapshot.get("cases", [])
+    if not isinstance(raw_cases, list):
+        raise TypeError("The spreadsheet snapshot has invalid test cases.")
+    case_inputs = (
+        None
+        if grading is None
+        else _private_case_inputs(grading, grading_snapshot.get("grader_hash"))
+    )
+    if case_inputs is not None and len(case_inputs) != len(raw_cases):
+        raise ValueError(
+            "The private spreadsheet grading configuration does not match this snapshot."
+        )
+    cases: list[Case] = []
+    for index, raw_case in enumerate(raw_cases):
+        if not isinstance(raw_case, Mapping):
+            raise TypeError("The spreadsheet snapshot has invalid test cases.")
+        name = raw_case.get("name")
+        raw_outputs = raw_case.get("outputs")
+        if not isinstance(name, str) or not isinstance(raw_outputs, Mapping):
+            raise TypeError("The spreadsheet snapshot has invalid test cases.")
+        outputs = {
+            str(output_name): _validated_snapshot_result(
+                result, f'Spreadsheet test case "{name}" output "{output_name}"'
+            )
+            for output_name, result in raw_outputs.items()
+        }
+        cases.append(
+            Case(
+                name=name,
+                outputs=outputs,
+                inputs=None if case_inputs is None else case_inputs[index],
+            )
+        )
+    return tuple(cases)
+
+
+def _validated_comparison_series(
+    value: object, cases: tuple[Case, ...], context: str
+) -> ComparisonSeries:
+    if not isinstance(value, Mapping) or not isinstance(
+        raw_cases := value.get("cases"), list
+    ):
+        raise TypeError(f"{context} has invalid reference comparisons.")
+    if len(raw_cases) != len(cases):
+        raise ValueError(f"{context} does not have one comparison per test case.")
+
+    def comparison(raw: object, case: Case | None) -> Comparison:
+        if not isinstance(raw, Mapping) or not isinstance(
+            match := raw.get("match"), bool
+        ):
+            raise TypeError(f"{context} has invalid reference comparisons.")
+        return Comparison(
+            student=_validated_snapshot_result(raw.get("student"), context),
+            reference=_validated_snapshot_result(raw.get("reference"), context),
+            match=match,
+            case=case,
+        )
+
+    return ComparisonSeries(
+        base=comparison(value.get("base"), None),
+        cases=tuple(
+            comparison(raw, case) for raw, case in zip(raw_cases, cases, strict=True)
+        ),
+    )
+
+
+def _validated_reference(value: object, cases: tuple[Case, ...]) -> Reference:
+    if not isinstance(value, Mapping):
+        raise TypeError("The spreadsheet snapshot has invalid reference comparisons.")
+    raw_cells = value.get("cells")
+    raw_outputs = value.get("outputs", {})
+    summary = value.get("summary")
+    if (
+        not isinstance(raw_cells, Mapping)
+        or not isinstance(raw_outputs, Mapping)
+        or not isinstance(summary, Mapping)
+    ):
+        raise TypeError("The spreadsheet snapshot has invalid reference comparisons.")
+    matched = summary.get("matched")
+    total = summary.get("total")
+    if (
+        isinstance(matched, bool)
+        or not isinstance(matched, int)
+        or isinstance(total, bool)
+        or not isinstance(total, int)
+    ):
+        raise TypeError("The spreadsheet snapshot has an invalid reference summary.")
+    return Reference(
+        _cells={
+            str(address): _validated_comparison_series(
+                series, cases, f'Spreadsheet reference cell "{address}"'
+            )
+            for address, series in raw_cells.items()
+        },
+        outputs={
+            str(name): _validated_comparison_series(
+                series, cases, f'Spreadsheet reference output "{name}"'
+            )
+            for name, series in raw_outputs.items()
+        },
+        matched=matched,
+        total=total,
+    )

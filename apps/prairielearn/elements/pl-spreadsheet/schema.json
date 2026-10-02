@@ -9,6 +9,14 @@
     {
       "tag": "pl-spreadsheet-output",
       "schema": "./schemas/pl-spreadsheet-output.json"
+    },
+    {
+      "tag": "pl-spreadsheet-parameter",
+      "schema": "./schemas/pl-spreadsheet-parameter.json"
+    },
+    {
+      "tag": "pl-spreadsheet-reference",
+      "schema": "./schemas/pl-spreadsheet-reference.json"
     }
   ]
 }

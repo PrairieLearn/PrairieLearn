@@ -228,6 +228,14 @@
         {
           "name": "pl-spreadsheet-output",
           "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-output.json"
+        },
+        {
+          "name": "pl-spreadsheet-parameter",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-parameter.json"
+        },
+        {
+          "name": "pl-spreadsheet-reference",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-reference.json"
         }
       ]
     },
