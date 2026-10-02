@@ -117,6 +117,11 @@ export default [
           message: 'module.exports should not be used in TypeScript files',
           selector: 'MemberExpression[object.name="module"][property.name="exports"]',
         },
+        {
+          message:
+            "Specify a reply-mapping type argument, e.g. `new Redis<'legacy'>(...)`, to avoid expensive TypeScript inference.",
+          selector: "NewExpression[callee.name='Redis']:not([typeArguments])",
+        },
       ],
     },
   },
