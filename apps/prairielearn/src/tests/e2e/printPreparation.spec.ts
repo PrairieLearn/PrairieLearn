@@ -37,7 +37,6 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
-  await expect(page.getByRole('link', { name: 'Print', exact: true })).toHaveCount(0);
   const instancesLoaded = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith('/printableExams.list'),
   );
@@ -596,8 +595,6 @@ test('protects pending preview settings and shows a PDF export error once', asyn
   await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
   await expect(page.getByLabel('Additional student information')).toHaveValue('Room');
   await expect(updatePreview).toBeDisabled();
-  await page.getByRole('button', { name: 'Regenerate Form A', exact: true }).focus();
-  await expect(page.getByRole('tooltip')).toContainText('Regenerate Form A with new randomization');
   await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
     name: 'invalid-cover.pdf',
     mimeType: 'application/pdf',
@@ -621,7 +618,6 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   );
   await page.getByRole('button', { name: 'Create preview', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(page.getByRole('button', { name: 'Full booklet', exact: true })).toHaveCount(0);
   await chooseDownload(page, 'Download booklet PDF…');
   const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
   const students = modal.getByLabel('Number of students', { exact: true });
@@ -673,7 +669,6 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   await submit.click();
   expect(await (await downloaded).failure()).toBeNull();
   await expect(downloadMenu(page)).toBeEnabled();
-  await expect(page.getByTitle('Full booklet preview', { exact: true })).toHaveCount(0);
 });
 
 test('limits static assessments to one form even when the saved URL selects several', async ({

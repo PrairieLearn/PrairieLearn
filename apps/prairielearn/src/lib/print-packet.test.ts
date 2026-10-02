@@ -53,7 +53,7 @@ describe('print packets', () => {
     ]);
   });
 
-  test('appends each answer key once after all student copies, without uploaded covers', async () => {
+  test('appends each answer key once after all student copies with uploaded covers', async () => {
     const covers = await readPrintCoverPages([await coverFile([501, 502])]);
     const result = await PDFDocument.load(
       await assemblePrintPacket({
