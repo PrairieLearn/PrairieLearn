@@ -7,10 +7,14 @@ import { type ToolOutcome, proposalContent } from '@prairielearn/course-agent-co
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import * as agentEvents from '../ee/lib/course-agent/events.js';
+import * as agentObserver from '../ee/lib/course-agent/observer.js';
 import * as agentProvider from '../ee/lib/course-agent/provider.js';
-import { authorize, prepare, snapshot } from '../ee/lib/course-agent/service.js';
+import { Publisher } from '../ee/lib/course-agent/publish.js';
+import { authorize, complete, prepare, snapshot } from '../ee/lib/course-agent/service.js';
 import { admit, estimatedCost, recordUsage } from '../ee/lib/course-agent/usage.js';
 import { config } from '../lib/config.js';
+import * as courseLibrary from '../lib/course.js';
+import { createServerJob } from '../lib/server-jobs.js';
 import {
   createConversation,
   reserveOperation,
@@ -20,12 +24,14 @@ import { insertExecution, selectOptionalExecution } from '../models/course-agent
 import {
   decideProposal,
   insertProposal,
+  prepareProposal,
   selectOptionalProposal,
 } from '../models/course-agent-proposal.js';
 import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
+import { updateCourseColumn } from '../models/course.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
 import * as helperServer from './helperServer.js';
@@ -256,6 +262,11 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
 
 it('uses shared AI prices, preserves recorded rates, and leaves unsupported models unknown', async () => {
   const { conversation } = await setupConversation();
+  expect(await recordUsage(conversation, { messages: [], revision: 0 })).toEqual({
+    input: 0,
+    output: 0,
+    estimatedCost: 0,
+  });
   const id = randomUUID();
   await insertExecution(conversation.id, id);
   const snapshot = {
@@ -413,5 +424,125 @@ it('returns failed schema validation to the agent, retries delivery, and only ex
     providerMock.mockRestore();
     fetcher.mockRestore();
     notify.mockRestore();
+  }
+});
+
+it('reverts a failed sync and returns its diagnostics to Codex without repeating work on delivery retry', async () => {
+  const { conversation, scope, user } = await setupConversation();
+  await insertCoursePermissionsByUserUid({
+    course_id: scope.course_id,
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: user.id,
+  });
+  await updateCourseColumn({
+    courseId: scope.course_id,
+    columnName: 'repository',
+    value: 'https://github.com/org/course.git',
+    authnUserId: user.id,
+  });
+  await updateCourseColumn({
+    courseId: scope.course_id,
+    columnName: 'branch',
+    value: 'main',
+    authnUserId: user.id,
+  });
+  const operation = randomUUID();
+  const approval = {
+    id: operation,
+    baseSha: 'a'.repeat(40),
+    proposedSha: 'b'.repeat(40),
+    digest: 'test-digest',
+    files: [],
+    diff: 'test diff',
+    status: 'pending',
+  };
+  const row = (await insertProposal({
+    conversation_id: conversation.id,
+    operation_id: operation,
+    sequence: 1,
+    payload: JSON.stringify(approval),
+    digest: 'test-digest',
+  }))!;
+  await prepareProposal(row.id, approval, true, null);
+  const delivery = vi
+    .fn<(input: ToolOutcome, signal: AbortSignal) => Promise<void>>()
+    .mockRejectedValueOnce(new Error('Delivery interrupted'))
+    .mockResolvedValue(undefined);
+  const originalProvider = agentProvider.createCloudflareProvider;
+  const mocks = [
+    vi.spyOn(agentEvents, 'notify').mockResolvedValue(),
+    vi.spyOn(agentObserver, 'observe').mockResolvedValue(),
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({})),
+    vi.spyOn(agentProvider, 'createCloudflareProvider').mockImplementation((...args) => ({
+      ...originalProvider(...args),
+      getSnapshot: async () => ({
+        messages: [],
+        revision: 0,
+        executions: {
+          [operation]: {
+            status: 'running',
+            model: 'fixture',
+            input: null,
+            cached: null,
+            output: null,
+          },
+        },
+      }),
+      deliverToolResult: delivery,
+    })),
+  ];
+  const push = vi.spyOn(Publisher.prototype, 'push').mockResolvedValue('c'.repeat(40));
+  const rollback = vi.spyOn(Publisher.prototype, 'rollback').mockResolvedValue('e'.repeat(40));
+  const sync = vi
+    .spyOn(courseLibrary, 'pullAndUpdateCourse')
+    .mockImplementation(async (options) => {
+      const job = await createServerJob({
+        type: 'sync',
+        description: 'Fixture failed sync',
+        courseId: scope.course_id,
+        userId: user.id,
+        authnUserId: user.id,
+      });
+      await options.onJobCreated!(job.jobSequenceId);
+      return {
+        jobSequenceId: job.jobSequenceId,
+        jobPromise: job.execute(async (task) => {
+          task.fail('infoCourse.json: required property topics is missing');
+        }),
+      };
+    });
+  const input = { id: operation, digest: row.digest, expectedRevision: 0, approved: true };
+  try {
+    await withConfig(
+      {
+        isEnterprise: true,
+        features: { 'course-agent': true },
+        courseAgent: settings,
+        githubClientToken: 'fake-shared-client-token',
+      },
+      async () => {
+        await expect(complete(scope, conversation, input)).rejects.toThrow('Delivery interrupted');
+        const failed = (await selectOptionalProposal(conversation.id, operation))!;
+        expect(failed.outcome).toContain('topics is missing');
+        expect(failed.outcome).toContain('Publication was reverted');
+        expect(failed.delivered).toBe(false);
+        await complete(scope, conversation, input);
+        expect(delivery.mock.calls[1][0]).toMatchObject({
+          id: operation,
+          success: false,
+          result: failed.outcome,
+        });
+        expect(push).toHaveBeenCalledOnce();
+        expect(rollback).toHaveBeenCalledOnce();
+        expect(sync).toHaveBeenCalledOnce();
+        expect((await selectOptionalProposal(conversation.id, operation))!.delivered).toBe(true);
+        expect(
+          await reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'next' }, 1),
+        ).toBe(2);
+      },
+    );
+  } finally {
+    for (const mock of [...mocks, push, rollback, sync]) mock.mockRestore();
   }
 });

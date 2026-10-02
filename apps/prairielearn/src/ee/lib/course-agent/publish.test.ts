@@ -246,3 +246,81 @@ test('rejects invalid course-instance JSON before preparing publication', async 
     .digest('hex');
   await publisher.prepare(publication);
 });
+
+function rollbackGithub(value: Publication) {
+  const publication = 'c'.repeat(40),
+    revert = 'e'.repeat(40);
+  let head = publication;
+  let writes = 0;
+  let loseAck = false;
+  const fetcher: typeof fetch = async (url, init) => {
+    const path = String(url);
+    if (path.includes('/git/ref/heads/')) return Response.json({ object: { sha: head } });
+    if (path.includes('/git/commits/')) {
+      return Response.json({
+        message:
+          head === revert
+            ? `Revert failed course-agent change ${value.id}\n\nPublication: ${publication}`
+            : 'publication',
+        parents: [{ sha: publication }],
+        tree: {
+          sha:
+            path.endsWith(value.approval.baseSha) || head === revert
+              ? 'base-tree'
+              : 'published-tree',
+        },
+      });
+    }
+    if (path.includes('/git/trees/')) {
+      return Response.json({ truncated: false, tree: [{ path: 'hello.txt', sha: 'base-blob' }] });
+    }
+    if (path.includes('/git/blobs/')) {
+      return Response.json({
+        encoding: 'base64',
+        content: Buffer.from('old\n').toString('base64'),
+      });
+    }
+    const body = JSON.parse(String(init?.body));
+    const input = body.variables.input;
+    assert.equal(input.expectedHeadOid, publication);
+    assert.deepEqual(input.fileChanges, {
+      additions: [{ path: 'hello.txt', contents: Buffer.from('old\n').toString('base64') }],
+      deletions: [],
+    });
+    writes++;
+    head = revert;
+    if (loseAck) throw new Error('response lost');
+    return Response.json({ data: { createCommitOnBranch: { commit: { oid: revert } } } });
+  };
+  return {
+    fetcher,
+    publication,
+    revert,
+    writes: () => writes,
+    advance: () => {
+      head = 'd'.repeat(40);
+    },
+    loseAck: () => {
+      loseAck = true;
+    },
+  };
+}
+
+test('rollback restores the base file contents and reconciles a lost response without a second revert', async () => {
+  const value = job(),
+    fake = rollbackGithub(value);
+  const publisher = new Publisher(value.destination, { token: 'test', fetch: fake.fetcher });
+  fake.loseAck();
+  await assert.rejects(publisher.rollback(value, fake.publication), /unconfirmed/);
+  assert.equal(await publisher.rollback(value, fake.publication), fake.revert);
+  assert.equal(fake.writes(), 1);
+});
+
+test('rollback refuses to overwrite later commits', async () => {
+  const value = job(),
+    fake = rollbackGithub(value);
+  const publisher = new Publisher(value.destination, { token: 'test', fetch: fake.fetcher });
+  fake.advance();
+  await assert.rejects(publisher.rollback(value, fake.publication), /newer commits/);
+  assert.equal(fake.writes(), 0);
+});

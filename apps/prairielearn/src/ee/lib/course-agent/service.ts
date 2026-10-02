@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { stripVTControlCharacters } from 'node:util';
 
 import { TRPCError } from '@trpc/server';
 
@@ -13,10 +14,15 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { config } from '../../../lib/config.js';
 import { pullAndUpdateCourse } from '../../../lib/course.js';
-import { type Course, type CourseAgentConversation } from '../../../lib/db-types.js';
+import {
+  type Course,
+  type CourseAgentConversation,
+  type CourseAgentProposal,
+} from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { parseGithubRepository } from '../../../lib/github-utils.js';
 import { isEnterprise } from '../../../lib/license.js';
+import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import {
   type AgentScope,
   selectConversationOperations,
@@ -266,6 +272,41 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
       : undefined,
   };
 }
+
+async function failSync(
+  scope: AgentScope,
+  conversation: CourseAgentConversation,
+  row: CourseAgentProposal,
+  sha: string,
+) {
+  const course = await authorizedDestination(scope, conversation);
+  const jobs = row.sync_job_sequence_id
+    ? await selectJobsByJobSequenceId(row.sync_job_sequence_id)
+    : [];
+  const details = stripVTControlCharacters(
+    [
+      course.sync_errors,
+      ...jobs
+        .filter((job) => job.status === 'Error')
+        .map((job) => [job.error_message, job.output?.slice(-1000)].filter(Boolean).join('\n')),
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  ).slice(0, 1400);
+  let recovery: string;
+  try {
+    const reverted = await publisher(conversation).rollback(job(conversation, row), sha);
+    recovery = `Publication was reverted by ${reverted}. Fetch and reconcile the sandbox checkout before fixing the errors and submitting a new proposal.`;
+  } catch (error) {
+    if (!(error instanceof PublishRejected)) throw error;
+    recovery = error.message;
+  }
+  await proposals.saveProposalProgress(row.id, {
+    outcome: `Course Sync failed. ${recovery}\nSync diagnostics:\n${details || 'Course Sync ended without diagnostic output. Check the course sync log.'}`,
+    error: 'Course sync failed.',
+  });
+}
+
 export async function complete(
   scope: AgentScope,
   conversation: CourseAgentConversation,
@@ -305,16 +346,18 @@ export async function complete(
               await proposals.saveProposalProgress(row.id, { published_sha: sha });
             }
             let synced = false;
+            let failed = false;
             if (row.sync_job_sequence_id) {
               const { status } = await proposals.selectSyncStatus(row.sync_job_sequence_id);
-              if (status === 'Running') {
+              if (status === 'Running' || status === 'Stopping') {
                 throw new Error(
                   'Course Sync is still running. Retry completion after it finishes.',
                 );
               }
               synced = status === 'Success' && !!row.synced_sha;
+              failed = status !== 'Success';
             }
-            if (!synced) {
+            if (!synced && !failed) {
               const sync = await pullAndUpdateCourse({
                 course: await authorizedDestination(scope, conversation),
                 userId: scope.user_id,
@@ -329,19 +372,21 @@ export async function complete(
               });
               await sync.jobPromise;
               const { status } = await proposals.selectSyncStatus(sync.jobSequenceId);
-              if (status !== 'Success') {
-                throw new Error(
-                  'Publication succeeded, but Course Sync failed. Review the Course Sync log and correct any reported course errors before retrying completion. Retrying only runs sync; it does not republish.',
-                );
-              }
+              failed = status !== 'Success';
             }
             row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
-            if (!row.synced_sha) {
-              throw new Error('Course Sync did not confirm the approved commit. Retry completion.');
+            if (failed) {
+              await failSync(scope, conversation, row, sha);
+            } else {
+              if (!row.synced_sha) {
+                throw new Error(
+                  'Course Sync did not confirm the approved commit. Retry completion.',
+                );
+              }
+              await proposals.saveProposalProgress(row.id, {
+                outcome: `Published ${sha} to ${conversation.repository} (${conversation.branch}). Course Sync completed at ${row.synced_sha}. Fetch and reconcile your checkout with the remote, preserving divergent work, before further edits.`,
+              });
             }
-            await proposals.saveProposalProgress(row.id, {
-              outcome: `Published ${sha} to ${conversation.repository} (${conversation.branch}). Course Sync completed at ${row.synced_sha}. Fetch and reconcile your checkout with the remote, preserving divergent work, before further edits.`,
-            });
           }
         }
         row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
@@ -356,6 +401,9 @@ export async function complete(
             {
               id: input.id,
               result: row.outcome,
+              success:
+                !row.outcome.startsWith('Course Sync failed.') &&
+                !row.outcome.startsWith('Publication rejected:'),
               display: {
                 name: 'push_sync',
                 value: {
@@ -368,7 +416,7 @@ export async function complete(
             },
             AbortSignal.timeout(120000),
           );
-          await proposals.saveProposalProgress(row.id, { delivered: true });
+          await proposals.saveProposalProgress(row.id, { delivered: true, error: row.error });
         }
       } catch (error) {
         if (error instanceof PublishRejected) {

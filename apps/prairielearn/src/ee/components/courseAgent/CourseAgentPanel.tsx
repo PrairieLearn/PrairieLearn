@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import {
   type ApprovalDisplay,
   type ChatSnapshot,
+  type SandboxDiagnostics,
   sendRequestSchema,
 } from '@prairielearn/course-agent-contract';
 import { getAppError } from '@prairielearn/trpc/client';
@@ -255,6 +256,8 @@ function Conversation({
   const { register, watch, setValue, handleSubmit } = useForm({ defaultValues: { draft: '' } });
   const draft = watch('draft');
   const [statisticsOpen, setStatisticsOpen] = useState(false);
+  const [loaded, setLoaded] = useState(!id);
+  const transcriptRef = useRef<HTMLDivElement>(null);
   const [failure, setFailure] = useState('');
   const [connection, setConnection] = useState<'connecting' | 'connected' | 'disconnected'>(
     id ? 'connecting' : 'connected',
@@ -305,6 +308,7 @@ function Conversation({
     source.onmessage = (event) => {
       const next = JSON.parse(event.data) as ChatSnapshot;
       setSnapshot(next);
+      setLoaded(true);
       setConnection('connected');
       setFailure('');
       if (!busyRef.current) {
@@ -321,14 +325,21 @@ function Conversation({
       }
     };
     source.onerror = () => {
-      setConnection('connecting');
-      setFailure('Connection interrupted. Reconnecting; your draft is preserved.');
+      setConnection('disconnected');
+      setFailure('Conversation disconnected');
+      source.close();
     };
     return () => {
       source.removeEventListener('connection-error', connectionError);
       source.close();
     };
   }, [base, id, storageKey, setMessages, resumeStream, setValue, connectionAttempt]);
+
+  // Keep incoming output and newly loaded conversations visible at the end of the transcript.
+  useEffect(() => {
+    const transcript = transcriptRef.current;
+    if (transcript) transcript.scrollTop = transcript.scrollHeight;
+  }, [messages, optimistic, loaded, snapshot.approvals]);
 
   async function submit() {
     if (!draft.trim() || snapshot.blocked || connection !== 'connected') return;
@@ -393,7 +404,7 @@ function Conversation({
     <>
       {failure && (
         <Alert variant="warning">
-          {failure}{' '}
+          Conversation disconnected{' '}
           <Button
             variant="link"
             onClick={() => {
@@ -401,7 +412,7 @@ function Conversation({
               setConnectionAttempt((value) => value + 1);
             }}
           >
-            Retry connection
+            Reconnect
           </Button>
         </Alert>
       )}
@@ -421,101 +432,95 @@ function Conversation({
           )}
         </Alert>
       )}
-      <div className="flex-grow-1 overflow-auto course-agent-transcript">
-        {messages.length === 0 && !optimistic && (
+      <div ref={transcriptRef} className="flex-grow-1 overflow-auto course-agent-transcript">
+        {!loaded && (
+          <div className="d-flex justify-content-center align-items-center h-100" role="status">
+            <span className="spinner-border text-secondary" />
+            <span className="visually-hidden">Loading conversation</span>
+          </div>
+        )}
+        {loaded && messages.length === 0 && !optimistic && (
           <div className="course-agent-empty text-center text-muted py-5 px-3">
             <i className="bi bi-stars fs-1 text-primary" aria-hidden="true" />
             <h3 className="h5 mt-3 text-body">What would you like to work on?</h3>
             <p>Set up your course, improve a question, or build an assessment.</p>
           </div>
         )}
-        <Transcript
-          userName={userName}
-          timezone={timezone}
-          messages={
-            optimistic && !messages.some((m) => m.id === optimistic.id)
-              ? [...messages, optimistic]
-              : messages
-          }
-          approvals={snapshot.approvals ?? []}
-          renderCodeChange={(approval) => (
-            <section className="card mb-3">
-              <div className="card-body">
-                <strong>
-                  {approval.status === 'pending'
-                    ? 'Code change · Review requested'
-                    : approval.status === 'approved'
-                      ? 'Code change · Approved'
-                      : 'Code change · Rejected'}
-                </strong>
-                <details open>
-                  <summary>Review exact changes</summary>
-                  <pre className="course-agent-diff">
-                    {approval.diff.split('\n').map((line, index) => (
-                      <span
-                        key={`${index}:${line}`}
-                        className={
-                          line.startsWith('+')
-                            ? 'bg-success-subtle'
-                            : line.startsWith('-')
-                              ? 'bg-danger-subtle'
-                              : ''
-                        }
-                      >
-                        {line}
-                        {'\n'}
-                      </span>
-                    ))}
-                  </pre>
-                </details>
+        {loaded && (
+          <Transcript
+            userName={userName}
+            timezone={timezone}
+            messages={
+              optimistic && !messages.some((m) => m.id === optimistic.id)
+                ? [...messages, optimistic]
+                : messages
+            }
+            approvals={snapshot.approvals ?? []}
+            renderCodeChange={(approval) => (
+              <section className="card mb-3">
+                <div className="card-body">
+                  <strong>
+                    {approval.status === 'pending'
+                      ? 'Code change · Review requested'
+                      : approval.status === 'approved'
+                        ? 'Code change · Approved'
+                        : 'Code change · Rejected'}
+                  </strong>
+                  <ChangeDiff diff={approval.diff} />
 
-                {snapshot.approval?.id === approval.id && (
-                  <>
-                    <p className="text-danger">{snapshot.publication?.error}</p>
-                    {approval.status === 'pending' ? (
-                      <>
-                        <Button
-                          disabled={
-                            decision.isPending || snapshot.publication?.status === 'invalid'
-                          }
-                          onClick={() => decide(approval, true)}
-                        >
-                          Approve and sync
-                        </Button>{' '}
-                        <Button
-                          variant="outline-secondary"
-                          disabled={decision.isPending}
-                          onClick={() => decide(approval, false)}
-                        >
-                          Reject
-                        </Button>
-                        {snapshot.publication?.status === 'invalid' && (
+                  {snapshot.approval?.id === approval.id && (
+                    <>
+                      <p className="text-danger">
+                        {snapshot.publication?.error &&
+                          (snapshot.blocked
+                            ? snapshot.publication.error
+                            : 'Course sync failed; the agent was notified.')}
+                      </p>
+                      {approval.status === 'pending' ? (
+                        <>
                           <Button
-                            variant="link"
-                            onClick={() =>
-                              prepare.mutate({ conversationId: id, operationId: approval.id })
+                            disabled={
+                              decision.isPending || snapshot.publication?.status === 'invalid'
                             }
+                            onClick={() => decide(approval, true)}
                           >
-                            Retry preparation
+                            Approve and sync
+                          </Button>{' '}
+                          <Button
+                            variant="outline-secondary"
+                            disabled={decision.isPending}
+                            onClick={() => decide(approval, false)}
+                          >
+                            Reject
                           </Button>
-                        )}
-                      </>
-                    ) : (
-                      snapshot.blocked && (
-                        <Button
-                          disabled={decision.isPending}
-                          onClick={() => decide(approval, approval.status === 'approved')}
-                        >
-                          Retry completion
-                        </Button>
-                      )
-                    )}
-                  </>
-                )}
-              </div>
-            </section>
-          )}
-        />
+                          {snapshot.publication?.status === 'invalid' && (
+                            <Button
+                              variant="link"
+                              onClick={() =>
+                                prepare.mutate({ conversationId: id, operationId: approval.id })
+                              }
+                            >
+                              Retry preparation
+                            </Button>
+                          )}
+                        </>
+                      ) : (
+                        snapshot.blocked && (
+                          <Button
+                            disabled={decision.isPending}
+                            onClick={() => decide(approval, approval.status === 'approved')}
+                          >
+                            Retry completion
+                          </Button>
+                        )
+                      )}
+                    </>
+                  )}
+                </div>
+              </section>
+            )}
+          />
+        )}
         <div role="status" aria-live="polite" className="px-3 pb-3">
           {working && <ActivityStatus state="streaming" statusText="Working…" />}
         </div>
@@ -534,15 +539,24 @@ function Conversation({
           <dl>
             <dt>Estimated cost</dt>
             <dd>
-              {snapshot.usage?.estimatedCost == null
-                ? 'Unknown'
-                : `$${snapshot.usage.estimatedCost.toFixed(4)}`}
+              {!id
+                ? '$0.0000'
+                : snapshot.usage?.estimatedCost == null
+                  ? 'Unknown'
+                  : `$${snapshot.usage.estimatedCost.toFixed(4)}`}
             </dd>
             <dt>Input tokens</dt>
-            <dd>{snapshot.usage?.input ?? 'Unknown'}</dd>
+            <dd>{!id ? 0 : (snapshot.usage?.input ?? 'Unknown')}</dd>
             <dt>Output tokens</dt>
-            <dd>{snapshot.usage?.output ?? 'Unknown'}</dd>
+            <dd>{!id ? 0 : (snapshot.usage?.output ?? 'Unknown')}</dd>
           </dl>
+          {statisticsOpen && (
+            <SandboxStatistics
+              diagnostics={snapshot.diagnostics}
+              timezone={timezone}
+              newConversation={!id}
+            />
+          )}
         </Modal.Body>
       </Modal>
       <Form className="course-agent-composer pt-3 mt-2" onSubmit={handleSubmit(submit)}>
@@ -579,7 +593,7 @@ function Conversation({
           >
             <i className="bi bi-bar-chart" aria-hidden="true" />
           </Button>
-          {working ? (
+          {working && !draft.trim() ? (
             <Button
               type="button"
               className="course-agent-action ms-auto"
@@ -594,15 +608,36 @@ function Conversation({
               <i className="bi bi-stop-fill" aria-hidden="true" />
             </Button>
           ) : (
-            <Button
-              type="submit"
-              aria-label="Send"
-              title="Send"
-              className="course-agent-action ms-auto"
-              disabled={connection !== 'connected' || snapshot.blocked || !draft.trim()}
+            <span
+              className="ms-auto"
+              title={
+                snapshot.blocked
+                  ? 'Act on the code change request before sending a message.'
+                  : 'Send'
+              }
             >
-              <i className="bi bi-send-fill" aria-hidden="true" />
-            </Button>
+              <Button
+                type="submit"
+                aria-label="Send"
+                title={
+                  snapshot.blocked
+                    ? 'Act on the code change request before sending a message.'
+                    : working
+                      ? 'Send to steer the agent'
+                      : 'Send'
+                }
+                className="course-agent-action"
+                disabled={
+                  connection !== 'connected' ||
+                  snapshot.blocked ||
+                  !draft.trim() ||
+                  send.isPending ||
+                  create.isPending
+                }
+              >
+                <i className="bi bi-send-fill" aria-hidden="true" />
+              </Button>
+            </span>
           )}
         </div>
       </Form>
@@ -660,6 +695,17 @@ function Transcript({
               <div key={index} className="d-flex flex-column gap-2 my-2">
                 {part.parts.map((tool) => {
                   const state = toolState(tool);
+                  const details = toolDetails(tool);
+                  if (!details) {
+                    return (
+                      <div
+                        key={'toolCallId' in tool ? String(tool.toolCallId) : index}
+                        className="course-agent-tool-empty"
+                      >
+                        <ActivityStatus state={state} statusText={toolTitle(tool)} />
+                      </div>
+                    );
+                  }
                   return (
                     <details
                       key={'toolCallId' in tool ? String(tool.toolCallId) : index}
@@ -669,9 +715,7 @@ function Transcript({
                       <summary>
                         <ActivityStatus state={state} statusText={toolTitle(tool)} />
                       </summary>
-                      <pre className="small mt-2 mb-0 p-2 bg-body border rounded">
-                        {toolDetails(tool)}
-                      </pre>
+                      <pre className="small mt-2 mb-0 p-2 bg-body border rounded">{details}</pre>
                     </details>
                   );
                 })}
@@ -736,7 +780,88 @@ function toolDetails(part: UIMessage['parts'][number]) {
     return `${String(input.command)}\n${String(text ?? '')}`;
   }
   if ('errorText' in part) return String(part.errorText);
-  return JSON.stringify(output ?? input, null, 2);
+  const value = output ?? input;
+  return value == null || (typeof value === 'object' && Object.keys(value).length === 0)
+    ? ''
+    : JSON.stringify(value, null, 2);
 }
 
 CourseAgentPanel.displayName = 'CourseAgentPanel';
+
+function ChangeDiff({ diff }: { diff: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <div className="my-2">
+        <Button variant="outline-secondary" size="sm" onClick={() => setOpen(true)}>
+          View changes
+        </Button>
+      </div>
+      <Modal
+        show={open}
+        size="xl"
+        aria-labelledby="course-agent-diff-title"
+        scrollable
+        onHide={() => setOpen(false)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title id="course-agent-diff-title">Code changes</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <pre className="course-agent-diff">
+            {diff.split('\n').map((line, index) => (
+              <span
+                key={index}
+                className={
+                  line.startsWith('+') && !line.startsWith('+++')
+                    ? 'bg-success-subtle'
+                    : line.startsWith('-') && !line.startsWith('---')
+                      ? 'bg-danger-subtle'
+                      : ''
+                }
+              >
+                {line}
+                {'\n'}
+              </span>
+            ))}
+          </pre>
+        </Modal.Body>
+      </Modal>
+    </>
+  );
+}
+
+function SandboxStatistics({
+  diagnostics,
+  timezone,
+  newConversation,
+}: {
+  diagnostics?: SandboxDiagnostics;
+  timezone: string;
+  newConversation: boolean;
+}) {
+  const [now, setNow] = useState(Date.now);
+  // Countdown ticks only while statistics are open; diagnostics come from the existing snapshot stream.
+  useEffect(() => {
+    const clock = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(clock);
+  }, []);
+
+  function expiration(at: number | null | undefined) {
+    if (at == null) return '—';
+    const seconds = Math.max(0, Math.ceil((at - now) / 1000));
+    return `${formatCourseAgentDate(new Date(at), timezone)} (${seconds ? `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m ${seconds % 60}s remaining` : 'due; awaiting cleanup'})`;
+  }
+  return (
+    <dl aria-label="Sandbox diagnostics">
+      <dt>Sandbox state</dt>
+      <dd>
+        <code>{diagnostics?.state ?? (newConversation ? 'absent' : 'Unavailable')}</code>
+      </dd>
+      <dt>Idle expiration</dt>
+      <dd>{expiration(diagnostics?.idleExpiresAt)}</dd>
+      <dt>Interaction expiration</dt>
+      <dd>{expiration(diagnostics?.interactionExpiresAt)}</dd>
+    </dl>
+  );
+}

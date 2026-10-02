@@ -95,6 +95,8 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Statistics', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Conversation statistics' })).toBeVisible();
+  await expect(page.getByLabel('Sandbox diagnostics')).toContainText('waiting_for_user');
+  await expect(page.getByLabel('Sandbox diagnostics')).toContainText('remaining');
   await page
     .getByRole('dialog')
     .filter({ has: page.getByRole('heading', { name: 'Conversation statistics' }) })
@@ -124,6 +126,11 @@ test('conversation and unsent draft persist across course pages', async ({
   await composer.press('Enter');
   const stopButton = page.getByRole('button', { name: 'Stop', exact: true });
   await expect(stopButton).toBeEnabled();
+  await composer.fill('Follow-up steering');
+  await expect(stopButton).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled();
+  await composer.fill('');
+  await expect(stopButton).toBeEnabled();
   await stopButton.click();
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeVisible();
 });
@@ -131,7 +138,7 @@ test('conversation and unsent draft persist across course pages', async ({
 test('failed preparation returns a native tool error and never displays an approval request', async ({
   page,
   courseInstance,
-}) => {
+}, testInfo) => {
   const courseId = courseInstance.course_id;
   await insertCoursePermissionsByUserUid({
     course_id: courseId,
@@ -182,7 +189,55 @@ test('failed preparation returns a native tool error and never displays an appro
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled({
     timeout: 20000,
   });
+  let release!: () => void;
+  const loading = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/course-agent/*/events', async (route) => {
+    await loading;
+    await route.continue();
+  });
   await page.reload();
+  await expect(page.getByText('Loading conversation', { exact: true })).toBeVisible();
+  await expect(page.getByText('Code change request', { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('course-agent-loading.png'), fullPage: true });
+  release();
   await expect(page.getByText('Code change request', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Approve and sync', exact: true })).toHaveCount(0);
+  await page.unroute('**/course-agent/*/events');
+  const proposal = {
+    id: '00000000-0000-4000-8000-000000000001',
+    digest: 'fixture',
+    baseSha: 'a'.repeat(40),
+    proposedSha: 'b'.repeat(40),
+    status: 'pending',
+    diff: '+hello\n',
+  };
+  await page.route('**/course-agent/*/events', (route) =>
+    route.fulfill({
+      contentType: 'text/event-stream',
+      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], revision: 0, blocked: true, approval: proposal, approvals: [proposal], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
+    }),
+  );
+  await page.reload();
+  await expect(page.getByText('Edited files', { exact: true })).toBeVisible();
+  await expect(page.getByText('undefined', { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText('Edited files', { exact: true }).locator('..').locator('..'),
+  ).not.toHaveJSProperty('tagName', 'SUMMARY');
+  await expect(page.getByRole('button', { name: 'Send', exact: true })).toHaveAttribute(
+    'title',
+    'Act on the code change request before sending a message.',
+  );
+  await expect(page.getByText('+hello', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'View changes', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByText('+hello', { exact: true })).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath('course-agent-diff.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });

@@ -92,21 +92,21 @@ SELECT
       WHERE
         input_tokens IS NULL
     ) > 0 THEN NULL
-    ELSE sum(input_tokens)
+    ELSE COALESCE(sum(input_tokens), 0)
   END::double precision AS input,
   CASE
     WHEN count(*) FILTER (
       WHERE
         output_tokens IS NULL
     ) > 0 THEN NULL
-    ELSE sum(output_tokens)
+    ELSE COALESCE(sum(output_tokens), 0)
   END::double precision AS output,
   CASE
     WHEN count(*) FILTER (
       WHERE
         estimated_cost IS NULL
     ) > 0 THEN NULL
-    ELSE sum(estimated_cost)
+    ELSE COALESCE(sum(estimated_cost), 0)
   END::double precision AS "estimatedCost"
 FROM
   course_agent_executions
