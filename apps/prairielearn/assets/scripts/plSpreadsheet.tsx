@@ -933,9 +933,9 @@ function SpreadsheetEditor({
         move horizontally, and Escape to cancel editing. Tab leaves the grid at its boundaries.
         Read-only cells are announced. While typing a formula in the formula bar, use the Up and
         Down arrow keys to choose a suggested function and Enter or Tab to insert it. Where the
-        formula expects a value, click or drag across cells to insert a cell reference; right
-        after that, the arrow keys move the reference and Shift with the arrow keys resizes it. Tab and Shift+Tab move between the missing parts
-        of a formula.
+        formula expects a value, click or drag across cells to insert a cell reference; right after
+        that, the arrow keys move the reference and Shift with the arrow keys resizes it. Tab and
+        Shift+Tab move between the missing parts of a formula.
       </p>
       <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
         <button
