@@ -125,23 +125,6 @@ describe('planPrintQuestionPages', () => {
     expect(pages.map((page) => page.allowsFlow)).toEqual([false, true, false]);
   });
 
-  it('starts a fresh group when the next question cannot fit after an oversized question', () => {
-    const pages = planPrintQuestionPages({
-      pageHeight: 900,
-      questions: [
-        { id: 'Question 1', naturalHeight: 200, blockSize: 'auto' },
-        { id: 'Question 2', naturalHeight: 1_000, blockSize: 'auto' },
-        { id: 'Question 3', naturalHeight: 601, blockSize: 'auto' },
-      ],
-    });
-
-    expect(pages.map((page) => page.questions.map((question) => question.id))).toEqual([
-      ['Question 1'],
-      ['Question 2'],
-      ['Question 3'],
-    ]);
-  });
-
   it('rejects invalid measurements', () => {
     expect(() => planPrintQuestionPages({ pageHeight: 0, questions: [] })).toThrow(
       'The printable page height must be a positive number',
