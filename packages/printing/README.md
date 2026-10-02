@@ -61,6 +61,8 @@ The Word document contains native paragraphs, lists, tables, answer spaces, hype
 Office Math equations. Only actual figures (images, SVG diagrams, and canvases) are captured as
 images. Question content is captured before pagination, so Word can reflow edited text and its
 page count can differ from the PDF. The sheet size and margins follow the printable page's CSS.
+Printable details boxes retain their heading and content. Response guidance appears below its
+answer line, with surrounding labels and units kept in separate table cells.
 
 The renderer installs optional browser hooks to retain MathML before print transforms clone
 typeset equations, then captures normalized HTML before Paged.js fragments the questions.

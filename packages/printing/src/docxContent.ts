@@ -171,6 +171,12 @@ export function buildDocxContent(
         const width = Math.min(number(node, 'data-docx-width', 180), maxWidth * 0.85);
         return [text('_'.repeat(Math.max(4, Math.floor(width / 7.5))))];
       }
+      if (
+        has(node, '.printing-response-placeholder') &&
+        $(node).parent().is('.printing-response-field')
+      ) {
+        return [new TextRun({ break: 1 }), ...inline(node.children, next, maxWidth)];
+      }
       if (has(node, 'input[type="checkbox"], input[type="radio"], .printing-choice-marker')) {
         return [text(has(node, 'input[type="radio"]') ? '○ ' : '☐ ')];
       }
@@ -181,6 +187,89 @@ export function buildDocxContent(
         return [new ExternalHyperlink({ link: href, children })];
       }
       return children;
+    });
+  }
+
+  function guidedInputGroup(node: HtmlElement, format: Format, maxWidth: number): Table | null {
+    const children = $(node)
+      .children()
+      .toArray()
+      .filter((child): child is HtmlElement => 'attribs' in child);
+    const fields = children.filter((child) => has(child, '.printing-response-field'));
+    if (
+      fields.length !== 1 ||
+      children.some((child) => has(child, 'table, .printing-response-area'))
+    ) {
+      return null;
+    }
+
+    const field = fields[0];
+    const line = $(field).children('[data-print-response-line]')[0];
+    const hint = $(field).children('.printing-response-placeholder')[0];
+    if (!line || !hint || !('attribs' in line) || !('attribs' in hint)) return null;
+
+    const fieldIndex = children.indexOf(field);
+    const before = children.slice(0, fieldIndex);
+    const after = children.slice(fieldIndex + 1);
+    const columns = [
+      ...(before.length > 0
+        ? [
+            {
+              nodes: before,
+              width:
+                before.reduce(
+                  (sum, child) =>
+                    sum + number(child, 'data-docx-width', $(child).text().length * 8),
+                  0,
+                ) + 5,
+            },
+          ]
+        : []),
+      { nodes: [field], width: number(field, 'data-docx-width', 180) + (after.length > 0 ? 5 : 0) },
+      ...(after.length > 0
+        ? [
+            {
+              nodes: after,
+              width: after.reduce(
+                (sum, child) => sum + number(child, 'data-docx-width', $(child).text().length * 8),
+                0,
+              ),
+            },
+          ]
+        : []),
+    ];
+    const scale = Math.min(1, maxWidth / columns.reduce((sum, column) => sum + column.width, 0));
+    const widths = columns.map((column) => Math.max(15, Math.round(column.width * scale * 15)));
+    const size = widths.reduce((sum, width) => sum + width, 0);
+    return new Table({
+      width: { size, type: WidthType.DXA },
+      columnWidths: widths,
+      borders: NO_BORDERS,
+      rows: [
+        new TableRow({
+          cantSplit: true,
+          children: columns.map(
+            (column, index) =>
+              new TableCell({
+                width: { size: widths[index], type: WidthType.DXA },
+                margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                borders: NO_BORDERS,
+                children:
+                  column.nodes[0] === field
+                    ? [
+                        paragraph(inline([line], format, column.width), {
+                          spacing: { before: 0, after: 0, line: 240 },
+                          keepNext: true,
+                        }),
+                        paragraph(inline(hint.children, formatFor(hint, format), column.width), {
+                          spacing: { before: 0, after: 0, line: 200 },
+                        }),
+                      ]
+                    : [paragraph(inline(column.nodes, format, column.width))],
+              }),
+          ),
+        }),
+      ],
     });
   }
 
@@ -363,6 +452,42 @@ export function buildDocxContent(
     ];
   }
 
+  function details(node: HtmlElement, maxWidth: number, format: Format): Block[] {
+    const width = Math.round(maxWidth * 15);
+    const innerWidth = maxWidth - 20;
+    const summary = $(node).children('summary, .printing-details-heading').first()[0];
+    const content = node.children.filter((child) => child !== summary);
+    return [
+      new Table({
+        width: { size: width, type: WidthType.DXA },
+        columnWidths: [width],
+        borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                shading: { fill: 'F7F7F7' },
+                margins: { top: 100, bottom: 100, left: 150, right: 150 },
+                children: [
+                  ...(summary
+                    ? [
+                        paragraph(inline(summary.children, { ...format, bold: true }, innerWidth), {
+                          keepNext: true,
+                          spacing: { before: 0, after: 80 },
+                        }),
+                      ]
+                    : []),
+                  ...walk(content, format, innerWidth),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+      empty(),
+    ];
+  }
+
   function selectionOption(node: HtmlElement, maxWidth: number): Block[] {
     const control = $(node).find('input[type="checkbox"], input[type="radio"]').first();
     const key = $(node)
@@ -460,6 +585,11 @@ export function buildDocxContent(
         blocks.push(...selectionOption(node, maxWidth));
         continue;
       }
+      if (node.name === 'details' || has(node, '.printing-details')) {
+        flush();
+        blocks.push(...details(node, maxWidth, format));
+        continue;
+      }
       if (
         has(node, '.printing-keep-together') &&
         number(node, 'data-docx-height', Infinity) < contentHeightPx * 0.8
@@ -504,6 +634,14 @@ export function buildDocxContent(
           }),
         );
         continue;
+      }
+      if (has(node, '.input-group')) {
+        const group = guidedInputGroup(node, format, maxWidth);
+        if (group) {
+          flush();
+          blocks.push(group);
+          continue;
+        }
       }
       if (has(node, '.input-group') && $(node).find('table, .printing-response-area').length > 0) {
         flush();
