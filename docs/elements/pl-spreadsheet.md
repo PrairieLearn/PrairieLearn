@@ -705,10 +705,15 @@ counts twice, across the submitted inputs and every test case.
 
 ## Interaction and saved work
 
-Single-clicking a cell selects it without opening the editor. Double-click an
-editable cell to edit its existing contents, or select it and start typing to
-replace its contents. The editor also supports keyboard navigation, direct
-formula-bar editing, copy/paste, relative-reference fill down/right, and undo/redo.
+Single-clicking a cell selects it. All editing happens in the formula bar: start
+typing in a selected cell to replace its contents, or double-click it or press F2 to
+edit its existing contents, and the formula bar takes focus with a brief blue outline.
+Enter saves and moves down, and Tab saves and moves right (Shift reverses either);
+Escape discards the edit. Delete or Backspace clears a selected cell. While a cell is
+being edited, it and every cell that depends on it show their values as the student
+types, and a line below the formula bar describes any error in the selected cell's
+value. The editor also supports keyboard navigation, copy/paste,
+relative-reference fill down/right, and undo/redo.
 The sheet tabs and fill controls are keyboard accessible. Editable and read-only
 cells are distinguished with text and accessibility state, not color alone.
 Submission and manual-grading views use native HTML tables. These tables show
@@ -724,19 +729,24 @@ as after `=`, `(`, `,`, or an operator, clicking a cell or dragging across cells
 inserts a reference, as in Google Sheets or Excel. The arrow keys, and Shift with the
 arrow keys, do the same from the keyboard.
 
-The formula bar also draws the structure of a formula. Values, ranges, and operators
-appear as tiles whose edges show what fits next to them, and the parentheses and
-commas of the call containing the cursor are highlighted together. Missing parts
-appear as outlined holes: a missing argument or value, a missing operator between two
-values, or a missing closing parenthesis. Deleting an operator or a `)` leaves a hole
+The formula bar also draws the structure of a formula as interlocking tiles, in the
+style of the [tylr](https://tylr.fun) structure editor. Values have pointed ends,
+operators have notched ends that values slot into, and a function call is split into
+shards (`SUM(`, `,`, `)`) that interlock with its arguments; each kind of tile has its
+own color, and the shards of the call containing the cursor are highlighted together.
+Missing parts appear as hollow, dashed holes shaped like what belongs in them, with
+argument names inside: a missing argument or value, a missing operator between two
+values, or a missing closing parenthesis. A parenthesized group also offers an
+optional function-name hole before its `(`, which turns the group into a function
+call when filled. Deleting an operator or a `)` leaves a hole
 where it was rather than changing what the rest of the formula means. Tab and
 Shift+Tab move between holes. Entering a formula closes any parentheses left open at
 its end and announces anything still missing, such as "SUMIF is missing criteria."
 
 The editor displays spreadsheet errors such as `#DIV/0!`, `#CYCLE!`, `#REF!`, and
-`#ERROR!` in their cells while retaining the entered formula in the cell editor and
-formula bar. Save and Grade includes the latest text even if the editor is still
-open. Formulas rejected by PrairieLearn's formula or reference policies remain
+`#ERROR!` in their cells while retaining the entered formula in the formula bar.
+Save and Grade includes the latest text even if the formula bar is still being
+edited. Formulas rejected by PrairieLearn's formula or reference policies remain
 format errors and are not graded, but their raw text is retained so the student can
 correct it after saving or reloading.
 

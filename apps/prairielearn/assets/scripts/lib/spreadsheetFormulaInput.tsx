@@ -90,6 +90,10 @@ export interface FormulaInputHandle {
   pointingTarget(): { start: number; end: number; continuing: boolean } | null;
   /** Replaces the text from `start` to `end` with `reference` and moves the caret after it. */
   writeReference(start: number, end: number, reference: string): void;
+  /** Focuses the formula bar with the caret at `offset` once the current value renders. */
+  focusAt(offset: number): void;
+  /** Flashes an outline around the formula bar to draw the eye to it. */
+  flash(): void;
 }
 
 interface PointedSpan {
@@ -269,6 +273,24 @@ export function FormulaInput({
       setPointedSpan(span);
       moveCaret(span.end);
       changeValue(next);
+    },
+    focusAt(offset) {
+      moveCaret(offset);
+      inputRef.current?.focus();
+    },
+    flash() {
+      const view = viewRef.current;
+      if (!view) return;
+      const primary = getComputedStyle(view).getPropertyValue('--bs-primary');
+      const shown = { outline: `3px solid ${primary}`, outlineOffset: '2px' };
+      // Animated with the Web Animations API because React rewrites the class name as
+      // focus moves into the bar, which would cut a class-based animation short.
+      view.animate(
+        matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? [shown, shown]
+          : [shown, { outline: '3px solid transparent', outlineOffset: '6px' }],
+        { duration: 700, easing: 'ease-out' },
+      );
     },
   }));
 

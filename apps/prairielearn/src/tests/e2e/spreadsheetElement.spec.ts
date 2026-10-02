@@ -11,19 +11,24 @@ test.setTimeout(120_000);
 // seconds when several Playwright workers share one machine.
 const GRADING_TIMEOUT = 60_000;
 
+function formulaBarFor(grid: Locator, address: string) {
+  return grid
+    .locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]')
+    .getByRole('combobox', { name: `Formula for ${address}` });
+}
+
 async function editCell(grid: Locator, address: string, value: string) {
   const cell = grid.getByRole('gridcell', {
     name: new RegExp(`^${address}, editable`),
   });
   await cell.dblclick();
-  const editor = grid.getByRole('textbox', { name: `Edit cell ${address}` });
-  await expect(editor).toBeVisible();
-  await editor.press('ControlOrMeta+A');
-  await editor.fill(value);
-  await editor.press('Enter');
+  const formulaBar = formulaBarFor(grid, address);
+  await expect(formulaBar).toBeFocused();
+  await formulaBar.fill(value);
+  await formulaBar.press('Enter');
 }
 
-test('uses spreadsheet-style click and typing behavior', async ({ page, courseInstance }) => {
+test('edits cells in the formula bar', async ({ page, courseInstance }) => {
   const question = await selectQuestionByQid({
     qid: 'spreadsheetElement',
     course_id: courseInstance.course_id,
@@ -40,38 +45,57 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
   });
   const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
   const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
-  const b2CellEditor = grid.getByRole('textbox', { name: 'Edit cell B2' });
-  const b2FormulaBar = parameterDemo.getByLabel('Formula for B2');
+  const b2FormulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
+  const formulaView = parameterDemo.locator('.pl-spreadsheet-formula-view');
 
   await b2.click();
   await expect(b2).toBeFocused();
-  await expect(b2CellEditor).toHaveCount(0);
-
   await b2.click();
-  await expect(b2CellEditor).toHaveCount(0);
+  await expect(b2).toBeFocused();
+  await expect(grid.getByRole('textbox')).toHaveCount(0);
 
-  await b2.press('F2');
-  await expect(b2CellEditor).toHaveCount(0);
-
-  await b2.focus();
   await page.keyboard.type('987');
-  await expect(b2CellEditor).toBeFocused();
-  await expect(b2CellEditor).toHaveValue('987');
+  await expect(b2FormulaBar).toBeFocused();
+  await expect(b2FormulaBar).toHaveValue('987');
+  // Moving editing into the bar flashes it.
+  expect(await formulaView.evaluate((view) => view.getAnimations().length)).toBeGreaterThan(0);
+  await expect(b2).toContainText('987');
   await expect(rawAnswer).toHaveValue(/"B2":987/);
-  await b2CellEditor.press('Escape');
+  await b2FormulaBar.press('Escape');
+  await expect(b2).toBeFocused();
   await expect(b2).toContainText('1');
   await expect(b2FormulaBar).toHaveValue('1');
   await expect(rawAnswer).not.toHaveValue(/"B2"/);
 
-  await b2.focus();
   await page.keyboard.type('987');
-  await expect(b2CellEditor).toHaveValue('987');
-  await b2CellEditor.press('Enter');
+  await b2FormulaBar.press('Enter');
   await expect(b2).toContainText('987');
   await expect(grid.getByRole('gridcell', { name: /^B3, editable/ })).toBeFocused();
 
   await b2.dblclick();
-  await expect(b2CellEditor).toHaveValue('987');
+  await expect(b2FormulaBar).toBeFocused();
+  await expect(b2FormulaBar).toHaveValue('987');
+  await b2FormulaBar.press('Escape');
+  await b2.press('F2');
+  await expect(b2FormulaBar).toBeFocused();
+  await b2FormulaBar.press('End');
+  await b2FormulaBar.press('0');
+  await b2FormulaBar.press('Tab');
+  await expect(b2).toContainText('9870');
+  await expect(grid.getByRole('gridcell', { name: /^C2, editable/ })).toBeFocused();
+  await expect(grid.getByRole('textbox')).toHaveCount(0);
+
+  await page.keyboard.press('Delete');
+  await expect(grid.getByRole('gridcell', { name: /^C2, editable, blank/ })).toBeVisible();
+
+  await b2.click();
+  await page.keyboard.type('=1/0');
+  await expect(parameterDemo.locator('.pl-spreadsheet-value-error')).toHaveText(
+    '#DIV/0! Division by zero.',
+  );
+  await b2FormulaBar.press('Backspace');
+  await b2FormulaBar.press('Backspace');
+  await expect(parameterDemo.locator('.pl-spreadsheet-value-error')).toHaveText('');
 });
 
 test('draws formulas as tiles in the formula bar', async ({ page, courseInstance }) => {
@@ -131,6 +155,37 @@ test('draws formulas as tiles in the formula bar', async ({ page, courseInstance
 
   await formulaBar.fill('=(A2)');
   await expect(view.locator('.pl-spreadsheet-hole-name')).toHaveClass(/is-optional/);
+});
+
+test('shows live values while editing in the formula bar', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const cell = (address: string) =>
+    grid.getByRole('gridcell', { name: new RegExp(`^${address}, `) });
+  const formulaBar = parameterDemo.getByLabel('Formula for B2');
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await cell('B2').click();
+  await formulaBar.fill('=1+2');
+  await expect(cell('B2')).toHaveText('3');
+  // D2 is =B2*C2, so dependent cells update too.
+  await expect(cell('D2')).toHaveText('6');
+  await formulaBar.press('Escape');
+  await expect(cell('B2')).toHaveText('1');
+  await expect(cell('D2')).toHaveText('2');
+  await expect(rawAnswer).not.toHaveValue(/"B2"/);
 });
 
 test('inserts references by pointing at cells', async ({ page, courseInstance }) => {
@@ -378,25 +433,27 @@ test('supports accessible local editing and trusted submission', async ({
 
   const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
   await b2.dblclick();
-  const b2CellEditor = grid.getByRole('textbox', { name: 'Edit cell B2' });
   const b2FormulaBar = parameterDemo.getByLabel('Formula for B2');
-  await b2CellEditor.fill('30');
-  await expect(b2FormulaBar).toHaveValue('1');
-  await b2CellEditor.press('Enter');
+  await expect(b2FormulaBar).toBeFocused();
+  await b2FormulaBar.fill('30');
+  await expect(b2).toContainText('30');
+  await b2FormulaBar.press('Enter');
+  await expect(grid.getByRole('gridcell', { name: /^B3, editable/ })).toBeFocused();
   await expect(b2).toContainText('30');
 
   await b2.click();
   await expect(b2FormulaBar).toHaveValue('30');
   await b2FormulaBar.fill('31');
-  await expect(b2).toContainText('30');
+  await expect(b2).toContainText('31');
   await b2FormulaBar.press('Enter');
+  // Editing that started in the bar returns to the same cell.
+  await expect(b2).toBeFocused();
   await expect(b2).toContainText('31');
 
   await b2.dblclick();
-  const canceledB2Editor = grid.getByRole('textbox', { name: 'Edit cell B2' });
-  await canceledB2Editor.fill('999');
+  await b2FormulaBar.fill('999');
   await expect(rawAnswer).toHaveValue(/"B2":999/);
-  await canceledB2Editor.press('Escape');
+  await b2FormulaBar.press('Escape');
   await expect(b2).toContainText('31');
   await expect(b2FormulaBar).toHaveValue('31');
   await expect(rawAnswer).toHaveValue(/"B2":31/);
@@ -468,7 +525,6 @@ test('supports accessible local editing and trusted submission', async ({
   });
   const readOnlyCell = summaryGrid.getByRole('gridcell', { name: /^A1, read-only/ });
   await readOnlyCell.click();
-  await expect(summaryGrid.getByRole('textbox', { name: 'Edit cell A1' })).toHaveCount(0);
   await expect(parameterDemo.getByLabel('Formula for A1')).toBeDisabled();
   await expect(parameterDemo.getByRole('status')).toContainText('A1, read-only');
 
@@ -543,8 +599,7 @@ test('persists active formula drafts and rejected formulas', async ({ page, cour
   const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
 
   await grid.getByRole('gridcell', { name: /^D2, editable/ }).dblclick();
-  const editor = grid.getByRole('textbox', { name: 'Edit cell D2' });
-  await editor.fill('=1/0');
+  await formulaBarFor(grid, 'D2').fill('=1/0');
   await expect(rawAnswer).toHaveValue(/[=]1\/0/);
   const formDataAnswer = await rawAnswer.evaluate((input: HTMLInputElement) => {
     input.value = 'stale';
@@ -563,8 +618,7 @@ test('persists active formula drafts and rejected formulas', async ({ page, cour
     name: 'Spreadsheet test, sheet Inputs',
   });
   await currentGrid.getByRole('gridcell', { name: /^D2, editable/ }).dblclick();
-  const rejectedEditor = currentGrid.getByRole('textbox', { name: 'Edit cell D2' });
-  await rejectedEditor.fill('=RAND()');
+  await formulaBarFor(currentGrid, 'D2').fill('=RAND()');
   await page.getByRole('button', { name: /Save & Grade/ }).click();
 
   await expect(page.getByText('Function RAND is not supported.').first()).toBeVisible({
@@ -578,7 +632,7 @@ test('persists active formula drafts and rejected formulas', async ({ page, cour
   await page.reload();
   await expect(rawAnswer).toHaveValue(/[=]RAND\(\)/);
   await parameterDemo.getByRole('gridcell', { name: /^D2, editable, #ERROR!/ }).dblclick();
-  await expect(parameterDemo.getByRole('textbox', { name: 'Edit cell D2' })).toHaveValue('=RAND()');
+  await expect(parameterDemo.getByLabel('Formula for D2')).toHaveValue('=RAND()');
 });
 
 test('keeps file-backed grading cells outside the student range private', async ({
