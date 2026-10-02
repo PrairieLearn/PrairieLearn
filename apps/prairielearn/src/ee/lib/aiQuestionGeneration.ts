@@ -67,7 +67,7 @@ const rateLimiter = new RedisRateLimiter({
       throw new Error('nonVolatileRedisUrl must be set in config');
     }
 
-    const redis = new Redis(config.nonVolatileRedisUrl);
+    const redis = new Redis<'legacy'>(config.nonVolatileRedisUrl);
     redis.on('error', (err) => {
       logger.error('AI question generation Redis error', err);
 
