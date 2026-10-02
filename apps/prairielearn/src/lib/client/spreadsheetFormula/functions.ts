@@ -35,7 +35,7 @@ function signature(
 const SIGNATURES: FormulaFunctionSignature[] = [
   signature('ABS', [value('number')], 'Absolute value of a number.'),
   signature('AND', [condition('logical1')], 'TRUE if every argument is TRUE.', 1),
-  signature('AVERAGE', [range('number1')], 'Arithmetic mean of the arguments.', 1),
+  signature('AVERAGE', [range('range1')], 'Arithmetic mean of the arguments.', 1),
   signature(
     'AVERAGEIF',
     [range('range'), condition('criteria'), optional(range('average_range'))],
@@ -49,8 +49,8 @@ const SIGNATURES: FormulaFunctionSignature[] = [
   ),
   signature('CONCATENATE', [text('text1')], 'Joins text values together.', 1),
   signature('COS', [value('angle')], 'Cosine of an angle in radians.'),
-  signature('COUNT', [range('value1')], 'Number of numeric values.', 1),
-  signature('COUNTA', [range('value1')], 'Number of non-empty values.', 1),
+  signature('COUNT', [range('range1')], 'Number of numeric values.', 1),
+  signature('COUNTA', [range('range1')], 'Number of non-empty values.', 1),
   signature('COUNTBLANK', [range('range')], 'Number of empty cells in a range.'),
   signature(
     'COUNTIF',
@@ -126,21 +126,21 @@ const SIGNATURES: FormulaFunctionSignature[] = [
     [value('lookup_value'), range('lookup_range'), optional(value('match_type'))],
     'Position of a value in a range.',
   ),
-  signature('MAX', [range('number1')], 'Largest value.', 1),
-  signature('MEDIAN', [range('number1')], 'Middle value.', 1),
+  signature('MAX', [range('range1')], 'Largest value.', 1),
+  signature('MEDIAN', [range('range1')], 'Middle value.', 1),
   signature(
     'MID',
     [text('text'), value('start'), value('num_chars')],
     'Characters from the middle of text.',
   ),
-  signature('MIN', [range('number1')], 'Smallest value.', 1),
+  signature('MIN', [range('range1')], 'Smallest value.', 1),
   signature('MOD', [value('number'), value('divisor')], 'Remainder after division.'),
   signature('MONTH', [value('date')], 'Month of a date.'),
   signature('NOT', [condition('logical')], 'Reverses a logical value.'),
   signature('OR', [condition('logical1')], 'TRUE if any argument is TRUE.', 1),
   signature('PI', [], 'The number π.'),
   signature('POWER', [value('base'), value('exponent')], 'A number raised to a power.'),
-  signature('PRODUCT', [range('number1')], 'Product of the arguments.', 1),
+  signature('PRODUCT', [range('range1')], 'Product of the arguments.', 1),
   signature('RADIANS', [value('angle')], 'Converts degrees to radians.'),
   signature(
     'RIGHT',
@@ -152,7 +152,7 @@ const SIGNATURES: FormulaFunctionSignature[] = [
   signature('ROUNDUP', [value('number'), value('digits')], 'Rounds away from zero.'),
   signature('SIN', [value('angle')], 'Sine of an angle in radians.'),
   signature('SQRT', [value('number')], 'Square root.'),
-  signature('SUM', [range('number1')], 'Sum of the arguments.', 1),
+  signature('SUM', [range('range1')], 'Sum of the arguments.', 1),
   signature(
     'SUMIF',
     [range('range'), condition('criteria'), optional(range('sum_range'))],
@@ -164,7 +164,7 @@ const SIGNATURES: FormulaFunctionSignature[] = [
     'Sum of the cells that meet several conditions.',
     2,
   ),
-  signature('SUMPRODUCT', [range('array1')], 'Sum of the products of matching cells.', 1),
+  signature('SUMPRODUCT', [range('range1')], 'Sum of the products of matching cells.', 1),
   signature(
     'SWITCH',
     [value('expression'), value('case1'), value('value1')],
@@ -195,7 +195,7 @@ export const FORMULA_FUNCTION_SIGNATURES: ReadonlyMap<string, FormulaFunctionSig
   SIGNATURES.map((entry) => [entry.name, entry]),
 );
 
-/** Returns the argument at `index`, numbering repeated arguments (`number2`, `criteria_range2`). */
+/** Returns the argument at `index`, numbering repeated arguments (`range2`, `criteria_range2`). */
 export function argumentAt(
   signature: FormulaFunctionSignature,
   index: number,
@@ -214,7 +214,7 @@ export function argumentAt(
   };
 }
 
-/** Returns the displayed argument list, e.g. `['number1', '[number2]', '…']` for SUM. */
+/** Returns the displayed argument list, e.g. `['range1', '[range2]', '…']` for SUM. */
 export function formatSignature(signature: FormulaFunctionSignature): string[] {
   const parts = signature.args.map((argument) =>
     argument.optional ? `[${argument.name}]` : argument.name,

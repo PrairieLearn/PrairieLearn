@@ -55,7 +55,7 @@ describe('parseFormula', () => {
     expect(parse('=SUM(')).toEqual({
       tree: 'SUM(□argument⟩',
       holes: [
-        ['argument', 5, 'number1'],
+        ['argument', 5, 'range1'],
         ['delimiter', 5],
       ],
       complete: false,

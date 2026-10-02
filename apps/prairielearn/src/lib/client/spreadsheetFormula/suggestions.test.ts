@@ -81,9 +81,9 @@ describe('getSignatureHint', () => {
   }
 
   it('tracks the current argument of the innermost call', () => {
-    expect(hint('=SUM(')).toEqual(['SUM', 0, 'number1']);
+    expect(hint('=SUM(')).toEqual(['SUM', 0, 'range1']);
     expect(hint('=SUMIF(A1:A3, ">0", ')).toEqual(['SUMIF', 2, 'sum_range']);
-    expect(hint('=IF(MAX(A1, B1')).toEqual(['MAX', 1, 'number2']);
+    expect(hint('=IF(MAX(A1, B1')).toEqual(['MAX', 1, 'range2']);
     expect(hint('=IF(MAX(A1, B1), ')).toEqual(['IF', 1, 'value_if_true']);
   });
 
