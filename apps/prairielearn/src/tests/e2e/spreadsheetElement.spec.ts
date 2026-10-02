@@ -109,6 +109,56 @@ test('highlights formulas in the formula bar', async ({ page, courseInstance }) 
   await expect(highlight).toHaveAttribute('aria-hidden', 'true');
 });
 
+test('suggests functions in the formula bar', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const formulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
+  const suggestions = parameterDemo.getByRole('listbox', { name: 'Function suggestions' });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
+  await formulaBar.fill('');
+  await formulaBar.pressSequentially('=1+su');
+  await expect(suggestions.getByRole('option')).toHaveText([
+    /^SUM /,
+    /^SUMIF /,
+    /^SUMIFS /,
+    /^SUMPRODUCT /,
+  ]);
+  await formulaBar.press('ArrowDown');
+  await expect(suggestions.getByRole('option', { selected: true })).toHaveText(/^SUMIF /);
+  await formulaBar.press('Enter');
+  await expect(formulaBar).toHaveValue('=1+SUMIF(');
+  await expect(suggestions).toHaveCount(0);
+  await expect(parameterDemo.getByText('SUMIF(range, criteria, [sum_range])')).toBeVisible();
+  await expect(parameterDemo.getByRole('status')).toHaveText('SUMIF, argument range');
+
+  await formulaBar.pressSequentially('A3:B3, ">0")+ma');
+  await formulaBar.press('Escape');
+  await expect(suggestions).toHaveCount(0);
+  await expect(formulaBar).toHaveValue('=1+SUMIF(A3:B3, ">0")+ma');
+  await formulaBar.pressSequentially('x');
+  await suggestions.getByRole('option', { name: /^MAX / }).click();
+  await expect(formulaBar).toBeFocused();
+  await expect(formulaBar).toHaveValue('=1+SUMIF(A3:B3, ">0")+MAX(');
+
+  await formulaBar.pressSequentially('C2)');
+  await formulaBar.press('Enter');
+  await expect(rawAnswer).toHaveValue(/"B2":"=1\+SUMIF\(A3:B3, \\">0\\"\)\+MAX\(C2\)"/);
+});
+
 test('supports accessible local editing and trusted submission', async ({
   page,
   context,

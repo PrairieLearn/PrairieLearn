@@ -50,6 +50,18 @@
   color: var(--bs-body-color);
 }
 
+.pl-spreadsheet-formula-popup {
+  top: 100%;
+  left: 0;
+  max-width: 100%;
+  margin-top: 0.125rem;
+}
+
+.pl-spreadsheet-formula-popup .dropdown-item {
+  cursor: pointer;
+  white-space: normal;
+}
+
 .pl-spreadsheet-tok-number,
 .pl-spreadsheet-tok-boolean {
   color: var(--bs-warning-text-emphasis);

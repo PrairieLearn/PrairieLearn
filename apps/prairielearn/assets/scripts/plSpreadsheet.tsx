@@ -786,7 +786,9 @@ function SpreadsheetEditor({
         Click a cell to select it, start typing to replace its contents, or double-click to edit its
         existing contents. Drag or hold Shift with an arrow key to select a range. Use Enter and
         Shift+Enter to move vertically, Tab and Shift+Tab to move horizontally, and Escape to cancel
-        editing. Tab leaves the grid at its boundaries. Read-only cells are announced.
+        editing. Tab leaves the grid at its boundaries. Read-only cells are announced. While typing
+        a formula in the formula bar, use the Up and Down arrow keys to choose a suggested function
+        and Enter or Tab to insert it.
       </p>
       <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
         <button
@@ -836,12 +838,11 @@ function SpreadsheetEditor({
           aria-describedby={instructionsId}
           disabled={!activeCell || !isCellEditable(sheet, activeCell.row, activeCell.column)}
           value={formulaText}
-          onChange={(event) => {
-            setFormulaText(event.currentTarget.value);
-            if (activeCell) {
-              updateDraft(activeCell.row, activeCell.column, event.currentTarget.value);
-            }
+          onValueChange={(value) => {
+            setFormulaText(value);
+            if (activeCell) updateDraft(activeCell.row, activeCell.column, value);
           }}
+          onAnnounce={setAnnouncement}
           onBlur={() => {
             if (skipFormulaBlurRef.current) {
               skipFormulaBlurRef.current = false;
