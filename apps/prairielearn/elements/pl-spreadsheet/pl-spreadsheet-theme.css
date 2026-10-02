@@ -28,6 +28,21 @@
   --pl-spreadsheet-shard-text: #183f78;
   --pl-spreadsheet-shard-active-fill: #b8d2f7;
   --pl-spreadsheet-shard-active-stroke: #1f5fc2;
+
+  /*
+   * Nested calls and groups cycle through the shard colors above and these two, so that
+   * matching parentheses share a color.
+   */
+  --pl-spreadsheet-nesting-1-fill: #eadff8;
+  --pl-spreadsheet-nesting-1-stroke: #8a5cc4;
+  --pl-spreadsheet-nesting-1-text: #4b2385;
+  --pl-spreadsheet-nesting-1-active-fill: #d6c2f2;
+  --pl-spreadsheet-nesting-1-active-stroke: #6b37b0;
+  --pl-spreadsheet-nesting-2-fill: #d6f0ee;
+  --pl-spreadsheet-nesting-2-stroke: #2a8c86;
+  --pl-spreadsheet-nesting-2-text: #11504c;
+  --pl-spreadsheet-nesting-2-active-fill: #b2e2de;
+  --pl-spreadsheet-nesting-2-active-stroke: #1a6f6a;
   --pl-spreadsheet-error-fill: #fbe1df;
   --pl-spreadsheet-error-stroke: #c0392b;
   --pl-spreadsheet-error-text: #8a1f15;

@@ -47,7 +47,17 @@ describe('applyCompletion', () => {
 
   it('inserts the function name and an opening parenthesis', () => {
     expect(complete('=1+su', 'SUM')).toEqual({ formula: '=1+SUM(', caret: 7 });
-    expect(complete('=su+1', 'SUM', 3)).toEqual({ formula: '=SUM(+1', caret: 5 });
+  });
+
+  it('lays out a hole for each required argument', () => {
+    expect(complete('=sumif', 'SUMIF')).toEqual({ formula: '=SUMIF(,', caret: 7 });
+    expect(complete('=if', 'IF')).toEqual({ formula: '=IF(,', caret: 4 });
+    expect(complete('=vlookup', 'VLOOKUP')).toEqual({ formula: '=VLOOKUP(,,', caret: 9 });
+  });
+
+  it('closes the call when text follows it', () => {
+    expect(complete('=su+1', 'SUM', 3)).toEqual({ formula: '=SUM()+1', caret: 5 });
+    expect(complete('=if*2', 'IF', 3)).toEqual({ formula: '=IF(,)*2', caret: 4 });
   });
 
   it('turns a bare group into a call', () => {

@@ -83,8 +83,20 @@ export function applyCompletion(
       caret: before.length + signature.name.length + (completion.hasParen ? 1 : 0),
     };
   }
-  const inserted = signature.args.length === 0 ? `${signature.name}()` : `${signature.name}(`;
-  return { formula: `${before}${inserted}${after}`, caret: before.length + inserted.length };
+  if (signature.args.length === 0) {
+    const inserted = `${signature.name}()`;
+    return { formula: `${before}${inserted}${after}`, caret: before.length + inserted.length };
+  }
+  // Commas for every required argument lay out a hole for each, which Tab steps through.
+  // Text after the call is closed off so that it doesn't become the last argument.
+  const required = signature.args.findIndex((argument) => argument.optional);
+  const commas = ','.repeat((required === -1 ? signature.args.length : required) - 1);
+  const close = after.trim() === '' ? '' : ')';
+  const opening = `${signature.name}(`;
+  return {
+    formula: `${before}${opening}${commas}${close}${after}`,
+    caret: before.length + opening.length,
+  };
 }
 
 export interface FormulaSignatureHint {

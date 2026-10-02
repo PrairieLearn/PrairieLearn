@@ -338,7 +338,7 @@ test('suggests functions in the formula bar', async ({ page, courseInstance }) =
   await formulaBar.press('ArrowDown');
   await expect(suggestions.getByRole('option', { selected: true })).toHaveText(/^SUMIF /);
   await formulaBar.press('Enter');
-  await expect(formulaBar).toHaveValue('=1+SUMIF(');
+  await expect(formulaBar).toHaveValue('=1+SUMIF(,');
   await expect(suggestions).toHaveCount(0);
   await expect(parameterDemo.getByText('SUMIF(range, criteria, [sum_range])')).toBeVisible();
   await expect(parameterDemo.getByRole('status')).toHaveText('SUMIF, argument range');

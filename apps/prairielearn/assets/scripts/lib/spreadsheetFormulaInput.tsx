@@ -323,9 +323,17 @@ export function FormulaInput({
       }
     }
     const input = event.currentTarget;
+    const position = input.selectionStart ?? 0;
+    if (event.key === ',' && position === input.selectionEnd && input.value[position] === ',') {
+      // A completed function comes with a comma per required argument, so typing one
+      // moves past it, like typing over an editor's automatically closed bracket.
+      event.preventDefault();
+      input.setSelectionRange(position + 1, position + 1);
+      syncCaret();
+      return;
+    }
     if (event.key === 'Tab' && structure && input.selectionStart === input.selectionEnd) {
       // Tab and Shift+Tab move between holes, then leave the formula bar as usual.
-      const position = input.selectionStart ?? 0;
       const required = structure.holes.filter((hole) => !hole.optional);
       const holes = event.shiftKey
         ? required.filter((hole) => hole.position < position).reverse()
