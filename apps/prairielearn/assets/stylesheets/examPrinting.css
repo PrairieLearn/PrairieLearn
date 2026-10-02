@@ -242,9 +242,9 @@ body {
   padding-block-end: var(--exam-print-question-spacing);
 }
 
-.printing-question[data-print-block-size='third'],
-.printing-question[data-print-block-size='half'],
-.printing-question[data-print-block-size='full'] {
+.printing-question[data-print-block-size='third'][data-print-allows-flow='false'],
+.printing-question[data-print-block-size='half'][data-print-allows-flow='false'],
+.printing-question[data-print-block-size='full'][data-print-allows-flow='false'] {
   block-size: var(--printing-question-block-height);
   break-inside: avoid;
 }
@@ -428,13 +428,23 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 }
 
 .printing-response-placeholder {
-  break-after: avoid;
   color: #555;
   display: block;
   font-size: 7.5pt;
   font-style: italic;
   line-height: 1.2;
-  margin: 0 0 0.025in;
+  margin-top: 0.025in;
+  text-align: left;
+}
+
+.printing-response-field {
+  align-items: stretch;
+  break-inside: avoid;
+  display: inline-flex;
+  flex-direction: column;
+  inline-size: var(--printing-response-width, 26ch);
+  max-inline-size: 100%;
+  vertical-align: baseline;
 }
 
 .printing-choice-list {
@@ -566,6 +576,22 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   margin-bottom: 0.1in;
 }
 
+.printing-question .question-body .printing-details {
+  background: #f7f7f7;
+  border: 0.6pt solid #999;
+  margin-block: 0.12in;
+  padding: 0.08in 0.12in;
+}
+
+.printing-question .question-body .printing-details-heading {
+  font-weight: 700;
+  margin-bottom: 0.06in;
+}
+
+.printing-question .question-body .printing-details > :last-child {
+  margin-bottom: 0;
+}
+
 .printing-question .question-container,
 .printing-question .question-form,
 .printing-question .question-block,
@@ -603,9 +629,14 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   white-space: normal;
 }
 
-.printing-question .question-body .input-group > .printing-response-line {
+.printing-question .question-body .input-group > .printing-response-line,
+.printing-question .question-body .input-group > .printing-response-field {
   flex: 1 1 var(--printing-response-width);
   min-inline-size: 0.6in;
+}
+
+.printing-response-field > .printing-response-line {
+  inline-size: 100%;
 }
 
 .printing-response-line {

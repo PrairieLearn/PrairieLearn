@@ -37,13 +37,6 @@ export function getPrintBlockHeight(blockSize: QuestionBlockSize, pageHeight: nu
   return blockSize === 'auto' ? pageHeight : pageHeight * BLOCK_SIZE_FRACTIONS[blockSize];
 }
 
-export class QuestionBlockSizeOverflowError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'QuestionBlockSizeOverflowError';
-  }
-}
-
 function isQuestionBlockSize(value: string): value is QuestionBlockSize {
   return Object.hasOwn(QUESTION_BLOCK_SIZE_LOOKUP, value);
 }
@@ -54,10 +47,6 @@ export function parsePrintBlockSize(value: string | undefined): QuestionBlockSiz
   throw new Error(
     `Invalid print block size ${JSON.stringify(value)}. Expected auto, third, half, or full.`,
   );
-}
-
-function describeHeight(height: number): string {
-  return `${Math.ceil(height)}px`;
 }
 
 export function planPrintQuestionPages({
@@ -86,19 +75,11 @@ export function planPrintQuestionPages({
       throw new Error(`${questionLabel} has an invalid measured height`);
     }
 
+    const requestedHeight = getPrintBlockHeight(question.blockSize, pageHeight);
     const reservedHeight =
-      question.blockSize === 'auto'
+      question.blockSize === 'auto' || question.naturalHeight - requestedHeight > FIT_TOLERANCE_PX
         ? question.naturalHeight
-        : getPrintBlockHeight(question.blockSize, pageHeight);
-
-    if (
-      question.blockSize !== 'auto' &&
-      question.naturalHeight - reservedHeight > FIT_TOLERANCE_PX
-    ) {
-      throw new QuestionBlockSizeOverflowError(
-        `${questionLabel} needs ${describeHeight(question.naturalHeight)}, but the requested ${question.blockSize} print block provides ${describeHeight(reservedHeight)}. Use auto or a larger block size.`,
-      );
-    }
+        : requestedHeight;
 
     const needsMultiplePages = reservedHeight - pageHeight > FIT_TOLERANCE_PX;
     const plannedQuestion = { ...question, reservedHeight, allowsFlow: needsMultiplePages };
