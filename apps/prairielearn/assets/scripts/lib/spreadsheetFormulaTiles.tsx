@@ -114,13 +114,8 @@ export function FormulaTiles({
   const currentHole = holesAtCaret.find((hole) => !hole.optional) ?? holesAtCaret.at(0);
   const caretOnHole = currentHole !== undefined;
 
-  const nodes: ReactNode[] = [
-    <span key="equals" className="pl-spreadsheet-formula-equals">
-      {renderText('=', 0, selection)}
-    </span>,
-  ];
-  let caretDrawn = caret === null || caretOnHole || caret === 0;
-  if (caret === 0) nodes.unshift(<span key="caret-start" className="pl-spreadsheet-caret" />);
+  const nodes: ReactNode[] = [];
+  let caretDrawn = caret === null || caretOnHole;
 
   for (const [index, piece] of layoutFormula(structure).entries()) {
     const start = pieceStart(piece);
