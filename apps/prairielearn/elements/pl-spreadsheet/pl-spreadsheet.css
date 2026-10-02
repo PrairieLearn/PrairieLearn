@@ -114,6 +114,8 @@
   align-items: center;
   row-gap: 0.2rem;
   height: auto;
+  /* Fits one row of tiles, so the bar keeps its height whether or not the formula parses. */
+  min-height: calc(1.75em + 0.4rem + 2 * var(--bs-border-width));
   padding-block: 0.2rem;
   cursor: text;
   white-space: pre;
@@ -126,6 +128,8 @@
 }
 
 .pl-spreadsheet-formula-view.is-disabled {
+  --pl-spreadsheet-tile-background: var(--bs-secondary-bg);
+
   background-color: var(--bs-secondary-bg);
   cursor: default;
 }
@@ -163,6 +167,18 @@
   top: calc(100% + 0.125rem);
   left: 0;
   max-width: 100%;
+  /* Fades once typing pauses so the grid beneath shows through. Typing restarts it. */
+  animation: pl-spreadsheet-popup-fade 0.3s var(--pl-spreadsheet-popup-idle-delay) forwards;
+}
+
+.pl-spreadsheet-formula-input.is-popup-hidden .pl-spreadsheet-formula-popup {
+  visibility: hidden;
+}
+
+@keyframes pl-spreadsheet-popup-fade {
+  to {
+    opacity: var(--pl-spreadsheet-popup-idle-opacity);
+  }
 }
 
 .pl-spreadsheet-formula-popup .dropdown-item {
@@ -209,7 +225,9 @@
 
 .pl-spreadsheet-piece::after {
   inset: 1.5px;
-  background: var(--pl-spreadsheet-tile-fill);
+  /* The fill is drawn over an opaque base so a transparent fill still hides the stroke layer. */
+  background: linear-gradient(var(--pl-spreadsheet-tile-fill), var(--pl-spreadsheet-tile-fill))
+    var(--pl-spreadsheet-tile-background);
 }
 
 .pl-spreadsheet-piece.is-joined {
@@ -274,11 +292,17 @@
   --pl-spreadsheet-tile-text: var(--pl-spreadsheet-operator-text);
 }
 
-.pl-spreadsheet-tile-shard,
-.pl-spreadsheet-tile-formula {
+.pl-spreadsheet-tile-shard {
   --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-shard-fill);
   --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-shard-stroke);
   --pl-spreadsheet-tile-text: var(--pl-spreadsheet-shard-text);
+}
+
+/* The leading `=` is solid, with no outline, to mark where the formula starts. */
+.pl-spreadsheet-tile-formula {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-formula-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-formula-fill);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-formula-text);
 }
 
 /* Shards and their name and `)` holes take the color of their nesting depth. */
@@ -303,6 +327,11 @@
   --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-shard-active-stroke);
 }
 
+/* Without fills, the active call stands out by a heavier outline. */
+.pl-spreadsheet-tile-shard.is-active::after {
+  inset: 2.5px;
+}
+
 .pl-spreadsheet-tile-error {
   --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-error-fill);
   --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-error-stroke);
@@ -313,7 +342,7 @@
 .pl-spreadsheet-tile-reference {
   --pl-spreadsheet-tile-fill: color-mix(
     in srgb,
-    var(--pl-spreadsheet-ref-color) 14%,
+    var(--pl-spreadsheet-ref-color) var(--pl-spreadsheet-reference-fill-amount),
     var(--pl-spreadsheet-reference-fill-base)
   );
   --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-ref-color);
@@ -322,7 +351,7 @@
 
 /* Holes are hollow, dashed tiles in the color of what belongs in them. */
 .pl-spreadsheet-hole {
-  --pl-spreadsheet-tile-fill: var(--bs-body-bg);
+  --pl-spreadsheet-tile-fill: transparent;
   --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-operator-stroke);
   --pl-spreadsheet-tile-stroke: repeating-linear-gradient(
     90deg,
@@ -338,6 +367,11 @@
 .pl-spreadsheet-hole-label {
   font-size: 0.75em;
   font-style: italic;
+}
+
+/* An automatically inserted `)` is set apart by its dashed outline alone. */
+.pl-spreadsheet-hole-delimiter .pl-spreadsheet-hole-label {
+  font-style: normal;
 }
 
 .pl-spreadsheet-hole-range {

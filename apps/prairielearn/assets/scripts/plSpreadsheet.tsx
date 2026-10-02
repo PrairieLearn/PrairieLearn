@@ -1067,6 +1067,19 @@ function SpreadsheetEditor({
           fillDragRef.current = { source: activeCell, target: activeCell };
         }}
         onPointerMove={(event) => {
+          // Moving the mouse over the sheet hides the formula bar's popups so the cells under
+          // them can be seen. Some browsers send a move without movement when the content under
+          // a resting pointer changes, e.g. as a popup opens.
+          if (
+            event.pointerType === 'mouse' &&
+            (event.movementX !== 0 || event.movementY !== 0) &&
+            !(
+              event.target instanceof Element &&
+              event.target.closest('.pl-spreadsheet-formula-popup')
+            )
+          ) {
+            formulaInputRef.current?.hidePopups();
+          }
           const drag = fillDragRef.current;
           if (!drag) return;
           const target = fillTarget(drag.source, event.clientX, event.clientY);

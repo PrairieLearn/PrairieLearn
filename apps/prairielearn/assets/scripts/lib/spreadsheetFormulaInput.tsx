@@ -94,6 +94,8 @@ export interface FormulaInputHandle {
   focusAt(offset: number): void;
   /** Flashes an outline around the formula bar to draw the eye to it. */
   flash(): void;
+  /** Hides suggestions and hints until the next keystroke, so the grid beneath can be seen. */
+  hidePopups(): void;
 }
 
 interface PointedSpan {
@@ -124,6 +126,7 @@ export function FormulaInput({
   onAnnounce: (message: string) => void;
   ref?: Ref<FormulaInputHandle>;
 }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const pendingCaretRef = useRef<number | null>(null);
@@ -140,6 +143,7 @@ export function FormulaInput({
   const [dismissedValue, setDismissedValue] = useState<string | null>(null);
   const [active, setActive] = useState({ key: '', index: 0 });
   const [editState, setEditState] = useState<FormulaEditState>({ formula: value, phantoms: [] });
+  const [popupsHidden, setPopupsHidden] = useState(false);
   // Phantoms only apply to the text they were computed for, not to a value the parent
   // replaced, e.g. by selecting another cell.
   const structure = parseFormula(value, editState.formula === value ? editState.phantoms : []);
@@ -188,7 +192,19 @@ export function FormulaInput({
     lastHintAnnouncementRef.current = message;
   }
 
+  /** Restarts the popups' fade, so they only fade once typing and caret moves stop. */
+  function restartPopupFade() {
+    const popups = wrapperRef.current?.querySelectorAll('.pl-spreadsheet-formula-popup') ?? [];
+    for (const popup of popups) {
+      for (const animation of popup.getAnimations()) {
+        animation.currentTime = 0;
+        animation.play();
+      }
+    }
+  }
+
   function syncCaret() {
+    restartPopupFade();
     const input = inputRef.current;
     if (!input) return;
     const start = input.selectionStart ?? 0;
@@ -292,6 +308,9 @@ export function FormulaInput({
         { duration: 700, easing: 'ease-out' },
       );
     },
+    hidePopups() {
+      setPopupsHidden(true);
+    },
   }));
 
   function accept(signature: FormulaFunctionSignature) {
@@ -303,6 +322,8 @@ export function FormulaInput({
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    restartPopupFade();
+    setPopupsHidden(false);
     if (completion) {
       const count = completion.matches.length;
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -350,7 +371,14 @@ export function FormulaInput({
   }
 
   return (
-    <div className={clsx('pl-spreadsheet-formula-input', pointing && 'is-pointing')}>
+    <div
+      ref={wrapperRef}
+      className={clsx(
+        'pl-spreadsheet-formula-input',
+        pointing && 'is-pointing',
+        popupsHidden && 'is-popup-hidden',
+      )}
+    >
       <input
         ref={inputRef}
         {...props}

@@ -116,7 +116,8 @@ export function layoutFormula(structure: FormulaStructure): FormulaPiece[] {
     end: 1,
     tokens: [{ kind: 'comparison', text: '=', start: 0, end: 1 }],
     sort: 'formula',
-    left: 'convex',
+    // Nothing comes before the `=`, so its left edge is flat like the start of a line.
+    left: 'flat',
     right: 'concave',
     container: null,
     colorIndex: null,

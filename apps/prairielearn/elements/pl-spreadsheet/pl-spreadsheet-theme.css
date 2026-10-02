@@ -10,40 +10,55 @@
   --pl-spreadsheet-ref-color-3: #00796b;
   --pl-spreadsheet-ref-color-4: #3949ab;
 
-  /* Reference tiles are filled with their color mixed into this base. */
-  --pl-spreadsheet-reference-fill-base: white;
+  /* Suggestions and hints fade to this opacity after this long without typing. */
+  --pl-spreadsheet-popup-idle-opacity: 0.3;
+  --pl-spreadsheet-popup-idle-delay: 1.5s;
 
-  /* Tile colors by sort, as in tylr: a pastel fill, a stroke, and text of one hue. */
-  --pl-spreadsheet-number-fill: #fdefc9;
-  --pl-spreadsheet-number-stroke: #c98a0b;
+  /*
+   * Reference tiles are filled with this much of their color mixed into the base below.
+   * At 0% they are unfilled.
+   */
+  --pl-spreadsheet-reference-fill-amount: 0%;
+  --pl-spreadsheet-reference-fill-base: transparent;
+
+  /*
+   * Tile colors by sort, as in tylr: a fill, a stroke, and text of one hue. Fills are
+   * transparent so tiles stay quiet in the formula bar, showing the base color beneath them.
+   * Strokes keep at least 4.5:1 contrast against a white background.
+   */
+  --pl-spreadsheet-tile-background: var(--bs-body-bg);
+  --pl-spreadsheet-number-fill: transparent;
+  --pl-spreadsheet-number-stroke: #9a6700;
   --pl-spreadsheet-number-text: #6b4400;
-  --pl-spreadsheet-string-fill: #dcf3dc;
-  --pl-spreadsheet-string-stroke: #3c8d40;
+  --pl-spreadsheet-string-fill: transparent;
+  --pl-spreadsheet-string-stroke: #2e7d32;
   --pl-spreadsheet-string-text: #1d5a22;
-  --pl-spreadsheet-operator-fill: #e4e8ef;
-  --pl-spreadsheet-operator-stroke: #7a8597;
+  --pl-spreadsheet-operator-fill: transparent;
+  --pl-spreadsheet-operator-stroke: #5f6b7d;
   --pl-spreadsheet-operator-text: #2f3846;
-  --pl-spreadsheet-shard-fill: #dbe8fb;
-  --pl-spreadsheet-shard-stroke: #4a7cc7;
+  --pl-spreadsheet-shard-fill: transparent;
+  --pl-spreadsheet-shard-stroke: #2f6bc0;
   --pl-spreadsheet-shard-text: #183f78;
-  --pl-spreadsheet-shard-active-fill: #b8d2f7;
-  --pl-spreadsheet-shard-active-stroke: #1f5fc2;
+  --pl-spreadsheet-shard-active-fill: transparent;
+  --pl-spreadsheet-shard-active-stroke: #174a99;
+  --pl-spreadsheet-formula-fill: var(--bs-primary);
+  --pl-spreadsheet-formula-text: white;
 
   /*
    * Nested calls and groups cycle through the shard colors above and these two, so that
    * matching parentheses share a color.
    */
-  --pl-spreadsheet-nesting-1-fill: #eadff8;
+  --pl-spreadsheet-nesting-1-fill: transparent;
   --pl-spreadsheet-nesting-1-stroke: #8a5cc4;
   --pl-spreadsheet-nesting-1-text: #4b2385;
-  --pl-spreadsheet-nesting-1-active-fill: #d6c2f2;
-  --pl-spreadsheet-nesting-1-active-stroke: #6b37b0;
-  --pl-spreadsheet-nesting-2-fill: #d6f0ee;
-  --pl-spreadsheet-nesting-2-stroke: #2a8c86;
+  --pl-spreadsheet-nesting-1-active-fill: transparent;
+  --pl-spreadsheet-nesting-1-active-stroke: #5a2b9c;
+  --pl-spreadsheet-nesting-2-fill: transparent;
+  --pl-spreadsheet-nesting-2-stroke: #1f7a75;
   --pl-spreadsheet-nesting-2-text: #11504c;
-  --pl-spreadsheet-nesting-2-active-fill: #b2e2de;
-  --pl-spreadsheet-nesting-2-active-stroke: #1a6f6a;
-  --pl-spreadsheet-error-fill: #fbe1df;
+  --pl-spreadsheet-nesting-2-active-fill: transparent;
+  --pl-spreadsheet-nesting-2-active-stroke: #11504c;
+  --pl-spreadsheet-error-fill: transparent;
   --pl-spreadsheet-error-stroke: #c0392b;
   --pl-spreadsheet-error-text: #8a1f15;
   --pl-spreadsheet-range-hole-stroke: #6f42c1;
