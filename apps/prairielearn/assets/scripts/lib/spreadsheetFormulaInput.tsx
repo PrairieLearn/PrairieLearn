@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import {
   type InputHTMLAttributes,
   type KeyboardEvent,
-  type ReactNode,
+  type MouseEvent,
   type Ref,
   useId,
   useImperativeHandle,
@@ -21,12 +21,7 @@ import {
   formatSignature,
 } from '../../../src/lib/client/spreadsheetFormula/functions.js';
 import {
-  type FormulaToken,
-  formulaReferences,
-} from '../../../src/lib/client/spreadsheetFormula/lexer.js';
-import {
   type FormulaHole,
-  type FormulaStructure,
   parseFormula,
 } from '../../../src/lib/client/spreadsheetFormula/parser.js';
 import { isPointingPosition } from '../../../src/lib/client/spreadsheetFormula/references.js';
@@ -37,107 +32,12 @@ import {
   getSignatureHint,
 } from '../../../src/lib/client/spreadsheetFormula/suggestions.js';
 
-// Long formulas get plain token colors only; tiles and holes would just add noise.
-const MAX_STRUCTURED_LENGTH = 400;
-
-const TILE_CLASSES: Partial<Record<FormulaToken['kind'], string>> = {
-  number: 'pl-spreadsheet-tile-value',
-  string: 'pl-spreadsheet-tile-value',
-  boolean: 'pl-spreadsheet-tile-value',
-  ref: 'pl-spreadsheet-tile-value',
-  name: 'pl-spreadsheet-tile-value',
-  range: 'pl-spreadsheet-tile-range',
-  operator: 'pl-spreadsheet-tile-operator',
-  comparison: 'pl-spreadsheet-tile-operator',
-};
-
-/**
- * Draws the formula as tylr-style tiles: each tile's edge shape shows what fits next to
- * it, the function name, parentheses, and commas of a call are shards of one tile, and
- * missing pieces are drawn as holes shaped like what belongs there. Every decoration is
- * absolutely positioned so the text lays out exactly like the input beneath it.
- */
-function StructuredFormula({
-  formula,
-  structure,
-  caret,
-}: {
-  formula: string;
-  structure: FormulaStructure;
-  caret: number | null;
-}) {
-  const structured = formula.length <= MAX_STRUCTURED_LENGTH;
-  const referenceColors = new Map(
-    formulaReferences(structure.tokens).map((reference) => [reference.token, reference.colorIndex]),
-  );
-  const shardContainers = new Map<FormulaToken, number>();
-  for (const [index, container] of structure.containers.entries()) {
-    for (const shard of container.shards) shardContainers.set(shard, index);
-  }
-  // The innermost call or group containing the caret has its shards highlighted.
-  let activeContainer: number | null = null;
-  if (caret !== null) {
-    for (const [index, container] of structure.containers.entries()) {
-      const contains = container.start < caret && caret <= container.end;
-      if (
-        contains &&
-        (activeContainer === null || container.start > structure.containers[activeContainer].start)
-      ) {
-        activeContainer = index;
-      }
-    }
-  }
-
-  const holes = structured ? structure.holes : [];
-  const elements: ReactNode[] = [
-    <span key="equals" className="pl-spreadsheet-tok-comparison">
-      =
-    </span>,
-  ];
-  let holeIndex = 0;
-
-  function pushHolesBefore(position: number) {
-    for (; holeIndex < holes.length && holes[holeIndex].position <= position; holeIndex += 1) {
-      const hole = holes[holeIndex];
-      elements.push(
-        <span
-          key={`hole-${holeIndex}`}
-          className={clsx(
-            'pl-spreadsheet-hole',
-            `pl-spreadsheet-hole-${hole.kind}`,
-            hole.argument?.kind === 'range' && 'pl-spreadsheet-hole-range',
-            hole.position === caret && 'is-current',
-          )}
-        />,
-      );
-    }
-  }
-  for (const token of structure.tokens) {
-    pushHolesBefore(token.start);
-    // Phantom parentheses only mark where a delimiter hole goes.
-    if (token.text === '') continue;
-    const container = shardContainers.get(token);
-    elements.push(
-      <span
-        key={token.start}
-        className={clsx(
-          `pl-spreadsheet-tok-${token.kind}`,
-          referenceColors.has(token) && `pl-spreadsheet-ref-color-${referenceColors.get(token)}`,
-          structured &&
-            (container === undefined
-              ? TILE_CLASSES[token.kind]
-              : clsx('pl-spreadsheet-tile-shard', container === activeContainer && 'is-active')),
-        )}
-      >
-        {token.text}
-      </span>,
-    );
-  }
-  pushHolesBefore(Infinity);
-  // Lets the overlay scroll as far as the input does when the caret is at the end.
-  elements.push('\u00a0');
-  return <>{elements}</>;
-}
+import {
+  type FormulaSelection,
+  FormulaTiles,
+  offsetAtPoint,
+  tileRangeAtPoint,
+} from './spreadsheetFormulaTiles.js';
 
 function HoleHint({ hole }: { hole: FormulaHole }) {
   return (
@@ -199,10 +99,10 @@ interface PointedSpan {
 }
 
 /**
- * A formula bar input that draws formulas as tiles with holes, suggests functions, and
- * accepts references pointed at in the grid. The text is drawn by an `aria-hidden`
- * overlay laid exactly over a native input whose own text is transparent, so editing,
- * selection, IME, and assistive technology all keep using the real input.
+ * A formula bar that draws formulas as tiles with holes, suggests functions, and accepts
+ * references pointed at in the grid. Typing, selection, IME, undo, and assistive
+ * technology all use a real input, which stays focused but invisible beneath an
+ * `aria-hidden` tile view that draws its text, caret, and selection.
  */
 export function FormulaInput({
   value,
@@ -221,7 +121,7 @@ export function FormulaInput({
   ref?: Ref<FormulaInputHandle>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<HTMLDivElement>(null);
   const pendingCaretRef = useRef<number | null>(null);
   const lastHintAnnouncementRef = useRef('');
   // The latest value, which runs ahead of `value` while a drag writes several references
@@ -231,14 +131,14 @@ export function FormulaInput({
   const [pointedSpan, setPointedSpan] = useState<PointedSpan | null>(null);
   const listId = useId();
   const [focused, setFocused] = useState(false);
-  const [caret, setCaret] = useState<number | null>(null);
+  const [selection, setSelection] = useState<FormulaSelection | null>(null);
+  const caret = selection && selection.start === selection.end ? selection.start : null;
   const [dismissedValue, setDismissedValue] = useState<string | null>(null);
   const [active, setActive] = useState({ key: '', index: 0 });
   const [editState, setEditState] = useState<FormulaEditState>({ formula: value, phantoms: [] });
   // Phantoms only apply to the text they were computed for, not to a value the parent
   // replaced, e.g. by selecting another cell.
   const structure = parseFormula(value, editState.formula === value ? editState.phantoms : []);
-  const highlighted = structure !== null;
   const currentHole =
     focused && caret !== null
       ? structure?.holes.find(
@@ -274,12 +174,6 @@ export function FormulaInput({
     onValueChange(next);
   }
 
-  function syncScroll() {
-    if (inputRef.current && overlayRef.current) {
-      overlayRef.current.scrollLeft = inputRef.current.scrollLeft;
-    }
-  }
-
   /** Tells screen reader users which argument they are typing whenever it changes. */
   function announceHint(nextValue: string, nextCaret: number | null) {
     const nextHint = nextCaret === null ? null : getSignatureHint(nextValue, nextCaret);
@@ -293,21 +187,63 @@ export function FormulaInput({
   function syncCaret() {
     const input = inputRef.current;
     if (!input) return;
-    const nextCaret = input.selectionStart === input.selectionEnd ? input.selectionStart : null;
-    setCaret(nextCaret);
-    announceHint(input.value, nextCaret);
+    const start = input.selectionStart ?? 0;
+    const end = input.selectionEnd ?? start;
+    setSelection({ start, end });
+    announceHint(input.value, start === end ? start : null);
   }
 
-  // Place the caret after an accepted suggestion once its text is rendered, then keep the
-  // overlay aligned, since the input scrolls to show the caret without firing an event.
+  function moveCaret(nextCaret: number) {
+    pendingCaretRef.current = nextCaret;
+    setSelection({ start: nextCaret, end: nextCaret });
+  }
+
+  // Place the caret after an edit made here, such as an accepted suggestion, once the
+  // input holds the new text.
   useLayoutEffect(() => {
     latestValueRef.current = value;
     if (pendingCaretRef.current !== null) {
       inputRef.current?.setSelectionRange(pendingCaretRef.current, pendingCaretRef.current);
       pendingCaretRef.current = null;
     }
-    syncScroll();
   });
+
+  /** Places the caret, extends the selection, or selects a tile where the view is clicked. */
+  function handleViewMouseDown(event: MouseEvent<HTMLDivElement>) {
+    const input = inputRef.current;
+    const view = viewRef.current;
+    if (event.button !== 0 || !input || !view || input.disabled) return;
+    // Keep focus in the input, which the view only draws.
+    event.preventDefault();
+    input.focus();
+    const length = input.value.length;
+    if (event.detail === 2) {
+      const tile = tileRangeAtPoint(view, event.clientX, event.clientY);
+      if (tile) input.setSelectionRange(tile.start, tile.end);
+      syncCaret();
+      return;
+    }
+    const anchor = event.shiftKey
+      ? (input.selectionStart ?? 0)
+      : offsetAtPoint(view, event.clientX, event.clientY, length);
+    const select = (focus: number) => {
+      input.setSelectionRange(
+        Math.min(anchor, focus),
+        Math.max(anchor, focus),
+        focus < anchor ? 'backward' : 'forward',
+      );
+      syncCaret();
+    };
+    select(event.shiftKey ? offsetAtPoint(view, event.clientX, event.clientY, length) : anchor);
+    const handleMove = (move: globalThis.MouseEvent) =>
+      select(offsetAtPoint(view, move.clientX, move.clientY, length));
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+  }
 
   useImperativeHandle(ref, () => ({
     pointingTarget() {
@@ -330,9 +266,8 @@ export function FormulaInput({
       const next = current.slice(0, start) + reference + current.slice(end);
       const span = { start, end: start + reference.length, value: next };
       pointedSpanRef.current = span;
-      pendingCaretRef.current = span.end;
       setPointedSpan(span);
-      setCaret(span.end);
+      moveCaret(span.end);
       changeValue(next);
     },
   }));
@@ -340,8 +275,7 @@ export function FormulaInput({
   function accept(signature: FormulaFunctionSignature) {
     if (!completion) return;
     const result = applyCompletion(value, completion, signature);
-    pendingCaretRef.current = result.caret;
-    setCaret(result.caret);
+    moveCaret(result.caret);
     announceHint(result.formula, result.caret);
     changeValue(result.formula);
   }
@@ -386,17 +320,11 @@ export function FormulaInput({
   }
 
   return (
-    <div
-      className={clsx(
-        'pl-spreadsheet-formula-input',
-        highlighted && 'is-highlighted',
-        pointing && 'is-pointing',
-      )}
-    >
+    <div className={clsx('pl-spreadsheet-formula-input', pointing && 'is-pointing')}>
       <input
         ref={inputRef}
         {...props}
-        className={clsx('form-control form-control-sm', className)}
+        className={className}
         value={value}
         role="combobox"
         aria-autocomplete="list"
@@ -407,14 +335,11 @@ export function FormulaInput({
           changeValue(event.currentTarget.value);
           syncCaret();
         }}
-        onSelect={() => {
-          syncScroll();
-          syncCaret();
-        }}
-        onScroll={syncScroll}
+        onSelect={syncCaret}
         onKeyDown={handleKeyDown}
         onFocus={(event) => {
           setFocused(true);
+          syncCaret();
           onFocus?.(event);
         }}
         onBlur={(event) => {
@@ -422,15 +347,20 @@ export function FormulaInput({
           onBlur?.(event);
         }}
       />
-      {structure && (
-        <div
-          ref={overlayRef}
-          className="form-control form-control-sm pl-spreadsheet-formula-highlight"
-          aria-hidden="true"
-        >
-          <StructuredFormula formula={value} structure={structure} caret={focused ? caret : null} />
-        </div>
-      )}
+      {/* Clicks are mapped onto the input, which keeps focus and handles the keyboard. */}
+      {}
+      <div
+        ref={viewRef}
+        className={clsx(
+          'form-control form-control-sm pl-spreadsheet-formula-view',
+          focused && 'is-focused',
+          props.disabled && 'is-disabled',
+        )}
+        aria-hidden="true"
+        onMouseDown={handleViewMouseDown}
+      >
+        <FormulaTiles value={value} structure={structure} selection={focused ? selection : null} />
+      </div>
       {completion ? (
         <ul
           id={listId}

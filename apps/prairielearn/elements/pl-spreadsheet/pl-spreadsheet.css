@@ -30,26 +30,69 @@
   min-width: 0;
 }
 
-.pl-spreadsheet-formula-input.is-highlighted input {
-  color: transparent;
-  caret-color: var(--bs-body-color);
-}
-
-/*
- * The overlay must lay out text exactly like the input beneath it, so token styles
- * may only change color and decoration, never font weight, spacing, or box size.
- */
-.pl-spreadsheet-formula-highlight {
+/* The real input keeps focus and handles typing, but the tile view draws it. */
+.pl-spreadsheet-formula-input > input {
   position: absolute;
   inset: 0;
-  overflow: hidden;
-  white-space: pre;
+  width: 100%;
+  opacity: 0;
   pointer-events: none;
-  background-color: transparent;
-  border-color: transparent;
-  color: var(--bs-body-color);
-  /* Keeps tile backgrounds behind the text but inside the overlay. */
-  isolation: isolate;
+}
+
+.pl-spreadsheet-formula-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 0.2rem;
+  height: auto;
+  padding-block: 0.2rem;
+  cursor: text;
+  white-space: pre;
+  user-select: none;
+}
+
+.pl-spreadsheet-formula-view.is-focused {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color, rgb(13 110 253 / 25%));
+}
+
+.pl-spreadsheet-formula-view.is-disabled {
+  background-color: var(--bs-secondary-bg);
+  cursor: default;
+}
+
+.pl-spreadsheet-formula-view .is-selected {
+  background-color: color-mix(in srgb, var(--bs-primary) 30%, transparent);
+}
+
+.pl-spreadsheet-formula-equals {
+  margin-right: 0.3em;
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+}
+
+.pl-spreadsheet-caret {
+  position: relative;
+  align-self: stretch;
+  width: 0;
+}
+
+.pl-spreadsheet-caret::after {
+  position: absolute;
+  top: 0.2em;
+  bottom: 0.2em;
+  left: -1px;
+  z-index: 1;
+  width: 2px;
+  background-color: var(--bs-body-color);
+  animation: pl-spreadsheet-caret-blink 1s step-end infinite;
+  content: '';
+}
+
+@keyframes pl-spreadsheet-caret-blink {
+  50% {
+    opacity: 0;
+  }
 }
 
 .pl-spreadsheet-formula-popup {
@@ -64,143 +107,207 @@
   white-space: normal;
 }
 
-.pl-spreadsheet-tok-number,
-.pl-spreadsheet-tok-boolean {
-  color: var(--bs-warning-text-emphasis);
-}
-
-.pl-spreadsheet-tok-string {
-  color: var(--bs-success-text-emphasis);
-}
-
-.pl-spreadsheet-tok-operator,
-.pl-spreadsheet-tok-comparison,
-.pl-spreadsheet-tok-lparen,
-.pl-spreadsheet-tok-rparen,
-.pl-spreadsheet-tok-comma {
-  color: var(--bs-secondary-color);
-}
-
-.pl-spreadsheet-tok-error {
-  color: var(--bs-danger-text-emphasis);
-  text-decoration: underline wavy;
-}
-
-/*
- * Tiles and holes are drawn with absolutely positioned pseudo-elements so that they never
- * move the text. A tile's edges show what fits next to it: values have rounded ends,
- * ranges have bracket ends, and operators have notched ends that values slot into.
- */
-.pl-spreadsheet-tile-value,
-.pl-spreadsheet-tile-range,
-.pl-spreadsheet-tile-operator,
-.pl-spreadsheet-tile-shard,
-.pl-spreadsheet-hole {
-  position: relative;
-}
-
-.pl-spreadsheet-tile-value::before,
-.pl-spreadsheet-tile-range::before,
-.pl-spreadsheet-tile-operator::before,
-.pl-spreadsheet-tile-shard::before {
-  position: absolute;
-  inset: 0.1em 0;
-  z-index: -1;
-  content: '';
-}
-
-.pl-spreadsheet-tile-value::before {
-  border-radius: 0.5em;
-  background-color: color-mix(in srgb, currentcolor 10%, transparent);
-}
-
-.pl-spreadsheet-tile-range::before {
-  border-inline: 2px solid color-mix(in srgb, currentcolor 55%, transparent);
-  background-color: color-mix(in srgb, currentcolor 10%, transparent);
-}
-
-.pl-spreadsheet-tile-operator::before {
-  inset: 0.1em -0.2em;
-  background-color: color-mix(in srgb, var(--bs-secondary-color) 14%, transparent);
-  clip-path: polygon(0 0, 100% 0, calc(100% - 0.25em) 50%, 100% 100%, 0 100%, 0.25em 50%);
-}
-
-.pl-spreadsheet-tile-shard::before {
-  border-radius: 0.2em;
-  background-color: color-mix(in srgb, var(--bs-secondary-color) 10%, transparent);
-}
-
-.pl-spreadsheet-tile-shard.is-active::before {
-  background-color: var(--bs-primary-bg-subtle);
-}
-
-.pl-spreadsheet-hole::after {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 0.7em;
-  height: 1.1em;
-  transform: translate(-50%, -50%);
-  border: 1.5px dashed var(--bs-secondary-color);
-  border-radius: 0.5em;
-  content: '';
-}
-
-.pl-spreadsheet-hole-range::after {
-  border-radius: 0;
-  border-inline-style: solid;
-}
-
-/* With no space between the two values, the operator hole sits above the gap like a caret. */
-.pl-spreadsheet-hole-operator::after {
-  width: 0.4em;
-  height: 0.4em;
-  transform: translate(-50%, -190%) rotate(45deg);
-  border-radius: 0;
-}
-
-.pl-spreadsheet-hole-delimiter::after {
-  width: 0.25em;
-  transform: translate(0.05em, -50%);
-  border-left: none;
-  border-radius: 0 50% 50% 0;
-}
-
-.pl-spreadsheet-hole.is-current::after {
-  border-style: solid;
-  border-color: var(--bs-primary);
-}
-
-.pl-spreadsheet-hole-delimiter.is-current::after {
-  border-left: none;
-}
-
 .pl-spreadsheet-editor {
   --pl-spreadsheet-ref-color-0: #1a5fb4;
   --pl-spreadsheet-ref-color-1: #8e24aa;
   --pl-spreadsheet-ref-color-2: #c2185b;
   --pl-spreadsheet-ref-color-3: #00796b;
   --pl-spreadsheet-ref-color-4: #3949ab;
+
+  /* Tile colors by sort, as in tylr: a pastel fill, a stroke, and text of one hue. */
+  --pl-spreadsheet-number-fill: #fdefc9;
+  --pl-spreadsheet-number-stroke: #c98a0b;
+  --pl-spreadsheet-number-text: #6b4400;
+  --pl-spreadsheet-string-fill: #dcf3dc;
+  --pl-spreadsheet-string-stroke: #3c8d40;
+  --pl-spreadsheet-string-text: #1d5a22;
+  --pl-spreadsheet-operator-fill: #e4e8ef;
+  --pl-spreadsheet-operator-stroke: #7a8597;
+  --pl-spreadsheet-operator-text: #2f3846;
+  --pl-spreadsheet-shard-fill: #dbe8fb;
+  --pl-spreadsheet-shard-stroke: #4a7cc7;
+  --pl-spreadsheet-shard-text: #183f78;
+  --pl-spreadsheet-shard-active-fill: #b8d2f7;
+  --pl-spreadsheet-shard-active-stroke: #1f5fc2;
+  --pl-spreadsheet-error-fill: #fbe1df;
+  --pl-spreadsheet-error-stroke: #c0392b;
+  --pl-spreadsheet-error-text: #8a1f15;
+  --pl-spreadsheet-range-hole-stroke: #6f42c1;
 }
 
-.pl-spreadsheet-ref-color-0 {
-  color: var(--pl-spreadsheet-ref-color-0);
+/*
+ * Tiles and holes are polygons whose left and right edges are convex nibs, concave
+ * notches, or flat, set by the edge classes below. A stroke layer and a fill layer inset
+ * from it share the shape. Joined pieces overlap by a nib so they visibly interlock.
+ */
+.pl-spreadsheet-piece {
+  --pl-spreadsheet-nib: 0.45em;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 1.75em;
+  padding-inline: calc(var(--pl-spreadsheet-nib) + 0.15em);
+  color: var(--pl-spreadsheet-tile-text);
+  isolation: isolate;
 }
 
-.pl-spreadsheet-ref-color-1 {
-  color: var(--pl-spreadsheet-ref-color-1);
+.pl-spreadsheet-piece::before,
+.pl-spreadsheet-piece::after {
+  position: absolute;
+  z-index: -1;
+  clip-path: polygon(
+    var(--pl-spreadsheet-top-left),
+    var(--pl-spreadsheet-top-right),
+    var(--pl-spreadsheet-middle-right),
+    var(--pl-spreadsheet-bottom-right),
+    var(--pl-spreadsheet-bottom-left),
+    var(--pl-spreadsheet-middle-left)
+  );
+  content: '';
 }
 
-.pl-spreadsheet-ref-color-2 {
-  color: var(--pl-spreadsheet-ref-color-2);
+.pl-spreadsheet-piece::before {
+  inset: 0;
+  background: var(--pl-spreadsheet-tile-stroke);
 }
 
-.pl-spreadsheet-ref-color-3 {
-  color: var(--pl-spreadsheet-ref-color-3);
+.pl-spreadsheet-piece::after {
+  inset: 1.5px;
+  background: var(--pl-spreadsheet-tile-fill);
 }
 
-.pl-spreadsheet-ref-color-4 {
-  color: var(--pl-spreadsheet-ref-color-4);
+.pl-spreadsheet-piece.is-joined {
+  margin-left: calc(-1 * var(--pl-spreadsheet-nib) + 0.1em);
+}
+
+.pl-spreadsheet-left-convex {
+  --pl-spreadsheet-top-left: var(--pl-spreadsheet-nib) 0;
+  --pl-spreadsheet-middle-left: 0 50%;
+  --pl-spreadsheet-bottom-left: var(--pl-spreadsheet-nib) 100%;
+}
+
+.pl-spreadsheet-left-concave {
+  --pl-spreadsheet-top-left: 0 0;
+  --pl-spreadsheet-middle-left: var(--pl-spreadsheet-nib) 50%;
+  --pl-spreadsheet-bottom-left: 0 100%;
+}
+
+.pl-spreadsheet-left-flat {
+  --pl-spreadsheet-top-left: 0 0;
+  --pl-spreadsheet-middle-left: 0 50%;
+  --pl-spreadsheet-bottom-left: 0 100%;
+
+  padding-left: 0.3em;
+}
+
+.pl-spreadsheet-right-convex {
+  --pl-spreadsheet-top-right: calc(100% - var(--pl-spreadsheet-nib)) 0;
+  --pl-spreadsheet-middle-right: 100% 50%;
+  --pl-spreadsheet-bottom-right: calc(100% - var(--pl-spreadsheet-nib)) 100%;
+}
+
+.pl-spreadsheet-right-concave {
+  --pl-spreadsheet-top-right: 100% 0;
+  --pl-spreadsheet-middle-right: calc(100% - var(--pl-spreadsheet-nib)) 50%;
+  --pl-spreadsheet-bottom-right: 100% 100%;
+}
+
+.pl-spreadsheet-right-flat {
+  --pl-spreadsheet-top-right: 100% 0;
+  --pl-spreadsheet-middle-right: 100% 50%;
+  --pl-spreadsheet-bottom-right: 100% 100%;
+
+  padding-right: 0.3em;
+}
+
+.pl-spreadsheet-tile-number {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-number-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-number-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-number-text);
+}
+
+.pl-spreadsheet-tile-string {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-string-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-string-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-string-text);
+}
+
+.pl-spreadsheet-tile-operator {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-operator-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-operator-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-operator-text);
+}
+
+.pl-spreadsheet-tile-shard {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-shard-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-shard-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-shard-text);
+}
+
+.pl-spreadsheet-tile-shard.is-active {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-shard-active-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-shard-active-stroke);
+}
+
+.pl-spreadsheet-tile-error {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-error-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-error-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-error-text);
+}
+
+/* A reference tile matches its outline in the grid. */
+.pl-spreadsheet-tile-reference {
+  --pl-spreadsheet-tile-fill: color-mix(in srgb, var(--pl-spreadsheet-ref-color) 14%, white);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-ref-color);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-ref-color);
+}
+
+/* Holes are hollow, dashed tiles in the color of what belongs in them. */
+.pl-spreadsheet-hole {
+  --pl-spreadsheet-tile-fill: var(--bs-body-bg);
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-operator-stroke);
+  --pl-spreadsheet-tile-stroke: repeating-linear-gradient(
+    90deg,
+    var(--pl-spreadsheet-hole-stroke) 0 0.3em,
+    transparent 0.3em 0.5em
+  );
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-hole-stroke);
+
+  min-width: 1.6em;
+  justify-content: center;
+}
+
+.pl-spreadsheet-hole-label {
+  font-size: 0.75em;
+  font-style: italic;
+}
+
+.pl-spreadsheet-hole-range {
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-range-hole-stroke);
+}
+
+.pl-spreadsheet-hole-text {
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-string-stroke);
+}
+
+.pl-spreadsheet-hole-condition {
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-number-stroke);
+}
+
+.pl-spreadsheet-hole-delimiter,
+.pl-spreadsheet-hole-name {
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-shard-stroke);
+}
+
+.pl-spreadsheet-hole.is-optional:not(.is-current) {
+  opacity: 0.55;
+}
+
+.pl-spreadsheet-hole.is-current {
+  --pl-spreadsheet-tile-fill: var(--bs-primary-bg-subtle);
+  --pl-spreadsheet-tile-stroke: var(--bs-primary);
+  --pl-spreadsheet-tile-text: var(--bs-primary-text-emphasis);
 }
 
 .pl-spreadsheet-grid {
@@ -295,12 +402,34 @@
 }
 
 @media (forced-colors: active) {
-  .pl-spreadsheet-formula-highlight {
+  .pl-spreadsheet-piece::before,
+  .pl-spreadsheet-piece::after {
     display: none;
   }
 
-  .pl-spreadsheet-formula-input.is-highlighted input {
-    color: FieldText;
+  .pl-spreadsheet-piece {
+    border: 1px solid CanvasText;
+  }
+
+  .pl-spreadsheet-piece.is-joined {
+    margin-left: 0.1em;
+  }
+
+  .pl-spreadsheet-hole {
+    border-style: dashed;
+  }
+
+  .pl-spreadsheet-hole.is-current {
+    outline: 2px solid Highlight;
+  }
+
+  .pl-spreadsheet-caret::after {
+    background-color: CanvasText;
+  }
+
+  .pl-spreadsheet-formula-view .is-selected {
+    background-color: Highlight;
+    color: HighlightText;
   }
 
   .pl-spreadsheet-ref-cell {
@@ -324,5 +453,9 @@
 @media (prefers-reduced-motion: reduce) {
   .pl-spreadsheet * {
     scroll-behavior: auto !important;
+  }
+
+  .pl-spreadsheet-caret::after {
+    animation: none;
   }
 }
