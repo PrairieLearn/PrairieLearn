@@ -3,6 +3,6 @@
   "dependencies": {
     "compiledScripts": ["plSpreadsheet.tsx"],
     "nodeModulesStyles": ["react-data-grid/lib/styles.css"],
-    "elementStyles": ["pl-spreadsheet.css"]
+    "elementStyles": ["pl-spreadsheet-theme.css", "pl-spreadsheet.css"]
   }
 }
