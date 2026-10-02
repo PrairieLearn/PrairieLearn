@@ -28,6 +28,12 @@ import {
   resolveReference,
 } from '../../src/lib/client/spreadsheetFormula/references.js';
 import {
+  SPREADSHEET_ENGINE_WASM_PATH,
+  initializeSpreadsheetEngine,
+  parseCellText,
+  spreadsheetEngineImports,
+} from '../../src/lib/spreadsheet-engine.js';
+import {
   type SpreadsheetCellInput,
   type SpreadsheetEditorEvaluation,
   type SpreadsheetElementConfig,
@@ -131,13 +137,7 @@ function displayInput(input: SpreadsheetCellInput | null | undefined): string {
 function parseEditorInput(value: string): SpreadsheetCellInput | null {
   if (value === '') return null;
   if (value.startsWith('=')) return value;
-  if (value.toUpperCase() === 'TRUE') return true;
-  if (value.toUpperCase() === 'FALSE') return false;
-  if (/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?$/.test(value)) {
-    const number = Number(value);
-    if (Number.isFinite(number)) return number;
-  }
-  return value;
+  return parseCellText(value);
 }
 
 function syncHiddenInput(hiddenInput: HTMLInputElement, submission: SpreadsheetRawSubmission) {
@@ -522,6 +522,12 @@ function SpreadsheetEditor({
     const rowStep = rowDistance >= columnDistance ? Math.sign(end.row - source.row) : 0;
     const columnStep = rowDistance >= columnDistance ? 0 : Math.sign(end.column - source.column);
     const count = Math.max(rowDistance, columnDistance);
+    const sourceInput = finalInput(
+      config,
+      rawSubmission,
+      sheet.name,
+      cellAddress(source.row, source.column),
+    );
     const edits = [];
     for (let step = 1; step <= count; step += 1) {
       const row = source.row + rowStep * step;
@@ -529,11 +535,10 @@ function SpreadsheetEditor({
       edits.push({
         row,
         column,
-        input: getRelativeFillInput(
-          evaluation.engine,
-          { sheet: activeSheetIndex, row: source.row, col: source.column },
-          { sheet: activeSheetIndex, row, col: column },
-        ),
+        input: getRelativeFillInput(sourceInput, {
+          rowOffset: row - source.row,
+          columnOffset: column - source.column,
+        }),
       });
     }
     if (edits.length === 0) return;
@@ -755,10 +760,6 @@ function SpreadsheetEditor({
     };
   }, [hiddenInput]);
 
-  // Release HyperFormula resources when this dynamically rendered element is removed.
-  useEffect(() => () => evaluation.engine.destroy(), [evaluation]);
-  useEffect(() => () => draftEvaluation?.engine.destroy(), [draftEvaluation]);
-
   // Drop a draft evaluation still scheduled when the element is removed.
   useEffect(
     () => () => {
@@ -905,17 +906,16 @@ function SpreadsheetEditor({
   function handleFill(event: FillEvent<SpreadsheetRow>): SpreadsheetRow {
     const parsedColumn = parseCellAddress(`${event.columnKey}1`);
     if (!parsedColumn) return event.targetRow;
-    const sourceAddress = {
-      sheet: activeSheetIndex,
-      row: event.sourceRow.rowIndex,
-      col: parsedColumn.column,
-    };
-    const targetAddress = {
-      sheet: activeSheetIndex,
-      row: event.targetRow.rowIndex,
-      col: parsedColumn.column,
-    };
-    const input = getRelativeFillInput(evaluation.engine, sourceAddress, targetAddress);
+    const sourceInput = finalInput(
+      config,
+      rawSubmission,
+      sheet.name,
+      cellAddress(event.sourceRow.rowIndex, parsedColumn.column),
+    );
+    const input = getRelativeFillInput(sourceInput, {
+      rowOffset: event.targetRow.rowIndex - event.sourceRow.rowIndex,
+      columnOffset: 0,
+    });
     return {
       ...event.targetRow,
       inputs: {
@@ -1376,6 +1376,32 @@ function SpreadsheetEditor({
   );
 }
 
+/** Resolves a specifier through the page's import maps, which list each element's dynamic dependencies. */
+function resolveImportMapUrl(specifier: string): string {
+  for (const script of document.querySelectorAll('script[type="importmap"]')) {
+    const importMap: { imports?: Record<string, string> } = JSON.parse(script.textContent);
+    const url = importMap.imports?.[specifier];
+    if (url) return url;
+  }
+  throw new Error(`${specifier} is not in the import map.`);
+}
+
+let spreadsheetEngineLoad: Promise<void> | null = null;
+
+/** Fetches and instantiates the spreadsheet engine once for every spreadsheet on the page. */
+function loadSpreadsheetEngine(): Promise<void> {
+  spreadsheetEngineLoad ??= (async () => {
+    const response = await fetch(resolveImportMapUrl(SPREADSHEET_ENGINE_WASM_PATH));
+    if (!response.ok) throw new Error('The spreadsheet engine could not be downloaded.');
+    const { instance } = await WebAssembly.instantiate(
+      await response.arrayBuffer(),
+      spreadsheetEngineImports(),
+    );
+    initializeSpreadsheetEngine(instance);
+  })();
+  return spreadsheetEngineLoad;
+}
+
 onDocumentReady(() => {
   observe('.js-pl-spreadsheet-formula-toggle', {
     constructor: HTMLInputElement,
@@ -1396,6 +1422,14 @@ onDocumentReady(() => {
   observe('.pl-spreadsheet-root', {
     constructor: HTMLDivElement,
     initialize(element) {
+      const showLoadError = () => {
+        element.innerHTML = '';
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger m-3';
+        alert.role = 'alert';
+        alert.textContent = 'The spreadsheet could not be loaded. Reload the page and try again.';
+        element.append(alert);
+      };
       const hiddenInput = element.parentElement?.querySelector<HTMLInputElement>(
         '.js-pl-spreadsheet-input',
       );
@@ -1405,19 +1439,30 @@ onDocumentReady(() => {
         }
         const options = JSON.parse(atob(element.dataset.options)) as SpreadsheetOptions;
         const root = createRoot(element);
-        root.render(
-          <SpreadsheetErrorBoundary>
-            <SpreadsheetEditor options={options} hiddenInput={hiddenInput} />
-          </SpreadsheetErrorBoundary>,
+        let removed = false;
+        loadSpreadsheetEngine().then(
+          () => {
+            if (removed) return;
+            root.render(
+              <SpreadsheetErrorBoundary>
+                <SpreadsheetEditor options={options} hiddenInput={hiddenInput} />
+              </SpreadsheetErrorBoundary>,
+            );
+          },
+          () => {
+            if (removed) return;
+            root.unmount();
+            showLoadError();
+          },
         );
-        return { remove: () => root.unmount() };
+        return {
+          remove: () => {
+            removed = true;
+            root.unmount();
+          },
+        };
       } catch {
-        element.innerHTML = '';
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-danger m-3';
-        alert.role = 'alert';
-        alert.textContent = 'The spreadsheet could not be loaded. Reload the page and try again.';
-        element.append(alert);
+        showLoadError();
       }
     },
   });

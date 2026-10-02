@@ -46,8 +46,8 @@ CSS_SIZE_RE = re.compile(
     r"^(?:0|(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em|vh|vw|vmin|vmax|%))$",
     re.IGNORECASE,
 )
-# Mirrors HyperFormula's identifier characters so that every name the engine could
-# parse as a function is checked as one whole token.
+# Treats accented letters as identifier characters too, so that a function name is
+# always checked as one whole token and cannot be split to hide a call.
 FUNCTION_RE = re.compile(
     r"(?<![A-Za-z\u00C0-\u02AF0-9_.])([A-Za-z\u00C0-\u02AF0-9_.]+)\s*\("
 )
@@ -1816,7 +1816,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
     engine = submission.get("engine", {})
-    if not isinstance(engine, dict) or engine.get("name") != "hyperformula":
+    if not isinstance(engine, dict) or engine.get("name") != "formualizer":
         _add_format_error(
             data, answer_name, "The spreadsheet answer was not normalized."
         )
