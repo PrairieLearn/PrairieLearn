@@ -16,7 +16,14 @@
     },
     "allow-sets": {
       "type": "string",
-      "format": "boolean"
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use allowed-types instead."
+    },
+    "allowed-types": {
+      "default": "expression",
+      "type": "string",
+      "pattern": "^\\s*(all|set|finite-set|interval|expression)(\\s*,\\s*(all|set|finite-set|interval|expression))*\\s*$"
     },
     "allow-trig-functions": {
       "type": "string",
