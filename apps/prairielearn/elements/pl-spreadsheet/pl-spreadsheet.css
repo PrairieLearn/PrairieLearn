@@ -491,3 +491,35 @@
     animation: none;
   }
 }
+
+/*
+ * The popped-out editor stays in place in the DOM, so none of its state is lost, and is
+ * fixed over the page with a small margin. The backdrop shares its stacking context.
+ */
+.pl-spreadsheet-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background-color: rgb(0 0 0 / 50%);
+}
+
+.pl-spreadsheet-editor.is-expanded {
+  position: fixed;
+  inset: 1rem;
+  z-index: 1055;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--bs-border-radius-lg);
+  background-color: var(--bs-body-bg);
+  box-shadow: var(--bs-box-shadow-lg);
+}
+
+.pl-spreadsheet-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: var(--bs-border-width) solid var(--bs-border-color);
+  font-weight: 600;
+}
