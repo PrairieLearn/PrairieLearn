@@ -724,6 +724,15 @@ as after `=`, `(`, `,`, or an operator, clicking a cell or dragging across cells
 inserts a reference, as in Google Sheets or Excel. The arrow keys, and Shift with the
 arrow keys, do the same from the keyboard.
 
+The formula bar also draws the structure of a formula. Values, ranges, and operators
+appear as tiles whose edges show what fits next to them, and the parentheses and
+commas of the call containing the cursor are highlighted together. Missing parts
+appear as outlined holes: a missing argument or value, a missing operator between two
+values, or a missing closing parenthesis. Deleting an operator or a `)` leaves a hole
+where it was rather than changing what the rest of the formula means. Tab and
+Shift+Tab move between holes. Entering a formula closes any parentheses left open at
+its end and announces anything still missing, such as "SUMIF is missing criteria."
+
 The editor displays spreadsheet errors such as `#DIV/0!`, `#CYCLE!`, `#REF!`, and
 `#ERROR!` in their cells while retaining the entered formula in the cell editor and
 formula bar. Save and Grade includes the latest text even if the editor is still

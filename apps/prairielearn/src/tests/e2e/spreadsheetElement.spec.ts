@@ -162,6 +162,61 @@ test('inserts references by pointing at cells', async ({ page, courseInstance })
   await expect(rawAnswer).toHaveValue(/"B2":"=SUM\(A2\)\+C3:C4\*2"/);
 });
 
+test('shows the missing parts of a formula as holes', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const formulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
+  const highlight = parameterDemo.locator('.pl-spreadsheet-formula-highlight');
+  const status = parameterDemo.getByRole('status');
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
+  await formulaBar.fill('=SUMIF(');
+  await expect(
+    highlight.locator('.pl-spreadsheet-hole-argument.pl-spreadsheet-hole-range'),
+  ).toHaveClass(/is-current/);
+  await expect(highlight.locator('.pl-spreadsheet-hole-delimiter')).toHaveCount(1);
+
+  await formulaBar.fill('=A2+B2');
+  await formulaBar.press('ArrowLeft');
+  await formulaBar.press('ArrowLeft');
+  await formulaBar.press('Backspace');
+  await expect(formulaBar).toHaveValue('=A2B2');
+  await expect(highlight.locator('.pl-spreadsheet-hole-operator')).toHaveClass(/is-current/);
+  await expect(parameterDemo.getByText('An operator is missing between two values.')).toBeVisible();
+  await formulaBar.press('*');
+  await expect(formulaBar).toHaveValue('=A2*B2');
+  await expect(highlight.locator('.pl-spreadsheet-hole')).toHaveCount(0);
+
+  await formulaBar.fill('=IF(A2>0,,1)+');
+  await formulaBar.press('Home');
+  await formulaBar.press('Tab');
+  await expect(status).toHaveText('IF is missing value_if_true.');
+  await expect(formulaBar).toBeFocused();
+  await formulaBar.press('Tab');
+  await expect(status).toHaveText('A value is missing.');
+  await formulaBar.press('Shift+Tab');
+  await formulaBar.pressSequentially('A3');
+  await expect(formulaBar).toHaveValue('=IF(A2>0,A3,1)+');
+
+  await formulaBar.fill('=ROUND(SUM(A2:B2');
+  await formulaBar.press('Enter');
+  await expect(rawAnswer).toHaveValue(/"B2":"=ROUND\(SUM\(A2:B2\)\)"/);
+  await expect(status).toHaveText('B2: ROUND is missing digits.');
+});
+
 test('suggests functions in the formula bar', async ({ page, courseInstance }) => {
   const question = await selectQuestionByQid({
     qid: 'spreadsheetElement',

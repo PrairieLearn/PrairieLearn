@@ -39,7 +39,7 @@ const SHEET_PREFIX = String.raw`(?:${QUOTED_SHEET}|${IDENTIFIER})!`;
 const NOT_IDENTIFIER_CONTINUATION = String.raw`(?![A-Za-z0-9_.(!])`;
 
 const RANGE_PATTERN = new RegExp(
-  String.raw`(?:${SHEET_PREFIX})?(?:${CELL}|${COLUMN}|${ROW}):(?:${CELL}|${COLUMN}|${ROW})${NOT_IDENTIFIER_CONTINUATION}`,
+  String.raw`(?:${SHEET_PREFIX})?(?:${CELL}|${COLUMN}|${ROW}):(?:${SHEET_PREFIX})?(?:${CELL}|${COLUMN}|${ROW})${NOT_IDENTIFIER_CONTINUATION}`,
   'y',
 );
 const REF_PATTERN = new RegExp(
