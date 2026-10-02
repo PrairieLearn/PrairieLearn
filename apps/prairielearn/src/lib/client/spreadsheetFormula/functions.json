@@ -1,0 +1,882 @@
+[
+  {
+    "name": "ABS",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      }
+    ],
+    "description": "Absolute value of a number."
+  },
+  {
+    "name": "AND",
+    "args": [
+      {
+        "name": "logical1",
+        "kind": "condition"
+      }
+    ],
+    "description": "TRUE if every argument is TRUE.",
+    "repeat": 1
+  },
+  {
+    "name": "AVERAGE",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Arithmetic mean of the arguments.",
+    "repeat": 1
+  },
+  {
+    "name": "AVERAGEIF",
+    "args": [
+      {
+        "name": "range",
+        "kind": "range"
+      },
+      {
+        "name": "criteria",
+        "kind": "condition"
+      },
+      {
+        "name": "average_range",
+        "kind": "range",
+        "optional": true
+      }
+    ],
+    "description": "Mean of the cells that meet a condition."
+  },
+  {
+    "name": "AVERAGEIFS",
+    "args": [
+      {
+        "name": "average_range",
+        "kind": "range"
+      },
+      {
+        "name": "criteria_range1",
+        "kind": "range"
+      },
+      {
+        "name": "criteria1",
+        "kind": "condition"
+      }
+    ],
+    "description": "Mean of the cells that meet several conditions.",
+    "repeat": 2
+  },
+  {
+    "name": "CONCATENATE",
+    "args": [
+      {
+        "name": "text1",
+        "kind": "text"
+      }
+    ],
+    "description": "Joins text values together.",
+    "repeat": 1
+  },
+  {
+    "name": "COS",
+    "args": [
+      {
+        "name": "angle",
+        "kind": "value"
+      }
+    ],
+    "description": "Cosine of an angle in radians."
+  },
+  {
+    "name": "COUNT",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Number of numeric values.",
+    "repeat": 1
+  },
+  {
+    "name": "COUNTA",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Number of non-empty values.",
+    "repeat": 1
+  },
+  {
+    "name": "COUNTBLANK",
+    "args": [
+      {
+        "name": "range",
+        "kind": "range"
+      }
+    ],
+    "description": "Number of empty cells in a range."
+  },
+  {
+    "name": "COUNTIF",
+    "args": [
+      {
+        "name": "range",
+        "kind": "range"
+      },
+      {
+        "name": "criteria",
+        "kind": "condition"
+      }
+    ],
+    "description": "Number of cells that meet a condition."
+  },
+  {
+    "name": "COUNTIFS",
+    "args": [
+      {
+        "name": "criteria_range1",
+        "kind": "range"
+      },
+      {
+        "name": "criteria1",
+        "kind": "condition"
+      }
+    ],
+    "description": "Number of cells that meet several conditions.",
+    "repeat": 2
+  },
+  {
+    "name": "DATE",
+    "args": [
+      {
+        "name": "year",
+        "kind": "value"
+      },
+      {
+        "name": "month",
+        "kind": "value"
+      },
+      {
+        "name": "day",
+        "kind": "value"
+      }
+    ],
+    "description": "Builds a date."
+  },
+  {
+    "name": "DAY",
+    "args": [
+      {
+        "name": "date",
+        "kind": "value"
+      }
+    ],
+    "description": "Day of the month of a date."
+  },
+  {
+    "name": "DAYS",
+    "args": [
+      {
+        "name": "end_date",
+        "kind": "value"
+      },
+      {
+        "name": "start_date",
+        "kind": "value"
+      }
+    ],
+    "description": "Number of days between two dates."
+  },
+  {
+    "name": "DEGREES",
+    "args": [
+      {
+        "name": "angle",
+        "kind": "value"
+      }
+    ],
+    "description": "Converts radians to degrees."
+  },
+  {
+    "name": "EDATE",
+    "args": [
+      {
+        "name": "start_date",
+        "kind": "value"
+      },
+      {
+        "name": "months",
+        "kind": "value"
+      }
+    ],
+    "description": "Date a number of months before or after a date."
+  },
+  {
+    "name": "EOMONTH",
+    "args": [
+      {
+        "name": "start_date",
+        "kind": "value"
+      },
+      {
+        "name": "months",
+        "kind": "value"
+      }
+    ],
+    "description": "Last day of the month a number of months away."
+  },
+  {
+    "name": "EXP",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      }
+    ],
+    "description": "e raised to a power."
+  },
+  {
+    "name": "FALSE",
+    "args": [],
+    "description": "The logical value FALSE."
+  },
+  {
+    "name": "HLOOKUP",
+    "args": [
+      {
+        "name": "lookup_value",
+        "kind": "value"
+      },
+      {
+        "name": "table_array",
+        "kind": "range"
+      },
+      {
+        "name": "row_index",
+        "kind": "value"
+      },
+      {
+        "name": "range_lookup",
+        "kind": "value",
+        "optional": true
+      }
+    ],
+    "description": "Looks up a value in the first row of a table."
+  },
+  {
+    "name": "IF",
+    "args": [
+      {
+        "name": "condition",
+        "kind": "condition"
+      },
+      {
+        "name": "value_if_true",
+        "kind": "value"
+      },
+      {
+        "name": "value_if_false",
+        "kind": "value",
+        "optional": true
+      }
+    ],
+    "description": "Chooses a value based on a condition."
+  },
+  {
+    "name": "IFERROR",
+    "args": [
+      {
+        "name": "value",
+        "kind": "value"
+      },
+      {
+        "name": "value_if_error",
+        "kind": "value"
+      }
+    ],
+    "description": "A fallback value if a value is an error."
+  },
+  {
+    "name": "IFNA",
+    "args": [
+      {
+        "name": "value",
+        "kind": "value"
+      },
+      {
+        "name": "value_if_na",
+        "kind": "value"
+      }
+    ],
+    "description": "A fallback value if a value is #N/A."
+  },
+  {
+    "name": "INDEX",
+    "args": [
+      {
+        "name": "range",
+        "kind": "range"
+      },
+      {
+        "name": "row",
+        "kind": "value"
+      },
+      {
+        "name": "column",
+        "kind": "value",
+        "optional": true
+      }
+    ],
+    "description": "Value at a position in a range."
+  },
+  {
+    "name": "INT",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      }
+    ],
+    "description": "Rounds down to the nearest integer."
+  },
+  {
+    "name": "ISBLANK",
+    "args": [
+      {
+        "name": "value",
+        "kind": "value"
+      }
+    ],
+    "description": "TRUE if a cell is empty."
+  },
+  {
+    "name": "ISERROR",
+    "args": [
+      {
+        "name": "value",
+        "kind": "value"
+      }
+    ],
+    "description": "TRUE if a value is an error."
+  },
+  {
+    "name": "ISLOGICAL",
+    "args": [
+      {
+        "name": "value",
+        "kind": "value"
+      }
+    ],
+    "description": "TRUE if a value is TRUE or FALSE."
+  },
+  {
+    "name": "ISNUMBER",
+    "args": [
+      {
+        "name": "value",
+        "kind": "value"
+      }
+    ],
+    "description": "TRUE if a value is a number."
+  },
+  {
+    "name": "ISTEXT",
+    "args": [
+      {
+        "name": "value",
+        "kind": "value"
+      }
+    ],
+    "description": "TRUE if a value is text."
+  },
+  {
+    "name": "LEFT",
+    "args": [
+      {
+        "name": "text",
+        "kind": "text"
+      },
+      {
+        "name": "num_chars",
+        "kind": "value",
+        "optional": true
+      }
+    ],
+    "description": "Characters from the start of text."
+  },
+  {
+    "name": "LEN",
+    "args": [
+      {
+        "name": "text",
+        "kind": "text"
+      }
+    ],
+    "description": "Number of characters in text."
+  },
+  {
+    "name": "LN",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      }
+    ],
+    "description": "Natural logarithm."
+  },
+  {
+    "name": "LOG",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      },
+      {
+        "name": "base",
+        "kind": "value",
+        "optional": true
+      }
+    ],
+    "description": "Logarithm to a base (default 10)."
+  },
+  {
+    "name": "LOG10",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      }
+    ],
+    "description": "Base-10 logarithm."
+  },
+  {
+    "name": "LOWER",
+    "args": [
+      {
+        "name": "text",
+        "kind": "text"
+      }
+    ],
+    "description": "Converts text to lowercase."
+  },
+  {
+    "name": "MATCH",
+    "args": [
+      {
+        "name": "lookup_value",
+        "kind": "value"
+      },
+      {
+        "name": "lookup_range",
+        "kind": "range"
+      },
+      {
+        "name": "match_type",
+        "kind": "value",
+        "optional": true
+      }
+    ],
+    "description": "Position of a value in a range."
+  },
+  {
+    "name": "MAX",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Largest value.",
+    "repeat": 1
+  },
+  {
+    "name": "MEDIAN",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Middle value.",
+    "repeat": 1
+  },
+  {
+    "name": "MID",
+    "args": [
+      {
+        "name": "text",
+        "kind": "text"
+      },
+      {
+        "name": "start",
+        "kind": "value"
+      },
+      {
+        "name": "num_chars",
+        "kind": "value"
+      }
+    ],
+    "description": "Characters from the middle of text."
+  },
+  {
+    "name": "MIN",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Smallest value.",
+    "repeat": 1
+  },
+  {
+    "name": "MOD",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      },
+      {
+        "name": "divisor",
+        "kind": "value"
+      }
+    ],
+    "description": "Remainder after division."
+  },
+  {
+    "name": "MONTH",
+    "args": [
+      {
+        "name": "date",
+        "kind": "value"
+      }
+    ],
+    "description": "Month of a date."
+  },
+  {
+    "name": "NOT",
+    "args": [
+      {
+        "name": "logical",
+        "kind": "condition"
+      }
+    ],
+    "description": "Reverses a logical value."
+  },
+  {
+    "name": "OR",
+    "args": [
+      {
+        "name": "logical1",
+        "kind": "condition"
+      }
+    ],
+    "description": "TRUE if any argument is TRUE.",
+    "repeat": 1
+  },
+  {
+    "name": "PI",
+    "args": [],
+    "description": "The number π."
+  },
+  {
+    "name": "POWER",
+    "args": [
+      {
+        "name": "base",
+        "kind": "value"
+      },
+      {
+        "name": "exponent",
+        "kind": "value"
+      }
+    ],
+    "description": "A number raised to a power."
+  },
+  {
+    "name": "PRODUCT",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Product of the arguments.",
+    "repeat": 1
+  },
+  {
+    "name": "RADIANS",
+    "args": [
+      {
+        "name": "angle",
+        "kind": "value"
+      }
+    ],
+    "description": "Converts degrees to radians."
+  },
+  {
+    "name": "RIGHT",
+    "args": [
+      {
+        "name": "text",
+        "kind": "text"
+      },
+      {
+        "name": "num_chars",
+        "kind": "value",
+        "optional": true
+      }
+    ],
+    "description": "Characters from the end of text."
+  },
+  {
+    "name": "ROUND",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      },
+      {
+        "name": "digits",
+        "kind": "value"
+      }
+    ],
+    "description": "Rounds to a number of digits."
+  },
+  {
+    "name": "ROUNDDOWN",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      },
+      {
+        "name": "digits",
+        "kind": "value"
+      }
+    ],
+    "description": "Rounds toward zero."
+  },
+  {
+    "name": "ROUNDUP",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      },
+      {
+        "name": "digits",
+        "kind": "value"
+      }
+    ],
+    "description": "Rounds away from zero."
+  },
+  {
+    "name": "SIN",
+    "args": [
+      {
+        "name": "angle",
+        "kind": "value"
+      }
+    ],
+    "description": "Sine of an angle in radians."
+  },
+  {
+    "name": "SQRT",
+    "args": [
+      {
+        "name": "number",
+        "kind": "value"
+      }
+    ],
+    "description": "Square root."
+  },
+  {
+    "name": "SUM",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Sum of the arguments.",
+    "repeat": 1
+  },
+  {
+    "name": "SUMIF",
+    "args": [
+      {
+        "name": "range",
+        "kind": "range"
+      },
+      {
+        "name": "criteria",
+        "kind": "condition"
+      },
+      {
+        "name": "sum_range",
+        "kind": "range",
+        "optional": true
+      }
+    ],
+    "description": "Sum of the cells that meet a condition."
+  },
+  {
+    "name": "SUMIFS",
+    "args": [
+      {
+        "name": "sum_range",
+        "kind": "range"
+      },
+      {
+        "name": "criteria_range1",
+        "kind": "range"
+      },
+      {
+        "name": "criteria1",
+        "kind": "condition"
+      }
+    ],
+    "description": "Sum of the cells that meet several conditions.",
+    "repeat": 2
+  },
+  {
+    "name": "SUMPRODUCT",
+    "args": [
+      {
+        "name": "range1",
+        "kind": "range"
+      }
+    ],
+    "description": "Sum of the products of matching cells.",
+    "repeat": 1
+  },
+  {
+    "name": "SWITCH",
+    "args": [
+      {
+        "name": "expression",
+        "kind": "value"
+      },
+      {
+        "name": "case1",
+        "kind": "value"
+      },
+      {
+        "name": "value1",
+        "kind": "value"
+      }
+    ],
+    "description": "Value for the first case that matches an expression.",
+    "repeat": 2
+  },
+  {
+    "name": "TAN",
+    "args": [
+      {
+        "name": "angle",
+        "kind": "value"
+      }
+    ],
+    "description": "Tangent of an angle in radians."
+  },
+  {
+    "name": "TEXT",
+    "args": [
+      {
+        "name": "value",
+        "kind": "value"
+      },
+      {
+        "name": "format",
+        "kind": "text"
+      }
+    ],
+    "description": "Formats a number as text."
+  },
+  {
+    "name": "TRIM",
+    "args": [
+      {
+        "name": "text",
+        "kind": "text"
+      }
+    ],
+    "description": "Removes extra spaces from text."
+  },
+  {
+    "name": "TRUE",
+    "args": [],
+    "description": "The logical value TRUE."
+  },
+  {
+    "name": "UPPER",
+    "args": [
+      {
+        "name": "text",
+        "kind": "text"
+      }
+    ],
+    "description": "Converts text to uppercase."
+  },
+  {
+    "name": "VALUE",
+    "args": [
+      {
+        "name": "text",
+        "kind": "text"
+      }
+    ],
+    "description": "Converts text to a number."
+  },
+  {
+    "name": "VLOOKUP",
+    "args": [
+      {
+        "name": "lookup_value",
+        "kind": "value"
+      },
+      {
+        "name": "table_array",
+        "kind": "range"
+      },
+      {
+        "name": "col_index",
+        "kind": "value"
+      },
+      {
+        "name": "range_lookup",
+        "kind": "value",
+        "optional": true
+      }
+    ],
+    "description": "Looks up a value in the first column of a table."
+  },
+  {
+    "name": "XOR",
+    "args": [
+      {
+        "name": "logical1",
+        "kind": "condition"
+      }
+    ],
+    "description": "TRUE if an odd number of arguments are TRUE.",
+    "repeat": 1
+  },
+  {
+    "name": "YEAR",
+    "args": [
+      {
+        "name": "date",
+        "kind": "value"
+      }
+    ],
+    "description": "Year of a date."
+  }
+]
