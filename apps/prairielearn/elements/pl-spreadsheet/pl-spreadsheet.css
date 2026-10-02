@@ -130,6 +130,63 @@
   background-color: var(--bs-primary-bg-subtle);
 }
 
+.pl-spreadsheet-editor:has(.pl-spreadsheet-formula-input.is-pointing)
+  .pl-spreadsheet-grid
+  [role='gridcell'] {
+  cursor: cell;
+}
+
+/* Outlines each range referenced by the formula being edited, in its reference color. */
+.pl-spreadsheet-ref-cell {
+  --pl-spreadsheet-ref-top: 0px;
+  --pl-spreadsheet-ref-bottom: 0px;
+  --pl-spreadsheet-ref-left: 0px;
+  --pl-spreadsheet-ref-right: 0px;
+
+  background-color: color-mix(in srgb, var(--pl-spreadsheet-ref-color) 10%, var(--bs-body-bg));
+  box-shadow:
+    inset 0 var(--pl-spreadsheet-ref-top) 0 0 var(--pl-spreadsheet-ref-color),
+    inset 0 calc(-1 * var(--pl-spreadsheet-ref-bottom)) 0 0 var(--pl-spreadsheet-ref-color),
+    inset var(--pl-spreadsheet-ref-left) 0 0 0 var(--pl-spreadsheet-ref-color),
+    inset calc(-1 * var(--pl-spreadsheet-ref-right)) 0 0 0 var(--pl-spreadsheet-ref-color);
+}
+
+.pl-spreadsheet-ref-top {
+  --pl-spreadsheet-ref-top: 2px;
+}
+
+.pl-spreadsheet-ref-bottom {
+  --pl-spreadsheet-ref-bottom: 2px;
+}
+
+.pl-spreadsheet-ref-left {
+  --pl-spreadsheet-ref-left: 2px;
+}
+
+.pl-spreadsheet-ref-right {
+  --pl-spreadsheet-ref-right: 2px;
+}
+
+.pl-spreadsheet-ref-fill-0 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-0);
+}
+
+.pl-spreadsheet-ref-fill-1 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-1);
+}
+
+.pl-spreadsheet-ref-fill-2 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-2);
+}
+
+.pl-spreadsheet-ref-fill-3 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-3);
+}
+
+.pl-spreadsheet-ref-fill-4 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-4);
+}
+
 .pl-spreadsheet-row-header {
   color: var(--bs-secondary-color);
   font-weight: 600;
@@ -153,6 +210,11 @@
 
   .pl-spreadsheet-formula-input.is-highlighted input {
     color: FieldText;
+  }
+
+  .pl-spreadsheet-ref-cell {
+    outline: 2px dashed Highlight;
+    outline-offset: -2px;
   }
 
   .pl-spreadsheet-cell-readonly {
