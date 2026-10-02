@@ -1,6 +1,6 @@
 import { type SpreadsheetCellRange, cellAddress } from '../../spreadsheet.js';
 
-import { tokenizeFormula } from './lexer.js';
+import { formulaTokens } from './lexer.js';
 
 // Offsets in this module index the full formula text, including the leading `=`.
 
@@ -11,13 +11,14 @@ const OPERAND_POSITION_KINDS = new Set(['lparen', 'comma', 'operator', 'comparis
  * `,`, or an operator, like Google Sheets' and Excel's point mode.
  */
 export function isPointingPosition(formula: string, caret: number): boolean {
-  if (!formula.startsWith('=') || caret < 1) return false;
+  const tokens = formulaTokens(formula);
+  if (!tokens || caret < 1) return false;
   let previous: { kind: string; text: string } | null = null;
-  for (const token of tokenizeFormula(formula.slice(1))) {
-    const start = token.start + 1;
-    const end = token.end + 1;
-    if (start < caret && caret < end) return token.kind === 'whitespace' && isOperand(previous);
-    if (end > caret) break;
+  for (const token of tokens) {
+    if (token.start < caret && caret < token.end) {
+      return token.kind === 'whitespace' && isOperand(previous);
+    }
+    if (token.end > caret) break;
     if (token.kind !== 'whitespace') previous = token;
   }
   return isOperand(previous);

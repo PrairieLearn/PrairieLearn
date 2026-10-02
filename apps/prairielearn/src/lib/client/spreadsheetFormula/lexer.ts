@@ -171,6 +171,26 @@ export function tokenizeFormula(text: string): FormulaToken[] {
   return tokens;
 }
 
+/**
+ * Tokenizes a whole formula including its leading `=`, with offsets into the whole
+ * formula, or returns null if the text is not a formula. No token spans a `boundary`.
+ */
+export function formulaTokens(formula: string, boundaries: number[] = []): FormulaToken[] | null {
+  if (!formula.startsWith('=')) return null;
+  const cuts = [...new Set(boundaries)]
+    .filter((boundary) => boundary > 1 && boundary < formula.length)
+    .sort((a, b) => a - b);
+  const tokens: FormulaToken[] = [];
+  let start = 1;
+  for (const end of [...cuts, formula.length]) {
+    for (const token of tokenizeFormula(formula.slice(start, end))) {
+      tokens.push({ ...token, start: token.start + start, end: token.end + start });
+    }
+    start = end;
+  }
+  return tokens;
+}
+
 /** Normalizes a `ref` or `range` token so equivalent references (`$a$1`, `A1`) compare equal. */
 export function referenceKey(token: FormulaToken): string {
   return token.text.replaceAll('$', '').toUpperCase();

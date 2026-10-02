@@ -3,22 +3,13 @@ import {
   type FormulaFunctionSignature,
   argumentAt,
 } from './functions.js';
-import { type FormulaToken, tokenizeFormula } from './lexer.js';
+import { type FormulaToken, formulaTokens } from './lexer.js';
 
 // Offsets in this module index the full formula text, including the leading `=`.
 
 const MAX_COMPLETIONS = 8;
 const OPERAND_POSITION_KINDS = new Set(['lparen', 'comma', 'operator', 'comparison']);
 const CONSTANTS = new Set(['TRUE', 'FALSE']);
-
-function formulaTokens(formula: string): FormulaToken[] | null {
-  if (!formula.startsWith('=')) return null;
-  return tokenizeFormula(formula.slice(1)).map((token) => ({
-    ...token,
-    start: token.start + 1,
-    end: token.end + 1,
-  }));
-}
 
 function previousSignificant(tokens: FormulaToken[], index: number): FormulaToken | null {
   for (let position = index - 1; position >= 0; position -= 1) {
