@@ -40,6 +40,7 @@ const qidsExampleCourse = [
   'element/orderBlocks',
   'element/panels',
   'element/pythonVariable',
+  'element/spreadsheet',
   'element/stringInput',
   'element/symbolicInput',
   'element/unitsInput',
