@@ -117,34 +117,6 @@
   white-space: normal;
 }
 
-.pl-spreadsheet-editor {
-  --pl-spreadsheet-ref-color-0: #1a5fb4;
-  --pl-spreadsheet-ref-color-1: #8e24aa;
-  --pl-spreadsheet-ref-color-2: #c2185b;
-  --pl-spreadsheet-ref-color-3: #00796b;
-  --pl-spreadsheet-ref-color-4: #3949ab;
-
-  /* Tile colors by sort, as in tylr: a pastel fill, a stroke, and text of one hue. */
-  --pl-spreadsheet-number-fill: #fdefc9;
-  --pl-spreadsheet-number-stroke: #c98a0b;
-  --pl-spreadsheet-number-text: #6b4400;
-  --pl-spreadsheet-string-fill: #dcf3dc;
-  --pl-spreadsheet-string-stroke: #3c8d40;
-  --pl-spreadsheet-string-text: #1d5a22;
-  --pl-spreadsheet-operator-fill: #e4e8ef;
-  --pl-spreadsheet-operator-stroke: #7a8597;
-  --pl-spreadsheet-operator-text: #2f3846;
-  --pl-spreadsheet-shard-fill: #dbe8fb;
-  --pl-spreadsheet-shard-stroke: #4a7cc7;
-  --pl-spreadsheet-shard-text: #183f78;
-  --pl-spreadsheet-shard-active-fill: #b8d2f7;
-  --pl-spreadsheet-shard-active-stroke: #1f5fc2;
-  --pl-spreadsheet-error-fill: #fbe1df;
-  --pl-spreadsheet-error-stroke: #c0392b;
-  --pl-spreadsheet-error-text: #8a1f15;
-  --pl-spreadsheet-range-hole-stroke: #6f42c1;
-}
-
 /*
  * Tiles and holes are polygons whose left and right edges are convex nibs, concave
  * notches, or flat, set by the edge classes below. A stroke layer and a fill layer inset
@@ -268,7 +240,11 @@
 
 /* A reference tile matches its outline in the grid. */
 .pl-spreadsheet-tile-reference {
-  --pl-spreadsheet-tile-fill: color-mix(in srgb, var(--pl-spreadsheet-ref-color) 14%, white);
+  --pl-spreadsheet-tile-fill: color-mix(
+    in srgb,
+    var(--pl-spreadsheet-ref-color) 14%,
+    var(--pl-spreadsheet-reference-fill-base)
+  );
   --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-ref-color);
   --pl-spreadsheet-tile-text: var(--pl-spreadsheet-ref-color);
 }
