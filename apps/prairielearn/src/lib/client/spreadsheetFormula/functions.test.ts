@@ -24,8 +24,8 @@ describe('formula function signatures', () => {
 
   it('formats signatures', () => {
     expect(formatSignature(FORMULA_FUNCTION_SIGNATURES.get('SUM')!)).toEqual([
-      'number1',
-      '[number2]',
+      'range1',
+      '[range2]',
       '…',
     ]);
     expect(formatSignature(FORMULA_FUNCTION_SIGNATURES.get('SUMIF')!)).toEqual([
