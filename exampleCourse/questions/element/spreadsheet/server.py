@@ -1,4 +1,3 @@
-import prairielearn as pl
 import prairielearn.spreadsheet_utils as psp
 
 
@@ -81,7 +80,7 @@ def generate(data):
                 },
             ),
         ],
-        reference={f"Order!D{row}": f"=B{row}*C{row}" for row in range(2, 5)},
+        reference=psp.fill_formula("Order!D2:D4", "=B2*C2"),
         compare_outputs=True,
     )
 
@@ -104,7 +103,15 @@ def grade(data):
         workbook.outputs["example_error"].is_error,
     ]
     score = sum(checks) / len(checks)
-    data["partial_scores"]["model"] = {"score": score, "weight": 1}
+    data["partial_scores"]["model"] = {
+        "score": score,
+        "weight": 1,
+        "feedback": (
+            "The inputs, formula structure, and private grading outputs are correct."
+            if score == 1
+            else "Check the inputs, formula, and calculated line total."
+        ),
+    }
     inventory = psp.Book(data["submitted_answers"]["inventory"])
     data["partial_scores"]["inventory"] = {
         "score": int(inventory.outputs["is_correct"].value is True),
@@ -115,30 +122,6 @@ def grade(data):
         "score": int(labor.outputs["is_correct"].value is True),
         "weight": 1,
     }
-    order = psp.Book(
-        data["submitted_answers"]["order"], grading=data["correct_answers"]["order"]
-    )
-    data["partial_scores"]["order"] = {
-        "score": order.reference.score(),
-        "weight": 1,
-    }
-    for address, series in order.reference.items():
-        mismatch = series.first_mismatch
-        if mismatch is None:
-            continue
-        when = (
-            "with the values shown"
-            if mismatch.case is None
-            else f"in a hidden case with inputs {dict(mismatch.case.inputs or {})}"
-        )
-        data["feedback"]["order"] = (
-            f"{address} is {mismatch.student_value} {when}; expected "
-            f"{mismatch.reference_value}. Use a formula rather than a typed value."
-        )
-        break
-    pl.set_weighted_score_data(data)
-    data["feedback"]["model"] = (
-        "The inputs, formula structure, and private grading outputs are correct."
-        if score == 1
-        else "Check the inputs, formula, and calculated line total."
-    )
+    # Credits each line total that matches the reference in every hidden case, and
+    # recomputes the question score from all partial scores.
+    psp.grade_reference(data, "order")

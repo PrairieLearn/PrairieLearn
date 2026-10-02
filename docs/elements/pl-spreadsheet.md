@@ -71,6 +71,13 @@ Each Python-defined sheet contains:
   accepted in submissions, and exposed to grading code. If omitted, the complete
   `A1:<last-cell>` sheet is visible.
 
+Like Google Sheets, an author-facing range may leave an endpoint open-ended by
+omitting its row or column: `B2:B` runs from `B2` to the last row, `A:C` covers
+every row of columns A to C, and `3:5` covers every column of rows 3 to 5. A
+`student_range` extends to the edge of the sheet, and editable ranges and
+parameters extend to the edge of the sheet's student range. Open-ended ranges are
+resolved when the variant is generated; student formulas still use closed ranges.
+
 Template addresses use source-workbook coordinates. PrairieLearn rebases each
 `student_range` into a student-local address space whose top-left cell is `A1`.
 For example, an authored range `C5:F20` is displayed and submitted as `A1:D16`;
@@ -115,8 +122,8 @@ variant; they are never sent to the browser.
 | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
 | `source-file`     | yes      | Relative `.csv`, `.tsv`, or `.xlsx` path. Absolute paths and traversal outside the selected root are invalid. |
 | `sheet-name`      | yes      | Assigns the CSV/TSV sheet name or selects an exact XLSX worksheet name.                                       |
-| `student-range`   | yes      | Contiguous A1 range that forms the hard visibility and formula-reference boundary.                            |
-| `editable-ranges` | no       | Comma-separated ranges contained by `student-range`. The default is read-only.                                |
+| `student-range`   | yes      | Contiguous A1 range that forms the hard visibility and formula-reference boundary. May be open-ended.         |
+| `editable-ranges` | no       | Comma-separated ranges contained by `student-range`, which may be open-ended. The default is read-only.       |
 | `directory`       | no       | `.` (the question directory) or `serverFilesCourse`; defaults to `.`.                                         |
 
 CSV and TSV sources contain one sheet and may be declared once. For XLSX files,
@@ -213,9 +220,31 @@ concrete variants such as `psp.NumberInput`, `psp.FormulaInput`, and
 `psp.QualifiedAddressRange`, `psp.AddressSpace`, and `psp.AddressSpaceMap` are
 public immutable coordinate types. Ranges support A1 parsing, containment, and
 intersection. Address spaces provide checked source-to-student and
-student-to-source conversion for cells and ranges. `psp.rebase_spreadsheet_formula()`
-rewrites source-coordinate formula references into the corresponding student-local
-address spaces and rejects references outside those spaces.
+student-to-source conversion for cells and ranges. Pass `bounds=` to
+`psp.AddressRange.from_a1()` to resolve an open-ended range such as `B2:B`.
+`psp.rebase_spreadsheet_formula()` rewrites source-coordinate formula references
+into the corresponding student-local address spaces and rejects references outside
+those spaces.
+
+`psp.fill_formula()` repeats a formula across a range the way a spreadsheet's fill
+handle does, so one formula can describe a whole column of answers:
+
+```python
+psp.fill_formula("Forecast!D4:D6", "=ABS(B4-C4)")
+# {"Forecast!D4": "=ABS(B4-C4)", "Forecast!D5": "=ABS(B5-C5)", "Forecast!D6": "=ABS(B6-C6)"}
+
+psp.fill_formula("D2:E2", "=ABS(B2-$C1)")
+# {"D2": "=ABS(B2-$C1)", "E2": "=ABS(C2-$C1)"}
+```
+
+The formula is written for the first cell of the range. Each other cell receives it
+with relative references moved by that cell's offset, while `$`-anchored rows and
+columns stay fixed. Pass `origin="E2"` to write the formula for a different cell,
+such as the last one when filling up or left. Keys are sheet-qualified when the
+range is, so the result can be merged into a `reference` mapping, or used as a
+sheet's `cells` otherwise. `psp.shift_formula(formula, rows=..., columns=...)`
+moves a single formula. A reference that would move above row 1 or left of column A
+raises `ValueError`.
 
 ## Grading snapshots
 
@@ -355,12 +384,13 @@ def grade(data):
 ```
 
 Use `sheet.cell("D2")` or `sheet.range("A2:D9")` when the expected return type is
-known. `workbook["Budget"]` returns a read-only `psp.Sheet`; indexing that sheet
-remains available when either cell or range is acceptable. A sheet retains its
-parent workbook, so a qualified reference such as
-`summary.range("Budget!A2:D9")` resolves to the `Budget` sheet.
-Excel-style quoted names and escaped apostrophes are supported, for example
-`sheet["'Input Data'!A2:D9"]` and `sheet["'Bob''s Data'!A1"]`.
+known. Ranges may be open-ended, so `sheet.range("D2:D")` runs to the last row of
+the student's sheet. `workbook["Budget"]` returns a read-only `psp.Sheet`; indexing
+that sheet remains available when either cell or range is acceptable. A sheet
+retains its parent workbook, so a qualified reference such as
+`summary.range("Budget!A2:D9")` resolves to the `Budget` sheet. Excel-style quoted
+names and escaped apostrophes are supported, for example `sheet["'Input
+Data'!A2:D9"]` and `sheet["'Bob''s Data'!A1"]`.
 
 The corresponding view types are `psp.Cell`, `psp.CellRange`, and `psp.Output`.
 
@@ -474,6 +504,33 @@ def grade(data):
     data["score"] = workbook.reference.score()
 ```
 
+Most reference-graded questions need only a reference solution, test cases, and a
+per-cell score. Private sheets and outputs may then be omitted, and
+`psp.fill_formula()` writes a column of reference formulas from the first one:
+
+```python title="server.py"
+def generate(data):
+    # Define data["params"]["workbook"] with editable cells in Order!C2:C7.
+    data["correct_answers"]["model"] = psp.create_spreadsheet(
+        test_cases=psp.random_cases(10, {"Order!A2": (1, 20), "Order!B2": (0.5, 99.5)}),
+        reference=psp.fill_formula("Order!C2:C7", "=A2*B2"),
+        rtol=0,
+        atol=1e-6,
+    )
+
+
+def grade(data):
+    psp.grade_reference(data, "model")
+```
+
+`psp.grade_reference(data, answers_name, weight=1)` gives each reference cell
+equal credit when it matches the reference on the submitted inputs and on every
+test case. The feedback names the first mismatching cell, in the student's
+coordinates, and says whether it calculates the wrong value, uses a typed value that
+does not change with the test cases, or uses a formula that does not generalize.
+`pl-spreadsheet` shows the feedback and a score badge with the submission. The
+question score is then recomputed with `pl.set_weighted_score_data()`.
+
 Every address uses authoritative source-workbook coordinates, like private sheets
 and outputs.
 
@@ -513,9 +570,10 @@ solution that cannot be evaluated is reported as a question error when the varia
 is created. Without a reference solution, the answer panel explains that grading is
 defined by the question.
 
-With a reference solution, `outputs` may be empty. Reference formulas, test-case
-inputs, and parameter declarations never leave the server. The normalized answer
-adds only the recalculated outputs, the typed comparisons, and a summary:
+With a reference solution, `outputs` and the private sheets may be omitted.
+Reference formulas, test-case inputs, and parameter declarations never leave the
+server. The normalized answer adds only the recalculated outputs, the typed
+comparisons, and a summary:
 
 ```json
 {
@@ -558,10 +616,13 @@ source address to `psp.ComparisonSeries`. A series provides `base`, `cases`,
 `all_match`, `match_rate`, and `first_mismatch`. Each `psp.Comparison` provides
 typed `student` and `reference` results, `student_value`, `reference_value`,
 `match`, and the `case` that produced it (`None` for the submitted inputs).
-`workbook.reference.outputs` holds output comparisons, and
-`workbook.reference.score()` returns the fraction of all comparisons that match. Pass
-`grading=data["correct_answers"][answers_name]` to also populate each case's
-`inputs`. PrairieLearn verifies that its `grader_hash` matches the snapshot.
+`workbook.reference.outputs` holds output comparisons.
+`workbook.reference.score()` returns the fraction of all comparisons that match, and
+`workbook.reference.cell_score()` returns the fraction of reference cells that match
+in every run. Pass `grading=data["correct_answers"][answers_name]` to also populate
+each case's `inputs` and to enable `workbook.student_cell(source_address)`, which
+returns the cell a student sees for a source address such as a reference key.
+PrairieLearn verifies that its `grader_hash` matches the snapshot.
 
 File-backed questions can declare reference cells and parameters in HTML:
 
@@ -587,15 +648,15 @@ File-backed questions can declare reference cells and parameters in HTML:
 </pl-spreadsheet>
 ```
 
-| Element                    | Attribute    | Required | Description                                          |
-| -------------------------- | ------------ | -------- | ---------------------------------------------------- |
-| `pl-spreadsheet-reference` | `sheet-name` | yes      | Source sheet containing the editable answer cell.    |
-|                            | `cell`       | yes      | Source-coordinate address of the answer cell.        |
-|                            | `formula`    | yes      | Reference formula in source coordinates.             |
-|                            | `rtol`       | no       | Relative tolerance for numbers; defaults to `1e-2`.  |
-|                            | `atol`       | no       | Absolute tolerance for numbers; defaults to `1e-8`.  |
-| `pl-spreadsheet-parameter` | `sheet-name` | yes      | Source sheet containing the editable input cells.    |
-|                            | `range`      | yes      | Source-coordinate range of editable parameter cells. |
+| Element                    | Attribute    | Required | Description                                                                   |
+| -------------------------- | ------------ | -------- | ----------------------------------------------------------------------------- |
+| `pl-spreadsheet-reference` | `sheet-name` | yes      | Source sheet containing the editable answer cell.                             |
+|                            | `cell`       | yes      | Source-coordinate address of the answer cell.                                 |
+|                            | `formula`    | yes      | Reference formula in source coordinates.                                      |
+|                            | `rtol`       | no       | Relative tolerance for numbers; defaults to `1e-2`.                           |
+|                            | `atol`       | no       | Absolute tolerance for numbers; defaults to `1e-8`.                           |
+| `pl-spreadsheet-parameter` | `sheet-name` | yes      | Source sheet containing the editable input cells.                             |
+|                            | `range`      | yes      | Source-coordinate range of editable parameter cells, which may be open-ended. |
 
 These children also work with `params-name`, and they merge with any `reference` or
 `parameters` set in `data["correct_answers"]`. Test cases are authored only in

@@ -661,7 +661,9 @@ def test_spreadsheet_wrapper_resolves_cross_sheet_references() -> None:
         ("A1:'Input Data'!B2", "cannot span multiple sheets"),
         ("B2:A1", "top-left to bottom-right"),
         ("'Input Data!A1", "Invalid spreadsheet reference"),
-        ("A:A", "Invalid spreadsheet reference"),
+        ("A1:", "Invalid spreadsheet reference"),
+        ("B:A", "top-left to bottom-right"),
+        ("A:3", "Invalid spreadsheet range"),
         ("A1:B2:C3", "Invalid spreadsheet reference"),
     ],
 )
@@ -948,7 +950,9 @@ def test_create_spreadsheet_adds_parameters_test_cases_and_reference() -> None:
 
     assert book["outputs"] == {}
     assert book.get("parameters") == ["'Bob''s Data'!A1:A3"]
-    assert book.get("test_cases") == [{"name": "zero", "inputs": {"'Bob''s Data'!A1": 0}}]
+    assert book.get("test_cases") == [
+        {"name": "zero", "inputs": {"'Bob''s Data'!A1": 0}}
+    ]
     assert book.get("reference") == {
         "cells": {
             "'Bob''s Data'!B2": {"value": "=A1*2"},
@@ -1106,3 +1110,258 @@ def test_book_reference_errors_are_explicit() -> None:
     reference["cells"]["Inputs!B1"]["cases"].pop()
     with pytest.raises(ValueError, match="one comparison per test case"):
         psp.Book(invalid)
+
+
+@pytest.mark.parametrize(
+    ("range_text", "expected"),
+    [
+        ("B2:B", "B2:B10"),
+        ("b2:c", "B2:C10"),
+        ("B:B2", "B2:B10"),
+        ("A:C", "A1:C10"),
+        ("3:5", "A3:D5"),
+        ("B3:3", "B3:D3"),
+        ("B2:C4", "B2:C4"),
+    ],
+)
+def test_address_ranges_resolve_open_ended_endpoints_against_bounds(
+    range_text: str, expected: str
+) -> None:
+    bounds = psp.AddressRange.from_a1("A1:D10")
+    assert psp.AddressRange.from_a1(range_text, bounds=bounds).address == expected
+
+
+def test_address_ranges_reject_unresolvable_open_ended_ranges() -> None:
+    with pytest.raises(ValueError, match="needs sheet bounds"):
+        psp.AddressRange.from_a1("B2:B")
+    bounds = psp.AddressRange.from_a1("B2:D10")
+    with pytest.raises(ValueError, match="outside B2:D10"):
+        psp.AddressRange.from_a1("A2:A", bounds=bounds)
+    with pytest.raises(ValueError, match="Invalid spreadsheet range"):
+        psp.AddressRange.from_a1("A:3", bounds=bounds)
+    with pytest.raises(ValueError, match="Invalid spreadsheet cell address"):
+        psp.AddressRange.from_a1("A", bounds=bounds)
+
+    space = psp.AddressSpace.from_source_range("C5:F20")
+    assert space.to_student_range("D6:D").address == "B2:B16"
+    assert space.to_source_range("B:B").address == "D5:D20"
+
+
+def test_create_spreadsheet_resolves_open_ended_sheet_ranges() -> None:
+    book = psp.create_spreadsheet({
+        "Inputs": {
+            "cells": {"A1": "Quantity"},
+            "rows": 20,
+            "columns": 6,
+            "student_range": "A1:D",
+            "editable_ranges": ["B2:B", "C:C"],
+        },
+        "Inferred": {"cells": {"C4": 1}, "editable_ranges": ["A2:B"]},
+    })
+
+    inputs, inferred = book["sheets"]
+    assert inputs.get("student_range") == "A1:D20"
+    assert inputs.get("editable_ranges") == ["B2:B20", "C1:C20"]
+    assert (inferred["rows"], inferred["columns"]) == (4, 3)
+    assert inferred.get("editable_ranges") == ["A2:B4"]
+
+    with pytest.raises(ValueError, match='Invalid editable range "E2:E"'):
+        psp.create_spreadsheet({
+            "Inputs": {"rows": 5, "columns": 6, "student_range": "A1:D"},
+            "Other": {"editable_ranges": ["E2:E"], "rows": 2, "columns": 2},
+        })
+
+
+def test_create_spreadsheet_keeps_open_ended_parameters_for_the_element() -> None:
+    book = psp.create_spreadsheet(
+        outputs={"total": "Checks!A1"},
+        parameters=["'Input Data'!a2:a", "Inputs!B2:C3"],
+    )
+    assert book["sheets"] == []
+    assert book.get("parameters") == ["'Input Data'!A2:A", "Inputs!B2:C3"]
+
+    with pytest.raises(ValueError, match="is invalid"):
+        psp.create_spreadsheet(
+            outputs={"total": "Checks!A1"}, parameters=["Inputs!A:3"]
+        )
+
+
+def test_create_spreadsheet_builds_reference_only_grading_books() -> None:
+    book = psp.create_spreadsheet(reference={"Inputs!B2": "=A2*2"}, atol=0)
+    assert book == {
+        "schema_version": 2,
+        "sheets": [],
+        "outputs": {},
+        "reference": {"cells": {"Inputs!B2": {"value": "=A2*2"}}, "atol": 0.0},
+    }
+    with pytest.raises(ValueError, match="must contain 1 to 10 sheets"):
+        psp.create_spreadsheet({})
+
+
+def test_spreadsheet_wrapper_resolves_open_ended_ranges() -> None:
+    inputs = psp.Book(snapshot())["Inputs"]
+
+    assert inputs.range("B1:B").range_address == "B1:B3"
+    assert inputs.range("A:A").range_address == "A1:A3"
+    assert inputs.range("1:1").range_address == "A1:C1"
+    assert inputs.range("'Input Data'!A1:B").qualified_range_address == (
+        "'Input Data'!A1:B2"
+    )
+    with pytest.raises(ValueError, match="outside A1:C3"):
+        inputs.range("D1:D")
+
+
+@pytest.mark.parametrize(
+    ("formula", "rows", "columns", "expected"),
+    [
+        ("=ABS(B2-$C1)", 0, 1, "=ABS(C2-$C1)"),
+        ("=ABS(B2-$C1)", 1, 0, "=ABS(B3-$C2)"),
+        ("=$B$2+B$2+$B2", 2, 3, "=$B$2+E$2+$B4"),
+        ("=SUM(A2:B3, C:C, 4:4)", 1, 1, "=SUM(B3:C4, D:D, 5:5)"),
+        ("=SUM($A:A)", 0, 2, "=SUM($A:C)"),
+        ("='Weekly Sales'!B2*Rates!$A$1", 1, 0, "='Weekly Sales'!B3*Rates!$A$1"),
+        ('=IF(A1>0,"A1",A1)&TRUE', 0, 1, '=IF(B1>0,"A1",B1)&TRUE'),
+        ("=Z1", 0, 1, "=AA1"),
+        ("=PI()", 5, 5, "=PI()"),
+    ],
+)
+def test_shift_formula_moves_relative_references(
+    formula: str, rows: int, columns: int, expected: str
+) -> None:
+    assert psp.shift_formula(formula, rows=rows, columns=columns) == expected
+
+
+def test_shift_formula_rejects_invalid_shifts() -> None:
+    with pytest.raises(ValueError, match="above row 1"):
+        psp.shift_formula("=B2+A1", rows=-1)
+    with pytest.raises(ValueError, match="left of column A"):
+        psp.shift_formula("=B2", columns=-2)
+    assert psp.shift_formula("=$A$1", rows=-5, columns=-5) == "=$A$1"
+    with pytest.raises(psp.FormulaParseError, match='must start with "="'):
+        psp.shift_formula("B2")
+
+
+def test_fill_formula_fills_down_right_and_from_an_origin() -> None:
+    assert psp.fill_formula("Forecast!D4:D6", "=ABS(B4-C4)") == {
+        "Forecast!D4": "=ABS(B4-C4)",
+        "Forecast!D5": "=ABS(B5-C5)",
+        "Forecast!D6": "=ABS(B6-C6)",
+    }
+    assert psp.fill_formula("D2:E3", "=ABS(B2-$C1)") == {
+        "D2": "=ABS(B2-$C1)",
+        "E2": "=ABS(C2-$C1)",
+        "D3": "=ABS(B3-$C2)",
+        "E3": "=ABS(C3-$C2)",
+    }
+    assert psp.fill_formula("'Weekly Sales'!C2:E2", "=E1*2", origin="E2") == {
+        "'Weekly Sales'!C2": "=C1*2",
+        "'Weekly Sales'!D2": "=D1*2",
+        "'Weekly Sales'!E2": "=E1*2",
+    }
+    with pytest.raises(ValueError, match="above row 1"):
+        psp.fill_formula("A1:A2", "=A1", origin="A2")
+
+
+def student_overlay(source_range: str) -> dict[str, str]:
+    return {
+        "student_sheet": "Inputs",
+        "source_sheet": "Inputs",
+        "source_range": source_range,
+    }
+
+
+def test_book_maps_source_addresses_to_student_cells() -> None:
+    grading = {
+        **private_grading_config(),
+        "student_overlays": [student_overlay("C5:E7")],
+    }
+    book = psp.Book(graded_snapshot(), grading=grading)
+
+    cell = book.student_cell("Inputs!D5")
+    assert (cell.qualified_address, cell.formula) == ("Inputs!B1", "=A1*2")
+    with pytest.raises(ValueError, match="outside every student range"):
+        book.student_cell("Inputs!A1")
+    with pytest.raises(ValueError, match="outside every student range"):
+        book.student_cell("Missing!A1")
+    with pytest.raises(ValueError, match="Pass grading="):
+        psp.Book(snapshot()).student_cell("Inputs!D5")
+
+
+def reference_question_data(
+    spreadsheet_snapshot: psp.Snapshot,
+) -> dict[str, Any]:
+    return {
+        "submitted_answers": {"model": spreadsheet_snapshot},
+        "correct_answers": {
+            "model": {
+                **private_grading_config(),
+                "student_overlays": [student_overlay("A1:C3")],
+            }
+        },
+        "partial_scores": {"other": {"score": 1, "weight": 1}},
+        "format_errors": {},
+    }
+
+
+def set_reference_cells(
+    spreadsheet_snapshot: psp.Snapshot,
+    cells: dict[str, list[bool]],
+) -> psp.Snapshot:
+    reference = snapshot_grading(spreadsheet_snapshot).get("reference")
+    assert reference is not None
+    reference["cells"] = {
+        address: {
+            "base": comparison(1, 1, match=matches[0]),
+            "cases": [comparison(1, 1, match=match) for match in matches[1:]],
+        }
+        for address, matches in cells.items()
+    }
+    return spreadsheet_snapshot
+
+
+def test_reference_cell_score_requires_every_run_to_match() -> None:
+    book = psp.Book(
+        set_reference_cells(
+            graded_snapshot(),
+            {"Inputs!A1": [True, True, True], "Inputs!B1": [True, False, True]},
+        )
+    )
+    assert book.reference.cell_score() == pytest.approx(0.5)
+
+
+@pytest.mark.parametrize(
+    ("cells", "score", "feedback"),
+    [
+        (
+            {"Inputs!A1": [True, True, True], "Inputs!B1": [True, True, True]},
+            1,
+            "All answer cells match the reference solution on your worksheet and on every hidden test case.",
+        ),
+        (
+            {"Inputs!A1": [True, True, True], "Inputs!B1": [False, True, True]},
+            0.5,
+            "1 of 2 answer cells match the reference solution. For example, Inputs!B1 does not calculate the expected value.",
+        ),
+        (
+            {"Inputs!B1": [True, False, True], "Inputs!A1": [True, True, False]},
+            0,
+            "0 of 2 answer cells match the reference solution. For example, Inputs!B1 is correct for the values shown but not for every hidden test case.",
+        ),
+        (
+            {"Inputs!A1": [True, True, False]},
+            0,
+            "0 of 1 answer cells match the reference solution. For example, Inputs!A1 is correct for the values shown but not when the hidden test cases change the data.",
+        ),
+    ],
+)
+def test_grade_reference_scores_cells_and_explains_the_first_mismatch(
+    cells: dict[str, list[bool]], score: float, feedback: str
+) -> None:
+    data = reference_question_data(set_reference_cells(graded_snapshot(), cells))
+
+    psp.grade_reference(cast(Any, data), "model", weight=2)
+
+    partial_score = data["partial_scores"]["model"]
+    assert (partial_score["score"], partial_score["weight"]) == (score, 2)
+    assert partial_score["feedback"].startswith(feedback)
+    assert data["score"] == pytest.approx((1 + 2 * score) / 3)
