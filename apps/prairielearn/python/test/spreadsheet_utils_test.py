@@ -1,7 +1,8 @@
 import datetime
+import random
 from dataclasses import FrozenInstanceError, is_dataclass
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -930,3 +931,178 @@ def test_get_formula_ast_and_invalid_formula() -> None:
         psp.parse_spreadsheet_formula("=named_expression")
     with pytest.raises(psp.FormulaParseError, match="incompatible endpoint"):
         psp.parse_spreadsheet_formula("=A1:B")
+
+
+def test_create_spreadsheet_adds_parameters_test_cases_and_reference() -> None:
+    book = psp.create_spreadsheet(
+        {"Bob's Data": {"A1": 1}},
+        reference={
+            "'Bob''s Data'!b2": "=A1*2",
+            "'Bob''s Data'!C2": {"value": "=A1*3", "rtol": 1e-6},
+        },
+        parameters=["'Bob''s Data'!a1:a3"],
+        test_cases=[{"name": "zero", "inputs": {"'Bob''s Data'!a1": np.int64(0)}}],
+        rtol=0.05,
+        compare_outputs=True,
+    )
+
+    assert book["outputs"] == {}
+    assert book.get("parameters") == ["'Bob''s Data'!A1:A3"]
+    assert book.get("test_cases") == [{"name": "zero", "inputs": {"'Bob''s Data'!A1": 0}}]
+    assert book.get("reference") == {
+        "cells": {
+            "'Bob''s Data'!B2": {"value": "=A1*2"},
+            "'Bob''s Data'!C2": {"value": "=A1*3", "rtol": 1e-6},
+        },
+        "rtol": 0.05,
+        "compare_outputs": True,
+    }
+
+
+def test_create_spreadsheet_rejects_invalid_testing_options() -> None:
+    with pytest.raises(ValueError, match="require a reference solution"):
+        psp.create_spreadsheet({"Inputs": {}}, outputs={"x": "Inputs!A1"}, rtol=0.1)
+    with pytest.raises(ValueError, match="require outputs or a reference"):
+        psp.create_spreadsheet({"Inputs": {}}, test_cases=cast(Any, []))
+    with pytest.raises(ValueError, match="must be sheet-qualified"):
+        psp.create_spreadsheet({"Inputs": {}}, reference={"B2": "=A1"})
+    with pytest.raises(ValueError, match="must not be empty"):
+        psp.create_spreadsheet({"Inputs": {}}, reference={"Inputs!B2": ""})
+    with pytest.raises(ValueError, match="non-negative finite"):
+        psp.create_spreadsheet(
+            {"Inputs": {}}, reference={"Inputs!B2": {"value": "=A1", "atol": -1}}
+        )
+    with pytest.raises(ValueError, match="more than once"):
+        psp.create_spreadsheet(
+            {"Inputs": {}},
+            outputs={"x": "Inputs!A1"},
+            test_cases=[{"inputs": {"Inputs!A1": 1, "Inputs!a1": 2}}],
+        )
+
+
+def test_random_cases_are_deterministic_for_the_seeded_variant() -> None:
+    inputs: dict[str, psp.RandomInput] = {
+        "Inputs!A2": (1, 10),
+        "Inputs!B2": (0.5, 1.5),
+        "Inputs!C2": ["low", "high"],
+        "Inputs!D2": lambda: 7,
+    }
+    random.seed(1234)
+    first = psp.random_cases(5, inputs)
+    random.seed(1234)
+    assert psp.random_cases(5, inputs) == first
+
+    assert [case.get("name") for case in first] == [
+        f"Random case {i}" for i in range(1, 6)
+    ]
+    for case in first:
+        values = case["inputs"]
+        assert isinstance(values["Inputs!A2"], int)
+        assert 1 <= values["Inputs!A2"] <= 10
+        assert isinstance(values["Inputs!B2"], float)
+        assert 0.5 <= values["Inputs!B2"] <= 1.5
+        assert values["Inputs!C2"] in {"low", "high"}
+        assert values["Inputs!D2"] == 7
+    assert psp.random_cases(1, {}, name="Case {index}") == [
+        {"name": "Case 1", "inputs": {}}
+    ]
+
+    with pytest.raises(ValueError, match="between 0 and 50"):
+        psp.random_cases(51, {})
+    with pytest.raises(TypeError, match="must be a"):
+        psp.random_cases(1, {"Inputs!A2": cast(psp.RandomInput, "abc")})
+
+
+def comparison(
+    student: float, reference: float, *, match: bool
+) -> psp.SnapshotComparison:
+    return {
+        "student": {"type": "number", "value": student},
+        "reference": {"type": "number", "value": reference},
+        "match": match,
+    }
+
+
+def graded_snapshot() -> psp.Snapshot:
+    spreadsheet_snapshot = snapshot()
+    grading = snapshot_grading(spreadsheet_snapshot)
+    grading["cases"] = [
+        {"name": "zero", "outputs": {"total": {"type": "number", "value": 0}}},
+        {"name": "large", "outputs": {"total": {"type": "number", "value": 600}}},
+    ]
+    grading["reference"] = {
+        "cells": {
+            "Inputs!B1": {
+                "base": comparison(6, 6, match=True),
+                "cases": [
+                    comparison(6, 0, match=False),
+                    comparison(600, 600, match=True),
+                ],
+            }
+        },
+        "summary": {"matched": 2, "total": 3},
+    }
+    return spreadsheet_snapshot
+
+
+def private_grading_config() -> dict[str, object]:
+    return {
+        "grader_hash": "grader-hash",
+        "test_cases": [
+            {"name": "zero", "inputs": [{"sheet": "Inputs", "cell": "A1", "value": 0}]},
+            {
+                "name": "large",
+                "inputs": [{"sheet": "Inputs", "cell": "A1", "value": 300}],
+            },
+        ],
+    }
+
+
+def test_book_exposes_test_cases_and_reference_comparisons() -> None:
+    book = psp.Book(graded_snapshot(), grading=private_grading_config())
+
+    assert [case.name for case in book.cases] == ["zero", "large"]
+    assert book.cases[1].value("total") == 600
+    assert book.cases[0].inputs == {"Inputs!A1": 0}
+
+    assert book.has_reference
+    series = book.reference["Inputs!b1"]
+    assert series.match_rate == pytest.approx(2 / 3)
+    assert not series.all_match
+    mismatch = series.first_mismatch
+    assert mismatch is not None
+    assert mismatch.case is book.cases[0]
+    assert (mismatch.student_value, mismatch.reference_value) == (6, 0)
+    assert series.base.case is None
+    assert list(book.reference) == ["Inputs!B1"]
+    assert book.reference.outputs == {}
+    assert book.reference.score() == pytest.approx(2 / 3)
+
+
+def test_book_case_inputs_require_the_matching_private_config() -> None:
+    assert psp.Book(graded_snapshot()).cases[0].inputs is None
+
+    mismatched = {**private_grading_config(), "grader_hash": "other"}
+    with pytest.raises(ValueError, match="does not match this snapshot"):
+        psp.Book(graded_snapshot(), grading=mismatched)
+
+
+def test_book_reference_errors_are_explicit() -> None:
+    book = psp.Book(snapshot())
+    assert book.cases == ()
+    assert not book.has_reference
+    with pytest.raises(ValueError, match="does not contain reference comparisons"):
+        _ = book.reference
+
+    graded = psp.Book(graded_snapshot())
+    with pytest.raises(KeyError, match="not a spreadsheet reference cell"):
+        graded.reference["Inputs!C1"]
+    with pytest.raises(KeyError, match="must be sheet-qualified"):
+        graded.reference["B1"]
+
+    invalid = graded_snapshot()
+    reference = snapshot_grading(invalid).get("reference")
+    assert reference is not None
+    reference["cells"]["Inputs!B1"]["cases"].pop()
+    with pytest.raises(ValueError, match="one comparison per test case"):
+        psp.Book(invalid)

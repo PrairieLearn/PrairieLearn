@@ -6,6 +6,7 @@ import json
 import math
 import pathlib
 import re
+from dataclasses import dataclass
 from typing import Any
 
 import chevron
@@ -29,6 +30,13 @@ MAX_FORMULA_LENGTH = 2048
 MAX_TEXT_LENGTH = 32 * 1024
 MAX_PAYLOAD_BYTES = 1024 * 1024
 MAX_GRADING_OUTPUTS = 100
+MAX_PARAMETER_RANGES = 100
+MAX_TEST_CASES = 50
+MAX_TEST_CASE_INPUTS = 100
+MAX_REFERENCE_CELLS = 500
+MAX_GRADING_RESULTS = 5000
+DEFAULT_RTOL = 1e-2
+DEFAULT_ATOL = 1e-8
 INTERNAL_SHEET_PREFIX = "__PL_STUDENT_"
 
 CELL_ADDRESS_RE = re.compile(r"^([A-Z]+)([1-9][0-9]*)$")
@@ -537,13 +545,14 @@ def _normalize_grading_config(
             f"Private grading workbooks may contain at most {MAX_FORMULAS} formulas."
         )
 
-    raw_outputs = raw_config.get("outputs")
+    raw_outputs = raw_config.get("outputs", {})
+    min_outputs = 0 if raw_config.get("reference") is not None else 1
     if (
         not isinstance(raw_outputs, dict)
-        or not 1 <= len(raw_outputs) <= MAX_GRADING_OUTPUTS
+        or not min_outputs <= len(raw_outputs) <= MAX_GRADING_OUTPUTS
     ):
         raise ValueError(
-            f"Private spreadsheet grading workbooks must define 1 to {MAX_GRADING_OUTPUTS} outputs."
+            f"Private spreadsheet grading workbooks must define 1 to {MAX_GRADING_OUTPUTS} outputs, or a reference solution."
         )
     sheets_by_name = {
         sheet["name"]: sheet
@@ -602,6 +611,15 @@ def _normalize_grading_config(
     }
     if raw_source_sheets:
         normalized["source_sheets"] = normalized_source_sheets
+    normalized.update(
+        _normalize_testing_config(
+            raw_config,
+            template,
+            normalized_source_sheets,
+            student_overlays,
+            output_count=len(outputs),
+        )
+    )
     normalized_size = len(
         json.dumps(
             normalized, ensure_ascii=False, separators=(",", ":"), sort_keys=True
@@ -612,6 +630,337 @@ def _normalize_grading_config(
             f"Private spreadsheet grading workbooks must be at most {MAX_PAYLOAD_BYTES} bytes."
         )
     return {**normalized, "grader_hash": _content_hash(normalized)}
+
+
+@dataclass(frozen=True)
+class _SourceCell:
+    """A source-coordinate cell and the student-relative cell it mirrors, if any."""
+
+    sheet: dict[str, Any]
+    address: str
+    position: tuple[int, int]
+    student_sheet: dict[str, Any] | None
+    student_position: tuple[int, int] | None
+
+    @property
+    def key(self) -> str:
+        return f"{self.sheet['name']}!{self.address}"
+
+
+def _split_qualified(value: Any, description: str) -> tuple[str, str]:
+    if not isinstance(value, str) or "!" not in value:
+        raise ValueError(
+            f'{description} must be a sheet-qualified address such as "Inputs!B2".'
+        )
+    sheet_text, local_text = value.rsplit("!", 1)
+    try:
+        sheet_name = psp.QualifiedAddress.from_a1(f"{sheet_text}!A1").sheet_name
+    except ValueError as exc:
+        raise ValueError(f'{description} "{value}" has an invalid sheet name.') from exc
+    return sheet_name, local_text.upper()
+
+
+def _cell_is_editable(sheet: dict[str, Any], row: int, column: int) -> bool:
+    return any(
+        (parsed_range := _parse_range(range_text)) is not None
+        and parsed_range.contains_cell(row, column)
+        for range_text in sheet["editable_ranges"]
+    )
+
+
+def _is_formula(value: Any) -> bool:
+    return isinstance(value, str) and value.startswith("=")
+
+
+def _normalize_tolerance(value: Any, description: str) -> float:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        raise ValueError(f"{description} must be a non-negative finite number.")
+    return float(value)
+
+
+def _normalize_testing_config(
+    raw_config: dict[str, Any],
+    template: dict[str, Any],
+    source_sheets: list[dict[str, Any]],
+    student_overlays: list[dict[str, str]],
+    *,
+    output_count: int,
+) -> dict[str, Any]:
+    """Normalize parameters, hidden test cases, and the reference solution."""
+    # All addresses are authored in source coordinates. Reference formulas are
+    # rebased into student-relative coordinates so that the server evaluates
+    # them exactly like a submission.
+    source_by_name = {sheet["name"].casefold(): sheet for sheet in source_sheets}
+    template_by_name = {sheet["name"]: sheet for sheet in template["sheets"]}
+    overlay_by_source: dict[str, tuple[dict[str, Any], psp.AddressRange]] = {}
+    for overlay in student_overlays:
+        source_range = _parse_range(overlay["source_range"])
+        assert source_range is not None
+        overlay_by_source[overlay["source_sheet"]] = (
+            template_by_name[overlay["student_sheet"]],
+            source_range,
+        )
+
+    def resolve(sheet_name: str, address: str, description: str) -> _SourceCell:
+        sheet = source_by_name.get(sheet_name.casefold())
+        position = _parse_address(address)
+        if (
+            sheet is None
+            or position is None
+            or position[0] >= sheet["rows"]
+            or position[1] >= sheet["columns"]
+        ):
+            raise ValueError(
+                f'{description} references unknown cell "{sheet_name}!{address}".'
+            )
+        overlay = overlay_by_source.get(sheet["name"])
+        if overlay is None or not overlay[1].contains_cell(*position):
+            return _SourceCell(sheet, address, position, None, None)
+        student_sheet, source_range = overlay
+        return _SourceCell(
+            sheet,
+            address,
+            position,
+            student_sheet,
+            (
+                position[0] - source_range.start_row,
+                position[1] - source_range.start_column,
+            ),
+        )
+
+    normalized: dict[str, Any] = {}
+
+    raw_parameters = raw_config.get("parameters", [])
+    if (
+        not isinstance(raw_parameters, list)
+        or len(raw_parameters) > MAX_PARAMETER_RANGES
+    ):
+        raise ValueError(
+            f"Spreadsheet parameters must be a list of at most {MAX_PARAMETER_RANGES} ranges."
+        )
+    parameter_keys: set[str] = set()
+    parameters: list[dict[str, str]] = []
+    for raw_parameter in raw_parameters:
+        sheet_name, range_text = _split_qualified(
+            raw_parameter, "Spreadsheet parameter range"
+        )
+        parameter_range = _parse_range(range_text)
+        sheet = source_by_name.get(sheet_name.casefold())
+        overlay = overlay_by_source.get(sheet["name"]) if sheet else None
+        if (
+            sheet is None
+            or parameter_range is None
+            or overlay is None
+            or not overlay[1].contains_range(parameter_range)
+        ):
+            raise ValueError(
+                f'Spreadsheet parameter range "{raw_parameter}" must be inside a student range.'
+            )
+        parameters.append({"sheet": sheet["name"], "range": parameter_range.address})
+        parameter_keys.update(
+            f"{sheet['name']}!{_column_name(column)}{row + 1}"
+            for row in range(parameter_range.start_row, parameter_range.end_row + 1)
+            for column in range(
+                parameter_range.start_column, parameter_range.end_column + 1
+            )
+        )
+    if parameters:
+        normalized["parameters"] = parameters
+
+    def is_overridable(cell: _SourceCell) -> bool:
+        if cell.key in parameter_keys:
+            return True
+        if cell.student_sheet is None or cell.student_position is None:
+            return not _is_formula(cell.sheet["cells"].get(cell.address))
+        row, column = cell.student_position
+        if _cell_is_editable(cell.student_sheet, row, column):
+            return False
+        return not _is_formula(
+            cell.student_sheet["cells"].get(f"{_column_name(column)}{row + 1}")
+        )
+
+    raw_cases = raw_config.get("test_cases", [])
+    if not isinstance(raw_cases, list) or len(raw_cases) > MAX_TEST_CASES:
+        raise ValueError(
+            f"Spreadsheet test cases must be a list of at most {MAX_TEST_CASES} cases."
+        )
+    case_names: set[str] = set()
+    test_cases: list[dict[str, Any]] = []
+    for case_index, raw_case in enumerate(raw_cases, start=1):
+        if not isinstance(raw_case, dict) or set(raw_case) - {"name", "inputs"}:
+            raise ValueError(
+                f'Spreadsheet test case {case_index} must be an object with "inputs" and an optional "name".'
+            )
+        name = raw_case.get("name", f"Case {case_index}")
+        if (
+            not isinstance(name, str)
+            or name.strip() != name
+            or not 1 <= len(name) <= 128
+        ):
+            raise ValueError(
+                f"Spreadsheet test case {case_index} name must be a non-empty string of at most 128 characters."
+            )
+        if name in case_names:
+            raise ValueError(f'Spreadsheet test case name "{name}" is duplicated.')
+        case_names.add(name)
+        raw_inputs = raw_case.get("inputs")
+        if not isinstance(raw_inputs, dict) or len(raw_inputs) > MAX_TEST_CASE_INPUTS:
+            raise ValueError(
+                f'Spreadsheet test case "{name}" inputs must map at most {MAX_TEST_CASE_INPUTS} cells to values.'
+            )
+        input_keys: set[str] = set()
+        inputs: list[dict[str, Any]] = []
+        for raw_address, raw_value in raw_inputs.items():
+            description = f'Spreadsheet test case "{name}"'
+            cell = resolve(*_split_qualified(raw_address, description), description)
+            if cell.key in input_keys:
+                raise ValueError(f'{description} sets "{cell.key}" more than once.')
+            input_keys.add(cell.key)
+            value = (
+                None
+                if raw_value is None
+                else _normalize_cell_value(raw_value, f"{cell.key} in {description}")
+            )
+            if _is_formula(value):
+                raise ValueError(
+                    f'{description} must set "{cell.key}" to a constant, not a formula.'
+                )
+            if not is_overridable(cell):
+                raise ValueError(
+                    f'{description} cannot override "{cell.key}". Only locked constant cells and declared parameter cells may be overridden.'
+                )
+            inputs.append({
+                "sheet": cell.sheet["name"],
+                "cell": cell.address,
+                "value": value,
+            })
+        test_cases.append({"name": name, "inputs": inputs})
+    if test_cases:
+        normalized["test_cases"] = test_cases
+
+    raw_reference = raw_config.get("reference")
+    reference_count = 0
+    compare_outputs = False
+    if raw_reference is not None:
+        if not isinstance(raw_reference, dict) or set(raw_reference) - {
+            "cells",
+            "rtol",
+            "atol",
+            "compare_outputs",
+        }:
+            raise ValueError(
+                'The spreadsheet reference solution must be an object with "cells" and optional "rtol", "atol", and "compare_outputs".'
+            )
+        raw_cells = raw_reference.get("cells")
+        if (
+            not isinstance(raw_cells, dict)
+            or not 1 <= len(raw_cells) <= MAX_REFERENCE_CELLS
+        ):
+            raise ValueError(
+                f"The spreadsheet reference solution must define 1 to {MAX_REFERENCE_CELLS} cells."
+            )
+        compare_outputs = raw_reference.get("compare_outputs", False)
+        if not isinstance(compare_outputs, bool):
+            raise TypeError("Spreadsheet reference compare_outputs must be a boolean.")
+
+        address_spaces = psp.AddressSpaceMap({
+            overlay["student_sheet"]: overlay["source_range"]
+            for overlay in student_overlays
+        })
+        visible_sheets = [
+            {
+                "name": overlay["student_sheet"],
+                "rows": template_by_name[overlay["student_sheet"]]["rows"],
+                "columns": template_by_name[overlay["student_sheet"]]["columns"],
+                "student_range": overlay["source_range"],
+            }
+            for overlay in student_overlays
+        ]
+        reference_keys: set[str] = set()
+        reference_cells: list[dict[str, Any]] = []
+        for raw_address, raw_cell in raw_cells.items():
+            description = "Spreadsheet reference cell"
+            cell = resolve(*_split_qualified(raw_address, description), description)
+            if cell.student_sheet is None or cell.student_position is None:
+                raise ValueError(
+                    f'Spreadsheet reference cell "{cell.key}" must be inside a student range.'
+                )
+            if not _cell_is_editable(cell.student_sheet, *cell.student_position):
+                raise ValueError(
+                    f'Spreadsheet reference cell "{cell.key}" must be editable.'
+                )
+            if cell.key in parameter_keys:
+                raise ValueError(
+                    f'Spreadsheet reference cell "{cell.key}" cannot also be a parameter.'
+                )
+            if cell.key in reference_keys:
+                raise ValueError(
+                    f'Spreadsheet reference cell "{cell.key}" is duplicated.'
+                )
+            reference_keys.add(cell.key)
+
+            options = raw_cell if isinstance(raw_cell, dict) else {"value": raw_cell}
+            if "value" not in options or set(options) - {"value", "rtol", "atol"}:
+                raise ValueError(
+                    f'Spreadsheet reference cell "{cell.key}" must be a value or an object with "value" and optional "rtol" and "atol".'
+                )
+            value = _normalize_cell_value(options["value"], cell.key)
+            student_sheet_name = cell.student_sheet["name"]
+            if _is_formula(value):
+                assert isinstance(value, str)
+                _validate_visible_formula_references(
+                    {
+                        "sheets": [
+                            {
+                                **sheet,
+                                "cells": {cell.address: value}
+                                if sheet["name"] == student_sheet_name
+                                else {},
+                            }
+                            for sheet in visible_sheets
+                        ]
+                    },
+                    source_sheets,
+                )
+                value = psp.rebase_spreadsheet_formula(
+                    value,
+                    current_sheet=student_sheet_name,
+                    address_spaces=address_spaces,
+                )
+            normalized_cell: dict[str, Any] = {
+                "sheet": cell.sheet["name"],
+                "cell": cell.address,
+                "input": value,
+            }
+            for tolerance in ("rtol", "atol"):
+                if tolerance in options:
+                    normalized_cell[tolerance] = _normalize_tolerance(
+                        options[tolerance], f'Reference cell "{cell.key}" {tolerance}'
+                    )
+            reference_cells.append(normalized_cell)
+        reference_count = len(reference_cells)
+        normalized["reference"] = {
+            "cells": reference_cells,
+            "rtol": _normalize_tolerance(
+                raw_reference.get("rtol", DEFAULT_RTOL), "Spreadsheet reference rtol"
+            ),
+            "atol": _normalize_tolerance(
+                raw_reference.get("atol", DEFAULT_ATOL), "Spreadsheet reference atol"
+            ),
+            "compare_outputs": compare_outputs,
+        }
+
+    comparisons = reference_count + (output_count if compare_outputs else 0)
+    if (1 + len(test_cases)) * (output_count + 2 * comparisons) > MAX_GRADING_RESULTS:
+        raise ValueError(
+            f"Spreadsheet grading may export at most {MAX_GRADING_RESULTS} results across all test cases."
+        )
+    return normalized
 
 
 def _source_path(child: lxml.html.HtmlElement, data: pl.QuestionData) -> pathlib.Path:
@@ -925,6 +1274,7 @@ def _prepare_file_template(
         raise TypeError(
             f'data["correct_answers"]["{answer_name}"] must be a spreadsheet grading object.'
         )
+    raw_grading_config = _with_child_grading_config(element, raw_grading_config)
     if raw_grading_config is None and not output_children:
         return template, student_overlays, None
 
@@ -961,6 +1311,51 @@ def _prepare_file_template(
         student_overlays,
         _normalize_grading_config(grading_config, template),
     )
+
+
+def _with_child_grading_config(
+    element: lxml.html.HtmlElement, raw_config: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    """Merge reference and parameter child elements into the raw grading config."""
+    reference_children = element.xpath("./pl-spreadsheet-reference")
+    parameter_children = element.xpath("./pl-spreadsheet-parameter")
+    if not reference_children and not parameter_children:
+        return raw_config
+    config = dict(raw_config or {"schema_version": 2, "sheets": [], "outputs": {}})
+
+    parameters = list(config.get("parameters", []))
+    for child in parameter_children:
+        if child.text and child.text.strip():
+            raise ValueError("pl-spreadsheet-parameter may not contain text.")
+        parameters.append(
+            psp.QualifiedAddressRange(
+                psp.AddressRange.from_a1(pl.get_string_attrib(child, "range")),
+                pl.get_string_attrib(child, "sheet-name"),
+            ).address
+        )
+    if parameters:
+        config["parameters"] = parameters
+
+    if reference_children:
+        reference = dict(config.get("reference") or {})
+        cells = dict(reference.get("cells", {}))
+        for child in reference_children:
+            if child.text and child.text.strip():
+                raise ValueError("pl-spreadsheet-reference may not contain text.")
+            key = psp.QualifiedAddress(
+                psp.Address.from_a1(pl.get_string_attrib(child, "cell")),
+                pl.get_string_attrib(child, "sheet-name"),
+            ).address
+            if key in cells:
+                raise ValueError(f'Spreadsheet reference cell "{key}" is duplicated.')
+            cell: dict[str, Any] = {"value": pl.get_string_attrib(child, "formula")}
+            for tolerance in ("rtol", "atol"):
+                if pl.has_attrib(child, tolerance):
+                    cell[tolerance] = pl.get_float_attrib(child, tolerance)
+            cells[key] = cell
+        reference["cells"] = cells
+        config["reference"] = reference
+    return config
 
 
 def _get_config(
@@ -1003,11 +1398,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             source_template, source_sheets
         )
         raw_grading_config = data["correct_answers"].get(answer_name)
+        if raw_grading_config is not None and not isinstance(raw_grading_config, dict):
+            raise TypeError(
+                f'data["correct_answers"]["{answer_name}"] must be a spreadsheet grading object.'
+            )
+        raw_grading_config = _with_child_grading_config(element, raw_grading_config)
         if raw_grading_config is not None:
-            if not isinstance(raw_grading_config, dict):
-                raise TypeError(
-                    f'data["correct_answers"]["{answer_name}"] must be a spreadsheet grading object.'
-                )
             grading_config = dict(raw_grading_config)
             grading_config["schema_version"] = 2
             grading_config["source_sheets"] = [
