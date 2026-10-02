@@ -1,7 +1,7 @@
 // Signatures for the functions in SPREADSHEET_ALLOWED_FUNCTIONS, used for formula bar
 // suggestions, signature hints, and argument holes.
 
-export type FormulaArgumentKind = 'value' | 'range' | 'condition' | 'text';
+type FormulaArgumentKind = 'value' | 'range' | 'condition' | 'text';
 
 export interface FormulaArgument {
   name: string;

@@ -25,7 +25,7 @@ function nextSignificant(tokens: FormulaToken[], index: number): FormulaToken | 
   return null;
 }
 
-export interface FormulaCompletion {
+interface FormulaCompletion {
   /** The span of the identifier being completed. */
   start: number;
   end: number;
