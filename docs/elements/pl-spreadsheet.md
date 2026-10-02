@@ -725,7 +725,9 @@ cell's original input.
 The formula bar colors formulas as students type, giving each distinct cell
 reference its own color and outlining the referenced cells in the grid in the same
 color. Typing a function name lists matching supported functions, which can be
-chosen with the arrow keys and Enter or Tab. Inside a function call, a hint shows
+chosen with the arrow keys and Enter or Tab. Choosing one inserts a comma for each
+required argument, leaving a hole for every argument; typing a comma steps over one
+already there. Inside a function call, a hint shows
 its arguments with the current one in bold. Wherever a formula expects a value, such
 as after `=`, `(`, `,`, or an operator, clicking a cell or dragging across cells
 inserts a reference, as in Google Sheets or Excel. Right after pointing, the arrow
@@ -737,6 +739,8 @@ style of the [tylr](https://tylr.fun) structure editor. Values have pointed ends
 operators have notched ends that values slot into, and a function call is split into
 shards (`SUM(`, `,`, `)`) that interlock with its arguments; each kind of tile has its
 own color, and the shards of the call containing the cursor are highlighted together.
+Calls and groups cycle through three colors by nesting depth, so each `(` shares a
+color with its matching `)`.
 Missing parts appear as hollow, dashed holes shaped like what belongs in them, with
 argument names inside: a missing argument or value, a missing operator between two
 values, or a missing closing parenthesis. A parenthesized group also offers an
