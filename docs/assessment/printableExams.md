@@ -10,6 +10,8 @@ Use **Print** on an assessment's **Questions** page to prepare paper copies of a
 4. Select each form to inspect its questions. You can exclude a question from a form or change its spacing. Select **Update preview** after making changes.
 5. Use **Student copy** and **Answer key** above the preview to check both versions. Review every form before downloading.
 
+Question spacing is a minimum. If a question needs more room than the selected block, it uses the space it needs and moves to the next page when it cannot fit in the remaining space.
+
 You can add up to 26 forms. **Regenerate Form** replaces that form with a new randomized instance. After regenerating, review its questions, exclusions, and spacing again. Printable forms are not currently supported for group assessments.
 
 ### Cover pages

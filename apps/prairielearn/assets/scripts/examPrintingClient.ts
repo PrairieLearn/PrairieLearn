@@ -7,7 +7,6 @@ import {
   encodePrintPageIdentity,
 } from '../../src/lib/client/print-page-code.js';
 import {
-  QuestionBlockSizeOverflowError,
   parsePrintBlockSize,
   planPrintQuestionPages,
 } from '../../src/lib/client/print-question-layout.js';
@@ -418,8 +417,6 @@ interface PrintLayout {
   plannedPageAllowsFlow: boolean[];
 }
 
-const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
-
 function layoutQuestions(source: HTMLElement): PrintLayout {
   const questionsContainer = source.querySelector<HTMLElement>('.exam-questions');
   if (!questionsContainer) throw new Error('Printable question container is missing');
@@ -464,7 +461,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
       question.dataset.printPlannedPage = String(pageIndex + 1);
       question.dataset.printPlannedSlot = String(slotIndex + 1);
       question.dataset.printAllowsFlow = String(plannedQuestion.allowsFlow);
-      if (plannedQuestion.blockSize !== 'auto') {
+      if (plannedQuestion.blockSize !== 'auto' && !plannedQuestion.allowsFlow) {
         question.style.setProperty(
           '--printing-question-block-height',
           `${plannedQuestion.reservedHeight}px`,
@@ -628,9 +625,6 @@ window.__PL_PRINT_READY__ = paginateExam().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   document.documentElement.dataset.printStatus = 'error';
   document.documentElement.dataset.printError = message;
-  if (error instanceof QuestionBlockSizeOverflowError) {
-    document.documentElement.dataset.printErrorCode = QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE;
-  }
   const status = document.querySelector('#exam-print-status');
   if (status) status.textContent = `Unable to paginate this exam: ${message}`;
   throw error;

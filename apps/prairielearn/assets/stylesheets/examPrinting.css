@@ -242,9 +242,9 @@ body {
   padding-block-end: var(--exam-print-question-spacing);
 }
 
-.printing-question[data-print-block-size='third'],
-.printing-question[data-print-block-size='half'],
-.printing-question[data-print-block-size='full'] {
+.printing-question[data-print-block-size='third'][data-print-allows-flow='false'],
+.printing-question[data-print-block-size='half'][data-print-allows-flow='false'],
+.printing-question[data-print-block-size='full'][data-print-allows-flow='false'] {
   block-size: var(--printing-question-block-height);
   break-inside: avoid;
 }
