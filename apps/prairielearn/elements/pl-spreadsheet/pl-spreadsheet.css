@@ -33,7 +33,10 @@
 /* One line is always reserved so the grid stays put as errors appear and disappear. */
 .pl-spreadsheet-value-error {
   grid-column: 2;
-  min-height: 1.25rem;
+  overflow: hidden;
+  height: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-top: -0.25rem;
   color: var(--bs-danger-text-emphasis);
   font-size: 0.875em;
@@ -73,12 +76,6 @@
 
 .pl-spreadsheet-formula-view .is-selected {
   background-color: color-mix(in srgb, var(--bs-primary) 30%, transparent);
-}
-
-.pl-spreadsheet-formula-equals {
-  margin-right: 0.3em;
-  color: var(--bs-secondary-color);
-  font-weight: 600;
 }
 
 .pl-spreadsheet-caret {
@@ -221,7 +218,8 @@
   --pl-spreadsheet-tile-text: var(--pl-spreadsheet-operator-text);
 }
 
-.pl-spreadsheet-tile-shard {
+.pl-spreadsheet-tile-shard,
+.pl-spreadsheet-tile-formula {
   --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-shard-fill);
   --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-shard-stroke);
   --pl-spreadsheet-tile-text: var(--pl-spreadsheet-shard-text);

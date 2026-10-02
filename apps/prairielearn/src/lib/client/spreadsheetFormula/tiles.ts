@@ -2,14 +2,16 @@
 // fits next to it: a value has convex nibs on both sides, an infix operator has concave
 // notches on both sides that values slot into, and a call is split into shards (`SUM(`,
 // `,`, `)`) whose notches face the arguments between them. Holes are hollow tiles shaped
-// like what belongs in them.
+// like what belongs in them. The leading `=` is a prefix tile whose operand is the whole
+// expression, like tylr's `let … in` tile and its body.
 
 import { type FormulaToken, formulaReferences } from './lexer.js';
 import { type FormulaHole, type FormulaStructure } from './parser.js';
 
 export type TileEdge = 'convex' | 'concave' | 'flat';
 
-export type TileSort = 'number' | 'string' | 'operator' | 'shard' | 'reference' | 'error';
+export type TileSort =
+  'number' | 'string' | 'operator' | 'shard' | 'reference' | 'error' | 'formula';
 
 interface PieceEdges {
   left: TileEdge;
@@ -82,6 +84,19 @@ export function layoutFormula(structure: FormulaStructure): FormulaPiece[] {
       piece.left !== 'flat';
     pieces.push(piece);
   }
+
+  push({
+    kind: 'tile',
+    start: 0,
+    end: 1,
+    tokens: [{ kind: 'comparison', text: '=', start: 0, end: 1 }],
+    sort: 'formula',
+    left: 'convex',
+    right: 'concave',
+    container: null,
+    colorIndex: null,
+    joined: false,
+  });
 
   let holeIndex = 0;
 

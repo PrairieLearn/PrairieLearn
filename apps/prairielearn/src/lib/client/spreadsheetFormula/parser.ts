@@ -238,7 +238,8 @@ class Parser {
       }
       return { close, end: close.end };
     }
-    this.holes.push({ kind: 'delimiter', position: this.lastEnd });
+    // After any trailing whitespace and argument holes, i.e. where the `)` would be typed.
+    this.holes.push({ kind: 'delimiter', position: this.peekStart() });
     return { close: null, end: this.length };
   }
 

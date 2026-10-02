@@ -124,6 +124,7 @@ test('draws formulas as tiles in the formula bar', async ({ page, courseInstance
   await formulaBar.fill('=SUM($B$3:B4)+B3+"x"');
   await expect(view).toHaveAttribute('aria-hidden', 'true');
   await expect(view.locator('.pl-spreadsheet-tile')).toHaveText([
+    '=',
     'SUM(',
     '$B$3:B4',
     ')',

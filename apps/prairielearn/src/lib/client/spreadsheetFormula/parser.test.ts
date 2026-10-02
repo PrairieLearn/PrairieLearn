@@ -65,6 +65,10 @@ describe('parseFormula', () => {
       ['delimiter', 12],
     ]);
     expect(parse('=IF(A1>0,,1)').holes).toEqual([['argument', 9, 'value_if_true']]);
+    expect(parse('=SUMIF(A1:A3, ').holes).toEqual([
+      ['argument', 14, 'criteria'],
+      ['delimiter', 14],
+    ]);
   });
 
   it('marks missing operands and operators', () => {

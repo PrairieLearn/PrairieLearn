@@ -1036,7 +1036,7 @@ function SpreadsheetEditor({
           }}
         />
         {/* Space is always reserved so the grid does not move as errors come and go. */}
-        <div id={valueErrorId} className="pl-spreadsheet-value-error">
+        <div id={valueErrorId} className="pl-spreadsheet-value-error" title={activeValueError}>
           {activeValueError}
         </div>
       </div>
