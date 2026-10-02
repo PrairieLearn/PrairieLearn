@@ -144,9 +144,11 @@ def _parse_address(address: str) -> tuple[int, int] | None:
     return int(match.group(2)) - 1, _column_index(match.group(1))
 
 
-def _parse_range(range_text: str) -> psp.AddressRange | None:
+def _parse_range(
+    range_text: str, bounds: psp.AddressRange | None = None
+) -> psp.AddressRange | None:
     try:
-        return psp.AddressRange.from_a1(range_text)
+        return psp.AddressRange.from_a1(range_text, bounds=bounds)
     except (TypeError, ValueError):
         return None
 
@@ -270,16 +272,17 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
             )
         total_addressable += rows * columns
 
+        sheet_range = psp.AddressRange(
+            psp.Address(row=0, column=0),
+            psp.Address(row=rows - 1, column=columns - 1),
+        )
         raw_student_range = raw_sheet.get("student_range")
         if raw_student_range is None:
-            student_range = psp.AddressRange(
-                psp.Address(row=0, column=0),
-                psp.Address(row=rows - 1, column=columns - 1),
-            )
+            student_range = sheet_range
         elif not isinstance(raw_student_range, str):
             raise TypeError(f'Sheet "{name}" student_range must be a string.')
         else:
-            student_range = _parse_range(raw_student_range)
+            student_range = _parse_range(raw_student_range, sheet_range)
             if (
                 student_range is None
                 or student_range.end_row >= rows
@@ -320,7 +323,7 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
         for raw_range in raw_ranges:
             if not isinstance(raw_range, str):
                 raise TypeError(f'Editable ranges in sheet "{name}" must be strings.')
-            parsed_range = _parse_range(raw_range)
+            parsed_range = _parse_range(raw_range, student_range)
             if (
                 parsed_range is None
                 or parsed_range.end_row >= rows
@@ -749,9 +752,11 @@ def _normalize_testing_config(
         sheet_name, range_text = _split_qualified(
             raw_parameter, "Spreadsheet parameter range"
         )
-        parameter_range = _parse_range(range_text)
         sheet = source_by_name.get(sheet_name.casefold())
         overlay = overlay_by_source.get(sheet["name"]) if sheet else None
+        parameter_range = (
+            _parse_range(range_text, overlay[1]) if overlay is not None else None
+        )
         if (
             sheet is None
             or parameter_range is None
@@ -1223,7 +1228,16 @@ def _prepare_file_template(
         added_files.add(file_path)
 
         raw_student_range = pl.get_string_attrib(child, "student-range")
-        student_range = _parse_range(raw_student_range)
+        student_range = _parse_range(
+            raw_student_range,
+            psp.AddressRange(
+                psp.Address(row=0, column=0),
+                psp.Address(
+                    row=selected_source["rows"] - 1,
+                    column=selected_source["columns"] - 1,
+                ),
+            ),
+        )
         if student_range is None:
             raise ValueError(f'Invalid student range "{raw_student_range}".')
         selected_source["rows"] = max(
@@ -1238,7 +1252,7 @@ def _prepare_file_template(
         for raw_range in raw_editable_ranges.split(","):
             if not raw_range.strip():
                 continue
-            editable_range = _parse_range(raw_range.strip())
+            editable_range = _parse_range(raw_range.strip(), student_range)
             if editable_range is None or not student_range.contains_range(
                 editable_range
             ):
@@ -1327,11 +1341,11 @@ def _with_child_grading_config(
     for child in parameter_children:
         if child.text and child.text.strip():
             raise ValueError("pl-spreadsheet-parameter may not contain text.")
+        sheet_name = pl.get_string_attrib(child, "sheet-name")
+        # Always quote the sheet name: open-ended ranges such as "A2:A" resolve
+        # only once the student range is known, so this stays a string for now.
         parameters.append(
-            psp.QualifiedAddressRange(
-                psp.AddressRange.from_a1(pl.get_string_attrib(child, "range")),
-                pl.get_string_attrib(child, "sheet-name"),
-            ).address
+            f"'{sheet_name.replace("'", "''")}'!{pl.get_string_attrib(child, 'range')}"
         )
     if parameters:
         config["parameters"] = parameters
@@ -1612,6 +1626,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         render_data["read_only"] = True
         render_data["sheets"] = _table_data(config, snapshot)
+        if data["panel"] == "submission":
+            partial_score = data["partial_scores"].get(answer_name, {})
+            score = partial_score.get("score")
+            if score is not None:
+                score_type, score_value = pl.determine_score_params(score)
+                render_data[score_type] = score_value
+            render_data["feedback"] = partial_score.get("feedback")
 
     with open("pl-spreadsheet.mustache", encoding="utf-8") as template_file:
         return chevron.render(template_file, render_data).strip()

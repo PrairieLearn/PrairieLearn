@@ -782,3 +782,66 @@ def test_reference_answer_cells_use_student_coordinates() -> None:
         ],
         "reference": {"cells": [{"sheet": "Inputs", "cell": "C3", "input": "=A1"}]},
     }) == {"Inputs": {"B2"}}
+
+
+def test_prepare_resolves_open_ended_ranges(element_directory: None) -> None:
+    workbook = template()
+    workbook["sheets"][0]["editable_ranges"] = ["A2:A"]
+    config = grading_config()
+    config["parameters"] = ["Inputs!a2:a"]
+
+    data = prepare_data(
+        params={"workbook": workbook}, correct_answers={"model": config}
+    )
+
+    public_sheet = data["params"]["_pl_spreadsheet_v2"]["model"]["template"]["sheets"][
+        0
+    ]
+    assert public_sheet["editable_ranges"] == ["A2:A3"]
+    assert data["correct_answers"]["model"]["parameters"] == [
+        {"sheet": "Inputs", "range": "A2:A3"}
+    ]
+
+
+def test_prepare_resolves_open_ended_file_ranges(tmp_path: Path) -> None:
+    (tmp_path / "workbook.csv").write_text(",,,\n,2,=B2*2,\n,3,,\n")
+    element_html = (
+        FILE_ELEMENT_HTML
+        .replace('student-range="B2:C3"', 'student-range="B2:C"')
+        .replace('editable-ranges="B2:B3"', 'editable-ranges="B2:B"')
+        .replace(
+            "</pl-spreadsheet>",
+            '<pl-spreadsheet-parameter sheet-name="Inputs" range="B:B">'
+            "</pl-spreadsheet-parameter></pl-spreadsheet>",
+        )
+    )
+    data = file_question_data(tmp_path)
+
+    spreadsheet.prepare(element_html, data)
+
+    public_sheet = data["params"]["_pl_spreadsheet_v2"]["model"]["template"]["sheets"][
+        0
+    ]
+    assert public_sheet["editable_ranges"] == ["A1:A2"]
+    grader = data["correct_answers"]["model"]
+    assert grader["student_overlays"][0]["source_range"] == "B2:C3"
+    assert grader["parameters"] == [{"sheet": "Inputs", "range": "B2:B3"}]
+
+
+def test_render_submission_shows_score_and_feedback(element_directory: None) -> None:
+    data = prepare_data()
+    data["panel"] = "submission"
+    data["submitted_answers"]["model"] = snapshot(data)
+    data["partial_scores"]["model"] = {
+        "score": 0.5,
+        "weight": 1,
+        "feedback": "1 of 2 answer cells match.",
+    }
+
+    html = spreadsheet.render(ELEMENT_HTML, data)
+
+    assert "50%" in html
+    assert "1 of 2 answer cells match." in html
+    data["panel"] = "question"
+    data["editable"] = False
+    assert "1 of 2 answer cells match." not in spreadsheet.render(ELEMENT_HTML, data)

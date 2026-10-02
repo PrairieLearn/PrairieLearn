@@ -26,6 +26,9 @@ import numpy as np
 import pandas as pd
 from openpyxl.formula import Tokenizer
 
+from prairielearn.grading_utils import grade_answer_parameterized
+from prairielearn.question_utils import QuestionData, set_weighted_score_data
+
 if TYPE_CHECKING:
     import os
 
@@ -111,12 +114,14 @@ __all__ = [
     "create_spreadsheet",
     "dataframe_to_spreadsheet_sheet",
     "dataframes_to_spreadsheet_book",
+    "fill_formula",
     "get_spreadsheet_cell",
     "get_spreadsheet_formula",
     "get_spreadsheet_formula_ast",
     "get_spreadsheet_grading_output",
     "get_spreadsheet_result",
     "get_spreadsheet_value",
+    "grade_reference",
     "parse_spreadsheet_formula",
     "random_cases",
     "read_spreadsheet",
@@ -124,6 +129,7 @@ __all__ = [
     "read_spreadsheet_tsv",
     "read_spreadsheet_xlsx",
     "rebase_spreadsheet_formula",
+    "shift_formula",
 ]
 
 
@@ -469,6 +475,7 @@ class _FormulaToken(Protocol):
 
 
 _CELL_ADDRESS_RE = re.compile(r"^([A-Z]+)([1-9][0-9]*)$")
+_RANGE_ENDPOINT_RE = re.compile(r"^([A-Z]*)((?:[1-9][0-9]*)?)$")
 _REFERENCE_CELL_RE = re.compile(r"^(\$?)([A-Z]+)(\$?)([1-9][0-9]*)$")
 _REFERENCE_COLUMN_RE = re.compile(r"^(\$?)([A-Z]+)$")
 _REFERENCE_ROW_RE = re.compile(r"^(\$?)([1-9][0-9]*)$")
@@ -487,6 +494,61 @@ def _normalized_address(address: str) -> tuple[str, int, int]:
     if match is None:
         raise ValueError(f'Invalid spreadsheet cell address "{address}".')
     return normalized, int(match.group(2)) - 1, _column_index(match.group(1))
+
+
+type _RangeEndpoint = tuple[int | None, int | None]
+
+
+def _parse_range_endpoint(text: str) -> _RangeEndpoint:
+    """Parse ``B2``, ``B``, or ``2`` into zero-based ``(row, column)``, using ``None`` for an omitted coordinate."""
+    match = _RANGE_ENDPOINT_RE.fullmatch(text.upper())
+    if match is None or not (match.group(1) or match.group(2)):
+        raise ValueError(f'Invalid spreadsheet range endpoint "{text}".')
+    row = int(match.group(2)) - 1 if match.group(2) else None
+    column = _column_index(match.group(1)) if match.group(1) else None
+    return row, column
+
+
+def _resolve_range_endpoints(
+    start: _RangeEndpoint,
+    end: _RangeEndpoint,
+    bounds: AddressRange | None,
+    range_text: str,
+) -> AddressRange:
+    """Resolve endpoints, extending an omitted coordinate to the edge of ``bounds``."""
+    if (start[0] is None and end[1] is None) or (start[1] is None and end[0] is None):
+        raise ValueError(f'Invalid spreadsheet range "{range_text}".')
+    is_open = None in (*start, *end)
+    if is_open and bounds is None:
+        raise ValueError(
+            f'Spreadsheet range "{range_text}" is open-ended and needs sheet bounds to resolve.'
+        )
+
+    def axis(
+        first: int | None, last: int | None, low: int, high: int
+    ) -> tuple[int, int]:
+        if first is None and last is None:
+            return low, high
+        first = high if first is None else first
+        last = high if last is None else last
+        return min(first, last), max(first, last)
+
+    low = bounds.start if bounds is not None else Address(row=0, column=0)
+    high = bounds.end if bounds is not None else low
+    start_row, end_row = axis(start[0], end[0], low.row, high.row)
+    start_column, end_column = axis(start[1], end[1], low.column, high.column)
+    resolved = AddressRange(
+        Address(row=start_row, column=start_column),
+        Address(row=end_row, column=end_column),
+    )
+    if is_open and bounds is not None and resolved not in bounds:
+        raise ValueError(f'Spreadsheet range "{range_text}" is outside {bounds}.')
+    return resolved
+
+
+def _is_open_range(range_text: str) -> bool:
+    """Return whether any endpoint of an A1 range omits its row or column."""
+    return any(None in _parse_range_endpoint(part) for part in range_text.split(":"))
 
 
 def _validated_snapshot(snapshot: object) -> Mapping[str, object]:
@@ -965,16 +1027,34 @@ class AddressRange:
     end: Address
 
     @classmethod
-    def from_a1(cls, range_text: str) -> AddressRange:
-        """Parse and normalize an unqualified A1 cell or range reference."""
+    def from_a1(
+        cls, range_text: str, *, bounds: AddressRange | None = None
+    ) -> AddressRange:
+        """Parse and normalize an unqualified A1 cell or range reference.
+
+        Like Google Sheets, a range endpoint may omit its row or column to extend
+        the range to the edge of ``bounds``: ``B2:B`` runs from ``B2`` to the last
+        row, ``A:C`` covers every row of columns A to C, and ``3:5`` covers every
+        column of rows 3 to 5.
+
+        Returns:
+            The normalized range, running from top-left to bottom-right.
+
+        Raises:
+            ValueError: If the range is invalid, or is open-ended without ``bounds``
+                or extends outside them.
+        """
         parts = range_text.split(":")
-        if len(parts) not in {1, 2}:
+        if len(parts) == 1:
+            address = Address.from_a1(range_text)
+            return cls(address, address)
+        if len(parts) != 2:
             raise ValueError(f'Invalid spreadsheet range "{range_text}".')
-        start = Address.from_a1(parts[0])
-        end = Address.from_a1(parts[-1])
-        return cls(
-            Address(row=min(start.row, end.row), column=min(start.column, end.column)),
-            Address(row=max(start.row, end.row), column=max(start.column, end.column)),
+        return _resolve_range_endpoints(
+            _parse_range_endpoint(parts[0]),
+            _parse_range_endpoint(parts[1]),
+            bounds,
+            range_text,
         )
 
     def __post_init__(self) -> None:
@@ -1071,6 +1151,12 @@ class AddressRange:
         return f"{self.start.address}:{self.end.address}"
 
 
+# Excel's sheet limits, used to validate open-ended ranges before their sheet is known.
+_UNBOUNDED_RANGE = AddressRange(
+    Address(row=0, column=0), Address(row=1_048_575, column=16_383)
+)
+
+
 @dataclass(frozen=True, slots=True)
 class AddressSpace:
     """A bounded mapping between source-workbook and student-local addresses."""
@@ -1113,7 +1199,7 @@ class AddressSpace:
     def to_student_range(self, source: str | AddressRange) -> AddressRange:
         """Translate a bounded source range into the student coordinate space."""
         if isinstance(source, str):
-            source = AddressRange.from_a1(source)
+            source = AddressRange.from_a1(source, bounds=self.source_range)
         return AddressRange(
             self.to_student_address(source.start),
             self.to_student_address(source.end),
@@ -1122,7 +1208,7 @@ class AddressSpace:
     def to_source_range(self, student: str | AddressRange) -> AddressRange:
         """Translate a bounded student range into the source coordinate space."""
         if isinstance(student, str):
-            student = AddressRange.from_a1(student)
+            student = AddressRange.from_a1(student, bounds=self.student_range)
         if student not in self.student_range:
             raise ValueError("Student spreadsheet range is outside its address space.")
         return AddressRange(
@@ -1267,6 +1353,109 @@ def rebase_spreadsheet_formula(
         raise FormulaParseError(
             "The spreadsheet formula could not be rebased."
         ) from exc
+
+
+def _shift_formula_reference_endpoint(
+    endpoint: FormulaReferenceEndpoint, rows: int, columns: int, text: str
+) -> str:
+    prefix = "" if endpoint.sheet is None else f"{_safe_sheet_name(endpoint.sheet)}!"
+    parts: list[str] = []
+    if not isinstance(endpoint, FormulaRowReference):
+        column = _column_index(endpoint.column)
+        if not endpoint.column_absolute:
+            column += columns
+        if column < 0:
+            raise ValueError(f'Shifting reference "{text}" moves it left of column A.')
+        parts.append(f"{'$' if endpoint.column_absolute else ''}{_column_name(column)}")
+    if not isinstance(endpoint, FormulaColumnReference):
+        row = endpoint.row
+        if not endpoint.row_absolute:
+            row += rows
+        if row < 1:
+            raise ValueError(f'Shifting reference "{text}" moves it above row 1.')
+        parts.append(f"{'$' if endpoint.row_absolute else ''}{row}")
+    return prefix + "".join(parts)
+
+
+def shift_formula(formula: str, *, rows: int = 0, columns: int = 0) -> str:
+    """Move a formula's relative references, as when copying it to another cell.
+
+    References anchored with ``$`` keep their row or column. For example, shifting
+    ``"=ABS(B2-$C1)"`` by one column gives ``"=ABS(C2-$C1)"``, and shifting it by
+    one row gives ``"=ABS(B3-$C2)"``. A reference that would move above row 1 or
+    left of column A raises ``ValueError``.
+
+    Returns:
+        The formula with every relative reference moved by ``rows`` and ``columns``.
+
+    Raises:
+        FormulaParseError: If the formula cannot be parsed.
+    """
+    if not isinstance(formula, str) or not formula.startswith("="):
+        raise FormulaParseError('Spreadsheet formulas must start with "=".')
+    try:
+        tokens = cast(list[_FormulaToken], Tokenizer(formula).items)
+    except Exception as exc:
+        raise FormulaParseError("The spreadsheet formula could not be parsed.") from exc
+    rendered: list[str] = ["="]
+    for token in tokens:
+        if token.type != "OPERAND" or token.subtype != "RANGE":
+            rendered.append(token.value)
+            continue
+        reference = _parse_reference(token.value)
+        if isinstance(reference, FormulaReferenceNode):
+            rendered.append(
+                _shift_formula_reference_endpoint(
+                    reference.reference, rows, columns, token.value
+                )
+            )
+        else:
+            start = _shift_formula_reference_endpoint(
+                reference.start, rows, columns, token.value
+            )
+            end = _shift_formula_reference_endpoint(
+                reference.end, rows, columns, token.value
+            )
+            rendered.append(f"{start}:{end}")
+    return "".join(rendered)
+
+
+def fill_formula(
+    target: str, formula: str, *, origin: str | None = None
+) -> dict[str, str]:
+    """Fill a formula across a range, like dragging a spreadsheet's fill handle.
+
+    ``formula`` is written for the ``origin`` cell, which defaults to the first cell
+    of ``target``. Every cell in ``target`` receives the formula shifted by its offset
+    from ``origin`` (see :func:`shift_formula`). For example, filling
+    ``"=ABS(B2-$C1)"`` across ``"D2:E2"`` gives ``E2`` the formula ``"=ABS(C2-$C1)"``.
+    Set ``origin`` to the last cell of ``target`` to fill up or left instead.
+
+    Returns:
+        Formulas keyed by address in row-major order. Addresses are sheet-qualified
+        when ``target`` is, so the result can be merged into a ``reference`` mapping;
+        otherwise it can be used as a sheet's ``cells``.
+    """
+    sheet_name: SheetName | None = None
+    local_text = target
+    if "!" in target:
+        sheet_text, local_text = target.rsplit("!", 1)
+        sheet_name = _decode_snapshot_sheet_name(sheet_text, target)
+    cells = AddressRange.from_a1(local_text)
+    anchor = cells.start if origin is None else Address.from_a1(origin)
+    filled: dict[str, str] = {}
+    for row in range(cells.start.row, cells.end.row + 1):
+        for column in range(cells.start.column, cells.end.column + 1):
+            address = Address(row=row, column=column)
+            key = (
+                address.address
+                if sheet_name is None
+                else QualifiedAddress(address, sheet_name).address
+            )
+            filled[key] = shift_formula(
+                formula, rows=row - anchor.row, columns=column - anchor.column
+            )
+    return filled
 
 
 @dataclass(frozen=True, slots=True)
@@ -1509,52 +1698,33 @@ def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSh
         raise TypeError(
             f'Spreadsheet sheet "{name}" editable_ranges must be a sequence of ranges.'
         )
-    editable_ranges: list[str] = []
-    parsed_editable_ranges: list[AddressRange] = []
     for raw_range in raw_editable_ranges:
         if not isinstance(raw_range, str):
             raise TypeError(
                 f'Editable ranges in spreadsheet sheet "{name}" must be strings.'
             )
-        try:
-            parsed_range = AddressRange.from_a1(raw_range)
-        except ValueError as exc:
-            raise ValueError(
-                f'Invalid editable range "{raw_range}" in spreadsheet sheet "{name}".'
-            ) from exc
-        parsed_editable_ranges.append(parsed_range)
-        editable_ranges.append(parsed_range.address)
-        bounds = Address(
-            row=max(bounds.row, parsed_range.end.row),
-            column=max(bounds.column, parsed_range.end.column),
-        )
+    if raw_student_range is not None and not isinstance(raw_student_range, str):
+        raise TypeError(f'Spreadsheet sheet "{name}" student_range must be a string.')
 
-    student_range: AddressRange | None = None
-    if raw_student_range is not None:
-        if not isinstance(raw_student_range, str):
-            raise TypeError(
-                f'Spreadsheet sheet "{name}" student_range must be a string.'
-            )
+    def parse_range(
+        raw_range: str, description: str, range_bounds: AddressRange | None
+    ) -> AddressRange:
         try:
-            student_range = AddressRange.from_a1(raw_student_range)
+            return AddressRange.from_a1(raw_range, bounds=range_bounds)
         except ValueError as exc:
             raise ValueError(
-                f'Invalid student range "{raw_student_range}" in spreadsheet sheet "{name}".'
+                f'Invalid {description} "{raw_range}" in spreadsheet sheet "{name}".'
             ) from exc
-        bounds = Address(
-            row=max(bounds.row, student_range.end.row),
-            column=max(bounds.column, student_range.end.column),
-        )
-        for address in cells:
-            if Address.from_a1(address) not in student_range:
-                raise ValueError(
-                    f'Spreadsheet cell "{address}" is outside the student range for sheet "{name}".'
-                )
-        for editable_range in parsed_editable_ranges:
-            if editable_range not in student_range:
-                raise ValueError(
-                    f'Editable range "{editable_range}" is outside the student range for sheet "{name}".'
-                )
+
+    # Closed ranges extend the inferred dimensions. Open-ended ranges such as "B2:B"
+    # resolve only once the dimensions are known.
+    for raw_range in [*raw_editable_ranges, raw_student_range]:
+        if raw_range is not None and not _is_open_range(raw_range):
+            closed_range = parse_range(raw_range, "range", None)
+            bounds = Address(
+                row=max(bounds.row, closed_range.end.row),
+                column=max(bounds.column, closed_range.end.column),
+            )
 
     def dimension(value: object, inferred: int, dimension_name: str) -> int:
         if value is None:
@@ -1569,10 +1739,36 @@ def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSh
             )
         return value
 
+    rows = dimension(raw_rows, bounds.row + 1, "rows")
+    columns = dimension(raw_columns, bounds.column + 1, "columns")
+    sheet_range = AddressRange(
+        Address(row=0, column=0), Address(row=rows - 1, column=columns - 1)
+    )
+
+    student_range: AddressRange | None = None
+    if raw_student_range is not None:
+        student_range = parse_range(raw_student_range, "student range", sheet_range)
+        for address in cells:
+            if Address.from_a1(address) not in student_range:
+                raise ValueError(
+                    f'Spreadsheet cell "{address}" is outside the student range for sheet "{name}".'
+                )
+
+    editable_ranges: list[str] = []
+    for raw_range in raw_editable_ranges:
+        editable_range = parse_range(
+            raw_range, "editable range", student_range or sheet_range
+        )
+        if student_range is not None and editable_range not in student_range:
+            raise ValueError(
+                f'Editable range "{editable_range}" is outside the student range for sheet "{name}".'
+            )
+        editable_ranges.append(editable_range.address)
+
     sheet: SourceSheet = {
         "name": name,
-        "rows": dimension(raw_rows, bounds.row + 1, "rows"),
-        "columns": dimension(raw_columns, bounds.column + 1, "columns"),
+        "rows": rows,
+        "columns": columns,
         "cells": cells,
     }
     if editable_ranges:
@@ -1598,7 +1794,7 @@ def create_spreadsheet(
 
 @overload
 def create_spreadsheet(
-    sheets: Mapping[SheetName, SheetInput],
+    sheets: Mapping[SheetName, SheetInput] | None = None,
     *,
     outputs: Mapping[str, OutputInput],
     parameters: Sequence[str] | None = None,
@@ -1612,7 +1808,7 @@ def create_spreadsheet(
 
 @overload
 def create_spreadsheet(
-    sheets: Mapping[SheetName, SheetInput],
+    sheets: Mapping[SheetName, SheetInput] | None = None,
     *,
     outputs: Mapping[str, OutputInput] | None = None,
     parameters: Sequence[str] | None = None,
@@ -1625,7 +1821,7 @@ def create_spreadsheet(
 
 
 def create_spreadsheet(
-    sheets: Mapping[SheetName, SheetInput],
+    sheets: Mapping[SheetName, SheetInput] | None = None,
     *,
     outputs: Mapping[str, OutputInput] | None = None,
     parameters: Sequence[str] | None = None,
@@ -1637,10 +1833,10 @@ def create_spreadsheet(
 ) -> Definition:
     """Build a versioned authoring workbook from relaxed sheet dictionaries.
 
-    Passing ``outputs`` or ``reference`` builds a private grading workbook. All
-    addresses in ``parameters``, ``test_cases``, and ``reference`` use source
-    coordinates, like private sheets and outputs. ``rtol``, ``atol``, and
-    ``compare_outputs`` configure the reference comparison.
+    Passing ``outputs`` or ``reference`` builds a private grading workbook, whose
+    private ``sheets`` are optional. All addresses in ``parameters``, ``test_cases``,
+    and ``reference`` use source coordinates, like private sheets and outputs.
+    ``rtol``, ``atol``, and ``compare_outputs`` configure the reference comparison.
 
     Returns:
         A source workbook, or a private grading workbook.
@@ -1649,9 +1845,14 @@ def create_spreadsheet(
         TypeError: If an argument has an unsupported type.
         ValueError: If an argument has an invalid value.
     """
+    is_grading_book = outputs is not None or reference is not None
+    if sheets is None and is_grading_book:
+        sheets = {}
     if not isinstance(sheets, Mapping):
         raise TypeError("create_spreadsheet() requires a mapping of sheets.")
-    if not 1 <= len(sheets) <= 10:
+    if is_grading_book and len(sheets) > 10:
+        raise ValueError("A private grading workbook may contain at most 10 sheets.")
+    if not is_grading_book and not 1 <= len(sheets) <= 10:
         raise ValueError("A spreadsheet workbook must contain 1 to 10 sheets.")
 
     normalized_names: set[str] = set()
@@ -1786,6 +1987,10 @@ def _qualified_range_text(range_text: object, description: str) -> str:
     sheet_text, local_text = range_text.rsplit("!", 1)
     try:
         sheet_name = QualifiedAddress.from_a1(f"{sheet_text}!A1").sheet_name
+        if _is_open_range(local_text):
+            # The sheet bounds are unknown here, so pl-spreadsheet resolves it.
+            AddressRange.from_a1(local_text, bounds=_UNBOUNDED_RANGE)
+            return f"{_safe_sheet_name(sheet_name)}!{local_text.upper()}"
         return QualifiedAddressRange(
             AddressRange.from_a1(local_text), sheet_name
         ).address
@@ -2080,11 +2285,32 @@ def read_spreadsheet(
 
 
 @dataclass(frozen=True, slots=True)
+class _SnapshotEndpoint:
+    """Parsed reference endpoint, which omits its row or column when open-ended."""
+
+    sheet_name: SheetName | None
+    row: int | None
+    column: int | None
+
+    @property
+    def coordinates(self) -> _RangeEndpoint:
+        return (self.row, self.column)
+
+    def to_address(self) -> _Address:
+        assert self.row is not None
+        assert self.column is not None
+        local = Address(row=self.row, column=self.column)
+        if self.sheet_name is None:
+            return local
+        return QualifiedAddress(local=local, sheet_name=self.sheet_name)
+
+
+@dataclass(frozen=True, slots=True)
 class _SnapshotReference:
     """Parsed cell or range reference from a spreadsheet snapshot."""
 
-    start: _Address
-    end: _Address | None
+    start: _SnapshotEndpoint
+    end: _SnapshotEndpoint | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -2184,7 +2410,9 @@ def _decode_snapshot_sheet_name(sheet_text: str, reference: str) -> SheetName:
     return sheet_text
 
 
-def _parse_snapshot_endpoint(text: str, reference: str) -> _Address:
+def _parse_snapshot_endpoint(
+    text: str, reference: str, *, allow_open: bool
+) -> _SnapshotEndpoint:
     if "!" in text:
         sheet_text, address_text = text.rsplit("!", 1)
         sheet_name = _decode_snapshot_sheet_name(sheet_text, reference)
@@ -2192,13 +2420,12 @@ def _parse_snapshot_endpoint(text: str, reference: str) -> _Address:
         address_text = text
         sheet_name = None
     try:
-        _, row, column = _normalized_address(address_text)
+        row, column = _parse_range_endpoint(address_text)
     except ValueError as exc:
         raise ValueError(f'Invalid spreadsheet reference "{reference}".') from exc
-    local = Address(row=row, column=column)
-    if sheet_name is not None:
-        return QualifiedAddress(local=local, sheet_name=sheet_name)
-    return local
+    if not allow_open and (row is None or column is None):
+        raise ValueError(f'Invalid spreadsheet reference "{reference}".')
+    return _SnapshotEndpoint(sheet_name=sheet_name, row=row, column=column)
 
 
 def _parse_snapshot_reference(reference: str) -> _SnapshotReference:
@@ -2209,8 +2436,8 @@ def _parse_snapshot_reference(reference: str) -> _SnapshotReference:
 
     if ":" in reference:
         start_text, end_text = reference.split(":", 1)
-        start = _parse_snapshot_endpoint(start_text, reference)
-        end = _parse_snapshot_endpoint(end_text, reference)
+        start = _parse_snapshot_endpoint(start_text, reference, allow_open=True)
+        end = _parse_snapshot_endpoint(end_text, reference, allow_open=True)
         if (
             start.sheet_name is not None
             and end.sheet_name is not None
@@ -2219,15 +2446,16 @@ def _parse_snapshot_reference(reference: str) -> _SnapshotReference:
             raise ValueError(
                 f'Spreadsheet range "{reference}" cannot span multiple sheets.'
             )
-        start_local = start.local_address
-        end_local = end.local_address
-        if start_local.row > end_local.row or start_local.column > end_local.column:
+        if any(
+            first is not None and last is not None and first > last
+            for first, last in zip(start.coordinates, end.coordinates, strict=True)
+        ):
             raise ValueError(
                 f'Spreadsheet range "{reference}" must run from top-left to bottom-right.'
             )
         return _SnapshotReference(start=start, end=end)
 
-    start = _parse_snapshot_endpoint(reference, reference)
+    start = _parse_snapshot_endpoint(reference, reference, allow_open=False)
     return _SnapshotReference(start=start, end=None)
 
 
@@ -2258,6 +2486,9 @@ class Book:
     _grading_outputs: dict[str, Result] = field(init=False)
     _has_grading: bool = field(init=False)
     _reference: Reference | None = field(init=False)
+    _student_spaces: dict[str, tuple[SheetName, AddressSpace]] | None = field(
+        init=False
+    )
     sheet_names: tuple[SheetName, ...] = field(init=False)
     outputs: Mapping[str, Output] = field(init=False)
     cases: tuple[Case, ...] = field(init=False)
@@ -2373,6 +2604,11 @@ class Book:
                 reference = _validated_reference(raw_reference, cases)
         object.__setattr__(self, "cases", cases)
         object.__setattr__(self, "_reference", reference)
+        object.__setattr__(
+            self,
+            "_student_spaces",
+            None if grading_config is None else _student_spaces(grading_config),
+        )
 
     @property
     def has_reference(self) -> bool:
@@ -2387,6 +2623,35 @@ class Book:
                 "The spreadsheet snapshot does not contain reference comparisons."
             )
         return self._reference
+
+    def student_cell(self, source_address: str) -> Cell:
+        """Return the student's cell for a sheet-qualified source address.
+
+        Reference cells, test-case inputs, and outputs use source-workbook
+        coordinates, while the student's sheets are rebased to start at ``A1``. Use
+        this to find the cell a student sees for a source address, such as a key of
+        :attr:`reference`. ``Book`` must be created with ``grading``.
+
+        Returns:
+            The cell view in the student's sheet.
+
+        Raises:
+            ValueError: If ``Book`` was created without ``grading``, or the address
+                is outside every student range.
+        """
+        if self._student_spaces is None:
+            raise ValueError(
+                "Pass grading=data['correct_answers'][answers_name] to Book() to map source addresses."
+            )
+        address = QualifiedAddress.from_a1(source_address)
+        try:
+            student_sheet, space = self._student_spaces[address.sheet_name.casefold()]
+            local = space.to_student_address(address.local)
+        except (KeyError, ValueError):
+            raise ValueError(
+                f'Spreadsheet source cell "{source_address}" is outside every student range.'
+            ) from None
+        return self[student_sheet].cell(local.address)
 
     def _sheet_data(self, sheet_name: SheetName) -> _SparseSheet:
         try:
@@ -2461,19 +2726,44 @@ class Sheet:
         self._validate_address(r.end)
 
     def __getitem__(self, reference: str) -> Cell | CellRange:
-        """Resolve an A1 cell or range reference."""
+        """Resolve an A1 cell or range, such as ``"B2"``, ``"B2:D9"``, or ``"B2:B"``.
+
+        An open-ended range extends to the edge of the sheet, like Google Sheets.
+
+        Returns:
+            A cell view for a cell reference, or a range view for a range.
+
+        Raises:
+            ValueError: If the reference is invalid or outside the sheet.
+        """
         parsed = _parse_snapshot_reference(reference)
         target_sheet_name = parsed.start.sheet_name or self.name
         target_sheet = self.book[target_sheet_name]
-        start = parsed.start.local_address
         if parsed.end is None:
-            return Cell(target_sheet, start)
+            return Cell(target_sheet, parsed.start.to_address().local_address)
         end_sheet_name = parsed.end.sheet_name or target_sheet_name
         if end_sheet_name != target_sheet.name:
             raise ValueError(
                 f'Spreadsheet range "{reference}" cannot span multiple sheets.'
             )
-        return CellRange(target_sheet, AddressRange(start, parsed.end.local_address))
+        start = parsed.start.coordinates
+        end = parsed.end.coordinates
+        if None not in (*start, *end):
+            # Closed ranges keep their endpoints so that out-of-sheet ranges are
+            # reported against the sheet rather than as unresolvable.
+            return CellRange(
+                target_sheet,
+                AddressRange(
+                    parsed.start.to_address().local_address,
+                    parsed.end.to_address().local_address,
+                ),
+            )
+        return CellRange(
+            target_sheet,
+            _resolve_range_endpoints(
+                start, end, target_sheet._cells.visible_range, reference
+            ),
+        )
 
     def cell(self, reference: str) -> Cell:
         """Resolve an A1 cell reference."""
@@ -2483,7 +2773,7 @@ class Sheet:
         return cell
 
     def range(self, reference: str) -> CellRange:
-        """Resolve an A1 range reference."""
+        """Resolve an A1 range reference, which may be open-ended like ``"B2:B"``."""
         cell_range = self[reference]
         if not isinstance(cell_range, CellRange):
             raise TypeError(f'Spreadsheet reference "{reference}" is not a range.')
@@ -2700,11 +2990,12 @@ class CellRange:
         parsed = _parse_snapshot_reference(reference)
         if parsed.end is not None:
             raise ValueError("Spreadsheet ranges can only be indexed by a single cell.")
-        if parsed.start not in QualifiedAddressRange(self._range, self.sheet.name):
+        address = parsed.start.to_address()
+        if address not in QualifiedAddressRange(self._range, self.sheet.name):
             raise ValueError(
                 f'Spreadsheet cell "{reference}" is outside range "{self.qualified_range_address}".'
             )
-        return Cell(self.sheet, parsed.start.local_address)
+        return Cell(self.sheet, address.local_address)
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -2883,6 +3174,40 @@ class Reference(Mapping[str, ComparisonSeries]):
         """Return the fraction of all comparisons that match, from 0 to 1."""
         return self.matched / self.total if self.total else 0.0
 
+    def cell_score(self) -> float:
+        """Return the fraction of reference cells that match in every run, from 0 to 1."""
+        if not self._cells:
+            return 0.0
+        return sum(series.all_match for series in self._cells.values()) / len(
+            self._cells
+        )
+
+
+def _student_spaces(
+    grading: Mapping[str, object],
+) -> dict[str, tuple[SheetName, AddressSpace]]:
+    raw_overlays = grading.get("student_overlays", [])
+    if not isinstance(raw_overlays, list):
+        raise TypeError("The private spreadsheet student overlays are invalid.")
+    spaces: dict[str, tuple[SheetName, AddressSpace]] = {}
+    for raw_overlay in raw_overlays:
+        if not isinstance(raw_overlay, Mapping):
+            raise TypeError("The private spreadsheet student overlays are invalid.")
+        source_sheet = raw_overlay.get("source_sheet")
+        student_sheet = raw_overlay.get("student_sheet")
+        source_range = raw_overlay.get("source_range")
+        if not (
+            isinstance(source_sheet, str)
+            and isinstance(student_sheet, str)
+            and isinstance(source_range, str)
+        ):
+            raise TypeError("The private spreadsheet student overlays are invalid.")
+        spaces[source_sheet.casefold()] = (
+            student_sheet,
+            AddressSpace.from_source_range(source_range),
+        )
+    return spaces
+
 
 def _private_case_inputs(
     grading: Mapping[str, object], grader_hash: object
@@ -3018,3 +3343,63 @@ def _validated_reference(value: object, cases: tuple[Case, ...]) -> Reference:
         matched=matched,
         total=total,
     )
+
+
+def _reference_score_and_feedback(book: Book) -> tuple[float, str]:
+    reference = book.reference
+    score = reference.cell_score()
+    if score == 1:
+        if book.cases:
+            return score, (
+                "All answer cells match the reference solution on your worksheet and "
+                "on every hidden test case."
+            )
+        return score, "All answer cells match the reference solution."
+
+    passed = sum(series.all_match for series in reference.values())
+    feedback = (
+        f"{passed} of {len(reference)} answer cells match the reference solution."
+    )
+    address, mismatch = next(
+        (address, series.first_mismatch)
+        for address, series in reference.items()
+        if series.first_mismatch is not None
+    )
+    cell = book.student_cell(address)
+    location = cell.qualified_address if len(book.sheet_names) > 1 else cell.address
+    if mismatch.case is None:
+        feedback += f" For example, {location} does not calculate the expected value."
+    elif cell.is_formula:
+        feedback += (
+            f" For example, {location} is correct for the values shown but not for "
+            "every hidden test case. Check that the formula works for other data too."
+        )
+    else:
+        feedback += (
+            f" For example, {location} is correct for the values shown but not when "
+            "the hidden test cases change the data. Use a formula that refers to the "
+            "data cells rather than a typed value."
+        )
+    return score, feedback
+
+
+def grade_reference(data: QuestionData, answers_name: str, *, weight: int = 1) -> None:
+    """Grade a ``pl-spreadsheet`` answer against its reference solution.
+
+    Call this from a question's ``grade()`` function. Each reference cell earns equal
+    credit when it matches the reference on the submitted inputs and on every hidden
+    test case. The feedback names the first mismatching cell in the student's
+    coordinates and suggests whether a typed value or a formula that does not
+    generalize is the cause. ``pl-spreadsheet`` shows the feedback with the
+    submission. The question score is then recomputed from all partial scores.
+    """
+    grading = data["correct_answers"][answers_name]
+    grade_answer_parameterized(
+        data,
+        answers_name,
+        lambda submission: _reference_score_and_feedback(
+            Book(submission, grading=grading)
+        ),
+        weight=weight,
+    )
+    set_weighted_score_data(data)
