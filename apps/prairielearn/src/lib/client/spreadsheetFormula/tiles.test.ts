@@ -22,25 +22,25 @@ function layout(formula: string) {
 
 describe('layoutFormula', () => {
   it('interlocks values, operators, and call shards', () => {
-    expect(layout('=SUM(A1,-B1%)*2')).toBe('<=[+<SUM([+<A1>+],[+<-[+<B1>+]%>+])>+]*[+<2>');
+    expect(layout('=SUM(A1,-B1%)*2')).toBe('|=[+<SUM([+<A1>+],[+<-[+<B1>+]%>+])>+]*[+<2>');
   });
 
   it('draws holes shaped like what belongs in them', () => {
-    expect(layout('=SUMIF(')).toBe('<=[+<SUMIF([|{argument}|<{argument}>+]{delimiter}>');
-    expect(layout('=1+')).toBe('<=[+<1>+]+[+<{operand}>');
-    expect(layout('=A1 B1')).toBe('<=[+<A1>+]{operator}[ <B1>');
+    expect(layout('=SUMIF(')).toBe('|=[+<SUMIF([|{argument}|<{argument}>+]{delimiter}>');
+    expect(layout('=1+')).toBe('|=[+<1>+]+[+<{operand}>');
+    expect(layout('=A1 B1')).toBe('|=[+<A1>+]{operator}[ <B1>');
   });
 
   it('puts an optional name hole before a bare group', () => {
-    expect(layout('=(1)')).toBe('<=[+<{name}||([+<1>+])>');
+    expect(layout('=(1)')).toBe('|=[+<{name}||([+<1>+])>');
   });
 
   it('makes the leading = a prefix tile for the whole expression', () => {
-    expect(layout('=')).toBe('<=[+<{operand}>');
+    expect(layout('=')).toBe('|=[+<{operand}>');
   });
 
   it('separates tiles at whitespace', () => {
-    expect(layout('=1 + 2')).toBe('<=[+<1> ]+[ <2>');
+    expect(layout('=1 + 2')).toBe('|=[+<1> ]+[ <2>');
   });
 
   it('cycles the colors of nested calls and groups by depth', () => {
