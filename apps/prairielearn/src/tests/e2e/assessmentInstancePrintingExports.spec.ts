@@ -342,7 +342,7 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
   const textareaBounds = await textareaLines.boundingBox();
   expect(textareaBounds!.width).toBeGreaterThan(600);
   const sketches = questions.locator('svg.printing-sketch');
-  await expect(sketches).toHaveCount(16);
+  await expect(sketches).toHaveCount(17);
   for (const sketch of await sketches.all()) {
     await expect(sketch).toHaveAttribute('viewBox', '0 0 800 450');
   }
