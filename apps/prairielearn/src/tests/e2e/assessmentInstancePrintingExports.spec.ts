@@ -164,6 +164,17 @@ test('prints details content in visible boxes and preserves it in Word', async (
   await expect(boxes.first().getByText('Reference values')).toBeVisible();
   await expect(boxes.first().getByText('The values are one and two.')).toBeVisible();
   await expect(boxes.last().getByText('Count both values.')).toBeVisible();
+  const figurePage = await page
+    .getByText('Reference figure')
+    .evaluate((element) =>
+      Number(element.closest('.pagedjs_page')?.getAttribute('data-page-number')),
+    );
+  const detailsPage = await boxes
+    .first()
+    .evaluate((element) =>
+      Number(element.closest('.pagedjs_page')?.getAttribute('data-page-number')),
+    );
+  expect(detailsPage).toBeGreaterThan(figurePage);
   expect(
     await boxes.first().evaluate((element) => ({
       background: getComputedStyle(element).backgroundColor,

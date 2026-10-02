@@ -315,6 +315,18 @@ function materializePrintableDetails(source: HTMLElement): void {
     }
     box.append(...details.childNodes);
     details.replaceWith(box);
+    const caption = box.parentElement;
+    const figure = caption?.parentElement;
+    if (
+      caption?.tagName === 'FIGCAPTION' &&
+      figure?.tagName === 'FIGURE' &&
+      caption.children.length === 1 &&
+      caption.textContent.trim() === box.textContent.trim()
+    ) {
+      // A tall figure can split its caption before the details box, so paginate the box separately.
+      figure.after(box);
+      caption.remove();
+    }
   }
 }
 
@@ -329,7 +341,7 @@ function measurePrintablePage(source: HTMLElement): { width: number; height: num
 
 function keepPrintableGroupsTogether(source: HTMLElement, pageHeight: number): void {
   for (const group of source.querySelectorAll<HTMLElement>(
-    '.question-body .card, .printing-order-blocks, .printing-order-choice-group, .sketchresponse, .pl-drawing-container, .printing-subsection, .pl-order-blocks-answer-container, .printing-excalidraw',
+    '.question-body .card, .printing-details, .printing-order-blocks, .printing-order-choice-group, .sketchresponse, .pl-drawing-container, .printing-subsection, .pl-order-blocks-answer-container, .printing-excalidraw',
   )) {
     if (group.getBoundingClientRect().height < pageHeight - 48) {
       group.classList.add('printing-keep-together');
