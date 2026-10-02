@@ -74,7 +74,7 @@ test('uses spreadsheet-style click and typing behavior', async ({ page, courseIn
   await expect(b2CellEditor).toHaveValue('987');
 });
 
-test('highlights formulas in the formula bar', async ({ page, courseInstance }) => {
+test('draws formulas as tiles in the formula bar', async ({ page, courseInstance }) => {
   const question = await selectQuestionByQid({
     qid: 'spreadsheetElement',
     course_id: courseInstance.course_id,
@@ -90,23 +90,47 @@ test('highlights formulas in the formula bar', async ({ page, courseInstance }) 
     name: 'Spreadsheet test, sheet Inputs',
   });
   const formulaBar = parameterDemo.getByLabel('Formula for B2');
-  const highlight = parameterDemo.locator('.pl-spreadsheet-formula-highlight');
+  const view = parameterDemo.locator('.pl-spreadsheet-formula-view');
 
   await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
   await formulaBar.fill('plain text');
-  await expect(highlight).toHaveCount(0);
+  await expect(view).toHaveText('plain text');
+  await expect(view.locator('.pl-spreadsheet-tile')).toHaveCount(0);
 
   await formulaBar.fill('=SUM($B$3:B4)+B3+"x"');
-  await expect(highlight).toHaveText('=SUM($B$3:B4)+B3+"x" ');
-  await expect(highlight.locator('.pl-spreadsheet-tok-function')).toHaveText('SUM');
-  await expect(highlight.locator('.pl-spreadsheet-tok-range')).toHaveClass(
-    /pl-spreadsheet-ref-color-0/,
+  await expect(view).toHaveAttribute('aria-hidden', 'true');
+  await expect(view.locator('.pl-spreadsheet-tile')).toHaveText([
+    'SUM(',
+    '$B$3:B4',
+    ')',
+    '+',
+    'B3',
+    '+',
+    '"x"',
+  ]);
+  await expect(view.locator('.pl-spreadsheet-tile-shard').first()).toHaveClass(
+    /pl-spreadsheet-left-convex.*pl-spreadsheet-right-concave/,
   );
-  await expect(highlight.locator('.pl-spreadsheet-tok-ref')).toHaveClass(
-    /pl-spreadsheet-ref-color-1/,
+  await expect(view.locator('.pl-spreadsheet-tile-reference').first()).toHaveClass(
+    /pl-spreadsheet-ref-fill-0/,
   );
-  await expect(highlight.locator('.pl-spreadsheet-tok-string')).toHaveText('"x"');
-  await expect(highlight).toHaveAttribute('aria-hidden', 'true');
+  await expect(view.locator('.pl-spreadsheet-tile-reference').last()).toHaveClass(
+    /pl-spreadsheet-ref-fill-1/,
+  );
+  await expect(view.locator('.pl-spreadsheet-tile-string')).toHaveText('"x"');
+
+  // Clicking a tile places the caret in the hidden input at the matching offset.
+  const b3Tile = view.locator('.pl-spreadsheet-tile-reference').last();
+  const b3Box = await b3Tile.boundingBox();
+  if (!b3Box) throw new Error('Expected the B3 tile to have a bounding box');
+  await page.mouse.click(b3Box.x + 2, b3Box.y + b3Box.height / 2);
+  await expect(formulaBar).toBeFocused();
+  expect(await formulaBar.evaluate((input: HTMLInputElement) => input.selectionStart)).toBe(14);
+  await page.mouse.click(b3Box.x + b3Box.width - 2, b3Box.y + b3Box.height / 2);
+  expect(await formulaBar.evaluate((input: HTMLInputElement) => input.selectionStart)).toBe(16);
+
+  await formulaBar.fill('=(A2)');
+  await expect(view.locator('.pl-spreadsheet-hole-name')).toHaveClass(/is-optional/);
 });
 
 test('inserts references by pointing at cells', async ({ page, courseInstance }) => {
@@ -178,7 +202,7 @@ test('shows the missing parts of a formula as holes', async ({ page, courseInsta
     name: 'Spreadsheet test, sheet Inputs',
   });
   const formulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
-  const highlight = parameterDemo.locator('.pl-spreadsheet-formula-highlight');
+  const highlight = parameterDemo.locator('.pl-spreadsheet-formula-view');
   const status = parameterDemo.getByRole('status');
   const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
 
