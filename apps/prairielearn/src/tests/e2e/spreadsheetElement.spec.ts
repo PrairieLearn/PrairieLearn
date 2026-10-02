@@ -7,6 +7,10 @@ import { expect, test } from './fixtures.js';
 
 test.setTimeout(120_000);
 
+// Grading recalculates every spreadsheet element on the page, which can take tens of
+// seconds when several Playwright workers share one machine.
+const GRADING_TIMEOUT = 60_000;
+
 async function editCell(grid: Locator, address: string, value: string) {
   const cell = grid.getByRole('gridcell', {
     name: new RegExp(`^${address}, editable`),
@@ -271,7 +275,7 @@ test('supports accessible local editing and trusted submission', async ({
   expect(accessibilityResults.violations).toEqual([]);
 
   await page.getByRole('button', { name: /Save & Grade/ }).click();
-  await expect(page.getByText(/100%/).first()).toBeVisible();
+  await expect(page.getByText(/100%/).first()).toBeVisible({ timeout: GRADING_TIMEOUT });
   const submissionTable = page.getByRole('table', { name: 'Inputs', exact: true });
   await expect(submissionTable).toBeVisible();
   await expect(submissionTable.getByRole('columnheader', { name: 'D' })).toBeVisible();
@@ -335,7 +339,7 @@ test('persists active formula drafts and rejected formulas', async ({ page, cour
   const submissionTable = page.getByRole('table', { name: 'Inputs', exact: true }).first();
   await expect(
     submissionTable.getByRole('cell', { name: 'Cell D2' }).getByText('#DIV/0!', { exact: true }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: GRADING_TIMEOUT });
   await expect(rawAnswer).toHaveValue(/[=]1\/0/);
 
   const currentGrid = parameterDemo.getByRole('grid', {
@@ -346,7 +350,9 @@ test('persists active formula drafts and rejected formulas', async ({ page, cour
   await rejectedEditor.fill('=RAND()');
   await page.getByRole('button', { name: /Save & Grade/ }).click();
 
-  await expect(page.getByText('Function RAND is not supported.').first()).toBeVisible();
+  await expect(page.getByText('Function RAND is not supported.').first()).toBeVisible({
+    timeout: GRADING_TIMEOUT,
+  });
   await expect(
     parameterDemo.getByRole('gridcell', { name: /^D2, editable, #ERROR!/ }),
   ).toContainText('#ERROR!');
@@ -389,13 +395,16 @@ test('keeps file-backed grading cells outside the student range private', async 
   expect(elementHtml).not.toContain('=C2=6');
 
   await editCell(grid, 'A1', '3');
+  await editCell(grid, 'A2', '=A1+1');
   const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
   await expect(rawAnswer).toHaveValue(/"A1":3/);
   await expect(rawAnswer).not.toHaveValue(/D2|HIDDEN_SENTINEL/);
   await page.getByRole('button', { name: /Save & Grade/ }).click();
-  await expect(page.getByText(/100%/).first()).toBeVisible();
+  await expect(page.getByText(/100%/).first()).toBeVisible({ timeout: GRADING_TIMEOUT });
 
-  const submissionTable = page.getByRole('table', { name: 'Inputs' });
+  const submissionTable = page
+    .getByTestId('submission-block')
+    .getByRole('table', { name: 'Inputs' });
   await expect(submissionTable.getByRole('columnheader', { name: 'A', exact: true })).toBeVisible();
   await expect(submissionTable.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
   await expect(submissionTable.getByRole('columnheader', { name: 'C', exact: true })).toHaveCount(
@@ -429,7 +438,7 @@ test('rejects file-backed formulas that reach hidden cells', async ({ page, cour
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(
     page.getByText('cannot reference cells outside declared student ranges').first(),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: GRADING_TIMEOUT });
   // The instructor preview's debug panels show the private grading data, so only
   // check the question and submission content that students also see.
   await expect(page.locator('.question-container')).not.toContainText('HIDDEN_SENTINEL');
