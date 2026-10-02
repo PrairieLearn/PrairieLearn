@@ -93,11 +93,13 @@ export function describeHole(hole: FormulaHole): string {
       return 'An operator is missing between two values.';
     case 'delimiter':
       return 'A closing parenthesis is missing.';
+    case 'name':
+      return 'A function name may go here.';
   }
 }
 
 /** Describes the first thing missing from a formula, or null if nothing is. */
 export function describeFirstHole(formula: string): string | null {
-  const hole = parseFormula(formula)?.holes[0];
+  const hole = parseFormula(formula)?.holes.find((candidate) => !candidate.optional);
   return hole ? describeHole(hole) : null;
 }

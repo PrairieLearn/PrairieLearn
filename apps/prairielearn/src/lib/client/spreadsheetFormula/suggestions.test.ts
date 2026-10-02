@@ -50,6 +50,10 @@ describe('applyCompletion', () => {
     expect(complete('=su+1', 'SUM', 3)).toEqual({ formula: '=SUM(+1', caret: 5 });
   });
 
+  it('turns a bare group into a call', () => {
+    expect(complete('=SU(A1+B1)', 'SUM', 3)).toEqual({ formula: '=SUM(A1+B1)', caret: 5 });
+  });
+
   it('reuses an existing parenthesis', () => {
     expect(complete('=SU(A1)', 'SUM', 3)).toEqual({ formula: '=SUM(A1)', caret: 5 });
   });

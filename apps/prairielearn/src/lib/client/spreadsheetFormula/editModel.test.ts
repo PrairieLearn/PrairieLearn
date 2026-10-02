@@ -52,5 +52,6 @@ describe('describeFirstHole', () => {
     expect(describeFirstHole('=SUMIF(A1:A3)')).toBe('SUMIF is missing criteria.');
     expect(describeFirstHole('=1+')).toBe('A value is missing.');
     expect(describeFirstHole('=SUM(A1)')).toBeNull();
+    expect(describeFirstHole('=(A1)')).toBeNull();
   });
 });

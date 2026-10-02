@@ -370,9 +370,10 @@ export function FormulaInput({
     if (event.key === 'Tab' && structure && input.selectionStart === input.selectionEnd) {
       // Tab and Shift+Tab move between holes, then leave the formula bar as usual.
       const position = input.selectionStart ?? 0;
+      const required = structure.holes.filter((hole) => !hole.optional);
       const holes = event.shiftKey
-        ? structure.holes.filter((hole) => hole.position < position).reverse()
-        : structure.holes.filter((hole) => hole.position > position);
+        ? required.filter((hole) => hole.position < position).reverse()
+        : required.filter((hole) => hole.position > position);
       if (holes.length > 0) {
         event.preventDefault();
         input.setSelectionRange(holes[0].position, holes[0].position);
