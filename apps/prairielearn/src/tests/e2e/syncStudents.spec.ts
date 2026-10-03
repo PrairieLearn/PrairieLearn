@@ -282,8 +282,11 @@ test('synchronizes students from a CSV file on mobile', async ({ page, courseIns
   });
   await compare.click();
   const changes = page.getByRole('group', { name: 'Students with label changes' });
-  await expect(changes.getByText('Remove: Section A')).toBeVisible();
-  await expect(changes.getByText('Add: Extra time')).toBeVisible();
+  const existingStudent = changes
+    .getByRole('checkbox', { name: new RegExp(existingUid) })
+    .locator('xpath=..');
+  await expect(existingStudent.getByText('Remove: Section A')).toBeVisible();
+  await expect(existingStudent.getByText('Add: Extra time')).toBeVisible();
   // Clear-labels phase.
   const clearStudent = changes
     .getByRole('checkbox', { name: new RegExp(clearUid) })
