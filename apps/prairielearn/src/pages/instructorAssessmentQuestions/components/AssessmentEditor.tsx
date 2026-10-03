@@ -188,7 +188,7 @@ function AssessmentEditorInner({
   const queryClient = useQueryClient();
   const questionByQidMutation = useMutation({
     mutationFn: (qid: string) =>
-      queryClient.fetchQuery(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
+      queryClient.query(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
   });
   const pickerError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
     questionByQidMutation.error,

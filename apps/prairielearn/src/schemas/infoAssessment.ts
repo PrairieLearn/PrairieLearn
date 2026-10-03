@@ -6,7 +6,7 @@ import { CommentJsonSchema } from './comment.js';
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
 export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
-function uniqueArray<T extends z.ZodType>(schema: T) {
+function uniqueArray<T extends z.core.$ZodType>(schema: T) {
   // Zod cannot express `uniqueItems` directly, and the `.refine()` uniqueness
   // check is unrepresentable in JSON Schema, so advertise it via metadata that
   // `z.toJSONSchema` copies through verbatim.

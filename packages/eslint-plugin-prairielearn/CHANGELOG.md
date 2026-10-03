@@ -1,5 +1,12 @@
 # @prairielearn/eslint-plugin
 
+## 4.4.2
+
+### Patch Changes
+
+- 83590cf: Align TypeScript ESLint utilities and rule-testing dependencies on version 8.70.1.
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 4.4.1
 
 ### Patch Changes

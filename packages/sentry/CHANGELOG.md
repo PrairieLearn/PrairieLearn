@@ -1,5 +1,12 @@
 # @prairielearn/sentry
 
+## 5.0.11
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- ca2bd16: Upgrade execa to v10 for Git release detection.
+
 ## 5.0.10
 
 ### Patch Changes

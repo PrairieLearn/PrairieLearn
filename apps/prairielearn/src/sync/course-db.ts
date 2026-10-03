@@ -1100,31 +1100,29 @@ function validateQuestion({
     errors.push(...validatePreferencesSchema(question.preferences));
   }
 
-  if (question.authors.length > 0) {
-    for (const author of question.authors) {
-      if (!author.email && !author.orcid && !author.originCourse) {
+  for (const author of question.authors) {
+    if (!author.email && !author.orcid && !author.originCourse) {
+      errors.push(
+        'At least one of "email", "orcid", or "originCourse" is required for each author',
+      );
+    }
+    if (author.orcid) {
+      if (!isValidORCID(author.orcid)) {
         errors.push(
-          'At least one of "email", "orcid", or "originCourse" is required for each author',
+          `The author ORCID identifier "${author.orcid}" has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
         );
       }
-      if (author.orcid) {
-        if (!isValidORCID(author.orcid)) {
-          errors.push(
-            `The author ORCID identifier "${author.orcid}" has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
-          );
-        }
-      }
-      if (author.email) {
-        // Manual check here since using email() directly in the schema validation doesn't work well with error logging yet
-        // See: https://github.com/PrairieLearn/PrairieLearn/issues/12846
-        const parsedEmail = z.email().safeParse(author.email);
-
-        if (!parsedEmail.success) {
-          errors.push(`The author email address "${author.email}" is invalid`);
-        }
-      }
-      // Origin courses are validated in bulk in loadQuestions(), and skipped here.
     }
+    if (author.email) {
+      // Manual check here since using email() directly in the schema validation doesn't work well with error logging yet
+      // See: https://github.com/PrairieLearn/PrairieLearn/issues/12846
+      const parsedEmail = z.email().safeParse(author.email);
+
+      if (!parsedEmail.success) {
+        errors.push(`The author email address "${author.email}" is invalid`);
+      }
+    }
+    // Origin courses are validated in bulk in loadQuestions(), and skipped here.
   }
 
   return { warnings, errors };
