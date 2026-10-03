@@ -135,7 +135,7 @@ describe('POST /pl/report-cheating', () => {
   it('rate-limits report attempts', async () => {
     const redisUrl = config.nonVolatileRedisUrl;
     assert(redisUrl);
-    const redis = new Redis(redisUrl);
+    const redis = new Redis<'legacy'>(redisUrl);
     const keyPrefix = `${config.cacheKeyPrefix}test:report-cheating:${crypto.randomUUID()}:`;
     const rateLimiter = new RedisRateLimiter({
       redis: () => redis,

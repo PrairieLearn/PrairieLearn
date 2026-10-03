@@ -1,5 +1,11 @@
 # @prairielearn/aws
 
+## 3.2.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 3.2.1
 
 ### Patch Changes
