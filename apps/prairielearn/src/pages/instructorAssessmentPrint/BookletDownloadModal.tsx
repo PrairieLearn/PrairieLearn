@@ -29,7 +29,7 @@ export function BookletDownloadModal({
     handleSubmit,
     reset,
     setFocus,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm({ defaultValues: { students }, mode: 'onChange' });
 
   return (
@@ -89,7 +89,7 @@ export function BookletDownloadModal({
           <Button type="button" variant="secondary" disabled={pending} onClick={onHide}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!isValid || pending}>
+          <Button type="submit" disabled={pending}>
             {pending ? (
               <span role="status">
                 <Spinner size="sm" className="me-2" aria-hidden="true" />

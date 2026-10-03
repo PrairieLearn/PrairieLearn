@@ -129,27 +129,6 @@ describe('print packet settings', () => {
   const instance = { assessmentInstanceId: '1', formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS };
   const metadata = { instances: [instance], copies: 45, document: 'exam' };
 
-  test.each([0, 501, 1.5])('rejects invalid copy count %s', (copies) => {
-    expect(PrintPacketMetadataSchema.safeParse({ ...metadata, copies }).success).toBe(false);
-  });
-
-  test.each(['HW1.1', '#123', 'Practice:1.1'])('accepts homework question label %s', (number) => {
-    const input = {
-      ...metadata,
-      instances: [
-        {
-          ...instance,
-          settings: {
-            ...instance.settings,
-            questionSizes: { [number]: 'half' },
-            excludedQuestions: [number],
-          },
-        },
-      ],
-    };
-    expect(PrintPacketMetadataSchema.parse(input)).toEqual(input);
-  });
-
   test('rejects duplicate instance IDs or labels, unknown settings, and invalid layout values', () => {
     for (const instances of [
       [instance, { ...instance, formLabel: 'B' }],

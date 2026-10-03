@@ -552,15 +552,10 @@ test('distinguishes paper review flags from broken questions omitted from the do
     .getByRole('combobox', { name: 'Preview form', exact: true })
     .selectOption({ label: 'Form A' });
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  const wordRequests: string[] = [];
-  page.on('request', (request) => {
-    if (new URL(request.url()).pathname.endsWith('/paper/docx')) wordRequests.push(request.url());
-  });
   await chooseDownload(page, 'Download Form B Word (.docx)');
   await expect(
     page.getByText('Form B has missing or unprintable questions.', { exact: false }),
-  ).toBeVisible();
-  expect(wordRequests).toEqual([]);
+  ).toBeVisible({ timeout: 120_000 });
 });
 
 test('protects pending preview settings and shows a PDF export error once', async ({
@@ -628,6 +623,7 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   page,
   courseInstance,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   const assessment = await selectAssessmentByTid({
     course_instance_id: courseInstance.id,
     tid: 'exam20-assessmentTools',
@@ -644,7 +640,8 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   await expect(students).toBeFocused();
   for (const value of ['', '0', '1.5', '501']) {
     await students.fill(value);
-    await expect(submit).toBeDisabled();
+    await submit.click();
+    await expect(students).toBeFocused();
     await expect(students).toHaveAttribute('aria-invalid', 'true');
     await expect(modal.getByText('Enter a whole number between 1 and 500.')).toBeVisible();
   }
@@ -652,6 +649,7 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   await expect(submit).toBeEnabled();
   await page.addScriptTag({ content: axe.source });
   expect((await page.evaluate(async () => await axe.run())).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await modal.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(modal).toHaveCount(0);
   await chooseDownload(page, 'Download booklet PDF…');

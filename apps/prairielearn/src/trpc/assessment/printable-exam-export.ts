@@ -22,6 +22,7 @@ import {
   type PrintDocument,
   getPrintRenderer,
   isBrowserRenderingAvailable,
+  validatePrintDocument,
   validateQuestionsForPrinting,
 } from '../../lib/printing.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
@@ -157,24 +158,7 @@ export const printableExamExportRouter = t.router({
               {
                 label: plan.appendAnswerKeys ? 'booklet PDF' : 'PDF',
                 produce: async (page) => {
-                  const state = await page.evaluate(() => {
-                    const sheets = [...document.querySelectorAll('.pagedjs_page')];
-                    return {
-                      questionCount: Number(document.documentElement.dataset.printQuestionCount),
-                      omittedCount: Number(
-                        document.documentElement.dataset.printOmittedQuestionCount,
-                      ),
-                      coverPageCount: sheets.findIndex((sheet) =>
-                        sheet.querySelector('.printing-question'),
-                      ),
-                    };
-                  });
-                  if (!state.questionCount || state.omittedCount || state.coverPageCount < 0) {
-                    throw new TRPCError({
-                      code: 'BAD_REQUEST',
-                      message: `${printDocument === 'answer_key' ? 'The answer key for Form' : 'Form'} ${instance.formLabel} has missing or unprintable questions. Review its preview and exclude or fix those questions before exporting.`,
-                    });
-                  }
+                  const state = await validatePrintDocument(page);
                   return {
                     pdf: await pdfOutput.produce(page),
                     coverPageCount: state.coverPageCount,

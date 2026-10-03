@@ -283,14 +283,14 @@ function PrintPreparation({
       const label = String.fromCharCode(65 + instanceIds.indexOf(id));
       const base = `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: id })}/paper`;
       const search = `${printLayoutSearch(settingsForInstance(id))}&form_label=${label}`;
-      const report = await fetchPrintDescriptor(`${base}?${search}`);
-      if (report.warnings.some((warning) => warning.question_number)) {
-        throw new Error(
-          `Form ${label} has missing or unprintable questions. Review its preview and exclude or fix those questions before exporting.`,
-        );
-      }
-      const response = await fetch(`${base}/docx?${search}&document=exam`);
+      const response = await fetch(`${base}/docx?${search}&document=exam`, {
+        headers: { Accept: 'application/json' },
+      });
       if (!response.ok) {
+        if (response.status === 400) {
+          const { error } = z.object({ error: z.string() }).parse(await response.json());
+          throw new Error(error);
+        }
         throw new Error('The download could not be generated. Review the preview and try again.');
       }
       saveDownload(await response.blob(), `assessment-form-${label}.docx`);
