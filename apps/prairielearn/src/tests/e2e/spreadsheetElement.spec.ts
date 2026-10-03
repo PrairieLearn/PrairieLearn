@@ -894,3 +894,48 @@ declare global {
     axe: typeof axe;
   }
 }
+
+test('marks randomized cells as locked and distinct', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetVolatileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  for (const label of ['Python randomized orders', 'File randomized orders']) {
+    const grid = page.getByRole('grid', { name: `${label}, sheet Orders` });
+    const editor = grid.locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]');
+    const a2 = grid.getByRole('gridcell', { name: /^A2, randomized, read-only/ });
+    await expect(a2).toHaveClass(/pl-spreadsheet-cell-volatile/);
+    await expect(grid.getByRole('gridcell', { name: /^A1, read-only/ })).not.toHaveClass(
+      /pl-spreadsheet-cell-volatile/,
+    );
+    await expect(grid.getByRole('gridcell', { name: /^C2, editable/ })).not.toHaveClass(
+      /pl-spreadsheet-cell-volatile/,
+    );
+    await expect(
+      editor.getByText('Randomized: changes between variants and in hidden tests'),
+    ).toBeVisible();
+
+    await a2.click();
+    await expect(editor.getByText('Randomized', { exact: true })).toBeVisible();
+    await expect(editor.getByRole('combobox', { name: 'Formula for A2' })).toBeDisabled();
+
+    await editCell(grid, 'C2', '=A2*B2');
+    await editCell(grid, 'C3', '=A3*B3');
+    await expect(editor.getByText('Randomized', { exact: true })).toHaveCount(0);
+  }
+
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  const submission = page.getByTestId('submission-block');
+  await expect(submission.getByText(/100%/).first()).toBeVisible({ timeout: GRADING_TIMEOUT });
+  const table = submission.getByRole('table', { name: 'Orders' }).first();
+  await expect(table.getByRole('cell', { name: 'Cell A2, randomized' })).toHaveClass(
+    /pl-spreadsheet-cell-volatile/,
+  );
+  await expect(
+    submission.getByText(/^\s*Randomized: changes between variants/).first(),
+  ).toBeVisible();
+});

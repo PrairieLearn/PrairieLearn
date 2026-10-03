@@ -44,10 +44,18 @@ import {
   evaluateSpreadsheetForEditor,
   getRelativeFillInput,
   isCellEditable,
+  isCellVolatile,
   parseCellAddress,
 } from '../../src/lib/spreadsheet.js';
 
 import { FormulaInput, type FormulaInputHandle } from './lib/spreadsheetFormulaInput.js';
+
+const VOLATILE_DESCRIPTION = 'Randomized: changes between variants and in hidden tests';
+
+function cellStateLabel(editable: boolean, volatile: boolean): string {
+  if (editable) return 'editable';
+  return volatile ? 'randomized, read-only' : 'read-only';
+}
 
 interface SpreadsheetOptions {
   uuid: string;
@@ -705,6 +713,7 @@ function SpreadsheetEditor({
           clsx(
             {
               'pl-spreadsheet-cell-readonly': !isCellEditable(sheet, row.rowIndex, columnIndex),
+              'pl-spreadsheet-cell-volatile': isCellVolatile(sheet, row.rowIndex, columnIndex),
               'pl-spreadsheet-cell-selected': isCellInRange(
                 selectedRange,
                 row.rowIndex,
@@ -725,15 +734,23 @@ function SpreadsheetEditor({
         renderCell: ({ row }) => {
           const address = `${columnName}${row.rowIndex + 1}`;
           const editable = isCellEditable(sheet, row.rowIndex, columnIndex);
+          const volatile = isCellVolatile(sheet, row.rowIndex, columnIndex);
           const issue = shownEvaluation.issues[sheet.name]?.[address];
           return (
             <span
               className={row.errors[columnName] ? 'pl-spreadsheet-cell-error' : undefined}
-              aria-label={`${address}, ${editable ? 'editable' : 'read-only'}, ${row.results[columnName] || 'blank'}`}
-              title={issue?.message ?? (editable ? undefined : 'Read-only cell')}
+              aria-label={`${address}, ${cellStateLabel(editable, volatile)}, ${row.results[columnName] || 'blank'}`}
+              title={
+                issue?.message ??
+                (editable ? undefined : volatile ? VOLATILE_DESCRIPTION : 'Read-only cell')
+              }
             >
               {row.results[columnName]}
-              {!editable && <span className="visually-hidden"> Read-only</span>}
+              {!editable && (
+                <span className="visually-hidden">
+                  {volatile ? ' Randomized, read-only' : ' Read-only'}
+                </span>
+              )}
             </span>
           );
         },
@@ -1178,9 +1195,17 @@ function SpreadsheetEditor({
           <div id={valueErrorId} className="pl-spreadsheet-value-error" title={activeValueError}>
             {activeValueError}
           </div>
-          <label htmlFor={`${instructionsId}-formula`}>
-            {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
-          </label>
+          <div className="d-flex align-items-center gap-1">
+            <label htmlFor={`${instructionsId}-formula`}>
+              {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
+            </label>
+            {activeCell && isCellVolatile(sheet, activeCell.row, activeCell.column) && (
+              <span className="badge pl-spreadsheet-volatile-badge" title={VOLATILE_DESCRIPTION}>
+                <i className="bi bi-shuffle" aria-hidden="true" />
+                Randomized
+              </span>
+            )}
+          </div>
           <FormulaInput
             ref={formulaInputRef}
             id={`${instructionsId}-formula`}
@@ -1305,21 +1330,18 @@ function SpreadsheetEditor({
               suppressActiveAnnouncementRef.current = false;
               return;
             }
-            const editable = isCellEditable(sheet, sourceRow, parsedColumn.column);
+            const state = cellStateLabel(
+              isCellEditable(sheet, sourceRow, parsedColumn.column),
+              isCellVolatile(sheet, sourceRow, parsedColumn.column),
+            );
             const snapshotCell = getSnapshotCell(evaluation, activeSheetIndex, address);
             const issue = evaluation.issues[sheet.name]?.[address];
             if (issue) {
-              setAnnouncement(
-                `${address}, ${editable ? 'editable' : 'read-only'}, contains ${issue.value}. ${issue.message}`,
-              );
+              setAnnouncement(`${address}, ${state}, contains ${issue.value}. ${issue.message}`);
             } else if (snapshotCell?.result.type === 'error') {
-              setAnnouncement(
-                `${address}, ${editable ? 'editable' : 'read-only'}, contains ${snapshotCell.result.value}.`,
-              );
+              setAnnouncement(`${address}, ${state}, contains ${snapshotCell.result.value}.`);
             } else {
-              setAnnouncement(
-                `${address}, ${editable ? 'editable' : 'read-only'}, ${resultText(snapshotCell) || 'blank'}.`,
-              );
+              setAnnouncement(`${address}, ${state}, ${resultText(snapshotCell) || 'blank'}.`);
             }
           }}
           onCellKeyDown={handleCellKeyDown}
@@ -1366,6 +1388,22 @@ function SpreadsheetEditor({
                 {candidate.name}
               </button>
             ))}
+          </div>
+        )}
+        {config.template.sheets.some((candidate) => candidate.volatile_ranges?.length) && (
+          <div className="pl-spreadsheet-legend px-2 py-1">
+            <span className="pl-spreadsheet-legend-item">
+              <span className="pl-spreadsheet-legend-swatch" aria-hidden="true" />
+              Editable
+            </span>
+            <span className="pl-spreadsheet-legend-item">
+              <span className="pl-spreadsheet-legend-swatch is-locked" aria-hidden="true" />
+              Locked
+            </span>
+            <span className="pl-spreadsheet-legend-item">
+              <span className="pl-spreadsheet-legend-swatch is-volatile" aria-hidden="true" />
+              {VOLATILE_DESCRIPTION}
+            </span>
           </div>
         )}
         <div id={errorId} className="visually-hidden" role="status" aria-live="polite">

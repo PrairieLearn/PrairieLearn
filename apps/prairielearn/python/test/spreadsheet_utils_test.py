@@ -995,7 +995,8 @@ def test_random_cases_are_deterministic_for_the_seeded_variant() -> None:
         "Inputs!A2": (1, 10),
         "Inputs!B2": (0.5, 1.5),
         "Inputs!C2": ["low", "high"],
-        "Inputs!D2": lambda: 7,
+        "Inputs!D2": lambda address: address.local.row * 10,
+        "Inputs!E2:E3": (0.05, 0.09, 0.0025),
     }
     random.seed(1234)
     first = psp.random_cases(5, inputs)
@@ -1012,7 +1013,13 @@ def test_random_cases_are_deterministic_for_the_seeded_variant() -> None:
         assert isinstance(values["Inputs!B2"], float)
         assert 0.5 <= values["Inputs!B2"] <= 1.5
         assert values["Inputs!C2"] in {"low", "high"}
-        assert values["Inputs!D2"] == 7
+        assert values["Inputs!D2"] == 10
+        for address in ("Inputs!E2", "Inputs!E3"):
+            rate = values[address]
+            assert isinstance(rate, float)
+            assert 0.05 <= rate <= 0.09
+            assert rate == round(rate, 4)
+            assert round((rate - 0.05) / 0.0025, 9).is_integer()
     assert psp.random_cases(1, {}, name="Case {index}") == [
         {"name": "Case 1", "inputs": {}}
     ]
@@ -1021,6 +1028,159 @@ def test_random_cases_are_deterministic_for_the_seeded_variant() -> None:
         psp.random_cases(51, {})
     with pytest.raises(TypeError, match="must be a"):
         psp.random_cases(1, {"Inputs!A2": cast(psp.RandomInput, "abc")})
+    with pytest.raises(ValueError, match="positive step"):
+        psp.random_cases(1, {"Inputs!A2": (1, 10, 0)})
+    with pytest.raises(ValueError, match="sheet-qualified"):
+        psp.random_cases(1, {"A2": (1, 10)})
+
+
+def test_stepped_random_inputs_keep_integers_and_reach_the_upper_bound() -> None:
+    random.seed(7)
+    values = {
+        value
+        for case in psp.random_cases(50, {"Inputs!A1": (1_000, 1_500, 250)})
+        for value in case["inputs"].values()
+    }
+    assert values == {1_000, 1_250, 1_500}
+    # A three-number list is choices, not a stepped range.
+    random.seed(7)
+    choices = {
+        value
+        for case in psp.random_cases(50, {"Inputs!A1": [25, 45, 65]})
+        for value in case["inputs"].values()
+    }
+    assert choices == {25, 45, 65}
+
+
+VOLATILE: psp.VolatileSpec = {
+    "Orders!B2:B3": (10, 99),
+    "Orders!C2:C3": (0.05, 0.09, 0.0025),
+}
+
+
+def order_sheet() -> dict[str, object]:
+    return {
+        "cells": {"A1": "Order", "B1": "Subtotal", "B2": 1, "D2": "=B2*C2"},
+        "editable_ranges": ["D2:D3"],
+    }
+
+
+def test_create_spreadsheet_samples_and_marks_volatile_ranges() -> None:
+    random.seed(1)
+    book = psp.create_spreadsheet({"Orders": order_sheet()}, volatile=VOLATILE)
+    sheet = book["sheets"][0]
+    assert sheet.get("volatile_ranges") == ["B2:B3", "C2:C3"]
+    assert sheet.get("editable_ranges") == ["D2:D3"]
+    for address in ("B2", "B3"):
+        assert isinstance(sheet["cells"][address], int)
+    for address in ("C2", "C3"):
+        assert 0.05 <= cast(float, sheet["cells"][address]) <= 0.09
+    assert sheet["cells"]["A1"] == "Order"
+
+    random.seed(1)
+    again = psp.create_spreadsheet({"Orders": order_sheet()}, volatile=VOLATILE)
+    assert again == book
+
+
+def test_create_spreadsheet_appends_randomized_cases_after_explicit_ones() -> None:
+    book = psp.create_spreadsheet(
+        reference={"Orders!D2": "=B2*C2"},
+        test_cases=[{"name": "zero subtotal", "inputs": {"Orders!B2": 0}}],
+        volatile=VOLATILE,
+        volatile_cases=3,
+    )
+    cases = book.get("test_cases", [])
+    assert [case.get("name") for case in cases] == [
+        "zero subtotal",
+        "Randomized case 1",
+        "Randomized case 2",
+        "Randomized case 3",
+    ]
+    assert set(cases[1]["inputs"]) == {
+        "Orders!B2",
+        "Orders!B3",
+        "Orders!C2",
+        "Orders!C3",
+    }
+    assert book.get("volatile", []) == ["Orders!B2:B3", "Orders!C2:C3"]
+
+    default = psp.create_spreadsheet(reference={"Orders!D2": "=B2"}, volatile=VOLATILE)
+    assert len(default.get("test_cases", [])) == 8
+
+
+def test_volatile_block_generators_sample_correlated_cells() -> None:
+    def correlated() -> dict[str, object]:
+        base = random.randint(1, 9)
+        return {"Data!A1": base, "Data!A2": base * 2, "Other!B1": "high"}
+
+    spec: psp.VolatileSpec = {("Data!A1:A2", "Other!B1"): psp.block(correlated)}
+    book = psp.create_spreadsheet({"Data": {}, "Other": {"A1": "Label"}}, volatile=spec)
+    data, other = book["sheets"]
+    assert data["cells"]["A2"] == 2 * cast(int, data["cells"]["A1"])
+    assert data.get("volatile_ranges") == ["A1:A2"]
+    assert other["cells"] == {"A1": "Label", "B1": "high"}
+    assert other.get("volatile_ranges") == ["B1:B1"]
+
+    grading = psp.create_spreadsheet(
+        reference={"Data!B1": "=A1"}, volatile=spec, volatile_cases=2
+    )
+    for case in grading.get("test_cases", []):
+        inputs = case["inputs"]
+        assert inputs["Data!A2"] == 2 * cast(int, inputs["Data!A1"])
+
+    with pytest.raises(ValueError, match="outside its volatile ranges"):
+        psp.create_spreadsheet(
+            {"Data": {}},
+            volatile={"Data!A1": psp.block(lambda: {"Data!A3": 1})},
+        )
+    with pytest.raises(ValueError, match="requires a block"):
+        psp.create_spreadsheet(
+            {"Data": {}, "Other": {}}, volatile={("Data!A1", "Other!A1"): (1, 2)}
+        )
+
+
+def test_volatile_ranges_are_validated() -> None:
+    with pytest.raises(ValueError, match="overlaps editable range"):
+        psp.create_spreadsheet(
+            {"Orders": order_sheet()}, volatile={"Orders!D2": (1, 2)}
+        )
+    with pytest.raises(ValueError, match="overlap"):
+        psp.create_spreadsheet(
+            {"Orders": {}},
+            volatile={"Orders!A1:A3": (1, 2), "Orders!A3:A4": (1, 2)},
+        )
+    with pytest.raises(ValueError, match="unknown sheet"):
+        psp.create_spreadsheet({"Orders": {}}, volatile={"Missing!A1": (1, 2)})
+    with pytest.raises(ValueError, match="constant"):
+        psp.create_spreadsheet({"Orders": {}}, volatile={"Orders!A1": ["=1+1"]})
+    with pytest.raises(ValueError, match="constant"):
+        psp.create_spreadsheet({
+            "Orders": {"cells": {"A1": "=1"}, "volatile_ranges": ["A1"]}
+        })
+    with pytest.raises(ValueError, match="closed"):
+        psp.create_spreadsheet({"Orders": {}}, volatile={"Orders!A1:A": (1, 2)})
+    with pytest.raises(ValueError, match="volatile_cases requires"):
+        psp.create_spreadsheet(
+            {"Orders": {}},
+            volatile={"Orders!A1": (1, 2)},
+            volatile_cases=cast(None, 2),
+        )
+    with pytest.raises(ValueError, match="between 0 and 50"):
+        psp.create_spreadsheet(
+            reference={"Orders!B1": "=A1"},
+            volatile={"Orders!A1": (1, 2)},
+            volatile_cases=51,
+        )
+
+
+def test_dataframe_sheets_can_mark_volatile_ranges() -> None:
+    sheet = psp.dataframe_to_spreadsheet_sheet(
+        pd.DataFrame({"x": [1, 2]}), volatile_ranges=["A1:A2"]
+    )
+    assert sheet.get("volatile_ranges") == ["A1:A2"]
+    assert "volatile_ranges" not in psp.dataframe_to_spreadsheet_sheet(
+        pd.DataFrame({"x": [1]})
+    )
 
 
 def comparison(

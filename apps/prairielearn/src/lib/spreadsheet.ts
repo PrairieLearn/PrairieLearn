@@ -126,6 +126,8 @@ const SpreadsheetSheetTemplateSchema = z
     columns: z.number().int().min(1).max(SPREADSHEET_MAX_COLUMNS),
     cells: z.record(z.string(), CellInputSchema),
     editable_ranges: z.array(z.string()).max(100),
+    // Locked cells whose values are randomized per variant and in hidden test cases.
+    volatile_ranges: z.array(z.string()).max(100).optional(),
   })
   .strict();
 
@@ -625,12 +627,8 @@ export function isCellVisible(
   );
 }
 
-export function isCellEditable(
-  sheet: SpreadsheetTemplate['sheets'][number],
-  row: number,
-  column: number,
-): boolean {
-  return sheet.editable_ranges.some((rangeText) => {
+function isCellInRanges(rangeTexts: readonly string[], row: number, column: number): boolean {
+  return rangeTexts.some((rangeText) => {
     const range = parseRange(rangeText);
     return (
       range !== null &&
@@ -640,6 +638,22 @@ export function isCellEditable(
       column <= range.endColumn
     );
   });
+}
+
+export function isCellEditable(
+  sheet: SpreadsheetTemplate['sheets'][number],
+  row: number,
+  column: number,
+): boolean {
+  return isCellInRanges(sheet.editable_ranges, row, column);
+}
+
+export function isCellVolatile(
+  sheet: SpreadsheetTemplate['sheets'][number],
+  row: number,
+  column: number,
+): boolean {
+  return isCellInRanges(sheet.volatile_ranges ?? [], row, column);
 }
 
 // Treats accented letters as identifier characters too, so that a function or
@@ -776,6 +790,35 @@ function validateTemplate(template: SpreadsheetTemplate): void {
       ) {
         throw new SpreadsheetSubmissionError(
           `Editable range ${rangeText} is outside sheet ${sheet.name}.`,
+        );
+      }
+    }
+
+    for (const rangeText of sheet.volatile_ranges ?? []) {
+      const range = parseRange(rangeText);
+      if (
+        !range ||
+        range.endRow >= sheet.rows ||
+        range.endColumn >= sheet.columns ||
+        !isRangeContained(visibleRange, range)
+      ) {
+        throw new SpreadsheetSubmissionError(
+          `Volatile range ${rangeText} is outside sheet ${sheet.name}.`,
+        );
+      }
+      const overlapsEditable = sheet.editable_ranges.some((editableText) => {
+        const editable = parseRange(editableText);
+        return (
+          editable !== null &&
+          editable.startRow <= range.endRow &&
+          range.startRow <= editable.endRow &&
+          editable.startColumn <= range.endColumn &&
+          range.startColumn <= editable.endColumn
+        );
+      });
+      if (overlapsEditable) {
+        throw new SpreadsheetSubmissionError(
+          `Volatile range ${rangeText} overlaps an editable range in sheet ${sheet.name}.`,
         );
       }
     }

@@ -10,6 +10,7 @@ const plSpreadsheetAttributesSchema = z
     'aria-label': z.string().optional(),
     height: z.string().optional(),
     'params-name': z.string().optional(),
+    'volatile-cases': integerFormat().optional(),
     weight: integerFormat().optional(),
   })
   .strict();
@@ -50,6 +51,17 @@ const plSpreadsheetReferenceAttributesSchema = z
   })
   .strict();
 
+const plSpreadsheetVolatileAttributesSchema = z
+  .object({
+    choices: z.string().optional(),
+    max: numberFormat().optional(),
+    min: numberFormat().optional(),
+    range: z.string(),
+    'sheet-name': z.string(),
+    step: numberFormat().optional(),
+  })
+  .strict();
+
 export const element: ElementSchemaModule = {
   tag: 'pl-spreadsheet',
   schema: z.toJSONSchema(plSpreadsheetAttributesSchema, { target: 'draft-04' }),
@@ -65,6 +77,9 @@ export const element: ElementSchemaModule = {
     },
     'pl-spreadsheet-reference': {
       schema: z.toJSONSchema(plSpreadsheetReferenceAttributesSchema, { target: 'draft-04' }),
+    },
+    'pl-spreadsheet-volatile': {
+      schema: z.toJSONSchema(plSpreadsheetVolatileAttributesSchema, { target: 'draft-04' }),
     },
   },
 };

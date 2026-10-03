@@ -17,6 +17,10 @@
     {
       "tag": "pl-spreadsheet-reference",
       "schema": "./schemas/pl-spreadsheet-reference.json"
+    },
+    {
+      "tag": "pl-spreadsheet-volatile",
+      "schema": "./schemas/pl-spreadsheet-volatile.json"
     }
   ]
 }

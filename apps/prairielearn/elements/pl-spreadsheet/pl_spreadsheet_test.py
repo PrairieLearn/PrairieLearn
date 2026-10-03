@@ -1,5 +1,6 @@
 import importlib
 import json
+import random
 import re
 from pathlib import Path
 from typing import Any
@@ -88,6 +89,7 @@ def question_data(**overrides: Any) -> dict[str, Any]:
         "partial_scores": {},
         "panel": "question",
         "editable": True,
+        "variant_seed": 1234,
     }
     data.update(overrides)
     return data
@@ -1066,3 +1068,199 @@ def test_reference_test_submissions_predict_their_grade(
         "weight": 2,
         "feedback": feedback,
     }
+
+
+def volatile_template() -> dict[str, Any]:
+    workbook = template()
+    workbook["sheets"][0]["cells"].update({"C1": 0.05, "C2": 0.07})
+    workbook["sheets"][0]["volatile_ranges"] = ["C1:C2"]
+    return workbook
+
+
+def test_prepare_normalizes_and_rebases_volatile_ranges(
+    element_directory: None,
+) -> None:
+    workbook = volatile_template()
+    workbook["sheets"][0]["student_range"] = "B1:C3"
+    workbook["sheets"][0]["cells"] = {"C1": 0.05, "C2": 0.07}
+    workbook["sheets"][0]["editable_ranges"] = ["B2:B3"]
+    data = prepare_data(params={"workbook": workbook})
+
+    public_sheet = data["params"]["_pl_spreadsheet_v2"]["model"]["template"]["sheets"][
+        0
+    ]
+    assert public_sheet["volatile_ranges"] == ["B1:B2"]
+    assert public_sheet["editable_ranges"] == ["A2:A3"]
+
+    plain = prepare_data()
+    assert "volatile_ranges" not in json.dumps(plain["params"]["_pl_spreadsheet_v2"])
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"volatile_ranges": ["A2:A3"]}, "overlaps editable range"),
+        ({"volatile_ranges": ["B2"]}, "constant, not a formula"),
+        ({"volatile_ranges": ["D1"]}, "outside the student range"),
+        ({"volatile_ranges": "C1"}, "must be a list"),
+    ],
+)
+def test_prepare_rejects_invalid_volatile_ranges(
+    element_directory: None, change: dict[str, Any], message: str
+) -> None:
+    workbook = volatile_template()
+    workbook["sheets"][0].update(change)
+    with pytest.raises((TypeError, ValueError), match=message):
+        prepare_data(params={"workbook": workbook})
+
+
+def test_prepare_checks_grading_volatile_ranges_against_the_template(
+    element_directory: None,
+) -> None:
+    config = reference_grading_config(
+        volatile=["Inputs!C1:C2"],
+        test_cases=[{"name": "rate", "inputs": {"Inputs!C1": 0.06}}],
+    )
+    data = prepare_data(
+        params={"workbook": volatile_template()}, correct_answers={"model": config}
+    )
+    assert "volatile" not in data["correct_answers"]["model"]
+
+    with pytest.raises(ValueError, match="is not volatile in the student workbook"):
+        prepare_data(correct_answers={"model": config})
+
+    overlapping = reference_grading_config(
+        parameters=["Inputs!C1"], volatile=["Inputs!C1:C2"]
+    )
+    with pytest.raises(ValueError, match="overlaps a volatile range"):
+        prepare_data(
+            params={"workbook": volatile_template()},
+            correct_answers={"model": overlapping},
+        )
+
+
+VOLATILE_CHILDREN = """
+  <pl-spreadsheet-volatile sheet-name="Inputs" range="C2:C3" min="1" max="9">
+  </pl-spreadsheet-volatile>
+  <pl-spreadsheet-volatile sheet-name="Inputs" range="D2" choices="0.05, 0.0625, low">
+  </pl-spreadsheet-volatile>
+  <pl-spreadsheet-reference sheet-name="Inputs" cell="B2" formula="=C2*2">
+  </pl-spreadsheet-reference>
+</pl-spreadsheet>"""
+
+
+def test_prepare_samples_volatile_children_into_file_workbooks(tmp_path: Path) -> None:
+    (tmp_path / "workbook.csv").write_text(",,,\n,2,0,0\n,3,0,\n")
+    element_html = (
+        FILE_ELEMENT_HTML
+        .replace('student-range="B2:C3"', 'student-range="B2:D3"')
+        .replace(
+            '<pl-spreadsheet answers-name="model"',
+            '<pl-spreadsheet answers-name="model" volatile-cases="3"',
+        )
+        .replace("</pl-spreadsheet>", VOLATILE_CHILDREN)
+    )
+
+    def prepared() -> dict[str, Any]:
+        data = file_question_data(tmp_path)
+        random.seed(1234)
+        spreadsheet.prepare(element_html, data)
+        return data
+
+    data = prepared()
+    public_sheet = data["params"]["_pl_spreadsheet_v2"]["model"]["template"]["sheets"][
+        0
+    ]
+    assert public_sheet["volatile_ranges"] == ["B1:B2", "C1:C1"]
+    assert all(1 <= public_sheet["cells"][address] <= 9 for address in ("B1", "B2"))
+    assert public_sheet["cells"]["C1"] in {0.05, 0.0625, "low"}
+
+    grader = data["correct_answers"]["model"]
+    source_cells = grader["source_sheets"][0]["cells"]
+    assert source_cells["C2"] == public_sheet["cells"]["B1"]
+    assert source_cells["D2"] == public_sheet["cells"]["C1"]
+    assert [case["name"] for case in grader["test_cases"]] == [
+        f"Randomized case {index}" for index in range(1, 4)
+    ]
+    assert {
+        (item["sheet"], item["cell"]) for item in grader["test_cases"][0]["inputs"]
+    } == {("Inputs", "C2"), ("Inputs", "C3"), ("Inputs", "D2")}
+
+    # The draws come from a stream derived from the variant seed, so they repeat for
+    # the same variant without consuming or repeating the global random sequence.
+    random.seed(1234)
+    expected_next = random.random()
+    again = prepared()
+    assert again["correct_answers"]["model"] == grader
+    assert random.random() == expected_next
+
+
+@pytest.mark.parametrize(
+    ("child", "message"),
+    [
+        ('sheet-name="Missing" range="C2" min="1" max="2"', "unknown sheet"),
+        ('sheet-name="Inputs" range="E2" min="1" max="2"', "outside the student range"),
+        ('sheet-name="Inputs" range="C2" min="1"', "both min and max"),
+        ('sheet-name="Inputs" range="C2" min="1" max="2" choices="1"', "not both"),
+        ('sheet-name="Inputs" range="C2" min="a" max="2"', 'format "number"'),
+        ('sheet-name="Inputs" range="B2" min="1" max="2"', "overlaps editable range"),
+    ],
+)
+def test_prepare_rejects_invalid_volatile_children(
+    tmp_path: Path, child: str, message: str
+) -> None:
+    (tmp_path / "workbook.csv").write_text(",,,\n,2,0,0\n,3,0,\n")
+    element_html = FILE_ELEMENT_HTML.replace(
+        "</pl-spreadsheet>",
+        f"<pl-spreadsheet-volatile {child}></pl-spreadsheet-volatile></pl-spreadsheet>",
+    )
+    with pytest.raises(ValueError, match=message):
+        spreadsheet.prepare(element_html, file_question_data(tmp_path))
+
+
+def test_prepare_volatile_children_extend_params_workbooks(
+    element_directory: None,
+) -> None:
+    element_html = ELEMENT_HTML.replace(
+        "</pl-spreadsheet>",
+        '<pl-spreadsheet-volatile sheet-name="Inputs" range="C1:C2" min="0.05" '
+        'max="0.09" step="0.01"></pl-spreadsheet-volatile></pl-spreadsheet>',
+    )
+    workbook = template()
+    data = question_data(params={"workbook": workbook})
+    spreadsheet.prepare(element_html, data)
+
+    public_sheet = data["params"]["_pl_spreadsheet_v2"]["model"]["template"]["sheets"][
+        0
+    ]
+    assert public_sheet["volatile_ranges"] == ["C1:C2"]
+    assert public_sheet["cells"]["C1"] in {0.05, 0.06, 0.07, 0.08, 0.09}
+    assert "C1" not in workbook["sheets"][0]["cells"]
+
+
+def test_render_marks_volatile_cells(element_directory: None) -> None:
+    data = prepare_data(params={"workbook": volatile_template()})
+    config = data["params"]["_pl_spreadsheet_v2"]["model"]
+
+    cell = spreadsheet._table_data(config, None)[0]["rows"][0]["cells"][2]
+    assert cell["volatile"] is True
+    assert cell["class_name"] == (
+        "pl-spreadsheet-cell-readonly pl-spreadsheet-cell-volatile"
+    )
+
+    data["panel"] = "submission"
+    html_output = spreadsheet.render(ELEMENT_HTML, data)
+    assert "Cell C1, randomized" in html_output
+    assert "Randomized: changes between variants" in html_output
+    assert "Randomized:" not in spreadsheet.render(
+        ELEMENT_HTML, {**prepare_data(), "panel": "submission"}
+    )
+
+
+def test_typed_value_feedback_points_at_randomized_cells() -> None:
+    assert "randomized cells change" in spreadsheet._mismatch_feedback(
+        0, 1, "B2", "typed", has_volatile=True
+    )
+    assert "hidden test cases change" in spreadsheet._mismatch_feedback(
+        0, 1, "B2", "typed"
+    )

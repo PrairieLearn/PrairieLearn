@@ -62,4 +62,8 @@
   --pl-spreadsheet-error-stroke: #c0392b;
   --pl-spreadsheet-error-text: #8a1f15;
   --pl-spreadsheet-range-hole-stroke: #6f42c1;
+
+  /* Randomized (volatile) cells: a tint in place of the locked background, and a corner mark. */
+  --pl-spreadsheet-volatile-bg: var(--bs-info-bg-subtle);
+  --pl-spreadsheet-volatile-mark: var(--bs-info);
 }

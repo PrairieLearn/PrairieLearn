@@ -18,6 +18,10 @@
     "params-name": {
       "type": "string"
     },
+    "volatile-cases": {
+      "type": "string",
+      "format": "integer"
+    },
     "weight": {
       "type": "string",
       "format": "integer"

@@ -1,0 +1,43 @@
+<pl-question-panel>
+  <p>Calculate the tax on each row as the subtotal times the rate.</p>
+</pl-question-panel>
+
+<section aria-labelledby="python-volatile-heading">
+  <h2 id="python-volatile-heading" class="h5">Python-randomized workbook</h2>
+  <pl-spreadsheet
+    answers-name="model"
+    params-name="workbook"
+    aria-label="Python randomized orders"
+    height="260px"
+  ></pl-spreadsheet>
+</section>
+
+<section aria-labelledby="file-volatile-heading">
+  <h2 id="file-volatile-heading" class="h5">File-backed randomized workbook</h2>
+  <pl-spreadsheet
+    answers-name="file_model"
+    aria-label="File randomized orders"
+    height="260px"
+    volatile-cases="4"
+  >
+    <pl-spreadsheet-data
+      source-file="orders.csv"
+      sheet-name="Orders"
+      student-range="A1:C3"
+      editable-ranges="C2:C3"
+    ></pl-spreadsheet-data>
+    <pl-spreadsheet-volatile
+      sheet-name="Orders"
+      range="A2:A3"
+      min="10"
+      max="99"
+    ></pl-spreadsheet-volatile>
+    <pl-spreadsheet-volatile
+      sheet-name="Orders"
+      range="B2:B3"
+      choices="0.05, 0.0625, 0.08"
+    ></pl-spreadsheet-volatile>
+    <pl-spreadsheet-reference sheet-name="Orders" cell="C2" formula="=A2*B2"></pl-spreadsheet-reference>
+    <pl-spreadsheet-reference sheet-name="Orders" cell="C3" formula="=A3*B3"></pl-spreadsheet-reference>
+  </pl-spreadsheet>
+</section>

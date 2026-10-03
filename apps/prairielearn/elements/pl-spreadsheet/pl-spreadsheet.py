@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import pathlib
+import random
 import re
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -20,6 +21,7 @@ DEFAULT_ARIA_LABEL = "Spreadsheet"
 DEFAULT_HEIGHT = "500px"
 DEFAULT_ALLOW_BLANK = False
 DEFAULT_WEIGHT = 1
+DEFAULT_VOLATILE_CASES = 8
 
 MAX_SHEETS = 10
 MAX_ROWS = 1000
@@ -363,6 +365,34 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
                 )
             editable_ranges.append(parsed_range.address)
 
+        raw_volatile_ranges = raw_sheet.get("volatile_ranges", [])
+        if not isinstance(raw_volatile_ranges, list) or len(raw_volatile_ranges) > 100:
+            raise ValueError(
+                f'Sheet "{name}" volatile_ranges must be a list of at most 100 ranges.'
+            )
+        volatile_ranges: list[str] = []
+        for raw_range in raw_volatile_ranges:
+            if not isinstance(raw_range, str):
+                raise TypeError(f'Volatile ranges in sheet "{name}" must be strings.')
+            parsed_range = _parse_range(raw_range, student_range)
+            if parsed_range is None or not student_range.contains_range(parsed_range):
+                raise ValueError(
+                    f'Volatile range "{raw_range}" is outside the student range for sheet "{name}".'
+                )
+            for editable_range in editable_ranges:
+                if parsed_range.intersection(psp.AddressRange.from_a1(editable_range)):
+                    raise ValueError(
+                        f'Volatile range "{raw_range}" overlaps editable range "{editable_range}" in sheet "{name}". Volatile cells are always locked.'
+                    )
+            for address, value in cells.items():
+                position = _parse_address(address)
+                assert position is not None
+                if _is_formula(value) and parsed_range.contains_cell(*position):
+                    raise ValueError(
+                        f'Volatile cell "{name}!{address}" must be a constant, not a formula.'
+                    )
+            volatile_ranges.append(parsed_range.address)
+
         normalized_sheet = {
             "name": name,
             "rows": rows,
@@ -370,6 +400,8 @@ def _normalize_template(raw_template: Any) -> dict[str, Any]:
             "cells": cells,
             "editable_ranges": editable_ranges,
         }
+        if volatile_ranges:
+            normalized_sheet["volatile_ranges"] = volatile_ranges
         if raw_student_range is not None:
             normalized_sheet["student_range"] = student_range.address
         normalized_sheets.append(normalized_sheet)
@@ -699,6 +731,14 @@ def _cell_is_editable(sheet: dict[str, Any], row: int, column: int) -> bool:
     )
 
 
+def _cell_is_volatile(sheet: dict[str, Any], row: int, column: int) -> bool:
+    return any(
+        (parsed_range := _parse_range(range_text)) is not None
+        and parsed_range.contains_cell(row, column)
+        for range_text in sheet.get("volatile_ranges", [])
+    )
+
+
 def _is_formula(value: Any) -> bool:
     return isinstance(value, str) and value.startswith("=")
 
@@ -804,6 +844,59 @@ def _normalize_testing_config(
         )
     if parameters:
         normalized["parameters"] = parameters
+
+    # Grading workbooks built with psp.create_spreadsheet(volatile=...) list the
+    # ranges their randomized cases override, which must be marked volatile in the
+    # student's workbook too so that students can see which values will change.
+    raw_volatile = raw_config.get("volatile", [])
+    if not isinstance(raw_volatile, list):
+        raise TypeError("Spreadsheet volatile ranges must be a list.")
+    for raw_range in raw_volatile:
+        sheet_name, range_text = _split_qualified(
+            raw_range, "Spreadsheet volatile range"
+        )
+        sheet = source_by_name.get(sheet_name.casefold())
+        overlay = overlay_by_source.get(sheet["name"]) if sheet else None
+        volatile_range = (
+            _parse_range(range_text, overlay[1]) if overlay is not None else None
+        )
+        if (
+            overlay is None
+            or volatile_range is None
+            or not overlay[1].contains_range(volatile_range)
+            or not all(
+                _cell_is_volatile(
+                    overlay[0],
+                    row - overlay[1].start_row,
+                    column - overlay[1].start_column,
+                )
+                for row in range(volatile_range.start_row, volatile_range.end_row + 1)
+                for column in range(
+                    volatile_range.start_column, volatile_range.end_column + 1
+                )
+            )
+        ):
+            raise ValueError(
+                f'Spreadsheet volatile range "{raw_range}" is not volatile in the student workbook. Pass the same volatile ranges to both create_spreadsheet() calls.'
+            )
+    for parameter in parameters:
+        overlay = overlay_by_source[parameter["sheet"]]
+        parameter_range = _parse_range(parameter["range"])
+        assert parameter_range is not None
+        if any(
+            _cell_is_volatile(
+                overlay[0],
+                row - overlay[1].start_row,
+                column - overlay[1].start_column,
+            )
+            for row in range(parameter_range.start_row, parameter_range.end_row + 1)
+            for column in range(
+                parameter_range.start_column, parameter_range.end_column + 1
+            )
+        ):
+            raise ValueError(
+                f'Spreadsheet parameter range "{parameter["sheet"]}!{parameter["range"]}" overlaps a volatile range.'
+            )
 
     def is_overridable(cell: _SourceCell) -> bool:
         if cell.key in parameter_keys:
@@ -1177,13 +1270,19 @@ def _student_relative_template(
             address_space.to_student_range(range_text).address
             for range_text in sheet["editable_ranges"]
         ]
-        student_sheets.append({
+        student_sheet = {
             "name": name,
             "rows": rows,
             "columns": columns,
             "cells": cells,
             "editable_ranges": editable_ranges,
-        })
+        }
+        if "volatile_ranges" in sheet:
+            student_sheet["volatile_ranges"] = [
+                address_space.to_student_range(range_text).address
+                for range_text in sheet["volatile_ranges"]
+            ]
+        student_sheets.append(student_sheet)
         overlays.append({
             "student_sheet": name,
             "source_sheet": name,
@@ -1303,6 +1402,9 @@ def _prepare_file_template(
             "student_range": student_range.address,
         })
 
+    volatile_ranges, volatile_cases = _sample_child_volatile(
+        element, data, answer_name, public_sheets, source_by_name
+    )
     source_template = _normalize_template({
         "schema_version": 2,
         "sheets": public_sheets,
@@ -1320,7 +1422,9 @@ def _prepare_file_template(
     if raw_grading_config is None and not output_children:
         return template, student_overlays, None
 
-    grading_config = dict(raw_grading_config or {})
+    grading_config = _with_volatile_cases(
+        dict(raw_grading_config or {}), volatile_ranges, volatile_cases
+    )
     grading_config["schema_version"] = 2
     grading_config["source_sheets"] = [
         *grading_config.get("source_sheets", []),
@@ -1353,6 +1457,149 @@ def _prepare_file_template(
         student_overlays,
         _normalize_grading_config(grading_config, template),
     )
+
+
+INTEGER_RE = re.compile(r"[+-]?[0-9]+")
+
+
+def _attribute_number(text: str, description: str) -> int | float:
+    text = text.strip()
+    if INTEGER_RE.fullmatch(text):
+        return int(text)
+    try:
+        number = float(text)
+    except ValueError:
+        number = math.nan
+    if not math.isfinite(number):
+        raise ValueError(f'{description} "{text}" must be a finite number.')
+    return number
+
+
+def _child_volatile_generator(child: lxml.html.HtmlElement) -> psp.RandomInput:
+    description = (
+        f'pl-spreadsheet-volatile range "{pl.get_string_attrib(child, "range")}"'
+    )
+    has_bounds = pl.has_attrib(child, "min") or pl.has_attrib(child, "max")
+    if pl.has_attrib(child, "choices"):
+        if has_bounds or pl.has_attrib(child, "step"):
+            raise ValueError(
+                f"{description} must set either choices or min and max, not both."
+            )
+        choices: list[str | int | float] = []
+        for raw_choice in pl.get_string_attrib(child, "choices").split(","):
+            choice = raw_choice.strip()
+            try:
+                choices.append(_attribute_number(choice, description))
+            except ValueError:
+                choices.append(choice)
+        if any(choice == "" for choice in choices):
+            raise ValueError(f"{description} choices must not be empty.")
+        return choices
+    if not pl.has_attrib(child, "min") or not pl.has_attrib(child, "max"):
+        raise ValueError(f"{description} must set choices, or both min and max.")
+    low = _attribute_number(pl.get_string_attrib(child, "min"), f"{description} min")
+    high = _attribute_number(pl.get_string_attrib(child, "max"), f"{description} max")
+    if pl.has_attrib(child, "step"):
+        step = _attribute_number(
+            pl.get_string_attrib(child, "step"), f"{description} step"
+        )
+        return (low, high, step)
+    return (low, high)
+
+
+def _sample_child_volatile(
+    element: lxml.html.HtmlElement,
+    data: pl.QuestionData,
+    answer_name: str,
+    public_sheets: list[dict[str, Any]],
+    source_by_name: dict[str, dict[str, Any]] | None = None,
+) -> tuple[list[str], list[psp.CaseSpec]]:
+    """Sample pl-spreadsheet-volatile children into the public source-coordinate sheets.
+
+    Returns:
+        The qualified volatile ranges, and the randomized test cases to append.
+
+    Raises:
+        ValueError: If a pl-spreadsheet-volatile child is invalid.
+    """
+    children = element.xpath("./pl-spreadsheet-volatile")
+    if not children:
+        return [], []
+    case_count = pl.get_integer_attrib(
+        element, "volatile-cases", DEFAULT_VOLATILE_CASES
+    )
+    if not 0 <= case_count <= MAX_TEST_CASES:
+        raise ValueError(
+            f'Attribute "volatile-cases" must be between 0 and {MAX_TEST_CASES}.'
+        )
+    public_by_name = {sheet["name"].casefold(): sheet for sheet in public_sheets}
+    inputs: dict[str, psp.RandomInput] = {}
+    for child in children:
+        if child.text and child.text.strip():
+            raise ValueError("pl-spreadsheet-volatile may not contain text.")
+        sheet_name = pl.get_string_attrib(child, "sheet-name")
+        sheet = public_by_name.get(sheet_name.casefold())
+        if sheet is None:
+            raise ValueError(
+                f'pl-spreadsheet-volatile references unknown sheet "{sheet_name}".'
+            )
+        student_range = _parse_range(
+            sheet.get(
+                "student_range",
+                f"A1:{_column_name(sheet['columns'] - 1)}{sheet['rows']}",
+            )
+        )
+        assert student_range is not None
+        raw_range = pl.get_string_attrib(child, "range")
+        volatile_range = _parse_range(raw_range, student_range)
+        if volatile_range is None or not student_range.contains_range(volatile_range):
+            raise ValueError(
+                f'pl-spreadsheet-volatile range "{raw_range}" is outside the student range for sheet "{sheet["name"]}".'
+            )
+        sheet["volatile_ranges"] = [
+            *sheet.get("volatile_ranges", []),
+            volatile_range.address,
+        ]
+        key = psp.QualifiedAddressRange(volatile_range, sheet["name"]).address
+        if key in inputs:
+            raise ValueError(f'pl-spreadsheet-volatile range "{key}" is duplicated.')
+        inputs[key] = _child_volatile_generator(child)
+
+    # PrairieLearn seeds random with the variant seed before server.py and before
+    # each element call, so a derived seed keeps these draws from repeating the
+    # ones that server.py made.
+    state = random.getstate()
+    try:
+        random.seed(f"{data['variant_seed']}:{answer_name}:volatile")
+        base = psp.random_cases(1, inputs)[0]["inputs"]
+        cases = psp.random_cases(case_count, inputs, name="Randomized case {index}")
+    finally:
+        random.setstate(state)
+
+    for raw_address, value in base.items():
+        address = psp.QualifiedAddress.from_a1(raw_address)
+        folded_name = address.sheet_name.casefold()
+        sheets = [public_by_name[folded_name]]
+        if source_by_name is not None:
+            sheets.append(source_by_name[folded_name])
+        for sheet in sheets:
+            if value is None:
+                sheet["cells"].pop(address.local.address, None)
+            else:
+                sheet["cells"][address.local.address] = value
+    return list(inputs), cases
+
+
+def _with_volatile_cases(
+    config: dict[str, Any], ranges: list[str], cases: list[psp.CaseSpec]
+) -> dict[str, Any]:
+    if not ranges:
+        return config
+    return {
+        **config,
+        "test_cases": [*config.get("test_cases", []), *cases],
+        "volatile": [*config.get("volatile", []), *ranges],
+    }
 
 
 def _with_child_grading_config(
@@ -1427,6 +1674,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if params_name not in data["params"]:
             raise ValueError(f'No value was found in data["params"]["{params_name}"].')
         source_template = _normalize_template(data["params"].get(params_name))
+        volatile_ranges, volatile_cases = _sample_child_volatile(
+            element, data, answer_name, source_template["sheets"]
+        )
+        if volatile_ranges:
+            # Recheck the sampled values and the added ranges.
+            source_template = _normalize_template(source_template)
         source_sheets = [
             {
                 "name": sheet["name"],
@@ -1446,7 +1699,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
         raw_grading_config = _with_child_grading_config(element, raw_grading_config)
         if raw_grading_config is not None:
-            grading_config = dict(raw_grading_config)
+            grading_config = _with_volatile_cases(
+                dict(raw_grading_config), volatile_ranges, volatile_cases
+            )
             grading_config["schema_version"] = 2
             grading_config["source_sheets"] = [
                 *grading_config.get("source_sheets", []),
@@ -1564,6 +1819,11 @@ def _table_data(
                 elif address in sheet_answer_cells:
                     cell["answer_cell"] = True
                     cell["class_name"] = "table-success"
+                elif _cell_is_volatile(sheet, row_index, column_index):
+                    cell["volatile"] = True
+                    cell["class_name"] = (
+                        "pl-spreadsheet-cell-readonly pl-spreadsheet-cell-volatile"
+                    )
                 elif not _cell_is_editable(sheet, row_index, column_index):
                     cell["class_name"] = "pl-spreadsheet-cell-readonly"
                 cells.append(cell)
@@ -1638,6 +1898,8 @@ def _mismatch_feedback(
     total: int,
     location: str,
     cause: Literal["value", "formula", "typed"],
+    *,
+    has_volatile: bool = False,
 ) -> str:
     feedback = f"{passed} of {total} answer cells match the reference solution."
     if cause == "value":
@@ -1650,6 +1912,12 @@ def _mismatch_feedback(
             "not for every hidden test case. Check that the formula works for other "
             "data too."
         )
+    if has_volatile:
+        return (
+            f"{feedback} For example, {location} is correct for the values shown but "
+            "not when the randomized cells change. Use a formula that refers to the "
+            "randomized cells rather than a typed value."
+        )
     return (
         f"{feedback} For example, {location} is correct for the values shown but not "
         "when the hidden test cases change the data. Use a formula that refers to the "
@@ -1657,7 +1925,7 @@ def _mismatch_feedback(
     )
 
 
-def _score_reference(book: psp.Book) -> tuple[float, str]:
+def _score_reference(book: psp.Book, *, has_volatile: bool) -> tuple[float, str]:
     """Credit each reference cell that matches in every run, and explain a mismatch."""
     reference = book.reference
     if reference.cell_score() == 1:
@@ -1678,7 +1946,7 @@ def _score_reference(book: psp.Book) -> tuple[float, str]:
     else:
         cause = "typed"
     return passed / len(reference), _mismatch_feedback(
-        passed, len(reference), location, cause
+        passed, len(reference), location, cause, has_volatile=has_volatile
     )
 
 
@@ -1764,6 +2032,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             config, snapshot, incorrect_cells=incorrect_cells
         )
 
+    render_data["has_volatile"] = any(
+        sheet.get("volatile_ranges")
+        for sheet in config.get("template", {}).get("sheets", [])
+    )
     with open("pl-spreadsheet.mustache", encoding="utf-8") as template_file:
         return chevron.render(template_file, render_data).strip()
 
@@ -1862,11 +2134,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # Without a reference solution, grading is defined by the question.
     if not isinstance(grading_config, dict) or "reference" not in grading_config:
         return
+    _, config = _get_config(element, data)
+    has_volatile = any(
+        sheet.get("volatile_ranges")
+        for sheet in config.get("template", {}).get("sheets", [])
+    )
     pl.grade_answer_parameterized(
         data,
         answer_name,
         lambda submission: _score_reference(
-            psp.Book(submission, grading=grading_config)
+            psp.Book(submission, grading=grading_config), has_volatile=has_volatile
         ),
         weight=pl.get_integer_attrib(element, "weight", DEFAULT_WEIGHT),
     )
