@@ -124,6 +124,15 @@ The printed pledge uses the configured `honorCode` when present, with a blank na
 `grading_table=true` adds blank question scores and a total to student covers. The table uses
 only included questions and fills down the available cover space before wrapping to another column.
 
+The print preparation page can combine multiple assessment instances and uploaded PDF cover
+pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded
+PDFs in order, and that instance's questions. Uploaded PDFs still precede the questions when the
+default cover is disabled. Copies cycle through the selected forms. After all student copies, the
+booklet appends one answer key per selected form, in form order, even when there are fewer student
+copies than selected forms. Uploaded covers are included only in the student copies. Generated page
+numbers and identification codes continue to identify pages within the original form; uploaded pages
+retain their own appearance and have no generated identification codes.
+
 Automatic blocks are measured at the final printable width after asynchronous question content,
 MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an
 exact fraction of the printable content height, including the question's internal spacing, when

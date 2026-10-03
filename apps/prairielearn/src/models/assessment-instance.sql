@@ -17,6 +17,17 @@ SELECT
       assessment_id = $assessment_id
   );
 
+-- BLOCK select_assessment_instances_for_user
+SELECT
+  ai.*
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.assessment_id = $assessment_id
+  AND ai.user_id = $user_id
+ORDER BY
+  ai.number DESC;
+
 -- BLOCK insert_group_assessment_instance
 INSERT INTO
   assessment_instances (auth_user_id, assessment_id, team_id, number)
