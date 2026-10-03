@@ -5,6 +5,7 @@ import {
   ExternalHyperlink,
   HeightRule,
   type INumberingOptions,
+  type IParagraphOptions,
   ImageRun,
   ImportedXmlComponent,
   LevelFormat,
@@ -73,7 +74,6 @@ export function buildDocxContent(
   const $ = load(html, null, false);
   const figureById = new Map(figures.map((figure) => [figure.id, figure]));
   const numbering: INumberingOptions['config'][number][] = [];
-  const widthDxa = Math.round(contentWidthPx * 15);
   const attribute = (node: HtmlElement, name: string) => node.attribs[name];
   const has = (node: HtmlElement, selector: string) => $(node).is(selector);
   const number = (node: HtmlElement, name: string, fallback: number) =>
@@ -90,16 +90,13 @@ export function buildDocxContent(
       superScript: format.sup,
       underline: format.underline ? {} : undefined,
     });
-  const paragraph = (
-    children: ParagraphChild[],
-    options: ConstructorParameters<typeof Paragraph>[0] = {},
-  ) =>
+  const paragraph = (children: ParagraphChild[], options: IParagraphOptions = {}) =>
     new Paragraph({
       spacing: { after: 100, line: 260 },
       keepLines: true,
       keepNext: keepFollowing,
       children,
-      ...(typeof options === 'string' ? {} : options),
+      ...options,
     });
   const empty = () =>
     paragraph([], { spacing: { before: 0, after: 0, line: 20 }, run: { size: 2 } });
@@ -792,5 +789,5 @@ export function buildDocxContent(
         ]
       : questionBlocks;
   });
-  return { children, numbering, widthDxa };
+  return { children, numbering };
 }
