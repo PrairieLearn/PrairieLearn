@@ -9,6 +9,7 @@ import {
 function printQuestion(html: string): HTMLElement {
   const dom = new JSDOM(
     `<section class="printing-question"><div class="question-block"><div class="question-body">${html}</div></div></section>`,
+    { url: 'https://example.com/print/preview' },
   );
   vi.stubGlobal('document', dom.window.document);
   vi.stubGlobal('HTMLElement', dom.window.HTMLElement);
@@ -20,6 +21,41 @@ function printQuestion(html: string): HTMLElement {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('printable response controls', () => {
+  it('prints media without a source as plain text', () => {
+    const question = printQuestion(`
+      <iframe title="Reference"></iframe>
+      <audio src="" title="Recording"></audio>
+      <video><source src=" "></video>
+    `);
+    expect(question.querySelector('a, iframe, audio, video')).toBeNull();
+    expect(
+      [...question.querySelectorAll('.printing-media-reference')].map(
+        (element) => element.textContent,
+      ),
+    ).toEqual(['Reference', 'Recording', 'Media reference']);
+  });
+
+  it('preserves media links and falls back to nonempty nested sources', () => {
+    const question = printQuestion(`
+      <iframe src="/reference" title="Reference"></iframe>
+      <audio src="recording.mp3" title="Recording"></audio>
+      <video src=""><source src=" "><source src="https://media.example.com/video"></video>
+    `);
+    expect(
+      [...question.querySelectorAll<HTMLAnchorElement>('a')].map((link) => [
+        link.href,
+        link.textContent,
+      ]),
+    ).toEqual([
+      ['https://example.com/reference', 'Reference: https://example.com/reference'],
+      [
+        'https://example.com/print/recording.mp3',
+        'Recording: https://example.com/print/recording.mp3',
+      ],
+      ['https://media.example.com/video', 'Media reference: https://media.example.com/video'],
+    ]);
+  });
+
   it('omits whitespace-only dropdown placeholders from the printed option bank', () => {
     const question = printQuestion(`
       <select name="association" aria-label="Association">
