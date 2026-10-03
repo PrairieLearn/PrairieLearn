@@ -1,19 +1,17 @@
 import { type ServerResponse, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { chromium } from '@playwright/test';
-import { expect, it, vi } from 'vitest';
+import { waitForPrintImages } from '../../lib/client/print-image-layout.js';
 
-import { waitForPrintImages } from './print-image-layout.js';
+import { expect, test } from './fixtures.js';
 
-it('waits for images in the question and its shadow roots', async () => {
+test('waits for images in the question and its shadow roots', async ({ page }) => {
   const responses = new Map<string, ServerResponse>();
   const server = createServer((request, response) => {
     responses.set(request.url!, response);
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  const browser = await chromium.launch();
   const sendImage = (response: ServerResponse) => {
     response.setHeader('Content-Type', 'image/svg+xml');
     response.end(
@@ -21,7 +19,6 @@ it('waits for images in the question and its shadow roots', async () => {
     );
   };
   try {
-    const page = await browser.newPage();
     await page.setContent(
       `<div id="source"><img src="${origin}/light.svg"><div id="host"></div></div>`,
       { waitUntil: 'domcontentloaded' },
@@ -31,7 +28,7 @@ it('waits for images in the question and its shadow roots', async () => {
       image.src = `${origin}/shadow.svg`;
       host.attachShadow({ mode: 'open' }).append(image);
     }, origin);
-    await vi.waitFor(() => expect(responses.size).toBe(2));
+    await expect.poll(() => responses.size).toBe(2);
 
     let complete = false;
     const waiting = page
@@ -48,7 +45,6 @@ it('waits for images in the question and its shadow roots', async () => {
     await waiting;
     expect(complete).toBe(true);
   } finally {
-    await browser.close();
     server.closeAllConnections();
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
