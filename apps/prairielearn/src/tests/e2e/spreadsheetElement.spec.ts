@@ -939,3 +939,32 @@ test('marks randomized cells as locked and distinct', async ({ page, courseInsta
     submission.getByText(/^\s*Randomized: changes between variants/).first(),
   ).toBeVisible();
 });
+
+test('selects whole columns and rows from their headings', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetVolatileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', { name: 'Python randomized orders, sheet Orders' });
+  const editor = grid.locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]');
+  const indicator = editor.locator('.pl-spreadsheet-address');
+  await expect(indicator).toHaveText('');
+
+  await grid.getByRole('button', { name: 'B', exact: true }).click();
+  await expect(indicator).toHaveText('B1:B3');
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(3);
+  await expect(grid.getByRole('gridcell', { name: /^B1,/ })).toBeFocused();
+
+  await grid.getByRole('gridcell', { name: '3', exact: true }).click();
+  await expect(indicator).toHaveText('A3:C3');
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(3);
+
+  await grid.getByRole('gridcell', { name: /^A2,/ }).click();
+  await expect(indicator).toHaveText('A2');
+  await grid.getByRole('gridcell', { name: /^C3,/ }).click({ modifiers: ['Shift'] });
+  await expect(indicator).toHaveText('A2:C3');
+});

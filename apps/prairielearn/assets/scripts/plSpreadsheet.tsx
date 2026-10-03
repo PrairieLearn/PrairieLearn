@@ -314,6 +314,8 @@ function SpreadsheetEditor({
   const rawSubmissionRef = useRef(rawSubmission);
   const committedSubmissionRef = useRef(rawSubmission);
   const dragAnchorRef = useRef<CellPosition | null>(null);
+  // A row or column selection, kept while the grid moves the active cell to its first cell.
+  const pendingRangeRef = useRef<CellRange | null>(null);
   const dragFocusRef = useRef<CellPosition | null>(null);
   const didDragRangeRef = useRef(false);
   const fillDragRef = useRef<{ source: CellPosition; target: CellPosition } | null>(null);
@@ -626,6 +628,18 @@ function SpreadsheetEditor({
     );
   }
 
+  /** Selects a whole row or column, with the active cell at its first cell. */
+  function selectRange(range: CellRange) {
+    setSelectedRange(range);
+    pendingRangeRef.current = range;
+    gridRef.current?.setActivePosition(
+      { idx: range.anchor.column + 1, rowIdx: range.anchor.row },
+      { shouldFocus: true },
+    );
+    pendingRangeRef.current = null;
+    setAnnouncement(`Selected ${formatReference(range.anchor, range.focus)}.`);
+  }
+
   function getTabTarget(position: CellPosition, backwards: boolean): CellPosition | null {
     const offset = backwards ? -1 : 1;
     const index = position.row * sheet.columns + position.column + offset;
@@ -700,6 +714,7 @@ function SpreadsheetEditor({
       renderCell: ({ row }) => (
         <span className="pl-spreadsheet-row-header">{row.rowIndex + 1}</span>
       ),
+      cellClass: 'pl-spreadsheet-row-header-cell',
     },
     ...Array.from({ length: sheet.columns }, (_, columnIndex): Column<SpreadsheetRow> => {
       const columnName = cellAddress(0, columnIndex).replace(/1$/, '');
@@ -708,6 +723,27 @@ function SpreadsheetEditor({
         name: columnName,
         minWidth: 96,
         resizable: true,
+        renderHeaderCell: () => (
+          // The grid handles header clicks itself, so this stops them reaching it.
+          <button
+            type="button"
+            className="pl-spreadsheet-column-header"
+            title={`Select column ${columnName}`}
+            onMouseDown={(event) => {
+              event.stopPropagation();
+              event.preventDefault();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              selectRange({
+                anchor: { row: 0, column: columnIndex },
+                focus: { row: sheet.rows - 1, column: columnIndex },
+              });
+            }}
+          >
+            {columnName}
+          </button>
+        ),
         editable: (row) => isCellEditable(sheet, row.rowIndex, columnIndex),
         cellClass: (row) =>
           clsx(
@@ -1198,7 +1234,9 @@ function SpreadsheetEditor({
             {activeValueError}
           </div>
           <label className="pl-spreadsheet-address" htmlFor={`${instructionsId}-formula`}>
-            {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
+            {activeCell && selectedRange
+              ? formatReference(selectedRange.anchor, selectedRange.focus)
+              : ''}
           </label>
           <FormulaInput
             ref={formulaInputRef}
@@ -1280,7 +1318,15 @@ function SpreadsheetEditor({
           onRowsChange={handleRowsChange}
           onFill={handleFill}
           onCellMouseDown={({ rowIdx, column }, event) => {
-            if (event.button !== 0 || column.key === '__row') return;
+            if (event.button !== 0) return;
+            if (column.key === '__row') {
+              event.preventGridDefault();
+              selectRange({
+                anchor: { row: rowIdx, column: 0 },
+                focus: { row: rowIdx, column: sheet.columns - 1 },
+              });
+              return;
+            }
             const position = { row: rowIdx, column: column.idx - 1 };
             const pointingTarget = formulaInputRef.current?.pointingTarget();
             if (pointingTarget) {
@@ -1323,7 +1369,9 @@ function SpreadsheetEditor({
             const sourceRow = rows[rowIdx].rowIndex;
             const position = { row: sourceRow, column: parsedColumn.column };
             setActiveCell(position);
-            if (!dragAnchorRef.current) setSelectedRange({ anchor: position, focus: position });
+            if (!dragAnchorRef.current && !pendingRangeRef.current) {
+              setSelectedRange({ anchor: position, focus: position });
+            }
             const address = cellAddress(sourceRow, parsedColumn.column);
             setFormulaText(
               displayInput(finalInput(config, committedSubmissionRef.current, sheet.name, address)),

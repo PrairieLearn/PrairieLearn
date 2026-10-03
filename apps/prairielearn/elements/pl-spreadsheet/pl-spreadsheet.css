@@ -80,8 +80,27 @@
 
 /* Fixed-width, so the formula input does not shift as the selected address changes. */
 .pl-spreadsheet-address {
-  min-width: 6ch;
+  min-width: 7ch;
   font-family: var(--bs-font-monospace);
+  text-align: right;
+}
+
+/* Clicking a column or row heading selects the whole column or row. */
+.pl-spreadsheet-column-header {
+  display: block;
+  width: calc(100% + 16px);
+  margin-inline: -8px;
+  padding: 0 8px;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.pl-spreadsheet-row-header-cell {
+  cursor: pointer;
 }
 
 .pl-spreadsheet-formula-input {
