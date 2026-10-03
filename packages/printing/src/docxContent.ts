@@ -763,30 +763,34 @@ export function buildDocxContent(
     return blocks.length > 0 ? blocks : [empty()];
   }
 
-  const children = $('.printing-question')
-    .toArray()
-    .flatMap((question, index) => {
-      // Preserve small questions as a unit; long questions remain free to span Word pages.
-      keepFollowing = number(question, 'data-docx-height', Infinity) < contentHeightPx * 0.7;
-      const blocks = [
-        paragraph(
-          [text(`Question ${attribute(question, 'data-question-number')}`, { bold: true })],
-          {
-            pageBreakBefore: startOnNewPage && index === 0,
-            keepNext: true,
-            spacing: { before: 240, after: 120 },
-            border: { bottom: GRID },
-          },
-        ),
-        ...walk(
-          $(question).find('.question-body').first().contents().toArray().length > 0
-            ? $(question).find('.question-body').first().contents().toArray()
-            : $(question).find('.question-container > .card-body').first().contents().toArray(),
-        ),
-      ];
-      const keepQuestion = keepFollowing && blocks.some((block) => block instanceof Table);
-      keepFollowing = false;
-      return keepQuestion ? keepTogether(blocks, contentWidthPx) : [...blocks, empty()];
-    });
+  const questions = $('.printing-question').toArray();
+  const children = questions.flatMap((question, index) => {
+    // Preserve small questions as a unit; long questions remain free to span Word pages.
+    keepFollowing = number(question, 'data-docx-height', Infinity) < contentHeightPx * 0.7;
+    const blocks = [
+      paragraph([text(`Question ${attribute(question, 'data-question-number')}`, { bold: true })], {
+        pageBreakBefore: startOnNewPage && index === 0,
+        keepNext: true,
+        spacing: { before: 240, after: 120 },
+        border: { bottom: GRID },
+      }),
+      ...walk(
+        $(question).find('.question-body').first().contents().toArray().length > 0
+          ? $(question).find('.question-body').first().contents().toArray()
+          : $(question).find('.question-container > .card-body').first().contents().toArray(),
+      ),
+    ];
+    const keepQuestion = keepFollowing && blocks.some((block) => block instanceof Table);
+    keepFollowing = false;
+    const questionBlocks = keepQuestion
+      ? keepTogether(blocks, contentWidthPx)
+      : [...blocks, empty()];
+    return index < questions.length - 1
+      ? [
+          ...questionBlocks,
+          new Paragraph({ spacing: { after: 780, line: 20 }, run: { size: 2 }, children: [] }),
+        ]
+      : questionBlocks;
+  });
   return { children, numbering, widthDxa };
 }

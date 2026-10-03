@@ -171,3 +171,17 @@ it('preserves ordering solution indentation without adding list bullets', async 
   expect(word(body).find('w\\:rFonts').attr('w:ascii')).toBe('Courier New');
   expect(word('w\\:numPr')).toHaveLength(0);
 });
+
+it('adds three lines of space only between Word questions', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body"><p>First answer</p></div></article>
+    <article class="printing-question" data-question-number="2"><div class="question-body"><p>Second answer</p></div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const xml = await zip.file('word/document.xml')!.async('string');
+  const gap = xml.indexOf('w:after="780"');
+  expect(xml.match(/w:after="780"/g)).toHaveLength(1);
+  expect(gap).toBeGreaterThan(xml.indexOf('First answer'));
+  expect(gap).toBeLessThan(xml.indexOf('Question 2'));
+});
