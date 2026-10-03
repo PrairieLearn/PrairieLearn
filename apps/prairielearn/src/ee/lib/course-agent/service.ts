@@ -15,7 +15,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 import * as Sentry from '@prairielearn/sentry';
 
 import { config } from '../../../lib/config.js';
-import { pullAndUpdateCourse } from '../../../lib/course.js';
+import { pullAndUpdateCourse, selectCourseHasSyncErrors } from '../../../lib/course.js';
 import {
   type Course,
   type CourseAgentConversation,
@@ -335,6 +335,7 @@ async function failSync(
   conversation: CourseAgentConversation,
   row: CourseAgentProposal,
   input: ApprovalDecision,
+  finishedSync?: string,
 ): Promise<boolean> {
   if (row.sync_diagnostics === null) {
     const course = await authorizedDestination(scope, conversation);
@@ -356,7 +357,62 @@ async function failSync(
     });
     row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
   }
-  const recovery = 'Publication was retained. Correct the course errors and submit a new proposal.';
+  let recovery: string;
+  if (!row.rollback_allowed) {
+    recovery =
+      'Publication was retained because its base was not a confirmed, error-free Course Sync. Correct the course errors and submit a new proposal.';
+  } else {
+    if (!row.rolled_back_sha) {
+      try {
+        const reverted = await publisher(conversation).rollback(
+          job(conversation, row),
+          row.published_sha!,
+        );
+        await proposals.saveProposalProgress(row.id, { rolled_back_sha: reverted });
+        await proposals.resetSyncReceipt(row.id);
+      } catch (error) {
+        if (!(error instanceof PublishRejected)) throw error;
+        await proposals.saveProposalProgress(row.id, {
+          outcome: `Course Sync failed. ${error.message}\nSync diagnostics:\n${row.sync_diagnostics}`,
+          outcome_success: false,
+          error: 'Course sync failed.',
+        });
+        return true;
+      }
+      row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
+    }
+    // A crash can happen between saving the rollback and clearing the original failed job.
+    if (row.sync_job_sequence_id) {
+      const { status } = await selectJobSequenceStatus(row.sync_job_sequence_id);
+      if (status === 'Running' || status === 'Stopping') return false;
+      if (status !== 'Success') {
+        if (finishedSync === row.sync_job_sequence_id) {
+          throw new Error(
+            'Publication was reverted, but Course Sync could not restore it. Retry completion.',
+          );
+        }
+        await proposals.resetSyncReceipt(row.id);
+        row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
+      }
+    }
+    if (!row.synced_sha) {
+      const sync = await pullAndUpdateCourse({
+        course: await authorizedDestination(scope, conversation),
+        userId: scope.user_id,
+        authnUserId: scope.authn_user_id,
+        expectedAncestorSha: row.rolled_back_sha!,
+        onJobCreated: async (id) => {
+          await proposals.saveProposalProgress(row.id, { sync_job_sequence_id: id });
+        },
+        onSynced: async (sha) => {
+          await proposals.saveProposalProgress(row.id, { synced_sha: sha });
+        },
+      });
+      continueAfterSync(sync, scope, conversation, input);
+      return false;
+    }
+    recovery = `Publication was reverted by ${row.rolled_back_sha}; Course Sync restored PL at ${row.synced_sha}. Fetch and reconcile the sandbox checkout before fixing the errors and submitting a new proposal.`;
+  }
   await proposals.saveProposalProgress(row.id, {
     outcome: `Course Sync failed. ${recovery}\nSync diagnostics:\n${row.sync_diagnostics}`,
     outcome_success: false,
@@ -400,7 +456,14 @@ export async function complete(
             });
           } else {
             if (!row.published_sha) {
-              await authorizedDestination(scope, conversation);
+              const baseline = await authorizedDestination(scope, conversation);
+              if (row.rollback_allowed === null) {
+                await proposals.saveProposalProgress(row.id, {
+                  rollback_allowed:
+                    baseline.commit_hash === approvalSchema.parse(row.payload).baseSha &&
+                    !(await selectCourseHasSyncErrors(baseline.id)).has_errors,
+                });
+              }
               const sha = await publisher(conversation).push(job(conversation, row));
               await proposals.saveProposalProgress(row.id, { published_sha: sha });
               row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
@@ -409,8 +472,8 @@ export async function complete(
               const { status } = await selectJobSequenceStatus(row.sync_job_sequence_id);
               if (status === 'Running' || status === 'Stopping') return;
             }
-            if (row.sync_validation_failed) {
-              if (!(await failSync(scope, conversation, row, input))) return;
+            if (row.rolled_back_sha || row.sync_validation_failed) {
+              if (!(await failSync(scope, conversation, row, input, finishedSync))) return;
             } else {
               if (row.sync_job_sequence_id) {
                 const { status } = await selectJobSequenceStatus(row.sync_job_sequence_id);

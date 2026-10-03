@@ -49,6 +49,8 @@ export const saveProposalProgress = (
       | 'delivered'
       | 'error'
       | 'outcome_success'
+      | 'rollback_allowed'
+      | 'rolled_back_sha'
       | 'sync_validation_failed'
       | 'sync_diagnostics'
     >
@@ -63,6 +65,8 @@ export const saveProposalProgress = (
     delivered: null,
     error: null,
     outcome_success: null,
+    rollback_allowed: null,
+    rolled_back_sha: null,
     sync_validation_failed: null,
     sync_diagnostics: null,
     ...input,

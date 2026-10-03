@@ -12,6 +12,8 @@ columns
     payload: jsonb not null
     prepared: boolean not null default false
     published_sha: text
+    rollback_allowed: boolean
+    rolled_back_sha: text
     sequence: integer not null
     sync_diagnostics: text
     sync_job_sequence_id: bigint

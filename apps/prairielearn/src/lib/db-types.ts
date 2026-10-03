@@ -738,6 +738,8 @@ export const CourseAgentProposalSchema = z.object({
   payload: z.json(),
   prepared: z.boolean(),
   published_sha: z.string().nullable(),
+  rollback_allowed: z.boolean().nullable(),
+  rolled_back_sha: z.string().nullable(),
   sequence: z.number(),
   sync_diagnostics: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),

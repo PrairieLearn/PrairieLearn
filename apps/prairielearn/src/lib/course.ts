@@ -23,6 +23,15 @@ import { type ServerJobResult, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/** Includes errors on the course's live questions, instances, and assessments. */
+export async function selectCourseHasSyncErrors(courseId: string) {
+  return sqldb.queryRow(
+    sql.sync_errors,
+    { course_id: courseId },
+    z.object({ has_errors: z.boolean() }),
+  );
+}
+
 /**
  * Check that an assessment_instance_id really belongs to the given course_instance_id
  *
