@@ -58,12 +58,17 @@ function replaceWithResponseArea(element: HTMLElement, label: string): void {
   element.replaceWith(createResponseArea(label));
 }
 
-function decodeBase64Utf8(value: string): string | null {
+function decodeBase64Utf8(value: string): string {
   try {
     const bytes = Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    return null;
+  } catch (error) {
+    throw new Error(
+      'Starter code could not be read. Check the question’s file editor before printing.',
+      {
+        cause: error,
+      },
+    );
   }
 }
 
@@ -292,7 +297,7 @@ function createOrderBlockOptions(
 }
 
 function replaceOrderBlocks(source: HTMLElement): void {
-  const widgets = [...source.querySelectorAll<HTMLElement>('[class*="pl-order-blocks-question-"]')];
+  const widgets = [...source.querySelectorAll<HTMLElement>('[data-ordering-required]')];
   for (const [index, widget] of widgets.entries()) {
     const options = widget.querySelector<HTMLElement>('[id^="order-blocks-options-"]');
     const supplied = widget.querySelector<HTMLElement>('[id^="order-blocks-dropzone-"]');
@@ -308,16 +313,8 @@ function replaceOrderBlocks(source: HTMLElement): void {
     }
     const instructions = document.createElement('p');
     instructions.className = 'printing-response-instructions';
-    const help = document.createElement('div');
-    help.innerHTML =
-      widget.querySelector('[data-bs-content]')?.getAttribute('data-bs-content') ?? '';
-    const requirements = [...help.querySelectorAll('p')]
-      .map((paragraph) => paragraph.querySelector('strong')?.textContent ?? paragraph.textContent)
-      .filter((text) => !text.startsWith('Keyboard Controls:'));
-    const indentation = [...help.querySelectorAll('strong')].some((requirement) =>
-      requirement.textContent.includes('should be indented'),
-    );
-    const ordered = !requirements.some((requirement) => requirement.includes('does not matter'));
+    const indentation = widget.dataset.indentationRequired === 'true';
+    const ordered = widget.dataset.orderingRequired === 'true';
     instructions.textContent = [
       !ordered
         ? 'Check the box beside each block you want to include. Leave unused blocks blank. The order of the selected blocks does not matter.'
