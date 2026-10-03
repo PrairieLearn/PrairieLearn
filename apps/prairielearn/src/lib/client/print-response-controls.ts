@@ -540,3 +540,11 @@ export function normalizeResponseControls(source: HTMLElement): void {
     if (!hasResponseControl) (questionBody ?? question).append(createResponseArea('Response'));
   }
 }
+
+export function removeResponseControlsForAnswerKey(questionBody: HTMLElement): void {
+  for (const response of questionBody.querySelectorAll<HTMLElement>(
+    '.printing-response-field, .printing-response-placeholder, [data-print-response-area]:not(.printing-order-blocks), [data-print-response-line], input[type="checkbox"], input[type="radio"]',
+  )) {
+    response.remove();
+  }
+}

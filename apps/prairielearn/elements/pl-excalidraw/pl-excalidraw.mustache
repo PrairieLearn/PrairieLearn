@@ -3,7 +3,12 @@
     (() => {
         const initialize = async () => {
             const module = await import("pl-excalidraw-js");
-            await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
+            await module.initializeExcalidraw(
+                "{{uuid}}",
+                "{{name}}",
+                JSON.parse(atob("{{metadata}}")),
+                Boolean(window.PrairieLearnExamPrinting),
+            );
         };
         if (window.PrairieLearnExamPrinting) {
             const initializationPromise = new Promise((resolve) => $(resolve)).then(initialize);
