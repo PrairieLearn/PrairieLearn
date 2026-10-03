@@ -185,6 +185,12 @@ const config: KnipConfig = {
       // Tell knip not to flag these as unused.
       ignoreDependencies: [...autoDetectedDeps, ...EXTERNAL_ELEMENT_DEPS, ...DEPS_OF_DEAD_CODE],
     },
+    'apps/course-agent': {
+      entry: ['test/fixtures/agent.ts'],
+      // Built into workerd, not an npm dependency.
+      ignoreDependencies: ['cloudflare'],
+      project: ['src/**/*.ts', 'test/**/*.ts'],
+    },
     'apps/workspace-host': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
