@@ -226,8 +226,8 @@ test('synchronizes students from a CSV file on mobile', async ({ page, courseIns
   expect(section).toBeDefined();
   expect(extraTime).toBeDefined();
   await addLabelToEnrollment({ enrollment, label: section!, authzData });
-  await addLabelToEnrollment({ clearEnrollment, label: section!, authzData });
-  await addLabelToEnrollment({ clearEnrollment, label: extraTime!, authzData });
+  await addLabelToEnrollment({ enrollment: clearEnrollment, label: section!, authzData });
+  await addLabelToEnrollment({ enrollment: clearEnrollment, label: extraTime!, authzData });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
