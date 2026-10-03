@@ -210,17 +210,17 @@ export class PrintRenderer {
   /** Closes a context, discarding the whole browser if the context does not close promptly. */
   private async discardContext(browser: Browser, context: BrowserContext): Promise<void> {
     let graceTimer: ReturnType<typeof setTimeout> | undefined;
-    const closedInTime = await Promise.race([
+    const closed = await Promise.race([
       context.close().then(
         () => true,
-        () => true,
+        () => false,
       ),
       new Promise<boolean>((resolve) => {
         graceTimer = setTimeout(() => resolve(false), this.contextCloseGraceMs);
       }),
     ]);
     if (graceTimer) clearTimeout(graceTimer);
-    if (!closedInTime) this.discardBrowser(browser);
+    if (!closed) this.discardBrowser(browser);
   }
 
   private async renderWithPermit<T>(
@@ -316,11 +316,9 @@ export class PrintRenderer {
     } finally {
       if (deadlineTimer) clearTimeout(deadlineTimer);
       const openContext: BrowserContext | null = context;
-      if (timedOut) {
-        // The worker must not wait on a hung page; tear it down in the background.
-        if (openContext) void this.discardContext(browser, openContext);
-        else this.discardBrowser(browser);
-      } else if (openContext) {
+      // A context created after the deadline may still be pending, so discard its browser.
+      if (timedOut && !openContext) this.discardBrowser(browser);
+      if (openContext) {
         await this.discardContext(browser, openContext);
       }
     }

@@ -43,7 +43,7 @@ const URL_REFERENCE_ATTRIBUTES = [
 
 function rewriteCssIdReferences(
   css: string,
-  context: 'declarationList' | 'stylesheet' | 'value',
+  context: 'declarationList' | 'selectorList' | 'stylesheet' | 'value',
   idRenames: ReadonlyMap<string, string>,
 ): string {
   if (!css.includes('#') || idRenames.size === 0) return css;
@@ -71,6 +71,13 @@ function rewriteCssIdReferences(
 }
 
 function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<string, string>) {
+  const rewriteSelectorCall = (call: string, quote: string, selector: string) => {
+    const namespacedSelector = rewriteCssIdReferences(selector, 'selectorList', idRenames);
+    return namespacedSelector === selector
+      ? call
+      : call.replace(`${quote}${selector}${quote}`, () => `${quote}${namespacedSelector}${quote}`);
+  };
+
   return scriptHtml
     .replaceAll(
       /\bgetElementById\(\s*(["'`])([^"'`]+)\1\s*\)/g,
@@ -82,20 +89,10 @@ function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<st
       },
     )
     .replaceAll(
-      /\b(?:querySelector(?:All)?|closest|matches)\(\s*(["'`])#([^"'`]+)\1\s*\)/g,
-      (call, quote: string, id: string) => {
-        const renamedId = idRenames.get(id);
-        return renamedId
-          ? call.replace(`${quote}#${id}${quote}`, `${quote}#${renamedId}${quote}`)
-          : call;
-      },
+      /\b(?:querySelector(?:All)?|closest|matches)\(\s*(["'`])([^"'`]+)\1\s*\)/g,
+      rewriteSelectorCall,
     )
-    .replaceAll(/\$\(\s*(["'`])#([^"'`]+)\1\s*\)/g, (call, quote: string, id: string) => {
-      const renamedId = idRenames.get(id);
-      return renamedId
-        ? call.replace(`${quote}#${id}${quote}`, `${quote}#${renamedId}${quote}`)
-        : call;
-    });
+    .replaceAll(/\$\(\s*(["'`])([^"'`]+)\1\s*\)/g, rewriteSelectorCall);
 }
 
 function attributeSelector(attribute: string): string {
