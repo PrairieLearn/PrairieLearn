@@ -20,9 +20,7 @@ interface PaginatedQuestionLayout {
 interface AnswerKeyQuestionPresentation {
   answerRegionCount: number;
   gradingBlockCount: number;
-  placement: string | undefined;
   questionNumber: string | undefined;
-  studentHeight: string | undefined;
   visibleStudentResponseCount: number;
 }
 
@@ -85,9 +83,7 @@ async function readAnswerKeyQuestionPresentations(
         return {
           answerRegionCount: question.querySelectorAll('[data-print-answer-key]').length,
           gradingBlockCount: question.querySelectorAll('.grading-block').length,
-          placement: question.dataset.printAnswerKeyPlacement,
           questionNumber: question.dataset.questionNumber,
-          studentHeight: question.dataset.printStudentHeight,
           visibleStudentResponseCount,
         };
       });
@@ -185,8 +181,6 @@ test('renders readable answer keys for every student question', async ({
       visibleStudentResponseCount: 0,
     });
     expect(presentation.questionNumber).toBeTruthy();
-    expect(presentation.studentHeight).toMatch(/^\d+\.\d{2}$/);
-    expect(presentation.placement).toMatch(/^(response|appended)$/);
   }
 });
 

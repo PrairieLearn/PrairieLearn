@@ -1,5 +1,8 @@
 import * as cheerio from 'cheerio';
 
+type HtmlNode = ReturnType<ReturnType<typeof cheerio.load>>['0'];
+type HtmlElement = Extract<HtmlNode, { type: 'tag' | 'script' | 'style' }>;
+
 export type PrintableTextBlock =
   | { type: 'heading'; text: string }
   | { type: 'paragraph'; text: string }
@@ -51,32 +54,55 @@ function normalizeText(text: string): string {
 export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
   const $ = cheerio.load(html, null, false);
   const blocks: PrintableTextBlock[] = [];
+  const blockTags = new Set(['article', 'blockquote', 'div', 'ol', 'p', 'section', 'ul']);
+  const ignoredTags = new Set(['script', 'style', 'noscript', 'template']);
+  const isBlock = (node: HtmlNode): node is HtmlElement =>
+    node.type === 'tag' && (blockTags.has(node.tagName) || /^h[1-6]$/.test(node.tagName));
 
-  for (const node of $.root().contents()) {
-    if (node.type === 'text') {
-      const text = normalizeText(node.data);
-      if (text) blocks.push({ type: 'paragraph', text });
-      continue;
-    }
-    if (node.type !== 'tag') continue;
-
-    const element = $(node);
-    const tagName = node.tagName.toLowerCase();
-    if (/^h[1-6]$/.test(tagName)) {
-      const text = normalizeText(element.text());
-      if (text) blocks.push({ type: 'heading', text });
-    } else if (tagName === 'ul' || tagName === 'ol') {
-      const items = element
-        .children('li')
-        .toArray()
-        .map((item) => normalizeText($(item).text()))
-        .filter((item) => item !== '');
-      if (items.length > 0) blocks.push({ type: 'list', ordered: tagName === 'ol', items });
-    } else {
-      const text = normalizeText(element.text());
-      if (text) blocks.push({ type: 'paragraph', text });
-    }
+  function contentText(node: HtmlNode): string {
+    if (node.type === 'text') return node.data;
+    if (node.type !== 'tag' || ignoredTags.has(node.tagName)) return '';
+    if (node.tagName === 'br') return ' ';
+    return node.children
+      .map((child) => `${contentText(child)}${isBlock(child) ? ' ' : ''}`)
+      .join('');
   }
+
+  function append(nodes: HtmlNode[]): void {
+    let inlineText = '';
+    const flush = () => {
+      const text = normalizeText(inlineText);
+      if (text) blocks.push({ type: 'paragraph', text });
+      inlineText = '';
+    };
+
+    for (const node of nodes) {
+      if (node.type === 'tag' && ignoredTags.has(node.tagName)) continue;
+      if (!isBlock(node)) {
+        inlineText += contentText(node);
+        continue;
+      }
+      flush();
+      if (/^h[1-6]$/.test(node.tagName)) {
+        const text = normalizeText(contentText(node));
+        if (text) blocks.push({ type: 'heading', text });
+      } else if (node.tagName === 'ul' || node.tagName === 'ol') {
+        const items = $(node)
+          .children('li')
+          .toArray()
+          .map((item) => normalizeText(contentText(item)))
+          .filter((item) => item !== '');
+        if (items.length > 0) {
+          blocks.push({ type: 'list', ordered: node.tagName === 'ol', items });
+        }
+      } else {
+        append(node.children);
+      }
+    }
+    flush();
+  }
+
+  append($.root().contents().toArray());
 
   return blocks;
 }

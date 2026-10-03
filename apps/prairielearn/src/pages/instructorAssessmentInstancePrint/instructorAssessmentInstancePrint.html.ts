@@ -406,13 +406,7 @@ export function InstructorAssessmentInstancePrint({
           }
 
           <div class="exam-questions">
-            ${
-              questionHtmls.length > 0
-                ? questionHtmls.map((questionHtml) => unsafeHtml(questionHtml))
-                : html`<section class="printing-question printing-question-empty">
-                    This assessment contains no questions.
-                  </section>`
-            }
+            ${questionHtmls.map((questionHtml) => unsafeHtml(questionHtml))}
           </div>
         </div>
         <main id="exam-print-pages"></main>

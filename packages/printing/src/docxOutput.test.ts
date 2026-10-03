@@ -148,6 +148,25 @@ describe('renderDocx', () => {
     ]);
   });
 
+  it('keeps a wide cover field in sequence after a partially filled row', async () => {
+    createBrowserHarness();
+    const docx = await new PrintRenderer().renderDocx({
+      url: 'https://localhost:3000/print',
+      cover: {
+        ...cover,
+        fields: [{ label: 'Section' }, { label: 'Full name', wide: true }, { label: 'Date' }],
+      },
+      footerLabel: 'Form A',
+    });
+    const { documentXml } = await readDocx(docx);
+    const word = load(documentXml, { xmlMode: true });
+    const labels = word('w\\:t')
+      .map((_, element) => word(element).text())
+      .get();
+    expect(labels.indexOf('Section')).toBeLessThan(labels.indexOf('Full name'));
+    expect(labels.indexOf('Full name')).toBeLessThan(labels.indexOf('Date'));
+  });
+
   it('keeps question text, math, lists, tables, and answer spaces editable', async () => {
     const harness = createBrowserHarness();
     const docx = await new PrintRenderer().renderDocx({

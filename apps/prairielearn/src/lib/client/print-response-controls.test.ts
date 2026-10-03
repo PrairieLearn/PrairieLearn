@@ -1,7 +1,10 @@
 import { JSDOM } from 'jsdom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { normalizeResponseControls } from './print-response-controls.js';
+import {
+  normalizeResponseControls,
+  removeResponseControlsForAnswerKey,
+} from './print-response-controls.js';
 
 function printQuestion(html: string): HTMLElement {
   const dom = new JSDOM(
@@ -65,6 +68,26 @@ describe('printable response controls', () => {
     expect(question.textContent).not.toContain('x^2');
     expect(question.querySelector('h3')?.textContent).toBe('pl-number-input');
     expect(question.querySelector('[data-print-response-area]')).toBeNull();
+  });
+
+  it('keeps multipart question prompts and choices in answer keys without blank responses', () => {
+    const question = printQuestion(`
+      <p>Calculate both forces and select the direction.</p>
+      <p>First: <span class="input-group"><input name="first" placeholder="number"><span>N</span></span></p>
+      <p>Second: <span class="input-group"><input name="second" placeholder="number"><span>N</span></span></p>
+      <p>Explanation: <textarea placeholder="Explain your choice"></textarea></p>
+      <fieldset><label><input type="radio" name="direction">North</label><label><input type="radio" name="direction">South</label></fieldset>
+    `);
+    const questionBody = question.querySelector<HTMLElement>('.question-body')!;
+    removeResponseControlsForAnswerKey(questionBody);
+
+    expect(questionBody.textContent).toContain('Calculate both forces and select the direction.');
+    expect(questionBody.textContent).toContain('First:');
+    expect(questionBody.textContent).toContain('Second:');
+    expect(questionBody.textContent).toContain('North');
+    expect(questionBody.textContent).toContain('South');
+    expect(questionBody.textContent).not.toContain('Explain your choice');
+    expect(questionBody.querySelectorAll('[data-print-response-line], input')).toHaveLength(0);
   });
 
   it('omits grading descriptors while preserving useful paper instructions', () => {

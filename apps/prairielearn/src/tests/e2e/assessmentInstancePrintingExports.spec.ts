@@ -1,8 +1,12 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import * as unzipper from 'unzipper';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { syncCourse } from '../helperCourse.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
@@ -80,6 +84,14 @@ test('describes printable exports and serves each linked format', async ({
   for (const warning of body.warnings) {
     expect(printedQuestionNumbers).not.toContain(warning.question_number);
   }
+
+  const brokenOnlyQuery = new URLSearchParams(query);
+  for (const number of new Set(printedQuestionNumbers)) {
+    brokenOnlyQuery.append('exclude_question', number!);
+  }
+  const emptyPreview = await page.request.get(`${paperUrl}/preview?${brokenOnlyQuery}`);
+  expect(emptyPreview.status()).toBe(422);
+  expect(await emptyPreview.text()).toContain('No questions could be rendered');
 
   const retainedQuestionNumber = await page
     .locator('.pagedjs_page .printing-question')
@@ -423,4 +435,36 @@ test('exports the broad answer key with correct answers before distractors', asy
   );
   expect(answerKeyResponse.status()).toBe(200);
   expect((await answerKeyResponse.body()).subarray(0, 5).toString()).toBe('%PDF-');
+});
+
+test('refuses incomplete question and answer-key renders and recovers after a correction', async ({
+  page,
+  courseInstance,
+  testCoursePath,
+}) => {
+  const { paperUrl } = await createPrintableExam(courseInstance, 'exam20-assessmentTools');
+  const serverPath = path.join(testCoursePath, 'questions/addNumbers/server.py');
+  const original = await fs.readFile(serverPath, 'utf8');
+  try {
+    for (const panel of ['question', 'answer']) {
+      await fs.writeFile(
+        serverPath,
+        `${original}\n\ndef render(data, html):\n    if data["panel"] == "${panel}":\n        raise Exception("Deliberately broken printable render")\n    return html\n`,
+      );
+      await syncCourse(testCoursePath);
+      const exam = await page.request.get(`${paperUrl}/preview?paper_size=Letter`);
+      expect(exam.status()).toBe(panel === 'question' ? 500 : 200);
+      const answerKey = await page.request.get(
+        `${paperUrl}/preview?paper_size=Letter&document=answer_key`,
+      );
+      expect(answerKey.status()).toBe(500);
+      expect(await answerKey.text()).toContain('could not be rendered for printing');
+    }
+  } finally {
+    await fs.writeFile(serverPath, original);
+    await syncCourse(testCoursePath);
+  }
+  await page.goto(`${paperUrl}/preview?paper_size=Letter&document=answer_key`);
+  await waitForPrintablePage(page);
+  await expect(page.getByText('Consider two numbers')).toBeVisible();
 });
