@@ -333,6 +333,7 @@ export function PageLayout({
           pageNote: resolvedOptions.pageNote,
         })}
         ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
+        ${resLocals.course_agent_panel ? html`${compiledStylesheetTag('courseAgent.css')}` : ''}
         ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
       </head>
       <body
@@ -481,7 +482,7 @@ export function PageLayout({
                 )}
                 ${contentString}
               </main>
-              ${postContentString}
+              ${postContentString} ${resLocals.course_agent_panel ?? ''}
             </div>
           </div>
         </div>

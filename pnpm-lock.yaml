@@ -453,310 +453,310 @@ importers:
 
   apps/prairielearn:
     dependencies:
-      '@ai-sdk/anthropic':
+      "@ai-sdk/anthropic":
         specifier: ^4.0.65
         version: 4.0.65(zod@4.6.5)
-      '@ai-sdk/google':
+      "@ai-sdk/google":
         specifier: ^4.0.82
         version: 4.0.82(zod@4.6.5)
-      '@ai-sdk/openai':
+      "@ai-sdk/openai":
         specifier: ^4.0.78
         version: 4.0.78(zod@4.6.5)
-      '@ai-sdk/provider':
+      "@ai-sdk/provider":
         specifier: ^4.0.18
         version: 4.0.18
-      '@ai-sdk/react':
+      "@ai-sdk/react":
         specifier: ^4.0.119
         version: 4.0.121(react@19.3.0)(zod@4.6.5)
-      '@aws-sdk/client-auto-scaling':
+      "@aws-sdk/client-auto-scaling":
         specifier: ^3.1141.0
         version: 3.1141.0
-      '@aws-sdk/client-cloudwatch':
+      "@aws-sdk/client-cloudwatch":
         specifier: ^3.1141.0
         version: 3.1141.0
-      '@aws-sdk/client-ec2':
+      "@aws-sdk/client-ec2":
         specifier: ^3.1141.0
         version: 3.1141.0
-      '@aws-sdk/client-ecr':
+      "@aws-sdk/client-ecr":
         specifier: ^3.1141.0
         version: 3.1141.0
-      '@aws-sdk/client-s3':
+      "@aws-sdk/client-s3":
         specifier: ^3.1141.0
         version: 3.1141.0
-      '@aws-sdk/client-sqs':
+      "@aws-sdk/client-sqs":
         specifier: ^3.1141.0
         version: 3.1141.0
-      '@aws-sdk/credential-providers':
+      "@aws-sdk/credential-providers":
         specifier: ^3.1141.0
         version: 3.1141.0
-      '@aws-sdk/lib-storage':
+      "@aws-sdk/lib-storage":
         specifier: ^3.1141.0
         version: 3.1141.0(@aws-sdk/client-s3@3.1141.0)
-      '@cortex-js/compute-engine':
+      "@cortex-js/compute-engine":
         specifier: ^0.102.0
         version: 0.102.0
-      '@dnd-kit/core':
+      "@dnd-kit/core":
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@dnd-kit/sortable':
+      "@dnd-kit/sortable":
         specifier: ^10.0.0
         version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
-      '@dnd-kit/utilities':
+      "@dnd-kit/utilities":
         specifier: ^3.2.2
         version: 3.2.2(react@19.3.0)
-      '@fortawesome/fontawesome-free':
+      "@fortawesome/fontawesome-free":
         specifier: ^7.3.1
         version: 7.3.1
-      '@js-temporal/polyfill':
+      "@js-temporal/polyfill":
         specifier: ^0.5.1
         version: 0.5.1
-      '@mathjax/mathjax-newcm-font':
+      "@mathjax/mathjax-newcm-font":
         specifier: ^4.1.3
         version: 4.1.3
-      '@node-saml/passport-saml':
+      "@node-saml/passport-saml":
         specifier: ^5.1.0
         version: 5.1.0(supports-color@7.2.0)
-      '@octokit/rest':
+      "@octokit/rest":
         specifier: ^22.0.1
         version: 22.0.1
-      '@panzoom/panzoom':
+      "@panzoom/panzoom":
         specifier: ^4.6.2
         version: 4.6.2
-      '@prairielearn/aws':
+      "@prairielearn/aws":
         specifier: workspace:^
         version: link:../../packages/aws
-      '@prairielearn/aws-imds':
+      "@prairielearn/aws-imds":
         specifier: workspace:^
         version: link:../../packages/aws-imds
-      '@prairielearn/bind-mount':
+      "@prairielearn/bind-mount":
         specifier: workspace:^
         version: link:../../packages/bind-mount
-      '@prairielearn/browser-utils':
+      "@prairielearn/browser-utils":
         specifier: workspace:^
         version: link:../../packages/browser-utils
-      '@prairielearn/cache':
+      "@prairielearn/cache":
         specifier: workspace:^
         version: link:../../packages/cache
-      '@prairielearn/compiled-assets':
+      "@prairielearn/compiled-assets":
         specifier: workspace:^
         version: link:../../packages/compiled-assets
-      '@prairielearn/config':
+      "@prairielearn/config":
         specifier: workspace:^
         version: link:../../packages/config
-      '@prairielearn/csv':
+      "@prairielearn/csv":
         specifier: workspace:^
         version: link:../../packages/csv
-      '@prairielearn/docker-utils':
+      "@prairielearn/docker-utils":
         specifier: workspace:^
         version: link:../../packages/docker-utils
-      '@prairielearn/encrypted-storage':
+      "@prairielearn/encrypted-storage":
         specifier: workspace:^
         version: link:../../packages/encrypted-storage
-      '@prairielearn/error':
+      "@prairielearn/error":
         specifier: workspace:^
         version: link:../../packages/error
-      '@prairielearn/excalidraw-builds':
+      "@prairielearn/excalidraw-builds":
         specifier: ^1.0.0
         version: 1.0.0
-      '@prairielearn/express-test-utils':
+      "@prairielearn/express-test-utils":
         specifier: workspace:^
         version: link:../../packages/express-test-utils
-      '@prairielearn/flash':
+      "@prairielearn/flash":
         specifier: workspace:^
         version: link:../../packages/flash
-      '@prairielearn/formatter':
+      "@prairielearn/formatter":
         specifier: workspace:^
         version: link:../../packages/formatter
-      '@prairielearn/html':
+      "@prairielearn/html":
         specifier: workspace:^
         version: link:../../packages/html
-      '@prairielearn/logger':
+      "@prairielearn/logger":
         specifier: workspace:^
         version: link:../../packages/logger
-      '@prairielearn/markdown':
+      "@prairielearn/markdown":
         specifier: workspace:^
         version: link:../../packages/markdown
-      '@prairielearn/marked-mathjax':
+      "@prairielearn/marked-mathjax":
         specifier: workspace:^
         version: link:../../packages/marked-mathjax
-      '@prairielearn/migrations':
+      "@prairielearn/migrations":
         specifier: workspace:^
         version: link:../../packages/migrations
-      '@prairielearn/named-locks':
+      "@prairielearn/named-locks":
         specifier: workspace:^
         version: link:../../packages/named-locks
-      '@prairielearn/node-metrics':
+      "@prairielearn/node-metrics":
         specifier: workspace:^
         version: link:../../packages/node-metrics
-      '@prairielearn/opentelemetry':
+      "@prairielearn/opentelemetry":
         specifier: workspace:^
         version: link:../../packages/opentelemetry
-      '@prairielearn/path-utils':
+      "@prairielearn/path-utils":
         specifier: workspace:^
         version: link:../../packages/path-utils
-      '@prairielearn/postgres':
+      "@prairielearn/postgres":
         specifier: workspace:^
         version: link:../../packages/postgres
-      '@prairielearn/postgres-tools':
+      "@prairielearn/postgres-tools":
         specifier: workspace:^
         version: link:../../packages/postgres-tools
-      '@prairielearn/public-fetch':
+      "@prairielearn/public-fetch":
         specifier: workspace:^
         version: link:../../packages/public-fetch
-      '@prairielearn/question-conversion':
+      "@prairielearn/question-conversion":
         specifier: workspace:^
         version: link:../../packages/question-conversion
-      '@prairielearn/react':
+      "@prairielearn/react":
         specifier: workspace:^
         version: link:../../packages/react
-      '@prairielearn/run':
+      "@prairielearn/run":
         specifier: workspace:^
         version: link:../../packages/run
-      '@prairielearn/sanitize':
+      "@prairielearn/sanitize":
         specifier: workspace:^
         version: link:../../packages/sanitize
-      '@prairielearn/sentry':
+      "@prairielearn/sentry":
         specifier: workspace:^
         version: link:../../packages/sentry
-      '@prairielearn/session':
+      "@prairielearn/session":
         specifier: workspace:^
         version: link:../../packages/session
-      '@prairielearn/signed-token':
+      "@prairielearn/signed-token":
         specifier: workspace:^
         version: link:../../packages/signed-token
-      '@prairielearn/sketchresponse':
+      "@prairielearn/sketchresponse":
         specifier: ^0.2.1
         version: 0.2.1(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))
-      '@prairielearn/tree-sitter-htmlmustache':
+      "@prairielearn/tree-sitter-htmlmustache":
         specifier: ^1.4.3
         version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.9.9)
-      '@prairielearn/trpc':
+      "@prairielearn/trpc":
         specifier: workspace:^
         version: link:../../packages/trpc
-      '@prairielearn/tsconfig':
+      "@prairielearn/tsconfig":
         specifier: workspace:^
         version: link:../../packages/tsconfig
-      '@prairielearn/ui':
+      "@prairielearn/ui":
         specifier: workspace:^
         version: link:../../packages/ui
-      '@prairielearn/utils':
+      "@prairielearn/utils":
         specifier: workspace:^
         version: link:../../packages/utils
-      '@prairielearn/workspace-utils':
+      "@prairielearn/workspace-utils":
         specifier: workspace:^
         version: link:../../packages/workspace-utils
-      '@prairielearn/zod':
+      "@prairielearn/zod":
         specifier: workspace:^
         version: link:../../packages/zod
-      '@pyroscope/nodejs':
+      "@pyroscope/nodejs":
         specifier: ^0.6.4
         version: 0.6.4(express@4.22.3(supports-color@7.2.0))(supports-color@7.2.0)
-      '@socket.io/redis-adapter':
+      "@socket.io/redis-adapter":
         specifier: ^8.3.0
         version: 8.3.0(socket.io-adapter@2.5.8(supports-color@7.2.0))(supports-color@7.2.0)
-      '@tanstack/match-sorter-utils':
+      "@tanstack/match-sorter-utils":
         specifier: ^9.1.2
         version: 9.1.2
-      '@tanstack/react-query':
+      "@tanstack/react-query":
         specifier: ^5.104.0
         version: 5.104.0(react@19.3.0)
-      '@tanstack/react-table':
+      "@tanstack/react-table":
         specifier: ^9.2.4
         version: 9.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tanstack/react-virtual':
+      "@tanstack/react-virtual":
         specifier: ^3.14.13
         version: 3.14.13(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tiptap/core':
+      "@tiptap/core":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/pm@3.31.3)
-      '@tiptap/extension-blockquote':
+      "@tiptap/extension-blockquote":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-bold':
+      "@tiptap/extension-bold":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-bullet-list':
+      "@tiptap/extension-bullet-list":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/extension-list@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
-      '@tiptap/extension-code':
+      "@tiptap/extension-code":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-code-block':
+      "@tiptap/extension-code-block":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-collaboration':
+      "@tiptap/extension-collaboration":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33))(yjs@13.6.33)
-      '@tiptap/extension-document':
+      "@tiptap/extension-document":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-drag-handle':
+      "@tiptap/extension-drag-handle":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-collaboration@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33))(yjs@13.6.33))(@tiptap/extension-node-range@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33))
-      '@tiptap/extension-drag-handle-react':
+      "@tiptap/extension-drag-handle-react":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/extension-drag-handle@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-collaboration@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33))(yjs@13.6.33))(@tiptap/extension-node-range@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33)))(@tiptap/pm@3.31.3)(@tiptap/react@3.31.3(@floating-ui/dom@1.8.0)(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tiptap/extension-dropcursor':
+      "@tiptap/extension-dropcursor":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
-      '@tiptap/extension-gapcursor':
+      "@tiptap/extension-gapcursor":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
-      '@tiptap/extension-heading':
+      "@tiptap/extension-heading":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-italic':
+      "@tiptap/extension-italic":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-list':
+      "@tiptap/extension-list":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-node-range':
+      "@tiptap/extension-node-range":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-paragraph':
+      "@tiptap/extension-paragraph":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-strike':
+      "@tiptap/extension-strike":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-subscript':
+      "@tiptap/extension-subscript":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-superscript':
+      "@tiptap/extension-superscript":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-text':
+      "@tiptap/extension-text":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-underline':
+      "@tiptap/extension-underline":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extensions':
+      "@tiptap/extensions":
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/pm':
+      "@tiptap/pm":
         specifier: ^3.31.3
         version: 3.31.3
-      '@tiptap/react':
+      "@tiptap/react":
         specifier: ^3.31.3
         version: 3.31.3(@floating-ui/dom@1.8.0)(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tiptap/y-tiptap':
+      "@tiptap/y-tiptap":
         specifier: ^3.0.9
         version: 3.0.9(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33)
-      '@trpc/client':
+      "@trpc/client":
         specifier: ^11.19.0
         version: 11.19.0(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2)
-      '@trpc/server':
+      "@trpc/server":
         specifier: ^11.19.0
         version: 11.19.0(@typescript/typescript6@6.0.2)
-      '@trpc/tanstack-react-query':
+      "@trpc/tanstack-react-query":
         specifier: ^11.19.0
         version: 11.19.0(@tanstack/react-query@5.104.0(react@19.3.0))(@trpc/client@11.19.0(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2))(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2)(react@19.3.0)
-      '@viz-js/viz':
+      "@viz-js/viz":
         specifier: ^3.30.0
         version: 3.30.0
-      '@web3-storage/parse-link-header':
+      "@web3-storage/parse-link-header":
         specifier: ^3.1.0
         version: 3.1.0
       ace-builds:
@@ -1188,167 +1188,179 @@ importers:
       zod:
         specifier: ^4.6.5
         version: 4.6.5
+      "@prairielearn/course-agent-contract":
+        specifier: workspace:^
+        version: link:../../packages/course-agent-contract
+      agents:
+        specifier: 0.23.0
+        version: 0.23.0(@ai-sdk/react@4.0.64(react@19.2.8)(zod@4.4.3))(@babel/core@8.0.1)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3))(@modelcontextprotocol/server@2.0.0)(ai@7.0.61(zod@4.4.3))(react@19.2.8)(rolldown@1.2.2)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))(zod@4.4.3)
+      diff:
+        specifier: ^8.0.2
+        version: 8.0.4
+      ws:
+        specifier: ^8.18.3
+        version: 8.21.1
     devDependencies:
-      '@playwright/test':
+      "@playwright/test":
         specifier: ^1.63.0
         version: 1.63.0
-      '@prairielearn/express-list-endpoints':
+      "@prairielearn/express-list-endpoints":
         specifier: workspace:^
         version: link:../../packages/express-list-endpoints
-      '@prairielearn/vite-plugin-express':
+      "@prairielearn/vite-plugin-express":
         specifier: workspace:^
         version: link:../../packages/vite-plugin-express
-      '@sa11y/format':
+      "@sa11y/format":
         specifier: ^8.1.1
         version: 8.1.1
-      '@smithy/types':
+      "@smithy/types":
         specifier: ^4.19.0
         version: 4.19.0
-      '@types/archiver':
+      "@types/archiver":
         specifier: ^8.0.0
         version: 8.0.0
-      '@types/async':
+      "@types/async":
         specifier: ^3.2.26
         version: 3.2.26
-      '@types/blocked':
+      "@types/blocked":
         specifier: ^1.3.5
         version: 1.3.5
-      '@types/blocked-at':
+      "@types/blocked-at":
         specifier: ^1.0.4
         version: 1.0.4
-      '@types/body-parser':
+      "@types/body-parser":
         specifier: ^1.19.6 <2
         version: 1.19.6
-      '@types/bootstrap':
+      "@types/bootstrap":
         specifier: ^5.2.11
         version: 5.2.11
-      '@types/byline':
+      "@types/byline":
         specifier: ^4.2.36
         version: 4.2.36
-      '@types/cookie':
+      "@types/cookie":
         specifier: ^0.6.0 <1
         version: 0.6.0
-      '@types/cookie-parser':
+      "@types/cookie-parser":
         specifier: ^1.4.10 <2
         version: 1.4.10(@types/express@4.17.25)
-      '@types/d3':
+      "@types/d3":
         specifier: ^7.4.3
         version: 7.4.3
-      '@types/debug':
+      "@types/debug":
         specifier: ^4.1.13
         version: 4.1.13
-      '@types/dockerode':
+      "@types/dockerode":
         specifier: ^4.0.1
         version: 4.0.1
-      '@types/express':
+      "@types/express":
         specifier: ^4.17.25 <5
         version: 4.17.25
-      '@types/express-serve-static-core':
+      "@types/express-serve-static-core":
         specifier: ^4.19.9 <5
         version: 4.19.9
-      '@types/folder-hash':
+      "@types/folder-hash":
         specifier: ^4.0.4
         version: 4.0.4
-      '@types/fs-extra':
+      "@types/fs-extra":
         specifier: ^11.0.4
         version: 11.0.4
-      '@types/he':
+      "@types/he":
         specifier: ^1.2.3
         version: 1.2.3
-      '@types/jju':
+      "@types/jju":
         specifier: ^1.4.5
         version: 1.4.5
-      '@types/jquery':
+      "@types/jquery":
         specifier: ^3.5.34 <4
         version: 3.5.34
-      '@types/js-cookie':
+      "@types/js-cookie":
         specifier: ^3.0.6
         version: 3.0.6
-      '@types/jsdom':
+      "@types/jsdom":
         specifier: ^30.0.0
         version: 30.0.0
-      '@types/json-stringify-safe':
+      "@types/json-stringify-safe":
         specifier: ^5.0.3
         version: 5.0.3
-      '@types/klaw':
+      "@types/klaw":
         specifier: ^3.0.7
         version: 3.0.7
-      '@types/memorystream':
+      "@types/memorystream":
         specifier: ^0.3.4
         version: 0.3.4
-      '@types/minimist':
+      "@types/minimist":
         specifier: ^1.2.5
         version: 1.2.5
-      '@types/multer':
+      "@types/multer":
         specifier: ^2.2.0
         version: 2.2.0
-      '@types/mustache':
+      "@types/mustache":
         specifier: ^4.2.6
         version: 4.2.6
-      '@types/node':
+      "@types/node":
         specifier: ^24.19.0
         version: 24.19.0
-      '@types/node-jose':
+      "@types/node-jose":
         specifier: ^1.1.13
         version: 1.1.13
-      '@types/oauth-signature':
+      "@types/oauth-signature":
         specifier: ^1.5.2
         version: 1.5.2
-      '@types/object-hash':
+      "@types/object-hash":
         specifier: ^3.0.6
         version: 3.0.6
-      '@types/on-finished':
+      "@types/on-finished":
         specifier: ^2.3.5
         version: 2.3.5
-      '@types/on-headers':
+      "@types/on-headers":
         specifier: ^1.0.4
         version: 1.0.4
-      '@types/passport':
+      "@types/passport":
         specifier: ^1.0.17
         version: 1.0.17
-      '@types/passport-azure-ad':
+      "@types/passport-azure-ad":
         specifier: ^4.3.6
         version: 4.3.6
-      '@types/pem':
+      "@types/pem":
         specifier: ^1.14.4
         version: 1.14.4
-      '@types/pg':
+      "@types/pg":
         specifier: ^8.23.1
         version: 8.23.1
-      '@types/qrcode-svg':
+      "@types/qrcode-svg":
         specifier: ^1.1.5
         version: 1.1.5
-      '@types/react':
+      "@types/react":
         specifier: ^19.3.0
         version: 19.3.0
-      '@types/react-dom':
+      "@types/react-dom":
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
-      '@types/serve-favicon':
+      "@types/serve-favicon":
         specifier: ^2.5.7
         version: 2.5.7
-      '@types/serve-static':
+      "@types/serve-static":
         specifier: ^2.2.0 <3
         version: 2.2.0
-      '@types/streamifier':
+      "@types/streamifier":
         specifier: ^0.1.2
         version: 0.1.2
-      '@types/tmp':
+      "@types/tmp":
         specifier: ^0.2.6
         version: 0.2.6
-      '@types/ua-parser-js':
+      "@types/ua-parser-js":
         specifier: ^0.7.39
         version: 0.7.39
-      '@types/unzipper':
+      "@types/unzipper":
         specifier: ^0.10.11
         version: 0.10.11
-      '@types/xml2js':
+      "@types/xml2js":
         specifier: ^0.4.14
         version: 0.4.14
-      '@typescript/native':
+      "@typescript/native":
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
-      '@vitest/coverage-v8':
+      "@vitest/coverage-v8":
         specifier: ^5.0.2
         version: 5.0.2(vitest@5.0.2)
       axe-core:
@@ -1369,6 +1381,9 @@ importers:
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+      "@types/ws":
+        specifier: ^8.18.1
+        version: 8.18.1
 
   apps/workspace-host:
     dependencies:
@@ -3057,16 +3072,16 @@ importers:
   packages/course-agent-contract:
     dependencies:
       ai:
-        specifier: 7.0.57
-        version: 7.0.57(zod@4.4.3)
+        specifier: 7.0.118
+        version: 7.0.118(zod@4.6.5)
       zod:
         specifier: ^4.4.3
-        version: 4.4.3
+        version: 4.6.5
     devDependencies:
-      '@prairielearn/tsconfig':
+      "@prairielearn/tsconfig":
         specifier: workspace:^
         version: link:../tsconfig
-      '@typescript/native':
+      "@typescript/native":
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
 
@@ -3108,6 +3123,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/gateway@4.0.49':
+    resolution: {integrity: sha512-qdSUr4FAN7e+MHBdVzkmbGMtpf7XQdQp1AgMI3jV0QPmld/4k4QbR7mXRQgjUsPeIfAwBzMPMPziHAPP1tXRwg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/gateway@4.0.96':
     resolution: {integrity: sha512-1aniRTzEf9T7uRHdKnBQ36WgEVQswK6wDgkPVsNMl+sPy7otcmrBa2HEurdFBS51s1q3/UXlh8nNcguwU79Hkg==}
     engines: {node: '>=22'}
@@ -3116,6 +3137,12 @@ packages:
 
   '@ai-sdk/google@4.0.82':
     resolution: {integrity: sha512-2zPYyBSyIcywLtOEJRxlrtXjBjz4KxEU19Qqg/Dk8I9BrsB08+ghG2jv155dtuDZj8qZMrh6LO8J+Wt5O4xVhg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/mcp@2.0.31':
+    resolution: {integrity: sha512-vBxkIg4CB9wQjWYo5uu1G/Vv3Xhbi3JZ47HoT5ywLNTycxKlY2RGGynTyGqcXLcvWBErRyMygDYVFn8VPc1N+w==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -3144,6 +3171,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider-utils@5.0.27':
+    resolution: {integrity: sha512-EzAn4pdgG5g0xXtH6lE2zyNmfjDQIDjATkfqzuidEI35g++hh4+07vnjzkT/RmGmIClPZiRj/Q2GMPV2V7mkHw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider-utils@5.0.49':
     resolution: {integrity: sha512-T+/H8DCvqJoCqLhltVatS7ffA779Iyk/ZZrgNXkrgv51E0n2Cd6eIdCmtwhCGIKqtbTtwCvTmQdAMv5Z8rOGHQ==}
     engines: {node: '>=22'}
@@ -3168,6 +3201,10 @@ packages:
     resolution: {integrity: sha512-YYXjvs8F3q/BdEn9tBDoDuQACotfR7c5foGw/ADsM6iAVC1JabqEjQSkwHv/Kg2vNIr1c2AVHcQb+JYsYk76Qw==}
     engines: {node: '>=22'}
 
+  '@ai-sdk/provider@4.0.7':
+    resolution: {integrity: sha512-6or44XprPzKbr8zkmzosowSE0pxkvJcoojBL+mCZvPUt3kvXp3XSNqeVun9golb1acEfSo6yaEBRT18h2VU+1Q==}
+    engines: {node: '>=22'}
+
   '@ai-sdk/react@4.0.121':
     resolution: {integrity: sha512-x1ZAJVpogdXZJ7E3GJMg6dOKR3Qe+DDgNpQRvnjxdzPN99MXkls58l0o80pNjPExZWEn763iuCB0+V0qZiKEsQ==}
     engines: {node: '>=22'}
@@ -3176,6 +3213,12 @@ packages:
 
   '@ai-sdk/react@4.0.125':
     resolution: {integrity: sha512-Pnv0YL21IigDrx9MYD2FsVwfmXrTO9xyTTsXMuQMNCcdt9GR9EJTj+WS+BHrReJEhUfSOJ4Imd6f9THHuvYdyw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
+
+  '@ai-sdk/react@4.0.64':
+    resolution: {integrity: sha512-9pvKkoHa/0UR0w+Xk40EAsIAv9epGA8N8qGviFp9tudbV1iGoedzkh5gzddHvb6xOifQa25Kfg2zVQeQdsIoKw==}
     engines: {node: '>=22'}
     peerDependencies:
       react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
@@ -6478,6 +6521,9 @@ packages:
   '@types/node@18.19.130':
     resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
 
+  '@types/node@24.13.3':
+    resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
+
   '@types/node@24.19.0':
     resolution: {integrity: sha512-zY+5tKxXdhGh1PYI0ac+7juvEu4OI6vWtVVoj5i2m42jxAY1U+zHGt6QCyOFwykdP62sM3MJ9stoYYUw5aCWew==}
 
@@ -7133,6 +7179,12 @@ packages:
 
   ai@7.0.57:
     resolution: {integrity: sha512-MDnflmccMqafBrV5SB00YMqqTKuqpWrOaK74+dA21izk3HmeyHTakkeZRcdgz4iPEB6L2NtEZHOPKTivZp47lw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ai@7.0.61:
+    resolution: {integrity: sha512-WaLRW+JI990nHdenxAUQw4QIuS+q8s7TqRcEjjjhspTy6m1vuMcDGubgOCGYIDWmK3GUJdMlSpas4I84eWaKAg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8097,6 +8149,10 @@ packages:
   dicer@0.3.0:
     resolution: {integrity: sha512-MdceRRWqltEG2dZqO769g27N/3PXfcKl04VhYnBlo2YhH7zPi88VebsjTKclaOyiuMaGU72hTfw3VkUitGcVCA==}
     engines: {node: '>=4.5.0'}
+
+  diff@8.0.4:
+    resolution: {integrity: sha512-DPi0FmjiSU5EvQV0++GFDOJ9ASQUVFh5kD+OzOnYdi7n3Wpm9hWWGfB/O2blfHcMVTL5WkQXSnRiK9makhrcnw==}
+    engines: {node: '>=0.3.1'}
 
   diff@9.0.0:
     resolution: {integrity: sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw==}
@@ -11567,6 +11623,9 @@ packages:
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
+  undici-types@7.18.2:
+    resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
+
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
@@ -12195,6 +12254,13 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
+  '@ai-sdk/gateway@4.0.49(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
+      '@vercel/oidc': 3.2.0
+      zod: 4.4.3
+
   '@ai-sdk/gateway@4.0.96(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 4.0.18
@@ -12207,6 +12273,13 @@ snapshots:
       '@ai-sdk/provider': 4.0.18
       '@ai-sdk/provider-utils': 5.0.49(zod@4.6.5)
       zod: 4.6.5
+
+  '@ai-sdk/mcp@2.0.31(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
+      pkce-challenge: 5.0.1
+      zod: 4.4.3
 
   '@ai-sdk/mcp@2.0.60(zod@4.6.5)':
     dependencies:
@@ -12234,6 +12307,15 @@ snapshots:
   '@ai-sdk/provider-utils@5.0.24(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.6
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.0
+      undici: 7.29.0
+      zod: 4.4.3
+
+  '@ai-sdk/provider-utils@5.0.27(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.7
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.0
@@ -12272,6 +12354,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
+  '@ai-sdk/provider@4.0.7':
+    dependencies:
+      json-schema: 0.4.0
+
   '@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.5)':
     dependencies:
       '@ai-sdk/mcp': 2.0.60(zod@4.6.5)
@@ -12296,6 +12382,18 @@ snapshots:
     transitivePeerDependencies:
       - zod
     optional: true
+
+  '@ai-sdk/react@4.0.64(react@19.2.8)(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/mcp': 2.0.31(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
+      ai: 7.0.61(zod@4.4.3)
+      react: 19.2.8
+      swr: 2.5.0(react@19.2.8)
+      throttleit: 2.1.0
+    transitivePeerDependencies:
+      - zod
 
   '@arnog/colors@0.5.0': {}
 
@@ -14863,6 +14961,15 @@ snapshots:
   '@rolldown/binding-win32-x64-msvc@1.2.2':
     optional: true
 
+  '@rolldown/plugin-babel@0.2.4(@babel/core@8.0.1)(@babel/runtime@7.29.7)(rolldown@1.2.2)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))':
+    dependencies:
+      '@babel/core': 8.0.1
+      picomatch: 4.0.7
+      rolldown: 1.2.2
+    optionalDependencies:
+      '@babel/runtime': 7.29.7
+      vite: 8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0)
+
   '@rolldown/plugin-babel@0.2.4(@babel/core@8.0.1)(@babel/runtime@7.29.7)(rolldown@1.2.2)(vite@8.2.1(@types/node@24.19.0)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 8.0.1
@@ -15587,6 +15694,10 @@ snapshots:
     dependencies:
       undici-types: 5.26.5
 
+  '@types/node@24.13.3':
+    dependencies:
+      undici-types: 7.18.2
+
   '@types/node@24.19.0':
     dependencies:
       undici-types: 7.24.6
@@ -16147,6 +16258,34 @@ snapshots:
       - '@babel/runtime'
       - rolldown
 
+  agents@0.23.0(@ai-sdk/react@4.0.64(react@19.2.8)(zod@4.4.3))(@babel/core@8.0.1)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3))(@modelcontextprotocol/server@2.0.0)(ai@7.0.61(zod@4.4.3))(react@19.2.8)(rolldown@1.2.2)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))(zod@4.4.3):
+    dependencies:
+      '@babel/plugin-proposal-decorators': 8.0.2(@babel/core@8.0.1)
+      '@cfworker/json-schema': 4.1.1
+      '@modelcontextprotocol/client': 2.0.0
+      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
+      '@modelcontextprotocol/server': 2.0.0
+      '@rolldown/plugin-babel': 0.2.4(@babel/core@8.0.1)(@babel/runtime@7.29.7)(rolldown@1.2.2)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0))
+      capnweb: 0.12.0
+      cron-schedule: 6.0.0
+      esbuild: 0.28.1
+      mimetext: 3.0.28
+      nanoid: 5.1.16
+      partysocket: 1.3.0(react@19.2.8)
+      postal-mime: 2.7.6
+      yaml: 2.9.0
+      zod: 4.4.3
+    optionalDependencies:
+      '@ai-sdk/react': 4.0.64(react@19.2.8)(zod@4.4.3)
+      ai: 7.0.61(zod@4.4.3)
+      react: 19.2.8
+      vite: 8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0)
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@babel/plugin-transform-runtime'
+      - '@babel/runtime'
+      - rolldown
+
   ai@7.0.118(zod@4.6.5):
     dependencies:
       '@ai-sdk/gateway': 4.0.96(zod@4.6.5)
@@ -16167,6 +16306,13 @@ snapshots:
       '@ai-sdk/gateway': 4.0.45(zod@4.4.3)
       '@ai-sdk/provider': 4.0.6
       '@ai-sdk/provider-utils': 5.0.24(zod@4.4.3)
+      zod: 4.4.3
+
+  ai@7.0.61(zod@4.4.3):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.49(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
       zod: 4.4.3
 
   ajv-errors@3.0.0(ajv@8.20.0):
@@ -17094,6 +17240,8 @@ snapshots:
   dicer@0.3.0:
     dependencies:
       streamsearch: 0.1.2
+
+  diff@8.0.4: {}
 
   diff@9.0.0: {}
 
@@ -21327,6 +21475,8 @@ snapshots:
 
   undici-types@5.26.5: {}
 
+  undici-types@7.18.2: {}
+
   undici-types@7.24.6: {}
 
   undici-types@8.11.2: {}
@@ -21480,6 +21630,22 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
+
+  vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.7
+      postcss: 8.5.25
+      rolldown: 1.2.2
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 24.13.3
+      esbuild: 0.28.1
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      sass: 1.102.0
+      tsx: 4.23.12
+      yaml: 2.9.0
 
   vite@8.2.1(@types/node@24.19.0)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(tsx@4.23.12)(yaml@2.9.0):
     dependencies:

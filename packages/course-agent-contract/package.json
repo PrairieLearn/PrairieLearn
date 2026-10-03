@@ -8,7 +8,7 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "ai": "7.0.57",
+    "ai": "7.0.118",
     "zod": "^4.4.3"
   },
   "devDependencies": {
