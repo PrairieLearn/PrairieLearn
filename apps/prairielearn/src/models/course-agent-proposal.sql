@@ -78,10 +78,10 @@ WHERE
 -- BLOCK fail_preparation
 UPDATE course_agent_proposals
 SET
-  prepared = false,
+  prepared = FALSE,
   error = $error,
   outcome = $outcome,
-  outcome_success = false
+  outcome_success = FALSE
 WHERE
   id = $id
   AND decision IS NULL;
