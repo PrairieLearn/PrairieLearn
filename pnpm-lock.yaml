@@ -886,6 +886,9 @@ importers:
       delegated-events:
         specifier: ^1.1.2
         version: 1.1.2
+      diff:
+        specifier: ^8.0.2
+        version: 8.0.4
       dockerode:
         specifier: ^5.0.1
         version: 5.0.1(supports-color@10.2.2)
@@ -7986,6 +7989,10 @@ packages:
   dicer@0.3.0:
     resolution: {integrity: sha512-MdceRRWqltEG2dZqO769g27N/3PXfcKl04VhYnBlo2YhH7zPi88VebsjTKclaOyiuMaGU72hTfw3VkUitGcVCA==}
     engines: {node: '>=4.5.0'}
+
+  diff@8.0.4:
+    resolution: {integrity: sha512-DPi0FmjiSU5EvQV0++GFDOJ9ASQUVFh5kD+OzOnYdi7n3Wpm9hWWGfB/O2blfHcMVTL5WkQXSnRiK9makhrcnw==}
+    engines: {node: '>=0.3.1'}
 
   diff@9.0.0:
     resolution: {integrity: sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw==}
@@ -16819,6 +16826,8 @@ snapshots:
   dicer@0.3.0:
     dependencies:
       streamsearch: 0.1.2
+
+  diff@8.0.4: {}
 
   diff@9.0.0: {}
 
