@@ -42,14 +42,15 @@ def generate(data):
 
 ## Attributes
 
-| Attribute      | Type     | Default         | Description                                                                                                               |
-| -------------- | -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name` | string   | —               | Required. Name of the normalized workbook snapshot in `data["submitted_answers"]`. It must be unique within the question. |
-| `params-name`  | string   | —               | Name of the workbook template in `data["params"]`. Omit it when using `pl-spreadsheet-data` children.                     |
-| `allow-blank`  | boolean  | `false`         | Whether every editable cell may be empty. A cell containing a formula is not empty.                                       |
-| `aria-label`   | string   | `"Spreadsheet"` | Accessible name shown in the element header and announced for the grid.                                                   |
-| `height`       | CSS size | `"500px"`       | Editor height. Accepts a non-negative number with `px`, `rem`, `em`, `vh`, `vw`, `vmin`, `vmax`, or `%`.                  |
-| `weight`       | integer  | 1               | Weight of this element's score when it grades against a [reference solution](#hidden-test-cases-and-reference-solutions). |
+| Attribute        | Type     | Default         | Description                                                                                                               |
+| ---------------- | -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`   | string   | —               | Required. Name of the normalized workbook snapshot in `data["submitted_answers"]`. It must be unique within the question. |
+| `params-name`    | string   | —               | Name of the workbook template in `data["params"]`. Omit it when using `pl-spreadsheet-data` children.                     |
+| `allow-blank`    | boolean  | `false`         | Whether every editable cell may be empty. A cell containing a formula is not empty.                                       |
+| `aria-label`     | string   | `"Spreadsheet"` | Accessible name shown in the element header and announced for the grid.                                                   |
+| `height`         | CSS size | `"500px"`       | Editor height. Accepts a non-negative number with `px`, `rem`, `em`, `vh`, `vw`, `vmin`, `vmax`, or `%`.                  |
+| `volatile-cases` | integer  | 8               | Number of randomized test cases generated from [`pl-spreadsheet-volatile`](#randomized-volatile-ranges) children.         |
+| `weight`         | integer  | 1               | Weight of this element's score when it grades against a [reference solution](#hidden-test-cases-and-reference-solutions). |
 
 ## Workbook template
 
@@ -68,6 +69,9 @@ Each Python-defined sheet contains:
 - `rows` and `columns`: fixed sheet dimensions.
 - `cells`: a sparse object mapping A1 addresses to initial inputs.
 - `editable_ranges`: an array of A1 ranges. All other cells are read-only.
+- `volatile_ranges`: an optional array of A1 ranges whose values are
+  [randomized](#randomized-volatile-ranges). They are always read-only and must not
+  overlap `editable_ranges` or contain formulas.
 - `student_range`: an optional contiguous A1 range. Only this range is rendered,
   accepted in submissions, and exposed to grading code. If omitted, the complete
   `A1:<last-cell>` sheet is visible.
@@ -189,8 +193,8 @@ xlsx_book = psp.read_spreadsheet_xlsx("workbook.xlsx")
 
 `psp.create_spreadsheet()` returns a versioned `psp.Definition` accepted by
 `data["params"]`. Each sheet may be a direct address-to-value mapping or a
-`psp.SheetSpec` with optional `cells`, `rows`, `columns`, `editable_ranges`, and
-`student_range`. It infers omitted dimensions, defaults omitted cells and editable
+`psp.SheetSpec` with optional `cells`, `rows`, `columns`, `editable_ranges`,
+`volatile_ranges`, and `student_range`. It infers omitted dimensions, defaults omitted cells and editable
 ranges to empty, and omits optional fields whose defaults apply. Pass a non-empty
 `outputs` mapping to return a `psp.GradingBook` suitable for
 `data["correct_answers"]`. Each output may be a qualified address string such as
@@ -549,9 +553,11 @@ and outputs.
   overridden. Override values must be constants (`None` clears a cell). A workbook
   may define at most 50 test cases with at most 100 inputs each.
 - **`psp.random_cases(count, inputs)`** generates cases from Python's `random`
-  module, which PrairieLearn seeds for each variant. Each input is a `(low, high)`
-  tuple (`randint` for two integers, otherwise `uniform`), any other non-string
-  sequence (`choice`), or a zero-argument callable.
+  module, which PrairieLearn seeds for each variant. Each key is a sheet-qualified
+  cell or range, and each cell is generated from a
+  [random generator](#randomized-volatile-ranges). Most questions should declare
+  [volatile ranges](#randomized-volatile-ranges) instead, which also randomize the
+  values the student sees.
 - **`parameters`** lists editable ranges that hold inputs rather than answers, such
   as `["Order!A2:A20"]`. The reference workbook keeps the student's values in these
   cells, and test cases may override them.
@@ -669,6 +675,134 @@ File-backed questions can declare reference cells and parameters in HTML:
 These children also work with `params-name`, and they merge with any `reference` or
 `parameters` set in `data["correct_answers"]`. Test cases are authored only in
 Python.
+
+## Randomized (volatile) ranges
+
+A volatile range holds locked input data that is randomized for each variant. One
+declaration both picks the values the student sees and generates hidden test cases
+that resample them, so a formula must generalize to earn credit. Volatile cells are
+always read-only and are shaded differently from other locked cells, with a corner
+mark, a legend below the grid, and a "Randomized" badge in the formula bar.
+
+Declare the generators once and pass them to both `create_spreadsheet()` calls:
+
+```python title="server.py"
+import random
+
+import prairielearn.spreadsheet_utils as psp
+
+VOLATILE = {
+    "Orders!B2:B7": (40.0, 250.0, 0.01),
+    "Orders!C2:C7": (0.055, 0.09, 0.0025),
+    "Orders!F2": ["Standard", "Express"],
+}
+
+
+def generate(data):
+    data["params"]["workbook"] = psp.create_spreadsheet(
+        {
+            "Orders": {
+                "cells": {"A1": "Order", "B1": "Subtotal", "C1": "Tax rate"},
+                "editable_ranges": ["D2:E7"],
+            }
+        },
+        volatile=VOLATILE,
+    )
+    data["correct_answers"]["model"] = psp.create_spreadsheet(
+        reference=psp.fill_formula("Orders!D2:D7", "=ROUND(B2*C2,2)"),
+        test_cases=[{"name": "zero tax rate", "inputs": {"Orders!C3": 0}}],
+        volatile=VOLATILE,
+        volatile_cases=8,
+        rtol=0,
+        atol=1e-6,
+    )
+```
+
+For the public workbook, `volatile` samples each cell once, writes the values into
+the sheet, and marks the ranges as volatile. For the grading workbook, it appends
+`volatile_cases` (default 8) test cases named `Randomized case 1`, and so on, each
+of which resamples every volatile cell. Test cases that you write keep the variant's
+values for any volatile cell they do not set, so an edge case like `zero tax rate`
+changes only `C3`. Randomized cases count toward the limit of 50 test cases. The
+generators run only in `server.py`; only their sampled values are stored.
+
+Each key is a closed, sheet-qualified range, and each cell in it is sampled
+independently from one of these generators:
+
+| Generator                     | Example                        | Samples                                                                                 |
+| ----------------------------- | ------------------------------ | --------------------------------------------------------------------------------------- |
+| `(low, high)`                 | `(1, 20)`, `(0.5, 99.5)`       | `random.randint` for two integers, otherwise `random.uniform`.                          |
+| `(low, high, step)`           | `(1000, 10000, 250)`           | A multiple of `step` above `low`, rounded to the decimal places of `low` and `step`.    |
+| Any other non-string sequence | `["Car", "Truck"]`, `[25, 45]` | `random.choice`. Use a list for numeric choices, because a tuple of numbers is a range. |
+| `fn(address) -> value`        | `lambda a: a.local.row * 100`  | The return value. `address` is the cell's source-coordinate `psp.QualifiedAddress`.     |
+
+When cells must be sampled together, such as a correlated series or values that
+must satisfy a constraint, key a range, or a tuple of ranges across sheets, to
+`psp.block(fn)`. The zero-argument
+function returns a mapping from qualified addresses to values, and is called once
+for the variant and once for each randomized case:
+
+```python title="server.py"
+def random_weeks():
+    """Return ad spend and sales scattered around a random upward trend."""
+    slope = random.uniform(4, 9)
+    cells = {}
+    for row in range(2, 14):
+        spend = random.randint(20, 120) / 10
+        cells[f"Regression!A{row}"] = spend
+        cells[f"Regression!B{row}"] = round(60 + slope * spend + random.uniform(-6, 6), 1)
+    return cells
+
+
+VOLATILE = {"Regression!A2:B13": psp.block(random_weeks)}
+```
+
+Every returned address must be inside the block's ranges; cells it does not return
+keep their template values. Volatile ranges must not overlap each other, editable
+ranges, or `parameters`, and every range in the grading workbook's `volatile` must
+also be volatile in the student's workbook. `psp.dataframe_to_spreadsheet_sheet()`
+accepts `volatile_ranges=` to mark cells whose values a DataFrame already holds.
+
+Questions without `server.py` can randomize file-backed or `params-name` workbooks
+with `pl-spreadsheet-volatile` children. These are sampled when the variant is
+created, from a random stream derived from the variant seed:
+
+```html title="question.html"
+<pl-spreadsheet answers-name="model" volatile-cases="8">
+  <pl-spreadsheet-data
+    source-file="orders.csv"
+    sheet-name="Orders"
+    student-range="A1:E7"
+    editable-ranges="D2:E7"
+  ></pl-spreadsheet-data>
+  <pl-spreadsheet-volatile
+    sheet-name="Orders"
+    range="B2:B7"
+    min="40"
+    max="250"
+    step="0.01"
+  ></pl-spreadsheet-volatile>
+  <pl-spreadsheet-volatile
+    sheet-name="Orders"
+    range="C2:C7"
+    choices="0.05, 0.0625, 0.08"
+  ></pl-spreadsheet-volatile>
+  <pl-spreadsheet-reference sheet-name="Orders" cell="D2" formula="=ROUND(B2*C2,2)">
+  </pl-spreadsheet-reference>
+</pl-spreadsheet>
+```
+
+| Attribute    | Required | Description                                                                                        |
+| ------------ | -------- | -------------------------------------------------------------------------------------------------- |
+| `sheet-name` | yes      | Source sheet containing the randomized cells.                                                      |
+| `range`      | yes      | Source-coordinate range inside the student range, which may be open-ended.                         |
+| `min`, `max` | —        | Bounds for a uniform value. Integers are sampled when both bounds (and `step`) are integers.       |
+| `step`       | no       | Spacing between sampled values, as for a `(low, high, step)` generator.                            |
+| `choices`    | —        | Comma-separated values to choose from. Numeric choices become numbers. Use instead of `min`/`max`. |
+
+The `volatile-cases` attribute on `pl-spreadsheet` sets the number of randomized
+test cases, which are added only when the element has a reference solution or
+outputs.
 
 ## Formula behavior
 

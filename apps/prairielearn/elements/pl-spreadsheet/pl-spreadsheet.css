@@ -415,6 +415,65 @@
   background-color: var(--bs-secondary-bg);
 }
 
+/* Randomized cells are locked too, but their values change between variants and test cases. */
+.pl-spreadsheet-cell-volatile {
+  position: relative;
+  background-color: var(--pl-spreadsheet-volatile-bg);
+}
+
+.pl-spreadsheet-cell-volatile::after,
+.pl-spreadsheet-legend-swatch.is-volatile::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  pointer-events: none;
+  content: '';
+  background-color: var(--pl-spreadsheet-volatile-mark);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.pl-spreadsheet-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--bs-secondary-color);
+}
+
+.pl-spreadsheet-legend-item {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.pl-spreadsheet-legend-swatch {
+  position: relative;
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  background-color: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+}
+
+.pl-spreadsheet-legend-swatch.is-locked {
+  background-color: var(--bs-secondary-bg);
+}
+
+.pl-spreadsheet-legend-swatch.is-volatile {
+  background-color: var(--pl-spreadsheet-volatile-bg);
+}
+
+.pl-spreadsheet-volatile-badge {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  color: var(--bs-info-text-emphasis);
+  background-color: var(--pl-spreadsheet-volatile-bg);
+}
+
 .pl-spreadsheet-cell-selected {
   background-color: var(--bs-primary-bg-subtle);
 }
@@ -518,6 +577,10 @@
   --bs-table-bg: var(--bs-secondary-bg);
 }
 
+.pl-spreadsheet-table .pl-spreadsheet-cell-volatile {
+  --bs-table-bg: var(--pl-spreadsheet-volatile-bg);
+}
+
 /*
  * Values and formulas share one grid area, and the one not shown is only made invisible,
  * so each column keeps the width of its widest content in either view.
@@ -577,6 +640,16 @@
 
   .pl-spreadsheet-cell-readonly {
     border: 2px dashed GrayText;
+  }
+
+  .pl-spreadsheet-cell-volatile {
+    border: 2px dotted LinkText;
+  }
+
+  .pl-spreadsheet-cell-volatile::after,
+  .pl-spreadsheet-legend-swatch.is-volatile::after {
+    forced-color-adjust: none;
+    background-color: LinkText;
   }
 
   .pl-spreadsheet-table .table-danger {

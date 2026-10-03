@@ -71,7 +71,7 @@
                     <th scope="row">{{number}}</th>
                     {{#cells}}
                       <td
-                        aria-label="Cell {{address}}{{#answer_cell}}, reference solution{{/answer_cell}}{{#incorrect_cell}}, incorrect{{/incorrect_cell}}"
+                        aria-label="Cell {{address}}{{#answer_cell}}, reference solution{{/answer_cell}}{{#incorrect_cell}}, incorrect{{/incorrect_cell}}{{#volatile}}, randomized{{/volatile}}"
                         {{#class_name}}class="{{class_name}}"{{/class_name}}
                       >
                         <div class="pl-spreadsheet-table-cell">
@@ -90,7 +90,15 @@
           </div>
         </section>
       {{/sheets}}
-      <div class="d-flex align-items-center justify-content-end gap-2">
+      <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+        {{#has_volatile}}
+          <div class="pl-spreadsheet-legend me-auto">
+            <span class="pl-spreadsheet-legend-item">
+              <span class="pl-spreadsheet-legend-swatch is-volatile" aria-hidden="true"></span>
+              Randomized: changes between variants and in hidden tests
+            </span>
+          </div>
+        {{/has_volatile}}
         <span>Values</span>
         <div class="form-check form-switch m-0">
           <input

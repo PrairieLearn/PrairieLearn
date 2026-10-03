@@ -10,6 +10,7 @@ import re
 import string
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import InitVar, dataclass, field
+from decimal import Decimal
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -114,6 +115,10 @@ __all__ = [
     "StringInput",
     "StringResult",
     "Value",
+    "VolatileBlock",
+    "VolatileInput",
+    "VolatileSpec",
+    "block",
     "create_spreadsheet",
     "dataframe_to_spreadsheet_sheet",
     "dataframes_to_spreadsheet_book",
@@ -1526,6 +1531,7 @@ class SourceSheet(TypedDict):
     columns: int
     cells: dict[str, SourceValue]
     editable_ranges: NotRequired[list[str]]
+    volatile_ranges: NotRequired[list[str]]
     student_range: NotRequired[str]
 
 
@@ -1585,6 +1591,7 @@ class GradingBook(TypedDict):
     parameters: NotRequired[list[str]]
     test_cases: NotRequired[list[CaseSpec]]
     reference: NotRequired[ReferenceSpec]
+    volatile: NotRequired[list[str]]
 
 
 type Definition = SourceBook | GradingBook
@@ -1598,6 +1605,7 @@ class SheetSpec(TypedDict):
     rows: NotRequired[int]
     columns: NotRequired[int]
     editable_ranges: NotRequired[Sequence[str]]
+    volatile_ranges: NotRequired[Sequence[str]]
     student_range: NotRequired[str]
 
 
@@ -1646,8 +1654,22 @@ _SHEET_INPUT_KEYS = {
     "rows",
     "columns",
     "editable_ranges",
+    "volatile_ranges",
     "student_range",
 }
+
+
+def _raw_range_list(name: SheetName, option: str, raw_ranges: object) -> list[str]:
+    if isinstance(raw_ranges, str) or not isinstance(raw_ranges, Sequence):
+        raise TypeError(
+            f'Spreadsheet sheet "{name}" {option}_ranges must be a sequence of ranges.'
+        )
+    for raw_range in raw_ranges:
+        if not isinstance(raw_range, str):
+            raise TypeError(
+                f'{option.capitalize()} ranges in spreadsheet sheet "{name}" must be strings.'
+            )
+    return list(raw_ranges)
 
 
 def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSheet:
@@ -1668,12 +1690,14 @@ def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSh
         raw_rows = raw_sheet.get("rows")
         raw_columns = raw_sheet.get("columns")
         raw_editable_ranges = raw_sheet.get("editable_ranges", ())
+        raw_volatile_ranges = raw_sheet.get("volatile_ranges", ())
         raw_student_range = raw_sheet.get("student_range")
     else:
         raw_cells = raw_sheet
         raw_rows = None
         raw_columns = None
         raw_editable_ranges = ()
+        raw_volatile_ranges = ()
         raw_student_range = None
 
     if not isinstance(raw_cells, Mapping):
@@ -1706,17 +1730,8 @@ def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSh
         if normalized is not None:
             cells[canonical_address] = normalized
 
-    if isinstance(raw_editable_ranges, str) or not isinstance(
-        raw_editable_ranges, Sequence
-    ):
-        raise TypeError(
-            f'Spreadsheet sheet "{name}" editable_ranges must be a sequence of ranges.'
-        )
-    for raw_range in raw_editable_ranges:
-        if not isinstance(raw_range, str):
-            raise TypeError(
-                f'Editable ranges in spreadsheet sheet "{name}" must be strings.'
-            )
+    editable_inputs = _raw_range_list(name, "editable", raw_editable_ranges)
+    volatile_inputs = _raw_range_list(name, "volatile", raw_volatile_ranges)
     if raw_student_range is not None and not isinstance(raw_student_range, str):
         raise TypeError(f'Spreadsheet sheet "{name}" student_range must be a string.')
 
@@ -1732,7 +1747,7 @@ def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSh
 
     # Closed ranges extend the inferred dimensions. Open-ended ranges such as "B2:B"
     # resolve only once the dimensions are known.
-    for raw_range in [*raw_editable_ranges, raw_student_range]:
+    for raw_range in [*editable_inputs, *volatile_inputs, raw_student_range]:
         if raw_range is not None and not _is_open_range(raw_range):
             closed_range = parse_range(raw_range, "range", None)
             bounds = Address(
@@ -1769,7 +1784,7 @@ def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSh
                 )
 
     editable_ranges: list[str] = []
-    for raw_range in raw_editable_ranges:
+    for raw_range in editable_inputs:
         editable_range = parse_range(
             raw_range, "editable range", student_range or sheet_range
         )
@@ -1779,6 +1794,31 @@ def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSh
             )
         editable_ranges.append(editable_range.address)
 
+    volatile_ranges: list[str] = []
+    for raw_range in volatile_inputs:
+        volatile_range = parse_range(
+            raw_range, "volatile range", student_range or sheet_range
+        )
+        if student_range is not None and volatile_range not in student_range:
+            raise ValueError(
+                f'Volatile range "{volatile_range}" is outside the student range for sheet "{name}".'
+            )
+        for editable_range in editable_ranges:
+            if volatile_range.intersection(AddressRange.from_a1(editable_range)):
+                raise ValueError(
+                    f'Volatile range "{volatile_range}" overlaps editable range "{editable_range}" in sheet "{name}". Volatile cells are always locked.'
+                )
+        for address, value in cells.items():
+            if (
+                isinstance(value, str)
+                and value.startswith("=")
+                and Address.from_a1(address) in volatile_range
+            ):
+                raise ValueError(
+                    f'Volatile cell "{name}!{address}" must be a constant, not a formula.'
+                )
+        volatile_ranges.append(volatile_range.address)
+
     sheet: SourceSheet = {
         "name": name,
         "rows": rows,
@@ -1787,6 +1827,8 @@ def _source_sheet_from_input(name: SheetName, raw_sheet: SheetInput) -> SourceSh
     }
     if editable_ranges:
         sheet["editable_ranges"] = editable_ranges
+    if volatile_ranges:
+        sheet["volatile_ranges"] = volatile_ranges
     if student_range is not None:
         sheet["student_range"] = student_range.address
     return sheet
@@ -1803,6 +1845,8 @@ def create_spreadsheet(
     rtol: None = None,
     atol: None = None,
     compare_outputs: None = None,
+    volatile: VolatileSpec | None = None,
+    volatile_cases: None = None,
 ) -> SourceBook: ...
 
 
@@ -1817,6 +1861,8 @@ def create_spreadsheet(
     rtol: float | None = None,
     atol: float | None = None,
     compare_outputs: bool | None = None,
+    volatile: VolatileSpec | None = None,
+    volatile_cases: int | None = None,
 ) -> GradingBook: ...
 
 
@@ -1831,6 +1877,8 @@ def create_spreadsheet(
     rtol: float | None = None,
     atol: float | None = None,
     compare_outputs: bool | None = None,
+    volatile: VolatileSpec | None = None,
+    volatile_cases: int | None = None,
 ) -> GradingBook: ...
 
 
@@ -1844,6 +1892,8 @@ def create_spreadsheet(
     rtol: float | None = None,
     atol: float | None = None,
     compare_outputs: bool | None = None,
+    volatile: VolatileSpec | None = None,
+    volatile_cases: int | None = None,
 ) -> Definition:
     """Build a versioned authoring workbook from relaxed sheet dictionaries.
 
@@ -1851,6 +1901,12 @@ def create_spreadsheet(
     private ``sheets`` are optional. All addresses in ``parameters``, ``test_cases``,
     and ``reference`` use source coordinates, like private sheets and outputs.
     ``rtol``, ``atol``, and ``compare_outputs`` configure the reference comparison.
+
+    ``volatile`` maps sheet-qualified ranges to random generators (see
+    :func:`random_cases` and :func:`block`). Pass the same mapping to both calls:
+    for the public workbook, each volatile cell is sampled once and the ranges are
+    marked as randomized and locked; for the grading workbook, ``volatile_cases``
+    (default 8) resampled test cases are appended to ``test_cases``.
 
     Returns:
         A source workbook, or a private grading workbook.
@@ -1864,6 +1920,13 @@ def create_spreadsheet(
         sheets = {}
     if not isinstance(sheets, Mapping):
         raise TypeError("create_spreadsheet() requires a mapping of sheets.")
+    volatile_entries = _parse_volatile(volatile) if volatile is not None else None
+    if volatile_cases is not None and (volatile_entries is None or not is_grading_book):
+        raise ValueError(
+            "Spreadsheet volatile_cases requires volatile ranges and outputs or a reference solution."
+        )
+    if volatile_entries is not None and not is_grading_book:
+        sheets = _sheets_with_volatile(sheets, volatile_entries)
     if is_grading_book and len(sheets) > 10:
         raise ValueError("A private grading workbook may contain at most 10 sheets.")
     if not is_grading_book and not 1 <= len(sheets) <= 10:
@@ -1975,11 +2038,72 @@ def create_spreadsheet(
         book["test_cases"] = [
             _case_spec(case, index) for index, case in enumerate(test_cases, start=1)
         ]
+    if volatile_entries is not None:
+        count = DEFAULT_VOLATILE_CASES if volatile_cases is None else volatile_cases
+        if (
+            isinstance(count, bool)
+            or not isinstance(count, int)
+            or not 0 <= count <= 50
+        ):
+            raise ValueError("Spreadsheet volatile_cases must be between 0 and 50.")
+        explicit_cases = book.get("test_cases", [])
+        book["test_cases"] = [
+            *explicit_cases,
+            *(
+                _case_spec(
+                    {
+                        "name": f"Randomized case {index}",
+                        "inputs": {
+                            address.address: value
+                            for address, value in _sample_volatile(
+                                volatile_entries
+                            ).items()
+                        },
+                    },
+                    len(explicit_cases) + index,
+                )
+                for index in range(1, count + 1)
+            ),
+        ]
+        book["volatile"] = [
+            r.address for entry in volatile_entries for r in entry.ranges
+        ]
     if reference is not None:
         book["reference"] = _reference_spec(
             reference, rtol=rtol, atol=atol, compare_outputs=compare_outputs
         )
     return book
+
+
+def _sheets_with_volatile(
+    sheets: Mapping[SheetName, SheetInput], entries: Sequence[_VolatileEntry]
+) -> dict[SheetName, SheetInput]:
+    """Sample each volatile cell once and mark its ranges on the public sheets."""
+    names = {name.casefold(): name for name in sheets if isinstance(name, str)}
+    ranges: dict[SheetName, list[AddressRange]] = {}
+    for entry in entries:
+        for qualified_range in entry.ranges:
+            name = names.get(qualified_range.sheet_name.casefold())
+            if name is None:
+                raise ValueError(
+                    f'Spreadsheet volatile range "{qualified_range}" refers to an unknown sheet.'
+                )
+            ranges.setdefault(name, []).append(qualified_range.local)
+    values: dict[SheetName, dict[Address, SourceValue | None]] = {}
+    for address, value in _sample_volatile(entries).items():
+        values.setdefault(names[address.sheet_name.casefold()], {})[address.local] = (
+            value
+        )
+
+    result: dict[SheetName, SheetInput] = dict(sheets)
+    for name, sheet_ranges in ranges.items():
+        raw_sheet = sheets[name]
+        if not isinstance(raw_sheet, Mapping):
+            raise TypeError(f'Spreadsheet sheet "{name}" must be a mapping.')
+        result[name] = _with_volatile_cells(
+            name, raw_sheet, sheet_ranges, values.get(name, {})
+        )
+    return result
 
 
 def _qualified_cell_text(address: object, description: str) -> str:
@@ -2093,10 +2217,133 @@ def _tolerance(value: object, description: str) -> float:
 type RandomInput = (
     tuple[int, int]
     | tuple[float, float]
+    | tuple[int, int, int]
+    | tuple[float, float, float]
     | Sequence[SourceValue]
-    | Callable[[], SourceValue | None]
+    | Callable[[QualifiedAddress], SourceValue | None]
 )
-"""Generator for one random test-case input: a range, choices, or a callable."""
+"""Generator for one random cell: a range, a stepped range, choices, or a callable."""
+
+
+@dataclass(frozen=True, slots=True)
+class VolatileBlock:
+    """Generator that samples several correlated volatile cells at once."""
+
+    generate: Callable[[], Mapping[str, object]]
+
+
+def block(generate: Callable[[], Mapping[str, object]]) -> VolatileBlock:
+    """Mark a zero-argument function as a block generator for volatile ranges.
+
+    The function returns a mapping from sheet-qualified addresses to values, and is
+    called once for the variant and once for each randomized test case. Use it when
+    cells must be sampled together, such as a correlated series or values that must
+    satisfy a constraint. Every returned address must be inside the ranges that the
+    block is declared for; cells it does not return keep their template values.
+
+    Returns:
+        A block generator for ``create_spreadsheet(volatile=...)``.
+
+    Raises:
+        TypeError: If ``generate`` is not callable.
+    """
+    if not callable(generate):
+        raise TypeError("Spreadsheet block() requires a callable.")
+    return VolatileBlock(generate)
+
+
+type VolatileInput = RandomInput | VolatileBlock
+"""Generator for one volatile range: a per-cell generator or a block generator."""
+
+type VolatileSpec = Mapping[str | tuple[str, ...], VolatileInput]
+"""Volatile ranges, keyed by a sheet-qualified range or a tuple of ranges."""
+
+DEFAULT_VOLATILE_CASES = 8
+
+
+def _is_range_spec(generator: object) -> bool:
+    return (
+        isinstance(generator, tuple)
+        and len(generator) in {2, 3}
+        and all(
+            isinstance(bound, numbers.Real) and not isinstance(bound, bool)
+            for bound in generator
+        )
+    )
+
+
+def _decimal_places(number: float) -> int:
+    exponent = Decimal(repr(float(number))).as_tuple().exponent
+    return max(0, -exponent) if isinstance(exponent, int) else 0
+
+
+def _sample(generator: object, address: QualifiedAddress) -> SourceValue | None:
+    """Sample one cell from a per-cell generator, using Python's ``random`` module."""
+    if callable(generator):
+        value = generator(address)
+    elif _is_range_spec(generator):
+        low, high, *step = cast(tuple[float, ...], generator)
+        if high < low:
+            raise ValueError(
+                f'Spreadsheet random input for "{address}" must have low <= high.'
+            )
+        integral = all(
+            isinstance(n, numbers.Integral) for n in cast(tuple[object, ...], generator)
+        )
+        if not step:
+            value = (
+                random.randint(int(low), int(high))
+                if integral
+                else random.uniform(low, high)
+            )
+        else:
+            if step[0] <= 0:
+                raise ValueError(
+                    f'Spreadsheet random input for "{address}" must have a positive step.'
+                )
+            # The epsilon keeps a float range such as (0.05, 0.09, 0.01) from
+            # dropping its last step to rounding error.
+            count = math.floor((high - low) / step[0] + 1e-9)
+            value = low + step[0] * random.randint(0, count)
+            # Round off float noise so a stepped value such as 0.0625 displays exactly.
+            value = (
+                int(value)
+                if integral
+                else round(value, max(_decimal_places(low), _decimal_places(step[0])))
+            )
+    elif (
+        isinstance(generator, Sequence) and not isinstance(generator, str) and generator
+    ):
+        value = random.choice(generator)
+    else:
+        raise TypeError(
+            f'Spreadsheet random input for "{address}" must be a (low, high) or (low, high, step) tuple of numbers, a non-empty sequence of choices, or a callable.'
+        )
+    return _json_spreadsheet_cell_value(value, address.address)
+
+
+def _parse_qualified_range(
+    range_text: object, description: str
+) -> QualifiedAddressRange:
+    if not isinstance(range_text, str) or "!" not in range_text:
+        raise ValueError(
+            f'{description} range must be sheet-qualified, such as "Inputs!B2:B5".'
+        )
+    sheet_text, local_text = range_text.rsplit("!", 1)
+    try:
+        sheet_name = QualifiedAddress.from_a1(f"{sheet_text}!A1").sheet_name
+        return QualifiedAddressRange(AddressRange.from_a1(local_text), sheet_name)
+    except ValueError as exc:
+        raise ValueError(
+            f'{description} range "{range_text}" must be a closed, sheet-qualified range.'
+        ) from exc
+
+
+def _range_cells(qualified_range: QualifiedAddressRange) -> Iterator[QualifiedAddress]:
+    local = qualified_range.local
+    for row in range(local.start_row, local.end_row + 1):
+        for column in range(local.start_column, local.end_column + 1):
+            yield QualifiedAddress(Address(row, column), qualified_range.sheet_name)
 
 
 def random_cases(
@@ -2108,55 +2355,149 @@ def random_cases(
     """Generate hidden test cases from Python's ``random`` module.
 
     PrairieLearn seeds ``random`` per variant before ``generate()``, so the cases
-    are deterministic for each variant. Each input is generated from:
+    are deterministic for each variant. Each key is a sheet-qualified cell or range,
+    and each cell in it is generated independently from:
 
     - a ``(low, high)`` tuple of two numbers: ``random.randint`` when both are
       integers, otherwise ``random.uniform``;
-    - any other non-string sequence: ``random.choice``;
-    - a zero-argument callable: its return value.
+    - a ``(low, high, step)`` tuple of three numbers: a multiple of ``step`` above
+      ``low``, rounded to the decimal places of ``low`` and ``step``;
+    - any other non-string sequence, such as a list: ``random.choice``;
+    - a callable: its return value when called with the cell's
+      :class:`QualifiedAddress`.
 
     Returns:
         A list of test cases for ``create_spreadsheet(test_cases=...)``.
 
     Raises:
         ValueError: If ``count`` is not between 0 and 50.
-        TypeError: If an input generator is not supported.
     """
     if isinstance(count, bool) or not isinstance(count, int) or not 0 <= count <= 50:
         raise ValueError("Spreadsheet random_cases() count must be between 0 and 50.")
+    ranges = [
+        (_parse_qualified_range(key, "Spreadsheet random input"), generator)
+        for key, generator in inputs.items()
+    ]
     cases: list[CaseSpec] = []
     for index in range(1, count + 1):
         values: dict[str, SourceValue | None] = {}
-        for address, generator in inputs.items():
-            if callable(generator):
-                values[address] = generator()
-            elif (
-                isinstance(generator, tuple)
-                and len(generator) == 2
-                and all(
-                    isinstance(bound, numbers.Real) and not isinstance(bound, bool)
-                    for bound in generator
-                )
-            ):
-                low, high = generator
-                values[address] = (
-                    random.randint(int(low), int(high))
-                    if isinstance(low, numbers.Integral)
-                    and isinstance(high, numbers.Integral)
-                    else random.uniform(float(low), float(high))
-                )
-            elif (
-                isinstance(generator, Sequence)
-                and not isinstance(generator, str)
-                and generator
-            ):
-                values[address] = random.choice(generator)
-            else:
-                raise TypeError(
-                    f'Spreadsheet random input "{address}" must be a (low, high) tuple, a non-empty sequence, or a callable.'
-                )
+        for qualified_range, generator in ranges:
+            for address in _range_cells(qualified_range):
+                values[address.address] = _sample(generator, address)
         cases.append({"name": name.format(index=index), "inputs": values})
     return cases
+
+
+@dataclass(frozen=True, slots=True)
+class _VolatileEntry:
+    ranges: tuple[QualifiedAddressRange, ...]
+    generator: VolatileInput
+
+
+def _parse_volatile(volatile: VolatileSpec) -> list[_VolatileEntry]:
+    if not isinstance(volatile, Mapping):
+        raise TypeError("Spreadsheet volatile ranges must be a mapping.")
+    entries: list[_VolatileEntry] = []
+    for key, generator in volatile.items():
+        raw_ranges = key if isinstance(key, tuple) else (key,)
+        if not raw_ranges:
+            raise ValueError("Spreadsheet volatile keys must name at least one range.")
+        ranges = tuple(
+            _parse_qualified_range(raw_range, "Spreadsheet volatile")
+            for raw_range in raw_ranges
+        )
+        if len(ranges) > 1 and not isinstance(generator, VolatileBlock):
+            raise ValueError(
+                f"Spreadsheet volatile key {key!r} names several ranges, so it requires a block() generator."
+            )
+        entries.append(_VolatileEntry(ranges, generator))
+
+    all_ranges = [r for entry in entries for r in entry.ranges]
+    for index, first in enumerate(all_ranges):
+        for second in all_ranges[index + 1 :]:
+            if first.intersection(second) is not None:
+                raise ValueError(
+                    f'Spreadsheet volatile ranges "{first}" and "{second}" overlap.'
+                )
+    return entries
+
+
+def _sample_volatile(
+    entries: Sequence[_VolatileEntry],
+) -> dict[QualifiedAddress, SourceValue | None]:
+    values: dict[QualifiedAddress, SourceValue | None] = {}
+    for entry in entries:
+        if isinstance(entry.generator, VolatileBlock):
+            block_values = entry.generator.generate()
+            if not isinstance(block_values, Mapping):
+                raise TypeError(
+                    "A spreadsheet block() generator must return a mapping of addresses to values."
+                )
+            sampled: dict[QualifiedAddress, SourceValue | None] = {}
+            for raw_address, value in block_values.items():
+                if not isinstance(raw_address, str):
+                    raise TypeError(
+                        "A spreadsheet block() generator must return string addresses."
+                    )
+                address = QualifiedAddress.from_a1(raw_address)
+                if not any(address in r for r in entry.ranges):
+                    ranges = ", ".join(str(r) for r in entry.ranges)
+                    raise ValueError(
+                        f'Spreadsheet block() returned "{address}", which is outside its volatile ranges ({ranges}).'
+                    )
+                sampled[address] = _json_spreadsheet_cell_value(value, address.address)
+        else:
+            sampled = {
+                address: _sample(entry.generator, address)
+                for address in _range_cells(entry.ranges[0])
+            }
+        for address, value in sampled.items():
+            if isinstance(value, str) and value.startswith("="):
+                raise ValueError(
+                    f'Spreadsheet volatile cell "{address}" must be a constant, not a formula.'
+                )
+        values.update(sampled)
+    return values
+
+
+def _with_volatile_cells(
+    name: SheetName,
+    raw_sheet: Mapping[str, object],
+    ranges: Sequence[AddressRange],
+    values: Mapping[Address, SourceValue | None],
+) -> dict[str, object]:
+    """Return a structured sheet input with sampled values and volatile ranges."""
+    is_structured = any(key in raw_sheet for key in _SHEET_INPUT_KEYS)
+    sheet: dict[str, object] = (
+        dict(raw_sheet) if is_structured else {"cells": raw_sheet}
+    )
+    raw_cells = sheet.get("cells", {})
+    if not isinstance(raw_cells, Mapping):
+        raise TypeError(f'Spreadsheet sheet "{name}" cells must be a mapping.')
+    sampled = {address.address: value for address, value in values.items()}
+
+    def is_sampled(raw_address: object) -> bool:
+        try:
+            return (
+                isinstance(raw_address, str)
+                and Address.from_a1(raw_address).address in sampled
+            )
+        except ValueError:
+            return False
+
+    sheet["cells"] = {
+        **{k: v for k, v in raw_cells.items() if not is_sampled(k)},
+        **sampled,
+    }
+    raw_volatile_ranges = sheet.get("volatile_ranges", ())
+    if isinstance(raw_volatile_ranges, str) or not isinstance(
+        raw_volatile_ranges, Sequence
+    ):
+        raise TypeError(
+            f'Spreadsheet sheet "{name}" volatile_ranges must be a sequence of ranges.'
+        )
+    sheet["volatile_ranges"] = [*raw_volatile_ranges, *(str(r) for r in ranges)]
+    return sheet
 
 
 def dataframe_to_spreadsheet_sheet(
@@ -2167,6 +2508,7 @@ def dataframe_to_spreadsheet_sheet(
     include_columns: bool = False,
     include_index: bool = False,
     editable_ranges: Sequence[str] = (),
+    volatile_ranges: Sequence[str] = (),
 ) -> SourceSheet:
     """Convert a DataFrame to a sparse, JSON-safe spreadsheet sheet dictionary."""
     if not isinstance(dataframe, pd.DataFrame):
@@ -2206,13 +2548,16 @@ def dataframe_to_spreadsheet_sheet(
 
     written_rows = len(dataframe.index) + int(include_columns)
     written_columns = len(dataframe.columns) + int(include_index)
-    return {
+    sheet: SourceSheet = {
         "name": name,
         "rows": start.row + max(written_rows, 1),
         "columns": start.column + max(written_columns, 1),
         "cells": cells,
         "editable_ranges": list(editable_ranges),
     }
+    if volatile_ranges:
+        sheet["volatile_ranges"] = list(volatile_ranges)
+    return sheet
 
 
 def dataframes_to_spreadsheet_book(

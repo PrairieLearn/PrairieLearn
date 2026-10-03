@@ -236,6 +236,10 @@
         {
           "name": "pl-spreadsheet-reference",
           "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-reference.json"
+        },
+        {
+          "name": "pl-spreadsheet-volatile",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-volatile.json"
         }
       ]
     },

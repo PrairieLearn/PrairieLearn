@@ -16,6 +16,7 @@ import {
   getRelativeFillInput,
   getSpreadsheetLogMetadata,
   intersectRanges,
+  isCellVolatile,
   normalizeSpreadsheetAnswers,
   parseRange,
   toRelativeAddress,
@@ -280,6 +281,49 @@ describe('spreadsheet ranges', () => {
           endColumn: 0,
         }),
       RangeError,
+    );
+  });
+});
+
+describe('volatile ranges', () => {
+  function makeVolatileConfig(volatileRanges: string[]): SpreadsheetElementConfig {
+    const config = makeConfig();
+    config.template.sheets[0] = {
+      ...config.template.sheets[0],
+      cells: { ...config.template.sheets[0].cells, C2: 0.05 },
+      editable_ranges: ['A2:B4'],
+      volatile_ranges: volatileRanges,
+    };
+    return config;
+  }
+
+  it('marks volatile cells and accepts them as locked constants', () => {
+    const config = makeVolatileConfig(['C2:C3']);
+    const sheet = config.template.sheets[0];
+    assert.isTrue(isCellVolatile(sheet, 1, 2));
+    assert.isFalse(isCellVolatile(sheet, 1, 1));
+    assert.isFalse(isCellVolatile(config.template.sheets[1], 0, 0));
+    assert.isTrue(SpreadsheetElementConfigSchema.safeParse(config).success);
+
+    const evaluation = evaluateSpreadsheet(config, makeSubmission({ Inputs: { A2: 3 } }));
+    assert.deepEqual(evaluation.snapshot.sheets[0].cells.C2.result, {
+      type: 'number',
+      value: 0.05,
+    });
+    assert.throws(
+      () => evaluateSpreadsheet(config, makeSubmission({ Inputs: { C2: 1 } })),
+      SpreadsheetSubmissionError,
+    );
+  });
+
+  it('rejects volatile ranges outside the sheet or overlapping editable cells', () => {
+    assert.throws(
+      () => evaluateSpreadsheet(makeVolatileConfig(['C2:D2']), makeSubmission()),
+      /Volatile range C2:D2 is outside sheet Inputs/,
+    );
+    assert.throws(
+      () => evaluateSpreadsheet(makeVolatileConfig(['B4:C4']), makeSubmission()),
+      /Volatile range B4:C4 overlaps an editable range/,
     );
   });
 });
