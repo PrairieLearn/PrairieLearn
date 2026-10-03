@@ -25,4 +25,4 @@ Creating an assessment is done in two separate parts:
 1. [Configuring the questions, scoring, and other assessment-specific settings](configuration.md)
 2. [Configuring access control for the assessment (due dates, credit, etc.)](accessControl.md)
 
-To prepare paper copies, see [Printable exams](printableExams.md).
+To prepare paper exams, including student copies and answer keys, see [Printable exams](printableExams.md).
