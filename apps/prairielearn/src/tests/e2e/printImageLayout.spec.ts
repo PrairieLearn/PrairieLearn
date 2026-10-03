@@ -134,7 +134,13 @@ test('fits image choices uniformly within the paper and requested question block
     );
     expect(response!.ok()).toBe(true);
     await waitForPrintablePage(page);
-    await expect(page.getByRole('img', { name: 'Image choice 1', exact: true })).toHaveCount(1);
+    await expect(
+      page.locator('[data-print-answer-key]').getByRole('img', {
+        name: 'Image choice 1',
+        exact: true,
+      }),
+    ).toHaveCount(1);
+    await expect(page.getByRole('img', { name: /^Image choice / })).toHaveCount(5);
   }
 });
 

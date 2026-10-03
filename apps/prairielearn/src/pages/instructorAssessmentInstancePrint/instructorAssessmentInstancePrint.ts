@@ -11,7 +11,6 @@ import {
   type PaperSize,
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
-  QuestionBlockSizeOverflowError,
 } from '@prairielearn/printing';
 import { parseRequestQuery } from '@prairielearn/zod';
 
@@ -267,45 +266,38 @@ function createDocumentHandler(format: PrintFormat) {
     };
     const renderer = getPrintRenderer();
     let output: Buffer;
-    try {
-      if (format === 'pdf') {
-        output = await renderer.renderPdf({ ...renderOptions, pageCode });
-      } else {
-        const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-        output = await renderer.renderDocx({
-          ...renderOptions,
-          // The question count and points are only known once the page has rendered and
-          // omitted any broken questions, so the cover reads them back from the page.
-          cover: layout.includeCoverPage
-            ? (pageDataset) =>
-                buildPrintableCover({
-                  resLocals: res.locals,
-                  document,
-                  formLabel: layout.formLabel,
-                  identityFields: layout.identityFields,
-                  questionCount: Number(pageDataset.printQuestionCount),
-                  maxPoints: Number(pageDataset.printMaxPoints),
-                  assessmentTextHtml,
-                  honorCodeHtml,
-                  includeHonorCode:
-                    layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
-                  gradingTable: pageDataset.printGradingTable
-                    ? PrintGradingTableSchema.parse(JSON.parse(pageDataset.printGradingTable))
-                    : undefined,
-                })
-            : undefined,
-          footerLabel: getPrintFooterLabel({
-            document,
-            formId: res.locals.assessment_instance.id,
-            formLabel: layout.formLabel,
-          }),
-        });
-      }
-    } catch (error) {
-      if (error instanceof QuestionBlockSizeOverflowError) {
-        throw new HttpStatusError(422, error.message, { cause: error });
-      }
-      throw error;
+    if (format === 'pdf') {
+      output = await renderer.renderPdf({ ...renderOptions, pageCode });
+    } else {
+      const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+      output = await renderer.renderDocx({
+        ...renderOptions,
+        // The question count and points are only known once the page has rendered and
+        // omitted any broken questions, so the cover reads them back from the page.
+        cover: layout.includeCoverPage
+          ? (pageDataset) =>
+              buildPrintableCover({
+                resLocals: res.locals,
+                document,
+                formLabel: layout.formLabel,
+                identityFields: layout.identityFields,
+                questionCount: Number(pageDataset.printQuestionCount),
+                maxPoints: Number(pageDataset.printMaxPoints),
+                assessmentTextHtml,
+                honorCodeHtml,
+                includeHonorCode:
+                  layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+                gradingTable: pageDataset.printGradingTable
+                  ? PrintGradingTableSchema.parse(JSON.parse(pageDataset.printGradingTable))
+                  : undefined,
+              })
+          : undefined,
+        footerLabel: getPrintFooterLabel({
+          document,
+          formId: res.locals.assessment_instance.id,
+          formLabel: layout.formLabel,
+        }),
+      });
     }
 
     const { contentType, disposition, extension } = PRINT_FORMATS[format];
@@ -378,6 +370,12 @@ router.get(
       excludedQuestionNumbers: layout.excludedQuestionNumbers,
       document,
     });
+    if (printingResult.questionHtmls.length === 0) {
+      throw new HttpStatusError(
+        422,
+        'No questions could be rendered for this printable assessment',
+      );
+    }
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
 
     res.setHeader('Cache-Control', 'private, no-store');

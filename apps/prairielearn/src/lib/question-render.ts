@@ -115,6 +115,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param params.locals The current locals for the page response.
  * @param params.user The effective user to attribute errors to.
  * @param params.authn_user The authenticated user to attribute errors to.
+ * @param params.throwOnFatalError Prevent incomplete content from being used in printed documents.
  */
 async function render({
   variant_course,
@@ -127,6 +128,7 @@ async function render({
   locals,
   user,
   authn_user,
+  throwOnFatalError = false,
 }: {
   variant_course: Course;
   renderSelection: questionServers.RenderSelection;
@@ -140,6 +142,7 @@ async function render({
   user: User;
   /** The authenticated user to attribute errors to. */
   authn_user: User;
+  throwOnFatalError?: boolean;
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -168,6 +171,12 @@ async function render({
     studentMessage,
     courseData,
   );
+  const fatalIssue = courseIssues.find((issue) => issue.fatal);
+  if (throwOnFatalError && fatalIssue) {
+    throw new Error(`Question ${question.qid ?? question.id} could not be rendered for printing.`, {
+      cause: fatalIssue,
+    });
+  }
   return data;
 }
 
@@ -679,6 +688,7 @@ export async function getAndRenderVariant(
     },
     user: locals.user,
     authn_user: locals.authn_user,
+    throwOnFatalError: renderMode !== 'default',
   });
 
   // Load issues last in case rendering produced any new ones.
