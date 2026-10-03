@@ -10,13 +10,12 @@ vi.mock('playwright', () => ({
   chromium: { connect: playwrightMocks.connect, launch: playwrightMocks.launch },
 }));
 
-import { PrintRenderer, QuestionBlockSizeOverflowError } from './printRenderer.js';
+import { PrintRenderer } from './printRenderer.js';
 
 interface HarnessOptions {
   response?: Response | null;
   printStatus?: 'error' | 'ready';
   printError?: string | null;
-  printErrorCode?: string | null;
   /** Called for every `page.pdf()`; lets a test stall or fail individual renders. */
   pdf?: (renderIndex: number) => Promise<Buffer>;
   contextClose?: () => Promise<void>;
@@ -26,7 +25,6 @@ function createBrowserHarness({
   response = { ok: () => true, status: () => 200 } as Response,
   printStatus = 'ready',
   printError = null,
-  printErrorCode = null,
   pdf = async () => Buffer.from('%PDF-test'),
   contextClose = async () => undefined,
 }: HarnessOptions = {}) {
@@ -49,7 +47,6 @@ function createBrowserHarness({
         evaluate: vi.fn(async () => ({
           status: printStatus,
           error: printError,
-          errorCode: printErrorCode,
         })),
         pdf: vi.fn(async () => await pdf(renderIndex++)),
       } as unknown as Page;
@@ -62,8 +59,8 @@ function createBrowserHarness({
         }),
         newPage: vi.fn(async () => page),
         close: vi.fn(async () => {
-          openContexts -= 1;
           await contextClose();
+          openContexts -= 1;
         }),
       } as unknown as BrowserContext;
       pages.push(page);
@@ -310,6 +307,48 @@ describe('PrintRenderer', () => {
     expect(playwrightMocks.launch).toHaveBeenCalledOnce();
   });
 
+  it('waits for timed-out context cleanup before starting another render', async () => {
+    const closeGate = createGate();
+    const harness = createBrowserHarness({
+      pdf: async (renderIndex) =>
+        renderIndex === 0 ? await new Promise<never>(() => undefined) : Buffer.from('%PDF-test'),
+      contextClose: async () => await closeGate.opened,
+    });
+    const renderer = new PrintRenderer();
+
+    const first = renderer.renderPdf({ url: 'http://localhost:3000/print/stalled', timeoutMs: 20 });
+    const second = renderer.renderPdf({ url: 'http://localhost:3000/print/next', timeoutMs: 2000 });
+
+    try {
+      await vi.waitFor(() => expect(harness.contexts[0].close).toHaveBeenCalledOnce());
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(harness.browser.newContext).toHaveBeenCalledOnce();
+      expect(harness.getOpenContexts()).toBe(1);
+    } finally {
+      closeGate.open();
+    }
+
+    await expect(first).rejects.toThrow('Timed out after 20 ms rendering the PDF');
+    await expect(second).resolves.toEqual(Buffer.from('%PDF-test'));
+    expect(harness.getPeakOpenContexts()).toBe(1);
+  });
+
+  it('discards the browser when closing a context fails', async () => {
+    const firstBrowser = createBrowserHarness({
+      contextClose: async () => {
+        throw new Error('Context close failed');
+      },
+    });
+    const renderer = new PrintRenderer();
+
+    await renderer.renderPdf({ url: 'http://localhost:3000/print/first' });
+    expect(firstBrowser.browser.close).toHaveBeenCalledOnce();
+
+    createBrowserHarness();
+    await renderer.renderPdf({ url: 'http://localhost:3000/print/second' });
+    expect(playwrightMocks.launch).toHaveBeenCalledTimes(2);
+  });
+
   it('discards the browser when a context does not close promptly', async () => {
     const harness = createBrowserHarness({
       pdf: async () => await new Promise<never>(() => undefined),
@@ -347,37 +386,6 @@ describe('PrintRenderer', () => {
     ).rejects.toThrow('The printable page failed: Paged.js failed');
     expect(harness.contexts[0].close).toHaveBeenCalledOnce();
     expect(harness.browser.close).not.toHaveBeenCalled();
-  });
-
-  it('identifies explicit question block overflows', async () => {
-    createBrowserHarness({
-      printStatus: 'error',
-      printError:
-        'Question 4 needs 451px, but the requested half print block provides 450px. Use auto or a larger block size.',
-      printErrorCode: 'question-block-size-overflow',
-    });
-
-    const render = new PrintRenderer().renderPdf({
-      url: 'http://localhost:3000/print?paper_size=Letter',
-    });
-    await expect(render).rejects.toBeInstanceOf(QuestionBlockSizeOverflowError);
-    await expect(render).rejects.toThrow(
-      'The printable page failed: Question 4 needs 451px, but the requested half print block provides 450px. Use auto or a larger block size.',
-    );
-  });
-
-  it('does not translate unrecognized printable-page failures into block overflows', async () => {
-    createBrowserHarness({
-      printStatus: 'error',
-      printError: 'Paged.js failed',
-      printErrorCode: 'unknown-print-error',
-    });
-
-    const render = new PrintRenderer().renderPdf({
-      url: 'http://localhost:3000/print?paper_size=Letter',
-    });
-    await expect(render).rejects.not.toBeInstanceOf(QuestionBlockSizeOverflowError);
-    await expect(render).rejects.toThrow('The printable page failed: Paged.js failed');
   });
 
   it('surfaces pagination failures that do not include an error message', async () => {

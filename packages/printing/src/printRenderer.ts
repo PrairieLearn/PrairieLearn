@@ -5,15 +5,6 @@ import type { PageCodeOptions } from './pageCode.js';
 import { createPdfOutput } from './pdfOutput.js';
 import type { PrintablePageOutput } from './printablePageOutput.js';
 
-const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
-
-export class QuestionBlockSizeOverflowError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'QuestionBlockSizeOverflowError';
-  }
-}
-
 const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
@@ -217,17 +208,17 @@ export class PrintRenderer {
   /** Closes a context, discarding the whole browser if the context does not close promptly. */
   private async discardContext(browser: Browser, context: BrowserContext): Promise<void> {
     let graceTimer: ReturnType<typeof setTimeout> | undefined;
-    const closedInTime = await Promise.race([
+    const closed = await Promise.race([
       context.close().then(
         () => true,
-        () => true,
+        () => false,
       ),
       new Promise<boolean>((resolve) => {
         graceTimer = setTimeout(() => resolve(false), this.contextCloseGraceMs);
       }),
     ]);
     if (graceTimer) clearTimeout(graceTimer);
-    if (!closedInTime) this.discardBrowser(browser);
+    if (!closed) this.discardBrowser(browser);
   }
 
   private async renderWithPermit<T>(
@@ -295,13 +286,9 @@ export class PrintRenderer {
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
-        errorCode: document.documentElement.dataset.printErrorCode ?? null,
       }));
       if (printState.status === 'error') {
         const message = `The printable page failed: ${printState.error ?? 'No pagination error was provided'}`;
-        if (printState.errorCode === QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE) {
-          throw new QuestionBlockSizeOverflowError(message);
-        }
         throw new Error(message);
       }
       if (printState.status !== 'ready') {
@@ -323,11 +310,9 @@ export class PrintRenderer {
     } finally {
       if (deadlineTimer) clearTimeout(deadlineTimer);
       const openContext: BrowserContext | null = context;
-      if (timedOut) {
-        // The worker must not wait on a hung page; tear it down in the background.
-        if (openContext) void this.discardContext(browser, openContext);
-        else this.discardBrowser(browser);
-      } else if (openContext) {
+      // A context created after the deadline may still be pending, so discard its browser.
+      if (timedOut && !openContext) this.discardBrowser(browser);
+      if (openContext) {
         await this.discardContext(browser, openContext);
       }
     }

@@ -25,6 +25,17 @@ describe('htmlToTextBlocks', () => {
     ]);
   });
 
+  it('separates line breaks and paragraphs inside author-provided wrappers', () => {
+    expect(
+      htmlToTextBlocks(
+        '<div><p>Bring a pen<br>Show your work.</p><p>Answer every question.</p><script>ignored()</script></div>',
+      ),
+    ).toEqual([
+      { type: 'paragraph', text: 'Bring a pen Show your work.' },
+      { type: 'paragraph', text: 'Answer every question.' },
+    ]);
+  });
+
   it('ignores empty and whitespace-only content', () => {
     expect(htmlToTextBlocks('  \n<p> </p><div></div><ol></ol>')).toEqual([]);
   });
