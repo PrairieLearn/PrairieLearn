@@ -96,9 +96,7 @@ export function LabelModifyModal({
 
     if (uids.length > 0) {
       try {
-        const result = await queryClient.fetchQuery(
-          trpc.studentLabels.checkUids.queryOptions({ uids }),
-        );
+        const result = await queryClient.query(trpc.studentLabels.checkUids.queryOptions({ uids }));
         if (result.unenrolledUids.length > 0) {
           setStage({ type: 'confirming', unknownUids: result.unenrolledUids });
           return;

@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 8.0.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 8.0.1
 
 ### Patch Changes
