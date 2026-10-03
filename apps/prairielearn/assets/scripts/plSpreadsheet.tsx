@@ -1042,6 +1042,8 @@ function SpreadsheetEditor({
     }
   }
 
+  const activeCellVolatile =
+    activeCell !== null && isCellVolatile(sheet, activeCell.row, activeCell.column);
   const activeValueError = run(() => {
     if (!activeCell) return '';
     const address = cellAddress(activeCell.row, activeCell.column);
@@ -1195,20 +1197,20 @@ function SpreadsheetEditor({
           <div id={valueErrorId} className="pl-spreadsheet-value-error" title={activeValueError}>
             {activeValueError}
           </div>
-          <div className="d-flex align-items-center gap-1">
-            <label htmlFor={`${instructionsId}-formula`}>
-              {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
-            </label>
-            {activeCell && isCellVolatile(sheet, activeCell.row, activeCell.column) && (
-              <span className="badge pl-spreadsheet-volatile-badge" title={VOLATILE_DESCRIPTION}>
-                <i className="bi bi-shuffle" aria-hidden="true" />
-                Randomized
-              </span>
-            )}
-          </div>
+          <label className="pl-spreadsheet-address" htmlFor={`${instructionsId}-formula`}>
+            {activeCell ? cellAddress(activeCell.row, activeCell.column) : 'Cell'}
+          </label>
           <FormulaInput
             ref={formulaInputRef}
             id={`${instructionsId}-formula`}
+            adornment={
+              activeCellVolatile && (
+                <span className="badge pl-spreadsheet-volatile-badge" title={VOLATILE_DESCRIPTION}>
+                  <i className="bi bi-shuffle" aria-hidden="true" />
+                  Randomized
+                </span>
+              )
+            }
             aria-label={
               activeCell
                 ? `Formula for ${cellAddress(activeCell.row, activeCell.column)}`
