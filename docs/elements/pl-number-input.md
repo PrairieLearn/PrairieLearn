@@ -77,7 +77,8 @@ def generate(data):
 ## Example implementations
 
 - [element/numberInput]
-- [demo/calculation]
+- [demo/numberInputTips]
+- [demo/numberInputGradingMethod]
 
 ## See also
 
@@ -87,5 +88,6 @@ def generate(data):
 
 ---
 
-[demo/calculation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/calculation
-[element/numberinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
+[demo/numberInputGradingMethod]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/numberInputGradingMethod
+[demo/numberInputTips]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/numberInputTips
+[element/numberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
