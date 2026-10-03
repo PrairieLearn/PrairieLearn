@@ -334,6 +334,7 @@ test('synchronizes students from a CSV file on mobile', async ({ page, courseIns
   });
   await compare.click();
   await expect(page.getByRole('group', { name: 'Students with label changes' })).toBeVisible();
+  await page.getByRole('button', { name: 'Clear all students to remove' }).click();
   await page.getByRole('button', { name: 'Update 3 students', exact: true }).click();
   await waitForJobAndCheckOutput(page, [
     `${existingUid}: Labels updated`,
