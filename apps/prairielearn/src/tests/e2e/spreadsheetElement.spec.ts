@@ -118,7 +118,8 @@ test('draws formulas as tiles in the formula bar', async ({ page, courseInstance
 
   await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
   await formulaBar.fill('plain text');
-  await expect(view).toHaveText('plain text');
+  // The address chip comes first, then the formula.
+  await expect(view).toHaveText(/^B2\s*plain text$/);
   await expect(view.locator('.pl-spreadsheet-tile')).toHaveCount(0);
 
   await formulaBar.fill('=SUM($B$3:B4)+B3+"x"');
@@ -951,20 +952,46 @@ test('selects whole columns and rows from their headings', async ({ page, course
 
   const grid = page.getByRole('grid', { name: 'Python randomized orders, sheet Orders' });
   const editor = grid.locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]');
-  const indicator = editor.locator('.pl-spreadsheet-address');
-  await expect(indicator).toHaveText('');
+  const indicator = editor.locator('.pl-spreadsheet-address-chip');
+  await expect(indicator).toHaveCount(0);
 
   await grid.getByRole('button', { name: 'B', exact: true }).click();
-  await expect(indicator).toHaveText('B1:B3');
+  await expect(indicator).toHaveText('B:B');
   await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(3);
   await expect(grid.getByRole('gridcell', { name: /^B1,/ })).toBeFocused();
 
-  await grid.getByRole('gridcell', { name: '3', exact: true }).click();
-  await expect(indicator).toHaveText('A3:C3');
+  await grid.locator('.pl-spreadsheet-row-header', { hasText: /^3$/ }).click();
+  await expect(indicator).toHaveText('3:3');
   await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(3);
 
   await grid.getByRole('gridcell', { name: /^A2,/ }).click();
   await expect(indicator).toHaveText('A2');
   await grid.getByRole('gridcell', { name: /^C3,/ }).click({ modifiers: ['Shift'] });
   await expect(indicator).toHaveText('A2:C3');
+});
+
+test('clears a selected range as one undoable change', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetVolatileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', { name: 'Python randomized orders, sheet Orders' });
+  await editCell(grid, 'C2', '1');
+  await editCell(grid, 'C3', '=C2+1');
+  await expect(grid.getByRole('gridcell', { name: 'C3, editable, 2' })).toBeVisible();
+
+  // The column includes the read-only heading in C1, which is left alone.
+  await grid.getByRole('button', { name: 'C', exact: true }).click();
+  await page.keyboard.press('Backspace');
+  await expect(grid.getByRole('gridcell', { name: 'C2, editable, blank' })).toBeVisible();
+  await expect(grid.getByRole('gridcell', { name: 'C3, editable, blank' })).toBeVisible();
+  await expect(grid.getByRole('gridcell', { name: 'C1, read-only, Tax' })).toBeVisible();
+
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(grid.getByRole('gridcell', { name: 'C2, editable, 1' })).toBeVisible();
+  await expect(grid.getByRole('gridcell', { name: 'C3, editable, 2' })).toBeVisible();
 });

@@ -81,6 +81,8 @@ interface CellPosition {
 interface CellRange {
   anchor: CellPosition;
   focus: CellPosition;
+  /** Set when a column or row heading selected the range, so it reads `B:B` or `3:3`. */
+  lines?: 'columns' | 'rows';
 }
 
 const ARROW_OFFSETS: Partial<Record<string, CellPosition>> = {
@@ -97,6 +99,22 @@ function isCellInRange(range: CellRange | null, row: number, column: number) {
   const firstColumn = Math.min(range.anchor.column, range.focus.column);
   const lastColumn = Math.max(range.anchor.column, range.focus.column);
   return row >= firstRow && row <= lastRow && column >= firstColumn && column <= lastColumn;
+}
+
+/** Describes a selection as Excel does: `B:B` for whole columns, `3:3` for whole rows. */
+function formatSelection(range: CellRange): string {
+  if (range.lines === 'columns') {
+    const columnName = (column: number) => cellAddress(0, column).replace(/1$/, '');
+    return `${columnName(Math.min(range.anchor.column, range.focus.column))}:${columnName(
+      Math.max(range.anchor.column, range.focus.column),
+    )}`;
+  }
+  if (range.lines === 'rows') {
+    return `${Math.min(range.anchor.row, range.focus.row) + 1}:${
+      Math.max(range.anchor.row, range.focus.row) + 1
+    }`;
+  }
+  return formatReference(range.anchor, range.focus);
 }
 
 function clampPosition(
@@ -523,6 +541,25 @@ function SpreadsheetEditor({
     if (changed) applySubmission(nextSubmission, message);
   }
 
+  /** Clears every editable cell in `range` as one change, so a single undo restores them. */
+  function clearRange(range: CellRange) {
+    const edits = [];
+    for (
+      let row = Math.min(range.anchor.row, range.focus.row);
+      row <= Math.max(range.anchor.row, range.focus.row);
+      row += 1
+    ) {
+      for (
+        let column = Math.min(range.anchor.column, range.focus.column);
+        column <= Math.max(range.anchor.column, range.focus.column);
+        column += 1
+      ) {
+        edits.push({ row, column, input: null });
+      }
+    }
+    commitCells(edits, `Cleared ${formatReference(range.anchor, range.focus)}.`);
+  }
+
   /** Fills the cells from `source` (exclusive) to `target` along a single row or column. */
   function fillLine(source: CellPosition, target: CellPosition) {
     const end = clampPosition(target, sheet);
@@ -637,7 +674,7 @@ function SpreadsheetEditor({
       { shouldFocus: true },
     );
     pendingRangeRef.current = null;
-    setAnnouncement(`Selected ${formatReference(range.anchor, range.focus)}.`);
+    setAnnouncement(`Selected ${formatSelection(range)}.`);
   }
 
   function getTabTarget(position: CellPosition, backwards: boolean): CellPosition | null {
@@ -705,6 +742,8 @@ function SpreadsheetEditor({
     });
   }
 
+  const selectionText = activeCell && selectedRange ? formatSelection(selectedRange) : '';
+
   const columns: readonly Column<SpreadsheetRow>[] = [
     {
       key: '__row',
@@ -728,6 +767,7 @@ function SpreadsheetEditor({
           <button
             type="button"
             className="pl-spreadsheet-column-header"
+            tabIndex={-1}
             title={`Select column ${columnName}`}
             onMouseDown={(event) => {
               event.stopPropagation();
@@ -738,6 +778,7 @@ function SpreadsheetEditor({
               selectRange({
                 anchor: { row: 0, column: columnIndex },
                 focus: { row: sheet.rows - 1, column: columnIndex },
+                lines: 'columns',
               });
             }}
           >
@@ -1002,7 +1043,15 @@ function SpreadsheetEditor({
     if (args.mode === 'ACTIVE' && (event.key === 'Delete' || event.key === 'Backspace')) {
       event.preventDefault();
       event.preventGridDefault();
-      commitCell(position.row, position.column, '', 'Cell cleared.');
+      if (
+        selectedRange &&
+        (selectedRange.anchor.row !== selectedRange.focus.row ||
+          selectedRange.anchor.column !== selectedRange.focus.column)
+      ) {
+        clearRange(selectedRange);
+      } else {
+        commitCell(position.row, position.column, '', 'Cell cleared.');
+      }
       return;
     }
 
@@ -1172,14 +1221,16 @@ function SpreadsheetEditor({
         <p id={instructionsId} className="visually-hidden">
           Click a cell to select it. Start typing to replace its contents, or double-click or press
           F2 to edit its existing contents; either moves you to the formula bar, and Enter or Tab
-          saves and returns to the grid. Delete or Backspace clears a cell. Drag or hold Shift with
-          an arrow key to select a range. Use Enter and Shift+Enter to move vertically, Tab and
-          Shift+Tab to move horizontally, and Escape to cancel editing. Tab leaves the grid at its
-          boundaries. Read-only cells are announced. While typing a formula in the formula bar, use
-          the Up and Down arrow keys to choose a suggested function and Enter or Tab to insert it.
-          Where the formula expects a value, click or drag across cells to insert a cell reference;
-          right after that, the arrow keys move the reference and Shift with the arrow keys resizes
-          it. Tab and Shift+Tab move between the missing parts of a formula.
+          saves and returns to the grid. Delete or Backspace clears a cell, or every editable cell
+          in the selected range. Drag or hold Shift with an arrow key to select a range, or click a
+          column letter or row number to select the whole column or row. Use Enter and Shift+Enter
+          to move vertically, Tab and Shift+Tab to move horizontally, and Escape to cancel editing.
+          Tab leaves the grid at its boundaries. Read-only cells are announced. While typing a
+          formula in the formula bar, use the Up and Down arrow keys to choose a suggested function
+          and Enter or Tab to insert it. Where the formula expects a value, click or drag across
+          cells to insert a cell reference; right after that, the arrow keys move the reference and
+          Shift with the arrow keys resizes it. Tab and Shift+Tab move between the missing parts of
+          a formula.
         </p>
         <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
           <button
@@ -1233,21 +1284,24 @@ function SpreadsheetEditor({
           <div id={valueErrorId} className="pl-spreadsheet-value-error" title={activeValueError}>
             {activeValueError}
           </div>
-          <label className="pl-spreadsheet-address" htmlFor={`${instructionsId}-formula`}>
-            {activeCell && selectedRange
-              ? formatReference(selectedRange.anchor, selectedRange.focus)
-              : ''}
-          </label>
           <FormulaInput
             ref={formulaInputRef}
             id={`${instructionsId}-formula`}
             adornment={
-              activeCellVolatile && (
-                <span className="badge pl-spreadsheet-volatile-badge" title={VOLATILE_DESCRIPTION}>
-                  <i className="bi bi-shuffle" aria-hidden="true" />
-                  Randomized
-                </span>
-              )
+              <>
+                {selectionText && (
+                  <span className="badge pl-spreadsheet-address-chip">{selectionText}</span>
+                )}
+                {activeCellVolatile && (
+                  <span
+                    className="badge pl-spreadsheet-volatile-badge"
+                    title={VOLATILE_DESCRIPTION}
+                  >
+                    <i className="bi bi-shuffle" aria-hidden="true" />
+                    Randomized
+                  </span>
+                )}
+              </>
             }
             aria-label={
               activeCell
@@ -1324,6 +1378,7 @@ function SpreadsheetEditor({
               selectRange({
                 anchor: { row: rowIdx, column: 0 },
                 focus: { row: rowIdx, column: sheet.columns - 1 },
+                lines: 'rows',
               });
               return;
             }
