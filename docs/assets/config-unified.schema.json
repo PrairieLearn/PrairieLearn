@@ -427,6 +427,18 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "printingPlaywrightWsEndpoint": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^wss?:\\/\\/"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "runMigrations": {
       "default": true,
       "type": "boolean"

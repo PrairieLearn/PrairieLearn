@@ -1,5 +1,6 @@
 import { addPreviewPageCodes } from '@prairielearn/printing/page-code';
 
+import { layoutPrintGradingTable } from '../../src/lib/client/print-cover-layout.js';
 import {
   fitPrintChoiceImages,
   waitForPrintImages,
@@ -540,6 +541,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   replaceCanvasesWithImages(source);
   await waitForPrintImages(source);
   const { height: pageHeight } = measurePrintablePage(source);
+  layoutPrintGradingTable(source, pageHeight);
   if (document.documentElement.dataset.printDocument === 'answer_key') {
     replaceStudentResponsesWithAnswerKeys(source, pageHeight);
   } else {

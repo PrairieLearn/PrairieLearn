@@ -1,0 +1,437 @@
+import { randomUUID } from 'node:crypto';
+
+import { type RequestHandler, Router } from 'express';
+import mustache from 'mustache';
+import { z } from 'zod';
+
+import { HttpStatusError } from '@prairielearn/error';
+import { markdownToHtml } from '@prairielearn/markdown';
+import {
+  PAPER_SIZES,
+  type PaperSize,
+  QUESTION_BLOCK_SIZES,
+  type QuestionBlockSize,
+  createDocxOutput,
+  createPdfOutput,
+} from '@prairielearn/printing';
+import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
+import { parseRequestQuery } from '@prairielearn/zod';
+
+import { renderText as renderAssessmentText } from '../../lib/assessment.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
+import {
+  PrintGradingTableSchema,
+  PrintIdentityFieldsSchema,
+} from '../../lib/client/print-cover.js';
+import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
+import { config } from '../../lib/config.js';
+import {
+  type OmittedQuestionWarning,
+  PRINT_DOCUMENTS,
+  type PrintDocument,
+  describeOmittedQuestions,
+  getPrintRenderer,
+  isBrowserRenderingAvailable,
+  renderAssessmentInstanceQuestionsForPrinting,
+  validatePrintDocument,
+  validateQuestionsForPrinting,
+} from '../../lib/printing.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
+import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
+import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
+
+import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
+import { buildPrintableCover, getPrintFooterLabel } from './printCover.js';
+
+const PRINT_FORMATS = {
+  pdf: {
+    contentType: 'application/pdf',
+    disposition: 'inline',
+    extension: 'pdf',
+  },
+  docx: {
+    contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    disposition: 'attachment',
+    extension: 'docx',
+  },
+} as const;
+type PrintFormat = keyof typeof PRINT_FORMATS;
+
+const QuestionBlockSizeSchema = z.enum(QUESTION_BLOCK_SIZES);
+const QuestionNumberSchema = z.string().min(1);
+const IdentityFieldsSchema = z
+  .union([z.string(), z.string().array()])
+  .transform((fields) => (Array.isArray(fields) ? fields : [fields]))
+  .pipe(PrintIdentityFieldsSchema)
+  .default([]);
+const QuestionBlockSizeOverrideSchema = z
+  .string()
+  .regex(new RegExp(`^.+:(${QUESTION_BLOCK_SIZES.join('|')})$`))
+  .transform((value) => {
+    const separator = value.lastIndexOf(':');
+    return {
+      questionNumber: value.slice(0, separator),
+      blockSize: QuestionBlockSizeSchema.parse(value.slice(separator + 1)),
+    };
+  });
+
+const LayoutQuerySchema = z.strictObject({
+  paper_size: z.enum(PAPER_SIZES),
+  include_honor_code: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
+  grading_table: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  include_cover: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+  form_label: z
+    .string()
+    .regex(/^[A-Z]$/)
+    .optional(),
+  identity_field: IdentityFieldsSchema,
+  block_size: z.union([QuestionBlockSizeSchema, QuestionBlockSizeSchema.array()]).optional(),
+  question_block_size: z
+    .union([QuestionBlockSizeOverrideSchema, QuestionBlockSizeOverrideSchema.array()])
+    .optional(),
+  exclude_question: z
+    .union([QuestionNumberSchema, QuestionNumberSchema.array()])
+    .transform((numbers) => (Array.isArray(numbers) ? numbers : [numbers]))
+    .default([]),
+});
+const DocumentQuerySchema = LayoutQuerySchema.extend({
+  document: z.enum(PRINT_DOCUMENTS).default('exam'),
+});
+
+/** The layout choices shared by every printable output of one assessment instance. */
+interface PrintLayout {
+  paperSize: PaperSize;
+  includeCoverPage: boolean;
+  includeGradingTable: boolean;
+  includeHonorCode: boolean | undefined;
+  formLabel: string | undefined;
+  identityFields: string[];
+  blockSize: QuestionBlockSize | undefined;
+  questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>;
+  excludedQuestionNumbers: ReadonlySet<string>;
+}
+
+interface PrintLocals {
+  printLayout: PrintLayout;
+  printDocument: PrintDocument;
+}
+
+type PrintWarning = OmittedQuestionWarning | { code: 'rendering_unavailable'; message: string };
+
+/** The JSON returned by `GET /paper`. */
+interface PrintableAssessmentInstanceResponse {
+  pdf_url: string;
+  answer_key_pdf_url: string;
+  docx_url: string;
+  warnings: PrintWarning[];
+}
+
+function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout {
+  if (Array.isArray(query.block_size)) {
+    throw new HttpStatusError(400, 'block_size may only be specified once');
+  }
+
+  const excludedQuestionNumbers = new Set(query.exclude_question);
+  if (excludedQuestionNumbers.size !== query.exclude_question.length) {
+    throw new HttpStatusError(400, 'exclude_question may only be specified once for each question');
+  }
+
+  const questionBlockSizeOverrides = new Map<string, QuestionBlockSize>();
+  const overrides = Array.isArray(query.question_block_size)
+    ? query.question_block_size
+    : query.question_block_size
+      ? [query.question_block_size]
+      : [];
+  for (const override of overrides) {
+    if (questionBlockSizeOverrides.has(override.questionNumber)) {
+      throw new HttpStatusError(
+        400,
+        `question_block_size may only be specified once for question ${override.questionNumber}`,
+      );
+    }
+    questionBlockSizeOverrides.set(override.questionNumber, override.blockSize);
+  }
+
+  return {
+    paperSize: query.paper_size,
+    includeCoverPage: query.include_cover,
+    includeGradingTable: query.grading_table,
+    includeHonorCode: query.include_honor_code,
+    formLabel: query.form_label,
+    identityFields: query.identity_field,
+    blockSize: query.block_size,
+    questionBlockSizeOverrides,
+    excludedQuestionNumbers,
+  };
+}
+
+const validateLayoutQuery: RequestHandler = (req, res, next) => {
+  res.locals.printLayout = parsePrintLayout(parseRequestQuery(req, LayoutQuerySchema));
+  next();
+};
+
+const validateDocumentQuery: RequestHandler = (req, res, next) => {
+  const query = parseRequestQuery(req, DocumentQuerySchema);
+  res.locals.printLayout = parsePrintLayout(query);
+  res.locals.printDocument = query.document;
+  next();
+};
+
+function buildPrintSearchParams(layout: PrintLayout, document: PrintDocument): URLSearchParams {
+  const params = new URLSearchParams({ paper_size: layout.paperSize });
+  if (!layout.includeCoverPage) params.set('include_cover', 'false');
+  if (layout.includeGradingTable) params.set('grading_table', 'true');
+  if (layout.includeHonorCode !== undefined) {
+    params.set('include_honor_code', String(layout.includeHonorCode));
+  }
+  if (layout.formLabel) params.set('form_label', layout.formLabel);
+  for (const identityField of layout.identityFields) params.append('identity_field', identityField);
+  if (layout.blockSize) params.set('block_size', layout.blockSize);
+  for (const [questionNumber, blockSize] of layout.questionBlockSizeOverrides) {
+    params.append('question_block_size', `${questionNumber}:${blockSize}`);
+  }
+  for (const questionNumber of layout.excludedQuestionNumbers) {
+    params.append('exclude_question', questionNumber);
+  }
+  if (document !== 'exam') params.set('document', document);
+  return params;
+}
+
+function printUrl(baseUrl: string, route: string, layout: PrintLayout, document: PrintDocument) {
+  return `${baseUrl}/${route}?${buildPrintSearchParams(layout, document)}`;
+}
+
+function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
+  return {
+    assessmentTextHtml: renderAssessmentText(resLocals.assessment, resLocals.urlPrefix),
+    honorCodeHtml: resLocals.assessment.honor_code
+      ? markdownToHtml(
+          mustache.render(resLocals.assessment.honor_code, {
+            user_name: '____________________________',
+          }),
+          { allowHtml: false, interpretMath: false },
+        ).replace(/^<h([1-6])>Academic integrity pledge<\/h\1>\s*/i, '')
+      : null,
+  };
+}
+
+function createDocumentHandler(format: PrintFormat) {
+  return typedAsyncHandler<'assessment-instance', PrintLocals>(async (req, res) => {
+    if (!isBrowserRenderingAvailable()) {
+      throw new HttpStatusError(
+        503,
+        'Printable document rendering is not configured on this server',
+      );
+    }
+    const { printLayout: layout, printDocument: document } = res.locals;
+    await validateQuestionsForPrinting(
+      res.locals.assessment_instance.id,
+      layout.questionBlockSizeOverrides,
+      layout.excludedQuestionNumbers,
+    );
+
+    // The renderer loads the HTML preview of this same document through the application.
+    const previewUrl = new URL(
+      printUrl(req.baseUrl, 'preview', layout, document),
+      `${config.serverType}://localhost:${config.serverPort}`,
+    );
+    const { course, assessment, authn_user } = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
+    const generatedAt = new Date().toISOString();
+    const exportId = randomUUID();
+    const renderOptions = {
+      url: previewUrl.href,
+      cookieHeader: req.get('cookie'),
+    };
+    const pageCode = {
+      encodePage: (pageNumber: number) =>
+        encodePrintPageIdentity({
+          courseId: course.id,
+          assessmentId: assessment.id,
+          assessmentInstanceId: res.locals.assessment_instance.id,
+          pageNumber,
+          generatedBy: { userId: authn_user.id, uid: authn_user.uid, name: authn_user.name },
+          generatedAt,
+          exportId,
+          document,
+          format,
+        }),
+    };
+    const renderer = getPrintRenderer();
+    const output = run(() => {
+      switch (format) {
+        case 'pdf':
+          return createPdfOutput(pageCode);
+        case 'docx': {
+          const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+          return createDocxOutput({
+            // The question count and points are only known once the page has rendered and
+            // omitted any broken questions, so the cover reads them back from the page.
+            cover: layout.includeCoverPage
+              ? (pageDataset) =>
+                  buildPrintableCover({
+                    resLocals: res.locals,
+                    document,
+                    formLabel: layout.formLabel,
+                    identityFields: layout.identityFields,
+                    questionCount: Number(pageDataset.printQuestionCount),
+                    maxPoints: Number(pageDataset.printMaxPoints),
+                    assessmentTextHtml,
+                    honorCodeHtml,
+                    includeHonorCode:
+                      layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+                    gradingTable: pageDataset.printGradingTable
+                      ? PrintGradingTableSchema.parse(JSON.parse(pageDataset.printGradingTable))
+                      : undefined,
+                  })
+              : undefined,
+            footerLabel: getPrintFooterLabel({
+              document,
+              formId: res.locals.assessment_instance.id,
+              formLabel: layout.formLabel,
+            }),
+          });
+        }
+        default:
+          return assertNever(format);
+      }
+    });
+    const contents = await renderer.render(renderOptions, {
+      ...output,
+      produce: async (page) => {
+        await validatePrintDocument(page);
+        return await output.produce(page);
+      },
+    });
+
+    const { contentType, disposition, extension } = PRINT_FORMATS[format];
+    const filename =
+      assessmentFilenamePrefix(
+        res.locals.assessment,
+        res.locals.assessment_set,
+        res.locals.course_instance,
+        res.locals.course,
+      ) +
+      sanitizeString(
+        `instance_${res.locals.assessment_instance.id}_${layout.paperSize.toLowerCase()}${
+          document === 'answer_key' ? '_answer_key' : ''
+        }`,
+      ) +
+      `.${extension}`;
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
+    res.send(contents);
+  });
+}
+
+const router = Router({ mergeParams: true });
+
+router.get(
+  '/',
+  validateLayoutQuery,
+  selectAndAuthzAssessmentInstance,
+  typedAsyncHandler<'assessment-instance', Pick<PrintLocals, 'printLayout'>>(async (req, res) => {
+    const layout = res.locals.printLayout;
+
+    // Rendering the student form here reuses or creates the instance's variants, so the
+    // documents linked below are built from the same questions this report describes.
+    const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
+      defaultQuestionBlockSize: layout.blockSize ?? 'auto',
+      questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
+      excludedQuestionNumbers: layout.excludedQuestionNumbers,
+      document: 'exam',
+    });
+    const warnings: PrintWarning[] = describeOmittedQuestions(printingResult.questionResults);
+    if (!isBrowserRenderingAvailable()) {
+      warnings.push({
+        code: 'rendering_unavailable',
+        message: 'PDF and Word rendering is not configured on this server.',
+      });
+    }
+
+    const response: PrintableAssessmentInstanceResponse = {
+      pdf_url: printUrl(req.baseUrl, 'pdf', layout, 'exam'),
+      answer_key_pdf_url: printUrl(req.baseUrl, 'pdf', layout, 'answer_key'),
+      docx_url: printUrl(req.baseUrl, 'docx', layout, 'exam'),
+      warnings,
+    };
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(response);
+  }),
+);
+
+router.get(
+  '/preview',
+  validateDocumentQuery,
+  selectAndAuthzAssessmentInstance,
+  typedAsyncHandler<'assessment-instance', PrintLocals>(async (req, res) => {
+    const { printLayout: layout, printDocument: document } = res.locals;
+
+    const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
+      defaultQuestionBlockSize: layout.blockSize ?? 'auto',
+      questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
+      excludedQuestionNumbers: layout.excludedQuestionNumbers,
+      document,
+    });
+    if (printingResult.questionHtmls.length === 0) {
+      throw new HttpStatusError(
+        422,
+        'No questions could be rendered for this printable assessment',
+      );
+    }
+    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    // The assessment's print preparation page embeds this preview on the same origin.
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.send(
+      InstructorAssessmentInstancePrint({
+        resLocals: res.locals,
+        paperSize: layout.paperSize,
+        includeCoverPage: layout.includeCoverPage,
+        includeGradingTable: layout.includeGradingTable,
+        includeHonorCode:
+          layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+        document,
+        formLabel: layout.formLabel,
+        identityFields: layout.identityFields,
+        questionHtmls: printingResult.questionHtmls,
+        omittedQuestionCount: describeOmittedQuestions(printingResult.questionResults).length,
+        extraHeadersHtml: printingResult.extraHeadersHtml,
+        hasLegacyQuestions: printingResult.hasLegacyQuestions,
+        maxPoints: printingResult.maxPoints,
+        assessmentTextHtml,
+        honorCodeHtml,
+      }).toString(),
+    );
+  }),
+);
+
+router.get(
+  '/pdf',
+  validateDocumentQuery,
+  selectAndAuthzAssessmentInstance,
+  createDocumentHandler('pdf'),
+);
+router.get(
+  '/docx',
+  validateDocumentQuery,
+  selectAndAuthzAssessmentInstance,
+  createDocumentHandler('docx'),
+);
+
+export default router;
