@@ -77,8 +77,6 @@ __all__ = [
     "FormulaRangeNode",
     "FormulaReferenceEndpoint",
     "FormulaReferenceNode",
-    "FormulaRowRangeNode",
-    "FormulaRowReference",
     "FormulaUnaryNode",
     "GradingBook",
     "Input",
@@ -325,20 +323,8 @@ class FormulaColumnReference:
     kind: Literal["column"] = field(default="column", init=False)
 
 
-@dataclass(frozen=True, slots=True)
-class FormulaRowReference:
-    """Parsed reference to one entire row in a spreadsheet formula."""
-
-    sheet: SheetName | None
-    row: int
-    row_absolute: bool
-    kind: Literal["row"] = field(default="row", init=False)
-
-
-type FormulaReferenceEndpoint = (
-    FormulaCellReference | FormulaColumnReference | FormulaRowReference
-)
-"""A parsed cell, column, or row reference endpoint."""
+type FormulaReferenceEndpoint = FormulaCellReference | FormulaColumnReference
+"""A parsed cell or column reference endpoint."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -376,18 +362,7 @@ class FormulaColumnRangeNode:
     type: Literal["range"] = field(default="range", init=False)
 
 
-@dataclass(frozen=True, slots=True)
-class FormulaRowRangeNode:
-    """Whole-row range node in a spreadsheet formula AST."""
-
-    start: FormulaRowReference
-    end: FormulaRowReference
-    type: Literal["range"] = field(default="range", init=False)
-
-
-type FormulaRangeNode = (
-    FormulaCellRangeNode | FormulaColumnRangeNode | FormulaRowRangeNode
-)
+type FormulaRangeNode = FormulaCellRangeNode | FormulaColumnRangeNode
 """Any parsed range node in a spreadsheet formula AST."""
 
 
@@ -500,6 +475,10 @@ def _normalized_address(address: str) -> tuple[str, int, int]:
 type _RangeEndpoint = tuple[int | None, int | None]
 
 
+def _row_first_message(reference: str) -> str:
+    return f'Spreadsheet reference "{reference}" must start with a column, as in "A3:3" instead of "3:3".'
+
+
 def _parse_range_endpoint(text: str) -> _RangeEndpoint:
     """Parse ``B2``, ``B``, or ``2`` into zero-based ``(row, column)``, using ``None`` for an omitted coordinate."""
     match = _RANGE_ENDPOINT_RE.fullmatch(text.upper())
@@ -517,7 +496,9 @@ def _resolve_range_endpoints(
     range_text: str,
 ) -> AddressRange:
     """Resolve endpoints, extending an omitted coordinate to the edge of ``bounds``."""
-    if (start[0] is None and end[1] is None) or (start[1] is None and end[0] is None):
+    if start[1] is None:
+        raise ValueError(_row_first_message(range_text))
+    if start[0] is None and end[1] is None:
         raise ValueError(f'Invalid spreadsheet range "{range_text}".')
     is_open = None in (*start, *end)
     if is_open and bounds is None:
@@ -691,13 +672,8 @@ def _parse_reference_endpoint(text: str) -> FormulaReferenceEndpoint:
             column=column_match.group(2),
             column_absolute=column_match.group(1) == "$",
         )
-    row_match = _REFERENCE_ROW_RE.fullmatch(reference)
-    if row_match is not None:
-        return FormulaRowReference(
-            sheet=sheet,
-            row=int(row_match.group(2)),
-            row_absolute=row_match.group(1) == "$",
-        )
+    if _REFERENCE_ROW_RE.fullmatch(reference) is not None:
+        raise FormulaParseError(_row_first_message(text))
     raise FormulaParseError(f'Unsupported spreadsheet reference "{text}".')
 
 
@@ -715,8 +691,6 @@ def _parse_reference(text: str) -> FormulaReferenceNode | FormulaRangeNode:
         end, FormulaColumnReference
     ):
         return FormulaColumnRangeNode(start=start, end=end)
-    if isinstance(start, FormulaRowReference) and isinstance(end, FormulaRowReference):
-        return FormulaRowRangeNode(start=start, end=end)
     raise FormulaParseError(
         f'Spreadsheet range "{text}" has incompatible endpoint types.'
     )
@@ -1050,8 +1024,9 @@ class AddressRange:
 
         Like Google Sheets, a range endpoint may omit its row or column to extend
         the range to the edge of ``bounds``: ``B2:B`` runs from ``B2`` to the last
-        row, ``A:C`` covers every row of columns A to C, and ``3:5`` covers every
-        column of rows 3 to 5.
+        row, ``A:C`` covers every row of columns A to C, and ``A3:5`` covers every
+        column of rows 3 to 5. Ranges must start with a column, so ``3:5`` is
+        invalid.
 
         Returns:
             The normalized range, running from top-left to bottom-right.
@@ -1298,19 +1273,12 @@ def _render_formula_reference_endpoint(
         )
         row = f"{'$' if endpoint.row_absolute else ''}{student.row + 1}"
         return f"{prefix}{column}{row}"
-    if isinstance(endpoint, FormulaColumnReference):
-        source = Address(
-            row=space.source_range.start.row,
-            column=_column_index(endpoint.column),
-        )
-        student = space.to_student_address(source)
-        return f"{prefix}{'$' if endpoint.column_absolute else ''}{_column_name(student.column)}"
     source = Address(
-        row=endpoint.row - 1,
-        column=space.source_range.start.column,
+        row=space.source_range.start.row,
+        column=_column_index(endpoint.column),
     )
     student = space.to_student_address(source)
-    return f"{prefix}{'$' if endpoint.row_absolute else ''}{student.row + 1}"
+    return f"{prefix}{'$' if endpoint.column_absolute else ''}{_column_name(student.column)}"
 
 
 def _rebase_formula_reference(
@@ -1378,15 +1346,13 @@ def _shift_formula_reference_endpoint(
     endpoint: FormulaReferenceEndpoint, rows: int, columns: int, text: str
 ) -> str:
     prefix = "" if endpoint.sheet is None else f"{_safe_sheet_name(endpoint.sheet)}!"
-    parts: list[str] = []
-    if not isinstance(endpoint, FormulaRowReference):
-        column = _column_index(endpoint.column)
-        if not endpoint.column_absolute:
-            column += columns
-        if column < 0:
-            raise ValueError(f'Shifting reference "{text}" moves it left of column A.')
-        parts.append(f"{'$' if endpoint.column_absolute else ''}{_column_name(column)}")
-    if not isinstance(endpoint, FormulaColumnReference):
+    column = _column_index(endpoint.column)
+    if not endpoint.column_absolute:
+        column += columns
+    if column < 0:
+        raise ValueError(f'Shifting reference "{text}" moves it left of column A.')
+    parts = [f"{'$' if endpoint.column_absolute else ''}{_column_name(column)}"]
+    if isinstance(endpoint, FormulaCellReference):
         row = endpoint.row
         if not endpoint.row_absolute:
             row += rows

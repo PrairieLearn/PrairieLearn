@@ -540,7 +540,7 @@ describe('evaluateSpreadsheet', () => {
     );
     assert.throws(
       () =>
-        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(3:3)' } })),
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(A3:3)' } })),
       /outside declared student ranges/,
     );
     assert.throws(
@@ -557,7 +557,7 @@ describe('evaluateSpreadsheet', () => {
   });
 
   it('detects cycles through open-ended ranges', () => {
-    for (const formula of ['=SUM(2:2)', '=SUM(A:A)', '=SUM(A1:A)', '=SUM(A2:2)', '=SUM($A:$B)']) {
+    for (const formula of ['=SUM(A:A)', '=SUM(A1:A)', '=SUM(A2:2)', '=SUM($A:$B)']) {
       const evaluation = evaluateSpreadsheet(
         makeOffsetConfig(),
         makeSubmission({ Inputs: { A2: formula } }),
@@ -570,11 +570,24 @@ describe('evaluateSpreadsheet', () => {
     }
   });
 
+  it('requires references to start with a column', () => {
+    for (const formula of ['=SUM(3:3)', '=SUM($1:$2)', '=SUM(1:B2)', "=SUM('Inputs'!1:1)"]) {
+      assert.throws(
+        () => evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A2: formula } })),
+        /must start with a column/,
+        undefined,
+        formula,
+      );
+    }
+    evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A2: '=SUM(A1:1)+3' } }));
+  });
+
   it('resolves open-ended ranges to the edge of the student sheet', () => {
     for (const [formula, value] of [
       ['=SUM(B:B)', 4],
       ['=AVERAGE(B1:B)', 4],
-      ['=SUM(1:1)', 6],
+      ['=SUM(A1:1)', 6],
+      ['=SUM(B:B2)', 0],
     ] as const) {
       const evaluation = evaluateSpreadsheet(
         makeOffsetConfig(),
@@ -913,7 +926,7 @@ describe('adversarial student formulas', () => {
     for (const [formula, result] of [
       ['=MATCH(31337,B:B,0)', { type: 'error', value: '#N/A', error_type: 'NA' }],
       ['=INDEX(B:B,1)', { type: 'number', value: 2 }],
-      ['=INDEX(1:1,1)', { type: 'number', value: 1 }],
+      ['=INDEX(A1:1,1)', { type: 'number', value: 1 }],
       ['=SUM(B2:B)', { type: 'number', value: 3 }],
     ] as const) {
       assert.deepEqual(evaluateAttack(formula).grading!.outputs.attack, result, formula);

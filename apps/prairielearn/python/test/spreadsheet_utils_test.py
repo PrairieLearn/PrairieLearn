@@ -564,11 +564,11 @@ def test_rebase_spreadsheet_formula_uses_student_local_coordinates() -> None:
     )
     assert (
         psp.rebase_spreadsheet_formula(
-            "=SUM(C:F,5:20)",
+            "=SUM(C:F)",
             current_sheet="Inputs",
             address_spaces=spaces,
         )
-        == "=SUM(A:D,1:16)"
+        == "=SUM(A:D)"
     )
     with pytest.raises(ValueError, match="outside"):
         psp.rebase_spreadsheet_formula(
@@ -858,21 +858,21 @@ def test_formula_ast_handles_unary_postfix_and_full_ranges() -> None:
     assert isinstance(unary.root, psp.FormulaUnaryNode)
     assert isinstance(unary.root.operand, psp.FormulaPostfixNode)
 
-    ranges = psp.parse_spreadsheet_formula("=SUM($A:$B,1:2)")
+    ranges = psp.parse_spreadsheet_formula("=SUM($A:$B)")
     assert isinstance(ranges.root, psp.FormulaFunctionNode)
     column_range = ranges.root.arguments[0]
-    row_range = ranges.root.arguments[1]
     assert isinstance(column_range, psp.FormulaColumnRangeNode)
-    assert isinstance(row_range, psp.FormulaRowRangeNode)
     assert column_range.start.kind == "column"
     assert column_range.start.column == "A"
     assert column_range.start.column_absolute is True
     assert column_range.end.kind == "column"
     assert column_range.end.column == "B"
-    assert row_range.start.kind == "row"
-    assert row_range.start.row == 1
-    assert row_range.end.kind == "row"
-    assert row_range.end.row == 2
+
+
+@pytest.mark.parametrize("formula", ["=SUM(1:2)", "=SUM($3:$3)", "=SUM(Inputs!2:2)"])
+def test_formula_ast_rejects_references_that_start_with_a_row(formula: str) -> None:
+    with pytest.raises(psp.FormulaParseError, match="must start with a column"):
+        psp.parse_spreadsheet_formula(formula)
 
 
 @pytest.mark.parametrize(
@@ -1285,7 +1285,7 @@ def test_book_reference_errors_are_explicit() -> None:
         ("b2:c", "B2:C10"),
         ("B:B2", "B2:B10"),
         ("A:C", "A1:C10"),
-        ("3:5", "A3:D5"),
+        ("A3:5", "A3:D5"),
         ("B3:3", "B3:D3"),
         ("B2:C4", "B2:C4"),
     ],
@@ -1307,6 +1307,9 @@ def test_address_ranges_reject_unresolvable_open_ended_ranges() -> None:
         psp.AddressRange.from_a1("A:3", bounds=bounds)
     with pytest.raises(ValueError, match="Invalid spreadsheet cell address"):
         psp.AddressRange.from_a1("A", bounds=bounds)
+    for range_text in ["3:5", "3:D5"]:
+        with pytest.raises(ValueError, match="must start with a column"):
+            psp.AddressRange.from_a1(range_text, bounds=bounds)
 
     space = psp.AddressSpace.from_source_range("C5:F20")
     assert space.to_student_range("D6:D").address == "B2:B16"
@@ -1369,7 +1372,7 @@ def test_spreadsheet_wrapper_resolves_open_ended_ranges() -> None:
 
     assert inputs.range("B1:B").range_address == "B1:B3"
     assert inputs.range("A:A").range_address == "A1:A3"
-    assert inputs.range("1:1").range_address == "A1:C1"
+    assert inputs.range("A1:1").range_address == "A1:C1"
     assert inputs.range("'Input Data'!A1:B").qualified_range_address == (
         "'Input Data'!A1:B2"
     )
@@ -1383,7 +1386,7 @@ def test_spreadsheet_wrapper_resolves_open_ended_ranges() -> None:
         ("=ABS(B2-$C1)", 0, 1, "=ABS(C2-$C1)"),
         ("=ABS(B2-$C1)", 1, 0, "=ABS(B3-$C2)"),
         ("=$B$2+B$2+$B2", 2, 3, "=$B$2+E$2+$B4"),
-        ("=SUM(A2:B3, C:C, 4:4)", 1, 1, "=SUM(B3:C4, D:D, 5:5)"),
+        ("=SUM(A2:B3, C:C)", 1, 1, "=SUM(B3:C4, D:D)"),
         ("=SUM($A:A)", 0, 2, "=SUM($A:C)"),
         ("='Weekly Sales'!B2*Rates!$A$1", 1, 0, "='Weekly Sales'!B3*Rates!$A$1"),
         ('=IF(A1>0,"A1",A1)&TRUE', 0, 1, '=IF(B1>0,"A1",B1)&TRUE'),
