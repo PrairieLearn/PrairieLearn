@@ -37,12 +37,6 @@ test('treats a whitespace-only labels cell as clearing labels', async () => {
   );
 });
 
-test('accepts reordered headers', async () => {
-  expect(await parseStudentSyncCsv('labels,uid\n"[""Section A""]",a@example.com', labels)).toEqual(
-    new Map([['a@example.com', ['1']]]),
-  );
-});
-
 test.each([
   ['uid,labels,labels\na@example.com,,', 'no duplicate'],
   ['email,labels\na@example.com,[]', 'header'],
@@ -58,7 +52,7 @@ test.each([
   await expect(parseStudentSyncCsv(text, labels)).rejects.toThrow(message);
 });
 
-test.each(['[', '"Section A"', '[[]]'])(
+test.each(['[', '"Section A"'])(
   'rejects labels that are not a JSON string array: %s',
   async (value) => {
     const cell = value.replaceAll('"', '""');

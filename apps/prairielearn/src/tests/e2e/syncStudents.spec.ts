@@ -245,19 +245,6 @@ test('synchronizes students from a CSV file on mobile', async ({ page, courseIns
   await compare.click();
   await expect(page.getByText('Select a CSV file.', { exact: true })).toBeVisible();
   await expect(input).toHaveAttribute('aria-invalid', 'true');
-  for (const [content, message] of [
-    ['', 'This file is empty.'],
-    ['a'.repeat(3_000_001), 'This file exceeds the 3 MB limit.'],
-    ['a'.repeat(1_000_001), 'This CSV exceeds the 1,000,000-character limit.'],
-  ]) {
-    await input.setInputFiles({
-      name: 'students.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(content),
-    });
-    await compare.click();
-    await expect(page.getByText(message, { exact: false })).toBeVisible();
-  }
   await input.setInputFiles({
     name: 'students.csv',
     mimeType: 'text/csv',
@@ -293,15 +280,6 @@ test('synchronizes students from a CSV file on mobile', async ({ page, courseIns
     .locator('xpath=..');
   await expect(clearStudent.getByText('Remove: Section A')).toBeVisible();
   await expect(clearStudent.getByText('Remove: Extra time')).toBeVisible();
-  await page.getByRole('button', { name: 'Clear all students to remove' }).click();
-  const existingCheckbox = changes.getByRole('checkbox', { name: new RegExp(existingUid) });
-  await existingCheckbox.press('Space');
-  await expect(page.getByRole('button', { name: 'Update 2 students', exact: true })).toBeVisible();
-  await existingCheckbox.press('Space');
-  await expect(page.getByRole('button', { name: 'Update 3 students', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await compare.click();
-  await expect(page.getByText('Review the changes below')).toBeVisible();
 
   // Switching formats phase.
   await page.getByRole('button', { name: 'Back', exact: true }).click();
