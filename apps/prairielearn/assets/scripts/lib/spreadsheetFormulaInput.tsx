@@ -3,6 +3,7 @@ import {
   type InputHTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
+  type ReactNode,
   type Ref,
   useId,
   useImperativeHandle,
@@ -112,6 +113,7 @@ interface PointedSpan {
  */
 export function FormulaInput({
   value,
+  adornment,
   className,
   onValueChange,
   onAnnounce,
@@ -122,6 +124,8 @@ export function FormulaInput({
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onScroll' | 'onSelect'> & {
   value: string;
+  /** Drawn inside the field before the formula, such as a badge describing the cell. */
+  adornment?: ReactNode;
   onValueChange: (value: string) => void;
   onAnnounce: (message: string) => void;
   ref?: Ref<FormulaInputHandle>;
@@ -417,6 +421,7 @@ export function FormulaInput({
         aria-hidden="true"
         onMouseDown={handleViewMouseDown}
       >
+        {adornment}
         <FormulaTiles value={value} structure={structure} selection={focused ? selection : null} />
       </div>
       {completion ? (
