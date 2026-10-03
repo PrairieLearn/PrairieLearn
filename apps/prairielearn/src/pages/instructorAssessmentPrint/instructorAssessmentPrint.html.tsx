@@ -19,13 +19,13 @@ import {
 import {
   BLOCK_SIZE_LABELS,
   DEFAULT_PRINT_SETTINGS,
-  type PrintDocument,
   PrintIdentityFieldsTextSchema,
   type PrintSettings,
   printLayoutSearch,
 } from '../../lib/client/print-preparation.js';
 import type { StaffAssessmentInstance } from '../../lib/client/safe-db-types.js';
 import { getAssessmentInstanceUrl, getQuestionUrl } from '../../lib/client/url.js';
+import type { PrintDocument } from '../../lib/printing.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 import type { PrintableExamExportError } from '../../trpc/assessment/printable-exam-export.js';
@@ -55,6 +55,14 @@ const PrintDescriptorSchema = z.object({
     }),
   ),
 });
+
+async function fetchPrintDescriptor(url: string, signal?: AbortSignal) {
+  const response = await fetch(url, { signal });
+  if (!response.ok) {
+    throw new Error('Could not prepare this assessment. Check the selected form and try again.');
+  }
+  return PrintDescriptorSchema.parse(await response.json());
+}
 
 export function InstructorAssessmentPrint(props: PrintPreparationProps) {
   const [queryClient] = useState(() => new QueryClient());
@@ -98,7 +106,10 @@ function PrintPreparation({
   const savedInstanceIds =
     selectedInstances ??
     [selectedInstance ?? initialInstances.at(0)?.id].filter((id): id is string => !!id);
-  const instanceIds = hasRandomization ? savedInstanceIds : savedInstanceIds.slice(0, 1);
+  const availableInstanceIds = [...new Set(savedInstanceIds)]
+    .filter((id) => instances.data.some((instance) => instance.id === id))
+    .slice(0, MAX_PRINT_INSTANCES);
+  const instanceIds = hasRandomization ? availableInstanceIds : availableInstanceIds.slice(0, 1);
   const instanceId =
     selectedInstance && instanceIds.includes(selectedInstance)
       ? selectedInstance
@@ -141,15 +152,7 @@ function PrintPreparation({
     enabled: validInstance,
     retry: false,
     staleTime: Infinity,
-    queryFn: async ({ signal }) => {
-      const response = await fetch(`${paperBase}?${layout}`, { signal });
-      if (!response.ok) {
-        throw new Error(
-          'Could not prepare this assessment. Check the selected form and try again.',
-        );
-      }
-      return PrintDescriptorSchema.parse(await response.json());
-    },
+    queryFn: ({ signal }) => fetchPrintDescriptor(`${paperBase}?${layout}`, signal),
   });
   const questions = useQuery(
     trpc.printableExams.questions.queryOptions(
@@ -280,6 +283,12 @@ function PrintPreparation({
       const label = String.fromCharCode(65 + instanceIds.indexOf(id));
       const base = `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: id })}/paper`;
       const search = `${printLayoutSearch(settingsForInstance(id))}&form_label=${label}`;
+      const report = await fetchPrintDescriptor(`${base}?${search}`);
+      if (report.warnings.some((warning) => warning.question_number)) {
+        throw new Error(
+          `Form ${label} has missing or unprintable questions. Review its preview and exclude or fix those questions before exporting.`,
+        );
+      }
       const response = await fetch(`${base}/docx?${search}&document=exam`);
       if (!response.ok) {
         throw new Error('The download could not be generated. Review the preview and try again.');
@@ -307,7 +316,8 @@ function PrintPreparation({
       (question) => question.concerns.length || omitted.has(question.number),
     ).length ?? 0;
   const noQuestionsSelected = questions.isSuccess && includedQuestions?.length === 0;
-  const previewHasError = descriptor.isError || currentPreview?.status === 'error';
+  const previewHasError =
+    descriptor.isError || currentPreview?.status === 'error' || omitted.size > 0;
   const canDownload =
     validInstance &&
     renderingAvailable &&
@@ -318,9 +328,6 @@ function PrintPreparation({
     omitted.size === 0 &&
     !download.isPending &&
     !busy;
-  const allInstancesAvailable = instanceIds.every((id) =>
-    instances.data.some((instance) => instance.id === id),
-  );
 
   async function downloadBooklet(studentCount: number) {
     setCopies(studentCount);
@@ -360,6 +367,7 @@ function PrintPreparation({
       >
         <i className="bi bi-arrow-left me-1" aria-hidden="true" /> Back to Questions
       </a>
+      <h1 className="h4 mb-3">Print assessment</h1>
       <AppErrorAlert
         error={getAppError<PrintableExamsError['create']>(create.error)}
         render={{ UNKNOWN: ({ message }) => message }}
@@ -390,9 +398,10 @@ function PrintPreparation({
           server.
         </Alert>
       )}
-      {selectedInstance && !validInstance && (
+      {savedInstanceIds.some((id) => !instances.data.some((instance) => instance.id === id)) && (
         <Alert variant="danger">
-          This assessment instance is not available. Choose another instance below.
+          Unavailable forms were removed from the selection. Review the remaining forms or create a
+          new preview.
         </Alert>
       )}
       {reviewCount > 0 && (
@@ -913,8 +922,7 @@ function PrintPreparation({
                   busy ||
                   noQuestionsSelected ||
                   (!!instanceId && !isDirty && !previewHasError) ||
-                  (groupWork && !instanceId) ||
-                  (!!selectedInstance && !validInstance)
+                  (groupWork && !instanceId)
                 }
               >
                 {isSubmitting ? (
@@ -1083,7 +1091,6 @@ function PrintPreparation({
                           <Dropdown.Divider />
                           {instanceIds.length > 1 && (
                             <Dropdown.Item
-                              disabled={!allInstancesAvailable}
                               onClick={() =>
                                 void downloadPacket(instanceIds, instanceIds.length, 'exam').catch(
                                   () => {},
@@ -1093,10 +1100,7 @@ function PrintPreparation({
                               Download all forms (PDF)
                             </Dropdown.Item>
                           )}
-                          <Dropdown.Item
-                            disabled={!allInstancesAvailable}
-                            onClick={() => setShowBookletModal(true)}
-                          >
+                          <Dropdown.Item onClick={() => setShowBookletModal(true)}>
                             Download booklet PDF…
                           </Dropdown.Item>
                         </Dropdown.Menu>

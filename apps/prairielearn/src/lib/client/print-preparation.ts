@@ -23,8 +23,6 @@ export interface PrintSettings {
   excludedQuestions: string[];
 }
 
-export type PrintDocument = 'exam' | 'answer_key';
-
 export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   paperSize: 'Letter',
   includeCoverPage: true,

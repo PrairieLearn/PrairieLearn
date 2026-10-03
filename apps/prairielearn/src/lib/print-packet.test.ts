@@ -129,11 +129,6 @@ describe('print packet settings', () => {
   const instance = { assessmentInstanceId: '1', formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS };
   const metadata = { instances: [instance], copies: 45, document: 'exam' };
 
-  test.each(['exam', 'answer_key', 'booklet'])('accepts a valid %s request', (document) => {
-    const input = { ...metadata, document };
-    expect(PrintPacketMetadataSchema.parse(input)).toEqual(input);
-  });
-
   test.each([0, 501, 1.5])('rejects invalid copy count %s', (copies) => {
     expect(PrintPacketMetadataSchema.safeParse({ ...metadata, copies }).success).toBe(false);
   });

@@ -524,6 +524,7 @@ test('distinguishes paper review flags from broken questions omitted from the do
     timeout: 120_000,
   });
   await expect(downloadMenu(page)).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeEnabled();
   await page.getByLabel(/Show only items to review/).check();
   await expect(page.getByRole('checkbox', { name: 'Include question 1', exact: true })).toHaveCount(
     0,
@@ -542,6 +543,24 @@ test('distinguishes paper review flags from broken questions omitted from the do
     timeout: 120_000,
   });
   await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Add assessment instance', exact: true }).click();
+  await expect(page.getByText('Omitted', { exact: true }).first()).toBeVisible({
+    timeout: 120_000,
+  });
+  await page
+    .getByRole('combobox', { name: 'Preview form', exact: true })
+    .selectOption({ label: 'Form A' });
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  const wordRequests: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.endsWith('/paper/docx')) wordRequests.push(request.url());
+  });
+  await chooseDownload(page, 'Download Form B Word (.docx)');
+  await expect(
+    page.getByText('Form B has missing or unprintable questions.', { exact: false }),
+  ).toBeVisible();
+  expect(wordRequests).toEqual([]);
 });
 
 test('protects pending preview settings and shows a PDF export error once', async ({
@@ -752,6 +771,15 @@ test('limits static assessments to one form even when the saved URL selects seve
     });
     expect(metadata.copies).toBe(2);
     expect(await (await downloaded).failure()).toBeNull();
+
+    await page.goto(
+      `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=999999999&instance=999999999`,
+    );
+    await expect(
+      page.getByText('Unavailable forms were removed from the selection.', { exact: false }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Create preview', exact: true }).click();
+    await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   } finally {
     await fs.writeFile(assessmentFile, originalAssessment);
     await fs.writeFile(questionFile, originalQuestion);
@@ -818,6 +846,14 @@ test('can omit the default cover in previews and every download while keeping cu
   const pdf = await PDFDocument.load(await fs.readFile(await (await pdfDownload).path()));
   expect(pdf.getPageCount()).toBe(studentPages + 1);
   expect(pdf.getPage(0).getSize()).toEqual({ width: 400, height: 600 });
+
+  const answerKeyDownload = page.waitForEvent('download', { timeout: 120_000 });
+  await chooseDownload(page, 'Download Form A answer key (PDF)');
+  const answerKey = await PDFDocument.load(
+    await fs.readFile(await (await answerKeyDownload).path()),
+  );
+  expect(answerKey.getPageCount()).toBe(answerKeyPages);
+  expect(answerKey.getPages().every((sheet) => sheet.getWidth() === 612)).toBe(true);
 
   const wordDownload = page.waitForEvent('download', { timeout: 120_000 });
   await chooseDownload(page, 'Download Form A Word (.docx)');

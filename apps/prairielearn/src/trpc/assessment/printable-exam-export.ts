@@ -4,12 +4,12 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { QuestionBlockSizeOverflowError, createPdfOutput } from '@prairielearn/printing';
+import { createPdfOutput } from '@prairielearn/printing';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 
 import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
-import { type PrintDocument, printLayoutSearch } from '../../lib/client/print-preparation.js';
+import { printLayoutSearch } from '../../lib/client/print-preparation.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
@@ -19,6 +19,7 @@ import {
   readPrintCoverPages,
 } from '../../lib/print-packet.js';
 import {
+  type PrintDocument,
   getPrintRenderer,
   isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
@@ -72,7 +73,8 @@ export const printableExamExportRouter = t.router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
       }
       try {
-        const covers = await readPrintCoverPages(files.data);
+        const covers =
+          metadata.document === 'answer_key' ? [] : await readPrintCoverPages(files.data);
         if (!isBrowserRenderingAvailable()) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
@@ -206,7 +208,6 @@ export const printableExamExportRouter = t.router({
       } catch (error) {
         if (
           error instanceof PrintPacketError ||
-          error instanceof QuestionBlockSizeOverflowError ||
           (error instanceof HttpStatusError && error.status === 400)
         ) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });

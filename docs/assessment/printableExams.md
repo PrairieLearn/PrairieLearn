@@ -18,7 +18,7 @@ You can add up to 26 forms. **Regenerate Form** replaces that form with a new ra
 
 The default cover includes **Name** and **Date**. Under **Additional student information**, enter one extra label per line if students should fill in other details. You can also include a grading table and an academic integrity pledge. The pledge uses the assessment's honor code when one is configured.
 
-You can upload PDF cover pages to place after the default cover and before the questions. If you turn off the default cover, uploaded pages come first. Uploads can contain up to 10 PDFs, 100 pages total, and 10 MB total. They stay in the current browser tab until export, so add them again after reloading the page.
+You can upload PDF cover pages to place after the default cover and before the questions. If you turn off the default cover, uploaded pages come first. Uploads can contain up to 10 PDFs, 100 pages total, and 10 MB total. Uploaded cover pages are included in student PDFs, but not in answer keys or Word files. They stay in the current browser tab until export, so add them again after reloading the page.
 
 ### Review questions
 
