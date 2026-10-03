@@ -13,7 +13,7 @@
     "searchPath": ["public", "server*"]
   },
   "files": {
-    "ignore": ["*.pg"]
+    "ignore": ["*.pg", "apps/course-agent/src/*.sql"]
   },
   "linter": {
     "rules": {
