@@ -72,17 +72,20 @@
 
 .pl-spreadsheet-formula-bar {
   display: grid;
-  grid-template-columns: auto minmax(8rem, 1fr);
+  grid-template-columns: minmax(8rem, 1fr);
   gap: 0.5rem;
   align-items: center;
   padding: 0 0.5rem 0.5rem;
 }
 
-/* Fixed-width, so the formula input does not shift as the selected address changes. */
-.pl-spreadsheet-address {
-  min-width: 7ch;
+/* The selected cell or range, shown first in the formula bar. */
+.pl-spreadsheet-address-chip {
+  margin-inline-end: 0.5rem;
   font-family: var(--bs-font-monospace);
-  text-align: right;
+  font-weight: normal;
+  color: var(--bs-emphasis-color);
+  background-color: var(--bs-tertiary-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
 }
 
 /* Clicking a column or row heading selects the whole column or row. */
@@ -110,10 +113,9 @@
 
 /*
  * One line above the formula bar is always reserved so the bar stays put as errors appear
- * and disappear. It shares the input's column, so the label drops to the bar's row.
+ * and disappear.
  */
 .pl-spreadsheet-value-error {
-  grid-column: 2;
   overflow: hidden;
   height: 1.25rem;
   text-overflow: ellipsis;
