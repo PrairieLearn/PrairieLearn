@@ -102,7 +102,6 @@ Word repagination, and Word's `DISPLAYBARCODE` field is not supported in Word fo
 workflow or an explicitly fixed-page document format is needed before promising physical-page
 identification in Word.
 
-
 ## Combining question fragments
 
 Questions are normally rendered in separate documents, so author- and element-generated IDs can
