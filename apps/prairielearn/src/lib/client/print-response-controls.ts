@@ -377,14 +377,23 @@ function normalizeFigures(source: HTMLElement): void {
     sketch.replaceChildren(svg);
     sketch.dataset.printResponseArea = '';
   }
-  for (const media of source.querySelectorAll<HTMLIFrameElement | HTMLMediaElement>(
-    'iframe, video, audio',
-  )) {
-    const link = document.createElement('a');
-    link.className = 'printing-media-reference';
-    link.href = media.src || media.querySelector('source')?.src || '';
-    link.textContent = `${media.getAttribute('title') || 'Media reference'}: ${link.href}`;
-    media.replaceWith(link);
+  for (const media of source.querySelectorAll('iframe, video, audio')) {
+    const src = [media, ...media.querySelectorAll('source')]
+      .map((element) => element.getAttribute('src')?.trim())
+      .find(Boolean);
+    const label = media.getAttribute('title') || 'Media reference';
+    let reference: HTMLAnchorElement | HTMLSpanElement;
+    if (src) {
+      const link = document.createElement('a');
+      link.href = src;
+      link.textContent = `${label}: ${link.href}`;
+      reference = link;
+    } else {
+      reference = document.createElement('span');
+      reference.textContent = label;
+    }
+    reference.className = 'printing-media-reference';
+    media.replaceWith(reference);
   }
 }
 

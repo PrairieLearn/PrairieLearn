@@ -99,7 +99,11 @@ export function captureDocxSource(source: HTMLElement): DocxSource {
     if (Number(style.fontWeight) >= 600) clone.setAttribute('data-docx-bold', 'true');
     if (style.fontStyle === 'italic') clone.setAttribute('data-docx-italic', 'true');
     if (element instanceof HTMLAnchorElement) clone.setAttribute('href', element.href);
-    for (const child of element.childNodes) {
+    const children =
+      element instanceof HTMLSlotElement
+        ? element.assignedNodes({ flatten: true })
+        : (element.shadowRoot ?? element).childNodes;
+    for (const child of children) {
       if (child instanceof Element) {
         const copied = copy(child);
         if (copied) clone.append(copied);

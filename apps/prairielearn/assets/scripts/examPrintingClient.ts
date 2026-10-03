@@ -44,14 +44,6 @@ declare global {
   }
 }
 
-function getReadinessPromises(): Promise<unknown>[] {
-  const readinessPromises = window.__PL_PRINT_READINESS_PROMISES__;
-  if (!readinessPromises) throw new Error('Exam printing bootstrap is missing');
-  return readinessPromises;
-}
-
-const extraReadinessPromises = getReadinessPromises();
-
 function waitForDocumentReady(): Promise<void> {
   if (document.readyState !== 'loading') return Promise.resolve();
   return new Promise((resolve) => {
@@ -523,6 +515,8 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
 
 async function paginateExam(): Promise<{ totalPages: number }> {
   await waitForDocumentReady();
+  const extraReadinessPromises = window.__PL_PRINT_READINESS_PROMISES__;
+  if (!extraReadinessPromises) throw new Error('Exam printing bootstrap is missing');
   const source = document.querySelector<HTMLElement>('#exam-print-source');
   const output = document.querySelector<HTMLElement>('#exam-print-pages');
   if (!source || !output) throw new Error('Printable exam containers are missing');
