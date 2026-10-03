@@ -19,6 +19,8 @@ import {
 } from 'docx';
 import type { Page } from 'playwright';
 
+import { assertNever } from '@prairielearn/utils';
+
 import { type DocxSource, annotateDocxMath, captureDocxSource } from './docxBrowser.js';
 import { type DocxFigure, buildDocxContent } from './docxContent.js';
 import type { PrintableCover, PrintableCoverField, PrintableTextBlock } from './printableCover.js';
@@ -172,6 +174,8 @@ function buildTextBlocks(blocks: PrintableTextBlock[], numbering: ListNumbering)
             }),
         );
       }
+      default:
+        return assertNever(block);
     }
   });
 }
