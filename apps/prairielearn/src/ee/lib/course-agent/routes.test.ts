@@ -3,37 +3,26 @@ import type { AddressInfo } from 'node:net';
 
 import { TRPCError } from '@trpc/server';
 import express from 'express';
-import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
 import { ChatError } from '@prairielearn/course-agent-contract';
 import { HttpStatusError } from '@prairielearn/error';
 
-const mocks = vi.hoisted(() => ({
+import * as pageContext from '../../../lib/client/page-context.js';
+import * as conversations from '../../../models/course-agent-conversation.js';
+
+import * as events from './events.js';
+import { createCloudflareProvider } from './provider.js';
+import router from './routes.js';
+import * as service from './service.js';
+
+const mocks = {
   selectConversation: vi.fn(),
   getSnapshot: vi.fn(),
   watch: vi.fn(),
   unsubscribe: vi.fn(),
   errorHandler: vi.fn(),
-}));
-vi.mock('../../../lib/client/page-context.js', () => ({
-  extractPageContext: () => ({
-    course: { id: '1' },
-    authz_data: { user: { id: '1' }, authn_user: { id: '1' } },
-  }),
-}));
-vi.mock('../../../models/course-agent-conversation.js', () => ({
-  selectConversation: mocks.selectConversation,
-}));
-vi.mock('./service.js', () => ({
-  provider: async () => ({ getSnapshot: mocks.getSnapshot, watch: mocks.watch }),
-  prepare: vi.fn(),
-  snapshot: vi.fn(),
-}));
-vi.mock('./events.js', () => ({ subscribe: async () => mocks.unsubscribe }));
-vi.mock('./host-tools.js', () => ({ dispatchHostTool: vi.fn() }));
-vi.mock('./usage.js', () => ({ recordUsage: vi.fn() }));
-
-import router from './routes.js';
+};
 
 const app = express();
 app.use(router);
@@ -59,7 +48,19 @@ afterAll(
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.selectConversation.mockResolvedValue({ id: '1' });
+  vi.spyOn(pageContext, 'extractPageContext').mockReturnValue({
+    course: { id: '1' },
+    authz_data: { user: { id: '1' }, authn_user: { id: '1' } },
+  } as ReturnType<typeof pageContext.extractPageContext>);
+  vi.spyOn(conversations, 'selectConversation').mockImplementation(mocks.selectConversation);
+  vi.spyOn(service, 'provider').mockResolvedValue({
+    ...createCloudflareProvider(new URL('http://localhost'), 'test'),
+    getSnapshot: mocks.getSnapshot,
+    watch: mocks.watch,
+  });
+  vi.spyOn(events, 'subscribe').mockResolvedValue(mocks.unsubscribe);
 });
+afterEach(() => vi.restoreAllMocks());
 
 test('sends authentication failure through SSE without invoking the HTML error handler', async () => {
   mocks.getSnapshot.mockRejectedValue(new ChatError(401, 'Authentication failed'));
