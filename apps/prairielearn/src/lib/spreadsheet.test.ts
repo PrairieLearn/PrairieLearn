@@ -556,6 +556,20 @@ describe('evaluateSpreadsheet', () => {
     evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(B1:B2)' } }));
   });
 
+  it('detects cycles through open-ended ranges', () => {
+    for (const formula of ['=SUM(2:2)', '=SUM(A:A)', '=SUM(A1:A)', '=SUM(A2:2)', '=SUM($A:$B)']) {
+      const evaluation = evaluateSpreadsheet(
+        makeOffsetConfig(),
+        makeSubmission({ Inputs: { A2: formula } }),
+      );
+      assert.deepEqual(
+        evaluation.snapshot.sheets[0].cells.A2.result,
+        { type: 'error', value: '#CYCLE!', error_type: 'CYCLE' },
+        formula,
+      );
+    }
+  });
+
   it('resolves open-ended ranges to the edge of the student sheet', () => {
     for (const [formula, value] of [
       ['=SUM(B:B)', 4],
@@ -840,7 +854,7 @@ describe('adversarial student formulas', () => {
     const attacks = [
       '=VLOOKUP(1,A1:C2,3,FALSE)',
       '=HLOOKUP(1,A1:B3,3,FALSE)',
-      '=SUM(A1:INDEX(A:A,5))',
+      '=SUM(A1:INDEX(B:B,5))',
       '=SUM(INDEX(A1:B2,1,1):C3)',
       '=SUMIF(A1:A2,">0",C1:C2)',
       '=SUMPRODUCT(A1:A2,C1:C2)',
@@ -897,8 +911,8 @@ describe('adversarial student formulas', () => {
     }
     // Whole columns and rows only reach the student range, so they cannot find hidden values.
     for (const [formula, result] of [
-      ['=MATCH(31337,A:A,0)', { type: 'error', value: '#N/A', error_type: 'NA' }],
-      ['=INDEX(A:A,1)', { type: 'number', value: 1 }],
+      ['=MATCH(31337,B:B,0)', { type: 'error', value: '#N/A', error_type: 'NA' }],
+      ['=INDEX(B:B,1)', { type: 'number', value: 2 }],
       ['=INDEX(1:1,1)', { type: 'number', value: 1 }],
       ['=SUM(B2:B)', { type: 'number', value: 3 }],
     ] as const) {

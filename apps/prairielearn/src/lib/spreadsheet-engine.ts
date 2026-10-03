@@ -211,6 +211,13 @@ interface RewriteOptions {
   columnOffset?: number;
   maxRows: number;
   maxColumns: number;
+  /**
+   * Returns the size of a sheet, named as `resolveSheet` emits it or null for the
+   * formula's own sheet. When given, open-ended ranges such as `B2:B` or `1:1` are
+   * bounded by that sheet's grid. The engine only links a formula to the cells of
+   * bounded ranges, so without this it misses cycles through open-ended ones.
+   */
+  sheetSize?: (sheet: string | null) => { rows: number; columns: number } | null;
 }
 
 const CELL_ENDPOINT = /^(\$?)([A-Za-z]{1,3})(\$?)([0-9]+)$/;
@@ -287,6 +294,38 @@ function shiftEndpoint(text: string, options: RewriteOptions): string | null | u
   return undefined;
 }
 
+/**
+ * Fills in the open bounds of a two-endpoint range, such as `B2:B` or `A:C`, with the
+ * edges of a `rows` by `columns` grid. An open end never comes before the range's
+ * start, so a range that starts past the grid stays outside it.
+ */
+function boundEndpoints(
+  [start, end]: [string, string],
+  { rows, columns }: { rows: number; columns: number },
+): [string, string] {
+  const parse = (text: string) => {
+    const cell = CELL_ENDPOINT.exec(text);
+    if (cell) return { column: `${cell[1]}${cell[2]}`, row: `${cell[3]}${cell[4]}` };
+    const column = COLUMN_ENDPOINT.exec(text);
+    if (column) return { column: text, row: null };
+    return { column: null, row: text };
+  };
+  const first = parse(start);
+  const last = parse(end);
+  if (first.column !== null && first.row !== null && last.column !== null && last.row !== null) {
+    return [start, end];
+  }
+  const index = {
+    column: (text: string) => columnIndex(text.replace('$', '')),
+    row: (text: string) => Number(text.replace('$', '')) - 1,
+  };
+  const startColumn = first.column ?? columnName(0);
+  const startRow = first.row ?? '1';
+  const endColumn = last.column ?? columnName(Math.max(index.column(startColumn), columns - 1));
+  const endRow = last.row ?? String(Math.max(index.row(startRow), rows - 1) + 1);
+  return [`${startColumn}${startRow}`, `${endColumn}${endRow}`];
+}
+
 /** Rewrites one engine `Range` operand, such as `A1`, `Sheet1!$A:$B`, or a name. */
 function rewriteReference(text: string, options: RewriteOptions): string {
   const split = splitSheet(text);
@@ -305,6 +344,12 @@ function rewriteReference(text: string, options: RewriteOptions): string {
     // prefix on one is still rewritten so that it cannot name a missing sheet.
     if (shifted === undefined) return `${prefix}${split.rest}`;
     endpoints.push(shifted);
+  }
+  const size = options.sheetSize?.(
+    split.sheet === null ? null : (options.resolveSheet?.(split.sheet) ?? split.sheet),
+  );
+  if (size && endpoints.length === 2) {
+    return `${prefix}${boundEndpoints([endpoints[0], endpoints[1]], size).join(':')}`;
   }
   return `${prefix}${endpoints.join(':')}`;
 }

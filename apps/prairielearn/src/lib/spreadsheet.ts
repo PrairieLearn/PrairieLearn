@@ -1295,13 +1295,30 @@ function sheetResolver(engineSheetNames: ReadonlyMap<string, string>) {
   return (name: string) => folded.get(name.toLocaleLowerCase('en-US')) ?? null;
 }
 
-/** Rewrites each formula in `rows` to refer to sheets by their engine names. */
-function toEngineRows(rows: SheetRows, resolveSheet: (name: string) => string | null): SheetRows {
+/**
+ * Rewrites each formula in `rows` to refer to sheets by their engine names, and bounds
+ * open-ended ranges by the grid of the sheet they refer to.
+ */
+function toEngineRows(
+  rows: SheetRows,
+  {
+    sheet,
+    resolveSheet,
+    sheetSizes,
+  }: {
+    /** The engine name of the sheet that holds `rows`. */
+    sheet: string;
+    resolveSheet: (name: string) => string | null;
+    /** Sheet sizes keyed by engine name. */
+    sheetSizes: ReadonlyMap<string, { rows: number; columns: number }>;
+  },
+): SheetRows {
   return rows.map((values) =>
     values.map((input) =>
       typeof input === 'string' && input.startsWith('=')
         ? rewriteFormulaReferences(input, {
             resolveSheet,
+            sheetSize: (name) => sheetSizes.get(name ?? sheet) ?? null,
             maxRows: SPREADSHEET_MAX_ROWS,
             maxColumns: SPREADSHEET_MAX_COLUMNS,
           })
@@ -1455,22 +1472,37 @@ function runGradingWorkbook(
 
   const resolveStudentSheet = sheetResolver(studentNames);
   const resolvePrivateSheet = sheetResolver(privateNames);
+  const sheetSizes = new Map([
+    ...template.sheets.map((sheet) => [engineName(studentNames, sheet.name), sheet] as const),
+    ...privateSheets.map((sheet) => [engineName(privateNames, sheet.name), sheet] as const),
+  ]);
   const engineSheets = [
-    ...template.sheets.map((sheet) => ({
-      name: engineName(studentNames, sheet.name),
-      rows: sheet.rows,
-      columns: sheet.columns,
-      inputs: toEngineRows(studentSheetData[sheet.name], resolveStudentSheet),
-    })),
-    ...privateSheets.map((sheet) => ({
-      name: engineName(privateNames, sheet.name),
-      rows: sheet.rows,
-      columns: sheet.columns,
-      inputs: toEngineRows(
-        buildSheetRows(sheet.rows, sheet.columns, sheet.cells),
-        resolvePrivateSheet,
-      ),
-    })),
+    ...template.sheets.map((sheet) => {
+      const name = engineName(studentNames, sheet.name);
+      return {
+        name,
+        rows: sheet.rows,
+        columns: sheet.columns,
+        inputs: toEngineRows(studentSheetData[sheet.name], {
+          sheet: name,
+          resolveSheet: resolveStudentSheet,
+          sheetSizes,
+        }),
+      };
+    }),
+    ...privateSheets.map((sheet) => {
+      const name = engineName(privateNames, sheet.name);
+      return {
+        name,
+        rows: sheet.rows,
+        columns: sheet.columns,
+        inputs: toEngineRows(buildSheetRows(sheet.rows, sheet.columns, sheet.cells), {
+          sheet: name,
+          resolveSheet: resolvePrivateSheet,
+          sheetSizes,
+        }),
+      };
+    }),
   ];
   // The engine inputs of every cell, kept so that test cases can restore the cells they change.
   const engineInputs = new Map(engineSheets.map((sheet) => [sheet.name, sheet.inputs]));
@@ -1773,16 +1805,20 @@ function evaluateSpreadsheetInternal(
 
   const engineSheetNames = studentEngineSheetNames(config.template);
   const resolveSheet = sheetResolver(engineSheetNames);
+  const sheetSizes = new Map(
+    config.template.sheets.map((sheet) => [engineSheetNames.get(sheet.name)!, sheet]),
+  );
   const workbook = new SpreadsheetEngineWorkbook();
   try {
     for (const sheet of config.template.sheets) {
       workbook.addSheet(engineSheetNames.get(sheet.name)!, sheet.rows, sheet.columns);
     }
     for (const sheet of config.template.sheets) {
+      const name = engineSheetNames.get(sheet.name)!;
       setSheetRows(
         workbook,
-        engineSheetNames.get(sheet.name)!,
-        toEngineRows(sheetData[sheet.name], resolveSheet),
+        name,
+        toEngineRows(sheetData[sheet.name], { sheet: name, resolveSheet, sheetSizes }),
       );
     }
     workbook.evaluate();
