@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 4.1.16
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 4.1.15
 
 ### Patch Changes

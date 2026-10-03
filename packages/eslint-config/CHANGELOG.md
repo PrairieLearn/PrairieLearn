@@ -1,5 +1,15 @@
 # @prairielearn/eslint-config
 
+## 3.2.0
+
+### Minor Changes
+
+- 83590cf: Upgrade the JSDoc, Unicorn, and React effect lint plugins and align TypeScript ESLint dependencies on version 8.70.1 while preserving existing lint style choices. Node.js 24.15.0 or newer is now required.
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 3.1.6
 
 ### Patch Changes

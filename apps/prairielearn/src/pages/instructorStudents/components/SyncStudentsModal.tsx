@@ -1,23 +1,28 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
-import { Alert, Button, Modal } from 'react-bootstrap';
+import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { assertNever } from '@prairielearn/utils';
 
 import { StudentCheckboxList } from '../../../components/StudentCheckboxList.js';
-import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import type { StaffCourseInstance, StaffStudentLabel } from '../../../lib/client/safe-db-types.js';
 import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
-import type { StudentRow } from '../instructorStudents.shared.js';
+import { useTRPC } from '../../../trpc/courseInstance/context.js';
+import type { StudentSyncError } from '../../../trpc/courseInstance/student-sync.js';
+import type { StudentRow, SyncCsv } from '../instructorStudents.shared.js';
 
 import { type StudentSyncItem, type SyncPreview, computeSyncDiff } from './sync-students-diff.js';
 
 interface SyncStudentsForm {
   uids: string;
+  format: 'uids' | 'csv';
 }
 
 type SyncStep = 'input' | 'preview';
@@ -64,8 +69,16 @@ export function SyncStudentsModal({
   students: StudentRow[];
   selfEnrollLink: string;
   onHide: () => void;
-  onSubmit: (toInvite: string[], toCancelInvitation: string[], toRemove: string[]) => Promise<void>;
+  onSubmit: (
+    toInvite: string[],
+    toCancelInvitation: string[],
+    toRemove: string[],
+    csv?: SyncCsv,
+  ) => Promise<void>;
 }) {
+  const trpc = useTRPC();
+  const [labels, setLabels] = useState<StaffStudentLabel[]>([]);
+  const [selectedLabelUpdates, setSelectedLabelUpdates] = useState<Set<string>>(() => new Set());
   const [step, setStep] = useState<SyncStep>('input');
   const [preview, setPreview] = useState<SyncPreview | null>(null);
   const [selectedAdds, setSelectedAdds] = useState<Set<string>>(() => new Set());
@@ -77,14 +90,36 @@ export function SyncStudentsModal({
     clearErrors,
     reset,
     getValues,
+    watch,
     formState: { errors },
   } = useForm<SyncStudentsForm>({
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
-    defaultValues: { uids: '' },
+    defaultValues: { uids: '', format: 'uids' },
   });
 
+  const format = watch('format');
+  const showPreview = (diff: SyncPreview) => {
+    setPreview(diff);
+    setSelectedAdds(new Set(diff.toInvite.map((item) => item.uid)));
+    setSelectedRemovals(
+      new Set([...diff.toCancelInvitation, ...diff.toRemove].map((item) => item.uid)),
+    );
+    setSelectedLabelUpdates(new Set(diff.toUpdateLabels.map((item) => item.uid)));
+    setStep('preview');
+  };
+  const previewMutation = useMutation(
+    trpc.studentSync.preview.mutationOptions({
+      onSuccess: ({ preview, labels }) => {
+        setLabels(labels);
+        showPreview(preview);
+      },
+    }),
+  );
+  const previewError = getAppError<StudentSyncError['Preview']>(previewMutation.error);
+
   const validateUidsFormat = (value: string): string | true => {
+    if (format === 'csv') return value.trim() !== '' || 'Enter a student CSV.';
     let uids: string[] = [];
     try {
       uids = parseUniqueValuesFromString(value, MAX_UIDS);
@@ -105,19 +140,12 @@ export function SyncStudentsModal({
     return true;
   };
 
-  const onCompare = handleSubmit(() => {
-    const uids = parseUniqueValuesFromString(getValues('uids'), MAX_UIDS);
-    const diff = computeSyncDiff(uids, students);
-    setPreview(diff);
-    // Pre-select all items by default
-    setSelectedAdds(new Set(diff.toInvite.map((item) => item.uid)));
-    setSelectedRemovals(
-      new Set([
-        ...diff.toCancelInvitation.map((item) => item.uid),
-        ...diff.toRemove.map((item) => item.uid),
-      ]),
-    );
-    setStep('preview');
+  const onCompare = handleSubmit(({ uids }) => {
+    if (format === 'csv') {
+      previewMutation.mutate({ text: uids });
+    } else {
+      showPreview(computeSyncDiff(parseUniqueValuesFromString(uids, MAX_UIDS), students));
+    }
   });
 
   const syncMutation = useMutation({
@@ -129,7 +157,20 @@ export function SyncStudentsModal({
         cancellationUids.has(uid),
       );
       const toRemove = Array.from(selectedRemovals).filter((uid) => !cancellationUids.has(uid));
-      return onSubmit(toInvite, toCancelInvitation, toRemove);
+      return onSubmit(
+        toInvite,
+        toCancelInvitation,
+        toRemove,
+        format === 'csv'
+          ? {
+              text: getValues('uids'),
+              labelUpdates: [
+                ...preview.toInvite.filter((item) => selectedAdds.has(item.uid)),
+                ...preview.toUpdateLabels.filter((item) => selectedLabelUpdates.has(item.uid)),
+              ].flatMap((item) => (item.labelUpdate ? [item.labelUpdate] : [])),
+            }
+          : undefined,
+      );
     },
     // Note: onSubmit navigates to the job sequence page via window.location.href,
     // so onSuccess won't visibly affect the UI.
@@ -144,6 +185,9 @@ export function SyncStudentsModal({
     setSelectedAdds(new Set());
     setSelectedRemovals(new Set());
     syncMutation.reset();
+    previewMutation.reset();
+    setSelectedLabelUpdates(new Set());
+    setLabels([]);
   };
 
   const toggleAdd = (uid: string) => {
@@ -175,7 +219,8 @@ export function SyncStudentsModal({
     return (
       preview.toInvite.length === 0 &&
       preview.toCancelInvitation.length === 0 &&
-      preview.toRemove.length === 0
+      preview.toRemove.length === 0 &&
+      preview.toUpdateLabels.length === 0
     );
   }, [preview]);
 
@@ -184,7 +229,7 @@ export function SyncStudentsModal({
     return [...preview.toCancelInvitation, ...preview.toRemove];
   }, [preview]);
 
-  const totalSelectedCount = selectedAdds.size + selectedRemovals.size;
+  const totalSelectedCount = selectedAdds.size + selectedRemovals.size + selectedLabelUpdates.size;
   const hasNoSelections = totalSelectedCount === 0;
 
   const summaryCounts = useMemo(() => {
@@ -198,14 +243,41 @@ export function SyncStudentsModal({
     };
   }, [preview, selectedAdds.size, selectedRemovals.size]);
 
+  const renderLabelChanges = (item: StudentSyncItem) => {
+    if (!item.labelUpdate) return null;
+    const previous = new Set(item.labelUpdate.expected?.labelIds);
+    const desired = new Set(item.labelUpdate.labelIds);
+    return (
+      <span className="d-flex flex-column small text-break">
+        {labels
+          .filter((label) => desired.has(label.id) && !previous.has(label.id))
+          .map((label) => (
+            <span key={label.id}>Add: {label.name}</span>
+          ))}
+        {labels
+          .filter((label) => previous.has(label.id) && !desired.has(label.id))
+          .map((label) => (
+            <span key={label.id}>Remove: {label.name}</span>
+          ))}
+      </span>
+    );
+  };
+
   const isUnpublished =
     courseInstance.modern_publishing &&
     computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
       'published';
 
   return (
-    <Modal show={show} backdrop="static" size="lg" onHide={onHide} onExited={resetModalState}>
-      <Modal.Header closeButton>
+    <Modal
+      show={show}
+      backdrop="static"
+      keyboard={!previewMutation.isPending && !syncMutation.isPending}
+      size="lg"
+      onHide={onHide}
+      onExited={resetModalState}
+    >
+      <Modal.Header closeButton={!previewMutation.isPending && !syncMutation.isPending}>
         <Modal.Title>Synchronize student list</Modal.Title>
       </Modal.Header>
 
@@ -223,30 +295,80 @@ export function SyncStudentsModal({
                 Paste your student list below. Students on this list will be added to the course.
                 Students not on this list will be removed.
               </p>
+              <Form.Group controlId="sync-format" className="mb-3">
+                <Form.Label>Input format</Form.Label>
+                <Form.Select
+                  {...register('format')}
+                  defaultValue="uids"
+                  disabled={previewMutation.isPending}
+                >
+                  <option value="uids">UID list</option>
+                  <option value="csv">CSV with labels</option>
+                </Form.Select>
+              </Form.Group>
+              {format === 'csv' && (
+                <div className="mb-3">
+                  <p>
+                    Use one row per student and one label per column. Labels must already exist in
+                    this course instance.
+                  </p>
+                  <pre className="bg-body-tertiary p-2" style={{ whiteSpace: 'pre-wrap' }}>
+                    {
+                      'uid,label1,label2\nadam@example.com,Section 1,Arts\nben@example.com,Section 1,Science'
+                    }
+                  </pre>
+                  <p className="mb-0">
+                    Label columns replace each student's labels. Include every label to retain.
+                    Leaving all label cells empty clears labels. Omit all label columns to preserve
+                    existing labels.
+                  </p>
+                </div>
+              )}
               <div>
                 <label htmlFor="sync-uids" className="form-label">
-                  Student UIDs
+                  {format === 'csv' ? 'Student CSV' : 'Student UIDs'}
                 </label>
                 <textarea
                   id="sync-uids"
-                  className={clsx('form-control', errors.uids && 'is-invalid')}
+                  className={clsx(
+                    'form-control',
+                    (errors.uids || (format === 'csv' && previewError)) && 'is-invalid',
+                  )}
                   rows={8}
-                  placeholder="student1@example.com&#10;student2@example.com&#10;student3@example.com"
-                  aria-invalid={!!errors.uids}
-                  aria-errormessage={errors.uids ? 'sync-uids-error' : undefined}
+                  defaultValue=""
+                  disabled={previewMutation.isPending}
+                  placeholder={
+                    format === 'csv'
+                      ? 'uid,label1,label2\nstudent@example.com,Section A,Extra time'
+                      : 'student1@example.com\nstudent2@example.com'
+                  }
+                  aria-invalid={!!errors.uids || (format === 'csv' && !!previewError)}
+                  aria-errormessage={
+                    errors.uids || (format === 'csv' && previewError)
+                      ? 'sync-uids-error'
+                      : undefined
+                  }
                   aria-describedby="sync-uids-help"
                   {...register('uids', {
                     validate: validateUidsFormat,
                   })}
                 />
+                {format === 'csv' && previewError && !errors.uids && (
+                  <div id="sync-uids-error" className="mt-2">
+                    <AppErrorAlert
+                      error={previewError}
+                      render={{ UNKNOWN: ({ message }) => message }}
+                    />
+                  </div>
+                )}
                 {errors.uids?.message && (
                   <div className="invalid-feedback" id="sync-uids-error">
                     {errors.uids.message}
                   </div>
                 )}
                 <div className="form-text" id="sync-uids-help">
-                  One UID per line, or comma/space/semicolon separated. Students are not notified
-                  about the invitation: you must instruct them to visit{' '}
+                  {format === 'uids' && 'One UID per line, or comma/space/semicolon separated. '}
+                  Students are not notified about the invitation: you must instruct them to visit{' '}
                   <a href="/" target="_blank" rel="noopener noreferrer">
                     the PrairieLearn homepage
                   </a>{' '}
@@ -304,12 +426,45 @@ export function SyncStudentsModal({
                     label="Students to add"
                     description="New students will be invited. Blocked or removed students will be re-enrolled."
                     checkboxIdPrefix="sync-add"
-                    renderItemExtra={renderSyncItemBadge}
+                    renderItemExtra={(item) => (
+                      <>
+                        {renderSyncItemBadge(item)}
+                        {renderLabelChanges(item)}
+                      </>
+                    )}
                     onToggle={toggleAdd}
                     onSelectAll={() =>
                       setSelectedAdds(new Set(preview.toInvite.map((item) => item.uid)))
                     }
                     onDeselectAll={() => setSelectedAdds(new Set())}
+                  />
+                )}
+
+                {preview.toUpdateLabels.length > 0 && (
+                  <StudentCheckboxList
+                    items={preview.toUpdateLabels}
+                    selectedUids={selectedLabelUpdates}
+                    icon="bi-tags"
+                    iconColor="text-primary"
+                    iconBg="bg-primary-subtle"
+                    label="Students with label changes"
+                    description="These students will keep their current enrollment status."
+                    checkboxIdPrefix="sync-labels"
+                    renderItemExtra={renderLabelChanges}
+                    onToggle={(uid) =>
+                      setSelectedLabelUpdates((previous) => {
+                        const next = new Set(previous);
+                        if (next.has(uid)) next.delete(uid);
+                        else next.add(uid);
+                        return next;
+                      })
+                    }
+                    onSelectAll={() =>
+                      setSelectedLabelUpdates(
+                        new Set(preview.toUpdateLabels.map((item) => item.uid)),
+                      )
+                    }
+                    onDeselectAll={() => setSelectedLabelUpdates(new Set())}
                   />
                 )}
 
@@ -340,11 +495,11 @@ export function SyncStudentsModal({
       <Modal.Footer>
         {step === 'input' && (
           <>
-            <Button variant="secondary" onClick={onHide}>
+            <Button variant="secondary" disabled={previewMutation.isPending} onClick={onHide}>
               Cancel
             </Button>
-            <Button variant="primary" onClick={onCompare}>
-              Compare
+            <Button variant="primary" disabled={previewMutation.isPending} onClick={onCompare}>
+              {previewMutation.isPending ? 'Comparing...' : 'Compare'}
             </Button>
           </>
         )}
@@ -352,7 +507,7 @@ export function SyncStudentsModal({
         {step === 'preview' && (
           <div className="d-flex flex-column w-100 gap-3">
             {!hasNoChanges && !hasNoSelections && (
-              <div className="d-flex align-items-center gap-3 small text-muted">
+              <div className="d-flex flex-wrap align-items-center gap-3 small text-muted">
                 <span className="fw-medium">Summary:</span>
                 {summaryCounts.added > 0 && (
                   <span className="d-inline-flex align-items-center gap-1">
@@ -373,6 +528,9 @@ export function SyncStudentsModal({
                     />
                     {summaryCounts.removed} removed
                   </span>
+                )}
+                {selectedLabelUpdates.size > 0 && (
+                  <span>{selectedLabelUpdates.size} labels updated</span>
                 )}
                 {summaryCounts.unchanged > 0 && (
                   <span className="d-inline-flex align-items-center gap-1">

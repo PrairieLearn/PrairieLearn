@@ -30,6 +30,9 @@ export function unicornConfig(): TSESLint.FlatConfig.ConfigArray {
         'unicorn/dom-node-dataset': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2261095992
         'unicorn/prefer-export-from': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252265000
         'unicorn/prefer-string-raw': 'off', // We don't use `String.raw` in our codebase
+        'unicorn/prefer-combined-guards': 'off', // Nested guards can make distinct conditions clearer
+        'unicorn/prefer-smaller-scope': 'off', // Declaration placement is contextual
+        'unicorn/prefer-group-by': 'off', // Map.groupBy is unavailable in our target lib
         'unicorn/prefer-ternary': 'off', // if/else can be more readable than a ternary
         'unicorn/prefer-top-level-await': 'off', // we use this on a lot of pages
         'unicorn/prefer-type-error': 'off',

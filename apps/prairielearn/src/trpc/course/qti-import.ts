@@ -35,9 +35,9 @@ const SafeDirectoryName = z
  * info.json files. Validate for correctness but keep the original input so
  * only the properties the client actually sent are written to disk.
  */
-function validatedInfoJsonSchema(schema: z.ZodType) {
+function validatedInfoJsonSchema(schema: z.core.$ZodType) {
   return z.record(z.string(), z.unknown()).superRefine((value, ctx) => {
-    const result = schema.safeParse(value);
+    const result = z.safeParse(schema, value);
     if (!result.success) {
       for (const issue of result.error.issues) {
         // Spread into a fresh object: $ZodIssue is not assignable to
