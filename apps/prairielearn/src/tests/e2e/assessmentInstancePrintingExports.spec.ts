@@ -85,6 +85,15 @@ test('describes printable exports and serves each linked format', async ({
     expect(printedQuestionNumbers).not.toContain(warning.question_number);
   }
 
+  for (const url of [body.pdf_url, body.answer_key_pdf_url, body.docx_url]) {
+    const incomplete = await page.request.get(url, {
+      headers: { Accept: 'application/json' },
+      timeout: 120_000,
+    });
+    expect(incomplete.status()).toBe(400);
+    expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
+  }
+
   const brokenOnlyQuery = new URLSearchParams(query);
   for (const number of new Set(printedQuestionNumbers)) {
     brokenOnlyQuery.append('exclude_question', number!);
@@ -245,7 +254,12 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
   courseInstance,
 }) => {
   const { paperUrl } = await createPrintableExam(courseInstance, 'exam23-printing');
-  await page.goto(`${paperUrl}/preview?paper_size=Letter`);
+  const report = await page.request.get(`${paperUrl}?paper_size=Letter`);
+  const { warnings } = (await report.json()) as PrintableAssessmentInstanceResponse;
+  expect(warnings.map((warning) => warning.qid)).toEqual(['brokenGeneration', 'brokenPrepare']);
+  const search = new URLSearchParams({ paper_size: 'Letter' });
+  for (const warning of warnings) search.append('exclude_question', warning.question_number!);
+  await page.goto(`${paperUrl}/preview?${search}`);
   await waitForPrintablePage(page);
   const questionNumbers = await page
     .locator('.pagedjs_page .printing-question')
@@ -359,7 +373,7 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
     await expect(sketch).toHaveAttribute('viewBox', '0 0 800 450');
   }
 
-  const docxResponse = await page.request.get(`${paperUrl}/docx?paper_size=Letter`, {
+  const docxResponse = await page.request.get(`${paperUrl}/docx?${search}`, {
     timeout: 120_000,
   });
   expect(docxResponse.status()).toBe(200);
@@ -382,7 +396,12 @@ test('exports the broad answer key with correct answers before distractors', asy
   courseInstance,
 }) => {
   const { paperUrl } = await createPrintableExam(courseInstance, 'exam23-printing');
-  await page.goto(`${paperUrl}/preview?paper_size=Letter`);
+  const report = await page.request.get(`${paperUrl}?paper_size=Letter`);
+  const { warnings } = (await report.json()) as PrintableAssessmentInstanceResponse;
+  expect(warnings.map((warning) => warning.qid)).toEqual(['brokenGeneration', 'brokenPrepare']);
+  const search = new URLSearchParams({ paper_size: 'Letter' });
+  for (const warning of warnings) search.append('exclude_question', warning.question_number!);
+  await page.goto(`${paperUrl}/preview?${search}`);
   await waitForPrintablePage(page);
   const questionNumbers = await page
     .locator('.pagedjs_page .printing-question')
@@ -390,7 +409,7 @@ test('exports the broad answer key with correct answers before distractors', asy
       ...new Set(questions.map((question) => (question as HTMLElement).dataset.questionNumber)),
     ]);
   expect(questionNumbers).toHaveLength(46);
-  await page.goto(`${paperUrl}/preview?paper_size=Letter&document=answer_key`);
+  await page.goto(`${paperUrl}/preview?${search}&document=answer_key`);
   await waitForPrintablePage(page);
   const answerQuestionNumbers = await page
     .locator('.pagedjs_page .printing-question')
@@ -430,7 +449,7 @@ test('exports the broad answer key with correct answers before distractors', asy
       ),
   ).toBe(true);
   const answerKeyResponse = await page.request.get(
-    `${paperUrl}/pdf?paper_size=Letter&document=answer_key`,
+    `${paperUrl}/pdf?${search}&document=answer_key`,
     { timeout: 120_000 },
   );
   expect(answerKeyResponse.status()).toBe(200);

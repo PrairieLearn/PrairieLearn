@@ -11,7 +11,11 @@ import {
   type PaperSize,
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
+  createDocxOutput,
+  createPdfOutput,
 } from '@prairielearn/printing';
+import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 import { parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
@@ -30,6 +34,7 @@ import {
   getPrintRenderer,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
+  validatePrintDocument,
   validateQuestionsForPrinting,
 } from '../../lib/printing.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
@@ -265,40 +270,51 @@ function createDocumentHandler(format: PrintFormat) {
         }),
     };
     const renderer = getPrintRenderer();
-    let output: Buffer;
-    if (format === 'pdf') {
-      output = await renderer.renderPdf({ ...renderOptions, pageCode });
-    } else {
-      const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-      output = await renderer.renderDocx({
-        ...renderOptions,
-        // The question count and points are only known once the page has rendered and
-        // omitted any broken questions, so the cover reads them back from the page.
-        cover: layout.includeCoverPage
-          ? (pageDataset) =>
-              buildPrintableCover({
-                resLocals: res.locals,
-                document,
-                formLabel: layout.formLabel,
-                identityFields: layout.identityFields,
-                questionCount: Number(pageDataset.printQuestionCount),
-                maxPoints: Number(pageDataset.printMaxPoints),
-                assessmentTextHtml,
-                honorCodeHtml,
-                includeHonorCode:
-                  layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
-                gradingTable: pageDataset.printGradingTable
-                  ? PrintGradingTableSchema.parse(JSON.parse(pageDataset.printGradingTable))
-                  : undefined,
-              })
-          : undefined,
-        footerLabel: getPrintFooterLabel({
-          document,
-          formId: res.locals.assessment_instance.id,
-          formLabel: layout.formLabel,
-        }),
-      });
-    }
+    const output = run(() => {
+      switch (format) {
+        case 'pdf':
+          return createPdfOutput(pageCode);
+        case 'docx': {
+          const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+          return createDocxOutput({
+            // The question count and points are only known once the page has rendered and
+            // omitted any broken questions, so the cover reads them back from the page.
+            cover: layout.includeCoverPage
+              ? (pageDataset) =>
+                  buildPrintableCover({
+                    resLocals: res.locals,
+                    document,
+                    formLabel: layout.formLabel,
+                    identityFields: layout.identityFields,
+                    questionCount: Number(pageDataset.printQuestionCount),
+                    maxPoints: Number(pageDataset.printMaxPoints),
+                    assessmentTextHtml,
+                    honorCodeHtml,
+                    includeHonorCode:
+                      layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+                    gradingTable: pageDataset.printGradingTable
+                      ? PrintGradingTableSchema.parse(JSON.parse(pageDataset.printGradingTable))
+                      : undefined,
+                  })
+              : undefined,
+            footerLabel: getPrintFooterLabel({
+              document,
+              formId: res.locals.assessment_instance.id,
+              formLabel: layout.formLabel,
+            }),
+          });
+        }
+        default:
+          return assertNever(format);
+      }
+    });
+    const contents = await renderer.render(renderOptions, {
+      ...output,
+      produce: async (page) => {
+        await validatePrintDocument(page);
+        return await output.produce(page);
+      },
+    });
 
     const { contentType, disposition, extension } = PRINT_FORMATS[format];
     const filename =
@@ -317,7 +333,7 @@ function createDocumentHandler(format: PrintFormat) {
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
-    res.send(output);
+    res.send(contents);
   });
 }
 

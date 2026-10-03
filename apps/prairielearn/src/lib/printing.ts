@@ -6,6 +6,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import {
   PrintRenderer,
+  type PrintablePageOutput,
   type QuestionBlockSize,
   namespaceQuestionHtmls,
 } from '@prairielearn/printing';
@@ -76,6 +77,34 @@ export async function closePrintRenderer(): Promise<void> {
 export function isBrowserRenderingAvailable(): boolean {
   return config.devMode || config.printingPlaywrightWsEndpoint !== null;
 }
+
+/** Previews may omit broken questions for review; downloads must include every selected question. */
+export const validatePrintDocument: PrintablePageOutput<{
+  coverPageCount: number;
+}>['produce'] = async (page) => {
+  const state = await page.evaluate(() => {
+    const sheets = [...document.querySelectorAll('.pagedjs_page')];
+    const data = document.documentElement.dataset;
+    return {
+      questionCount: Number(data.printQuestionCount),
+      omittedCount: Number(data.printOmittedQuestionCount),
+      coverPageCount: sheets.findIndex((sheet) => sheet.querySelector('.printing-question')),
+      document: data.printDocument,
+      formLabel: data.printFormLabel,
+    };
+  });
+  if (!state.questionCount || state.omittedCount || state.coverPageCount < 0) {
+    let label = state.formLabel ? `Form ${state.formLabel}` : 'This assessment';
+    if (state.document === 'answer_key') {
+      label = state.formLabel ? `The answer key for ${label}` : 'This answer key';
+    }
+    throw new HttpStatusError(
+      400,
+      `${label} has missing or unprintable questions. Review its preview and exclude or fix those questions before exporting.`,
+    );
+  }
+  return { coverPageCount: state.coverPageCount };
+};
 
 export interface OmittedQuestionWarning {
   code: typeof BROKEN_QUESTION_FAILURE_CODE;
