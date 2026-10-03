@@ -59,8 +59,8 @@ function createBrowserHarness({
         }),
         newPage: vi.fn(async () => page),
         close: vi.fn(async () => {
-          openContexts -= 1;
           await contextClose();
+          openContexts -= 1;
         }),
       } as unknown as BrowserContext;
       pages.push(page);
@@ -305,6 +305,48 @@ describe('PrintRenderer', () => {
     expect(harness.contexts[0].close).toHaveBeenCalledOnce();
     expect(harness.browser.close).not.toHaveBeenCalled();
     expect(playwrightMocks.launch).toHaveBeenCalledOnce();
+  });
+
+  it('waits for timed-out context cleanup before starting another render', async () => {
+    const closeGate = createGate();
+    const harness = createBrowserHarness({
+      pdf: async (renderIndex) =>
+        renderIndex === 0 ? await new Promise<never>(() => undefined) : Buffer.from('%PDF-test'),
+      contextClose: async () => await closeGate.opened,
+    });
+    const renderer = new PrintRenderer();
+
+    const first = renderer.renderPdf({ url: 'http://localhost:3000/print/stalled', timeoutMs: 20 });
+    const second = renderer.renderPdf({ url: 'http://localhost:3000/print/next', timeoutMs: 2000 });
+
+    try {
+      await vi.waitFor(() => expect(harness.contexts[0].close).toHaveBeenCalledOnce());
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(harness.browser.newContext).toHaveBeenCalledOnce();
+      expect(harness.getOpenContexts()).toBe(1);
+    } finally {
+      closeGate.open();
+    }
+
+    await expect(first).rejects.toThrow('Timed out after 20 ms rendering the PDF');
+    await expect(second).resolves.toEqual(Buffer.from('%PDF-test'));
+    expect(harness.getPeakOpenContexts()).toBe(1);
+  });
+
+  it('discards the browser when closing a context fails', async () => {
+    const firstBrowser = createBrowserHarness({
+      contextClose: async () => {
+        throw new Error('Context close failed');
+      },
+    });
+    const renderer = new PrintRenderer();
+
+    await renderer.renderPdf({ url: 'http://localhost:3000/print/first' });
+    expect(firstBrowser.browser.close).toHaveBeenCalledOnce();
+
+    createBrowserHarness();
+    await renderer.renderPdf({ url: 'http://localhost:3000/print/second' });
+    expect(playwrightMocks.launch).toHaveBeenCalledTimes(2);
   });
 
   it('discards the browser when a context does not close promptly', async () => {
