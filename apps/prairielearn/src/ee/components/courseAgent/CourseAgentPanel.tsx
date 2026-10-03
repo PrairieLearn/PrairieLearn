@@ -12,7 +12,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Alert, Button, Dropdown, Form, Modal, Offcanvas } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Form, Modal, Offcanvas, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import {
@@ -24,6 +24,7 @@ import {
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
 
 import { formatCourseAgentDate } from '../../../lib/course-agent-date.js';
 import type { CourseAgentPanelState } from '../../../lib/course-agent-panel.js';
@@ -40,6 +41,19 @@ import { readPanelState, savePanelState, usePanelState } from './panelState.js';
 
 const pendingApprovalMessage =
   'A code change is pending approval. After approving or denying it, you can send a message.';
+
+function approvalPresentation(status: ApprovalDisplay['status']) {
+  switch (status) {
+    case 'pending':
+      return { text: 'Review requested', color: '', icon: 'bi-exclamation-circle-fill' };
+    case 'approved':
+      return { text: 'Approved', color: 'text-success', icon: 'bi-check-lg' };
+    case 'denied':
+      return { text: 'Denied', color: 'text-danger', icon: 'bi-x-lg' };
+    default:
+      assertNever(status);
+  }
+}
 
 function subscribeMobile(onChange: () => void) {
   const query = window.matchMedia('(max-width: 767.98px)');
@@ -359,6 +373,8 @@ function Conversation({
   const send = useMutation(trpc.courseAgent.send.mutationOptions());
   const cancel = useMutation(trpc.courseAgent.stop.mutationOptions());
   const cleanup = useMutation(trpc.courseAgent.cleanup.mutationOptions());
+  const decision = useMutation(trpc.courseAgent.decide.mutationOptions());
+  const prepare = useMutation(trpc.courseAgent.prepare.mutationOptions());
   const working =
     !snapshot.blocked &&
     (send.isPending ||
@@ -502,8 +518,20 @@ function Conversation({
     }
   }
 
+  function decide(approval: ApprovalDisplay, approved: boolean) {
+    decision.mutate({
+      conversationId: id,
+      decision: {
+        id: approval.id,
+        digest: approval.digest,
+        expectedRevision: snapshot.revision,
+        approved,
+      },
+    });
+  }
   const transcriptMessages = mergeSnapshotMessages(snapshot.messages, messages);
-  const mutationError = create.error ?? send.error ?? cancel.error ?? cleanup.error;
+  const mutationError =
+    create.error ?? send.error ?? cancel.error ?? decision.error ?? prepare.error ?? cleanup.error;
   return (
     <>
       {renderPicker(startingAgent)}
@@ -526,9 +554,28 @@ function Conversation({
         </Alert>
       )}
       <AppErrorAlert
-        error={getAppError<CourseAgentError['Create' | 'Send' | 'Stop' | 'Cleanup']>(mutationError)}
+        error={getAppError<
+          CourseAgentError['Create' | 'Send' | 'Stop' | 'Decide' | 'Prepare' | 'Cleanup']
+        >(mutationError)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
+      {snapshot.preparation?.error && (
+        <Alert
+          variant="warning"
+          className="d-flex align-items-center justify-content-between gap-3"
+        >
+          <span>{snapshot.preparation.error}</span>
+          <Button
+            size="sm"
+            disabled={prepare.isPending}
+            onClick={() =>
+              prepare.mutate({ conversationId: id, operationId: snapshot.preparation!.id })
+            }
+          >
+            Retry preparation
+          </Button>
+        </Alert>
+      )}
       {snapshot.diagnostics?.cleanup?.error && (
         <Alert
           variant="warning"
@@ -575,7 +622,113 @@ function Conversation({
                 : transcriptMessages
             }
             approvals={snapshot.approvals ?? []}
-            renderCodeChange={() => null}
+            renderCodeChange={(approval) => {
+              const deciding = decision.isPending && decision.variables.decision.id === approval.id;
+              const presentation = approvalPresentation(approval.status);
+              return (
+                <section
+                  className="d-flex align-items-center flex-wrap gap-3 my-2 p-2 border rounded bg-body w-100"
+                  aria-label="Code change"
+                >
+                  <span
+                    className={clsx('d-inline-flex align-items-center gap-1', presentation.color)}
+                  >
+                    <i
+                      className={clsx(
+                        'bi',
+                        approval.status === 'pending' && 'text-warning',
+                        presentation.icon,
+                      )}
+                      aria-hidden="true"
+                    />
+                    {presentation.text}
+                  </span>
+                  <div className="ms-auto d-flex align-items-center flex-wrap gap-2">
+                    <ChangeDiff diff={approval.diff} />
+                    {(snapshot.approval?.id === approval.id || deciding) && (
+                      <>
+                        {approval.status === 'pending' || deciding ? (
+                          <>
+                            <span className="text-muted mx-1" aria-hidden="true">
+                              ·
+                            </span>
+                            <Button
+                              size="sm"
+                              disabled={
+                                decision.isPending || snapshot.publication?.status === 'invalid'
+                              }
+                              onClick={() => decide(approval, true)}
+                            >
+                              {deciding && decision.variables.decision.approved ? (
+                                <>
+                                  <Spinner
+                                    animation="border"
+                                    size="sm"
+                                    className="me-1"
+                                    aria-hidden="true"
+                                  />
+                                  Approving…
+                                </>
+                              ) : (
+                                'Approve'
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="text-body text-decoration-none"
+                              disabled={decision.isPending}
+                              onClick={() => decide(approval, false)}
+                            >
+                              {deciding && !decision.variables.decision.approved ? (
+                                <>
+                                  <Spinner
+                                    animation="border"
+                                    size="sm"
+                                    className="me-1"
+                                    aria-hidden="true"
+                                  />
+                                  Denying…
+                                </>
+                              ) : (
+                                'Deny'
+                              )}
+                            </Button>
+                          </>
+                        ) : (
+                          (snapshot.publication?.status === 'retry' ||
+                            (decision.error && !snapshot.publication?.delivered)) &&
+                          !decision.isPending && (
+                            <Button
+                              onClick={() => decide(approval, approval.status === 'approved')}
+                            >
+                              Retry completion
+                            </Button>
+                          )
+                        )}
+                        {!decision.isPending &&
+                          ['publishing', 'syncing'].includes(
+                            snapshot.publication?.status ?? '',
+                          ) && (
+                            <span
+                              role="status"
+                              className="text-muted d-inline-flex align-items-center gap-2"
+                            >
+                              <Spinner animation="border" size="sm" aria-hidden="true" />
+                              {snapshot.publication?.status === 'syncing'
+                                ? 'Syncing course…'
+                                : 'Publishing…'}
+                            </span>
+                          )}
+                      </>
+                    )}
+                  </div>
+                  {snapshot.approval?.id === approval.id && snapshot.publication?.error && (
+                    <span className="text-danger w-100 small">{snapshot.publication.error}</span>
+                  )}
+                </section>
+              );
+            }}
           />
         )}
         <div role="status" aria-live="polite" className="px-3 pb-3">
@@ -868,6 +1021,51 @@ function toolDetails(part: UIMessage['parts'][number]) {
 }
 
 CourseAgentPanel.displayName = 'CourseAgentPanel';
+
+function ChangeDiff({ diff }: { diff: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button
+        variant="link"
+        className="p-0 text-decoration-none align-baseline"
+        onClick={() => setOpen(true)}
+      >
+        View changes
+      </Button>
+      <Modal
+        show={open}
+        size="xl"
+        aria-labelledby="course-agent-diff-title"
+        scrollable
+        onHide={() => setOpen(false)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title id="course-agent-diff-title">Code changes</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <pre className="course-agent-diff">
+            {diff.split('\n').map((line, index) => (
+              <span
+                key={index}
+                className={
+                  line.startsWith('+') && !line.startsWith('+++')
+                    ? 'bg-success-subtle'
+                    : line.startsWith('-') && !line.startsWith('---')
+                      ? 'bg-danger-subtle'
+                      : ''
+                }
+              >
+                {line}
+                {'\n'}
+              </span>
+            ))}
+          </pre>
+        </Modal.Body>
+      </Modal>
+    </>
+  );
+}
 
 function SandboxStatistics({
   diagnostics,

@@ -68,6 +68,7 @@ export async function reserveOperation(
   operation_id: string,
   payload: Record<string, unknown>,
   expected: number,
+  gate = true,
 ) {
   return runInTransactionAsync(async () => {
     const row = await queryRow(sql.lock, { id: conversation.id }, CourseAgentConversationSchema);
@@ -94,6 +95,15 @@ export async function reserveOperation(
       throw new TRPCError({
         code: 'CONFLICT',
         message: 'Conversation changed. Refresh before retrying; your draft is preserved.',
+      });
+    }
+    if (
+      gate &&
+      (await queryRow(sql.pending, { id: row.id }, z.object({ pending: z.boolean() }))).pending
+    ) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message: 'Resolve the pending proposal before sending another message.',
       });
     }
     const { revision } = await queryRow(

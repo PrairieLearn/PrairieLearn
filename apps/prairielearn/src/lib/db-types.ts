@@ -724,6 +724,27 @@ export const CourseAgentOperationSchema = z.object({
   revision: z.number(),
 });
 export type CourseAgentOperation = z.infer<typeof CourseAgentOperationSchema>;
+export const CourseAgentProposalSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  decision: z.boolean().nullable(),
+  delivered: z.boolean(),
+  digest: z.string(),
+  error: z.string().nullable(),
+  id: IdSchema,
+  operation_id: z.string(),
+  outcome: z.string().nullable(),
+  outcome_success: z.boolean().nullable(),
+  payload: z.json(),
+  prepared: z.boolean(),
+  published_sha: z.string().nullable(),
+  sequence: z.number(),
+  sync_diagnostics: z.string().nullable(),
+  sync_job_sequence_id: IdSchema.nullable(),
+  sync_validation_failed: z.boolean(),
+  synced_sha: z.string().nullable(),
+});
+export type CourseAgentProposal = z.infer<typeof CourseAgentProposalSchema>;
 export const CourseAgentExecutionSchema = z.object({
   admitted_at: DateFromISOString,
   cached_input_tokens: z.coerce.number().nullable(),
@@ -1843,6 +1864,7 @@ export const TableNames = [
   'course_agent_conversations',
   'course_agent_executions',
   'course_agent_operations',
+  'course_agent_proposals',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',

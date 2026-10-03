@@ -1,7 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { ChatError, sendRequestSchema } from '@prairielearn/course-agent-contract';
+import {
+  ChatError,
+  approvalDecisionSchema,
+  sendRequestSchema,
+} from '@prairielearn/course-agent-contract';
 import { IdSchema } from '@prairielearn/zod';
 
 import { formatCourseAgentDate } from '../../lib/course-agent-date.js';
@@ -16,6 +20,7 @@ import {
   selectConversationActivity,
 } from '../../models/course-agent-conversation.js';
 import { rejectExecution, selectOptionalExecution } from '../../models/course-agent-execution.js';
+import { selectOptionalProposal } from '../../models/course-agent-proposal.js';
 
 import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.js';
 
@@ -24,9 +29,9 @@ const procedure = t.procedure
   .use(requireNotExampleCourse)
   .use(async ({ ctx, next }) => {
     if (!isEnterprise()) throw new TRPCError({ code: 'FORBIDDEN' });
-    const { authorize, destination, provider, newWorkEnabled } =
+    const { authorize, destination, provider, prepare, complete, newWorkEnabled } =
       await import('../../ee/lib/course-agent/service.js');
-    const service = { authorize, destination, provider, newWorkEnabled };
+    const service = { authorize, destination, provider, prepare, complete, newWorkEnabled };
     const scope: AgentScope = {
       course_id: ctx.course.id,
       user_id: ctx.authz_data.user.id,
@@ -94,7 +99,7 @@ export const courseAgentRouter = t.router({
       let dispatched = false;
       try {
         await nameConversation(c.id, title);
-        await observe(c, chat);
+        await observe(c, chat, (tool) => ctx.service.prepare(ctx.scope, c, tool));
         dispatched = true;
         await chat.send(
           { ...input.message, dispatchId: execution.dispatch_id },
@@ -122,6 +127,42 @@ export const courseAgentRouter = t.router({
     );
     await chat.retryCleanup(AbortSignal.timeout(30000));
   }),
+  decide: procedure
+    .input(id.extend({ decision: approvalDecisionSchema }))
+    .mutation(async ({ ctx, input }) =>
+      ctx.service.complete(
+        ctx.scope,
+        await selectConversation(ctx.scope, input.conversationId),
+        input.decision,
+      ),
+    ),
+  prepare: procedure
+    .input(id.extend({ operationId: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = await selectConversation(ctx.scope, input.conversationId);
+      const row = await selectOptionalProposal(c.id, input.operationId);
+      const retained = !row
+        ? (await (await ctx.service.provider(ctx.scope, c)).getSnapshot(AbortSignal.timeout(10000)))
+            .pendingTool
+        : undefined;
+      if (!row && retained?.id !== input.operationId) throw new TRPCError({ code: 'NOT_FOUND' });
+      await ctx.service.prepare(
+        ctx.scope,
+        c,
+        row
+          ? {
+              id: row.operation_id,
+              sequence: row.sequence,
+              name: 'push_sync',
+              args: row.payload,
+            }
+          : retained!,
+      );
+      if ((await selectOptionalProposal(c.id, input.operationId))?.prepared) {
+        const chat = await ctx.service.provider(ctx.scope, c);
+        await chat.markToolPrepared(input.operationId, AbortSignal.timeout(30000));
+      }
+    }),
 });
 
 export interface CourseAgentError {
@@ -131,4 +172,6 @@ export interface CourseAgentError {
   Send: never;
   Stop: never;
   Cleanup: never;
+  Decide: never;
+  Prepare: never;
 }
