@@ -961,7 +961,7 @@ test('selects whole columns and rows from their headings', async ({ page, course
   await expect(grid.getByRole('gridcell', { name: /^B1,/ })).toBeFocused();
 
   await grid.locator('.pl-spreadsheet-row-header', { hasText: /^3$/ }).click();
-  await expect(indicator).toHaveText('3:3');
+  await expect(indicator).toHaveText('A3:3');
   await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(3);
 
   await grid.getByRole('gridcell', { name: /^A2,/ }).click();

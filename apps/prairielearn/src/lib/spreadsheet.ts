@@ -3,6 +3,7 @@ import * as z from 'zod/v4';
 import {
   type SpreadsheetEngineResult,
   SpreadsheetEngineWorkbook,
+  findRowFirstReference,
   rewriteFormulaReferences,
 } from './spreadsheet-engine.js';
 
@@ -717,6 +718,10 @@ export function validateFormula(formula: string): string | null {
     sheetNames.some((name) => name.includes('[') || name.includes(']'))
   ) {
     return 'External references, structured references, and array formulas are not supported.';
+  }
+  const rowFirstReference = findRowFirstReference(formula);
+  if (rowFirstReference !== null) {
+    return `Reference ${rowFirstReference} must start with a column, as in A3:3 instead of 3:3.`;
   }
   const functions = source.matchAll(/(?<![A-Za-zÀ-ʯ0-9_.])([A-Za-zÀ-ʯ0-9_.]+)\s*\(/g);
   for (const match of functions) {

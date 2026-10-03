@@ -78,10 +78,14 @@ Each Python-defined sheet contains:
 
 Like Google Sheets, an author-facing range may leave an endpoint open-ended by
 omitting its row or column: `B2:B` runs from `B2` to the last row, `A:C` covers
-every row of columns A to C, and `3:5` covers every column of rows 3 to 5. A
+every row of columns A to C, and `A3:5` covers every column of rows 3 to 5. A
 `student_range` extends to the edge of the sheet, and editable ranges and
 parameters extend to the edge of the sheet's student range. Open-ended ranges are
-resolved when the variant is generated; student formulas still use closed ranges.
+resolved when the variant is generated.
+
+Every address and range must start with a column letter, in attributes, author
+formulas, and student formulas alike. Write `A3:3` or `A3:Z3` rather than `3:3` or
+`3:Z3`.
 
 Template addresses use source-workbook coordinates. PrairieLearn rebases each
 `student_range` into a student-local address space whose top-left cell is `A1`.
@@ -152,7 +156,7 @@ may reference visible or hidden cells. A visible formula may reference only cell
 inside the union of declared student ranges; direct, transitive, cross-sheet,
 whole-row, and whole-column references that escape that boundary are rejected both
 when the variant is generated and when a submission is normalized. In student
-formulas, open-ended references such as `B2:B`, `B:B`, and `2:2` stop at the edge
+formulas, open-ended references such as `B2:B`, `B:B`, and `A2:2` stop at the edge
 of the student sheet, so they read only visible cells.
 
 File ingest imports cell values and formulas, not XLSX styles, merged cells,

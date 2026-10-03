@@ -101,7 +101,10 @@ function isCellInRange(range: CellRange | null, row: number, column: number) {
   return row >= firstRow && row <= lastRow && column >= firstColumn && column <= lastColumn;
 }
 
-/** Describes a selection as Excel does: `B:B` for whole columns, `3:3` for whole rows. */
+/**
+ * Describes a selection as `B:B` for whole columns and `A3:3` for whole rows, since
+ * references must start with a column.
+ */
 function formatSelection(range: CellRange): string {
   if (range.lines === 'columns') {
     const columnName = (column: number) => cellAddress(0, column).replace(/1$/, '');
@@ -110,7 +113,7 @@ function formatSelection(range: CellRange): string {
     )}`;
   }
   if (range.lines === 'rows') {
-    return `${Math.min(range.anchor.row, range.focus.row) + 1}:${
+    return `A${Math.min(range.anchor.row, range.focus.row) + 1}:${
       Math.max(range.anchor.row, range.focus.row) + 1
     }`;
   }

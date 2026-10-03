@@ -296,34 +296,33 @@ function shiftEndpoint(text: string, options: RewriteOptions): string | null | u
 
 /**
  * Fills in the open bounds of a two-endpoint range, such as `B2:B` or `A:C`, with the
- * edges of a `rows` by `columns` grid. An open end never comes before the range's
- * start, so a range that starts past the grid stays outside it.
+ * edges of a `rows` by `columns` grid. As in PrairieLearn's Python helpers, an
+ * omitted coordinate runs to the far edge, so `B:B5` covers `B5` to the last row and
+ * a range that starts past the grid stays outside it.
  */
 function boundEndpoints(
   [start, end]: [string, string],
   { rows, columns }: { rows: number; columns: number },
 ): [string, string] {
   const parse = (text: string) => {
-    const cell = CELL_ENDPOINT.exec(text);
-    if (cell) return { column: `${cell[1]}${cell[2]}`, row: `${cell[3]}${cell[4]}` };
-    const column = COLUMN_ENDPOINT.exec(text);
-    if (column) return { column: text, row: null };
-    return { column: null, row: text };
+    const match = /^\$?([A-Za-z]*)\$?([0-9]*)$/.exec(text);
+    return {
+      column: match?.[1] ? columnIndex(match[1]) : null,
+      row: match?.[2] ? Number(match[2]) - 1 : null,
+    };
   };
   const first = parse(start);
   const last = parse(end);
   if (first.column !== null && first.row !== null && last.column !== null && last.row !== null) {
     return [start, end];
   }
-  const index = {
-    column: (text: string) => columnIndex(text.replace('$', '')),
-    row: (text: string) => Number(text.replace('$', '')) - 1,
-  };
-  const startColumn = first.column ?? columnName(0);
-  const startRow = first.row ?? '1';
-  const endColumn = last.column ?? columnName(Math.max(index.column(startColumn), columns - 1));
-  const endRow = last.row ?? String(Math.max(index.row(startRow), rows - 1) + 1);
-  return [`${startColumn}${startRow}`, `${endColumn}${endRow}`];
+  const axis = (from: number | null, to: number | null, edge: number) =>
+    from === null && to === null
+      ? [0, edge]
+      : [Math.min(from ?? edge, to ?? edge), Math.max(from ?? edge, to ?? edge)];
+  const [startRow, endRow] = axis(first.row, last.row, rows - 1);
+  const [startColumn, endColumn] = axis(first.column, last.column, columns - 1);
+  return [`${columnName(startColumn)}${startRow + 1}`, `${columnName(endColumn)}${endRow + 1}`];
 }
 
 /** Rewrites one engine `Range` operand, such as `A1`, `Sheet1!$A:$B`, or a name. */
@@ -362,22 +361,42 @@ interface EngineToken {
   end: number;
 }
 
+/** Tokenizes a formula as the engine will, or returns null if the engine cannot. */
+function tokenize(formula: string): EngineToken[] | null {
+  try {
+    const tokenizer = new bindings.Tokenizer(formula);
+    const tokens: EngineToken[] = tokenizer.tokens();
+    tokenizer.free();
+    return tokens;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns the first reference in a formula that starts with a row, such as `3:3` or
+ * `Sheet1!3:Z3`, or null if there is none. PrairieLearn requires every reference to
+ * start with a column, as in `A3:3`.
+ */
+export function findRowFirstReference(formula: string): string | null {
+  for (const token of tokenize(formula) ?? []) {
+    if (token.tokenType !== 'Operand' || token.subtype !== 'Range') continue;
+    const rest = splitSheet(token.value)?.rest ?? token.value;
+    if (/^\$?[0-9]/.test(rest)) return token.value;
+  }
+  return null;
+}
+
 /**
  * Rewrites every reference in a formula using the engine's own tokenizer, so that
  * the rewrite sees exactly the references the engine will. References to missing
  * sheets, or shifted off the grid, become `#REF!` as they do in Excel.
  */
 export function rewriteFormulaReferences(formula: string, options: RewriteOptions): string {
-  let tokens: EngineToken[];
-  try {
-    const tokenizer = new bindings.Tokenizer(formula);
-    tokens = tokenizer.tokens();
-    tokenizer.free();
-  } catch {
-    // The engine reports a formula it cannot tokenize as #ERROR! without resolving
-    // any of its references.
-    return formula;
-  }
+  const tokens = tokenize(formula);
+  // The engine reports a formula it cannot tokenize as #ERROR! without resolving
+  // any of its references.
+  if (!tokens) return formula;
   // Token positions are UTF-8 byte offsets.
   const bytes = new TextEncoder().encode(formula);
   const decoder = new TextDecoder();

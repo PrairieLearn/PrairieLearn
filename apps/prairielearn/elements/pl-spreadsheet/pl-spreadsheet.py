@@ -1181,7 +1181,7 @@ def _validate_visible_formula_references(
                     ),
                 ),
             )
-        elif isinstance(start, psp.FormulaColumnReference):
+        else:
             column_end = end if isinstance(end, psp.FormulaColumnReference) else start
             referenced = psp.AddressRange(
                 psp.Address(
@@ -1195,19 +1195,6 @@ def _validate_visible_formula_references(
                     column=max(
                         _column_index(start.column), _column_index(column_end.column)
                     ),
-                ),
-            )
-        else:
-            row_end = end if isinstance(end, psp.FormulaRowReference) else start
-            if not isinstance(start, psp.FormulaRowReference) or not isinstance(
-                row_end, psp.FormulaRowReference
-            ):
-                raise TypeError("Spreadsheet formula range endpoints are incompatible.")
-            referenced = psp.AddressRange(
-                psp.Address(row=min(start.row, row_end.row) - 1, column=0),
-                psp.Address(
-                    row=max(start.row, row_end.row) - 1,
-                    column=source["columns"] - 1,
                 ),
             )
         if not student_range.contains_range(referenced):
@@ -1227,9 +1214,7 @@ def _validate_visible_formula_references(
                     validate_reference(sheet["name"], node.reference)
                 elif isinstance(
                     node,
-                    psp.FormulaCellRangeNode
-                    | psp.FormulaColumnRangeNode
-                    | psp.FormulaRowRangeNode,
+                    psp.FormulaCellRangeNode | psp.FormulaColumnRangeNode,
                 ):
                     validate_reference(sheet["name"], node.start, node.end)
                 else:
