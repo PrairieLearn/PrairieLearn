@@ -1,42 +1,57 @@
-import { JSDOM } from 'jsdom';
+import { type ServerResponse, createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+
+import { chromium } from '@playwright/test';
 import { expect, it, vi } from 'vitest';
 
 import { waitForPrintImages } from './print-image-layout.js';
 
 it('waits for images in the question and its shadow roots', async () => {
-  const document = new JSDOM('<div id="source"><img src="light.png"><div id="host"></div></div>')
-    .window.document;
-  const source = document.querySelector<HTMLElement>('#source')!;
-  const lightImage = source.querySelector('img')!;
-  const shadowImage = document.createElement('img');
-  shadowImage.src = 'shadow.png';
-  source.querySelector('#host')!.attachShadow({ mode: 'open' }).append(shadowImage);
-
-  let finishShadowDecode!: () => void;
-  const shadowDecode = new Promise<void>((resolve) => {
-    finishShadowDecode = resolve;
+  const responses = new Map<string, ServerResponse>();
+  const server = createServer((request, response) => {
+    responses.set(request.url!, response);
   });
-  for (const image of [lightImage, shadowImage]) {
-    Object.defineProperties(image, {
-      complete: { value: true },
-      naturalWidth: { value: 100 },
-    });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const browser = await chromium.launch();
+  const sendImage = (response: ServerResponse) => {
+    response.setHeader('Content-Type', 'image/svg+xml');
+    response.end(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>',
+    );
+  };
+  try {
+    const page = await browser.newPage();
+    await page.setContent(
+      `<div id="source"><img src="${origin}/light.svg"><div id="host"></div></div>`,
+      { waitUntil: 'domcontentloaded' },
+    );
+    await page.locator('#host').evaluate((host, origin) => {
+      const image = document.createElement('img');
+      image.src = `${origin}/shadow.svg`;
+      host.attachShadow({ mode: 'open' }).append(image);
+    }, origin);
+    await vi.waitFor(() => expect(responses.size).toBe(2));
+
+    let complete = false;
+    const waiting = page
+      .locator('#source')
+      .evaluate(waitForPrintImages)
+      .then(() => {
+        complete = true;
+      });
+    sendImage(responses.get('/light.svg')!);
+    await page.waitForFunction(() => document.querySelector('img')!.complete);
+    expect(complete).toBe(false);
+
+    sendImage(responses.get('/shadow.svg')!);
+    await waiting;
+    expect(complete).toBe(true);
+  } finally {
+    await browser.close();
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
   }
-  const lightDecode = vi.fn(async () => undefined);
-  const decodeShadow = vi.fn(() => shadowDecode);
-  lightImage.decode = lightDecode;
-  shadowImage.decode = decodeShadow;
-
-  let complete = false;
-  const waiting = waitForPrintImages(source).then(() => {
-    complete = true;
-  });
-  await Promise.resolve();
-  expect(lightDecode).toHaveBeenCalledOnce();
-  expect(decodeShadow).toHaveBeenCalledOnce();
-  expect(complete).toBe(false);
-
-  finishShadowDecode();
-  await waiting;
-  expect(complete).toBe(true);
 });

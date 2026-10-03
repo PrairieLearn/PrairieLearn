@@ -68,7 +68,7 @@ export function fitPrintChoiceImages(questions: Iterable<HTMLElement>, pageHeigh
     };
 
     // If the text alone cannot fit, retain the authored images and let the existing page
-    // planner handle the long question (or report that its requested block is too small).
+    // planner handle the long question.
     scaleImages(0);
     if (question.getBoundingClientRect().height > availableHeight) {
       restoreImages();
