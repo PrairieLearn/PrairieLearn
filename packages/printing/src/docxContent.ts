@@ -192,13 +192,15 @@ export function buildDocxContent(
 
   function guidedInputGroup(node: HtmlElement, format: Format, maxWidth: number): Table | null {
     const children = $(node)
-      .children()
+      .contents()
       .toArray()
-      .filter((child): child is HtmlElement => 'attribs' in child);
-    const fields = children.filter((child) => has(child, '.printing-response-field'));
+      .filter((child) => (child.type === 'text' ? child.data.trim() !== '' : 'attribs' in child));
+    const fields = children.filter(
+      (child): child is HtmlElement => 'attribs' in child && has(child, '.printing-response-field'),
+    );
     if (
       fields.length !== 1 ||
-      children.some((child) => has(child, 'table, .printing-response-area'))
+      children.some((child) => 'attribs' in child && has(child, 'table, .printing-response-area'))
     ) {
       return null;
     }
@@ -211,17 +213,18 @@ export function buildDocxContent(
     const fieldIndex = children.indexOf(field);
     const before = children.slice(0, fieldIndex);
     const after = children.slice(fieldIndex + 1);
+    const measuredWidth = (child: HtmlNode) =>
+      'attribs' in child
+        ? number(child, 'data-docx-width', $(child).text().length * 8)
+        : child.type === 'text'
+          ? child.data.trim().length * 8
+          : 0;
     const columns = [
       ...(before.length > 0
         ? [
             {
               nodes: before,
-              width:
-                before.reduce(
-                  (sum, child) =>
-                    sum + number(child, 'data-docx-width', $(child).text().length * 8),
-                  0,
-                ) + 5,
+              width: before.reduce((sum, child) => sum + measuredWidth(child), 0) + 5,
             },
           ]
         : []),
@@ -230,10 +233,7 @@ export function buildDocxContent(
         ? [
             {
               nodes: after,
-              width: after.reduce(
-                (sum, child) => sum + number(child, 'data-docx-width', $(child).text().length * 8),
-                0,
-              ),
+              width: after.reduce((sum, child) => sum + measuredWidth(child), 0),
             },
           ]
         : []),
@@ -275,6 +275,7 @@ export function buildDocxContent(
 
   function response(node: HtmlElement, maxWidth: number): Block[] {
     const label = $(node).find('.printing-response-label').first().text();
+    const instructions = $(node).find('.printing-response-instructions').toArray();
     const lines = $(node).find('.printing-response-lines').first()[0];
     const height = lines && 'attribs' in lines ? number(lines, 'data-docx-height', 206) : 206;
     const drawing = has(node, '.printing-drawing-response');
@@ -291,6 +292,12 @@ export function buildDocxContent(
             }),
           ]
         : []),
+      ...instructions.map((instruction) =>
+        paragraph(inline(instruction.children, { small: true }, maxWidth), {
+          keepNext: true,
+          spacing: { before: 0, after: 60 },
+        }),
+      ),
       new Table({
         width: { size, type: WidthType.DXA },
         columnWidths: [size],
