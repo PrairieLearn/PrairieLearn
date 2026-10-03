@@ -4,6 +4,7 @@ import path from 'node:path';
 import * as unzipper from 'unzipper';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
+import type { OmittedQuestionWarning } from '../../lib/printing.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
 import { getConfiguredUser } from '../utils/auth.js';
@@ -72,10 +73,16 @@ test('fills the cover grading table down columns using only included questions',
     expect(layout.pageBottom - layout.bottom).toBeLessThan(50);
     await expect(cover).toHaveCount(1);
   }
-  const response = await page.request.get(
-    `${base}/docx?paper_size=Letter&grading_table=true&exclude_question=2`,
-    { timeout: 120_000 },
-  );
+  const report = await page.request.get(`${base}?paper_size=Letter`);
+  const { warnings } = (await report.json()) as { warnings: OmittedQuestionWarning[] };
+  expect(warnings.map((warning) => warning.qid)).toEqual(['brokenGeneration', 'brokenPrepare']);
+  const search = new URLSearchParams({
+    paper_size: 'Letter',
+    grading_table: 'true',
+    exclude_question: '2',
+  });
+  for (const warning of warnings) search.append('exclude_question', warning.question_number);
+  const response = await page.request.get(`${base}/docx?${search}`, { timeout: 120_000 });
   expect(response.status()).toBe(200);
   const archive = await unzipper.Open.buffer(await response.body());
   const xml = (
