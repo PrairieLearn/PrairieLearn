@@ -224,12 +224,14 @@ test('reviews CSV file label replacement and a new invitation on mobile', async 
   await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
   await page.getByRole('button', { name: 'Manage enrollments' }).click();
   await page.getByRole('button', { name: 'Synchronize student list' }).click();
-  await page.getByRole('combobox', { name: 'Input format' }).selectOption('csv-file');
-  const input = page.getByLabel('CSV file', { exact: true });
+  await page.getByRole('radio', { name: 'CSV file', exact: true }).check();
+  const input = page.getByLabel('Choose CSV file', { exact: true });
   await input.setInputFiles({
     name: 'students.csv',
     mimeType: 'text/csv',
-    buffer: Buffer.from('\uFEFF' + `uid,label1\n${existingUid},Unknown`.replaceAll('\n', '\r\n')),
+    buffer: Buffer.from(
+      '\uFEFF' + `uid,labels\n${existingUid},"[""Unknown""]"`.replaceAll('\n', '\r\n'),
+    ),
   });
   await page.getByRole('button', { name: 'Compare', exact: true }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'unknown label' })).toBeVisible();
@@ -239,7 +241,7 @@ test('reviews CSV file label replacement and a new invitation on mobile', async 
     mimeType: 'text/csv',
     buffer: Buffer.from(
       '\uFEFF' +
-        `uid,label1,label2\n${existingUid},Extra time,\n${newUid},Section A,Extra time`.replaceAll(
+        `uid,labels\n${existingUid},"[""Extra time""]"\n${newUid},"[""Section A"", ""Extra time""]"`.replaceAll(
           '\n',
           '\r\n',
         ),
@@ -277,9 +279,12 @@ test('validates CSV files and clears the file when switching formats or reopenin
   await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
   await page.getByRole('button', { name: 'Manage enrollments' }).click();
   await page.getByRole('button', { name: 'Synchronize student list' }).click();
-  const format = page.getByRole('combobox', { name: 'Input format' });
-  await format.selectOption('csv-file');
-  const input = page.getByLabel('CSV file', { exact: true });
+  const format = page.getByRole('group', { name: 'Input format' });
+  await expect(format.getByRole('radio')).toHaveCount(2);
+  await expect(format.getByRole('radio', { name: 'UID list', exact: true })).toBeVisible();
+  await expect(format.getByRole('radio', { name: 'CSV file', exact: true })).toBeVisible();
+  await format.getByRole('radio', { name: 'CSV file', exact: true }).check();
+  const input = page.getByLabel('Choose CSV file', { exact: true });
   const compare = page.getByRole('button', { name: 'Compare', exact: true });
   await compare.click();
   await expect(page.getByText('Select a CSV file.', { exact: true })).toBeVisible();
@@ -308,22 +313,22 @@ test('validates CSV files and clears the file when switching formats or reopenin
   await compare.click();
   await expect(page.getByText('Review the changes below')).toBeVisible();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await format.selectOption('uids');
+  await format.getByRole('radio', { name: 'UID list', exact: true }).check();
   await page.getByRole('textbox', { name: 'Student UIDs' }).fill('pasted-student@example.com');
   await compare.click();
   await expect(
     page.getByRole('group', { name: 'Students to add' }).getByText('pasted-student@example.com'),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await format.selectOption('csv-file');
+  await format.getByRole('radio', { name: 'CSV file', exact: true }).check();
   await compare.click();
   await expect(page.getByText('Select a CSV file.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.getByRole('button', { name: 'Manage enrollments' }).click();
   await page.getByRole('button', { name: 'Synchronize student list' }).click();
-  await expect(format).toHaveValue('uids');
-  await format.selectOption('csv-file');
+  await expect(format.getByRole('radio', { name: 'UID list', exact: true })).toBeChecked();
+  await format.getByRole('radio', { name: 'CSV file', exact: true }).check();
   await compare.click();
   await expect(page.getByText('Select a CSV file.', { exact: true })).toBeVisible();
 });
