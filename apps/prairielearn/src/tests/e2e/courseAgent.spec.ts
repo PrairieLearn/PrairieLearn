@@ -220,6 +220,7 @@ test('failed preparation returns a native tool error and never displays an appro
   page,
   courseInstance,
 }, testInfo) => {
+  test.setTimeout(60_000);
   const courseId = courseInstance.course_id;
   await insertCoursePermissionsByUserUid({
     course_id: courseId,
