@@ -2462,6 +2462,9 @@ importers:
       '@prairielearn/qr-code':
         specifier: workspace:^
         version: link:../qr-code
+      '@prairielearn/utils':
+        specifier: workspace:^
+        version: link:../utils
       cheerio:
         specifier: ^1.2.0
         version: 1.2.0
