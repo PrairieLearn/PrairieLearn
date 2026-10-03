@@ -389,9 +389,11 @@ const infoPopoverConfig = {
 
 function AfterCompleteCard({
   title = 'After completion',
+  hasPrairieTest,
   children,
 }: {
   title?: string;
+  hasPrairieTest: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -415,7 +417,14 @@ function AfterCompleteCard({
           assessment.
         </div>
       </div>
-      <div className="d-flex flex-column gap-3">{children}</div>
+      <div className="d-flex flex-column gap-3">
+        {hasPrairieTest && (
+          <Alert variant="info" className="mb-0">
+            During active PrairieTest reservations, the exam’s visibility settings apply instead.
+          </Alert>
+        )}
+        {children}
+      </div>
     </div>
   );
 }
@@ -485,7 +494,7 @@ export function DefaultAfterCompleteForm({
     : 'a due date, time limit, late deadline, or PrairieTest exam';
 
   return (
-    <AfterCompleteCard title={title}>
+    <AfterCompleteCard title={title} hasPrairieTest={hasPrairieTest}>
       {!hasCompletionMechanism && (
         <Alert variant="info" className="mb-0">
           Without {automaticCompletionMechanisms}, these settings will only take effect if an
@@ -588,7 +597,7 @@ export function OverrideAfterCompleteForm({
   });
 
   return (
-    <AfterCompleteCard title={title}>
+    <AfterCompleteCard title={title} hasPrairieTest={hasPrairieTest}>
       <div>
         <FieldWrapper
           isOverridden={svOverridden}

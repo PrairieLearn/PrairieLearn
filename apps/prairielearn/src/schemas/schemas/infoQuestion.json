@@ -334,14 +334,7 @@
             "type": "string"
           },
           "additionalProperties": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"]
           },
           "description": "Environment variables to set inside the workspace container. Use a null value to unset a variable."
         },
@@ -391,29 +384,12 @@
             "enum": ["string", "number", "boolean"]
           },
           "default": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              }
-            ]
+            "type": ["string", "number", "boolean"]
           },
           "enum": {
             "type": "array",
             "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                }
-              ]
+              "type": ["string", "number"]
             }
           }
         },

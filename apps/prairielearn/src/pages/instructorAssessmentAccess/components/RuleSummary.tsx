@@ -948,7 +948,13 @@ export function DateTableView({
   );
 }
 
-export function AfterCompleteTableView({ rows }: { rows: AfterCompleteTableRow[] }) {
+export function AfterCompleteTableView({
+  rows,
+  hasPrairieTest,
+}: {
+  rows: AfterCompleteTableRow[];
+  hasPrairieTest: boolean;
+}) {
   if (rows.length === 0) return null;
   const errors = Array.from(new Set(rows.flatMap((row) => row.errors ?? [])));
   return (
@@ -991,6 +997,11 @@ export function AfterCompleteTableView({ rows }: { rows: AfterCompleteTableRow[]
           </div>
         ))}
       </div>
+      {hasPrairieTest && (
+        <div className="access-summary-card-footer">
+          During active PrairieTest reservations, the exam’s visibility settings apply instead.
+        </div>
+      )}
       {errors.length > 0 && (
         <div className="access-summary-card-footer text-danger">
           {errors.map((error) => (
@@ -1203,7 +1214,7 @@ export function PrairieTestExamsTable({
                   if (exam.afterCompleteQuestionsHidden && exam.afterCompleteScoreHidden) {
                     return 'Questions and score hidden';
                   } else if (exam.afterCompleteQuestionsHidden) {
-                    return 'Questions hidden';
+                    return 'Questions hidden · Score shown';
                   } else {
                     return 'Questions and score visible';
                   }
