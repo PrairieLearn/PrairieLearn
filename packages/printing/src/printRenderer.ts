@@ -259,7 +259,14 @@ export class PrintRenderer {
           await route.abort('blockedbyclient');
           return;
         }
-        await route.continue();
+        // Playwright only routes the first request in a redirect chain, so a redirect could
+        // otherwise leave the allowed origin without passing through these checks again.
+        const response = await route.fetch({ maxRedirects: 0 });
+        if (response.status() >= 300 && response.status() < 400) {
+          await route.abort('blockedbyclient');
+          return;
+        }
+        await route.fulfill({ response });
       });
       await context.routeWebSocket('**/*', async (webSocket) => {
         await webSocket.close({ code: 1008, reason: 'WebSockets are disabled while printing' });
