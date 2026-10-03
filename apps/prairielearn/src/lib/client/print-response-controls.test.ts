@@ -169,7 +169,7 @@ describe('printable response controls', () => {
 
   it('preserves ordering options, alternatives, and provided blocks without drag controls', () => {
     const question =
-      printQuestion(`<div class="pl-order-blocks-question-uuid"><button data-bs-content="&lt;p&gt;Your answer ordering does not matter.&lt;/p&gt;&lt;p&gt;Keyboard Controls: arrows&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Your answer should be indented.&lt;/strong&gt; Indent your tiles by dragging them.&lt;/p&gt;"></button>
+      printQuestion(`<div class="pl-order-blocks-question-uuid" data-ordering-required="false" data-indentation-required="true"><button data-bs-content="Arrange the blocks to answer the question."></button>
       <ul id="order-blocks-options-uuid">
         <li class="pl-order-block"><div class="pl-order-block-content">First</div></li>
         <li class="pl-order-blocks-pairing-indicator"><ul>
@@ -228,7 +228,8 @@ describe('printable response controls', () => {
   });
 
   it('uses blank number boxes without a duplicate written response for unindented ordering', () => {
-    const question = printQuestion(`<div class="pl-order-blocks-question-uuid">
+    const question =
+      printQuestion(`<div class="pl-order-blocks-question-uuid" data-ordering-required="true" data-indentation-required="false">
       <ul id="order-blocks-options-uuid">
         <li class="pl-order-block"><div class="pl-order-block-content">First</div></li>
         <li class="pl-order-block"><div class="pl-order-block-content">Second</div></li>
@@ -276,5 +277,11 @@ describe('printable response controls', () => {
     expect(question.textContent).not.toContain('Existing response');
     expect(question.textContent).toContain('Minimum 20 words');
     expect(question.querySelectorAll('[data-print-response-area]')).toHaveLength(2);
+  });
+
+  it.each(['not base64!', '/w=='])('rejects unreadable starter code (%s)', (encoded) => {
+    expect(() =>
+      printQuestion(`<div id="file-editor-test"><input type="hidden" value="${encoded}"></div>`),
+    ).toThrow('Starter code could not be read. Check the question’s file editor before printing.');
   });
 });
