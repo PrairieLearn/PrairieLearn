@@ -151,7 +151,9 @@ carry their results into the authoritative source workbook. A hidden source form
 may reference visible or hidden cells. A visible formula may reference only cells
 inside the union of declared student ranges; direct, transitive, cross-sheet,
 whole-row, and whole-column references that escape that boundary are rejected both
-when the variant is generated and when a submission is normalized.
+when the variant is generated and when a submission is normalized. In student
+formulas, open-ended references such as `B2:B`, `B:B`, and `2:2` stop at the edge
+of the student sheet, so they read only visible cells.
 
 File ingest imports cell values and formulas, not XLSX styles, merged cells,
 comments, charts, or macros.

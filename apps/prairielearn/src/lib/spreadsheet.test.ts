@@ -550,10 +550,28 @@ describe('evaluateSpreadsheet', () => {
     );
     assert.throws(
       () =>
-        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(B:B)' } })),
+        evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(B3:B)' } })),
       /outside declared student ranges/,
     );
     evaluateSpreadsheet(makeOffsetConfig(), makeSubmission({ Inputs: { A1: '=SUM(B1:B2)' } }));
+  });
+
+  it('resolves open-ended ranges to the edge of the student sheet', () => {
+    for (const [formula, value] of [
+      ['=SUM(B:B)', 4],
+      ['=AVERAGE(B1:B)', 4],
+      ['=SUM(1:1)', 6],
+    ] as const) {
+      const evaluation = evaluateSpreadsheet(
+        makeOffsetConfig(),
+        makeSubmission({ Inputs: { A2: formula } }),
+      );
+      assert.deepEqual(
+        evaluation.snapshot.sheets[0].cells.A2.result,
+        { type: 'number', value },
+        formula,
+      );
+    }
   });
 
   it('rejects required private outputs that are empty or contain an error', () => {
@@ -822,9 +840,6 @@ describe('adversarial student formulas', () => {
     const attacks = [
       '=VLOOKUP(1,A1:C2,3,FALSE)',
       '=HLOOKUP(1,A1:B3,3,FALSE)',
-      '=MATCH(31337,A:A,0)',
-      '=INDEX(A:A,1)',
-      '=INDEX(1:1,1)',
       '=SUM(A1:INDEX(A:A,5))',
       '=SUM(INDEX(A1:B2,1,1):C3)',
       '=SUMIF(A1:A2,">0",C1:C2)',
@@ -879,6 +894,15 @@ describe('adversarial student formulas', () => {
     ];
     for (const formula of mismatchedShapes) {
       assert.notMatch(JSON.stringify(evaluateAttack(formula)), /SENTINEL|31337/, formula);
+    }
+    // Whole columns and rows only reach the student range, so they cannot find hidden values.
+    for (const [formula, result] of [
+      ['=MATCH(31337,A:A,0)', { type: 'error', value: '#N/A', error_type: 'NA' }],
+      ['=INDEX(A:A,1)', { type: 'number', value: 1 }],
+      ['=INDEX(1:1,1)', { type: 'number', value: 1 }],
+      ['=SUM(B2:B)', { type: 'number', value: 3 }],
+    ] as const) {
+      assert.deepEqual(evaluateAttack(formula).grading!.outputs.attack, result, formula);
     }
     // As in Excel, a zero row and column select the whole range.
     const snapshot = evaluateAttack('=SUM(INDEX(B1:B2,0,0))');
