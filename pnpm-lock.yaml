@@ -812,7 +812,7 @@ importers:
         specifier: 0.23.0
         version: 0.23.0(@ai-sdk/react@4.0.125(react@19.3.0)(zod@4.6.5))(@babel/core@8.0.1)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(ai@7.0.118(zod@4.6.5))(react@19.3.0)(rolldown@1.2.11)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.5)
       ai:
-        specifier: ^7.0.116
+        specifier: 7.0.118
         version: 7.0.118(zod@4.6.5)
       ajv:
         specifier: ^8.20.0
