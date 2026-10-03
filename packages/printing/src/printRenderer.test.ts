@@ -161,16 +161,19 @@ describe('PrintRenderer', () => {
     const routeHandler = harness.getRouteHandler();
     expect(routeHandler).toBeDefined();
 
-    const continueRequest = vi.fn(async () => undefined);
+    const response = { status: () => 200 };
+    const fetch = vi.fn(async () => response);
+    const fulfill = vi.fn(async () => undefined);
     await routeHandler!({
       request: () => ({
         method: () => 'GET',
         url: () => 'http://localhost:3000/assets/question.png',
       }),
       abort: vi.fn(),
-      continue: continueRequest,
+      fetch,
+      fulfill,
     } as unknown as Route);
-    expect(continueRequest).toHaveBeenCalledOnce();
+    expect(fulfill).toHaveBeenCalledExactlyOnceWith({ response });
 
     for (const request of [
       { method: 'POST', url: 'http://localhost:3000/pl/mutate' },
@@ -182,10 +185,11 @@ describe('PrintRenderer', () => {
       await routeHandler!({
         request: () => ({ method: () => request.method, url: () => request.url }),
         abort,
-        continue: vi.fn(),
+        fetch,
       } as unknown as Route);
       expect(abort).toHaveBeenCalledExactlyOnceWith('blockedbyclient');
     }
+    expect(fetch).toHaveBeenCalledExactlyOnceWith({ maxRedirects: 0 });
 
     const webSocketHandler = harness.getWebSocketHandler();
     expect(webSocketHandler).toBeDefined();
