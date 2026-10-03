@@ -192,13 +192,15 @@ export function buildDocxContent(
 
   function guidedInputGroup(node: HtmlElement, format: Format, maxWidth: number): Table | null {
     const children = $(node)
-      .children()
+      .contents()
       .toArray()
-      .filter((child): child is HtmlElement => 'attribs' in child);
-    const fields = children.filter((child) => has(child, '.printing-response-field'));
+      .filter((child) => (child.type === 'text' ? child.data.trim() !== '' : 'attribs' in child));
+    const fields = children.filter(
+      (child): child is HtmlElement => 'attribs' in child && has(child, '.printing-response-field'),
+    );
     if (
       fields.length !== 1 ||
-      children.some((child) => has(child, 'table, .printing-response-area'))
+      children.some((child) => 'attribs' in child && has(child, 'table, .printing-response-area'))
     ) {
       return null;
     }
@@ -211,17 +213,18 @@ export function buildDocxContent(
     const fieldIndex = children.indexOf(field);
     const before = children.slice(0, fieldIndex);
     const after = children.slice(fieldIndex + 1);
+    const measuredWidth = (child: HtmlNode) =>
+      'attribs' in child
+        ? number(child, 'data-docx-width', $(child).text().length * 8)
+        : child.type === 'text'
+          ? child.data.trim().length * 8
+          : 0;
     const columns = [
       ...(before.length > 0
         ? [
             {
               nodes: before,
-              width:
-                before.reduce(
-                  (sum, child) =>
-                    sum + number(child, 'data-docx-width', $(child).text().length * 8),
-                  0,
-                ) + 5,
+              width: before.reduce((sum, child) => sum + measuredWidth(child), 0) + 5,
             },
           ]
         : []),
@@ -230,10 +233,7 @@ export function buildDocxContent(
         ? [
             {
               nodes: after,
-              width: after.reduce(
-                (sum, child) => sum + number(child, 'data-docx-width', $(child).text().length * 8),
-                0,
-              ),
+              width: after.reduce((sum, child) => sum + measuredWidth(child), 0),
             },
           ]
         : []),
@@ -275,6 +275,7 @@ export function buildDocxContent(
 
   function response(node: HtmlElement, maxWidth: number): Block[] {
     const label = $(node).find('.printing-response-label').first().text();
+    const instructions = $(node).find('.printing-response-instructions').toArray();
     const lines = $(node).find('.printing-response-lines').first()[0];
     const height = lines && 'attribs' in lines ? number(lines, 'data-docx-height', 206) : 206;
     const drawing = has(node, '.printing-drawing-response');
@@ -291,6 +292,12 @@ export function buildDocxContent(
             }),
           ]
         : []),
+      ...instructions.map((instruction) =>
+        paragraph(inline(instruction.children, { small: true }, maxWidth), {
+          keepNext: true,
+          spacing: { before: 0, after: 60 },
+        }),
+      ),
       new Table({
         width: { size, type: WidthType.DXA },
         columnWidths: [size],
@@ -756,30 +763,34 @@ export function buildDocxContent(
     return blocks.length > 0 ? blocks : [empty()];
   }
 
-  const children = $('.printing-question')
-    .toArray()
-    .flatMap((question, index) => {
-      // Preserve small questions as a unit; long questions remain free to span Word pages.
-      keepFollowing = number(question, 'data-docx-height', Infinity) < contentHeightPx * 0.7;
-      const blocks = [
-        paragraph(
-          [text(`Question ${attribute(question, 'data-question-number')}`, { bold: true })],
-          {
-            pageBreakBefore: startOnNewPage && index === 0,
-            keepNext: true,
-            spacing: { before: 240, after: 120 },
-            border: { bottom: GRID },
-          },
-        ),
-        ...walk(
-          $(question).find('.question-body').first().contents().toArray().length > 0
-            ? $(question).find('.question-body').first().contents().toArray()
-            : $(question).find('.question-container > .card-body').first().contents().toArray(),
-        ),
-      ];
-      const keepQuestion = keepFollowing && blocks.some((block) => block instanceof Table);
-      keepFollowing = false;
-      return keepQuestion ? keepTogether(blocks, contentWidthPx) : [...blocks, empty()];
-    });
+  const questions = $('.printing-question').toArray();
+  const children = questions.flatMap((question, index) => {
+    // Preserve small questions as a unit; long questions remain free to span Word pages.
+    keepFollowing = number(question, 'data-docx-height', Infinity) < contentHeightPx * 0.7;
+    const blocks = [
+      paragraph([text(`Question ${attribute(question, 'data-question-number')}`, { bold: true })], {
+        pageBreakBefore: startOnNewPage && index === 0,
+        keepNext: true,
+        spacing: { before: 240, after: 120 },
+        border: { bottom: GRID },
+      }),
+      ...walk(
+        $(question).find('.question-body').first().contents().toArray().length > 0
+          ? $(question).find('.question-body').first().contents().toArray()
+          : $(question).find('.question-container > .card-body').first().contents().toArray(),
+      ),
+    ];
+    const keepQuestion = keepFollowing && blocks.some((block) => block instanceof Table);
+    keepFollowing = false;
+    const questionBlocks = keepQuestion
+      ? keepTogether(blocks, contentWidthPx)
+      : [...blocks, empty()];
+    return index < questions.length - 1
+      ? [
+          ...questionBlocks,
+          new Paragraph({ spacing: { after: 780, line: 20 }, run: { size: 2 }, children: [] }),
+        ]
+      : questionBlocks;
+  });
   return { children, numbering, widthDxa };
 }

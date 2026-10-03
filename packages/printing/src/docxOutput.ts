@@ -181,6 +181,10 @@ function buildFieldLines(fields: PrintableCoverField[], widthDxa: number): (Tabl
   let sharedRow: PrintableCoverField[] = [];
   for (const field of fields) {
     if (field.wide) {
+      if (sharedRow.length > 0) {
+        rows.push(sharedRow);
+        sharedRow = [];
+      }
       rows.push([field]);
       continue;
     }

@@ -25,7 +25,7 @@ it('preserves mathematical symbols and XML punctuation in native Office Math', a
 
 it('preserves response areas and matrix tables nested inside input groups', async () => {
   const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
-    <div class="input-group"><div class="printing-response-area"><div class="printing-response-lines" data-docx-height="128"></div></div></div>
+    <div class="input-group"><div class="printing-response-area"><div class="printing-response-instructions">At most 250 words</div><div class="printing-response-lines" data-docx-height="128"></div></div></div>
     <div class="input-group"><table><tr><td>top left</td><td>top right</td></tr><tr><td>bottom left</td><td>bottom right</td></tr></table></div>
   </div></article>`;
   const content = buildDocxContent(html, [], 700);
@@ -37,6 +37,7 @@ it('preserves response areas and matrix tables nested inside input groups', asyn
   expect(word('w\\:tbl')).toHaveLength(2);
   expect(word('w\\:tbl').last().find('w\\:tr')).toHaveLength(2);
   expect(word('w\\:tbl').first().find('w\\:tr')).toHaveLength(4);
+  expect(word('w\\:t').text()).toContain('At most 250 words');
 });
 
 it('places Word response guidance below the answer line at the same left edge', async () => {
@@ -59,6 +60,22 @@ it('places Word response guidance below the answer line at the same left edge', 
       .get(),
   ).toEqual(['____________________________', '3 significant figures']);
   expect(cells.eq(2).find('w\\:t').text()).toBe('m²');
+});
+
+it('preserves plain-text labels and units around a guided response field', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <span class="input-group">Area = <span class="printing-response-field" data-docx-width="250"><span data-print-response-line data-docx-width="250"></span><small class="printing-response-placeholder">3 significant figures</small></span> m²</span>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const cells = word('w\\:tbl').first().find('w\\:tr').first().find('w\\:tc');
+  expect(cells).toHaveLength(3);
+  expect(cells.eq(0).find('w\\:t').text()).toBe('Area = ');
+  expect(cells.eq(1).find('w\\:t').text()).toContain('3 significant figures');
+  expect(cells.eq(2).find('w\\:t').text()).toBe(' m²');
 });
 
 it('keeps selection options separate and preserves lettered answer references', async () => {
@@ -153,4 +170,18 @@ it('preserves ordering solution indentation without adding list bullets', async 
   expect(word(body).find('w\\:ind').attr('w:left')).toBe('520');
   expect(word(body).find('w\\:rFonts').attr('w:ascii')).toBe('Courier New');
   expect(word('w\\:numPr')).toHaveLength(0);
+});
+
+it('adds three lines of space only between Word questions', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body"><p>First answer</p></div></article>
+    <article class="printing-question" data-question-number="2"><div class="question-body"><p>Second answer</p></div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const xml = await zip.file('word/document.xml')!.async('string');
+  const gap = xml.indexOf('w:after="780"');
+  expect(xml.match(/w:after="780"/g)).toHaveLength(1);
+  expect(gap).toBeGreaterThan(xml.indexOf('First answer'));
+  expect(gap).toBeLessThan(xml.indexOf('Question 2'));
 });

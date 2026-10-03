@@ -30,8 +30,9 @@ describe('namespaceQuestionHtmls', () => {
           <div id="unique-1"></div>
           <script>
             document.getElementById("ans-a");
-            document.querySelector('#details');
-            $('#help');
+            document.querySelector('#details .value');
+            document.querySelectorAll('.thing#details');
+            $('#help > span');
           </script>
         `,
       },
@@ -68,8 +69,9 @@ describe('namespaceQuestionHtmls', () => {
     expect($first('style').html()).toBe('#question-1-details{clip-path:url(#question-1-clip)}');
     expect($first('#unique-1')).toHaveLength(1);
     expect($first('script').html()).toContain('getElementById("question-1-ans-a")');
-    expect($first('script').html()).toContain("querySelector('#question-1-details')");
-    expect($first('script').html()).toContain("$('#question-1-help')");
+    expect($first('script').html()).toContain("querySelector('#question-1-details .value')");
+    expect($first('script').html()).toContain("querySelectorAll('.thing#question-1-details')");
+    expect($first('script').html()).toContain("$('#question-1-help>span')");
 
     expect($second('label').attr('for')).toBe('question-2-ans-a');
     expect($second('#unique-2')).toHaveLength(1);

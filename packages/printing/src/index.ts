@@ -11,7 +11,7 @@ export type {
   PrintableCoverSummaryItem,
   PrintableTextBlock,
 } from './printableCover.js';
-export { PrintRenderer, QuestionBlockSizeOverflowError } from './printRenderer.js';
+export { PrintRenderer } from './printRenderer.js';
 export type { PrintablePageOutput } from './printablePageOutput.js';
 export type {
   PrintRendererOptions,
