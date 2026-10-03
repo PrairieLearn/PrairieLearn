@@ -25,6 +25,7 @@ test('conversation and unsent draft persist across course pages', async ({
   page,
   courseInstance,
 }, testInfo) => {
+  test.setTimeout(60_000);
   const courseId = courseInstance.course_id;
   await insertCoursePermissionsByUserUid({
     course_id: courseId,

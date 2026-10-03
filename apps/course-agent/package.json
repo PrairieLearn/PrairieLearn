@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "wrangler deploy --config wrangler.jsonc --dry-run --outdir dist",
+    "build": "wrangler deploy --config wrangler.jsonc --dry-run --containers-rollout=none --outdir dist",
     "demo": "node scripts/demo.mjs",
     "deploy": "wrangler deploy --config wrangler.jsonc",
     "dev": "wrangler dev --port 8790 --inspector-port 0 --persist-to .wrangler/local",
