@@ -18,6 +18,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
+    "@prairielearn/utils": "workspace:^",
     "cheerio": "^1.2.0",
     "css-tree": "^3.2.1",
     "docx": "^9.7.1",
