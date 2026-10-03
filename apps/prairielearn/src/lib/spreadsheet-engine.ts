@@ -166,13 +166,21 @@ export class SpreadsheetEngineWorkbook {
       }
       if (reference.kind === 'range') {
         const { declared } = reference;
-        // Open bounds, as in `A:A` or `1:1`, extend to the edge of the grid.
+        // Open bounds, as in `A:A`, `1:1`, or `B2:B`, extend only to the edge of the
+        // referenced sheet's grid, since the engine holds no cells past it. An open
+        // range that starts past the edge still ends at its start, so it stays outside.
+        const size = this.sheets.get(declared.sheet);
+        const startRow = declared.startRow ?? 1;
+        const startColumn = declared.startColumn ?? 1;
         return {
           sheet: declared.sheet,
-          startRow: (declared.startRow ?? 1) - 1,
-          endRow: (declared.endRow ?? Number.MAX_SAFE_INTEGER) - 1,
-          startColumn: (declared.startColumn ?? 1) - 1,
-          endColumn: (declared.endColumn ?? Number.MAX_SAFE_INTEGER) - 1,
+          startRow: startRow - 1,
+          endRow:
+            (declared.endRow ?? Math.max(startRow, size?.rows ?? Number.MAX_SAFE_INTEGER)) - 1,
+          startColumn: startColumn - 1,
+          endColumn:
+            (declared.endColumn ??
+              Math.max(startColumn, size?.columns ?? Number.MAX_SAFE_INTEGER)) - 1,
         };
       }
       return null;
