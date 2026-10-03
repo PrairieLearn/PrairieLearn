@@ -21,10 +21,10 @@ browser memory stays roughly constant no matter how many people print at once. R
 time; additional requests wait in a bounded queue (`maxQueuedRenders`, default 16) and fail
 immediately once it is full. Each render gets its own short-lived browser context so cookies never
 leak between requests. One deadline (`timeoutMs`, default 120 seconds) covers queueing, page
-preparation, pagination, and output; a timed-out render has its context closed in the background,
-and a context that does not close within `contextCloseGraceMs` takes the whole browser with it. A
-browser that crashes or disconnects is relaunched on the next render, and `close()` rejects queued
-renders and shuts the browser down.
+preparation, pagination, and output; cleanup can add up to `contextCloseGraceMs` (default 5 seconds)
+before the next render starts. A context that fails to close or exceeds that grace period causes the
+browser to be discarded. A browser that crashes or disconnects is relaunched on the next render,
+and calling `close()` rejects queued renders and shuts the browser down.
 
 Set `browserWSEndpoint` to connect to a Playwright browser server instead of launching Chromium
 locally; the server and package Playwright versions must match. Remote endpoints should be private
