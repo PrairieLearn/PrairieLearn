@@ -1,4 +1,7 @@
 import { type TRPCDefaultErrorShape, TRPCError, type TRPC_ERROR_CODE_KEY } from '@trpc/server';
+import { getHTTPStatusCodeFromError } from '@trpc/server/http';
+
+import { formatTrpcErrorResponse } from './express.js';
 
 /** Metadata serialized for a typed application-level error. */
 export interface AppErrorBase {
@@ -43,6 +46,23 @@ class AppError extends TRPCError {
   }
 }
 
+/** Preserve HTTP errors wrapped by tRPC, while respecting explicit tRPC error codes. */
+export function getTrpcErrorStatus(error: TRPCError): number {
+  const cause = error.cause;
+  if (
+    error.code === 'INTERNAL_SERVER_ERROR' &&
+    cause &&
+    'status' in cause &&
+    typeof cause.status === 'number' &&
+    Number.isInteger(cause.status) &&
+    cause.status >= 400 &&
+    cause.status <= 599
+  ) {
+    return cause.status;
+  }
+  return getHTTPStatusCodeFromError(error);
+}
+
 /**
  * Attaches typed application-error metadata to a tRPC error response.
  *
@@ -54,13 +74,23 @@ export const appErrorFormatter = ({
 }: {
   shape: TRPCDefaultErrorShape;
   error: TRPCError;
-}): AppErrorShape => ({
-  ...shape,
-  data: {
-    ...shape.data,
-    ...(error instanceof AppError ? { appError: error.meta } : {}),
-  },
-});
+}): AppErrorShape => {
+  const status = getTrpcErrorStatus(error);
+  const formatted =
+    status === shape.data.httpStatus
+      ? shape
+      : formatTrpcErrorResponse({ status, message: error.message, stack: shape.data.stack }).error
+          .json;
+  return {
+    ...shape,
+    ...formatted,
+    data: {
+      ...shape.data,
+      ...formatted.data,
+      ...(error instanceof AppError ? { appError: error.meta } : {}),
+    },
+  };
+};
 
 /**
  * Throws a typed application error.
