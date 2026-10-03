@@ -5,6 +5,7 @@ import { Router } from 'express';
 import * as error from '@prairielearn/error';
 
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
+import type { Assessment } from '../../lib/db-types.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetById } from '../../models/assessment-set.js';
 import { selectOptionalAssessmentById } from '../../models/assessment.js';
@@ -15,7 +16,7 @@ const router = Router({ mergeParams: true });
 
 router.get(
   '/',
-  typedAsyncHandler<'public-course-instance'>(async (req, res) => {
+  typedAsyncHandler<'public-course-instance', { assessment: Assessment }>(async (req, res) => {
     const assessment_id = req.params.assessment_id;
     const assessment = await selectOptionalAssessmentById(assessment_id);
     if (
@@ -25,6 +26,7 @@ router.get(
     ) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
+    res.locals.assessment = assessment;
 
     assert(assessment.assessment_set_id);
     const assessment_set = await selectAssessmentSetById(assessment.assessment_set_id);
