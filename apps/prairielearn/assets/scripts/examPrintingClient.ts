@@ -1,4 +1,7 @@
-import { fitPrintChoiceImages } from '../../src/lib/client/print-image-layout.js';
+import {
+  fitPrintChoiceImages,
+  waitForPrintImages,
+} from '../../src/lib/client/print-image-layout.js';
 import {
   parsePrintBlockSize,
   planPrintQuestionPages,
@@ -6,6 +9,7 @@ import {
 import {
   normalizeAnswerPresentation,
   normalizeResponseControls,
+  removeResponseControlsForAnswerKey,
 } from '../../src/lib/client/print-response-controls.js';
 
 interface PagedFlow {
@@ -242,20 +246,9 @@ function replaceStudentResponsesWithAnswerKeys(source: HTMLElement, pageHeight: 
       ) !== null;
     const answerKey = createAnswerKeyArea(answerBody, responseHeight);
 
-    if (hasMultipleParts) {
-      // These answer panels contain the authored subparts themselves. Keeping the student
-      // subparts as well duplicates headings and leaves empty prompts between answers.
-      answerKey.classList.add('printing-answer-key-sections');
-      questionBody.replaceChildren(answerKey);
-      question.dataset.printAnswerKeyPlacement = 'response';
-    } else if (responseTargets.length > 0) {
-      responseTargets[0].replaceWith(answerKey);
-      for (const responseTarget of responseTargets.slice(1)) responseTarget.remove();
-      question.dataset.printAnswerKeyPlacement = 'response';
-    } else {
-      questionBody.append(answerKey);
-      question.dataset.printAnswerKeyPlacement = 'appended';
-    }
+    if (hasMultipleParts) answerKey.classList.add('printing-answer-key-sections');
+    removeResponseControlsForAnswerKey(questionBody);
+    questionBody.append(answerKey);
 
     const transformedHeight = question.getBoundingClientRect().height;
     const reservationHeight = hasMultipleParts ? 0 : Math.max(0, studentHeight - transformedHeight);
@@ -374,30 +367,6 @@ function materializePrintableShadowRootStyles(source: HTMLElement): void {
     }
     host.shadowRoot.prepend(styles);
   }
-}
-
-async function waitForImages(source: HTMLElement): Promise<void> {
-  await Promise.all(
-    [...source.querySelectorAll('img')].map(async (image) => {
-      // Elements such as image capture ship placeholder images that only receive a source once a
-      // student acts, so an image without one has nothing to load and cannot block printing.
-      if (!image.getAttribute('src')) return;
-      if (!image.complete) {
-        await new Promise<void>((resolve, reject) => {
-          image.addEventListener('load', () => resolve(), { once: true });
-          image.addEventListener(
-            'error',
-            () => reject(new Error('An image in the printable exam could not be loaded')),
-            { once: true },
-          );
-        });
-      }
-      if (image.naturalWidth === 0) {
-        throw new Error('An image in the printable exam could not be loaded');
-      }
-      await image.decode();
-    }),
-  );
 }
 
 function formatMeasurement(value: number): string {
@@ -569,7 +538,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   window.__PL_PRINT_CAPTURE_MATH__?.(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
-  await waitForImages(source);
+  await waitForPrintImages(source);
   const { height: pageHeight } = measurePrintablePage(source);
   if (document.documentElement.dataset.printDocument === 'answer_key') {
     replaceStudentResponsesWithAnswerKeys(source, pageHeight);

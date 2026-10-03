@@ -1,5 +1,38 @@
 import { getPrintBlockHeight, parsePrintBlockSize } from './print-question-layout.js';
 
+export async function waitForPrintImages(source: HTMLElement): Promise<void> {
+  const images: HTMLImageElement[] = [];
+  const collectImages = (root: ParentNode) => {
+    images.push(...root.querySelectorAll<HTMLImageElement>('img'));
+    for (const element of root.querySelectorAll('*')) {
+      if (element.shadowRoot) collectImages(element.shadowRoot);
+    }
+  };
+  collectImages(source);
+
+  await Promise.all(
+    images.map(async (image) => {
+      // Elements such as image capture ship placeholder images that only receive a source once a
+      // student acts, so an image without one has nothing to load and cannot block printing.
+      if (!image.getAttribute('src')) return;
+      if (!image.complete) {
+        await new Promise<void>((resolve, reject) => {
+          image.addEventListener('load', () => resolve(), { once: true });
+          image.addEventListener(
+            'error',
+            () => reject(new Error('An image in the printable exam could not be loaded')),
+            { once: true },
+          );
+        });
+      }
+      if (image.naturalWidth === 0) {
+        throw new Error('An image in the printable exam could not be loaded');
+      }
+      await image.decode();
+    }),
+  );
+}
+
 /** Fit image choices together without changing the size of question text or answer markers. */
 export function fitPrintChoiceImages(questions: Iterable<HTMLElement>, pageHeight: number): void {
   for (const question of questions) {
