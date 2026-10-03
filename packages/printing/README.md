@@ -34,8 +34,8 @@ remains reachable from a browser running in another container. Without an endpoi
 Playwright-compatible Chromium executable must be installed locally (for example, with
 `pnpm playwright install chromium`).
 
-The browser permits only same-origin `GET` requests during rendering; mutating, cross-origin,
-service worker, and WebSocket traffic is blocked, and socket.io polling requests are refused as
+The browser permits only same-origin `GET` requests during rendering; redirects, mutating requests,
+cross-origin requests, service worker, and WebSocket traffic are blocked, and socket.io polling requests are refused as
 well. Refusing them matters: with WebSockets closed, socket.io would otherwise fall back to HTTP
 long-polling, and a few open polls can occupy every HTTP/1.1 connection to the server and starve
 the page's own script and image loads. This prevents external requests from receiving
