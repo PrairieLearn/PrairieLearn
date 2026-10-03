@@ -6,42 +6,6 @@
 <div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax mb-3">
     <div class="pl-drawing-output">
         <div class="pl-drawing-main">
-            {{#parse_error}}
-                <div class="pl-drawing-header">
-                    <span class="small d-inline-flex align-items-center gap-1 text-nowrap">
-                        <span class="badge text-bg-danger">
-                            Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-                        </span>
-                        <a
-                            class="link-primary"
-                            tabindex="0"
-                            role="button"
-                            data-bs-placement="auto"
-                            data-bs-toggle="popover"
-                            data-bs-html="true"
-                            title="Format error"
-                            data-bs-content="{{parse_error}}"
-                        >
-                            More info…
-                        </a>
-                    </span>
-                </div>
-            {{/parse_error}}
-            {{#correct}}
-                <div class="pl-drawing-header">
-                    <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
-                </div>
-            {{/correct}}
-            {{#partial}}
-                <div class="pl-drawing-header">
-                    <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
-                </div>
-            {{/partial}}
-            {{#incorrect}}
-                <div class="pl-drawing-header">
-                    <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
-                </div>
-            {{/incorrect}}
             <canvas
                 width="{{width}}"
                 height="{{height}}"
@@ -51,6 +15,42 @@
             >
             </canvas>
         </div>
+        {{#parse_error}}
+            <div class="pl-drawing-footer">
+                <span class="small d-inline-flex align-items-center gap-1 text-nowrap">
+                    <span class="badge text-bg-danger">
+                        Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                    </span>
+                    <a
+                        class="link-primary"
+                        tabindex="0"
+                        role="button"
+                        data-bs-placement="auto"
+                        data-bs-toggle="popover"
+                        data-bs-html="true"
+                        title="Format error"
+                        data-bs-content="{{parse_error}}"
+                    >
+                        More info…
+                    </a>
+                </span>
+            </div>
+        {{/parse_error}}
+        {{#correct}}
+            <div class="pl-drawing-footer">
+                <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+            </div>
+        {{/correct}}
+        {{#partial}}
+            <div class="pl-drawing-footer">
+                <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+            </div>
+        {{/partial}}
+        {{#incorrect}}
+            <div class="pl-drawing-footer">
+                <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+            </div>
+        {{/incorrect}}
         {{#show_tolerance}}
             <div><small>({{{ tolerance }}})</small></div>
         {{/show_tolerance}}
