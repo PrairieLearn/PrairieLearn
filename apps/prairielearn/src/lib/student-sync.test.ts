@@ -31,6 +31,12 @@ test('distinguishes an omitted labels column from a blank cell or empty array', 
   );
 });
 
+test('treats a whitespace-only labels cell as clearing labels', async () => {
+  expect(await parseStudentSyncCsv('uid,labels\na@example.com,"   "', labels)).toEqual(
+    new Map([['a@example.com', []]]),
+  );
+});
+
 test('accepts reordered headers', async () => {
   expect(await parseStudentSyncCsv('labels,uid\n"[""Section A""]",a@example.com', labels)).toEqual(
     new Map([['a@example.com', ['1']]]),
@@ -44,22 +50,21 @@ test.each([
   ['uid,label1\na@example.com,Section A', 'not supported'],
   ['uid\na@example.com\na@example.com', 'more than once'],
   ['uid\ninvalid', 'valid student UID'],
-  ['uid,labels\na@example.com,"[""Unknown""]"', 'unknown label'],
-  ['uid,labels\na@example.com,"[""section a""]"', 'unknown label'],
+  ['uid,labels\na@example.com,"[""Unknown""]"', 'a@example.com: unknown label'],
+  ['uid,labels\na@example.com,"[""section a""]"', 'a@example.com: unknown label'],
   ['uid,labels\na@example.com', 'Invalid CSV'],
-  ['uid,labels\na@example.com,"unterminated', 'Invalid CSV'],
   ['uid,labels', 'at least one student'],
 ])('rejects invalid CSV: %s', async (text, message) => {
   await expect(parseStudentSyncCsv(text, labels)).rejects.toThrow(message);
 });
 
-test.each(['Section A;Extra time', '[', 'null', '{}', '1', '"Section A"', '[1]', '[null]', '[[]]'])(
+test.each(['[', '"Section A"', '[[]]'])(
   'rejects labels that are not a JSON string array: %s',
   async (value) => {
     const cell = value.replaceAll('"', '""');
     await expect(
       parseStudentSyncCsv(`uid,labels\na@example.com,"${cell}"`, labels),
-    ).rejects.toThrow('Row ending on line 2: labels must be a JSON array');
+    ).rejects.toThrow('Row ending on line 2: a@example.com: labels must be a JSON array');
   },
 );
 

@@ -84,7 +84,7 @@ export async function parseStudentSyncCsv(
             if (!(error instanceof SyntaxError)) throw error;
             throw new HttpStatusError(
               400,
-              `Row ending on line ${info.lines}: labels must be a JSON array of label names, such as ["Section A", "Extra time"].`,
+              `Row ending on line ${info.lines}: ${uid}: labels must be a JSON array of label names, such as ["Section A", "Extra time"].`,
               { cause: error },
             );
           }
@@ -93,7 +93,7 @@ export async function parseStudentSyncCsv(
         if (!names.success) {
           throw new HttpStatusError(
             400,
-            `Row ending on line ${info.lines}: labels must be a JSON array of label names, such as ["Section A", "Extra time"].`,
+            `Row ending on line ${info.lines}: ${uid}: labels must be a JSON array of label names, such as ["Section A", "Extra time"].`,
           );
         }
         const labelIds = names.data.map((name) => {
@@ -101,7 +101,7 @@ export async function parseStudentSyncCsv(
           if (!id) {
             throw new HttpStatusError(
               400,
-              `Row ending on line ${info.lines}: unknown label "${name}". Use an existing label name exactly as shown in this course instance.`,
+              `Row ending on line ${info.lines}: ${uid}: unknown label "${name}". Use an existing label name exactly as shown in this course instance.`,
             );
           }
           return id;
