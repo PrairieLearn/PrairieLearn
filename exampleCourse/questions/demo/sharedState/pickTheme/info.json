@@ -1,0 +1,12 @@
+{
+  "uuid": "751601f6-5eee-44b3-99b9-f327be80abbd",
+  "title": "Demo: Pick an assessment theme",
+  "topic": "Demo",
+  "tags": ["v3"],
+  "type": "v3",
+  "singleVariant": true,
+  "showCorrectAnswer": false,
+  "sharedStateAccess": {
+    "assessmentTheme": "assessmentTheme"
+  }
+}

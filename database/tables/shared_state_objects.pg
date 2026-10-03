@@ -1,0 +1,21 @@
+columns
+    course_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    current_revision_id: bigint
+    id: bigint not null default nextval('shared_state_objects_id_seq'::regclass)
+    name: text not null
+    uuid: uuid not null
+
+indexes
+    shared_state_objects_pkey: PRIMARY KEY (id) USING btree (id)
+    shared_state_objects_course_id_name_key: UNIQUE USING btree (course_id, name)
+    shared_state_objects_course_id_uuid_key: UNIQUE USING btree (course_id, uuid)
+
+foreign-key constraints
+    shared_state_objects_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    shared_state_objects_current_revision_id_fkey: FOREIGN KEY (current_revision_id) REFERENCES shared_state_object_revisions(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+referenced by
+    assessment_instance_shared_state_values: FOREIGN KEY (shared_state_object_id) REFERENCES shared_state_objects(id) ON UPDATE CASCADE ON DELETE CASCADE
+    shared_state_object_revisions: FOREIGN KEY (shared_state_object_id) REFERENCES shared_state_objects(id) ON UPDATE CASCADE ON DELETE CASCADE
+    user_shared_state_values: FOREIGN KEY (shared_state_object_id) REFERENCES shared_state_objects(id) ON UPDATE CASCADE ON DELETE CASCADE
