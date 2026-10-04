@@ -498,7 +498,7 @@ test('failed preparation returns a native tool error and never displays an appro
   }
 });
 
-test('navigation during the first send restores the pending message and conversation', async ({
+test('navigation during the first send recovers even with malformed stored settings', async ({
   page,
   courseInstance,
 }) => {
@@ -541,6 +541,11 @@ test('navigation during the first send restores the pending message and conversa
     authn_user_id: '1',
   });
   expect(conversations[0]).toBeTruthy();
+  await page.evaluate((id) => {
+    const key = `course-agent:1:${id}`;
+    sessionStorage.setItem(`${key}:settings`, '{invalid');
+    sessionStorage.setItem(`${key}:panel`, '{invalid');
+  }, courseId);
   await page.getByRole('link', { name: 'Questions', exact: true }).click();
   release();
   await expect(page.getByLabel('Message', { exact: true })).toHaveValue(
@@ -580,12 +585,21 @@ test('navigation preserves a new-conversation selection before the settings requ
   await updateCourseColumn({ courseId, columnName: 'branch', value: 'main', authnUserId: '1' });
   await page.goto(`/pl/course/${courseId}/course_admin/settings`);
   await page.getByRole('button', { name: 'Open course agent' }).click();
+  const errors: Error[] = [];
+  page.on('pageerror', (error) => errors.push(error));
   await page.getByLabel('Message', { exact: true }).fill('Saved selection');
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Conversation', exact: true })).not.toHaveText(
     'New conversation',
   );
   await page.getByRole('button', { name: 'Stop', exact: true }).click();
+  await page.evaluate((id) => {
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith(`course-agent:1:${id}:`) && key.endsWith(':pending')) {
+        sessionStorage.setItem(key, '{invalid');
+      }
+    }
+  }, courseId);
   await page.reload();
   await expect(page.getByRole('button', { name: 'Conversation', exact: true })).not.toHaveText(
     'New conversation',
@@ -593,6 +607,7 @@ test('navigation preserves a new-conversation selection before the settings requ
   // The selected title is server-rendered; restored history confirms React's
   // handlers are attached before exercising a selection and immediate navigation.
   await expect(page.getByText('Saved selection', { exact: true })).toBeVisible({ timeout: 15000 });
+  expect(errors).toEqual([]);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;

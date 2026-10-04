@@ -275,16 +275,26 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
         outcome: { id: pending.id, result: 'Denied. Nothing was published.' },
       };
       const received: unknown[] = [];
+      const rejected: unknown[] = [];
       socket.on('message', (raw) => {
         const frame = JSON.parse(String(raw));
         if (frame.type === 'host-tool-delivered') received.push(frame);
+        if (frame.type === 'host-tool-delivery-error') rejected.push(frame);
       });
       socket.send(JSON.stringify(outcome));
+      await expect.poll(() => rejected.length).toBe(1);
+      expect(received).toHaveLength(0);
+      expect((await c.request('test/status')).restores).toBe(0);
+      expect((await c.request('snapshot')).pendingTool.id).toBe(pending.id);
+      const dispatchId = randomUUID();
+      const admitted = { ...outcome, outcome: { ...outcome.outcome, dispatchId } };
+      socket.send(JSON.stringify(admitted));
       await expect.poll(() => received.length, { timeout: 15000 }).toBe(1);
       socket.send(JSON.stringify(outcome));
       await expect.poll(() => received.length).toBe(2);
       const snapshot = await c.request('snapshot');
       expect(snapshot.pendingTool).toBeUndefined();
+      expect(snapshot.executions[pending.id].dispatchId).toBe(dispatchId);
       expect(
         snapshot.messages.filter(
           (m: { metadata?: { source: string } }) => m.metadata?.source === 'tool-result',

@@ -749,7 +749,11 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       this.resolveToolResult(toolResult(input.result, success));
       this.resolveToolResult = undefined;
     } else {
-      // The old RPC no longer exists. Only a resolved gate may resume with an internal continuation.
+      // The resolver can disappear after PL observes a warm turn. Require a
+      // fresh admission before restoring a sandbox and starting another turn.
+      if (!input.dispatchId) {
+        throw new ChatError(409, 'Cold result delivery needs admission. Retry completion.');
+      }
       await this.send(
         {
           id: tool.id,
