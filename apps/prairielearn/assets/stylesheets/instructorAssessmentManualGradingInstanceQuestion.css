@@ -3,6 +3,8 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  container-name: manual-grading;
+  container-type: inline-size;
 }
 
 .instance-question-manual-grading-header {
@@ -28,13 +30,10 @@
   overflow-y: auto;
 }
 
-@media (max-width: 991.98px) {
-  .instance-question-manual-grading {
-    height: auto;
-  }
-
+@container manual-grading (max-width: 1099.98px) {
   .instance-question-manual-grading-panes {
     display: block;
+    flex: 0 0 auto;
   }
 
   .instance-question-manual-grading-question,

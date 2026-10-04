@@ -348,7 +348,12 @@ export function InstanceQuestion({
         </div>
 
         <div class="instance-question-manual-grading-panes">
-          <div class="instance-question-manual-grading-question p-3">
+          <div
+            class="instance-question-manual-grading-question p-3"
+            role="region"
+            aria-label="Question and grading settings"
+            tabindex="0"
+          >
             ${
               resLocals.assessment_instance.open
                 ? html`
@@ -475,7 +480,12 @@ export function InstanceQuestion({
               aiGradingInfo,
             })}
           </div>
-          <div class="instance-question-manual-grading-sidebar p-3">
+          <div
+            class="instance-question-manual-grading-sidebar p-3"
+            role="region"
+            aria-label="Grading controls and instructor information"
+            tabindex="0"
+          >
             <div class="card mb-4">
               <div class="card-header">Grading</div>
               <div class="js-main-grading-panel">
