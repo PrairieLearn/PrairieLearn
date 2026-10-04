@@ -87,7 +87,13 @@ export function Conversation({
     setValue('draft', readPanelState(storageKey + ':draft'));
     const saved = readPanelState(storageKey + ':pending');
     if (saved) {
-      const value = sendRequestSchema.safeParse(JSON.parse(saved));
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(saved);
+      } catch {
+        // A corrupt saved request must not interrupt draft or stream restoration.
+      }
+      const value = sendRequestSchema.safeParse(parsed);
       if (value.success) {
         pendingRef.current = value.data;
         if (!readPanelState(storageKey + ':draft')) {
