@@ -83,6 +83,18 @@ INSERT INTO
 VALUES
   ($id, $operation_id, $payload, $revision);
 
+-- BLOCK pending
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_agent_proposals
+    WHERE
+      conversation_id = $id
+      AND NOT delivered
+  ) AS pending;
+
 -- BLOCK activity
 SELECT
   to_jsonb(c.*) AS conversation,

@@ -152,6 +152,7 @@
     "date-fns": "^4.4.0",
     "debug": "^4.4.3",
     "delegated-events": "^1.1.2",
+    "diff": "^8.0.2",
     "dockerode": "^5.0.1",
     "domhandler": "^6.0.1",
     "dompurify": "^3.4.16",

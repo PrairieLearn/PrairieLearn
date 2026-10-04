@@ -1,24 +1,42 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { type ToolOutcome, proposalContent } from '@prairielearn/course-agent-contract';
+import * as namedLocks from '@prairielearn/named-locks';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
+import * as agentEvents from '../ee/lib/course-agent/events.js';
+import * as agentObserver from '../ee/lib/course-agent/observer.js';
+import * as agentProvider from '../ee/lib/course-agent/provider.js';
+import { Publisher } from '../ee/lib/course-agent/publish.js';
 import {
   authorize,
+  complete,
   provider as configuredProvider,
   newWorkEnabled,
+  prepare,
+  snapshot,
 } from '../ee/lib/course-agent/service.js';
 import { admit, estimatedCost, recordUsage } from '../ee/lib/course-agent/usage.js';
 import { config } from '../lib/config.js';
+import * as courseLibrary from '../lib/course.js';
 import { features } from '../lib/features/index.js';
+import { createServerJob } from '../lib/server-jobs.js';
 import {
   createConversation,
   reserveOperation,
   selectConversation,
 } from '../models/course-agent-conversation.js';
 import { insertExecution, selectOptionalExecution } from '../models/course-agent-execution.js';
+import {
+  decideProposal,
+  insertProposal,
+  prepareProposal,
+  saveProposalProgress,
+  selectOptionalProposal,
+} from '../models/course-agent-proposal.js';
 import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
@@ -86,6 +104,28 @@ async function setupConversation() {
   });
   return { scope, conversation, user };
 }
+it('persists a single decision, gates new work, and allows an identical stale retry', async () => {
+  const { scope, conversation } = await setupConversation();
+  const operation_id = randomUUID();
+  const proposal = (await insertProposal({
+    conversation_id: conversation.id,
+    operation_id,
+    sequence: 1,
+    payload: JSON.stringify({ id: operation_id }),
+    digest: 'immutable',
+  }))!;
+  await expect(
+    reserveOperation(conversation, randomUUID(), { kind: 'message' }, 0),
+  ).rejects.toThrow('pending proposal');
+  await decideProposal(scope, conversation, proposal, false, 0);
+  const saved = (await selectOptionalProposal(conversation.id, operation_id))!;
+  expect(saved.decision).toBe(false);
+  await decideProposal(scope, conversation, saved, false, 0);
+  await expect(decideProposal(scope, conversation, saved, true, 1)).rejects.toThrow(
+    'different input',
+  );
+  expect((await selectOptionalProposal(conversation.id, operation_id))?.decision).toBe(false);
+});
 it('requires current owner access for both the effective and authenticated user', async () => {
   const { scope, user } = await setupConversation();
   const other = await selectOrInsertUserByUid('course-agent-other@example.com');
@@ -171,6 +211,65 @@ it('serializes admissions, keeps missing usage unknown, and does not double-coun
   }
 });
 
+it('uses the existing PL GitHub client token for proposal validation', async () => {
+  const { conversation, scope, user } = await setupConversation();
+  await insertCoursePermissionsByUserUid({
+    course_id: scope.course_id,
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: user.id,
+  });
+  const originalProvider = agentProvider.createCloudflareProvider;
+  const providerMock = vi
+    .spyOn(agentProvider, 'createCloudflareProvider')
+    .mockImplementation((...args) => ({
+      ...originalProvider(...args),
+      getSnapshot: async () => ({ messages: [], revision: 0 }),
+      deliverToolResult: async () => {},
+    }));
+  const fetcher = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(new Response(null, { status: 404 }));
+  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
+  const baseSha = 'a'.repeat(40),
+    proposedSha = 'b'.repeat(40);
+  const files = [
+    { path: 'question.txt', content: 'Changed', mode: '100644', previousMode: '100644' },
+  ];
+  const id = randomUUID();
+  try {
+    await withConfig(
+      { isEnterprise: true, courseAgent: settings, githubClientToken: 'fake-shared-client-token' },
+      async () => {
+        await prepare(scope, conversation, {
+          id,
+          sequence: 1,
+          name: 'push_sync',
+          args: {
+            id,
+            baseSha,
+            proposedSha,
+            files,
+            diff: '',
+            status: 'pending',
+            digest: createHash('sha256')
+              .update(proposalContent(baseSha, proposedSha, files))
+              .digest('hex'),
+          },
+        });
+      },
+    );
+    expect(fetcher).toHaveBeenCalledOnce();
+    const [url, init] = fetcher.mock.calls[0];
+    expect(String(url)).toContain('/repos/org/course/');
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer fake-shared-client-token');
+  } finally {
+    providerMock.mockRestore();
+    fetcher.mockRestore();
+    notify.mockRestore();
+  }
+});
+
 it('uses shared AI prices, preserves recorded rates, and leaves unsupported models unknown', async () => {
   const { conversation } = await setupConversation();
   expect(await recordUsage(conversation, { messages: [], revision: 0 })).toEqual({
@@ -230,6 +329,307 @@ it('uses shared AI prices, preserves recorded rates, and leaves unsupported mode
   });
   expect((await selectOptionalExecution(conversation.id, unknown))?.estimated_cost).toBeNull();
 });
+
+it('returns failed schema validation to the agent, retries delivery, and only exposes valid approvals', async () => {
+  const { conversation, scope, user } = await setupConversation();
+  await insertCoursePermissionsByUserUid({
+    course_id: scope.course_id,
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: user.id,
+  });
+  const fetcher = vi
+    .spyOn(globalThis, 'fetch')
+    .mockImplementation(async () => Response.json({ truncated: false, tree: [] }));
+  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
+  const delivery = vi
+    .fn<(input: ToolOutcome, signal: AbortSignal) => Promise<void>>()
+    .mockRejectedValueOnce(new Error('Delivery interrupted'))
+    .mockResolvedValue(undefined);
+  const originalProvider = agentProvider.createCloudflareProvider;
+  const providerMock = vi
+    .spyOn(agentProvider, 'createCloudflareProvider')
+    .mockImplementation((...args) => ({
+      ...originalProvider(...args),
+      getSnapshot: async () => ({ messages: [], revision: 0 }),
+      deliverToolResult: delivery,
+    }));
+  const id = randomUUID();
+  const baseSha = 'a'.repeat(40),
+    proposedSha = 'b'.repeat(40);
+  const files = [
+    {
+      path: 'courseInstances/Fall2026/infoCourseInstance.json',
+      previousMode: '000000',
+      mode: '100644',
+      content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', accessRules: [] }),
+    },
+  ];
+  const tool = {
+    id,
+    sequence: 1,
+    name: 'push_sync',
+    args: {
+      id,
+      baseSha,
+      proposedSha,
+      files,
+      diff: '',
+      status: 'pending',
+      digest: createHash('sha256')
+        .update(proposalContent(baseSha, proposedSha, files))
+        .digest('hex'),
+    },
+  };
+  try {
+    await withConfig(
+      { isEnterprise: true, courseAgent: settings, githubClientToken: 'fake-shared-client-token' },
+      async () => {
+        await expect(prepare(scope, conversation, tool)).rejects.toThrow('Delivery interrupted');
+        const failed = (await selectOptionalProposal(conversation.id, id))!;
+        expect(failed.prepared).toBe(false);
+        expect(failed.decision).toBeNull();
+        expect(failed.error).toContain('accessRules');
+        expect(failed.outcome).toContain('Code change request failed');
+        expect((await snapshot(conversation, { messages: [], revision: 0 })).approvals).toEqual([]);
+        await expect(
+          reserveOperation(conversation, randomUUID(), { kind: 'message' }, 0),
+        ).rejects.toThrow('pending proposal');
+        await prepare(scope, conversation, tool);
+        expect(fetcher).toHaveBeenCalledOnce();
+        expect(delivery.mock.calls[1][0]).toMatchObject({
+          id,
+          success: false,
+          display: { name: 'push_sync', value: { error: failed.error } },
+        });
+        expect((await selectOptionalProposal(conversation.id, id))!.delivered).toBe(true);
+        expect(await reserveOperation(conversation, randomUUID(), { kind: 'message' }, 0)).toBe(1);
+        const validId = randomUUID();
+        const validFiles = [
+          {
+            ...files[0],
+            content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', allowAccess: [] }),
+          },
+        ];
+        await prepare(scope, conversation, {
+          ...tool,
+          id: validId,
+          sequence: 2,
+          args: {
+            ...tool.args,
+            id: validId,
+            files: validFiles,
+            digest: createHash('sha256')
+              .update(proposalContent(baseSha, proposedSha, validFiles))
+              .digest('hex'),
+          },
+        });
+        const state = await snapshot(conversation, { messages: [], revision: 0 });
+        expect(state.approvals).toHaveLength(1);
+        expect(state.approvals[0].id).toBe(validId);
+        expect(delivery).toHaveBeenCalledTimes(2);
+      },
+    );
+  } finally {
+    providerMock.mockRestore();
+    fetcher.mockRestore();
+    notify.mockRestore();
+  }
+});
+
+it('keeps a transient preparation failure retryable and exposes its saved recovery action', async () => {
+  const { conversation, scope, user } = await setupConversation();
+  await insertCoursePermissionsByUserUid({
+    course_id: scope.course_id,
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: user.id,
+  });
+  const id = randomUUID(),
+    baseSha = 'a'.repeat(40),
+    proposedSha = 'b'.repeat(40);
+  const tool = {
+    id,
+    sequence: 1,
+    name: 'push_sync',
+    args: {
+      id,
+      baseSha,
+      proposedSha,
+      files: [],
+      diff: '',
+      status: 'pending',
+      digest: createHash('sha256')
+        .update(proposalContent(baseSha, proposedSha, []))
+        .digest('hex'),
+    },
+  };
+  const preparation = vi
+    .spyOn(Publisher.prototype, 'prepare')
+    .mockRejectedValueOnce(new Error('Temporary GitHub outage'))
+    .mockResolvedValue('');
+  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
+  try {
+    await withConfig(
+      { isEnterprise: true, courseAgent: settings, githubClientToken: 'test' },
+      async () => {
+        await expect(prepare(scope, conversation, tool)).rejects.toThrow('Temporary GitHub outage');
+        expect((await selectOptionalProposal(conversation.id, id))!.outcome).toBeNull();
+        expect((await snapshot(conversation, { messages: [], revision: 0 })).preparation?.id).toBe(
+          id,
+        );
+        await prepare(scope, conversation, tool);
+        expect((await selectOptionalProposal(conversation.id, id))!.prepared).toBe(true);
+        expect(
+          (await snapshot(conversation, { messages: [], revision: 0 })).approvals,
+        ).toHaveLength(1);
+      },
+    );
+  } finally {
+    preparation.mockRestore();
+    notify.mockRestore();
+  }
+});
+
+it.each(['transient', 'preexisting validation', 'preexisting question validation'] as const)(
+  'retains publication and retries only the incomplete stage for a %s sync failure',
+  async (failure) => {
+    const { conversation, scope, user } = await setupConversation();
+    await insertCoursePermissionsByUserUid({
+      course_id: scope.course_id,
+      uid: user.uid,
+      course_role: 'Owner',
+      authn_user_id: user.id,
+    });
+    for (const [columnName, value] of [
+      ['repository', 'https://github.com/org/course.git'],
+      ['branch', 'main'],
+    ] as const) {
+      await updateCourseColumn({
+        courseId: scope.course_id,
+        columnName,
+        value,
+        authnUserId: user.id,
+      });
+    }
+    await execute(sql.baseline, {
+      course_id: scope.course_id,
+      commit_hash: 'a'.repeat(40),
+      sync_errors:
+        failure === 'preexisting validation'
+          ? 'An unrelated file already contains an error.'
+          : null,
+    });
+    await execute(sql.question_errors, {
+      course_id: scope.course_id,
+      sync_errors:
+        failure === 'preexisting question validation'
+          ? 'An unrelated question already contains an error.'
+          : null,
+    });
+    const id = randomUUID();
+    const approval = {
+      id,
+      baseSha: 'a'.repeat(40),
+      proposedSha: 'b'.repeat(40),
+      digest: 'test',
+      files: [],
+      diff: '',
+      status: 'pending',
+    };
+    const row = (await insertProposal({
+      conversation_id: conversation.id,
+      operation_id: id,
+      sequence: 1,
+      payload: JSON.stringify(approval),
+      digest: 'test',
+    }))!;
+    await prepareProposal(row.id, approval, true, null);
+    const delivery = vi.fn<(input: ToolOutcome) => Promise<void>>().mockResolvedValue();
+    const original = agentProvider.createCloudflareProvider;
+    const mocks = [
+      vi.spyOn(agentEvents, 'notify').mockResolvedValue(),
+      vi.spyOn(agentObserver, 'observe').mockResolvedValue(),
+      vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async () => Response.json({ model: 'fixture-model' })),
+      vi.spyOn(agentProvider, 'createCloudflareProvider').mockImplementation((...args) => ({
+        ...original(...args),
+        getSnapshot: async () => ({
+          messages: [],
+          revision: 0,
+          executions: {
+            [id]: {
+              status: 'running',
+              model: 'fixture',
+              input: null,
+              cached: null,
+              output: null,
+            },
+          },
+        }),
+        deliverToolResult: delivery,
+      })),
+    ];
+    const push = vi.spyOn(Publisher.prototype, 'push').mockResolvedValue('c'.repeat(40));
+    let attempts = 0;
+    const sync = vi
+      .spyOn(courseLibrary, 'pullAndUpdateCourse')
+      .mockImplementation(async (options) => {
+        const job = await createServerJob({
+          type: 'sync',
+          description: 'Fixture sync',
+          courseId: scope.course_id,
+          userId: user.id,
+          authnUserId: user.id,
+        });
+        await options.onJobCreated!(job.jobSequenceId);
+        const attempt = ++attempts;
+        return {
+          jobSequenceId: job.jobSequenceId,
+          jobPromise: job.execute(async (task) => {
+            if (failure !== 'transient') {
+              await options.onValidationFailure!();
+              task.fail('Existing JSON errors');
+            }
+            if (attempt === 1) task.fail('Temporary fetch timeout');
+            await options.onSynced!('c'.repeat(40));
+          }),
+        };
+      });
+    const input = { id, digest: 'test', expectedRevision: 0, approved: true };
+    try {
+      await withConfig(
+        {
+          isEnterprise: true,
+          courseAgent: settings,
+          githubClientToken: 'test',
+          features: { 'course-agent': true },
+        },
+        async () => {
+          await complete(scope, conversation, input);
+          if (failure === 'transient') {
+            await vi.waitFor(async () => {
+              const saved = (await selectOptionalProposal(conversation.id, id))!;
+              if (!saved.error?.includes('retry completion') || saved.outcome !== null) {
+                throw new Error('Waiting for retryable sync failure');
+              }
+            });
+            await complete(scope, conversation, input);
+          }
+          await expect
+            .poll(async () => (await selectOptionalProposal(conversation.id, id))?.delivered)
+            .toBe(true);
+          expect(push).toHaveBeenCalledOnce();
+          expect(delivery.mock.calls[0][0].success).toBe(failure === 'transient');
+        },
+      );
+    } finally {
+      for (const mock of [...mocks, push, sync]) mock.mockRestore();
+      await execute(sql.question_errors, { course_id: scope.course_id, sync_errors: null });
+    }
+  },
+);
 
 it('uses the authenticated owner feature grant while retaining recovery after disabling new work', async () => {
   const { scope, user } = await setupConversation();
@@ -300,4 +700,121 @@ it('requires exact configured model pricing before starting an execution', async
   } finally {
     request.mockRestore();
   }
+});
+
+it('shows publication progress only while a webserver owns the publication lock', async () => {
+  const { scope, conversation } = await setupConversation();
+  const id = randomUUID();
+  const proposal = {
+    id,
+    baseSha: 'a'.repeat(40),
+    proposedSha: 'b'.repeat(40),
+    status: 'pending',
+    digest: 'test',
+    files: [],
+    diff: '',
+  };
+  const row = (await insertProposal({
+    conversation_id: conversation.id,
+    operation_id: id,
+    sequence: 1,
+    payload: JSON.stringify(proposal),
+    digest: 'test',
+  }))!;
+  await prepareProposal(row.id, proposal, true, null);
+  await decideProposal(scope, conversation, row, true, 0);
+  const value = { messages: [], revision: 0, blocked: true };
+  expect((await snapshot(conversation, value)).publication?.status).toBe('retry');
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let acquired!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    acquired = resolve;
+  });
+  const publishing = namedLocks.doWithLock(
+    `course-agent:proposal:${id}`,
+    { timeout: 5000 },
+    async () => {
+      acquired();
+      await gate;
+    },
+  );
+  await ready;
+  try {
+    expect((await snapshot(conversation, value)).publication?.status).toBe('publishing');
+  } finally {
+    release();
+    await publishing;
+  }
+  expect((await snapshot(conversation, value)).publication?.status).toBe('retry');
+});
+
+it('does not offer retry while an approved, synced outcome is resuming a cold sandbox', async () => {
+  const { scope, conversation, user } = await setupConversation();
+  const id = randomUUID();
+  const approval = {
+    id,
+    baseSha: 'a'.repeat(40),
+    proposedSha: 'b'.repeat(40),
+    status: 'pending',
+    digest: 'cold-sync',
+    files: [],
+    diff: '',
+  };
+  const row = (await insertProposal({
+    conversation_id: conversation.id,
+    operation_id: id,
+    sequence: 1,
+    payload: JSON.stringify(approval),
+    digest: approval.digest,
+  }))!;
+  await prepareProposal(row.id, approval, true, null);
+  await decideProposal(scope, conversation, row, true, 0);
+  const sync = await createServerJob({
+    type: 'sync',
+    description: 'Cold approval fixture',
+    courseId: scope.course_id,
+    userId: user.id,
+    authnUserId: user.id,
+  });
+  await sync.execute(async () => {});
+  await saveProposalProgress(row.id, {
+    sync_job_sequence_id: sync.jobSequenceId,
+    published_sha: 'c'.repeat(40),
+    synced_sha: 'c'.repeat(40),
+  });
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let acquired!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    acquired = resolve;
+  });
+  const completing = namedLocks.doWithLock(
+    `course-agent:proposal:${id}`,
+    { timeout: 5000 },
+    async () => {
+      acquired();
+      await gate;
+    },
+  );
+  await ready;
+  const value = { messages: [], revision: 0, blocked: true };
+  try {
+    expect((await snapshot(conversation, value)).publication?.status).toBe('publishing');
+    await saveProposalProgress(row.id, {
+      outcome: 'Published and synced. Restoring the sandbox.',
+      outcome_success: true,
+    });
+    expect((await snapshot(conversation, value)).publication?.status).toBe('publishing');
+  } finally {
+    release();
+    await completing;
+  }
+  expect((await snapshot(conversation, value)).publication?.status).toBe('retry');
+  await saveProposalProgress(row.id, { delivered: true });
+  expect((await snapshot(conversation, value)).publication?.status).toBe('complete');
 });

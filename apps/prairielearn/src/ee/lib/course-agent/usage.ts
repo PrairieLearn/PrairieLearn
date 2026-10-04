@@ -196,3 +196,22 @@ export async function admit(conversation: CourseAgentConversation, input: SendRe
     return revision;
   });
 }
+
+/** A cold continuation consumes a new execution slot; warm results continue their admitted turn. */
+export async function admitResult(
+  conversation: CourseAgentConversation,
+  id: string,
+  snapshot: ChatSnapshot,
+) {
+  if (Object.values(snapshot.executions ?? {}).some((value) => value.status === 'running')) {
+    return undefined;
+  }
+  return withAdmissionLocks(conversation, async () => {
+    const existing = await executions.selectOptionalExecution(conversation.id, id);
+    if (!existing || ['failed', 'cancelled', 'interrupted'].includes(existing.status)) {
+      await checkCapacity(conversation, false);
+      await executions.insertExecution(conversation.id, id, true);
+    }
+    return (await executions.selectOptionalExecution(conversation.id, id))!.dispatch_id;
+  });
+}

@@ -57,10 +57,18 @@ export async function pullAndUpdateCourse({
   course,
   userId,
   authnUserId,
+  onJobCreated,
+  expectedAncestorSha,
+  onSynced,
+  onValidationFailure,
 }: {
   course: Course;
   userId: string | null;
   authnUserId: string | null;
+  onJobCreated?: (jobSequenceId: string) => Promise<void>;
+  expectedAncestorSha?: string;
+  onSynced?: (commitHash: string) => Promise<void>;
+  onValidationFailure?: () => Promise<void>;
 }): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
   const serverJob = await createServerJob({
     type: 'sync',
@@ -76,6 +84,7 @@ export async function pullAndUpdateCourse({
   }
 
   const jobPromise = serverJob.execute(async (job) => {
+    await onJobCreated?.(serverJob.jobSequenceId);
     const { path, branch, repository, commit_hash } = course;
 
     if (!path) {
@@ -153,6 +162,14 @@ export async function pullAndUpdateCourse({
             cancelSignal: AbortSignal.timeout(30_000),
           });
 
+          if (expectedAncestorSha) {
+            await job.exec(
+              'git',
+              ['merge-base', '--is-ancestor', expectedAncestorSha, `origin/${branch}`],
+              gitOptions,
+            );
+          }
+
           job.info('Restore staged and unstaged changes');
           await job.exec('git', ['restore', '--staged', '--worktree', '.'], gitOptions);
 
@@ -173,9 +190,18 @@ export async function pullAndUpdateCourse({
         // hash next time.
         const endGitHash = await getCourseCommitHash(path);
 
+        if (expectedAncestorSha) {
+          await job.exec(
+            'git',
+            ['merge-base', '--is-ancestor', expectedAncestorSha, endGitHash],
+            gitOptions,
+          );
+        }
+
         job.info('Sync git repository to database');
         const syncResult = await syncDiskToSqlWithLock(course, job);
         if (syncResult.status === 'sharing_error') {
+          await onValidationFailure?.();
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
           }
@@ -197,7 +223,10 @@ export async function pullAndUpdateCourse({
         await updateCourseCommitHash({ id: course.id, path });
 
         if (syncResult.hadJsonErrors) {
+          await onValidationFailure?.();
           job.fail('One or more JSON files contained errors and were unable to be synced.');
+        } else {
+          await onSynced?.(endGitHash);
         }
       },
     );

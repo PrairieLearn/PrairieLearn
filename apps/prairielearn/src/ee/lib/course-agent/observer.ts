@@ -1,16 +1,20 @@
-import type { ChatProvider } from '@prairielearn/course-agent-contract';
+import type { ChatProvider, PendingTool } from '@prairielearn/course-agent-contract';
 import * as Sentry from '@prairielearn/sentry';
 
 import type { CourseAgentConversation } from '../../../lib/db-types.js';
 import { selectActiveExecution } from '../../../models/course-agent-execution.js';
 
 import { notify } from './events.js';
-import { executeHostTool } from './host-tools.js';
+import { dispatchHostTool } from './host-tools.js';
 import { recordUsage } from './usage.js';
 
 const observers = new Map<string, AbortController>();
 /** Keep host execution and accounting attached when the browser leaves the page. */
-export async function observe(conversation: CourseAgentConversation, chat: ChatProvider) {
+export async function observe(
+  conversation: CourseAgentConversation,
+  chat: ChatProvider,
+  prepareTool: (tool: PendingTool) => Promise<void>,
+) {
   if (observers.has(conversation.id)) return;
   const controller = new AbortController();
   observers.set(conversation.id, controller);
@@ -63,7 +67,15 @@ export async function observe(conversation: CourseAgentConversation, chat: ChatP
       controller.signal,
       () => void changed(),
       () => controller.abort(),
-      executeHostTool,
+      (call) =>
+        dispatchHostTool(call, (incoming) =>
+          prepareTool({
+            id: incoming.id,
+            sequence: incoming.sequence!,
+            name: incoming.name,
+            args: incoming.input,
+          }),
+        ),
     );
     if (controller.signal.aborted) cleanup();
   } catch (error) {
