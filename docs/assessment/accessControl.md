@@ -127,13 +127,15 @@ You can also enable **Read-only mode**. During a read-only reservation, students
 
 #### PrairieTest precedence
 
+Linking a PrairieTest exam does not disable Date control. If configured, Date control provides a separate access schedule outside PrairieTest.
+
 When a PrairieTest exam is associated with the assessment, PrairieLearn resolves access in this order:
 
 - **During an active matching reservation (Exam mode)**, PrairieTest grants access. Date-control scheduling, time limits, and passwords are **not** enforced — PrairieTest enforces its own scheduling, time limit, and access controls. For non-read-only reservations, the per-exam **After completion** visibility setting controls what students see after they finish, until the reservation ends.
 - **In Exam mode without an active matching reservation**, date control is not used as a fallback access path. PrairieLearn denies access, omits the assessment from the student assessment list, and hides completed-work visibility such as gradebook scores.
 - **Outside Exam mode**, the top-level date control rules apply normally when a date-control release exists. Top-level **After completion** visibility also takes over for completed instances once the reservation ends.
 
-To restrict submission access to PrairieTest only, leave date control disabled. If students should also be unable to review questions or scores outside the reservation, keep top-level **Question visibility** and **Score visibility** hidden.
+To restrict submission access to PrairieTest only, disable Date control and check for overrides that enable it. If students should also be unable to review questions or scores outside the reservation, keep top-level **Question visibility** and **Score visibility** hidden.
 
 ### Before release
 
