@@ -78,7 +78,11 @@ export class Chat extends ProductionChat {
       return new Response(null, { status: 204 });
     }
     if (path.endsWith('/test/approval')) {
-      await this.fixture().requestApproval();
+      const { count, captureDelay } = await request.json<{
+        count?: number;
+        captureDelay?: number;
+      }>();
+      await this.fixture().requestApproval(undefined, undefined, count, captureDelay);
       return new Response(null, { status: 204 });
     }
     if (path.endsWith('/test/run')) {

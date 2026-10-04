@@ -226,6 +226,38 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     await c.request('cleanup', {});
     expect((await c.request('diagnostics')).state).toBe('absent');
   });
+  it('rejects an overlapping prepared call without overwriting the first approval gate', async () => {
+    const c = conversation();
+    const socket = await c.host();
+    try {
+      await c.send();
+      await c.request('test/approval', { count: 2, captureDelay: 200 });
+      await expect.poll(async () => (await c.request('test/status')).toolResults?.length).toBe(1);
+      expect((await c.request('test/status')).toolResults[0]).toMatchObject({
+        callId: 'approval-call-1',
+        success: false,
+      });
+      await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
+      const pending = (await c.request('snapshot')).pendingTool;
+      expect((await c.request('test/state')).toolSequence).toBe(1);
+      socket.send(
+        JSON.stringify({
+          type: 'host-tool-result',
+          id: pending.id,
+          outcome: { id: pending.id, result: 'Denied. Nothing was published.' },
+        }),
+      );
+      await expect.poll(async () => (await c.request('test/status')).toolResults?.length).toBe(2);
+      expect((await c.request('test/status')).toolResults[1]).toMatchObject({
+        callId: 'approval-call',
+        success: true,
+      });
+      await expect.poll(async () => (await c.request('snapshot')).blocked).toBe(false);
+      await c.request('cancel', {});
+    } finally {
+      socket.close();
+    }
+  });
   it('delivers a failed native tool result and releases the gate without an approval decision', async () => {
     const c = conversation();
     const socket = await c.host();

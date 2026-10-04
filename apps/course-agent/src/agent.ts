@@ -774,7 +774,10 @@ export class Chat extends AIChatAgent<Env, CodexState> {
 
   /** Persist the gate before waiting, including across sandbox suspension and DO restart. */
   private async requestTool(name: string, args: unknown, captured: (id: string) => void) {
-    if (this.state.pendingTool) throw new Error('A tool decision is already pending.');
+    // Native tool requests arrive concurrently, including while capture awaits sandbox I/O.
+    if (this.state.pendingTool || this.toolPreparing) {
+      throw new Error('A tool decision is already pending.');
+    }
     const run = this.state.run!;
     this.toolPreparing = true;
     let payload;

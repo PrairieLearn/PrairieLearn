@@ -483,7 +483,14 @@ export function Conversation({
                 body: pendingApprovalMessage,
               }}
             >
-              <span className="ms-auto">
+              <span
+                className="ms-auto"
+                // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex -- Disabled controls need a focusable tooltip host.
+                tabIndex={snapshot.blocked ? 0 : undefined}
+                aria-describedby={
+                  snapshot.blocked ? `course-agent-pending-approval-${id}` : undefined
+                }
+              >
                 {snapshot.blocked && (
                   <span id={`course-agent-pending-approval-${id}`} className="visually-hidden">
                     {pendingApprovalMessage}

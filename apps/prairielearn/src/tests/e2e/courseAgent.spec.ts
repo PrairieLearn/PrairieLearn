@@ -47,6 +47,9 @@ test('conversation and unsent draft persist across course pages', async ({
   await expect(composer).toBeVisible();
   await composer.fill('Please inspect the course.');
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: 'Send', exact: true }).locator('..'),
+  ).not.toHaveAttribute('tabindex', '0');
   await page.route('**/trpc/courseAgent.send', (route) => route.abort(), { times: 1 });
   await composer.press('Enter');
   await expect(composer).toHaveValue('Please inspect the course.');
@@ -355,6 +358,14 @@ test('failed preparation returns a native tool error and never displays an appro
     animations: 'disabled',
   });
   await page.getByLabel('Message', { exact: true }).hover();
+  await expect(pendingTooltip).toHaveCount(0);
+  await page.getByRole('button', { name: 'Statistics', exact: true }).focus();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Send', exact: true }).locator('..')).toBeFocused();
+  await expect(pendingTooltip).toHaveText(
+    'A code change is pending approval. After approving or denying it, you can send a message.',
+  );
+  await page.getByLabel('Message', { exact: true }).focus();
   await expect(pendingTooltip).toHaveCount(0);
   await expect(page.getByText('Review requested', { exact: true })).toBeVisible();
   await expect(page.getByText('Approved', { exact: true })).toBeVisible();
