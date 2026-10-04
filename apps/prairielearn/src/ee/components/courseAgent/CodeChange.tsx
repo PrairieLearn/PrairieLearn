@@ -96,7 +96,8 @@ export function CodeChange({
             ) : (
               (snapshot.publication?.status === 'retry' ||
                 (decisionError && !snapshot.publication?.delivered)) &&
-              !decisionPending && (
+              !decisionPending &&
+              !completing && (
                 <Button
                   onClick={() =>
                     onDecide(approval, approval.status === 'approved' ? 'approve' : 'deny')
