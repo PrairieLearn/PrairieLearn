@@ -30,20 +30,38 @@ SELECT
   COALESCE(
     sum(e.estimated_cost) FILTER (
       WHERE
-        e.created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+        c.user_id = $user_id
+        AND e.created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
     ),
     0
-  )::double precision AS cost,
+  )::double precision AS user_cost,
+  COALESCE(
+    sum(e.estimated_cost) FILTER (
+      WHERE
+        c.course_id = $course_id
+        AND e.created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+    ),
+    0
+  )::double precision AS course_cost,
   count(*) FILTER (
     WHERE
-      e.created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+      c.user_id = $user_id
+      AND e.created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
       AND e.status NOT IN ('admitted', 'running')
       AND e.model IS NOT NULL
       AND e.estimated_cost IS NULL
-  )::integer AS unknown_cost
+  )::integer AS user_unknown_cost,
+  count(*) FILTER (
+    WHERE
+      c.course_id = $course_id
+      AND e.created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+      AND e.status NOT IN ('admitted', 'running')
+      AND e.model IS NOT NULL
+      AND e.estimated_cost IS NULL
+  )::integer AS course_unknown_cost
 FROM
-  course_agent_executions e
-  JOIN course_agent_conversations c ON c.id = e.conversation_id
+  course_agent_executions AS e
+  JOIN course_agent_conversations AS c ON c.id = e.conversation_id
 WHERE
   c.user_id = $user_id
   OR c.course_id = $course_id;
@@ -52,8 +70,8 @@ WHERE
 SELECT
   count(*)::integer AS requests
 FROM
-  course_agent_operations o
-  JOIN course_agent_conversations c ON c.id = o.conversation_id
+  course_agent_operations AS o
+  JOIN course_agent_conversations AS c ON c.id = o.conversation_id
 WHERE
   c.user_id = $user_id
   AND o.created_at > now() - interval '1 hour'
@@ -106,7 +124,7 @@ WHERE
   );
 
 -- BLOCK update
-UPDATE course_agent_executions e
+UPDATE course_agent_executions AS e
 SET
   status = v.status,
   input_tokens = GREATEST(e.input_tokens, v.input),
@@ -172,8 +190,8 @@ WHERE
 SELECT DISTINCT
   c.*
 FROM
-  course_agent_conversations c
-  JOIN course_agent_executions e ON e.conversation_id = c.id
+  course_agent_conversations AS c
+  JOIN course_agent_executions AS e ON e.conversation_id = c.id
 WHERE
   (
     c.course_id = $course_id

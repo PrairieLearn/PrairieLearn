@@ -40,7 +40,13 @@ export async function observe(conversation: CourseAgentConversation, chat: ChatP
         dirty = false;
         const snapshot = await chat.getSnapshot(controller.signal);
         await recordUsage(conversation, snapshot);
-        await notify(conversation.id);
+        // Notifications are best-effort wakeups; browser routes also poll. Redis
+        // downtime must not detach host-tool execution or usage reconciliation.
+        try {
+          await notify(conversation.id);
+        } catch (error) {
+          Sentry.captureException(error);
+        }
         const values = Object.values(snapshot.executions ?? {});
         if (
           !values.some((value) => value.status === 'running') &&
