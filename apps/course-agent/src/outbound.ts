@@ -1,4 +1,6 @@
-// This executes in Workers, never inside the Linux container.
+// Runs in Cloudflare's outbound handlers, outside the Linux container. Sandbox
+// commands can construct arbitrary HTTP requests, so every request is checked
+// here before credentials are injected. Credentials never enter the checkout.
 /** Inject the model credential outside the sandbox, only for the allowlisted inference endpoint. */
 export async function forwardOpenAI(
   request: Request,
@@ -24,7 +26,8 @@ export async function forwardOpenAI(
   if (!('model' in body) || body.model !== env.CODEX_MODEL) {
     return new Response('Model is not allowed', { status: 403 });
   }
-  // Function/custom calls return to Codex; provider-hosted tools would bypass sandbox egress controls.
+  // Provider-hosted search and code execution run outside our sandbox network policy.
+  // Only function/custom tools, whose execution returns to Codex or PL, are allowed.
   if ('tools' in body) {
     if (!Array.isArray(body.tools)) return new Response('Invalid tools', { status: 400 });
     body.tools = body.tools.filter(

@@ -1,19 +1,33 @@
 import { z } from 'zod';
 
 import { OperationTimeout } from './cleanup-error.js';
-import type {
-  ClientRequest,
-  DynamicToolCallParams,
-  DynamicToolCallResponse,
-  InitializeResponse,
-  ServerNotification,
-  ThreadReadResponse,
-  ThreadResumeResponse,
-  ThreadStartResponse,
-  TurnInterruptResponse,
-  TurnStartResponse,
-  TurnSteerResponse,
-} from './protocol.js';
+import type { CodexNotification } from './codex-notifications.js';
+import type { InitializeParams } from './generated/InitializeParams.js';
+import type { InitializeResponse } from './generated/InitializeResponse.js';
+import type { DynamicToolCallParams } from './generated/v2/DynamicToolCallParams.js';
+import type { DynamicToolCallResponse } from './generated/v2/DynamicToolCallResponse.js';
+import type { ThreadReadParams } from './generated/v2/ThreadReadParams.js';
+import type { ThreadReadResponse } from './generated/v2/ThreadReadResponse.js';
+import type { ThreadResumeParams } from './generated/v2/ThreadResumeParams.js';
+import type { ThreadResumeResponse } from './generated/v2/ThreadResumeResponse.js';
+import type { ThreadStartParams } from './generated/v2/ThreadStartParams.js';
+import type { ThreadStartResponse } from './generated/v2/ThreadStartResponse.js';
+import type { TurnInterruptParams } from './generated/v2/TurnInterruptParams.js';
+import type { TurnInterruptResponse } from './generated/v2/TurnInterruptResponse.js';
+import type { TurnStartParams } from './generated/v2/TurnStartParams.js';
+import type { TurnStartResponse } from './generated/v2/TurnStartResponse.js';
+import type { TurnSteerParams } from './generated/v2/TurnSteerParams.js';
+import type { TurnSteerResponse } from './generated/v2/TurnSteerResponse.js';
+
+interface Params {
+  initialize: InitializeParams;
+  'thread/start': ThreadStartParams;
+  'thread/resume': ThreadResumeParams;
+  'thread/read': ThreadReadParams;
+  'turn/start': TurnStartParams;
+  'turn/steer': TurnSteerParams;
+  'turn/interrupt': TurnInterruptParams;
+}
 
 interface Results {
   initialize: InitializeResponse;
@@ -31,7 +45,7 @@ const envelope = z.object({
   result: z.unknown().optional(),
   error: z.object({ code: z.number(), message: z.string() }).optional(),
 });
-// A rejected RPC is distinct from an uncertain transport failure.
+// Codex explicitly rejected this RPC; unlike a timeout, acceptance is known.
 export class AppServerError extends Error {
   readonly code: number;
   constructor(code: number, message: string) {
@@ -57,7 +71,12 @@ export function within<T>(promise: Promise<T>, milliseconds: number, message: st
   ]).finally(() => clearTimeout(timer));
 }
 
-// Cloudflare supplies the socket. This client owns only Codex's JSON-RPC protocol.
+/**
+ * Runs in the Chat Durable Object and talks to the app-server inside its Linux
+ * sandbox. Request IDs correlate acknowledgments; notifications describe turn
+ * progress. A lost acknowledgment is not proof that a mutation did not execute,
+ * so this transport rejects it without automatically sending it a second time.
+ */
 export class AppServer {
   private socket: Socket;
   private nextId = 0;
@@ -66,7 +85,7 @@ export class AppServer {
     { resolve: (value: unknown) => void; reject: (error: Error) => void }
   >();
 
-  private subscribers = new Set<(event: ServerNotification) => void>();
+  private subscribers = new Set<(event: CodexNotification) => void>();
   private closed = false;
   toolHandler?: (params: DynamicToolCallParams) => Promise<DynamicToolCallResponse>;
   readonly disconnected: Promise<never>;
@@ -122,7 +141,7 @@ export class AppServer {
             ].includes(frame.method)
           ) {
             // Authenticated, version-pinned protocol; generated types describe the payload.
-            const notification = frame as ServerNotification;
+            const notification = frame as CodexNotification;
             for (const subscriber of this.subscribers) subscriber(notification);
           }
         } else if (typeof frame.id === 'number') {
@@ -160,10 +179,7 @@ export class AppServer {
     this.fail(new Error('Codex client closed.'));
   }
 
-  async request<M extends keyof Results>(
-    method: M,
-    params: Extract<ClientRequest, { method: M }>['params'],
-  ): Promise<Results[M]> {
+  async request<M extends keyof Results>(method: M, params: Params[M]): Promise<Results[M]> {
     if (this.closed) throw new Error('Codex connection is closed.');
     const id = ++this.nextId;
     const response = new Promise<unknown>((resolve, reject) => {
@@ -191,15 +207,15 @@ export class AppServer {
       // Dynamic host tools require this opt-in before thread/start.
       capabilities: { experimentalApi: true, requestAttestation: false },
       clientInfo: {
-        name: 'pl_sandbox_prototype',
-        title: 'PL sandbox prototype',
+        name: 'prairielearn_course_agent',
+        title: 'PrairieLearn course agent',
         version: '1',
       },
     });
     this.socket.send(JSON.stringify({ method: 'initialized' }));
   }
 
-  subscribe(listener: (event: ServerNotification) => void) {
+  subscribe(listener: (event: CodexNotification) => void) {
     this.subscribers.add(listener);
     return () => this.subscribers.delete(listener);
   }

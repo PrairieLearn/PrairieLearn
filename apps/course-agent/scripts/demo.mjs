@@ -23,7 +23,7 @@ await request('configure', {
 await request('message', {
   id: randomUUID(),
   dispatchId: randomUUID(),
-  expectedRevision: 0,
+  expectedOperationNumber: 0,
   text:
     process.argv
       .slice(2)

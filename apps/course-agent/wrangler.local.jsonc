@@ -1,3 +1,4 @@
+// Local sandbox development only. All bindings below are development resources.
 {
   "name": "prairielearn-course-agent-dev",
   "main": "src/worker.ts",

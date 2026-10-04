@@ -92,7 +92,7 @@ export const courseAgentRouter = t.router({
       const chat = await ctx.service.provider(ctx.scope, c, true);
       const { admit, recordUsage } = await import('../../ee/lib/course-agent/usage.js');
       await recordUsage(c, await chat.getSnapshot(AbortSignal.timeout(10000)));
-      const revision = await admit(c, input.message);
+      const operationNumber = await admit(c, input.message);
       const execution = (await selectOptionalExecution(c.id, input.message.id))!;
       const title = formatCourseAgentDate(c.created_at, ctx.course.display_timezone);
       const { observe } = await import('../../ee/lib/course-agent/observer.js');
@@ -111,7 +111,7 @@ export const courseAgentRouter = t.router({
         }
         throw error;
       }
-      return { title, revision };
+      return { title, operationNumber };
     }),
   stop: procedure.input(id).mutation(async ({ ctx, input }) => {
     const chat = await ctx.service.provider(

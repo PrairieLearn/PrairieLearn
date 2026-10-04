@@ -1,4 +1,4 @@
--- BLOCK list
+-- BLOCK select_conversations
 SELECT
   *
 FROM
@@ -9,7 +9,7 @@ WHERE
 ORDER BY
   created_at DESC;
 
--- BLOCK select
+-- BLOCK select_conversation
 SELECT
   *
 FROM
@@ -19,7 +19,7 @@ WHERE
   AND course_id = $course_id
   AND user_id = $user_id;
 
--- BLOCK lock
+-- BLOCK select_conversation_for_update
 SELECT
   *
 FROM
@@ -28,7 +28,7 @@ WHERE
   id = $id
 FOR UPDATE;
 
--- BLOCK insert
+-- BLOCK insert_conversation
 INSERT INTO
   course_agent_conversations (
     course_id,
@@ -50,7 +50,7 @@ VALUES
 RETURNING
   *;
 
--- BLOCK operation
+-- BLOCK select_operation
 SELECT
   *
 FROM
@@ -59,7 +59,7 @@ WHERE
   conversation_id = $id
   AND operation_id = $operation_id;
 
--- BLOCK same_operation
+-- BLOCK select_operation_payload_matches
 SELECT
   payload = $payload::jsonb AS same
 FROM
@@ -68,22 +68,27 @@ WHERE
   conversation_id = $id
   AND operation_id = $operation_id;
 
--- BLOCK advance
+-- BLOCK increment_operation_number
 UPDATE course_agent_conversations
 SET
-  revision = revision + 1
+  operation_number = operation_number + 1
 WHERE
   id = $id
 RETURNING
-  revision;
+  operation_number;
 
--- BLOCK admit
+-- BLOCK insert_operation
 INSERT INTO
-  course_agent_operations (conversation_id, operation_id, payload, revision)
+  course_agent_operations (
+    conversation_id,
+    operation_id,
+    payload,
+    operation_number
+  )
 VALUES
-  ($id, $operation_id, $payload, $revision);
+  ($id, $operation_id, $payload, $operation_number);
 
--- BLOCK pending
+-- BLOCK select_pending_proposal_exists
 SELECT
   EXISTS (
     SELECT
@@ -95,14 +100,14 @@ SELECT
       AND NOT delivered
   ) AS pending;
 
--- BLOCK activity
+-- BLOCK select_conversation_activity
 SELECT
   to_jsonb(c.*) AS conversation,
   EXISTS (
     SELECT
       1
     FROM
-      course_agent_executions e
+      course_agent_executions AS e
     WHERE
       e.conversation_id = c.id
       AND e.status IN ('admitted', 'running')
@@ -111,19 +116,19 @@ SELECT
     SELECT
       max(e.finished_at)
     FROM
-      course_agent_executions e
+      course_agent_executions AS e
     WHERE
       e.conversation_id = c.id
   ) AS finished_at
 FROM
-  course_agent_conversations c
+  course_agent_conversations AS c
 WHERE
   c.course_id = $course_id
   AND c.user_id = $user_id
 ORDER BY
   c.created_at DESC;
 
--- BLOCK name
+-- BLOCK update_conversation_title
 UPDATE course_agent_conversations
 SET
   title = $title
@@ -131,7 +136,7 @@ WHERE
   id = $id
   AND title = 'New conversation';
 
--- BLOCK operations
+-- BLOCK select_message_operations
 SELECT
   *
 FROM

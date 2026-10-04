@@ -210,7 +210,7 @@ test('JSONB property reordering preserves the approved digest', async () => {
   assert.equal(await publisher.prepare(value), value.approval.digest);
 });
 
-test('rejects invalid course-instance JSON before preparing publication', async () => {
+test('defers course-instance schema and JSON validation to Course Sync', async () => {
   const publication = job();
   publication.approval.files = [
     {
@@ -233,7 +233,7 @@ test('rejects invalid course-instance JSON before preparing publication', async 
     token: 'fixture',
     fetch: async () => Response.json({ truncated: false, tree: [] }),
   });
-  await assert.rejects(() => publisher.prepare(publication), /timeZone/);
+  assert.equal(await publisher.prepare(publication), publication.approval.digest);
   publication.approval.files[0].content = JSON.stringify({
     uuid: randomUUID(),
     longName: 'Fall 2026',
@@ -243,7 +243,11 @@ test('rejects invalid course-instance JSON before preparing publication', async 
   publication.approval.digest = createHash('sha256')
     .update(proposalContent(baseSha, proposedSha, files))
     .digest('hex');
-  await publisher.prepare(publication);
+  publication.approval.files[0].content = '{invalid JSON';
+  publication.approval.digest = createHash('sha256')
+    .update(proposalContent(baseSha, proposedSha, files))
+    .digest('hex');
+  assert.equal(await publisher.prepare(publication), publication.approval.digest);
 });
 
 test.each(['retry-after', 'x-ratelimit-remaining'])(
@@ -290,5 +294,67 @@ test('rejects a deleted binary base blob permanently instead of offering identic
   await assert.rejects(
     publisher.prepare(value),
     (error) => error instanceof PublishRejected && error.message.includes('UTF-8 text files'),
+  );
+});
+
+test.each(['FORBIDDEN', 'NOT_FOUND', 'UNPROCESSABLE'])(
+  'returns a definite GraphQL %s rejection without identical retries',
+  async (type) => {
+    const value = job();
+    const fixture = github(value);
+    const publisher = new Publisher(value.destination, {
+      token: 'test',
+      fetch: async (url, init) => {
+        if (
+          String(url).endsWith('/graphql') &&
+          JSON.parse(String(init?.body)).query.startsWith('mutation')
+        ) {
+          return Response.json({
+            errors: [{ type, path: ['createCommitOnBranch'], message: 'private upstream text' }],
+            data: { createCommitOnBranch: null },
+          });
+        }
+        return fixture.fetcher(url, init);
+      },
+    });
+    value.candidate = await publisher.prepare(value);
+    await assert.rejects(
+      publisher.push(value),
+      (error) => error instanceof PublishRejected && !error.message.includes('private upstream'),
+    );
+  },
+);
+
+test('keeps unknown GraphQL mutation failures unconfirmed for receipt reconciliation', async () => {
+  const value = job();
+  const fixture = github(value);
+  const publisher = new Publisher(value.destination, {
+    token: 'test',
+    fetch: async (url, init) => {
+      if (
+        String(url).endsWith('/graphql') &&
+        JSON.parse(String(init?.body)).query.startsWith('mutation')
+      ) {
+        return Response.json({ errors: [{ type: 'INTERNAL', path: ['createCommitOnBranch'] }] });
+      }
+      return fixture.fetcher(url, init);
+    },
+  });
+  value.candidate = await publisher.prepare(value);
+  await assert.rejects(publisher.push(value), (error) => error instanceof ChatError);
+});
+
+test('a deleted branch ends completion with an explicit unverified-prior-publication result', async () => {
+  const value = job();
+  value.candidate = value.approval.digest;
+  const publisher = new Publisher(value.destination, {
+    token: 'test',
+    fetch: async () => Response.json({ data: { repository: { ref: null } } }),
+  });
+  await assert.rejects(
+    publisher.push(value),
+    (error) =>
+      error instanceof PublishRejected &&
+      error.message.includes('Prior publication could not be verified'),
   );
 });

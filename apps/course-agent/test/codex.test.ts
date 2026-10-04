@@ -12,8 +12,8 @@ import { captureApproval } from '../src/approval.js';
 import { cleanupError } from '../src/cleanup-error.js';
 import { CodexEvents } from '../src/codex-events.js';
 import { type CodexSandbox, ContainerLost, checkpointCodex, connectCodex } from '../src/codex.js';
+import type { ThreadItem } from '../src/generated/v2/ThreadItem.js';
 import { forwardOpenAI } from '../src/outbound.js';
-import type { ThreadItem } from '../src/protocol.js';
 
 const text: ThreadItem = {
   type: 'agentMessage',

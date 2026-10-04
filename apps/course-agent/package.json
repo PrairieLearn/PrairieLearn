@@ -3,12 +3,12 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "wrangler deploy --config wrangler.jsonc --dry-run --containers-rollout=none --outdir dist",
+    "build": "wrangler deploy --config wrangler.local.jsonc --dry-run --containers-rollout=none --outdir dist",
+    "check:protocol": "node ../../scripts/gen-codex-protocol.mts check",
     "demo": "node scripts/demo.mjs",
-    "deploy": "wrangler deploy --config wrangler.jsonc",
-    "dev": "wrangler dev --port 8790 --inspector-port 0 --persist-to .wrangler/local",
+    "dev": "wrangler dev --config wrangler.local.jsonc --port 8790 --inspector-port 0 --persist-to .wrangler/local",
     "dev:fixture": "wrangler dev --config test/fixtures/wrangler.json --port 8791 --inspector-port 0 --persist-to .wrangler/fixture",
-    "generate:protocol": "node scripts/generate-protocol.mjs",
+    "generate:protocol": "node ../../scripts/gen-codex-protocol.mts",
     "test": "vitest run",
     "test:lifecycle": "COURSE_AGENT_FIXTURE_URL=http://localhost:8791 vitest run test/lifecycle.test.ts",
     "typecheck": "tsc --noEmit"
@@ -23,10 +23,11 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260917.1",
+    "@openai/codex": "0.155.0",
     "@types/node": "^24.13.5",
-    "@types/ws": "^8.18.1",
     "typescript": "^7.0.2",
     "wrangler": "^4.134.0",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "@types/ws": "^8.18.1"
   }
 }

@@ -3,8 +3,8 @@ columns
     created_at: timestamp with time zone not null default now()
     id: bigint not null default nextval('course_agent_operations_id_seq'::regclass)
     operation_id: uuid not null
+    operation_number: integer not null
     payload: jsonb not null
-    revision: integer not null
 
 indexes
     course_agent_operations_pkey: PRIMARY KEY (id) USING btree (id)

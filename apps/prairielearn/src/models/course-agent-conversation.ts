@@ -28,13 +28,13 @@ export interface AgentScope {
 }
 export const selectConversations = (scope: AgentScope) =>
   queryRows(
-    sql.list,
+    sql.select_conversations,
     { course_id: scope.course_id, user_id: scope.user_id },
     CourseAgentConversationSchema,
   );
 export async function selectConversation(scope: AgentScope, id: string) {
   const row = await queryOptionalRow(
-    sql.select,
+    sql.select_conversation,
     { course_id: scope.course_id, user_id: scope.user_id, id },
     CourseAgentConversationSchema,
   );
@@ -47,7 +47,7 @@ export async function createConversation(
 ) {
   return runInTransactionAsync(async () => {
     const row = await queryRow(
-      sql.insert,
+      sql.insert_conversation,
       { course_id: scope.course_id, user_id: scope.user_id, ...input, external_id: randomUUID() },
       CourseAgentConversationSchema,
     );
@@ -71,15 +71,19 @@ export async function reserveOperation(
   gate = true,
 ) {
   return runInTransactionAsync(async () => {
-    const row = await queryRow(sql.lock, { id: conversation.id }, CourseAgentConversationSchema);
+    const row = await queryRow(
+      sql.select_conversation_for_update,
+      { id: conversation.id },
+      CourseAgentConversationSchema,
+    );
     const existing = await queryOptionalRow(
-      sql.operation,
+      sql.select_operation,
       { id: row.id, operation_id },
       CourseAgentOperationSchema,
     );
     if (existing) {
       const { same } = await queryRow(
-        sql.same_operation,
+        sql.select_operation_payload_matches,
         { id: row.id, operation_id, payload: JSON.stringify(payload) },
         z.object({ same: z.boolean() }),
       );
@@ -89,9 +93,9 @@ export async function reserveOperation(
           message: 'Operation ID reused with different input.',
         });
       }
-      return existing.revision;
+      return existing.operation_number;
     }
-    if (row.revision !== expected) {
+    if (row.operation_number !== expected) {
       throw new TRPCError({
         code: 'CONFLICT',
         message: 'Conversation changed. Refresh before retrying; your draft is preserved.',
@@ -99,31 +103,37 @@ export async function reserveOperation(
     }
     if (
       gate &&
-      (await queryRow(sql.pending, { id: row.id }, z.object({ pending: z.boolean() }))).pending
+      (
+        await queryRow(
+          sql.select_pending_proposal_exists,
+          { id: row.id },
+          z.object({ pending: z.boolean() }),
+        )
+      ).pending
     ) {
       throw new TRPCError({
         code: 'CONFLICT',
         message: 'Resolve the pending proposal before sending another message.',
       });
     }
-    const { revision } = await queryRow(
-      sql.advance,
+    const { operation_number } = await queryRow(
+      sql.increment_operation_number,
       { id: row.id },
-      z.object({ revision: z.number() }),
+      z.object({ operation_number: z.number() }),
     );
-    await execute(sql.admit, {
+    await execute(sql.insert_operation, {
       id: row.id,
       operation_id,
       payload: JSON.stringify(payload),
-      revision,
+      operation_number,
     });
-    return revision;
+    return operation_number;
   });
 }
 
 export const selectConversationActivity = (scope: AgentScope) =>
   queryRows(
-    sql.activity,
+    sql.select_conversation_activity,
     { course_id: scope.course_id, user_id: scope.user_id },
     z.object({
       conversation: CourseAgentConversationSchema,
@@ -131,6 +141,7 @@ export const selectConversationActivity = (scope: AgentScope) =>
       finished_at: z.coerce.date().nullable(),
     }),
   );
-export const nameConversation = (id: string, title: string) => execute(sql.name, { id, title });
+export const nameConversation = (id: string, title: string) =>
+  execute(sql.update_conversation_title, { id, title });
 export const selectConversationOperations = (id: string) =>
-  queryRows(sql.operations, { id }, CourseAgentOperationSchema);
+  queryRows(sql.select_message_operations, { id }, CourseAgentOperationSchema);

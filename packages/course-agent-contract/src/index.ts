@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const sendRequestSchema = z.object({
   id: z.uuid(),
-  expectedRevision: z.number().int().nonnegative().default(0),
+  expectedOperationNumber: z.number().int().nonnegative().default(0),
   text: z.string().trim().min(1).max(100_000),
 });
 export type SendRequest = z.infer<typeof sendRequestSchema>;
@@ -13,6 +13,7 @@ export const admissionReconciliationSchema = z.object({
   admissions: z.array(z.object({ id: z.uuid(), dispatchId: z.uuid() })).max(100),
 });
 
+/** One cleanup attempt, persisted with sandbox state so retries survive DO eviction. */
 export const cleanupDiagnosticsSchema = z.object({
   id: z.string(),
   stage: z.enum(['stop', 'backup', 'destroy']),
@@ -22,6 +23,7 @@ export const cleanupDiagnosticsSchema = z.object({
 });
 export type CleanupDiagnostics = z.infer<typeof cleanupDiagnosticsSchema>;
 
+/** Read-time lifecycle view; deadlines are computed from durable timestamps. */
 export const sandboxDiagnosticsSchema = z.object({
   state: z.enum([
     'absent',
@@ -99,9 +101,9 @@ export function proposalContent(base: string, proposed: string, files: Approval[
 }
 export const approvalDecisionSchema = z.object({
   id: z.uuid(),
-  expectedRevision: z.number().int().nonnegative(),
+  expectedOperationNumber: z.number().int().nonnegative(),
   digest: z.string(),
-  approved: z.boolean(),
+  decision: z.enum(['approve', 'deny']),
 });
 export type ApprovalDecision = z.infer<typeof approvalDecisionSchema>;
 export interface ChatSnapshot {
@@ -118,7 +120,8 @@ export interface ChatSnapshot {
   >;
   usage?: { input: number | null; output: number | null; estimatedCost: number | null };
   messages: UIMessage[];
-  revision: number;
+  operationNumber: number;
+  newWorkUnavailable?: string;
   blocked?: boolean;
   pendingTool?: PendingTool;
   diagnostics?: SandboxDiagnostics;

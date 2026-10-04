@@ -26,11 +26,16 @@ export interface Run {
   cancelRequested?: boolean;
   status: 'running' | 'completed' | 'cancelled' | 'failed' | 'interrupted';
 }
-/** Persisted in the Chat DO; filesystem contents live in the sandbox or its latest R2 checkpoint. */
+/** Chat DO metadata is durable separately from the Linux filesystem; R2 checkpoints preserve that filesystem and native Codex history. */
 export interface CodexState {
   rejectedDispatches?: Record<string, true>;
   repository?: { repository: string; branch: string };
   usageTotal?: { threadId: string; input: number; cached: number; output: number };
+  /**
+   * Prompt/continuation receipts correlate acceptance and incremental token totals.
+   * Terminal entries are archived to SQLite, so broadcasts stay bounded without
+   * forgetting an old dispatch when PL reconciles usage or retries a request.
+   */
   executions?: Record<
     string,
     {
@@ -42,9 +47,15 @@ export interface CodexState {
       output: number | null;
     }
   >;
+  /**
+   * Corrections belong to an existing turn. Persist before sending turn/steer:
+   * after a lost acknowledgment native history decides whether it was accepted.
+   */
   steering?: Record<string, { sandboxId: string; threadId: string; accepted: boolean }>;
+  /** Captured tool arguments outlive the socket/container while PL waits for approval. */
   pendingTool?: PendingTool;
   toolSequence?: number;
+  /** Completed results fence retries after a lost native result-delivery acknowledgment. */
   toolReceipts?: Record<string, string | { result: string; success: boolean }>;
   sandbox?: {
     id: string;

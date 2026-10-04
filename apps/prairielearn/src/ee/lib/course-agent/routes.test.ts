@@ -75,7 +75,7 @@ test('sends authentication failure through SSE without invoking the HTML error h
 });
 
 test('ends a failed WebSocket connection cleanly and hides internal error details', async () => {
-  mocks.getSnapshot.mockResolvedValue({ messages: [], revision: 0 });
+  mocks.getSnapshot.mockResolvedValue({ messages: [], operationNumber: 0 });
   mocks.watch.mockRejectedValue(new Error('private transport details'));
   const response = await fetch(url);
   const body = await response.text();

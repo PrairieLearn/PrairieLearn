@@ -153,6 +153,8 @@ test('conversation and unsent draft persist across course pages', async ({
   );
   await expect(page.getByRole('button', { name: 'Rename', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Send', exact: true }).hover();
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
   await page.getByRole('button', { name: 'Statistics', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Conversation statistics' })).toBeVisible();
   await expect(page.getByLabel('Sandbox diagnostics')).toContainText('waiting_for_user');
@@ -216,6 +218,25 @@ test('conversation and unsent draft persist across course pages', async ({
     await expect(page.getByText('Please inspect the course.', { exact: true })).toBeVisible();
   } finally {
     await features.delete('course-agent', featureContext);
+  }
+  await updateCourseColumn({
+    courseId,
+    columnName: 'branch',
+    value: 'changed-branch',
+    authnUserId: '1',
+  });
+  try {
+    await page.reload();
+    await expect(
+      page.getByText('The course repository or branch changed. Start a new conversation.', {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled();
+    await expect(page.getByText('Please inspect the course.', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'New conversation', exact: true })).toBeEnabled();
+  } finally {
+    await updateCourseColumn({ courseId, columnName: 'branch', value: 'main', authnUserId: '1' });
   }
 });
 
@@ -311,7 +332,7 @@ test('failed preparation returns a native tool error and never displays an appro
   await page.route('**/course-agent/*/events', (route) =>
     route.fulfill({
       contentType: 'text/event-stream',
-      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], revision: 0, diagnostics: { cleanup: { error: 'Technical cleanup failure' }, checkpointError: 'Technical checkpoint failure' }, blocked: true, approval: proposal, approvals: [proposal, { ...proposal, id: 'approved', status: 'approved' }, { ...proposal, id: 'denied', status: 'denied' }], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
+      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], operationNumber: 0, diagnostics: { cleanup: { error: 'Technical cleanup failure' }, checkpointError: 'Technical checkpoint failure' }, blocked: true, approval: proposal, approvals: [proposal, { ...proposal, id: 'approved', status: 'approved' }, { ...proposal, id: 'denied', status: 'denied' }], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
     }),
   );
   await page.reload();
@@ -420,7 +441,7 @@ test('failed preparation returns a native tool error and never displays an appro
     await page.route('**/course-agent/*/events', (route) =>
       route.fulfill({
         contentType: 'text/event-stream',
-        body: `data: ${JSON.stringify({ messages: [], revision: 0, blocked: false, approval, approvals: [approval], publication: { status: 'retry', error: 'Result delivery interrupted. Retry completion.', repository: 'example/course', branch: 'main' } })}\n\n`,
+        body: `data: ${JSON.stringify({ messages: [], operationNumber: 0, blocked: false, approval, approvals: [approval], publication: { status: 'retry', error: 'Result delivery interrupted. Retry completion.', repository: 'example/course', branch: 'main' } })}\n\n`,
       }),
     );
     await page.reload();
@@ -435,7 +456,7 @@ test('failed preparation returns a native tool error and never displays an appro
     await page.route('**/course-agent/*/events', (route) =>
       route.fulfill({
         contentType: 'text/event-stream',
-        body: `data: ${JSON.stringify({ messages: [], revision: 0, blocked: true, approval, approvals: [approval], publication: { status, repository: 'example/course', branch: 'main' } })}\n\n`,
+        body: `data: ${JSON.stringify({ messages: [], operationNumber: 0, blocked: true, approval, approvals: [approval], publication: { status, repository: 'example/course', branch: 'main' } })}\n\n`,
       }),
     );
     await page.reload();
@@ -451,7 +472,7 @@ test('failed preparation returns a native tool error and never displays an appro
     await page.route('**/course-agent/*/events', (route) =>
       route.fulfill({
         contentType: 'text/event-stream',
-        body: `data: ${JSON.stringify({ messages: [], revision: 0, blocked: false, approvals: [], diagnostics: { state } })}\n\n`,
+        body: `data: ${JSON.stringify({ messages: [], operationNumber: 0, blocked: false, approvals: [], diagnostics: { state } })}\n\n`,
       }),
     );
     await page.reload();

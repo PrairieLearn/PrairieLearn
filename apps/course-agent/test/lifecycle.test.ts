@@ -31,7 +31,7 @@ function conversation() {
       const response = await fetch(`${root}/message`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ id: randomUUID(), text, expectedRevision: 0 }),
+        body: JSON.stringify({ id: randomUUID(), text, expectedOperationNumber: 0 }),
       });
       expect(response.ok).toBe(true);
     },
@@ -65,9 +65,10 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
       rejected: [dispatchId],
     });
     expect(
-      (await c.rawMessage({ id, dispatchId, text: 'Late request', expectedRevision: 0 })).status,
+      (await c.rawMessage({ id, dispatchId, text: 'Late request', expectedOperationNumber: 0 }))
+        .status,
     ).toBe(409);
-    const retried = { id, dispatchId: randomUUID(), text: 'Retry', expectedRevision: 0 };
+    const retried = { id, dispatchId: randomUUID(), text: 'Retry', expectedOperationNumber: 0 };
     expect((await c.rawMessage(retried)).ok).toBe(true);
     expect((await c.request('snapshot')).executions[id].dispatchId).toBe(retried.dispatchId);
     expect(
@@ -116,7 +117,7 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
           id: randomUUID(),
           dispatchId: rejected[0],
           text: 'Late',
-          expectedRevision: 0,
+          expectedOperationNumber: 0,
         })
       ).status,
     ).toBe(409);
@@ -177,9 +178,9 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
       )
       .toBe(true);
     const id = randomUUID();
-    expect((await c.rawMessage({ id, text: 'Continue checking.', expectedRevision: 0 })).ok).toBe(
-      true,
-    );
+    expect(
+      (await c.rawMessage({ id, text: 'Continue checking.', expectedOperationNumber: 0 })).ok,
+    ).toBe(true);
     await expect
       .poll(async () =>
         (await c.request('snapshot')).messages.some((message: { parts: { type: string }[] }) =>
@@ -193,7 +194,11 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     const c = conversation();
     await c.send();
     await c.request('test/steer-behavior', { behavior: 'lose-ack' });
-    const input = { id: randomUUID(), text: 'Also check the assessments.', expectedRevision: 0 };
+    const input = {
+      id: randomUUID(),
+      text: 'Also check the assessments.',
+      expectedOperationNumber: 0,
+    };
     const response = await c.rawMessage(input);
     expect(response.status).toBe(503);
     const retry = await c.rawMessage(input);

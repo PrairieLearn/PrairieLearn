@@ -183,17 +183,19 @@ export async function admit(conversation: CourseAgentConversation, input: SendRe
     for (const result of results) if (result.status === 'rejected') throw result.reason;
   }
   return withAdmissionLocks(conversation, async () => {
-    const revision = await reserveOperation(
+    const operationNumber = await reserveOperation(
       conversation,
       input.id,
       { kind: 'message', text: input.text },
-      input.expectedRevision,
+      input.expectedOperationNumber,
     );
     const existing = await executions.selectOptionalExecution(conversation.id, input.id);
-    if (existing && !(existing.status === 'failed' && existing.model === null)) return revision;
+    if (existing && !(existing.status === 'failed' && existing.model === null)) {
+      return operationNumber;
+    }
     await checkCapacity(conversation, true);
     await executions.insertExecution(conversation.id, input.id);
-    return revision;
+    return operationNumber;
   });
 }
 

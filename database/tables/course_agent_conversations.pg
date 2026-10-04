@@ -4,8 +4,8 @@ columns
     created_at: timestamp with time zone not null default now()
     external_id: uuid not null
     id: bigint not null default nextval('course_agent_conversations_id_seq'::regclass)
+    operation_number: integer not null default 0
     repository: text not null
-    revision: integer not null default 0
     title: text not null
     user_id: bigint not null
 
@@ -15,7 +15,7 @@ indexes
     course_agent_conversations_course_id_user_id_idx: USING btree (course_id, user_id)
 
 check constraints
-    course_agent_conversations_revision_check: CHECK (revision >= 0)
+    course_agent_conversations_operation_number_check: CHECK (operation_number >= 0)
 
 foreign-key constraints
     course_agent_conversations_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -90,8 +90,7 @@ async function authorizedDestination(scope: AgentScope, conversation: CourseAgen
   if (target.repository !== conversation.repository || target.branch !== conversation.branch) {
     throw new TRPCError({
       code: 'CONFLICT',
-      message:
-        'Course repository changed. Start a new conversation; existing cleanup remains available.',
+      message: 'The course repository or branch changed. Start a new conversation.',
     });
   }
   return course;
@@ -238,6 +237,12 @@ export async function prepare(
   await notify(conversation.id);
 }
 export async function snapshot(conversation: CourseAgentConversation, value: ChatSnapshot) {
+  const course = await selectCourseById(conversation.course_id);
+  const currentRepository = parseGithubRepository(course.repository ?? '');
+  const destinationChanged =
+    !currentRepository ||
+    `${currentRepository.owner}/${currentRepository.repo}` !== conversation.repository ||
+    course.branch !== conversation.branch;
   const rows = await proposals.selectProposals(conversation.id);
   const operations = await selectConversationOperations(conversation.id);
   const prepared = rows.filter((row) => row.prepared);
@@ -279,6 +284,9 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
   }));
   return {
     ...value,
+    newWorkUnavailable: destinationChanged
+      ? 'The course repository or branch changed. Start a new conversation.'
+      : undefined,
     messages: value.messages.map((message) => {
       const operation = operations.find((operation) => operation.operation_id === message.id);
       return operation
@@ -291,7 +299,7 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
           }
         : message;
     }),
-    revision: conversation.revision,
+    operationNumber: conversation.operation_number,
     approvals,
     preparation: preparation
       ? { id: preparation.operation_id, error: preparation.error ?? undefined }
@@ -343,7 +351,7 @@ async function failSync(
       : [];
     const details = stripVTControlCharacters(
       [
-        course.sync_errors,
+        course.sync_errors ? `infoCourse.json: ${course.sync_errors}` : null,
         ...jobs
           .filter((job) => job.status === 'Error')
           .map((job) => [job.error_message, job.output?.slice(-1000)].filter(Boolean).join('\n')),
@@ -356,7 +364,7 @@ async function failSync(
     });
     row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
   }
-  const recovery = 'Publication was retained. Correct the course errors and submit a new proposal.';
+  const recovery = `GitHub commit ${row.published_sha} was retained on ${conversation.repository} (${conversation.branch}). Course Sync may have applied valid course entities before failing. Fetch and reconcile the published commit, then correct the errors or explicitly revert the change in a new proposal for instructor approval.`;
   await proposals.saveProposalProgress(row.id, {
     outcome: `Course Sync failed. ${recovery}\nSync diagnostics:\n${row.sync_diagnostics}`,
     outcome_success: false,
@@ -387,69 +395,82 @@ export async function complete(
         scope,
         conversation,
         row,
-        input.approved,
-        input.expectedRevision,
+        input.decision,
+        input.expectedOperationNumber,
       );
       row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
       try {
-        if (!row.outcome) {
-          if (!input.approved) {
-            await proposals.saveProposalProgress(row.id, {
-              outcome: 'The user denied this proposal. Nothing was published.',
-              outcome_success: true,
-            });
-          } else {
-            if (!row.published_sha) {
-              await authorizedDestination(scope, conversation);
-              const sha = await publisher(conversation).push(job(conversation, row));
-              await proposals.saveProposalProgress(row.id, { published_sha: sha });
-              row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
-            }
-            if (row.sync_job_sequence_id) {
-              const { status } = await selectJobSequenceStatus(row.sync_job_sequence_id);
-              if (status === 'Running' || status === 'Stopping') return;
-            }
-            if (row.sync_validation_failed) {
-              if (!(await failSync(scope, conversation, row, input))) return;
+        try {
+          if (!row.outcome) {
+            if (input.decision === 'deny') {
+              await proposals.saveProposalProgress(row.id, {
+                outcome: 'The user denied this proposal. Nothing was published.',
+                outcome_success: true,
+              });
             } else {
+              if (!row.published_sha) {
+                await authorizedDestination(scope, conversation);
+                const sha = await publisher(conversation).push(job(conversation, row));
+                await proposals.saveProposalProgress(row.id, { published_sha: sha });
+                row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
+              }
               if (row.sync_job_sequence_id) {
                 const { status } = await selectJobSequenceStatus(row.sync_job_sequence_id);
                 if (status === 'Running' || status === 'Stopping') return;
-                if (status !== 'Success') {
-                  if (finishedSync === row.sync_job_sequence_id) {
-                    throw new Error(
-                      'Course Sync could not finish. The publication is saved; retry completion.',
-                    );
+              }
+              if (row.sync_validation_failed) {
+                if (!(await failSync(scope, conversation, row, input))) return;
+              } else {
+                if (row.sync_job_sequence_id) {
+                  const { status } = await selectJobSequenceStatus(row.sync_job_sequence_id);
+                  if (status === 'Running' || status === 'Stopping') return;
+                  if (status !== 'Success') {
+                    if (finishedSync === row.sync_job_sequence_id) {
+                      throw new Error(
+                        'Course Sync could not finish. The publication is saved; retry completion.',
+                      );
+                    }
+                    await proposals.resetSyncReceipt(row.id);
+                    row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
                   }
-                  await proposals.resetSyncReceipt(row.id);
-                  row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
                 }
-              }
-              if (!row.synced_sha) {
-                const sync = await pullAndUpdateCourse({
-                  course: await authorizedDestination(scope, conversation),
-                  userId: scope.user_id,
-                  authnUserId: scope.authn_user_id,
-                  expectedAncestorSha: row.published_sha!,
-                  onJobCreated: async (id) => {
-                    await proposals.saveProposalProgress(row!.id, { sync_job_sequence_id: id });
-                  },
-                  onSynced: async (sha) => {
-                    await proposals.saveProposalProgress(row!.id, { synced_sha: sha });
-                  },
-                  onValidationFailure: async () => {
-                    await proposals.saveProposalProgress(row!.id, { sync_validation_failed: true });
-                  },
+                if (!row.synced_sha) {
+                  const sync = await pullAndUpdateCourse({
+                    course: await authorizedDestination(scope, conversation),
+                    userId: scope.user_id,
+                    authnUserId: scope.authn_user_id,
+                    expectedAncestorSha: row.published_sha!,
+                    onJobCreated: async (id) => {
+                      await proposals.saveProposalProgress(row!.id, { sync_job_sequence_id: id });
+                    },
+                    onSynced: async (sha) => {
+                      await proposals.saveProposalProgress(row!.id, { synced_sha: sha });
+                    },
+                    onValidationFailure: async () => {
+                      await proposals.saveProposalProgress(row!.id, {
+                        sync_validation_failed: true,
+                      });
+                    },
+                  });
+                  continueAfterSync(sync, scope, conversation, input);
+                  return;
+                }
+                await proposals.saveProposalProgress(row.id, {
+                  outcome: `Published ${row.published_sha} to ${conversation.repository} (${conversation.branch}). Course Sync completed at ${row.synced_sha}. Fetch and reconcile your checkout with the remote, preserving divergent work, before further edits.`,
+                  outcome_success: true,
                 });
-                continueAfterSync(sync, scope, conversation, input);
-                return;
               }
-              await proposals.saveProposalProgress(row.id, {
-                outcome: `Published ${row.published_sha} to ${conversation.repository} (${conversation.branch}). Course Sync completed at ${row.synced_sha}. Fetch and reconcile your checkout with the remote, preserving divergent work, before further edits.`,
-                outcome_success: true,
-              });
             }
           }
+        } catch (error) {
+          if (!(error instanceof PublishRejected)) throw error;
+          // A definite rejection is a tool result the agent can act on. Saving
+          // it before delivery makes a failed/cold delivery retry independently.
+          await proposals.saveProposalProgress(row.id, {
+            outcome: `Publication rejected: ${error.message} Prepare a new proposal.`,
+            outcome_success: false,
+            error: error.message,
+          });
         }
         row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
         if (!row.delivered && row.outcome) {
@@ -480,17 +501,9 @@ export async function complete(
           await proposals.saveProposalProgress(row.id, { delivered: true, error: row.error });
         }
       } catch (error) {
-        if (error instanceof PublishRejected) {
-          await proposals.saveProposalProgress(row.id, {
-            outcome: `Publication rejected: ${error.message} Prepare a new proposal.`,
-            outcome_success: false,
-            error: error.message,
-          });
-        } else {
-          await proposals.saveProposalProgress(row.id, {
-            error: error instanceof Error ? error.message : 'Completion failed.',
-          });
-        }
+        await proposals.saveProposalProgress(row.id, {
+          error: error instanceof Error ? error.message : 'Completion failed.',
+        });
         throw error;
       } finally {
         await notify(conversation.id);

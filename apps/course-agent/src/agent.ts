@@ -34,8 +34,9 @@ import {
   checkpointCodex,
   connectCodex,
 } from './codex.js';
+import type { DynamicToolCallResponse } from './generated/v2/DynamicToolCallResponse.js';
+import type { Turn } from './generated/v2/Turn.js';
 import { HostTools } from './host-tools.js';
-import type { DynamicToolCallResponse, Turn } from './protocol.js';
 import { ReceiptStore } from './receipt-store.js';
 import type { Sandbox } from './sandbox.js';
 import { getTool, isPreparedTool, toolResult } from './tools.js';
@@ -64,7 +65,7 @@ const interruptedMessage =
   'Task interrupted. It was not automatically repeated. You can send another message to continue.';
 
 /**
- * One durable conversation: SQLite owns history, lifecycle state, and generic pending-tool gates.
+ * One durable conversation: SQLite owns history, lifecycle state, and execution receipts.
  * Live sockets/promises belong to this instance only; recovery consults Codex native history.
  */
 export class Chat extends AIChatAgent<Env, CodexState> {
@@ -391,7 +392,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         {
           messages: this.snapshotMessages(),
           executions: this.executionReceipts(ids),
-          revision: 0, // PL supplies its authoritative admission revision.
+          operationNumber: 0, // PL supplies the authoritative operation number.
           blocked: !!this.state.pendingTool || this.toolPreparing,
           pendingTool: this.state.pendingTool,
         },
@@ -511,7 +512,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
   }
 
   /**
-   * Admit a revision-checked prompt, then steer an active turn or start a new one.
+   * Admit a prompt checked against the last observed operation number, then steer an active turn or start a new one.
    * Return on native acceptance, not completion. Hidden tool results use the same delivery path.
    */
   private async send(input: DispatchRequest, continuation = false) {
@@ -753,7 +754,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         {
           id: tool.id,
           text: `${tool.name} result for operation ${tool.id}: ${input.result}`,
-          expectedRevision: 0,
+          expectedOperationNumber: 0,
           dispatchId: input.dispatchId,
         },
         true,

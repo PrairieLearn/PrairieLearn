@@ -7,7 +7,7 @@ import {
 } from '@prairielearn/course-agent-contract';
 
 import type { CodexSandbox } from './codex.js';
-import type { DynamicToolSpec } from './protocol.js';
+import type { DynamicToolSpec } from './generated/v2/DynamicToolSpec.js';
 
 export const pushSyncTool: DynamicToolSpec = {
   type: 'function',

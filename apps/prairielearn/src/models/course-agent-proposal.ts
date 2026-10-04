@@ -19,24 +19,38 @@ import { type AgentScope, reserveOperation } from './course-agent-conversation.j
 
 const sql = loadSqlEquiv(import.meta.url);
 export const selectOptionalProposal = (conversation_id: string, operation_id: string) =>
-  queryOptionalRow(sql.select, { conversation_id, operation_id }, CourseAgentProposalSchema);
+  queryOptionalRow(
+    sql.select_proposal,
+    { conversation_id, operation_id },
+    CourseAgentProposalSchema,
+  );
 export const selectProposals = (conversation_id: string) =>
-  queryRows(sql.list, { conversation_id }, CourseAgentProposalSchema);
+  queryRows(sql.select_proposals, { conversation_id }, CourseAgentProposalSchema);
 export const insertProposal = (input: {
   conversation_id: string;
   operation_id: string;
   sequence: number;
   payload: string;
   digest: string;
-}) => queryOptionalRow(sql.insert, input, CourseAgentProposalSchema);
+}) => queryOptionalRow(sql.insert_proposal, input, CourseAgentProposalSchema);
 export const prepareProposal = (
   id: string,
   payload: unknown,
   prepared: boolean,
   error: string | null,
-) => execute(sql.prepare, { id, payload: JSON.stringify(payload), prepared, error });
+) =>
+  execute(sql.update_proposal_preparation, {
+    id,
+    payload: JSON.stringify(payload),
+    prepared,
+    error,
+  });
 export const failProposalPreparation = (id: string, error: string) =>
-  execute(sql.fail_preparation, { id, error, outcome: `Code change request failed: ${error}` });
+  execute(sql.update_proposal_preparation_failure, {
+    id,
+    error,
+    outcome: `Code change request failed: ${error}`,
+  });
 export const saveProposalProgress = (
   id: string,
   input: Partial<
@@ -54,7 +68,7 @@ export const saveProposalProgress = (
     >
   >,
 ) =>
-  execute(sql.progress, {
+  execute(sql.update_proposal_progress, {
     id,
     published_sha: null,
     sync_job_sequence_id: null,
@@ -67,31 +81,32 @@ export const saveProposalProgress = (
     sync_diagnostics: null,
     ...input,
   });
-export const resetSyncReceipt = (id: string) => execute(sql.reset_sync, { id });
+export const resetSyncReceipt = (id: string) => execute(sql.reset_proposal_sync_receipt, { id });
 export async function decideProposal(
   scope: AgentScope,
   conversation: CourseAgentConversation,
   row: CourseAgentProposal,
-  decision: boolean,
-  expectedRevision: number,
+  decision: 'approve' | 'deny',
+  expectedOperationNumber: number,
 ) {
+  const approved = decision === 'approve';
   return runInTransactionAsync(async () => {
     await reserveOperation(
       conversation,
       row.operation_id,
-      { kind: 'decision', digest: row.digest, approved: decision },
-      expectedRevision,
+      { kind: 'decision', digest: row.digest, decision },
+      expectedOperationNumber,
       false,
     );
     if (row.decision !== null) {
-      if (row.decision !== decision) {
+      if (row.decision !== approved) {
         throw new TRPCError({ code: 'CONFLICT', message: 'Another decision is already saved.' });
       }
       return;
     }
     const next = await queryOptionalRow(
-      sql.decide,
-      { id: row.id, decision },
+      sql.update_proposal_decision,
+      { id: row.id, decision: approved },
       CourseAgentProposalSchema,
     );
     if (!next) {
@@ -100,13 +115,13 @@ export async function decideProposal(
     await insertAuditEvent({
       tableName: 'course_agent_proposals',
       action: 'update',
-      actionDetail: decision ? 'approve' : 'deny',
+      actionDetail: decision,
       rowId: row.id,
       courseId: scope.course_id,
       agentUserId: scope.user_id,
       agentAuthnUserId: scope.authn_user_id,
       oldRow: { decision: null, digest: row.digest },
-      newRow: { decision, digest: row.digest },
+      newRow: { decision: approved, digest: row.digest },
     });
   });
 }

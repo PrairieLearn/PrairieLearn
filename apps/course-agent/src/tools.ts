@@ -2,7 +2,8 @@ import { hostToolDefinitions } from '@prairielearn/course-agent-contract';
 
 import { captureApproval, pushSyncTool } from './approval.js';
 import type { CodexSandbox } from './codex.js';
-import type { DynamicToolCallResponse, DynamicToolSpec } from './protocol.js';
+import type { DynamicToolCallResponse } from './generated/v2/DynamicToolCallResponse.js';
+import type { DynamicToolSpec } from './generated/v2/DynamicToolSpec.js';
 
 /** Sandbox adapters prepare opaque payloads; the PL webserver owns their product workflows. */
 export interface ToolAdapter {

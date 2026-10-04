@@ -1,7 +1,8 @@
 /* eslint-disable unicorn/no-error-property-assignment -- Fixtures reproduce SDK errors after RPC serialization. */
 import { DurableObject } from 'cloudflare:workers';
 
-import type { ThreadItem, Turn } from '../../src/protocol.js';
+import type { ThreadItem } from '../../src/generated/v2/ThreadItem.js';
+import type { Turn } from '../../src/generated/v2/Turn.js';
 
 interface State {
   files: Record<string, string>;

@@ -4,11 +4,7 @@ import { createTwoFilesPatch } from 'diff';
 import { z } from 'zod';
 
 import { type Approval, ChatError, proposalContent } from '@prairielearn/course-agent-contract';
-
-import { AssessmentJsonSchema } from '../../../schemas/infoAssessment.js';
-import { CourseJsonSchema } from '../../../schemas/infoCourse.js';
-import { CourseInstanceJsonSchema } from '../../../schemas/infoCourseInstance.js';
-import { QuestionJsonSchema } from '../../../schemas/infoQuestion.js';
+import { run } from '@prairielearn/run';
 
 const EMPTY_BASE = '0'.repeat(40);
 export interface Destination {
@@ -26,6 +22,30 @@ export interface Publication {
   error?: string;
 }
 export class PublishRejected extends Error {}
+
+/**
+ * Only explicit errors on the requested field prove rejection. Rate limits,
+ * transport failures, and unknown errors leave the write outcome unconfirmed.
+ */
+function definiteGraphqlRejection(errors: unknown, field: string) {
+  const result = z
+    .array(
+      z.object({
+        type: z.string().optional(),
+        path: z.array(z.union([z.string(), z.number()])).optional(),
+      }),
+    )
+    .safeParse(errors);
+  return (
+    result.success &&
+    result.data.length > 0 &&
+    result.data.every(
+      (error) =>
+        ['FORBIDDEN', 'NOT_FOUND', 'UNPROCESSABLE'].includes(error.type ?? '') &&
+        error.path?.[0] === field,
+    )
+  );
+}
 
 /** Publish immutable file contents using GitHub APIs. No checkout or Git executable runs in the PL webserver. */
 export class Publisher {
@@ -118,8 +138,9 @@ export class Publisher {
       if (!previous && file.content === null) {
         throw new PublishRejected('Deleted file is absent from the base commit.');
       }
-      let before = '';
-      if (previous) {
+      const before = await run(async () => {
+        if (!previous) return '';
+
         const blob = (await this.request(`${root}/git/blobs/${previous.sha}`)) as {
           content: string;
           encoding: string;
@@ -128,7 +149,7 @@ export class Publisher {
           throw new PublishRejected('Unsupported GitHub blob encoding.');
         }
         try {
-          before = new TextDecoder('utf-8', { fatal: true }).decode(
+          return new TextDecoder('utf-8', { fatal: true }).decode(
             Buffer.from(blob.content, 'base64'),
           );
         } catch {
@@ -136,35 +157,9 @@ export class Publisher {
             `${file.path}: only UTF-8 text files are supported. Prepare a proposal without this binary file.`,
           );
         }
-      }
-      if (file.content !== null) {
-        const schema =
-          file.path === 'infoCourse.json'
-            ? CourseJsonSchema
-            : /^courseInstances\/[^/]+\/infoCourseInstance\.json$/.test(file.path)
-              ? CourseInstanceJsonSchema
-              : /^courseInstances\/[^/]+\/assessments\/.+\/infoAssessment\.json$/.test(file.path)
-                ? AssessmentJsonSchema
-                : /^questions\/.+\/infoQuestion\.json$/.test(file.path)
-                  ? QuestionJsonSchema
-                  : undefined;
-        if (schema) {
-          let value: unknown;
-          try {
-            value = JSON.parse(file.content);
-          } catch {
-            throw new PublishRejected(
-              `${file.path}: invalid JSON. Correct the file and submit a new proposal.`,
-            );
-          }
-          const result = schema.safeParse(value);
-          if (!result.success) {
-            throw new PublishRejected(
-              `${file.path}: ${z.prettifyError(result.error)}. Correct the file and submit a new proposal.`,
-            );
-          }
-        }
-      }
+      });
+      // Course Sync owns course-content validation. Capture/publish only verifies
+      // the approved bytes and paths, so sync can return its normal diagnostics.
       const after = file.content ?? '';
       bytes += Buffer.byteLength(before) + Buffer.byteLength(after);
       if (bytes > 262144 || before.includes('\0') || after.includes('\0')) {
@@ -218,6 +213,15 @@ export class Publisher {
         };
       };
       const history = result.data?.repository?.ref?.target.history;
+      if (
+        !history &&
+        (definiteGraphqlRejection(result.errors, 'repository') ||
+          (!result.errors && result.data?.repository !== undefined))
+      ) {
+        throw new PublishRejected(
+          'The GitHub repository or branch is unavailable. Prior publication could not be verified; check access and branch history before preparing another proposal.',
+        );
+      }
       if (result.errors || !history) {
         throw new ChatError(
           502,
@@ -286,7 +290,7 @@ export class Publisher {
     );
   }
 
-  /** Undo only this publication with a new commit, fenced against concurrent branch changes. */
+  /** Stable receipt marker lets a lost mutation response be reconciled against verified commit contents. */
   private message(job: Publication) {
     return `Approved course-agent change ${job.id}\n\nProposal: ${job.approval.digest}`;
   }
@@ -311,12 +315,11 @@ export class Publisher {
             body: `Proposal: ${job.approval.digest}`,
           },
           fileChanges: {
-            additions: job.approval.files
-              .filter((f) => f.content !== null)
-              .map((f) => ({
-                path: f.path,
-                contents: Buffer.from(f.content!).toString('base64'),
-              })),
+            additions: job.approval.files.flatMap((file) =>
+              file.content === null
+                ? []
+                : [{ path: file.path, contents: Buffer.from(file.content).toString('base64') }],
+            ),
             deletions: job.approval.files
               .filter((f) => f.content === null)
               .map((f) => ({ path: f.path })),
@@ -327,12 +330,19 @@ export class Publisher {
       errors?: unknown;
       data?: { createCommitOnBranch?: { commit: { oid: string } } };
     };
-    if (result.errors || !result.data?.createCommitOnBranch) {
+    const sha = result.data?.createCommitOnBranch?.commit.oid;
+    if (sha) return sha;
+    if (definiteGraphqlRejection(result.errors, 'createCommitOnBranch')) {
+      throw new PublishRejected(
+        'GitHub rejected publication. Check repository access, branch protection, and the current branch head before preparing another proposal.',
+      );
+    }
+    if (result.errors || !sha) {
       throw new ChatError(
         502,
         'GitHub did not confirm publication. Retry completion to reconcile the outcome.',
       );
     }
-    return result.data.createCommitOnBranch.commit.oid;
+    throw new Error('GitHub returned no publication receipt.');
   }
 }

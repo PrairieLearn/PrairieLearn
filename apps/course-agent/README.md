@@ -1,167 +1,199 @@
-# Course agent
+# Course agent development
 
-Integration draft for [Course agent MVP](https://github.com/PrairieLearn/PrairieLearn/issues/15871).
-The selected [prototype stack](https://github.com/miguelaenlle/cloudflare-agents-sdk-test/pull/21)
-is the architectural reference for the native Codex adapter and sandbox lifecycle.
-PL supplies the catalog, authorization, durable proposals, publication, and Course Sync.
-A **proposal** is the immutable captured code change; **approval** is the instructor's decision;
-**publication** writes the approved change to GitHub before Course Sync. `push_sync` is the
-protocol tool name, presented to instructors as a code change request.
+The course agent runs Codex in a Cloudflare Linux sandbox and exposes a browser
+chat panel in PrairieLearn. Enable it only for courses whose owners should have
+access. This directory contains the local Worker configuration and test fixtures.
 
-## Ownership
+## Where the code runs
 
-```mermaid
-flowchart LR
-  Browser[Instructor panel] <-->|tRPC / SSE| PL[PL webserver]
-  PL <-->|Authenticated HTTP / WebSocket| Chat[Chat Durable Object]
-  PL --> PG[(Postgres)]
-  PL --> GitHub[GitHub API publication]
-  PL --> Sync[Existing Course Sync]
-  Chat --> Sandbox[Sandbox / Codex app-server]
-  Sandbox <-->|Latest checkpoint| R2[(R2)]
-```
+| Code                                               | Runtime                                    | Responsibility                                                                                   |
+| -------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `worker.ts`                                        | Cloudflare Worker                          | Authenticate requests and route them to a conversation.                                          |
+| `agent.ts`                                         | Chat Durable Object                        | Persist messages and execution receipts; coordinate Send, steering, Stop, recovery, and cleanup. |
+| `app-server.ts`                                    | Chat Durable Object                        | Correlate Codex JSON-RPC acknowledgments and route native notifications.                         |
+| `codex-turn.ts`, `codex-events.ts`                 | Chat Durable Object                        | Control one native turn and translate its events into AI SDK message parts.                      |
+| `codex.ts`                                         | Chat Durable Object                        | Start/connect the sandbox's Codex process and restore or create filesystem checkpoints.          |
+| `sandbox.ts`, `outbound.ts`                        | Cloudflare Worker / Sandbox Durable Object | Enforce outbound destinations and inject credentials outside the container.                      |
+| Codex CLI                                          | Linux sandbox                              | Read and modify the course checkout; run commands.                                               |
+| `apps/prairielearn/src/ee/lib/course-agent/`       | PL webserver                               | Authorize course owners and bridge browser requests to the Worker.                               |
+| `apps/prairielearn/src/ee/components/courseAgent/` | Browser                                    | Display saved messages and live output; send follow-ups, steering, and Stop.                     |
 
-- `src/agent.ts`: conversation history, generic pending tools, native execution, cleanup alarms.
-- `src/codex*.ts`, `src/app-server.ts`: the pinned Codex protocol and AI SDK stream adapter.
-- `src/outbound.ts`, `src/sandbox.ts`: the shared GitHub client token restricted to authorized repository reads, and model credentials outside the sandbox.
-- `apps/prairielearn/src/ee/lib/course-agent`: PL authorization, event subscriptions, proposal completion, GitHub publication, and usage.
-- `apps/prairielearn/src/models/course-agent-*`: Postgres entities. Decisions and their audit events commit together.
-- `packages/course-agent-contract`: private transport types, with no standalone database or prototype server.
+`cleanupDiagnosticsSchema` describes one stored stop/backup/destroy attempt in
+Chat's sandbox state. `sandboxDiagnosticsSchema` describes the complete response
+from `/diagnostics`: that attempt plus lifecycle state, checkpoint warnings, and
+computed expiration times. Neither contains raw SDK exceptions or signed URLs.
 
-## Local development
+## Start with the deterministic fixture
 
-First follow the normal PL local setup, including Postgres, Redis, Python, and `pnpm install`.
-Build workspace packages with `make build` when needed. Nothing is enabled by default.
+The fixture runs the real Chat Durable Object and its persistence/transport in
+local workerd. A fake Sandbox Durable Object simulates Codex responses, token
+usage, lost acknowledgments, cancellation, and R2 checkpoint contents. It needs
+no Docker, OpenAI key, GitHub access, or network publication. It verifies control
+flow; it does not verify the real Codex process, sandbox isolation, or GitHub.
 
-### Deterministic sandbox fixture
-
-Run this alongside the PL development server:
+From the repository root:
 
 ```sh
+pnpm install
+make build
+make start-support
 pnpm --filter @prairielearn/course-agent dev:fixture
 ```
 
-This runs the real Chat Durable Object in local workerd on port 8791. It replaces only
-sandbox execution and Codex responses. It does not call a model or publish to GitHub.
-The fixture supports `example/course` on `main`. Its predictable responses finish in eight seconds.
-Test-only controls live under the fixture entry point and are absent from the production Worker.
-
-A PL development config can opt in with:
+The fixture uses port **8791**. In another terminal, add these local settings to
+`config.json` (or your usual PrairieLearn config file):
 
 ```json
 {
-  "isEnterprise": true,
-  "redisUrl": "redis://localhost:6379",
-  "features": { "course-agent": true },
   "courseAgent": {
     "workerUrl": "http://localhost:8791",
     "serviceToken": "local-fixture-service-token-not-a-secret",
     "pricing": { "fixture-model": { "input": 0, "cachedInput": 0, "output": 0 } }
-  }
+  },
+  "githubClientToken": "fixture-no-github-network",
+  "features": { "course-agent": true }
 }
 ```
 
-Use an editable, non-example course whose repository is `https://github.com/example/course.git`
-and branch is `main`; the authenticated and effective users must both be course owners.
-The browser test creates an isolated copy of PL's existing test course and configures this automatically.
-Keep `githubClientToken` unset in the fixture config.
+Start PL with `pnpm --filter @prairielearn/prairielearn dev`. Use an enterprise
+development license, sign in as a course owner, and open a non-example course
+configured with repository `https://github.com/example/course` and branch `main`.
+The fixture binds its conversations to this destination; it never clones it.
+The placeholder PL GitHub token satisfies publisher setup; the empty-base fixture
+proposal is rejected before a GitHub request. Use a real token only for the real
+publication flow below.
+Open the stars button, send a message, send a correction while the answer streams,
+and use Stop. Saved conversations, drafts, and panel selection survive course-page navigation.
+The statistics dialog includes token totals and estimated cost.
+
+Fixture lifecycle checks:
 
 ```sh
-# Portable protocol, capture, outbound, and host-tool tests
 pnpm --filter @prairielearn/course-agent test
-
-# With dev:fixture running
 pnpm --filter @prairielearn/course-agent test:lifecycle
-COURSE_AGENT_FIXTURE_URL=http://localhost:8791 pnpm --filter @prairielearn/prairielearn test:e2e courseAgent.spec.ts --workers=1
-
-# PL persistence, approvals, accounting, and mocked GitHub publication
-pnpm test apps/prairielearn/src/tests/courseAgent.test.ts apps/prairielearn/src/ee/lib/course-agent/publish.test.ts
+pnpm test apps/prairielearn/src/ee/components/courseAgent/chat-transport.test.ts apps/prairielearn/src/ee/lib/course-agent/routes.test.ts
 ```
 
-### Real local sandbox
+The lifecycle tests require the fixture running on 8791. They advance its test
+clock instead of sleeping for production deadlines. `scripts/start-fixture.sh`
+starts it and waits for readiness in CI. `pnpm --filter @prairielearn/course-agent
+demo` is an optional one-shot HTTP smoke test: create a conversation, send one
+prompt, and print its saved transcript. The browser is the interactive test path.
 
-Docker must be running. Copy `.dev.vars.example` to `.dev.vars` in this directory,
-set a shared service token, a model, a model API key, and `GITHUB_CLIENT_TOKEN`.
-Use the same GitHub token as PL's existing `githubClientToken` setting. PL and the Worker are separate
-processes, so configure the value in both places; PL does not send it through conversation configuration.
-No per-repository token mapping is needed. The trusted outbound handler restricts sandbox access to
-read-only Git operations on the authorized course repository, even if the token can write other repositories.
-Run `pnpm --filter @prairielearn/course-agent dev` and use port 8790 in PL's configuration.
-Set PL's course repository and branch normally; the browser cannot choose the sandbox repository.
-Test with a disposable course repository you intend to modify.
-PL uses `config.githubClientToken` to validate proposals and publish approved changes through GitHub APIs;
-only the existing Course Sync operation accesses PL's normal course checkout.
+## Run the real sandbox locally
 
-Prices default to PL’s shared `costPerMillionTokens` configuration, using the exact model name.
-The inference proxy enforces this exact model and removes provider-hosted tools, allowing only
-function/custom tools that execute through Codex. Optional `courseAgent.pricing` overrides use dollars per million tokens, e.g.
-`"pricing": { "your-model": { "input": 1, "cachedInput": 0.1, "output": 5 } }`.
-These numbers illustrate the config shape; supply current prices for the chosen model.
-Unreported usage and unpriced models display **Unknown**. Estimated costs exclude Cloudflare,
-R2, and other infrastructure charges. Admission limits use reported estimated model cost,
-request counts, and active conversations; they are not a hard cap on provider invoices.
-Use provider-side spending controls as well before a pilot. PL requires a configured price for the
-Worker's exact `CODEX_MODEL` before starting work, and pauses new admissions when completed usage
-has an unknown cost. Default limits are two active conversations per user, five per course,
-30 requests per user per hour, and $20 in known estimates per day.
-Production PL configuration requires `githubClientToken` at boot; the local fixture remains token-free.
+Docker must be running. Copy `apps/course-agent/.dev.vars.example` to
+`apps/course-agent/.dev.vars` and fill in:
 
-## Recovery
+- `PL_SERVICE_TOKEN`: a random secret of at least 32 characters, matching PL's
+  `courseAgent.serviceToken`.
+- `CODEX_MODEL` and `CODEX_API_KEY`: the model and its API credential.
+- `GITHUB_CLIENT_TOKEN`: access to read your course repository.
 
-| Situation                           | Behavior                                                                                                                                                                                                                                       |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Browser closes or changes pages     | Native work continues; PL keeps a host-tool/accounting observer. Reopening observes the existing stream.                                                                                                                                       |
-| Steering acknowledgment lost        | Keep a durable receipt and reconcile the native message ID on retry; do not submit uncertain steering twice.                                                                                                                                   |
-| Webserver exits                     | DO history and lifecycle survive. The next authorized connection reattaches; admission reconciles active execution receipts.                                                                                                                   |
-| Ten minutes waiting for a user/tool | Checkpoint the workspace, then destroy the sandbox. One latest checkpoint is retained per conversation, with the SDK’s seven-day TTL.                                                                                                          |
-| Backup or destruction fails         | Three total cleanup attempts, 30 seconds apart. Then show the stage and require **Retry cleanup**.                                                                                                                                             |
-| Six hours without user interaction  | Interrupt and destroy; preserve a visible warning if the final checkpoint failed.                                                                                                                                                              |
-| Checkpoint missing/expired          | Preserve the failure and saved PL decision; require a new conversation rather than silently creating a replacement thread.                                                                                                                     |
-| Proposal preparation fails          | Permanent validation/access failures return a failed native tool result. Temporary GitHub or database failures retain the proposal and expose **Retry preparation**. Only validated proposals expose an approval card.                         |
-| Approval after shutdown             | Save the decision and outcome in Postgres. Restore the checkpoint and send a hidden continuation; a warm call receives its native tool result.                                                                                                 |
-| GitHub response lost                | **Retry completion** checks branch history, parent, and full tree before attempting another write.                                                                                                                                             |
-| Branch moved                        | Reject the stale proposal without force-pushing. Prepare a new proposal.                                                                                                                                                                       |
-| Course Sync fails                   | Temporary failures retain publication and permit **Retry completion**. Validation failures retain publication and return bounded diagnostics to Codex; correct the course and submit a new proposal. Newer commits are never overwritten.      |
-| Sync webserver dies                 | The continuation lives in the webserver process. After a restart, PL's abandoned-job handling marks the job failed; the panel then exposes **Retry completion** to resume from the saved publication. A running job shows **Syncing course…**. |
-| Result delivery fails               | Keep the same outcome and operation ID. Preparation errors retry on reconnect; completion retries do not repeat publication, a confirmed rollback, or successful sync.                                                                         |
-| Feature disabled                    | Reject new conversations/messages; existing authorized history and recovery remain available while integration config is retained.                                                                                                             |
+Keep `.dev.vars` untracked. Local R2 emulation does not need remote R2 keys.
+Run `pnpm --filter @prairielearn/course-agent dev` and point PL's `workerUrl` to
+`http://localhost:8790`. Configure the course's actual GitHub repository and branch.
+The explicitly named `wrangler.local.jsonc` uses development resources; package
+scripts do not expose a deployment shortcut.
 
-Admission retries recheck capacity. Unanswered dispatches are reconciled after two minutes: the
-Worker first durably rejects that dispatch token, so delayed copies cannot start after PL releases
-its slot. A retry receives a new token. Usage snapshots update changed receipts in a batch;
-unknown model prices remain unknown. Course-level feature grants use the authenticated user in
-both the panel and server; disabling new work leaves recovery controls available.
+Send a prompt that reads a known course file, then one that edits a scratch file
+and runs a command. Check that live text, tool output, steering, and Stop appear
+in the browser. To publish, configure PL's `githubClientToken` with write access, ask the agent to
+commit its changes and call `push_sync`, inspect **View changes**, then approve or
+deny. Use a disposable course repository for this test. Approval publishes the
+exact captured files to GitHub and then runs Course Sync.
 
-Terminal receipts and rejected dispatch tokens are archived in the Chat DO's SQLite tables instead
-of accumulating in broadcast state. The state keeps the latest 100 receipts and active runs; PL
-requests older unaccounted receipts in batches. Archived fences do not expire, so delayed requests
-cannot become executable after compaction. An unreachable conversation keeps its admission slot,
-but other conversations can still start within the remaining capacity.
+## Recovery and troubleshooting
 
-The daily cost limit applies to known estimates across this user's conversations and other owners'
-conversations in the current course. It is a soft usage guard: unreported or unpriced usage cannot
-enforce a hard spending cap. Configure a price for the deployed `CODEX_MODEL` before enabling a pilot.
+- A completed turn enters `waiting_for_user`. After **10 idle minutes**, Chat
+  checkpoints `/workspace` to R2 and destroys the sandbox. A follow-up restores
+  that checkpoint into a new sandbox and resumes the native thread.
+- **Six hours since the last user interaction** is a separate hard cleanup
+  deadline, including while the agent runs. `SANDBOX_IDLE_MS` and `USER_IDLE_MS`
+  in `src/codex.ts` control these deadlines. The app-server's 15-second timeout
+  controls RPC acknowledgments, not how long Codex may work.
+- Stop asks Codex to interrupt. Navigating away or closing a stream only detaches
+  observation. Lost acknowledgments are reconciled against native history;
+  mutating requests are not blindly replayed.
+- Failed cleanup exposes **Retry cleanup**. A missing/expired checkpoint requires
+  a new conversation. A changed course repository or branch invalidates new work
+  in the old conversation; history, Stop, and cleanup remain available.
+- For `bind(): Address already in use`, inspect `lsof -nP -iTCP:8790 -sTCP:LISTEN`
+  (or 8791 for the fixture). Stop your earlier dev instance or use another port
+  and update PL's URL. Do not run two Workers with the same port/persistence path.
+- Wrangler prints the path to its local log. PL logs failed connections and
+  authorization; the statistics dialog shows sanitized lifecycle diagnostics.
+  Never copy credentials or signed checkpoint URLs into issue reports.
 
-CI starts the deterministic fixture for the Worker lifecycle and course-agent browser tests.
+## Codex protocol types
 
-Only ordinary UTF-8 files are supported, with a 256 KiB proposal limit and at most 100 files.
-Executable files, symlinks, submodules, `.git`, and `.github` changes are rejected.
-The displayed diff is rebuilt from trusted base blobs and the exact saved file contents.
+The sandbox Dockerfile and development dependency pin the same Codex CLI version.
+`make update-codex-protocol` invokes that CLI's experimental TypeScript generator,
+selects the payload types this integration uses through the TypeScript parser,
+and preserves upstream directories and comments under `src/generated/`. NodeNext
+imports gain `.js` extensions and the repository's Prettier settings are applied.
+`make check-codex-protocol` detects stale, missing, and obsolete generated files.
+Update the CLI dependency and Dockerfile together when changing versions.
 
-## Deployment boundary
+## Saved conversations and usage
 
-This draft does not provision or deploy a Cloudflare account. `wrangler.jsonc` is for local development;
-it is not the production account configuration. Production provisioning belongs in sysconf/Terraform:
-Worker, Chat/Sandbox SQLite Durable Objects and migrations, pinned container image, private service
-credential, R2 binding and backup credentials, environment-scoped secrets, and capacity limits.
-Set `LOCAL_DEV` to false outside local development. Keep account IDs, tokens, and bucket credentials
-out of Git. Coordinate the private contract version when deploying PL and the Worker.
+Configure `courseAgent.pricing` before sending work, including the fixture model:
 
-Before enabling a pilot, validate a deployed Worker and R2 backup/restore, repository-specific
-credentials and rotation, a small model canary, real GitHub publication and Course Sync, revocation,
-multiple PL webservers, and deployment during pending approval. The automated fixtures establish
-local behavior, not production readiness.
+```json
+{ "fixture-model": { "input": 0, "cachedInput": 0, "output": 0 } }
+```
 
-Codex is pinned to `0.155.0`, Sandbox SDK/image to `0.12.9`, Agents to `0.23.0`, and AIChatAgent to
-`0.12.0`. To regenerate `src/protocol.ts`, point `CODEX_BINARY` at the matching Codex binary and run
-`pnpm --filter @prairielearn/course-agent generate:protocol`; review the protocol diff and rerun tests.
+Pricing is per million tokens. Production prices must match the chosen model;
+unknown pricing blocks admission rather than counting the work as free. Defaults
+allow two concurrent requests per user, five per course, 30 requests per hour,
+and a $20 daily estimate limit. These are admission limits, not a hard limit on
+one turn's eventual cost. Unconfirmed receipts remain charged as active until
+reconciled; one unavailable conversation must not silently free its slot.
+
+In the browser, reload while a response streams, navigate to another course page,
+switch conversations, and return to an unsent draft. Confirm each survives and
+that the statistics dialog updates without duplicating token usage. Turn off the
+feature flag and verify history, Stop, and cleanup remain usable while new work
+is disabled. `courseAgent.test.ts` and `courseAgentUsage.test.ts` cover database
+ownership, operation retries, admission races, and accounting reconciliation.
+
+## Approval and Course Sync
+
+The runtime captures committed UTF-8 text changes as an immutable proposal. PL
+verifies paths, modes, trusted base contents, size, and the digest before showing
+an approval. It does not prevalidate course JSON or schemas: Course Sync owns
+those checks. The instructor can inspect the diff, approve it, or deny it. New
+messages wait until the durable tool result is delivered; the Send button explains
+this through an upward hover/focus tooltip.
+
+During approval the card displays **Publishing…** or **Syncing course…**. A normal
+publication, including a cold sandbox restore, must not display **Retry
+completion**. Definite GitHub rejections return a failed result to the agent.
+Lost acknowledgments remain retryable and reconcile verified branch history
+before another write. A changed branch head requires a new proposal.
+
+Course-content failures retain the GitHub commit. The agent receives its SHA and
+Course Sync diagnostics, then can propose a correction or explicit revert for
+another instructor approval. Course Sync can have applied valid entities before
+failing; this is not an automatic rollback or an atomic course update. A transient
+sync error retries from the saved publication rather than pushing twice.
+
+If PL restarts during Course Sync, its abandoned-job cleanup marks the job failed.
+The instructor uses **Retry completion** to resume from saved receipts. Background
+continuation is process-local; automatic restart recovery is outside this MVP.
+History, Stop, and sandbox cleanup remain available after repository/branch changes,
+but the old conversation cannot start or publish more work.
+
+For automated validation, start the fixture and run:
+
+```sh
+COURSE_AGENT_FIXTURE_URL=http://localhost:8791 pnpm --filter @prairielearn/prairielearn test:e2e src/tests/e2e/courseAgent.spec.ts
+pnpm test apps/prairielearn/src/tests/courseAgent.test.ts apps/prairielearn/src/tests/courseAgentSync.test.ts apps/prairielearn/src/ee/lib/course-agent/publish.test.ts
+```
+
+The browser tests cover approval presentation, pending-message tooltips, visible
+publication progress, and preparation rejection. Worker lifecycle tests exercise
+warm and cold result delivery. The sync tests use real local Git repositories and
+the normal Course Sync jobs; publisher tests simulate lost GitHub acknowledgments,
+branch movement, definite GraphQL rejection, and unavailable branches. Real
+GitHub writes, model inference, and Docker networking require the manual flow.

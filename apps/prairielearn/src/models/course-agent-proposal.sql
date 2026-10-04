@@ -1,4 +1,4 @@
--- BLOCK select
+-- BLOCK select_proposal
 SELECT
   *
 FROM
@@ -7,7 +7,7 @@ WHERE
   conversation_id = $conversation_id
   AND operation_id = $operation_id;
 
--- BLOCK list
+-- BLOCK select_proposals
 SELECT
   *
 FROM
@@ -17,7 +17,7 @@ WHERE
 ORDER BY
   sequence;
 
--- BLOCK insert
+-- BLOCK insert_proposal
 INSERT INTO
   course_agent_proposals (
     conversation_id,
@@ -38,7 +38,7 @@ ON CONFLICT (operation_id) DO NOTHING
 RETURNING
   *;
 
--- BLOCK prepare
+-- BLOCK update_proposal_preparation
 UPDATE course_agent_proposals
 SET
   payload = $payload,
@@ -48,7 +48,7 @@ WHERE
   id = $id
   AND decision IS NULL;
 
--- BLOCK decide
+-- BLOCK update_proposal_decision
 UPDATE course_agent_proposals
 SET
   decision = $decision
@@ -58,7 +58,7 @@ WHERE
 RETURNING
   *;
 
--- BLOCK progress
+-- BLOCK update_proposal_progress
 UPDATE course_agent_proposals
 SET
   published_sha = COALESCE($published_sha, published_sha),
@@ -73,7 +73,7 @@ SET
 WHERE
   id = $id;
 
--- BLOCK fail_preparation
+-- BLOCK update_proposal_preparation_failure
 UPDATE course_agent_proposals
 SET
   prepared = FALSE,
@@ -84,7 +84,7 @@ WHERE
   id = $id
   AND decision IS NULL;
 
--- BLOCK reset_sync
+-- BLOCK reset_proposal_sync_receipt
 UPDATE course_agent_proposals
 SET
   sync_job_sequence_id = NULL,

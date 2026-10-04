@@ -2,12 +2,10 @@ import type { UIMessageChunk } from 'ai';
 
 import type { AppServer } from './app-server.js';
 import { CodexEvents } from './codex-events.js';
-import type {
-  DynamicToolCallParams,
-  DynamicToolCallResponse,
-  Turn,
-  TurnSteerParams,
-} from './protocol.js';
+import type { DynamicToolCallParams } from './generated/v2/DynamicToolCallParams.js';
+import type { DynamicToolCallResponse } from './generated/v2/DynamicToolCallResponse.js';
+import type { Turn } from './generated/v2/Turn.js';
+import type { TurnSteerParams } from './generated/v2/TurnSteerParams.js';
 import { toolDefinitions } from './tools.js';
 
 export type CodexTurn = Awaited<ReturnType<typeof openCodexTurn>>;

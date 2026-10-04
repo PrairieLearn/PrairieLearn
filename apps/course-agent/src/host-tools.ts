@@ -1,6 +1,6 @@
 import { hostToolResultSchema } from '@prairielearn/course-agent-contract';
 
-import type { DynamicToolCallResponse } from './protocol.js';
+import type { DynamicToolCallResponse } from './generated/v2/DynamicToolCallResponse.js';
 
 interface Executor {
   id: string;

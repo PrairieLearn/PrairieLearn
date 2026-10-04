@@ -223,7 +223,7 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
         messages,
         executions: value.executions,
         blocked: value.blocked,
-        revision: z.number().int().nonnegative().parse(value.revision),
+        operationNumber: z.number().int().nonnegative().parse(value.operationNumber),
         pendingTool: value.pendingTool,
       };
     },

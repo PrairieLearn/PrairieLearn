@@ -10,7 +10,7 @@ import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import * as agentEvents from '../ee/lib/course-agent/events.js';
 import * as agentObserver from '../ee/lib/course-agent/observer.js';
 import * as agentProvider from '../ee/lib/course-agent/provider.js';
-import { Publisher } from '../ee/lib/course-agent/publish.js';
+import { PublishRejected, Publisher } from '../ee/lib/course-agent/publish.js';
 import {
   authorize,
   complete,
@@ -117,11 +117,11 @@ it('persists a single decision, gates new work, and allows an identical stale re
   await expect(
     reserveOperation(conversation, randomUUID(), { kind: 'message' }, 0),
   ).rejects.toThrow('pending proposal');
-  await decideProposal(scope, conversation, proposal, false, 0);
+  await decideProposal(scope, conversation, proposal, 'deny', 0);
   const saved = (await selectOptionalProposal(conversation.id, operation_id))!;
   expect(saved.decision).toBe(false);
-  await decideProposal(scope, conversation, saved, false, 0);
-  await expect(decideProposal(scope, conversation, saved, true, 1)).rejects.toThrow(
+  await decideProposal(scope, conversation, saved, 'deny', 0);
+  await expect(decideProposal(scope, conversation, saved, 'approve', 1)).rejects.toThrow(
     'different input',
   );
   expect((await selectOptionalProposal(conversation.id, operation_id))?.decision).toBe(false);
@@ -157,11 +157,13 @@ it('serializes admissions, keeps missing usage unknown, and does not double-coun
   const { conversation: second } = await setupConversation();
   const mocked = vi
     .spyOn(globalThis, 'fetch')
-    .mockImplementation(async () => Response.json({ messages: [], revision: 0, executions: {} }));
+    .mockImplementation(async () =>
+      Response.json({ messages: [], operationNumber: 0, executions: {} }),
+    );
   try {
     await withConfig({ courseAgent: settings }, async () => {
-      const a = { id: randomUUID(), text: 'a', expectedRevision: 0 };
-      const b = { id: randomUUID(), text: 'b', expectedRevision: 0 };
+      const a = { id: randomUUID(), text: 'a', expectedOperationNumber: 0 };
+      const b = { id: randomUUID(), text: 'b', expectedOperationNumber: 0 };
       const admitted = await Promise.allSettled([admit(conversation, a), admit(second, b)]);
       expect(admitted.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
       const winner = admitted[0].status === 'fulfilled' ? conversation : second;
@@ -170,7 +172,7 @@ it('serializes admissions, keeps missing usage unknown, and does not double-coun
       await admit(winner, operation);
       const snapshot = {
         messages: [],
-        revision: 1,
+        operationNumber: 1,
         executions: {
           [operation.id]: {
             status: 'completed' as const,
@@ -224,7 +226,7 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
     .spyOn(agentProvider, 'createCloudflareProvider')
     .mockImplementation((...args) => ({
       ...originalProvider(...args),
-      getSnapshot: async () => ({ messages: [], revision: 0 }),
+      getSnapshot: async () => ({ messages: [], operationNumber: 0 }),
       deliverToolResult: async () => {},
     }));
   const fetcher = vi
@@ -272,7 +274,7 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
 
 it('uses shared AI prices, preserves recorded rates, and leaves unsupported models unknown', async () => {
   const { conversation } = await setupConversation();
-  expect(await recordUsage(conversation, { messages: [], revision: 0 })).toEqual({
+  expect(await recordUsage(conversation, { messages: [], operationNumber: 0 })).toEqual({
     input: 0,
     output: 0,
     estimatedCost: 0,
@@ -281,7 +283,7 @@ it('uses shared AI prices, preserves recorded rates, and leaves unsupported mode
   await insertExecution(conversation.id, id);
   const snapshot = {
     messages: [],
-    revision: 0,
+    operationNumber: 0,
     executions: {
       [id]: {
         status: 'completed' as const,
@@ -330,7 +332,7 @@ it('uses shared AI prices, preserves recorded rates, and leaves unsupported mode
   expect((await selectOptionalExecution(conversation.id, unknown))?.estimated_cost).toBeNull();
 });
 
-it('returns failed schema validation to the agent, retries delivery, and only exposes valid approvals', async () => {
+it('returns unsupported file modes to the agent, retries delivery, and only exposes supported approvals', async () => {
   const { conversation, scope, user } = await setupConversation();
   await insertCoursePermissionsByUserUid({
     course_id: scope.course_id,
@@ -351,7 +353,7 @@ it('returns failed schema validation to the agent, retries delivery, and only ex
     .spyOn(agentProvider, 'createCloudflareProvider')
     .mockImplementation((...args) => ({
       ...originalProvider(...args),
-      getSnapshot: async () => ({ messages: [], revision: 0 }),
+      getSnapshot: async () => ({ messages: [], operationNumber: 0 }),
       deliverToolResult: delivery,
     }));
   const id = randomUUID();
@@ -361,7 +363,7 @@ it('returns failed schema validation to the agent, retries delivery, and only ex
     {
       path: 'courseInstances/Fall2026/infoCourseInstance.json',
       previousMode: '000000',
-      mode: '100644',
+      mode: '100755',
       content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', accessRules: [] }),
     },
   ];
@@ -389,9 +391,11 @@ it('returns failed schema validation to the agent, retries delivery, and only ex
         const failed = (await selectOptionalProposal(conversation.id, id))!;
         expect(failed.prepared).toBe(false);
         expect(failed.decision).toBeNull();
-        expect(failed.error).toContain('accessRules');
+        expect(failed.error).toContain('ordinary text');
         expect(failed.outcome).toContain('Code change request failed');
-        expect((await snapshot(conversation, { messages: [], revision: 0 })).approvals).toEqual([]);
+        expect(
+          (await snapshot(conversation, { messages: [], operationNumber: 0 })).approvals,
+        ).toEqual([]);
         await expect(
           reserveOperation(conversation, randomUUID(), { kind: 'message' }, 0),
         ).rejects.toThrow('pending proposal');
@@ -408,6 +412,7 @@ it('returns failed schema validation to the agent, retries delivery, and only ex
         const validFiles = [
           {
             ...files[0],
+            mode: '100644',
             content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', allowAccess: [] }),
           },
         ];
@@ -424,7 +429,7 @@ it('returns failed schema validation to the agent, retries delivery, and only ex
               .digest('hex'),
           },
         });
-        const state = await snapshot(conversation, { messages: [], revision: 0 });
+        const state = await snapshot(conversation, { messages: [], operationNumber: 0 });
         expect(state.approvals).toHaveLength(1);
         expect(state.approvals[0].id).toBe(validId);
         expect(delivery).toHaveBeenCalledTimes(2);
@@ -475,13 +480,13 @@ it('keeps a transient preparation failure retryable and exposes its saved recove
       async () => {
         await expect(prepare(scope, conversation, tool)).rejects.toThrow('Temporary GitHub outage');
         expect((await selectOptionalProposal(conversation.id, id))!.outcome).toBeNull();
-        expect((await snapshot(conversation, { messages: [], revision: 0 })).preparation?.id).toBe(
-          id,
-        );
+        expect(
+          (await snapshot(conversation, { messages: [], operationNumber: 0 })).preparation?.id,
+        ).toBe(id);
         await prepare(scope, conversation, tool);
         expect((await selectOptionalProposal(conversation.id, id))!.prepared).toBe(true);
         expect(
-          (await snapshot(conversation, { messages: [], revision: 0 })).approvals,
+          (await snapshot(conversation, { messages: [], operationNumber: 0 })).approvals,
         ).toHaveLength(1);
       },
     );
@@ -491,7 +496,12 @@ it('keeps a transient preparation failure retryable and exposes its saved recove
   }
 });
 
-it.each(['transient', 'preexisting validation', 'preexisting question validation'] as const)(
+it.each([
+  'transient',
+  'preexisting validation',
+  'preexisting question validation',
+  'publication rejected',
+] as const)(
   'retains publication and retries only the incomplete stage for a %s sync failure',
   async (failure) => {
     const { conversation, scope, user } = await setupConversation();
@@ -557,7 +567,7 @@ it.each(['transient', 'preexisting validation', 'preexisting question validation
         ...original(...args),
         getSnapshot: async () => ({
           messages: [],
-          revision: 0,
+          operationNumber: 0,
           executions: {
             [id]: {
               status: 'running',
@@ -571,7 +581,12 @@ it.each(['transient', 'preexisting validation', 'preexisting question validation
         deliverToolResult: delivery,
       })),
     ];
-    const push = vi.spyOn(Publisher.prototype, 'push').mockResolvedValue('c'.repeat(40));
+    const push = vi.spyOn(Publisher.prototype, 'push').mockImplementation(async () => {
+      if (failure === 'publication rejected') {
+        throw new PublishRejected('Branch protection rejected the change.');
+      }
+      return 'c'.repeat(40);
+    });
     let attempts = 0;
     const sync = vi
       .spyOn(courseLibrary, 'pullAndUpdateCourse')
@@ -597,7 +612,7 @@ it.each(['transient', 'preexisting validation', 'preexisting question validation
           }),
         };
       });
-    const input = { id, digest: 'test', expectedRevision: 0, approved: true };
+    const input = { id, digest: 'test', expectedOperationNumber: 0, decision: 'approve' as const };
     try {
       await withConfig(
         {
@@ -621,6 +636,16 @@ it.each(['transient', 'preexisting validation', 'preexisting question validation
             .poll(async () => (await selectOptionalProposal(conversation.id, id))?.delivered)
             .toBe(true);
           expect(push).toHaveBeenCalledOnce();
+          expect(sync).toHaveBeenCalledTimes(
+            failure === 'publication rejected' ? 0 : failure === 'transient' ? 2 : 1,
+          );
+          expect(delivery.mock.calls[0][0].result).toMatch(
+            failure === 'publication rejected'
+              ? /Publication rejected: Branch protection/
+              : failure === 'transient'
+                ? /Course Sync completed/
+                : /GitHub commit c{40} was retained[\s\S]*instructor approval[\s\S]*Sync diagnostics:/,
+          );
           expect(delivery.mock.calls[0][0].success).toBe(failure === 'transient');
         },
       );
@@ -722,8 +747,8 @@ it('shows publication progress only while a webserver owns the publication lock'
     digest: 'test',
   }))!;
   await prepareProposal(row.id, proposal, true, null);
-  await decideProposal(scope, conversation, row, true, 0);
-  const value = { messages: [], revision: 0, blocked: true };
+  await decideProposal(scope, conversation, row, 'approve', 0);
+  const value = { messages: [], operationNumber: 0, blocked: true };
   expect((await snapshot(conversation, value)).publication?.status).toBe('retry');
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
@@ -771,7 +796,7 @@ it('does not offer retry while an approved, synced outcome is resuming a cold sa
     digest: approval.digest,
   }))!;
   await prepareProposal(row.id, approval, true, null);
-  await decideProposal(scope, conversation, row, true, 0);
+  await decideProposal(scope, conversation, row, 'approve', 0);
   const sync = await createServerJob({
     type: 'sync',
     description: 'Cold approval fixture',
@@ -802,7 +827,7 @@ it('does not offer retry while an approved, synced outcome is resuming a cold sa
     },
   );
   await ready;
-  const value = { messages: [], revision: 0, blocked: true };
+  const value = { messages: [], operationNumber: 0, blocked: true };
   try {
     expect((await snapshot(conversation, value)).publication?.status).toBe('publishing');
     await saveProposalProgress(row.id, {

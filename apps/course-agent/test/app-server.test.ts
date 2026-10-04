@@ -94,8 +94,8 @@ test('initialization negotiates experimental tools before completing the handsha
   assert.deepEqual(socket.sent[0].params, {
     capabilities: { experimentalApi: true, requestAttestation: false },
     clientInfo: {
-      name: 'pl_sandbox_prototype',
-      title: 'PL sandbox prototype',
+      name: 'prairielearn_course_agent',
+      title: 'PrairieLearn course agent',
       version: '1',
     },
   });
