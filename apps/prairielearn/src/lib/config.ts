@@ -66,6 +66,13 @@ export const STANDARD_COURSE_DIRS = [
 ];
 
 export const ConfigSchema = z.object({
+  courseAgent: z
+    .object({
+      workerUrl: z.url(),
+      serviceToken: z.string().min(32),
+    })
+    .nullable()
+    .default(null),
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
@@ -783,6 +790,10 @@ export async function loadConfig(paths: string[]) {
         'databaseEncryptionKey must be set to a secure value in production environments',
       );
     }
+  }
+
+  if (config.courseAgent && !DEV_MODE && !config.githubClientToken) {
+    throw new Error('githubClientToken must be set when courseAgent is configured in production');
   }
 
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {

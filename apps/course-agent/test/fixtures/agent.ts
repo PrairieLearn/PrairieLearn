@@ -74,11 +74,7 @@ export class Chat extends ProductionChat {
         name: string;
         input: Record<string, string>;
       }>();
-      await this.fixture().requestApproval(name, input);
-      return new Response(null, { status: 204 });
-    }
-    if (path.endsWith('/test/approval')) {
-      await this.fixture().requestApproval();
+      await this.fixture().requestHostTool(name, input);
       return new Response(null, { status: 204 });
     }
     if (path.endsWith('/test/run')) {
@@ -98,10 +94,6 @@ export class Chat extends ProductionChat {
       this.timeOffset += milliseconds;
       // Invoke the actual persisted callbacks with a test clock, not six hours of sleep.
       for (const schedule of this.getSchedules<Parameters<Chat['expireSandbox']>[0]>()) {
-        if (schedule.callback === 'expireToolPreparation' && schedule.time * 1000 <= this.now()) {
-          await this.cancelSchedule(schedule.id);
-          await this.expireToolPreparation({ id: schedule.payload.id });
-        }
         if (schedule.callback === 'expireSandbox' && schedule.time * 1000 <= this.now()) {
           await this.cancelSchedule(schedule.id);
           await this.expireSandbox(schedule.payload);

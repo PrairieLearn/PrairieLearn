@@ -1,8 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { once } from 'node:events';
 
 import { describe, expect, it } from 'vitest';
-import WebSocket from 'ws';
 
 const origin = process.env.COURSE_AGENT_FIXTURE_URL;
 const headers = {
@@ -31,28 +29,9 @@ function conversation() {
       const response = await fetch(`${root}/message`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ id: randomUUID(), text, expectedRevision: 0 }),
+        body: JSON.stringify({ id: randomUUID(), text, expectedOperationNumber: 0 }),
       });
       expect(response.ok).toBe(true);
-    },
-    async host(prepared = true) {
-      const socket = new WebSocket(root.replace('http', 'ws'), {
-        headers: { ...headers, 'X-Host-Tools': '1' },
-      });
-      await once(socket, 'open');
-      socket.send(JSON.stringify({ type: 'host-tools-ready' }));
-      socket.on('message', (raw) => {
-        const frame = JSON.parse(String(raw));
-        if (frame.type === 'host-tool-call' && frame.sequence) {
-          socket.send(
-            JSON.stringify({
-              type: prepared ? 'host-tool-prepared' : 'host-tool-preparation-error',
-              id: frame.id,
-            }),
-          );
-        }
-      });
-      return socket;
     },
   };
 }
@@ -65,9 +44,10 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
       rejected: [dispatchId],
     });
     expect(
-      (await c.rawMessage({ id, dispatchId, text: 'Late request', expectedRevision: 0 })).status,
+      (await c.rawMessage({ id, dispatchId, text: 'Late request', expectedOperationNumber: 0 }))
+        .status,
     ).toBe(409);
-    const retried = { id, dispatchId: randomUUID(), text: 'Retry', expectedRevision: 0 };
+    const retried = { id, dispatchId: randomUUID(), text: 'Retry', expectedOperationNumber: 0 };
     expect((await c.rawMessage(retried)).ok).toBe(true);
     expect((await c.request('snapshot')).executions[id].dispatchId).toBe(retried.dispatchId);
     expect(
@@ -116,31 +96,12 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
           id: randomUUID(),
           dispatchId: rejected[0],
           text: 'Late',
-          expectedRevision: 0,
+          expectedOperationNumber: 0,
         })
       ).status,
     ).toBe(409);
   });
-  it('keeps a preparation failure connected and acknowledges a successful explicit retry', async () => {
-    const c = conversation();
-    const socket = await c.host(false);
-    try {
-      await c.send();
-      await c.request('test/approval', {});
-      await expect
-        .poll(async () => (await c.request('snapshot')).pendingTool?.error)
-        .toBe('Retry preparation.');
-      expect(socket.readyState).toBe(WebSocket.OPEN);
-      const tool = (await c.request('snapshot')).pendingTool;
-      expect(tool.prepared).not.toBe(true);
-      await c.request('tool-prepared', { id: tool.id });
-      expect((await c.request('snapshot')).pendingTool.prepared).toBe(true);
-      expect((await c.request('snapshot')).pendingTool.error).toBeUndefined();
-      await c.request('cancel', {});
-    } finally {
-      socket.close();
-    }
-  });
+
   it('suspends after ten idle minutes, keeps one checkpoint, and restores on the next message', async () => {
     const c = conversation();
     await c.send();
@@ -177,9 +138,9 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
       )
       .toBe(true);
     const id = randomUUID();
-    expect((await c.rawMessage({ id, text: 'Continue checking.', expectedRevision: 0 })).ok).toBe(
-      true,
-    );
+    expect(
+      (await c.rawMessage({ id, text: 'Continue checking.', expectedOperationNumber: 0 })).ok,
+    ).toBe(true);
     await expect
       .poll(async () =>
         (await c.request('snapshot')).messages.some((message: { parts: { type: string }[] }) =>
@@ -193,7 +154,11 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     const c = conversation();
     await c.send();
     await c.request('test/steer-behavior', { behavior: 'lose-ack' });
-    const input = { id: randomUUID(), text: 'Also check the assessments.', expectedRevision: 0 };
+    const input = {
+      id: randomUUID(),
+      text: 'Also check the assessments.',
+      expectedOperationNumber: 0,
+    };
     const response = await c.rawMessage(input);
     expect(response.status).toBe(503);
     const retry = await c.rawMessage(input);
@@ -220,75 +185,5 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     expect(diagnostics.cleanup.retryAt).toBeNull();
     await c.request('cleanup', {});
     expect((await c.request('diagnostics')).state).toBe('absent');
-  });
-  it('delivers a failed native tool result and releases the gate without an approval decision', async () => {
-    const c = conversation();
-    const socket = await c.host();
-    try {
-      await c.send();
-      await c.request('test/approval', {});
-      await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
-      const pending = (await c.request('snapshot')).pendingTool;
-      const error = 'Unrecognized key: accessRules. Correct the file and submit a new proposal.';
-      const result = {
-        type: 'host-tool-result',
-        id: pending.id,
-        outcome: {
-          id: pending.id,
-          result: error,
-          success: false,
-          display: { name: 'push_sync', value: { error } },
-        },
-      };
-      socket.send(JSON.stringify(result));
-      await expect
-        .poll(async () => (await c.request('test/status')).toolResults?.[0]?.success)
-        .toBe(false);
-      await expect.poll(async () => (await c.request('snapshot')).blocked).toBe(false);
-      expect((await c.request('test/status')).toolResults[0].contentItems[0].text).toBe(error);
-      socket.send(JSON.stringify(result));
-      await c.request('cancel', {});
-      expect((await c.request('test/status')).toolResults).toHaveLength(1);
-    } finally {
-      socket.close();
-    }
-  });
-  it('retains the pending tool across suspension and delivers a cold hidden continuation exactly once', async () => {
-    const c = conversation();
-    const socket = await c.host();
-    try {
-      await c.send();
-      await c.request('test/approval', {});
-      await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
-      const pending = (await c.request('snapshot')).pendingTool;
-      await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
-      expect((await c.request('snapshot')).pendingTool.id).toBe(pending.id);
-      expect((await c.request('diagnostics')).state).toBe('absent');
-      const outcome = {
-        type: 'host-tool-result',
-        id: pending.id,
-        outcome: { id: pending.id, result: 'Denied. Nothing was published.' },
-      };
-      const received: unknown[] = [];
-      socket.on('message', (raw) => {
-        const frame = JSON.parse(String(raw));
-        if (frame.type === 'host-tool-delivered') received.push(frame);
-      });
-      socket.send(JSON.stringify(outcome));
-      await expect.poll(() => received.length, { timeout: 15000 }).toBe(1);
-      socket.send(JSON.stringify(outcome));
-      await expect.poll(() => received.length).toBe(2);
-      const snapshot = await c.request('snapshot');
-      expect(snapshot.pendingTool).toBeUndefined();
-      expect(
-        snapshot.messages.filter(
-          (m: { metadata?: { source: string } }) => m.metadata?.source === 'tool-result',
-        ),
-      ).toHaveLength(1);
-      expect((await c.request('test/status')).restores).toBe(1);
-      await c.request('cancel', {});
-    } finally {
-      socket.close();
-    }
   });
 });

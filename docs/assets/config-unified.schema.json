@@ -313,6 +313,29 @@
       "default": 10,
       "type": "number"
     },
+    "courseAgent": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "workerUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "serviceToken": {
+              "type": "string",
+              "minLength": 32
+            }
+          },
+          "required": ["workerUrl", "serviceToken"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "startServer": {
       "default": true,
       "type": "boolean"

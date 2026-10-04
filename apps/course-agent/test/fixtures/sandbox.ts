@@ -1,7 +1,8 @@
 /* eslint-disable unicorn/no-error-property-assignment -- Fixtures reproduce SDK errors after RPC serialization. */
 import { DurableObject } from 'cloudflare:workers';
 
-import type { ThreadItem, Turn } from '../../src/protocol.js';
+import type { ThreadItem } from '../../src/generated/v2/ThreadItem.js';
+import type { Turn } from '../../src/generated/v2/Turn.js';
 
 interface State {
   files: Record<string, string>;
@@ -99,7 +100,7 @@ export class TestSandbox extends DurableObject {
     server.addEventListener('close', () => this.sockets.delete(server));
     server.addEventListener('message', (event) => {
       const frame = JSON.parse(String(event.data));
-      if (!frame.method && frame.id === 'approval-call') {
+      if (!frame.method && frame.id === 'host-call') {
         void this.acceptToolResult(frame.result);
         return;
       }
@@ -313,43 +314,12 @@ export class TestSandbox extends DurableObject {
     await this.save(state);
   }
 
-  async exec(command: string) {
-    const path = command.match(/(\/tmp\/approval-[\w-]+\.json)/)?.[1];
-    if (path) {
-      await this.writeFile(
-        path,
-        JSON.stringify({
-          diff: 'diff --git a/hello.txt b/hello.txt\n--- a/hello.txt\n+++ b/hello.txt\n@@ -1 +1 @@\n-old\n+new\n',
-          files: [
-            {
-              path: 'hello.txt',
-              content: 'new\n',
-              previousMode: '100644',
-              mode: '100644',
-            },
-          ],
-        }),
-      );
-    }
-    return {
-      success: true,
-      stdout:
-        'diff --git a/hello.txt b/hello.txt\n--- a/hello.txt\n+++ b/hello.txt\n@@ -1 +1 @@\n-old\n+new\n',
-    };
-  }
-
-  async requestApproval(
-    tool = 'push_sync',
-    args: Record<string, string> = {
-      baseSha: 'a'.repeat(40),
-      proposedSha: 'b'.repeat(40),
-    },
-  ) {
+  async requestHostTool(tool: string, args: Record<string, string>) {
     const state = await this.state();
     state.waitingTool = true;
     const item: ThreadItem = {
       type: 'dynamicToolCall',
-      id: 'approval-call',
+      id: 'host-call',
       namespace: null,
       tool,
       arguments: args,
@@ -368,12 +338,12 @@ export class TestSandbox extends DurableObject {
     for (const socket of this.sockets) {
       socket.send(
         JSON.stringify({
-          id: 'approval-call',
+          id: 'host-call',
           method: 'item/tool/call',
           params: {
             threadId: 'native-thread',
             turnId: state.turns.at(-1)!.id,
-            callId: 'approval-call',
+            callId: 'host-call',
             namespace: null,
             tool,
             arguments: args,
@@ -402,6 +372,10 @@ export class TestSandbox extends DurableObject {
     }
     await this.save(state);
     await this.ctx.storage.setAlarm(Math.max(Date.now() + 100, turn.startedAt! * 1000 + 8000));
+  }
+
+  async exec(_command: string) {
+    return { success: true, stdout: '' };
   }
 
   async startProcess(_command: string, _options: { processId: string }) {

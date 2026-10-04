@@ -225,6 +225,9 @@ export default [
     },
   },
   globalIgnores([
+    // Preserve upstream Codex declarations; the generator's freshness check owns this directory.
+    'apps/course-agent/src/generated/**',
+    'apps/course-agent/**/.wrangler/**',
     '.claude/worktrees/*',
     '.venv/*',
     'docs/*',
