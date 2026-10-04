@@ -70,6 +70,8 @@ test('conversation and unsent draft persist across course pages', async ({
   await composer.press('Enter');
   await expect(page.getByText('Keep counting.', { exact: true })).toHaveCount(1);
   await expect(page.getByText('Started.', { exact: true })).toHaveCount(1);
+  // Wait for steering to be accepted before checking persisted history after reload.
+  await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeEnabled();
   let releaseReplay!: () => void;
   const replayGate = new Promise<void>((resolve) => {
     releaseReplay = resolve;
@@ -120,12 +122,13 @@ test('conversation and unsent draft persist across course pages', async ({
   await composer.fill('Keep this draft.');
   await page.getByRole('link', { name: 'Questions', exact: true }).click();
   await expect(page).toHaveURL(`/pl/course/${courseId}/course_admin/questions`);
-  await expect(composer).toHaveValue('Keep this draft.');
+  // Drafts restore after hydration, which may wait for on-demand asset builds in CI.
+  await expect(composer).toHaveValue('Keep this draft.', { timeout: 15000 });
   await expect(page.getByText('Use a different approach.', { exact: true })).toHaveCount(1);
   await expect(page.getByText('Please inspect the course.', { exact: true })).toBeVisible();
   await expect(page.getByText('Finished.', { exact: false })).toBeVisible({ timeout: 20000 });
   await page.reload();
-  await expect(composer).toHaveValue('Keep this draft.');
+  await expect(composer).toHaveValue('Keep this draft.', { timeout: 15000 });
   await page.route(
     '**/course-agent/*/events',
     (route) =>
@@ -137,7 +140,7 @@ test('conversation and unsent draft persist across course pages', async ({
     { times: 1 },
   );
   await page.reload();
-  await expect(composer).toHaveValue('Keep this draft.');
+  await expect(composer).toHaveValue('Keep this draft.', { timeout: 15000 });
   await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled({
     timeout: 15000,
   });

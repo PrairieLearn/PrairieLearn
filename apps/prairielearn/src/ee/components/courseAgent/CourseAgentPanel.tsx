@@ -405,7 +405,7 @@ function Conversation({
         const startupKey = storageKey.replace(/:[^:]+$/, ':new:conversation');
         if (readPanelState(startupKey) === id) savePanelState(startupKey, '');
       }
-      setSnapshot(next);
+      setSnapshot((current) => ({ ...next, revision: Math.max(current.revision, next.revision) }));
       setLoaded(true);
       setConnection('connected');
       setFailure('');
@@ -473,6 +473,10 @@ function Conversation({
       }
       onSending(conversationId);
       const result = await send.mutateAsync({ conversationId, message });
+      setSnapshot((current) => ({
+        ...current,
+        revision: Math.max(current.revision, result.revision),
+      }));
       pendingRef.current = null;
       savePanelState(storageKey + ':pending', '');
       if (!id) {
