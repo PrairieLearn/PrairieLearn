@@ -50,7 +50,14 @@ export async function observe(
         dirty = false;
         // Ask for registered receipts explicitly: completed operations may have
         // been compacted out of the Worker's default snapshot.
-        const snapshot = await chat.getSnapshot(controller.signal, Array.from(operations));
+        const ids = Array.from(operations);
+        const snapshot = await chat.getSnapshot(controller.signal, ids.slice(0, 100));
+        // The receipt endpoint accepts at most 100 IDs per request. A long
+        // steered turn can register more than that before its final receipt.
+        for (let offset = 100; offset < ids.length; offset += 100) {
+          const batch = await chat.getSnapshot(controller.signal, ids.slice(offset, offset + 100));
+          snapshot.executions = { ...snapshot.executions, ...batch.executions };
+        }
         const values = Object.values(snapshot.executions ?? {});
         if (
           !values.some((value) => value.status === 'running') &&
