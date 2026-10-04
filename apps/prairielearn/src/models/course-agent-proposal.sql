@@ -66,6 +66,8 @@ SET
   synced_sha = COALESCE($synced_sha, synced_sha),
   outcome = COALESCE($outcome, outcome),
   outcome_success = COALESCE($outcome_success, outcome_success),
+  rollback_allowed = COALESCE($rollback_allowed, rollback_allowed),
+  rolled_back_sha = COALESCE($rolled_back_sha, rolled_back_sha),
   sync_validation_failed = COALESCE($sync_validation_failed, sync_validation_failed),
   sync_diagnostics = COALESCE($sync_diagnostics, sync_diagnostics),
   delivered = COALESCE($delivered, delivered),

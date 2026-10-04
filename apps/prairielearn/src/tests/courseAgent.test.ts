@@ -437,6 +437,152 @@ it('returns failed schema validation to the agent, retries delivery, and only ex
   }
 });
 
+it('restores PL after rollback and retries restoration and delivery without repeating publication', async () => {
+  const { conversation, scope, user } = await setupConversation();
+  await insertCoursePermissionsByUserUid({
+    course_id: scope.course_id,
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: user.id,
+  });
+  await updateCourseColumn({
+    courseId: scope.course_id,
+    columnName: 'repository',
+    value: 'https://github.com/org/course.git',
+    authnUserId: user.id,
+  });
+  await updateCourseColumn({
+    courseId: scope.course_id,
+    columnName: 'branch',
+    value: 'main',
+    authnUserId: user.id,
+  });
+  const operation = randomUUID();
+  const approval = {
+    id: operation,
+    baseSha: 'a'.repeat(40),
+    proposedSha: 'b'.repeat(40),
+    digest: 'test-digest',
+    files: [],
+    diff: 'test diff',
+    status: 'pending',
+  };
+  await execute(sql.baseline, {
+    course_id: scope.course_id,
+    commit_hash: approval.baseSha,
+    sync_errors: null,
+  });
+  const row = (await insertProposal({
+    conversation_id: conversation.id,
+    operation_id: operation,
+    sequence: 1,
+    payload: JSON.stringify(approval),
+    digest: 'test-digest',
+  }))!;
+  await prepareProposal(row.id, approval, true, null);
+  const delivery = vi
+    .fn<(input: ToolOutcome, signal: AbortSignal) => Promise<void>>()
+    .mockRejectedValueOnce(new Error('Delivery interrupted'))
+    .mockResolvedValue(undefined);
+  const originalProvider = agentProvider.createCloudflareProvider;
+  const mocks = [
+    vi.spyOn(agentEvents, 'notify').mockResolvedValue(),
+    vi.spyOn(agentObserver, 'observe').mockResolvedValue(),
+    vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => Response.json({ model: 'fixture-model' })),
+    vi.spyOn(agentProvider, 'createCloudflareProvider').mockImplementation((...args) => ({
+      ...originalProvider(...args),
+      getSnapshot: async () => ({
+        messages: [],
+        revision: 0,
+        executions: {
+          [operation]: {
+            status: 'running',
+            model: 'fixture',
+            input: null,
+            cached: null,
+            output: null,
+          },
+        },
+      }),
+      deliverToolResult: delivery,
+    })),
+  ];
+  const push = vi.spyOn(Publisher.prototype, 'push').mockResolvedValue('c'.repeat(40));
+  const rollback = vi.spyOn(Publisher.prototype, 'rollback').mockResolvedValue('e'.repeat(40));
+  const sync = vi
+    .spyOn(courseLibrary, 'pullAndUpdateCourse')
+    .mockImplementation(async (options) => {
+      const job = await createServerJob({
+        type: 'sync',
+        description: 'Fixture failed sync',
+        courseId: scope.course_id,
+        userId: user.id,
+        authnUserId: user.id,
+      });
+      await options.onJobCreated!(job.jobSequenceId);
+      return {
+        jobSequenceId: job.jobSequenceId,
+        jobPromise: job.execute(async (task) => {
+          if (options.expectedAncestorSha === 'c'.repeat(40)) {
+            await options.onValidationFailure!();
+            task.fail('infoCourse.json: required property topics is missing');
+          } else if (sync.mock.calls.length === 2) {
+            task.fail('Temporary fetch failure');
+          } else {
+            await options.onSynced!('e'.repeat(40));
+          }
+        }),
+      };
+    });
+  const input = { id: operation, digest: row.digest, expectedRevision: 0, approved: true };
+  try {
+    await withConfig(
+      {
+        isEnterprise: true,
+        features: { 'course-agent': true },
+        courseAgent: settings,
+        githubClientToken: 'fake-shared-client-token',
+      },
+      async () => {
+        await complete(scope, conversation, input);
+        await expect
+          .poll(async () => (await selectOptionalProposal(conversation.id, operation))?.error)
+          .toContain('could not restore');
+        const recovering = (await selectOptionalProposal(conversation.id, operation))!;
+        expect(recovering.rolled_back_sha).toBe('e'.repeat(40));
+        expect(recovering.outcome).toBeNull();
+        expect(delivery).not.toHaveBeenCalled();
+        await complete(scope, conversation, input);
+        await expect
+          .poll(async () => (await selectOptionalProposal(conversation.id, operation))?.error)
+          .toBe('Delivery interrupted');
+        const failed = (await selectOptionalProposal(conversation.id, operation))!;
+        expect(failed.outcome).toContain('topics is missing');
+        expect(failed.outcome).toContain('Publication was reverted');
+        expect(failed.synced_sha).toBe('e'.repeat(40));
+        expect(failed.delivered).toBe(false);
+        await complete(scope, conversation, input);
+        expect(delivery.mock.calls[1][0]).toMatchObject({
+          id: operation,
+          success: false,
+          result: failed.outcome,
+        });
+        expect(push).toHaveBeenCalledOnce();
+        expect(rollback).toHaveBeenCalledOnce();
+        expect(sync).toHaveBeenCalledTimes(3);
+        expect((await selectOptionalProposal(conversation.id, operation))!.delivered).toBe(true);
+        expect(
+          await reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'next' }, 1),
+        ).toBe(2);
+      },
+    );
+  } finally {
+    for (const mock of [...mocks, push, rollback, sync]) mock.mockRestore();
+  }
+});
+
 it('keeps a transient preparation failure retryable and exposes its saved recovery action', async () => {
   const { conversation, scope, user } = await setupConversation();
   await insertCoursePermissionsByUserUid({
@@ -492,7 +638,7 @@ it('keeps a transient preparation failure retryable and exposes its saved recove
 });
 
 it.each(['transient', 'preexisting validation', 'preexisting question validation'] as const)(
-  'retains publication and retries only the incomplete stage for a %s sync failure',
+  'does not roll back a publication for a %s sync failure',
   async (failure) => {
     const { conversation, scope, user } = await setupConversation();
     await insertCoursePermissionsByUserUid({
@@ -572,6 +718,7 @@ it.each(['transient', 'preexisting validation', 'preexisting question validation
       })),
     ];
     const push = vi.spyOn(Publisher.prototype, 'push').mockResolvedValue('c'.repeat(40));
+    const rollback = vi.spyOn(Publisher.prototype, 'rollback');
     let attempts = 0;
     const sync = vi
       .spyOn(courseLibrary, 'pullAndUpdateCourse')
@@ -620,12 +767,13 @@ it.each(['transient', 'preexisting validation', 'preexisting question validation
           await expect
             .poll(async () => (await selectOptionalProposal(conversation.id, id))?.delivered)
             .toBe(true);
+          expect(rollback).not.toHaveBeenCalled();
           expect(push).toHaveBeenCalledOnce();
           expect(delivery.mock.calls[0][0].success).toBe(failure === 'transient');
         },
       );
     } finally {
-      for (const mock of [...mocks, push, sync]) mock.mockRestore();
+      for (const mock of [...mocks, push, rollback, sync]) mock.mockRestore();
       await execute(sql.question_errors, { course_id: scope.course_id, sync_errors: null });
     }
   },

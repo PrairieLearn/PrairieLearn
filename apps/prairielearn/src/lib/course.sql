@@ -68,3 +68,48 @@ SELECT
       )
       AND deleted_at IS NULL
   ) AS exists;
+
+-- BLOCK sync_errors
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      courses
+    WHERE
+      id = $course_id
+      AND deleted_at IS NULL
+      AND sync_errors IS NOT NULL
+  )
+  OR EXISTS (
+    SELECT
+      1
+    FROM
+      questions
+    WHERE
+      course_id = $course_id
+      AND deleted_at IS NULL
+      AND sync_errors IS NOT NULL
+  )
+  OR EXISTS (
+    SELECT
+      1
+    FROM
+      course_instances
+    WHERE
+      course_id = $course_id
+      AND deleted_at IS NULL
+      AND sync_errors IS NOT NULL
+  )
+  OR EXISTS (
+    SELECT
+      1
+    FROM
+      assessments a
+      JOIN course_instances ci ON ci.id = a.course_instance_id
+    WHERE
+      ci.course_id = $course_id
+      AND ci.deleted_at IS NULL
+      AND a.deleted_at IS NULL
+      AND a.sync_errors IS NOT NULL
+  ) AS has_errors;
