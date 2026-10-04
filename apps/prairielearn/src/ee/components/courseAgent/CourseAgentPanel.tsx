@@ -13,7 +13,10 @@ import { Button, Dropdown, Offcanvas } from 'react-bootstrap';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
-import type { CourseAgentPanelState } from '../../../lib/course-agent-panel.js';
+import {
+  type CourseAgentPanelState,
+  CourseAgentPanelStateSchema,
+} from '../../../lib/course-agent-panel.js';
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
@@ -91,6 +94,12 @@ function Panel({
   const settings = useMutation({
     ...trpc.courseAgent.panel.mutationOptions(),
     scope: { id: key },
+    onSuccess: (_result, saved) => {
+      // An earlier mutation must not clear a newer selection queued behind it.
+      if (readPanelState(`${key}:settings`) === JSON.stringify(saved)) {
+        savePanelState(`${key}:settings`, '');
+      }
+    },
   });
   // Catalog refresh only observes persisted execution status; it never retries publication or starts work.
   const conversations = useQuery({
@@ -137,14 +146,21 @@ function Panel({
       const next = { ...panelRef.current, ...change };
       panelRef.current = next;
       setPanel(next);
+      savePanelState(`${key}:settings`, JSON.stringify(next));
       saveSettings(next);
       if (change.open === false && !mobile) requestAnimationFrame(() => toggleRef.current?.focus());
     },
-    [saveSettings, mobile],
+    [saveSettings, mobile, key],
   );
-  // A first Send can outlive navigation before its acknowledgement selects the conversation.
+  // Navigation may render session settings before the preceding mutation has
+  // persisted. Restore/retry that local selection before first-send recovery.
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
+      const saved = readPanelState(`${key}:settings`);
+      if (saved) {
+        const pending = CourseAgentPanelStateSchema.safeParse(JSON.parse(saved));
+        if (pending.success) changePanel(pending.data);
+      }
       const recovered = readPanelState(`${key}:new:conversation`);
       if (recovered && !panelRef.current.selected) {
         changePanel({ selected: recovered, title: 'New conversation' });

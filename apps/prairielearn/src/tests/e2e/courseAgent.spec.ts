@@ -559,3 +559,60 @@ test('navigation during the first send restores the pending message and conversa
     1,
   );
 });
+
+test('navigation preserves a new-conversation selection before the settings request finishes', async ({
+  page,
+  courseInstance,
+}) => {
+  const courseId = courseInstance.course_id;
+  await insertCoursePermissionsByUserUid({
+    course_id: courseId,
+    uid: 'dev@example.com',
+    course_role: 'Owner',
+    authn_user_id: '1',
+  });
+  await updateCourseColumn({
+    courseId,
+    columnName: 'repository',
+    value: 'https://github.com/example/course.git',
+    authnUserId: '1',
+  });
+  await updateCourseColumn({ courseId, columnName: 'branch', value: 'main', authnUserId: '1' });
+  await page.goto(`/pl/course/${courseId}/course_admin/settings`);
+  await page.getByRole('button', { name: 'Open course agent' }).click();
+  await page.getByLabel('Message', { exact: true }).fill('Saved selection');
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Conversation', exact: true })).not.toHaveText(
+    'New conversation',
+  );
+  await page.getByRole('button', { name: 'Stop', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Conversation', exact: true })).not.toHaveText(
+    'New conversation',
+  );
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/trpc/courseAgent.panel', async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await page.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await page.getByLabel('Message', { exact: true }).fill('Draft in the new conversation');
+  await page.getByRole('link', { name: 'Questions', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Conversation', exact: true })).toHaveText(
+    'New conversation',
+  );
+  await expect(page.getByLabel('Message', { exact: true })).toHaveValue(
+    'Draft in the new conversation',
+  );
+  const saved = page.waitForResponse('**/trpc/courseAgent.panel');
+  release();
+  await saved;
+  await page.unroute('**/trpc/courseAgent.panel');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Conversation', exact: true })).toHaveText(
+    'New conversation',
+  );
+});

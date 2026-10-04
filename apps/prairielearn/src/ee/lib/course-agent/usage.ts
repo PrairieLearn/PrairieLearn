@@ -141,7 +141,7 @@ async function checkCapacity(conversation: CourseAgentConversation, message: boo
   const stats = await executions.selectUsageStats(conversation.course_id, conversation.user_id);
   const active = await executions.selectActiveExecution(conversation.id);
   const recent = message ? await executions.selectRecentRequests(conversation.user_id) : undefined;
-  if (stats.unknown_cost > 0) {
+  if (stats.user_unknown_cost > 0 || stats.course_unknown_cost > 0) {
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
       message:
@@ -150,7 +150,8 @@ async function checkCapacity(conversation: CourseAgentConversation, message: boo
   }
   if (
     (recent && recent.requests > settings.maxRequestsPerHour) ||
-    stats.cost >= settings.dailyCostLimit ||
+    stats.user_cost >= settings.dailyCostLimit ||
+    stats.course_cost >= settings.dailyCostLimit ||
     (!active.active &&
       (stats.user_active >= settings.maxConcurrentPerUser ||
         stats.course_active >= settings.maxConcurrentPerCourse))

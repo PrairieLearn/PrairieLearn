@@ -19,3 +19,15 @@ SET
   admitted_at = now() - interval '3 minutes'
 WHERE
   conversation_id = $conversation_id;
+
+-- BLOCK courses
+SELECT
+  id
+FROM
+  courses
+WHERE
+  deleted_at IS NULL
+ORDER BY
+  id
+LIMIT
+  2;

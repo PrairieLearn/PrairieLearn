@@ -1,21 +1,26 @@
 import { randomUUID } from 'node:crypto';
 
+import type { TRPCError } from '@trpc/server';
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { ChatError } from '@prairielearn/course-agent-contract';
 import * as namedLocks from '@prairielearn/named-locks';
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import * as provider from '../ee/lib/course-agent/provider.js';
 import { admit, recordUsage } from '../ee/lib/course-agent/usage.js';
 import { createConversation } from '../models/course-agent-conversation.js';
 import {
+  insertExecution,
   rejectExecution,
+  saveExecutions,
   selectActiveExecution,
   selectOptionalExecution,
+  selectUsageStats,
 } from '../models/course-agent-execution.js';
+import { selectOrInsertCourseByPath } from '../models/course.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
 import * as helperDb from './helperDb.js';
@@ -245,3 +250,102 @@ it('blocks unknown completed cost until the saved usage has a configured price',
     mocked.mockRestore();
   }
 });
+
+async function scopedConversations() {
+  // A second course is required to distinguish cross-course user usage from course usage.
+  await selectOrInsertCourseByPath('/course-agent-cost-scope');
+  const courses = await queryRows(sql.courses, z.object({ id: z.string() }));
+  expect(courses).toHaveLength(2);
+  const users = await Promise.all(
+    ['scope-a@example.com', 'scope-b@example.com'].map((uid) => selectOrInsertUserByUid(uid)),
+  );
+  const create = (course: number, user: number) =>
+    createConversation(
+      { course_id: courses[course].id, user_id: users[user].id, authn_user_id: users[user].id },
+      { title: 'Scoped cost', repository: 'example/course', branch: 'main' },
+    );
+  return {
+    target: await create(0, 0),
+    sameUser: await create(1, 0),
+    sameCourse: await create(0, 1),
+    unrelated: await create(1, 1),
+  };
+}
+
+async function savedCost(
+  conversation: Awaited<ReturnType<typeof createConversation>>,
+  cost: number | null,
+) {
+  const id = randomUUID();
+  await insertExecution(conversation.id, id);
+  const execution = (await selectOptionalExecution(conversation.id, id))!;
+  await saveExecutions(conversation.id, [
+    {
+      operation_id: id,
+      dispatch_id: execution.dispatch_id,
+      status: 'completed',
+      input: 100,
+      cached: 0,
+      output: 0,
+      cost,
+      model: cost === null ? 'unpriced-model' : 'fixture',
+      pricing: cost === null ? null : settings.pricing.fixture,
+    },
+  ]);
+}
+it('applies user and course daily budgets separately instead of summing their union', async () => {
+  const { target, sameUser, sameCourse } = await scopedConversations();
+  await savedCost(sameUser, 12);
+  await savedCost(sameCourse, 12);
+  const stats = await selectUsageStats(target.course_id, target.user_id);
+  expect(stats.user_cost).toBe(12);
+  expect(stats.course_cost).toBe(12);
+  const mocked = mockProvider();
+  try {
+    await withConfig({ courseAgent: settings }, async () => {
+      await admit(target, {
+        id: randomUUID(),
+        text: 'Both budgets have room',
+        expectedOperationNumber: 0,
+      });
+      await savedCost(target, 9);
+      await expect(
+        admit(target, {
+          id: randomUUID(),
+          text: 'Both budgets exhausted',
+          expectedOperationNumber: 1,
+        }),
+      ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+    });
+  } finally {
+    mocked.mockRestore();
+  }
+});
+it.each(['sameUser', 'sameCourse', 'unrelated'] as const)(
+  'limits unknown cost to its corresponding %s scope',
+  async (scope) => {
+    const conversations = await scopedConversations();
+    await savedCost(conversations[scope], null);
+    const mocked = mockProvider();
+    try {
+      await withConfig({ courseAgent: settings }, async () => {
+        const result = admit(conversations.target, {
+          id: randomUUID(),
+          text: 'Scoped unknown cost',
+          expectedOperationNumber: 0,
+        });
+        expect(
+          await result.then(
+            () => undefined,
+            (error: TRPCError) => error.code,
+          ),
+        ).toBe(scope === 'unrelated' ? undefined : 'PRECONDITION_FAILED');
+        expect((await selectActiveExecution(conversations.target.id)).active).toBe(
+          scope === 'unrelated',
+        );
+      });
+    } finally {
+      mocked.mockRestore();
+    }
+  },
+);

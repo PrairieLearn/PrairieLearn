@@ -22,8 +22,10 @@ export const selectUsageStats = (course_id: string, user_id: string) =>
     z.object({
       user_active: z.number(),
       course_active: z.number(),
-      cost: z.number(),
-      unknown_cost: z.number(),
+      user_cost: z.number(),
+      course_cost: z.number(),
+      user_unknown_cost: z.number(),
+      course_unknown_cost: z.number(),
     }),
   );
 export const selectRecentRequests = (user_id: string) =>

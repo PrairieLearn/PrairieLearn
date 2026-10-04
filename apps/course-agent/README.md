@@ -146,7 +146,10 @@ Configure `courseAgent.pricing` before sending work, including the fixture model
 Pricing is per million tokens. Production prices must match the chosen model;
 unknown pricing blocks admission rather than counting the work as free. Defaults
 allow two concurrent requests per user, five per course, 30 requests per hour,
-and a $20 daily estimate limit. These are admission limits, not a hard limit on
+and a $20 daily estimate limit applied separately to each user across courses
+and each course across owners. Usage in the overlap is counted in both scopes,
+not added together into a combined budget. Unknown completed costs block their
+user and course scopes until reconciled. These are admission limits, not a hard limit on
 one turn's eventual cost. Unconfirmed receipts remain charged as active until
 reconciled; one unavailable conversation must not silently free its slot.
 
