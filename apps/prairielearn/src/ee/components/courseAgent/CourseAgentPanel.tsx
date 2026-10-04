@@ -142,10 +142,13 @@ function Panel({
   const saveSettings = settings.mutate;
   const changePanel = useCallback(
     (change: Partial<CourseAgentPanelState>) => {
-      if (change.open !== undefined) setAnimate(true);
+      if (change.open !== undefined && change.open !== panelRef.current.open) setAnimate(true);
       const next = { ...panelRef.current, ...change };
       panelRef.current = next;
       setPanel(next);
+      // Keep the last selection even after its write succeeds: navigation may
+      // have rendered the next page before that response reached this page.
+      savePanelState(`${key}:panel`, JSON.stringify(next));
       savePanelState(`${key}:settings`, JSON.stringify(next));
       saveSettings(next);
       if (change.open === false && !mobile) requestAnimationFrame(() => toggleRef.current?.focus());
@@ -156,7 +159,7 @@ function Panel({
   // persisted. Restore/retry that local selection before first-send recovery.
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      const saved = readPanelState(`${key}:settings`);
+      const saved = readPanelState(`${key}:settings`) || readPanelState(`${key}:panel`);
       if (saved) {
         const pending = CourseAgentPanelStateSchema.safeParse(JSON.parse(saved));
         if (pending.success) changePanel(pending.data);

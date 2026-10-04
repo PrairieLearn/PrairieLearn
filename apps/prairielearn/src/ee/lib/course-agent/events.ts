@@ -16,13 +16,13 @@ function connect() {
     const sub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
     try {
       await Promise.all([pub.connect(), sub.connect()]);
+      sub.on('message', (_channel, id) => listeners.emit(id));
+      await sub.subscribe(channel);
     } catch (error) {
       pub.disconnect();
       sub.disconnect();
       throw error;
     }
-    sub.on('message', (_channel, id) => listeners.emit(id));
-    await sub.subscribe(channel);
     return { pub, sub };
   })().catch((error) => {
     clients = undefined;

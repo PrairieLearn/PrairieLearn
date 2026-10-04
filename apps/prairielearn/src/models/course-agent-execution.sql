@@ -126,7 +126,12 @@ WHERE
 -- BLOCK update
 UPDATE course_agent_executions AS e
 SET
-  status = v.status,
+  -- The first terminal receipt is authoritative; later receipts may still
+  -- contribute higher usage totals without rewriting the execution outcome.
+  status = CASE
+    WHEN e.status IN ('admitted', 'running') THEN v.status
+    ELSE e.status
+  END,
   input_tokens = GREATEST(e.input_tokens, v.input),
   cached_input_tokens = GREATEST(e.cached_input_tokens, v.cached),
   output_tokens = GREATEST(e.output_tokens, v.output),
@@ -134,6 +139,8 @@ SET
   model = v.model,
   pricing = COALESCE(e.pricing, v.pricing),
   finished_at = CASE
+    WHEN v.status = 'running'
+    AND e.status NOT IN ('admitted', 'running') THEN e.finished_at
     WHEN v.status = 'running' THEN NULL
     ELSE COALESCE(e.finished_at, now())
   END

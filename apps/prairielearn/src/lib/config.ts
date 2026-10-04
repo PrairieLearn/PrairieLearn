@@ -809,6 +809,15 @@ export async function loadConfig(paths: string[]) {
   if (config.courseAgent && !config.redisUrl) {
     throw new Error('redisUrl must be set when courseAgent is configured');
   }
+
+  if (
+    config.courseAgent &&
+    !DEV_MODE &&
+    new URL(config.courseAgent.workerUrl).protocol !== 'https:'
+  ) {
+    throw new Error('courseAgent.workerUrl must use HTTPS in production');
+  }
+
   if (config.courseAgent && !DEV_MODE && !config.githubClientToken) {
     throw new Error('githubClientToken must be set when courseAgent is configured in production');
   }
