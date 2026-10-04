@@ -154,7 +154,13 @@ function UnpublishedBannerComponent({
   navContext: NavContext;
   resLocals: UntypedResLocals;
 }) {
-  if ((navContext.type !== 'instructor') || !navContext.page || !['instance_admin', 'assessment', 'students'].includes(navContext.page)) return null;
+  if (
+    navContext.type !== 'instructor' ||
+    !navContext.page ||
+    !['instance_admin', 'assessment', 'students'].includes(navContext.page)
+  ) {
+    return null;
+  }
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
   const { course_instance: courseInstance, urlPrefix } = resLocals;
