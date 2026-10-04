@@ -1,22 +1,27 @@
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import type { ChatSnapshot } from '@prairielearn/course-agent-contract';
+import * as Sentry from '@prairielearn/sentry';
 
 import type { CourseAgentConversation } from '../../../lib/db-types.js';
-import { selectActiveExecution } from '../../../models/course-agent-execution.js';
+import * as executions from '../../../models/course-agent-execution.js';
 
-import { notify } from './events.js';
+import * as events from './events.js';
 import { observe, stopObservers } from './observer.js';
 import { createCloudflareProvider } from './provider.js';
-import { recordUsage } from './usage.js';
+import * as usage from './usage.js';
 
-vi.mock('./events.js', () => ({ notify: vi.fn() }));
-vi.mock('./usage.js', () => ({ recordUsage: vi.fn() }));
-vi.mock('../../../models/course-agent-execution.js', () => ({ selectActiveExecution: vi.fn() }));
-vi.mock('@prairielearn/sentry', () => ({ captureException: vi.fn() }));
+// Test files share a module cache in this repository. Spies also replace the
+// live bindings when a prior integration test has already imported the observer.
+beforeEach(() => {
+  vi.spyOn(events, 'notify');
+  vi.spyOn(usage, 'recordUsage');
+  vi.spyOn(executions, 'selectActiveExecution');
+  vi.spyOn(Sentry, 'captureException').mockImplementation(() => 'test');
+});
 afterEach(() => {
   stopObservers();
-  vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 test('a Redis notification failure keeps observation attached until the execution finishes', async () => {
@@ -47,16 +52,16 @@ test('a Redis notification failure keeps observation attached until the executio
       return close;
     }),
   };
-  vi.mocked(notify).mockRejectedValue(new Error('Redis unavailable'));
-  vi.mocked(recordUsage).mockResolvedValue({ input: 1, output: 0, estimatedCost: 0 });
-  vi.mocked(selectActiveExecution).mockResolvedValue({ active: true });
+  vi.mocked(events.notify).mockRejectedValue(new Error('Redis unavailable'));
+  vi.mocked(usage.recordUsage).mockResolvedValue({ input: 1, output: 0, estimatedCost: 0 });
+  vi.mocked(executions.selectActiveExecution).mockResolvedValue({ active: true });
   await observe(conversation, chat);
   changed();
-  await vi.waitFor(() => expect(notify).toHaveBeenCalledOnce());
+  await vi.waitFor(() => expect(events.notify).toHaveBeenCalledOnce());
   expect(close).not.toHaveBeenCalled();
   getSnapshot.mockResolvedValue({ messages: [], operationNumber: 0, executions: {} });
-  vi.mocked(selectActiveExecution).mockResolvedValue({ active: false });
+  vi.mocked(executions.selectActiveExecution).mockResolvedValue({ active: false });
   changed();
   await vi.waitFor(() => expect(close).toHaveBeenCalledOnce());
-  expect(recordUsage).toHaveBeenCalledTimes(2);
+  expect(usage.recordUsage).toHaveBeenCalledTimes(2);
 });
