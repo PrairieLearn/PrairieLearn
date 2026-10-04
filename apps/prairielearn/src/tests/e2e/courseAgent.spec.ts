@@ -590,6 +590,9 @@ test('navigation preserves a new-conversation selection before the settings requ
   await expect(page.getByRole('button', { name: 'Conversation', exact: true })).not.toHaveText(
     'New conversation',
   );
+  // The selected title is server-rendered; restored history confirms React's
+  // handlers are attached before exercising a selection and immediate navigation.
+  await expect(page.getByText('Saved selection', { exact: true })).toBeVisible({ timeout: 15000 });
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -599,6 +602,9 @@ test('navigation preserves a new-conversation selection before the settings requ
     await route.continue();
   });
   await page.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Conversation', exact: true })).toHaveText(
+    'New conversation',
+  );
   await page.getByLabel('Message', { exact: true }).fill('Draft in the new conversation');
   await page.getByRole('link', { name: 'Questions', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Conversation', exact: true })).toHaveText(
