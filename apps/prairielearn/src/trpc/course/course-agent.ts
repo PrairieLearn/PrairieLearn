@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { sendRequestSchema } from '@prairielearn/course-agent-contract';
+import { ChatError, sendRequestSchema } from '@prairielearn/course-agent-contract';
 import { IdSchema } from '@prairielearn/zod';
 
 import { formatCourseAgentDate } from '../../lib/course-agent-date.js';
@@ -62,10 +62,24 @@ export const courseAgentRouter = t.router({
         input.message.expectedOperationNumber,
       );
       const title = formatCourseAgentDate(c.created_at, ctx.course.display_timezone);
-      const { observe } = await import('../../ee/lib/course-agent/observer.js');
+      const { observe, forgetOperation } = await import('../../ee/lib/course-agent/observer.js');
       await nameConversation(c.id, title);
       await observe(c, chat, input.message.id);
-      await chat.send(input.message, AbortSignal.timeout(120000));
+      try {
+        await chat.send(input.message, AbortSignal.timeout(120000));
+      } catch (error) {
+        // A transport failure may have accepted the prompt. Only definitive
+        // Worker rejections can release the operation without its receipt.
+        if (
+          error instanceof ChatError &&
+          error.status >= 400 &&
+          error.status < 500 &&
+          error.status !== 408
+        ) {
+          forgetOperation(c.id, input.message.id);
+        }
+        throw error;
+      }
       return { title, operationNumber };
     }),
   stop: procedure.input(id).mutation(async ({ ctx, input }) => {

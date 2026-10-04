@@ -5,7 +5,10 @@ import type { CourseAgentConversation } from '../../../lib/db-types.js';
 
 import { executeHostTool } from './host-tools.js';
 
-const observers = new Map<string, { controller: AbortController; operations: Set<string> }>();
+const observers = new Map<
+  string,
+  { controller: AbortController; operations: Set<string>; refresh: () => void }
+>();
 /** Keep live host execution attached when the browser leaves the page. */
 export async function observe(
   conversation: CourseAgentConversation,
@@ -21,7 +24,6 @@ export async function observe(
   // between opening its socket and Codex accepting this prompt.
   const operations = new Set([operationId]);
   const controller = new AbortController();
-  observers.set(conversation.id, { controller, operations });
   const timeout = setTimeout(() => controller.abort(), 6 * 60 * 60_000);
   timeout.unref();
   let close: (() => void) | undefined;
@@ -46,7 +48,9 @@ export async function observe(
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       while (dirty && !controller.signal.aborted) {
         dirty = false;
-        const snapshot = await chat.getSnapshot(controller.signal);
+        // Ask for registered receipts explicitly: completed operations may have
+        // been compacted out of the Worker's default snapshot.
+        const snapshot = await chat.getSnapshot(controller.signal, Array.from(operations));
         const values = Object.values(snapshot.executions ?? {});
         if (
           !values.some((value) => value.status === 'running') &&
@@ -66,6 +70,7 @@ export async function observe(
       reading = false;
     }
   };
+  observers.set(conversation.id, { controller, operations, refresh: () => void changed() });
   try {
     close = await chat.watch(
       controller.signal,
@@ -79,6 +84,14 @@ export async function observe(
     throw error;
   }
 }
+/** A definite rejection has no receipt to wait for; uncertain dispatches remain observed. */
+export function forgetOperation(conversationId: string, operationId: string) {
+  const observer = observers.get(conversationId);
+  if (!observer) return;
+  observer.operations.delete(operationId);
+  observer.refresh();
+}
+
 export function stopObservers() {
   for (const { controller } of observers.values()) controller.abort();
 }
