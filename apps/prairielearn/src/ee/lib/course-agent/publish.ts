@@ -173,6 +173,13 @@ export class Publisher {
       );
     }
     if (seen.size === 0) throw new PublishRejected('Proposal contains no changes.');
+    // Patch prefixes and headers can exceed the content budget, so validate the
+    // derived display before saving a row that must parse on every snapshot.
+    if (Buffer.byteLength(diff) > 262144) {
+      throw new PublishRejected(
+        'The rendered diff exceeds 256 KiB. Split the change into smaller proposals.',
+      );
+    }
     approval.diff = diff;
     return approval.digest;
   }
@@ -337,12 +344,9 @@ export class Publisher {
         'GitHub rejected publication. Check repository access, branch protection, and the current branch head before preparing another proposal.',
       );
     }
-    if (result.errors || !sha) {
-      throw new ChatError(
-        502,
-        'GitHub did not confirm publication. Retry completion to reconcile the outcome.',
-      );
-    }
-    throw new Error('GitHub returned no publication receipt.');
+    throw new ChatError(
+      502,
+      'GitHub did not confirm publication. Retry completion to reconcile the outcome.',
+    );
   }
 }

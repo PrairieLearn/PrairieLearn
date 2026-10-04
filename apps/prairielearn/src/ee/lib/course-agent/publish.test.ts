@@ -358,3 +358,30 @@ test('a deleted branch ends completion with an explicit unverified-prior-publica
       error.message.includes('Prior publication could not be verified'),
   );
 });
+
+test('rejects a rendered diff larger than its schema budget even when raw content fits', async () => {
+  const value = job();
+  value.approval.files = [
+    { path: 'hello.txt', content: null, previousMode: '100644', mode: '000000' },
+  ];
+  value.approval.digest = createHash('sha256')
+    .update(
+      proposalContent(value.approval.baseSha, value.approval.proposedSha, value.approval.files),
+    )
+    .digest('hex');
+  const fixture = github(value);
+  const publisher = new Publisher(value.destination, {
+    token: 'test',
+    fetch: async (url, init) =>
+      String(url).includes('/git/blobs/')
+        ? Response.json({
+            encoding: 'base64',
+            content: Buffer.from('a\n'.repeat(131000)).toString('base64'),
+          })
+        : fixture.fetcher(url, init),
+  });
+  await assert.rejects(
+    publisher.prepare(value),
+    (error) => error instanceof PublishRejected && error.message.includes('rendered diff exceeds'),
+  );
+});

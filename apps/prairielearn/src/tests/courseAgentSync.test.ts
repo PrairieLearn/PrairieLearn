@@ -55,11 +55,15 @@ it('rejects a missing approved commit before resetting local files or reporting 
   const path = join(repository.courseLiveDir, 'keep-until-validated.txt');
   await writeFile(path, 'Keep me');
   let savedSha: string | undefined;
+  let ancestryFailed = false;
   const job = await pullAndUpdateCourse({
     course: await selectCourseById('1'),
     userId: '1',
     authnUserId: '1',
     expectedAncestorSha: 'f'.repeat(40),
+    onAncestryFailure: async () => {
+      ancestryFailed = true;
+    },
     onSynced: async (sha) => {
       savedSha = sha;
     },
@@ -67,7 +71,40 @@ it('rejects a missing approved commit before resetting local files or reporting 
   await job.jobPromise;
   expect((await helperServer.waitForJobSequence(job.jobSequenceId)).status).toBe('Error');
   expect(savedSha).toBeUndefined();
+  expect(ancestryFailed).toBe(true);
   expect(await readFile(path, 'utf8')).toBe('Keep me');
+});
+
+it('reports a rewritten remote history before changing the live checkout', async () => {
+  const publishedSha = (
+    await execa('git', ['rev-parse', 'HEAD'], { cwd: repository.courseOriginDir })
+  ).stdout;
+  await execa('git', ['checkout', '--orphan', 'replacement-history'], {
+    cwd: repository.courseOriginDir,
+  });
+  await execa('git', ['commit', '-m', 'Replace remote history'], {
+    cwd: repository.courseOriginDir,
+  });
+  await execa('git', ['branch', '-f', 'master', 'HEAD'], { cwd: repository.courseOriginDir });
+  await execa('git', ['checkout', 'master'], { cwd: repository.courseOriginDir });
+  const liveSha = (await execa('git', ['rev-parse', 'HEAD'], { cwd: repository.courseLiveDir }))
+    .stdout;
+  let ancestryFailed = false;
+  const job = await pullAndUpdateCourse({
+    course: await selectCourseById('1'),
+    userId: '1',
+    authnUserId: '1',
+    expectedAncestorSha: publishedSha,
+    onAncestryFailure: async () => {
+      ancestryFailed = true;
+    },
+  });
+  await job.jobPromise;
+  expect((await helperServer.waitForJobSequence(job.jobSequenceId)).status).toBe('Error');
+  expect(ancestryFailed).toBe(true);
+  expect(
+    (await execa('git', ['rev-parse', 'HEAD'], { cwd: repository.courseLiveDir })).stdout,
+  ).toBe(liveSha);
 });
 
 it('retains the published commit and reports course-content validation through Course Sync', async () => {

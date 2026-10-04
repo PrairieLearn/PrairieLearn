@@ -501,6 +501,7 @@ it.each([
   'preexisting validation',
   'preexisting question validation',
   'publication rejected',
+  'ancestry',
 ] as const)(
   'retains publication and retries only the incomplete stage for a %s sync failure',
   async (failure) => {
@@ -603,6 +604,10 @@ it.each([
         return {
           jobSequenceId: job.jobSequenceId,
           jobPromise: job.execute(async (task) => {
+            if (failure === 'ancestry') {
+              await options.onAncestryFailure!();
+              task.fail('Published commit is not an ancestor');
+            }
             if (failure !== 'transient') {
               await options.onValidationFailure!();
               task.fail('Existing JSON errors');
@@ -639,12 +644,16 @@ it.each([
           expect(sync).toHaveBeenCalledTimes(
             failure === 'publication rejected' ? 0 : failure === 'transient' ? 2 : 1,
           );
+          const retainedOutcome =
+            /GitHub commit c{40} was retained[\s\S]*instructor approval[\s\S]*Sync diagnostics:/;
           expect(delivery.mock.calls[0][0].result).toMatch(
-            failure === 'publication rejected'
-              ? /Publication rejected: Branch protection/
-              : failure === 'transient'
-                ? /Course Sync completed/
-                : /GitHub commit c{40} was retained[\s\S]*instructor approval[\s\S]*Sync diagnostics:/,
+            {
+              transient: /Course Sync completed/,
+              'publication rejected': /Publication rejected: Branch protection/,
+              ancestry: /GitHub publication was confirmed at c{40}[\s\S]*current remote history/,
+              'preexisting validation': retainedOutcome,
+              'preexisting question validation': retainedOutcome,
+            }[failure],
           );
           expect(delivery.mock.calls[0][0].success).toBe(failure === 'transient');
         },

@@ -80,12 +80,13 @@ export function Conversation({
   const cleanup = useMutation(trpc.courseAgent.cleanup.mutationOptions());
   const decision = useMutation(trpc.courseAgent.decide.mutationOptions());
   const prepare = useMutation(trpc.courseAgent.prepare.mutationOptions());
+  // Preparing a durable tool blocks new messages while native work can still
+  // run. Keep Stop available until the run actually enters waiting_for_user.
   const working =
-    !snapshot.blocked &&
-    (send.isPending ||
-      create.isPending ||
-      busy ||
-      ['starting', 'waiting_for_agent'].includes(snapshot.diagnostics?.state ?? ''));
+    send.isPending ||
+    create.isPending ||
+    (!snapshot.blocked && busy) ||
+    ['starting', 'waiting_for_agent'].includes(snapshot.diagnostics?.state ?? '');
   const startingAgent =
     snapshot.diagnostics?.state === 'starting' ||
     create.isPending ||

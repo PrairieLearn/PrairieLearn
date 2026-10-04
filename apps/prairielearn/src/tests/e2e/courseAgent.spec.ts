@@ -472,7 +472,7 @@ test('failed preparation returns a native tool error and never displays an appro
     await page.route('**/course-agent/*/events', (route) =>
       route.fulfill({
         contentType: 'text/event-stream',
-        body: `data: ${JSON.stringify({ messages: [], operationNumber: 0, blocked: false, approvals: [], diagnostics: { state } })}\n\n`,
+        body: `data: ${JSON.stringify({ messages: [], operationNumber: 0, blocked: state === 'waiting_for_agent', approvals: [], diagnostics: { state } })}\n\n`,
       }),
     );
     await page.reload();

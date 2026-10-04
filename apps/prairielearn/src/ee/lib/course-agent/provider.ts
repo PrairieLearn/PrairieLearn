@@ -157,7 +157,9 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
               : {}),
           },
         });
-      const deadline = AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]);
+      // A cold continuation includes sandbox restore and native acceptance;
+      // its caller supplies a budget for that work, not an ordinary control RPC.
+      const deadline = signal;
       let cleanup = () => {};
       try {
         await new Promise<void>((resolve, reject) => {

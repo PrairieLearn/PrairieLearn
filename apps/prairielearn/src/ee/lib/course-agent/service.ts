@@ -446,6 +446,15 @@ export async function complete(
                     onSynced: async (sha) => {
                       await proposals.saveProposalProgress(row!.id, { synced_sha: sha });
                     },
+                    onAncestryFailure: async () => {
+                      // Persist a terminal result before the failed job completes;
+                      // continuation then delivers it instead of retrying sync.
+                      await proposals.saveProposalProgress(row!.id, {
+                        outcome: `GitHub publication was confirmed at ${row!.published_sha}, but Course Sync could not find it in the current remote history. Check repository access and branch history, reconcile the checkout, and request a new proposal for instructor approval. No automatic revert was made.`,
+                        outcome_success: false,
+                        error: 'The published commit is absent from the course sync history.',
+                      });
+                    },
                     onValidationFailure: async () => {
                       await proposals.saveProposalProgress(row!.id, {
                         sync_validation_failed: true,

@@ -173,7 +173,9 @@ During approval the card displays **Publishing…** or **Syncing course…**. A 
 publication, including a cold sandbox restore, must not display **Retry
 completion**. Definite GitHub rejections return a failed result to the agent.
 Lost acknowledgments remain retryable and reconcile verified branch history
-before another write. A changed branch head requires a new proposal.
+before another write. A changed branch head requires a new proposal. If remote history no longer
+contains a confirmed publication, Course Sync returns a terminal failure to the
+agent instead of retrying the same ancestry check forever.
 
 Course-content failures retain the GitHub commit. The agent receives its SHA and
 Course Sync diagnostics, then can propose a correction or explicit revert for

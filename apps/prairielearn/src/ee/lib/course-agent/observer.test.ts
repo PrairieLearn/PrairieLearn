@@ -50,7 +50,7 @@ test('a Redis notification failure keeps observation attached until the executio
   vi.mocked(notify).mockRejectedValue(new Error('Redis unavailable'));
   vi.mocked(recordUsage).mockResolvedValue({ input: 1, output: 0, estimatedCost: 0 });
   vi.mocked(selectActiveExecution).mockResolvedValue({ active: true });
-  await observe(conversation, chat);
+  await observe(conversation, chat, vi.fn());
   changed();
   await vi.waitFor(() => expect(notify).toHaveBeenCalledOnce());
   expect(close).not.toHaveBeenCalled();
