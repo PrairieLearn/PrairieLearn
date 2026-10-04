@@ -349,3 +349,23 @@ it.each(['sameUser', 'sameCourse', 'unrelated'] as const)(
     }
   },
 );
+
+it('keeps the first terminal status while merging later same-dispatch usage', async () => {
+  const source = await conversation();
+  const id = randomUUID();
+  await withConfig({ courseAgent: settings }, async () => {
+    await insertExecution(source.id, id);
+    const dispatchId = (await selectOptionalExecution(source.id, id))!.dispatch_id;
+    await recordUsage(source, receipts(id, dispatchId));
+    const completed = (await selectOptionalExecution(source.id, id))!;
+    const later = receipts(id, dispatchId);
+    await recordUsage(source, {
+      ...later,
+      executions: { [id]: { ...later.executions[id], status: 'interrupted', input: 200 } },
+    });
+    const merged = (await selectOptionalExecution(source.id, id))!;
+    expect(merged.status).toBe('completed');
+    expect(merged.finished_at).toEqual(completed.finished_at);
+    expect(merged.input_tokens).toBe(200);
+  });
+});
