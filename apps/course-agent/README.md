@@ -23,3 +23,11 @@ Snapshots and browser disconnects never restart execution or reset idle expirati
 ## Deployment
 
 The checked-in Wrangler configuration is for local development. Cloudflare/R2 provisioning and deployed backup/restore verification belong to a separate rollout. No production service is provisioned by this change.
+
+## PrairieLearn instructor chat
+
+Start the fixture and the normal PL development server. In local `config.json`, set `isEnterprise: true`, `redisUrl: "redis://localhost:6379"`, `features: { "course-agent": true }`, and `courseAgent: { "workerUrl": "http://localhost:8791", "serviceToken": "local-fixture-service-token-not-a-secret", "pricing": { "fixture-model": { "input": 0, "cachedInput": 0, "output": 0 } } }`. Use a non-example course where both your authenticated and effective users are owners, with repository `https://github.com/example/course.git` and branch `main`.
+
+Open the course-agent rail, send a message, steer it, navigate to Questions while it runs, and reload. The conversation and unsent draft remain available. Statistics show native usage, estimated model cost, and sandbox expiration. Missing usage/cost remains unknown; exact model pricing is required before new work. Defaults permit two active conversations per user, five per course, 30 requests per user per hour, and $20 in known estimates per day. Unknown completed cost blocks new admissions.
+
+With the fixture running, execute `COURSE_AGENT_FIXTURE_URL=http://localhost:8791 pnpm --filter @prairielearn/prairielearn test:e2e courseAgent.spec.ts --workers=1` for the real browser flow. This stage does not offer publication.
