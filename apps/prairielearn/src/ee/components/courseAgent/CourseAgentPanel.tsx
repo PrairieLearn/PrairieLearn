@@ -161,7 +161,13 @@ function Panel({
     const frame = requestAnimationFrame(() => {
       const saved = readPanelState(`${key}:settings`) || readPanelState(`${key}:panel`);
       if (saved) {
-        const pending = CourseAgentPanelStateSchema.safeParse(JSON.parse(saved));
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(saved);
+        } catch {
+          // Corrupt browser settings must not prevent first-send recovery below.
+        }
+        const pending = CourseAgentPanelStateSchema.safeParse(parsed);
         if (pending.success) changePanel(pending.data);
       }
       const recovered = readPanelState(`${key}:new:conversation`);
