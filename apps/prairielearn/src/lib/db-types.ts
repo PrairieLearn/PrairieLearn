@@ -709,8 +709,8 @@ export const CourseAgentConversationSchema = z.object({
   created_at: DateFromISOString,
   external_id: z.string(),
   id: IdSchema,
-  repository: z.string(),
   operation_number: z.number(),
+  repository: z.string(),
   title: z.string(),
   user_id: IdSchema,
 });
@@ -720,8 +720,8 @@ export const CourseAgentOperationSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
   operation_id: z.string(),
-  payload: z.json(),
   operation_number: z.number(),
+  payload: z.json(),
 });
 export type CourseAgentOperation = z.infer<typeof CourseAgentOperationSchema>;
 
