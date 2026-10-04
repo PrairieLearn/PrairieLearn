@@ -107,7 +107,11 @@ function Panel({
   const [animate, setAnimate] = useState(false);
   const panelRef = useRef(panel);
   panelRef.current = panel;
-  const settings = useMutation(trpc.courseAgent.panel.mutationOptions());
+  // Serialize writes so a slower close cannot overwrite a later reopen.
+  const settings = useMutation({
+    ...trpc.courseAgent.panel.mutationOptions(),
+    scope: { id: key },
+  });
   // Catalog refresh only observes persisted execution status; it never retries publication or starts work.
   const conversations = useQuery({
     ...trpc.courseAgent.list.queryOptions(),
