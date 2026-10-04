@@ -70,8 +70,7 @@ async function authorizedDestination(scope: AgentScope, conversation: CourseAgen
   if (target.repository !== conversation.repository || target.branch !== conversation.branch) {
     throw new TRPCError({
       code: 'CONFLICT',
-      message:
-        'Course repository changed. Start a new conversation; existing cleanup remains available.',
+      message: 'The course repository or branch changed. Start a new conversation.',
     });
   }
   return course;
@@ -120,9 +119,18 @@ export async function provider(
 }
 
 export async function snapshot(conversation: CourseAgentConversation, value: ChatSnapshot) {
+  const course = await selectCourseById(conversation.course_id);
+  const repository = parseGithubRepository(course.repository ?? '');
+  const changed =
+    !repository ||
+    `${repository.owner}/${repository.repo}` !== conversation.repository ||
+    course.branch !== conversation.branch;
   const operations = await selectConversationOperations(conversation.id);
   return {
     ...value,
+    newWorkUnavailable: changed
+      ? 'The course repository or branch changed. Start a new conversation.'
+      : undefined,
     messages: value.messages.map((message) => {
       const operation = operations.find((operation) => operation.operation_id === message.id);
       return operation
@@ -135,6 +143,6 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
           }
         : message;
     }),
-    revision: conversation.revision,
+    operationNumber: conversation.operation_number,
   };
 }

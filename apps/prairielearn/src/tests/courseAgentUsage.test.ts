@@ -50,7 +50,7 @@ async function conversation() {
     },
   );
 }
-const empty = { messages: [], revision: 0, executions: {} };
+const empty = { messages: [], operationNumber: 0, executions: {} };
 
 function receipts(id: string, dispatchId: string, status: 'running' | 'completed' = 'completed') {
   return {
@@ -78,12 +78,12 @@ it('accounts for an identical operation ID independently in each conversation', 
   const mocked = mockProvider();
   try {
     await withConfig({ courseAgent: settings }, async () => {
-      await admit(source, { id, text: 'first', expectedRevision: 0 });
+      await admit(source, { id, text: 'first', expectedOperationNumber: 0 });
       await recordUsage(
         source,
         receipts(id, (await selectOptionalExecution(source.id, id))!.dispatch_id),
       );
-      await admit(target, { id, text: 'second', expectedRevision: 0 });
+      await admit(target, { id, text: 'second', expectedOperationNumber: 0 });
       const receipt = (await selectOptionalExecution(target.id, id))!;
       expect(receipt.status).toBe('admitted');
       expect((await selectActiveExecution(target.id)).active).toBe(true);
@@ -96,8 +96,8 @@ it('accounts for an identical operation ID independently in each conversation', 
 it('checks capacity again on a rejected-send retry and ignores an earlier dispatch receipt', async () => {
   const source = await conversation(),
     target = await conversation();
-  const input = { id: randomUUID(), text: 'retry', expectedRevision: 0 };
-  const other = { id: randomUUID(), text: 'other', expectedRevision: 0 };
+  const input = { id: randomUUID(), text: 'retry', expectedOperationNumber: 0 };
+  const other = { id: randomUUID(), text: 'other', expectedOperationNumber: 0 };
   const mocked = mockProvider();
   try {
     await withConfig({ courseAgent: settings }, async () => {
@@ -126,7 +126,7 @@ it('checks capacity again on a rejected-send retry and ignores an earlier dispat
 it('releases a missing execution only after the Worker fences its dispatch', async () => {
   const source = await conversation(),
     target = await conversation();
-  const input = { id: randomUUID(), text: 'not received', expectedRevision: 0 };
+  const input = { id: randomUUID(), text: 'not received', expectedOperationNumber: 0 };
   const mocked = mockProvider();
   try {
     await withConfig({ courseAgent: settings }, async () => {
@@ -134,7 +134,11 @@ it('releases a missing execution only after the Worker fences its dispatch', asy
       await execute(sql.age, { conversation_id: source.id });
       await recordUsage(source, empty);
       expect((await selectOptionalExecution(source.id, input.id))!.status).toBe('failed');
-      await admit(target, { id: randomUUID(), text: 'capacity released', expectedRevision: 0 });
+      await admit(target, {
+        id: randomUUID(),
+        text: 'capacity released',
+        expectedOperationNumber: 0,
+      });
       expect((await selectActiveExecution(target.id)).active).toBe(true);
     });
   } finally {
@@ -160,7 +164,7 @@ it('admits concurrent work with a single-client named-lock pool', async () => {
       async () => {
         await Promise.all(
           conversations.map((c) =>
-            admit(c, { id: randomUUID(), text: 'parallel', expectedRevision: 0 }),
+            admit(c, { id: randomUUID(), text: 'parallel', expectedOperationNumber: 0 }),
           ),
         );
         expect(
@@ -194,8 +198,8 @@ it('keeps an unavailable conversation reserved without blocking spare course cap
     await withConfig(
       { courseAgent: { ...settings, maxConcurrentPerUser: 2, maxConcurrentPerCourse: 2 } },
       async () => {
-        await admit(source, { id: randomUUID(), text: 'source', expectedRevision: 0 });
-        await admit(target, { id: randomUUID(), text: 'target', expectedRevision: 0 });
+        await admit(source, { id: randomUUID(), text: 'source', expectedOperationNumber: 0 });
+        await admit(target, { id: randomUUID(), text: 'target', expectedOperationNumber: 0 });
         expect((await selectActiveExecution(source.id)).active).toBe(true);
         expect((await selectActiveExecution(target.id)).active).toBe(true);
         expect(captured).toHaveBeenCalledOnce();
@@ -209,7 +213,7 @@ it('keeps an unavailable conversation reserved without blocking spare course cap
 it('blocks unknown completed cost until the saved usage has a configured price', async () => {
   const source = await conversation(),
     target = await conversation();
-  const input = { id: randomUUID(), text: 'source', expectedRevision: 0 };
+  const input = { id: randomUUID(), text: 'source', expectedOperationNumber: 0 };
   const mocked = mockProvider();
   try {
     await withConfig({ courseAgent: settings }, async () => {
@@ -221,7 +225,7 @@ it('blocks unknown completed cost until the saved usage has a configured price',
       snapshot.executions[input.id].model = 'unpriced-model';
       await recordUsage(source, snapshot);
       await expect(
-        admit(target, { id: randomUUID(), text: 'blocked', expectedRevision: 0 }),
+        admit(target, { id: randomUUID(), text: 'blocked', expectedOperationNumber: 0 }),
       ).rejects.toThrow('unknown cost');
       await withConfig(
         {
@@ -232,7 +236,7 @@ it('blocks unknown completed cost until the saved usage has a configured price',
         },
         async () => {
           await recordUsage(source, snapshot);
-          await admit(target, { id: randomUUID(), text: 'priced', expectedRevision: 0 });
+          await admit(target, { id: randomUUID(), text: 'priced', expectedOperationNumber: 0 });
           expect((await selectActiveExecution(target.id)).active).toBe(true);
         },
       );

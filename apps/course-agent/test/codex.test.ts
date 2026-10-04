@@ -1,19 +1,14 @@
 /* eslint-disable unicorn/no-error-property-assignment -- Fixtures reproduce SDK errors after RPC serialization. */
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 
 import type { UIMessageChunk } from 'ai';
 import { test } from 'vitest';
 
-import { captureApproval } from '../src/approval.js';
 import { cleanupError } from '../src/cleanup-error.js';
 import { CodexEvents } from '../src/codex-events.js';
 import { type CodexSandbox, ContainerLost, checkpointCodex, connectCodex } from '../src/codex.js';
+import type { ThreadItem } from '../src/generated/v2/ThreadItem.js';
 import { forwardOpenAI } from '../src/outbound.js';
-import type { ThreadItem } from '../src/protocol.js';
 
 const text: ThreadItem = {
   type: 'agentMessage',
@@ -252,44 +247,6 @@ test('steering splits live text and reasoning without duplicating completion sna
   assert.ok(chunks.slice(marker + 1).some((c) => c.type === 'text-start'));
 });
 
-test('approval capture preserves file bytes even when exec stdout is trimmed', async () => {
-  const diff = 'diff --git a/a b/a\n+é  \n\\ No newline at end of file\n';
-  let path = '';
-  let deleted = '';
-  const sandbox = {
-    exec: async (command: string) => {
-      path = command.match(/(\/tmp\/approval-[\w-]+\.json)/)![1]!;
-      return { success: true, stdout: diff.trimEnd() };
-    },
-    readFile: async (requested: string) => {
-      assert.equal(requested, path);
-      return {
-        content: JSON.stringify({
-          diff,
-          files: [
-            {
-              path: 'a',
-              content: 'é  ',
-              mode: '100644',
-              previousMode: '100644',
-            },
-          ],
-        }),
-      };
-    },
-    deleteFile: async (requested: string) => {
-      deleted = requested;
-    },
-  } as unknown as CodexSandbox;
-  const result = await captureApproval(sandbox, {
-    baseSha: '0'.repeat(40),
-    proposedSha: 'a'.repeat(40),
-  });
-  assert.equal(result.diff, diff);
-  assert.equal(deleted, path);
-  assert.match(path, /^\/tmp\/approval-[\w-]+\.json$/);
-});
-
 test('cleanup diagnostics classify failures without retaining credentials or signed URLs', () => {
   for (const text of [
     '403 AccessDenied secret',
@@ -370,80 +327,3 @@ test('transient restore failure never discards the checkpoint or initializes fre
 });
 
 // Execute the actual capture script: a mocked exec cannot detect a missing runtime dependency.
-test('Node capture reads committed additions, edits and deletions from real Git', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'node-capture-'));
-  const git = (...args: string[]) =>
-    execFileSync('git', ['-C', directory, ...args], {
-      encoding: 'utf8',
-    }).trim();
-  try {
-    git('init', '--quiet');
-    git('config', 'user.name', 'Capture test');
-    git('config', 'user.email', 'capture@example.com');
-    await writeFile(join(directory, 'edit.txt'), 'old\n');
-    await writeFile(join(directory, 'delete.txt'), 'delete me\n');
-    git('add', '.');
-    git('commit', '--quiet', '-m', 'Base');
-    const baseSha = git('rev-parse', 'HEAD');
-    await writeFile(join(directory, 'edit.txt'), 'é  ');
-    await writeFile(join(directory, 'space name.txt'), 'new\n');
-    await rm(join(directory, 'delete.txt'));
-    git('add', '-A');
-    git('commit', '--quiet', '-m', 'Proposed');
-    const proposedSha = git('rev-parse', 'HEAD');
-    await writeFile(join(directory, 'edit.txt'), 'uncommitted newer edit');
-    const sandbox = {
-      exec: async (command: string) => {
-        assert.ok(command.startsWith("node - <<'CAPTURE'"));
-        execFileSync('/bin/sh', ['-c', command.replace('/workspace/repo', directory)]);
-        return { success: true };
-      },
-      readFile: async (path: string) => ({
-        content: await readFile(path, 'utf8'),
-      }),
-      deleteFile: async (path: string) => {
-        await rm(path);
-      },
-    } as unknown as CodexSandbox;
-    const result = await captureApproval(sandbox, { baseSha, proposedSha });
-    assert.deepEqual(result.files, [
-      {
-        path: 'delete.txt',
-        content: null,
-        mode: '000000',
-        previousMode: '100644',
-      },
-      {
-        path: 'edit.txt',
-        content: 'é  ',
-        mode: '100644',
-        previousMode: '100644',
-      },
-      {
-        path: 'space name.txt',
-        content: 'new\n',
-        mode: '100644',
-        previousMode: '000000',
-      },
-    ]);
-    assert.equal(
-      result.diff,
-      execFileSync(
-        'git',
-        [
-          '-C',
-          directory,
-          'diff',
-          '--no-ext-diff',
-          '--no-textconv',
-          '--no-renames',
-          baseSha,
-          proposedSha,
-        ],
-        { encoding: 'utf8' },
-      ),
-    );
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-  }
-});

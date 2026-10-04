@@ -1,8 +1,14 @@
 import type { UIMessageChunk } from 'ai';
 
-import type { ServerNotification, ThreadItem } from './protocol.js';
+import type { CodexNotification } from './codex-notifications.js';
+import type { ThreadItem } from './generated/v2/ThreadItem.js';
 
-/** Translate native Codex items into AI SDK chunks; steering can split one item across several UI parts. */
+/**
+ * Runs in the Chat DO. Native item IDs survive deltas and final snapshots, while
+ * the AI SDK requires each text/reasoning part to have a start/end pair. Steering
+ * closes the current segment before its user marker; later deltas get a new
+ * segment so the correction appears where Codex accepted it in the transcript.
+ */
 export class CodexEvents {
   private parts = new Map<
     string,
@@ -25,7 +31,7 @@ export class CodexEvents {
   }
 
   /** Consume a native notification after the turn coordinator filters its thread/turn identity. */
-  accept(event: ServerNotification) {
+  accept(event: CodexNotification) {
     if (event.method === 'item/agentMessage/delta') {
       this.delta(event.params.itemId, 'text', event.params.delta);
     } else if (event.method === 'item/reasoning/summaryTextDelta') {

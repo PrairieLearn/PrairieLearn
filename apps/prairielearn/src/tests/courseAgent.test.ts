@@ -117,11 +117,13 @@ it('serializes admissions, keeps missing usage unknown, and does not double-coun
   const { conversation: second } = await setupConversation();
   const mocked = vi
     .spyOn(globalThis, 'fetch')
-    .mockImplementation(async () => Response.json({ messages: [], revision: 0, executions: {} }));
+    .mockImplementation(async () =>
+      Response.json({ messages: [], operationNumber: 0, executions: {} }),
+    );
   try {
     await withConfig({ courseAgent: settings }, async () => {
-      const a = { id: randomUUID(), text: 'a', expectedRevision: 0 };
-      const b = { id: randomUUID(), text: 'b', expectedRevision: 0 };
+      const a = { id: randomUUID(), text: 'a', expectedOperationNumber: 0 };
+      const b = { id: randomUUID(), text: 'b', expectedOperationNumber: 0 };
       const admitted = await Promise.allSettled([admit(conversation, a), admit(second, b)]);
       expect(admitted.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
       const winner = admitted[0].status === 'fulfilled' ? conversation : second;
@@ -130,7 +132,7 @@ it('serializes admissions, keeps missing usage unknown, and does not double-coun
       await admit(winner, operation);
       const snapshot = {
         messages: [],
-        revision: 1,
+        operationNumber: 1,
         executions: {
           [operation.id]: {
             status: 'completed' as const,
@@ -173,7 +175,7 @@ it('serializes admissions, keeps missing usage unknown, and does not double-coun
 
 it('uses shared AI prices, preserves recorded rates, and leaves unsupported models unknown', async () => {
   const { conversation } = await setupConversation();
-  expect(await recordUsage(conversation, { messages: [], revision: 0 })).toEqual({
+  expect(await recordUsage(conversation, { messages: [], operationNumber: 0 })).toEqual({
     input: 0,
     output: 0,
     estimatedCost: 0,
@@ -182,7 +184,7 @@ it('uses shared AI prices, preserves recorded rates, and leaves unsupported mode
   await insertExecution(conversation.id, id);
   const snapshot = {
     messages: [],
-    revision: 0,
+    operationNumber: 0,
     executions: {
       [id]: {
         status: 'completed' as const,

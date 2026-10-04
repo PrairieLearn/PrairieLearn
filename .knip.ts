@@ -186,9 +186,9 @@ const config: KnipConfig = {
       ignoreDependencies: [...autoDetectedDeps, ...EXTERNAL_ELEMENT_DEPS, ...DEPS_OF_DEAD_CODE],
     },
     'apps/course-agent': {
-      entry: ['test/fixtures/agent.ts'],
+      entry: ['src/worker.ts', 'test/fixtures/agent.ts'],
       // Built into workerd, not an npm dependency.
-      ignoreDependencies: ['cloudflare'],
+      ignoreDependencies: ['cloudflare', '@openai/codex'],
       project: ['src/**/*.ts', 'test/**/*.ts'],
     },
     'apps/workspace-host': {
