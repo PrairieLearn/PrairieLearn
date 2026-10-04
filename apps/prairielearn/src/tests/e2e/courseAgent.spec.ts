@@ -264,8 +264,10 @@ test('navigation preserves a new-conversation selection before the settings requ
   );
   await page.getByLabel('Message', { exact: true }).fill('Draft in the new conversation');
   await page.getByRole('link', { name: 'Questions', exact: true }).click();
+  // The server renders the older selection; recovery waits for the new page's JS bundles.
   await expect(page.getByRole('button', { name: 'Conversation', exact: true })).toHaveText(
     'New conversation',
+    { timeout: 15000 },
   );
   await expect(page.getByLabel('Message', { exact: true })).toHaveValue(
     'Draft in the new conversation',
