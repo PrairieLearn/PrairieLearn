@@ -34,7 +34,13 @@ const resumeEventSchema = z.discriminatedUnion('type', [
 export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvider {
   const agentUrl = new URL(`/agents/chat/${encodeURIComponent(id)}`, workerUrl);
 
-  async function request(path: string, method: string, signal: AbortSignal, body?: unknown) {
+  async function request(
+    path: string,
+    method: string,
+    signal: AbortSignal,
+    body?: unknown,
+    timeoutMs: number | null = REQUEST_TIMEOUT_MS,
+  ) {
     const response = await fetch(`${agentUrl}/${path}`, {
       method,
       headers: {
@@ -44,7 +50,8 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
           : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+      signal:
+        timeoutMs === null ? signal : AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]),
     }).catch(() => {
       throw new ChatError(
         502,
@@ -146,7 +153,9 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
       return validateUIMessages({ messages });
     },
     async send(input, signal) {
-      await request('message', 'POST', signal, input);
+      // Prompt acceptance may restore a checkpoint before Codex acknowledges it.
+      // The caller supplies a deadline that covers that complete operation.
+      await request('message', 'POST', signal, input, null);
     },
     async reconcileAdmissions(admissions, signal) {
       const response = await request('reconcile-admissions', 'POST', signal, { admissions });
