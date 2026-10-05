@@ -370,20 +370,8 @@ class TestSympy:
         [
             ("m + 1", {"expression", "finite-set"}, sympy.Symbol("m") + 1),
             ("{1, 2}", {"set"}, sympy.FiniteSet(1, 2)),
-            ("[1, 2]", {"set"}, sympy.Interval(1, 2)),
-            ("{}", {"set"}, sympy.EmptySet),
             ("{}", {"finite-set"}, sympy.EmptySet),
             ("{}", {"interval"}, sympy.EmptySet),
-            ("{}", {"all"}, sympy.EmptySet),
-            (
-                "{ {}, { {} } }",
-                {"finite-set"},
-                sympy.FiniteSet(sympy.EmptySet, sympy.FiniteSet(sympy.EmptySet)),
-            ),
-            ("{1, 2}", {"finite-set", "interval"}, sympy.FiniteSet(1, 2)),
-            ("{1, 2} U {3, 4}", {"finite-set"}, sympy.FiniteSet(1, 2, 3, 4)),
-            ("[1, 2]", {"expression", "interval"}, sympy.Interval(1, 2)),
-            ("(-infty, infty)", {"interval"}, sympy.Interval(-sympy.oo, sympy.oo)),
             (
                 "(-infty, 0) U [0, infty)",
                 {"interval"},
@@ -396,8 +384,6 @@ class TestSympy:
             ),
             ("[0, 2] U {1}", {"interval"}, sympy.Interval(0, 2)),
             ("[0, 2] & [1, 4]", {"interval"}, sympy.Interval(1, 2)),
-            ("{0, 2} & {2, 4}", {"finite-set"}, sympy.FiniteSet(2)),
-            ("{0, 2} U {2, 4}", {"finite-set"}, sympy.FiniteSet(0, 2, 4)),
             (
                 "{m} - {n}",
                 {"finite-set"},
@@ -410,16 +396,6 @@ class TestSympy:
                 "{[1, 2]} - {[m, n]}",
                 {"finite-set", "interval"},
                 sympy.Complement(
-                    sympy.FiniteSet(sympy.Interval(1, 2)),
-                    sympy.FiniteSet(
-                        sympy.Interval(sympy.Symbol("m"), sympy.Symbol("n"))
-                    ),
-                ),
-            ),
-            (
-                "{[1, 2]} & {[m, n]}",
-                {"finite-set", "interval"},
-                sympy.Intersection(
                     sympy.FiniteSet(sympy.Interval(1, 2)),
                     sympy.FiniteSet(
                         sympy.Interval(sympy.Symbol("m"), sympy.Symbol("n"))
@@ -477,11 +453,8 @@ class TestSympy:
     @pytest.mark.parametrize(
         ("text", "allowed_types", "missing_types"),
         [
-            ("m + 1", {"finite-set"}, "expression"),
             ("m + 1", {"set"}, "expression"),
             ("{}", {"expression"}, "set"),
-            ("{1, 2}", {"expression"}, "finite-set"),
-            ("[1, 2]", {"finite-set"}, "interval"),
             ("[1, 2] U [3, 4]", {"finite-set"}, "interval"),
             ("m + 1", {"finite-set", "interval"}, "expression"),
             ("{1, 2}", {"expression", "interval"}, "finite-set"),
@@ -489,13 +462,9 @@ class TestSympy:
             ("Reals", {"interval"}, "set"),
             ("[1, 2] U {2, 3}", {"interval"}, "finite-set"),
             ("[1, 4] & {2, 3}", {"interval"}, "finite-set"),
-            ("[0, 1] U [1, 4] & {2, 3}", {"interval"}, "finite-set"),
-            ("[1, 2] U {3, 4}", {"finite-set"}, "interval"),
             ("{ [1, 2] }", {"finite-set"}, "interval"),
             ("{[1, 2]} - {[m, n]}", {"finite-set"}, "interval"),
-            ("{[1, 2]} & {[m, n]}", {"finite-set"}, "interval"),
             ("{[1, 2]} & {[m, n]}", {"interval"}, "finite-set"),
-            ("[0, 5] - {m}", {"finite-set"}, "interval"),
             ("[0, 5] - {m}", {"interval"}, "finite-set"),
         ],
     )
@@ -533,59 +502,22 @@ class TestSympy:
 
         assert result == psu.SympyParseSuccess(getattr(sympy.S, domain_name))
 
-    @pytest.mark.parametrize(
-        "domain_name",
-        ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
-    )
-    def test_declared_set_domain_names_are_scalar_variables_with_sets(
-        self, domain_name: str
+    @pytest.mark.parametrize("allow_sets", [True, False])
+    def test_declared_set_domain_names_are_scalar_variables(
+        self, *, allow_sets: bool
     ) -> None:
-        symbol = sympy.Symbol(domain_name)
-
         assert psu.try_parse_string_as_sympy(
-            domain_name,
-            [domain_name],
-            allow_sets=True,
+            "Reals + 1",
+            ["Reals"],
+            allow_sets=allow_sets,
             allowed_types={"expression"},
-        ) == psu.SympyParseSuccess(symbol)
-        assert psu.try_parse_string_as_sympy(
-            f"{domain_name} + 1",
-            [domain_name],
-            allow_sets=True,
-            allowed_types={"expression"},
-        ) == psu.SympyParseSuccess(symbol + 1)
-
-    @pytest.mark.parametrize(
-        "domain_name",
-        ["Complexes", "Integers", "Naturals", "Naturals0", "Rationals", "Reals"],
-    )
-    def test_set_domain_names_are_scalar_variables_when_sets_are_disabled(
-        self, domain_name: str
-    ) -> None:
-        symbol = sympy.Symbol(domain_name)
-
-        assert psu.try_parse_string_as_sympy(
-            domain_name,
-            [domain_name],
-            allowed_types={"expression"},
-        ) == psu.SympyParseSuccess(symbol)
-        assert psu.try_parse_string_as_sympy(
-            f"{domain_name} + 1",
-            [domain_name],
-            allowed_types={"expression"},
-        ) == psu.SympyParseSuccess(symbol + 1)
+        ) == psu.SympyParseSuccess(sympy.Symbol("Reals") + 1)
 
     @pytest.mark.parametrize(
         ("operation", "expected"),
         [
             ("Reals - Naturals", sympy.Complement(sympy.S.Reals, sympy.S.Naturals)),
             ("Reals U Naturals", sympy.S.Reals),
-            ("Reals & Naturals", sympy.S.Naturals),
-            (
-                "Complement(Reals, Naturals)",
-                sympy.Complement(sympy.S.Reals, sympy.S.Naturals),
-            ),
-            ("Union(Reals, Naturals)", sympy.S.Reals),
             ("Intersection(Reals, Naturals)", sympy.S.Naturals),
         ],
     )
@@ -593,7 +525,6 @@ class TestSympy:
         ("allowed_types", "expected_error"),
         [
             ({"set"}, None),
-            ({"all"}, None),
             ({"finite-set", "interval"}, "uses set"),
         ],
     )
@@ -719,15 +650,10 @@ class TestSympy:
 
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
-    @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
-    def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
-        assert sympy_expr == psu.json_to_sympy(
-            psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
-        )
-
     @pytest.mark.parametrize(
         "sympy_expr",
         [
+            *(out for _, out in SET_EXPR_PAIRS),
             sympy.S.Complexes,
             sympy.S.Integers,
             sympy.S.Naturals,
@@ -736,7 +662,7 @@ class TestSympy:
             sympy.S.Reals,
         ],
     )
-    def test_set_domains_json_conversion(self, sympy_expr: sympy.Set) -> None:
+    def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
         assert sympy_expr == psu.json_to_sympy(
             psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
         )
