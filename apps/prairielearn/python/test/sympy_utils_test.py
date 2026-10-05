@@ -649,7 +649,16 @@ class TestExceptions:
     # where evaluateFalse keeps expressions like sqrt(-2) unevaluated.
     IMPLICIT_COMPLEX_CASES = ("sqrt(-2)", "sqrt(-1)", "(-2)^(1/2)", "sqrt(-2) + 3")
     NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
-    INVALID_EXPRESSION_CASES = ("5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5")
+    INVALID_EXPRESSION_CASES = (
+        "5==5",
+        "5!=5",
+        "5>5",
+        "5<5",
+        "5>=5",
+        "5<=5",
+        "2***n",
+        "n***",
+    )
     INVALID_FUNCTION_CASES = ("eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))")
     INVALID_VARIABLE_CASES = ("x", "exp(y)", "z*n")
     FUNCTION_NOT_CALLED_CASES = ("2+exp", "cos*n")
@@ -722,26 +731,17 @@ class TestExceptions:
             text, self.VARIABLES
         ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
 
-    # Unknown to unidecode, superscript, and subscript characters
-    @pytest.mark.parametrize("text", ["2⋆n", "n²", "n₁"])
+    # Unknown to unidecode, plus-minus, superscript, and subscript characters
+    @pytest.mark.parametrize("text", ["2⋆n", "2±n", "2∓n", "n²", "n₁"])
     def test_unsupported_characters(self, text: str) -> None:
-        with pytest.raises(psu.HasInvalidCharacterError) as exc_info:
+        with pytest.raises(psu.HasInvalidSymbolError) as exc_info:
             psu.convert_string_to_sympy(text, self.VARIABLES)
-        assert exc_info.value.offset == 1
+        assert exc_info.value.symbol == text[1]
 
         result = psu.try_parse_string_as_sympy(text, self.VARIABLES)
         assert isinstance(result, psu.SympyParseFailure)
-        assert "unsupported character" in result.error
-
-    @pytest.mark.parametrize("text", ["2±n", "2∓n"])
-    def test_plus_minus_rejected(self, text: str) -> None:
-        with pytest.raises(psu.HasPlusMinusError) as exc_info:
-            psu.convert_string_to_sympy(text, self.VARIABLES)
-        assert exc_info.value.offset == 1
-
-        result = psu.try_parse_string_as_sympy(text, self.VARIABLES)
-        assert isinstance(result, psu.SympyParseFailure)
-        assert "gives two values" in result.error
+        assert f'invalid symbol "{text[1]}"' in result.error
+        assert f"<pre>{text}\n ^" in result.error
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
@@ -761,6 +761,16 @@ class TestExceptions:
     def test_invalid_expression(self, a_sub: str) -> None:
         with pytest.raises(psu.HasInvalidExpressionError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
+
+    @pytest.mark.parametrize("allow_sets", [False, True])
+    def test_triple_asterisk_points_at_input(self, *, allow_sets: bool) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "2 *** n", self.VARIABLES, allow_sets=allow_sets
+        )
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "invalid expression" in result.error
+        assert "set" not in result.error
+        assert "<pre>2 *** n\n  ^" in result.error
 
     @pytest.mark.parametrize("a_sub", INVALID_FUNCTION_CASES)
     def test_invalid_function(self, a_sub: str) -> None:
