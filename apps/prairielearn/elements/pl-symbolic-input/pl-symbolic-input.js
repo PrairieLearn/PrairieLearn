@@ -622,9 +622,33 @@
     const placeholderText = mf.dataset.placeholderText;
     mf.setAttribute('placeholder', `\\text{${placeholderText}}`);
 
+    // MathLive writes \pm as "+-" in plain text, which is indistinguishable from a
+    // typed "+-". A hidden field (MathLive only serializes mounted fields) writes it
+    // as "±" instead, so the server can tell them apart.
+    const plusMinusPattern = /\\pm(?![a-zA-Z])/g;
+    let plusMinusSerializer = null;
+    const getPlainText = function () {
+      const latex = mf.getValue('latex');
+      if (!/\\pm(?![a-zA-Z])/.test(latex)) {
+        return mf.getValue('plain-text');
+      }
+      if (!plusMinusSerializer) {
+        plusMinusSerializer = document.createElement('math-field');
+        plusMinusSerializer.hidden = true;
+        for (const attribute of ['custom-functions', 'allow-sets']) {
+          const value = mf.getAttribute(attribute);
+          if (value !== null) plusMinusSerializer.setAttribute(attribute, value);
+        }
+        mf.after(plusMinusSerializer);
+        setUpSymbolicInputMacros(plusMinusSerializer);
+      }
+      plusMinusSerializer.value = latex.replaceAll(plusMinusPattern, '\\text{±}');
+      return plusMinusSerializer.getValue('plain-text');
+    };
+
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
-      $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
+      $('#symbolic-input-sub-' + name).val(getPlainText());
       $('#symbolic-input-latex-' + name).val(mf.getValue('latex'));
     };
 

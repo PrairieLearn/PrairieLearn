@@ -163,3 +163,25 @@ test.describe('pl-symbolic-input unicode multiplication keys', () => {
     }
   });
 });
+
+test.describe('pl-symbolic-input plus-minus', () => {
+  test.beforeEach(async ({ page, courseInstance }) => {
+    await openSymbolicInputEditorQuestion(page, courseInstance);
+  });
+
+  test('submits \\pm as "±" and typed "+-" unchanged', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await expect(formulaEditor).toBeVisible();
+
+    await fillFormulaEditor(formulaEditor, '');
+    await formulaEditor.press('2');
+    await page.keyboard.insertText('±');
+    await page.keyboard.press('y');
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('2\\pm y');
+    await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('2±y');
+
+    await fillFormulaEditor(formulaEditor, '');
+    for (const key of '2+-y') await formulaEditor.press(key);
+    await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('2+-y');
+  });
+});
