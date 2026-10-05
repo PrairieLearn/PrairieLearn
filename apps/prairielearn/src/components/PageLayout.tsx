@@ -154,9 +154,13 @@ function UnpublishedBannerComponent({
   navContext: NavContext;
   resLocals: UntypedResLocals;
 }) {
-  if (navContext.type !== 'instructor') return null;
-  if (!navContext.page) return null;
-  if (!['instance_admin', 'assessment', 'students'].includes(navContext.page)) return null;
+  if (
+    navContext.type !== 'instructor' ||
+    !navContext.page ||
+    !['instance_admin', 'assessment', 'students'].includes(navContext.page)
+  ) {
+    return null;
+  }
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
   const { course_instance: courseInstance, urlPrefix } = resLocals;
@@ -400,6 +404,7 @@ export function PageLayout({
             <div
               class="${clsx(
                 sideNavEnabled && 'app-main-container',
+                resolvedOptions.fullHeight && 'app-main-container-full-height',
                 !sideNavEnabled && resolvedOptions.fullWidth && 'w-100',
                 !sideNavEnabled && resolvedOptions.fullHeight && 'h-100',
                 'd-flex flex-column',
@@ -474,6 +479,7 @@ export function PageLayout({
                   resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   resolvedOptions.contentPadding && 'pb-3',
                   resolvedOptions.fullHeight && 'h-100',
+                  resolvedOptions.fullHeight && 'app-content-full-height',
                 )}"
               >
                 ${renderHtml(
