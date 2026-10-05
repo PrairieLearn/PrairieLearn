@@ -6,7 +6,7 @@ import { ZipArchive } from 'archiver';
 import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 
-import { Stringifier, stringifyStream } from '@prairielearn/csv';
+import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import {
   MINUTE_IN_MILLISECONDS,
@@ -491,18 +491,6 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
   });
 }
 
-/** Stream large submission rows without prefetching a batch of file contents. */
-function streamSubmissionRows<T>(cursor: sqldb.CursorIterator<T>, transform: (row: T) => unknown) {
-  return Readable.from(
-    (async function* () {
-      for await (const rows of cursor.iterate(1)) {
-        yield transform(rows[0]);
-      }
-    })(),
-    { highWaterMark: 1 },
-  );
-}
-
 async function sendInstancesCsv(
   res: Response,
   req: Request,
@@ -704,7 +692,7 @@ router.get(
           feedback: '',
         };
       });
-      await pipeline(cursor.stream(100), stringifier, res);
+      await pipeline(cursor.stream(1), stringifier, res);
     } else if (
       req.params.filename === filenames.allSubmissionsCsvFilename ||
       req.params.filename === filenames.finalSubmissionsCsvFilename ||
@@ -762,7 +750,8 @@ router.get(
 
       res.attachment(req.params.filename);
       await pipeline(
-        streamSubmissionRows(cursor, (row) => ({
+        cursor.stream(1),
+        stringifyWithColumns(columns, (row: AssessmentInstanceSubmissionRow) => ({
           ...row,
           assessment_label: assessmentName,
           qid: qidWithSharingName(res.locals, row),
@@ -788,11 +777,6 @@ router.get(
                   items: row.rubric_grading_items ?? [],
                 },
         })),
-        new Stringifier({
-          header: true,
-          columns: columns.map(([header, key]) => ({ header, key })),
-          writableHighWaterMark: 1,
-        }),
         res,
       );
     } else if (req.params.filename === filenames.filesForManualGradingZipFilename) {

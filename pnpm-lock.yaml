@@ -1751,9 +1751,6 @@ importers:
       csv-stringify:
         specifier: ^6.9.0
         version: 6.9.0
-      multipipe:
-        specifier: ^4.0.0
-        version: 4.0.0
       stream-transform:
         specifier: ^3.6.0
         version: 3.6.0
@@ -1761,9 +1758,6 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
-      '@types/multipipe':
-        specifier: ^3.0.5
-        version: 3.0.5
       '@types/node':
         specifier: ^24.19.0
         version: 24.19.0
@@ -5695,9 +5689,6 @@ packages:
   '@types/multer@2.2.0':
     resolution: {integrity: sha512-3U1troeqGV8Ntp7Q3klwf4zr23VEoqYVocYXaswm9+8z3O9UHDYAqLxjJ/h550iRADTjKdOdhhasXw6gD6kYtg==}
 
-  '@types/multipipe@3.0.5':
-    resolution: {integrity: sha512-mHBbV67bsmUtLtio0gj/GPzGsjv+Y6K1ff/48iR6YAfFfLkBtRIR0M5lZPbkMCyHGrCZM9p3VNnfY1QCws4t4w==}
-
   '@types/mustache@4.2.6':
     resolution: {integrity: sha512-t+8/QWTAhOFlrF1IVZqKnMRJi84EgkIK5Kh0p2JV4OLywUvCwJPFxbJAl7XAow7DVIHsF+xW9f1MVzg0L6Szjw==}
 
@@ -9001,9 +8992,6 @@ packages:
   multer@2.4.0:
     resolution: {integrity: sha512-7dqa0ZcFfzbefdTuIkzOSMvZWC0J7FLqBOjJUZvDCXShIURWKxAyTT1wHhnE5q19c7jOJf43IYYKjBmZVZmvhg==}
     engines: {node: '>= 10.16.0'}
-
-  multipipe@4.0.0:
-    resolution: {integrity: sha512-jzcEAzFXoWwWwUbvHCNPwBlTz3WCWe/jPcXSmTfbo/VjRwRTfvLZ/bdvtiTdqCe8d4otCSsPCbhGYcX+eggpKQ==}
 
   mustache@4.2.0:
     resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
@@ -13844,10 +13832,6 @@ snapshots:
     dependencies:
       '@types/express': 4.17.25
 
-  '@types/multipipe@3.0.5':
-    dependencies:
-      '@types/node': 24.19.0
-
   '@types/mustache@4.2.6': {}
 
   '@types/node-jose@1.1.13':
@@ -17478,11 +17462,6 @@ snapshots:
       append-field: 1.0.0
       busboy: 1.6.0
       type-is: 1.6.18
-
-  multipipe@4.0.0:
-    dependencies:
-      duplexer2: 0.1.4
-      object-assign: 4.1.1
 
   mustache@4.2.0: {}
 

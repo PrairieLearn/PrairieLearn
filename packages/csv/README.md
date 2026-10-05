@@ -41,6 +41,10 @@ const stringifier = stringifyStream<Workspace>({
 await pipeline(cursor.stream(100), stringifier, output);
 ```
 
+`stringifyStream` limits each input record queue to one record and runs asynchronous transformations one at a time. CSV output uses byte-based buffering, though a single oversized record can exceed that threshold. Errors and cancellation propagate through the transformation and stringifier.
+
+For records containing large fields, use `cursor.stream(1)` to also limit how many database rows are fetched together. The CSV stream cannot limit buffering in its source.
+
 Note that this works best when the source stream is producing data asynchronously, such as though an async iterator. If you use a synchronous data source like `Readable.from([...])`, the conversion will still occur synchronously. If you have a large array of data in memory and want to convert it to a CSV, you can use `stringifyNonblocking`:
 
 ```ts
@@ -49,7 +53,7 @@ import { createWriteStream } from 'node:fs';
 
 const data = Array.from(new Array(100_000), (_, i) => ({ id: i }));
 const output = createWriteStream('numbers.csv');
-stringifyNonblocking<{ id: number }>(data, {
+stringifyNonblocking(data, {
   header: true,
   columns: [{ key: 'id', header: 'ID' }],
 }).pipe(output);
