@@ -704,7 +704,7 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
-export const CourseAgentUsageSchema = conversationUsageSchema.extend({
+const CourseAgentUsageSchema = conversationUsageSchema.extend({
   estimatedCost: z.number().nonnegative().nullable(),
   pricing: z
     .object({
