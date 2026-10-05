@@ -7,11 +7,3 @@ This directory contains the various applications that make up the PrairieLearn p
 - [`workspace-host`](./workspace-host): The runner for workspace containers.
 
 - [`course-agent`](./course-agent): The instructor course agent's local Cloudflare Worker and sandbox development environment. See its README for setup and browser testing.
-
-```mermaid
-flowchart LR
-  PL[prairielearn] --> CA[course-agent]
-  CA --> Sandbox[Codex sandbox]
-  PL --> Grader[grader-host]
-  PL --> Workspace[workspace-host]
-```
