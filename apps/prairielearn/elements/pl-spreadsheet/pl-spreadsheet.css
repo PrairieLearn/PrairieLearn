@@ -107,6 +107,7 @@
 }
 
 .pl-spreadsheet-formula-input {
+  font-family: monospace;
   position: relative;
   min-width: 0;
 }
@@ -374,6 +375,12 @@
   );
   --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-ref-color);
   --pl-spreadsheet-tile-text: var(--pl-spreadsheet-ref-color);
+}
+
+/* Without tiles, a reference's text matches its outline in the grid. */
+.pl-spreadsheet-reference {
+  color: var(--pl-spreadsheet-ref-color);
+  font-weight: 600;
 }
 
 /* Holes are hollow, dashed tiles in the color of what belongs in them. */

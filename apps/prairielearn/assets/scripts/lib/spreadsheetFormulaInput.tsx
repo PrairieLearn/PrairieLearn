@@ -35,6 +35,7 @@ import {
 
 import {
   type FormulaSelection,
+  FormulaText,
   FormulaTiles,
   offsetAtPoint,
   tileRangeAtPoint,
@@ -106,13 +107,15 @@ interface PointedSpan {
 }
 
 /**
- * A formula bar that draws formulas as tiles with holes, suggests functions, and accepts
- * references pointed at in the grid. Typing, selection, IME, undo, and assistive
+ * A formula bar that draws formulas as tiles with holes (or as text with color-coded
+ * references when `tiles` is off), suggests functions, and accepts references pointed at
+ * in the grid. Typing, selection, IME, undo, and assistive
  * technology all use a real input, which stays focused but invisible beneath an
  * `aria-hidden` tile view that draws its text, caret, and selection.
  */
 export function FormulaInput({
   value,
+  tiles,
   adornment,
   className,
   onValueChange,
@@ -124,6 +127,8 @@ export function FormulaInput({
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onScroll' | 'onSelect'> & {
   value: string;
+  /** Whether to draw the formula as tiles with holes and step between them with Tab. */
+  tiles: boolean;
   /** Drawn inside the field before the formula, such as a badge describing the cell. */
   adornment?: ReactNode;
   onValueChange: (value: string) => void;
@@ -150,7 +155,9 @@ export function FormulaInput({
   const [popupsHidden, setPopupsHidden] = useState(false);
   // Phantoms only apply to the text they were computed for, not to a value the parent
   // replaced, e.g. by selecting another cell.
-  const structure = parseFormula(value, editState.formula === value ? editState.phantoms : []);
+  const structure = tiles
+    ? parseFormula(value, editState.formula === value ? editState.phantoms : [])
+    : null;
   const currentHole =
     focused && caret !== null
       ? structure?.holes.find(
@@ -319,7 +326,7 @@ export function FormulaInput({
 
   function accept(signature: FormulaFunctionSignature) {
     if (!completion) return;
-    const result = applyCompletion(value, completion, signature);
+    const result = applyCompletion(value, completion, signature, { argumentHoles: tiles });
     moveCaret(result.caret);
     announceHint(result.formula, result.caret);
     changeValue(result.formula);
@@ -349,7 +356,12 @@ export function FormulaInput({
     }
     const input = event.currentTarget;
     const position = input.selectionStart ?? 0;
-    if (event.key === ',' && position === input.selectionEnd && input.value[position] === ',') {
+    if (
+      tiles &&
+      event.key === ',' &&
+      position === input.selectionEnd &&
+      input.value[position] === ','
+    ) {
       // A completed function comes with a comma per required argument, so typing one
       // moves past it, like typing over an editor's automatically closed bracket.
       event.preventDefault();
@@ -422,7 +434,15 @@ export function FormulaInput({
         onMouseDown={handleViewMouseDown}
       >
         {adornment}
-        <FormulaTiles value={value} structure={structure} selection={focused ? selection : null} />
+        {tiles ? (
+          <FormulaTiles
+            value={value}
+            structure={structure}
+            selection={focused ? selection : null}
+          />
+        ) : (
+          <FormulaText value={value} selection={focused ? selection : null} />
+        )}
       </div>
       {completion ? (
         <ul

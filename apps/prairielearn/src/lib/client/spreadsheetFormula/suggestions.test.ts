@@ -55,6 +55,15 @@ describe('applyCompletion', () => {
     expect(complete('=vlookup', 'VLOOKUP')).toEqual({ formula: '=VLOOKUP(,,', caret: 9 });
   });
 
+  it('leaves out argument holes when asked', () => {
+    const formula = '=if*2';
+    expect(
+      applyCompletion(formula, getCompletion(formula, 3)!, FORMULA_FUNCTION_SIGNATURES.get('IF')!, {
+        argumentHoles: false,
+      }),
+    ).toEqual({ formula: '=IF()*2', caret: 4 });
+  });
+
   it('closes the call when text follows it', () => {
     expect(complete('=su+1', 'SUM', 3)).toEqual({ formula: '=SUM()+1', caret: 5 });
     expect(complete('=if*2', 'IF', 3)).toEqual({ formula: '=IF(,)*2', caret: 4 });

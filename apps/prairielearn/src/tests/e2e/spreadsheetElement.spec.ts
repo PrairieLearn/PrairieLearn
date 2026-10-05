@@ -117,6 +117,17 @@ test('draws formulas as tiles in the formula bar', async ({ page, courseInstance
   const view = parameterDemo.locator('.pl-spreadsheet-formula-view');
 
   await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
+  // Without tile editing, the formula is drawn as text with color-coded references.
+  await formulaBar.fill('=SUM($B$3:B4)+B3');
+  await expect(view).toHaveText(/^B2\s*=SUM\(\$B\$3:B4\)\+B3$/);
+  await expect(view.locator('.pl-spreadsheet-piece')).toHaveCount(0);
+  await expect(view.locator('.pl-spreadsheet-reference')).toHaveText(['$B$3:B4', 'B3']);
+  await expect(view.locator('.pl-spreadsheet-reference').last()).toHaveClass(
+    /pl-spreadsheet-ref-fill-1/,
+  );
+
+  await parameterDemo.getByRole('switch', { name: 'Tile editing' }).check();
+  await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
   await formulaBar.fill('plain text');
   // The address chip comes first, then the formula.
   await expect(view).toHaveText(/^B2\s*plain text$/);
@@ -249,8 +260,15 @@ test('inserts references by pointing at cells', async ({ page, courseInstance })
 
   await formulaBar.press('Enter');
   await expect(cell('B2')).toBeFocused();
-  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(0);
   await expect(rawAnswer).toHaveValue(/"B2":"=SUM\(A2\)\+C4:D4\*2"/);
+
+  // The active cell's references stay highlighted outside of editing.
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(3);
+  await page.keyboard.press('ArrowLeft');
+  await expect(cell('A2')).toBeFocused();
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(0);
+  await page.keyboard.press('ArrowRight');
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(3);
 });
 
 test('shows the missing parts of a formula as holes', async ({ page, courseInstance }) => {
@@ -273,6 +291,7 @@ test('shows the missing parts of a formula as holes', async ({ page, courseInsta
   const status = parameterDemo.getByRole('status');
   const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
 
+  await parameterDemo.getByRole('switch', { name: 'Tile editing' }).check();
   await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
   await formulaBar.fill('=SUMIF(');
   await expect(
@@ -339,7 +358,7 @@ test('suggests functions in the formula bar', async ({ page, courseInstance }) =
   await formulaBar.press('ArrowDown');
   await expect(suggestions.getByRole('option', { selected: true })).toHaveText(/^SUMIF /);
   await formulaBar.press('Enter');
-  await expect(formulaBar).toHaveValue('=1+SUMIF(,');
+  await expect(formulaBar).toHaveValue('=1+SUMIF(');
   await expect(suggestions).toHaveCount(0);
   await expect(parameterDemo.getByText('SUMIF(range, criteria, [sum_range])')).toBeVisible();
   await expect(parameterDemo.getByRole('status')).toHaveText('SUMIF, argument range');
