@@ -78,7 +78,6 @@ export function Transcript({
                     <details
                       key={'toolCallId' in tool ? String(tool.toolCallId) : index}
                       className="course-agent-tool"
-                      open={state === 'error'}
                     >
                       <summary>
                         <ActivityStatus state={state} statusText={toolTitle(tool)} />

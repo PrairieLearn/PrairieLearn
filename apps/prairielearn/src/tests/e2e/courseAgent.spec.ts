@@ -178,6 +178,12 @@ test('conversation and unsent draft persist across course pages', async ({
   expect(statistics!.width).toBe(send!.width);
   expect(statistics!.height).toBe(send!.height);
   await page.screenshot({ path: testInfo.outputPath('course-agent.png'), fullPage: true });
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await expect(page.getByRole('complementary', { name: 'Course agent' })).toHaveCSS(
+    'width',
+    '350px',
+  );
+
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(composer).toBeVisible();
   const mobilePanel = page.getByRole('dialog', { name: 'Course agent' });
@@ -650,3 +656,39 @@ test('navigation preserves a new-conversation selection before the settings requ
     'New conversation',
   );
 });
+const unavailableTest = createTest({
+  isEnterprise: true,
+  features: { 'course-agent': true },
+  courseAgent: {
+    workerUrl: 'http://localhost:8791',
+    serviceToken: null,
+    maxConcurrentPerUser: 2,
+    maxConcurrentPerCourse: 5,
+    maxRequestsPerHour: 30,
+    dailyCostLimit: 20,
+    pricing: {},
+  },
+});
+
+unavailableTest(
+  'explains the missing connection token without opening chat',
+  async ({ page, courseInstance }) => {
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid: 'dev@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/settings`);
+    const launcher = page.getByRole('button', { name: 'Open course agent' });
+    await expect(launcher).toBeVisible();
+    await expect(launcher).toBeDisabled();
+    const trigger = launcher.locator('..');
+    await trigger.hover();
+    await expect(page.getByRole('tooltip')).toContainText('connection token is not configured');
+    await page.getByRole('navigation', { name: 'Global navigation' }).hover();
+    await trigger.focus();
+    await expect(page.getByRole('tooltip')).toContainText('connection token is not configured');
+    await expect(page.getByLabel('Message', { exact: true })).toHaveCount(0);
+  },
+);

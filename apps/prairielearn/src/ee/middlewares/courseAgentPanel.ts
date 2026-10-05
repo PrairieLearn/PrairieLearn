@@ -1,10 +1,9 @@
-import { config } from '../../lib/config.js';
 import { CourseAgentPanelStateSchema } from '../../lib/course-agent-panel.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectConversations } from '../../models/course-agent-conversation.js';
 import { hasCourseAgentOwnerAccess } from '../lib/course-agent/access.js';
 import { renderCourseAgentPanel } from '../lib/course-agent/panel.js';
-import { newWorkEnabled } from '../lib/course-agent/service.js';
+import { newWorkEnabled, unavailableReason } from '../lib/course-agent/service.js';
 
 export default typedAsyncHandler<'course'>(async (req, res, next) => {
   const fetchDestination = req.get('Sec-Fetch-Dest');
@@ -14,7 +13,6 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
     (fetchDestination && fetchDestination !== 'document') ||
     req.path.includes('/trpc') ||
     req.path.includes('/course-agent/') ||
-    !config.courseAgent ||
     !res.locals.authz_data.has_course_permission_own ||
     res.locals.course.example_course
   ) {
@@ -31,6 +29,7 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
     return;
   }
   const canStartNewWork = await newWorkEnabled(scope, res.locals.course);
+  const disabledReason = unavailableReason();
   if (canStartNewWork || (await selectConversations(scope)).length > 0) {
     res.locals.course_agent_panel = renderCourseAgentPanel({
       courseId: res.locals.course.id,
@@ -41,7 +40,8 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
       initialPanelState: CourseAgentPanelStateSchema.parse(
         req.session.course_agent_panels?.[`${scope.course_id}:${scope.user_id}`] ?? {},
       ),
-      canStartNewWork,
+      canStartNewWork: canStartNewWork && !disabledReason,
+      disabledReason,
     });
   }
   next();
