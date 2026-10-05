@@ -107,21 +107,30 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
 
 
 @pytest.mark.parametrize(
-    ("formula_editor", "submission"),
+    ("formula_editor", "submission", "latex"),
     [
-        # Formula editor plain text for \frac{-b\pm\sqrt{b^2-4ac}}{2a}
-        ("true", "(-b±sqrt(b^2-4a c))/(2a)"),
-        ("false", "(-b ± sqrt(b^2 - 4*a*c))/(2*a)"),
+        # Formula editor plain text and LaTeX for the quadratic formula
+        (
+            "true",
+            "(-b+-sqrt(b^2-4a c))/(2a)",
+            r"\frac{-b\pm\sqrt{b^2-4ac}}{2a}",
+        ),
+        ("false", "(-b ± sqrt(b^2 - 4*a*c))/(2*a)", None),
     ],
 )
-def test_plus_minus_grades_as_finite_set(formula_editor: str, submission: str) -> None:
+def test_plus_minus_grades_as_finite_set(
+    formula_editor: str, submission: str, latex: str | None
+) -> None:
     element_html = build_element_html(
         'variables="a, b, c"',
         'allowed-types="finite-set"',
         f'formula-editor="{formula_editor}"',
         'correct-answer="{(-b + sqrt(b^2 - 4*a*c))/(2*a), (-b - sqrt(b^2 - 4*a*c))/(2*a)}"',
     )
-    data = make_question_data(submitted_answers={"test": submission})
+    data = make_question_data(
+        submitted_answers={"test": submission},
+        raw_submitted_answers={"test": submission, "test-latex": latex},
+    )
 
     symbolic_input.prepare(element_html, data)
     symbolic_input.parse(element_html, data)
