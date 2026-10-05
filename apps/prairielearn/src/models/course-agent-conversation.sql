@@ -281,8 +281,8 @@ SELECT
       WHERE
         id = $id
     ),
-    false
+    FALSE
   ) AS current_active,
-  COALESCE(bool_or(unknown), false) AS unknown
+  COALESCE(bool_or(unknown), FALSE) AS unknown
 FROM
   activity;
