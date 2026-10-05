@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
 
 import { Redis } from 'ioredis';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -10,7 +11,12 @@ let limiter: RedisRateLimiter;
 let prefix: string;
 beforeEach(async () => {
   prefix = `course-agent-limiter-test:${randomUUID()}:`;
-  redis = new Redis<'legacy'>('redis://localhost:6379', { lazyConnect: true });
+  redis = new Redis<'legacy'>('redis://localhost:6379', {
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    enableOfflineQueue: false,
+    commandTimeout: 10000,
+  });
   await redis.connect();
   limiter = new RedisRateLimiter({
     redis: () => redis,
@@ -55,7 +61,7 @@ test('keeps watermarks across hour boundaries and attributes late deltas to the 
   expect(await redis.get(oldKey)).toBe('2');
   expect(await redis.ttl(`${prefix}rate-limiter:watermark:conversation`)).toBe(-1);
 });
-test('retries safely after Redis wrote successfully but its acknowledgment was lost', async () => {
+test('retries safely after lost acknowledgments and connection recovery', async () => {
   const evalScript = redis.eval.bind(redis);
   vi.spyOn(redis, 'eval').mockImplementationOnce(async (...args) => {
     await evalScript(...args);
@@ -64,6 +70,11 @@ test('retries safely after Redis wrote successfully but its acknowledgment was l
   await expect(limiter.reconcileCumulativeUsage('user', 'conversation', 4, 1)).rejects.toThrow(
     'Lost acknowledgment',
   );
+  await limiter.reconcileCumulativeUsage('user', 'conversation', 4, 1);
+  expect(await limiter.getIntervalUsage('user')).toBe(4);
+  const reconnected = once(redis, 'ready');
+  redis.disconnect(true);
+  await reconnected;
   await limiter.reconcileCumulativeUsage('user', 'conversation', 4, 1);
   expect(await limiter.getIntervalUsage('user')).toBe(4);
   await limiter.addToIntervalUsage('other', 2);

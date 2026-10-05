@@ -31,7 +31,7 @@ export const rateLimiter = new RedisRateLimiter({
       maxRetriesPerRequest: 1,
       enableOfflineQueue: false,
       connectTimeout: 10000,
-      retryStrategy: () => null,
+      commandTimeout: 10000,
     });
     try {
       await redis.connect();

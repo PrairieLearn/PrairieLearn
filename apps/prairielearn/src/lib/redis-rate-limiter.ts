@@ -118,6 +118,6 @@ export class RedisRateLimiter {
   }
 
   async close() {
-    await this.redis?.quit().catch(() => {});
+    await this.redis?.quit().catch(() => this.redis?.disconnect());
   }
 }
