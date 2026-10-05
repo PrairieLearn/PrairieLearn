@@ -60,6 +60,7 @@ function createBrowserHarness({
         routeWebSocket: vi.fn(async (_pattern, handler) => {
           webSocketHandler = handler;
         }),
+        unrouteAll: vi.fn(async () => undefined),
         newPage: vi.fn(async () => page),
         close: vi.fn(async () => {
           await contextClose();

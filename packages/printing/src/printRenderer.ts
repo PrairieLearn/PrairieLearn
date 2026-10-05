@@ -211,10 +211,15 @@ export class PrintRenderer {
   private async discardContext(browser: Browser, context: BrowserContext): Promise<void> {
     let graceTimer: ReturnType<typeof setTimeout> | undefined;
     const closed = await Promise.race([
-      context.close().then(
-        () => true,
-        () => false,
-      ),
+      // Closing the context cancels pending route.fetch() calls. Their rejections must not
+      // escape as unhandled errors after the render has already finished or failed.
+      context
+        .unrouteAll({ behavior: 'ignoreErrors' })
+        .then(() => context.close())
+        .then(
+          () => true,
+          () => false,
+        ),
       new Promise<boolean>((resolve) => {
         graceTimer = setTimeout(() => resolve(false), this.contextCloseGraceMs);
       }),
