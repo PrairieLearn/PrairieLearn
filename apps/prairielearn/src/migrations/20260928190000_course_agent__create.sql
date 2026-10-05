@@ -17,6 +17,20 @@ CREATE TABLE course_agent_operations (
   conversation_id BIGINT NOT NULL REFERENCES course_agent_conversations (id) ON DELETE CASCADE ON UPDATE CASCADE,
   operation_id UUID NOT NULL,
   payload JSONB NOT NULL,
+  dispatch_id UUID NOT NULL DEFAULT gen_random_uuid(),
+  status TEXT NOT NULL DEFAULT 'admitted' CHECK (
+    status IN (
+      'admitted',
+      'running',
+      'completed',
+      'cancelled',
+      'failed',
+      'interrupted',
+      'rejected'
+    )
+  ),
+  admitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at TIMESTAMPTZ,
   operation_number INTEGER NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (conversation_id, operation_id)

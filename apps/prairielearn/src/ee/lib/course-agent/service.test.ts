@@ -60,11 +60,6 @@ const conversation = {
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
-  maxConcurrentPerUser: 2,
-  maxConcurrentPerCourse: 5,
-  maxRequestsPerHour: 30,
-  dailyCostLimit: 20,
-  pricing: { 'fixture-model': { input: 0, cachedInput: 0, cacheWrite: 0, output: 0 } },
 };
 
 test('reports an unsent message without leaking a configure transport error', async () => {
@@ -94,7 +89,7 @@ test.each(['{}', 'not JSON'])(
   },
 );
 
-test('accepts a configured model with complete pricing', async () => {
+test('validates the configured model response', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ model: 'fixture-model' })));
   await withConfig({ isEnterprise: true, courseAgent: settings }, async () => {
     await expect(provider(scope, conversation, true)).resolves.toBeDefined();

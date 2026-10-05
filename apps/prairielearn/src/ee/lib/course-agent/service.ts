@@ -17,7 +17,6 @@ import { selectCourseById } from '../../../models/course.js';
 import { hasCourseAgentOwnerAccess } from './access.js';
 import { workerResponseError } from './errors.js';
 import { createCloudflareProvider } from './provider.js';
-import { modelPricing } from './usage.js';
 
 /** A missing connection token keeps the launcher visible without exposing credentials. */
 export function unavailableReason(): string | null {
@@ -125,13 +124,6 @@ export async function provider(
         502,
         'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
       );
-    }
-    const model = parsed.data;
-    if (!modelPricing(model.model)) {
-      throw new TRPCError({
-        code: 'PRECONDITION_FAILED',
-        message: `Configure course agent pricing for ${model.model} before starting work.`,
-      });
     }
   } else {
     await authorize(scope);

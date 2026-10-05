@@ -95,7 +95,7 @@ SELECT
     SELECT
       1
     FROM
-      course_agent_executions AS e
+      course_agent_operations AS e
     WHERE
       e.conversation_id = c.id
       AND e.status IN ('admitted', 'running')
@@ -104,7 +104,7 @@ SELECT
     SELECT
       max(e.finished_at)
     FROM
-      course_agent_executions AS e
+      course_agent_operations AS e
     WHERE
       e.conversation_id = c.id
   ) AS finished_at
@@ -132,3 +132,51 @@ FROM
 WHERE
   conversation_id = $id
   AND payload ->> 'kind' = 'message';
+
+-- BLOCK select_active_operations
+SELECT
+  *
+FROM
+  course_agent_operations
+WHERE
+  conversation_id = $id
+  AND status IN ('admitted', 'running');
+
+-- BLOCK retry_operation
+UPDATE course_agent_operations
+SET
+  status = 'admitted',
+  dispatch_id = gen_random_uuid(),
+  admitted_at = now(),
+  finished_at = NULL
+WHERE
+  conversation_id = $id
+  AND operation_id = $operation_id;
+
+-- BLOCK reject_operation
+UPDATE course_agent_operations
+SET
+  status = 'rejected',
+  finished_at = now()
+WHERE
+  conversation_id = $id
+  AND operation_id = $operation_id
+  AND dispatch_id = $dispatch_id
+  AND status = 'admitted';
+
+-- BLOCK update_operation_statuses
+UPDATE course_agent_operations AS o
+SET
+  status = v.status,
+  finished_at = CASE
+    WHEN v.status = 'running' THEN NULL
+    ELSE now()
+  END
+FROM
+  jsonb_to_recordset($updates::jsonb) AS v (operation_id uuid, dispatch_id uuid, status text)
+WHERE
+  o.conversation_id = $id
+  AND o.operation_id = v.operation_id
+  AND o.dispatch_id = v.dispatch_id
+  AND o.status IN ('admitted', 'running')
+  AND o.status <> v.status;

@@ -1,5 +1,5 @@
 import { useChat } from '@ai-sdk/react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
@@ -40,6 +40,7 @@ export function Conversation({
   canStartNewWork: boolean;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const base = `/pl/course/${courseId}/course-agent/${id}`;
   const [snapshot, setSnapshot] = useState<ChatSnapshot>({ messages: [], operationNumber: 0 });
   const { register, watch, setValue, handleSubmit } = useForm({ defaultValues: { draft: '' } });
@@ -110,8 +111,13 @@ export function Conversation({
       source.close();
     };
     source.addEventListener('connection-error', connectionError);
+    let lastPhase: string | undefined;
     source.onmessage = (event) => {
       const next = JSON.parse(event.data) as ChatSnapshot;
+      if (next.diagnostics?.state !== lastPhase) {
+        lastPhase = next.diagnostics?.state;
+        void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
+      }
       const pending = pendingRef.current;
       if (pending && next.messages.some((message) => message.id === pending.id)) {
         pendingRef.current = null;
@@ -156,7 +162,17 @@ export function Conversation({
       source.removeEventListener('connection-error', connectionError);
       source.close();
     };
-  }, [base, id, storageKey, setMessages, resumeStream, setValue, connectionAttempt]);
+  }, [
+    base,
+    id,
+    storageKey,
+    setMessages,
+    resumeStream,
+    setValue,
+    connectionAttempt,
+    queryClient,
+    trpc,
+  ]);
 
   // Keep incoming output and newly loaded conversations visible at the end of the transcript.
   useEffect(() => {
@@ -322,20 +338,6 @@ export function Conversation({
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <dl>
-            <dt>Estimated cost</dt>
-            <dd>
-              {!id
-                ? '$0.0000'
-                : snapshot.usage?.estimatedCost == null
-                  ? 'Unknown'
-                  : `$${snapshot.usage.estimatedCost.toFixed(4)}`}
-            </dd>
-            <dt>Input tokens</dt>
-            <dd>{!id ? 0 : (snapshot.usage?.input ?? 'Unknown')}</dd>
-            <dt>Output tokens</dt>
-            <dd>{!id ? 0 : (snapshot.usage?.output ?? 'Unknown')}</dd>
-          </dl>
           {statisticsOpen && (
             <SandboxStatistics
               diagnostics={snapshot.diagnostics}
