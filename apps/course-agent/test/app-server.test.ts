@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import { AppServer, AppServerError, type Socket } from '../src/app-server.js';
+import { openCodexTurn } from '../src/codex-turn.js';
 
 class FakeSocket implements Socket {
   private listeners = new Map<string, ((event: { data: unknown }) => void)[]>();
@@ -103,5 +104,41 @@ test('initialization negotiates experimental tools before completing the handsha
   socket.receive({ id: socket.sent[0].id, result: { userAgent: 'test' } });
   await initialized;
   assert.equal(socket.sent[1].method, 'initialized');
+  client.close();
+});
+
+test('forwards native cache-write usage without combining it with cache reads', async () => {
+  const socket = new FakeSocket();
+  const client = new AppServer(socket);
+  const usage: unknown[] = [];
+  const opening = openCodexTurn(client, {
+    runId: 'run',
+    write: () => {},
+    onTurnStarted: () => {},
+    onUsage: (value) => usage.push(value),
+    onToolCall: async () => ({ contentItems: [], success: true }),
+  });
+  socket.receive({ id: 1, result: { thread: { id: 'thread', turns: [] } } });
+  const turn = await opening;
+  const breakdown = {
+    inputTokens: 100,
+    cachedInputTokens: 40,
+    cacheWriteInputTokens: 60,
+    outputTokens: 10,
+    reasoningOutputTokens: 0,
+    totalTokens: 110,
+  };
+  socket.receive({
+    method: 'thread/tokenUsage/updated',
+    params: {
+      threadId: 'thread',
+      turnId: 'turn',
+      tokenUsage: { total: breakdown, last: breakdown },
+    },
+  });
+  assert.deepEqual(usage, [
+    { threadId: 'thread', input: 100, cached: 40, cacheWrite: 60, output: 10 },
+  ]);
+  await turn.close();
   client.close();
 });

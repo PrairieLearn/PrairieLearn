@@ -397,6 +397,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
           model: this.env.CODEX_MODEL!,
           input: 0,
           cached: 0,
+          cacheWrite: 0,
           output: 0,
         },
       },
@@ -1037,6 +1038,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
           model: this.env.CODEX_MODEL,
           input: null,
           cached: null,
+          cacheWrite: null,
           output: null,
         },
       },
@@ -1118,12 +1120,13 @@ export class Chat extends AIChatAgent<Env, CodexState> {
                 const before =
                   this.state.usageTotal?.threadId === total.threadId
                     ? this.state.usageTotal
-                    : { input: 0, cached: 0, output: 0 };
+                    : { input: 0, cached: 0, cacheWrite: 0, output: 0 };
                 const current = this.state.executions?.[run.messageId];
                 if (
                   current &&
                   total.input >= before.input &&
                   total.cached >= before.cached &&
+                  (before.cacheWrite === undefined || total.cacheWrite >= before.cacheWrite) &&
                   total.output >= before.output
                 ) {
                   this.saveState({
@@ -1135,6 +1138,12 @@ export class Chat extends AIChatAgent<Env, CodexState> {
                         ...current,
                         input: (current.input ?? 0) + total.input - before.input,
                         cached: (current.cached ?? 0) + total.cached - before.cached,
+                        // Older checkpoints lack a cache-write baseline; that cost remains unknown.
+                        cacheWrite:
+                          before.cacheWrite === undefined ||
+                          (current.input !== null && current.cacheWrite == null)
+                            ? null
+                            : (current.cacheWrite ?? 0) + total.cacheWrite - before.cacheWrite,
                         output: (current.output ?? 0) + total.output - before.output,
                       },
                     },

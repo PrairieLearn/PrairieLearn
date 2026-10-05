@@ -26,12 +26,14 @@ function conversation() {
       return fetch(`${root}/message`, { method: 'POST', headers, body: JSON.stringify(input) });
     },
     async send(text = 'Hello') {
+      const id = randomUUID();
       const response = await fetch(`${root}/message`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ id: randomUUID(), text, expectedOperationNumber: 0 }),
+        body: JSON.stringify({ id, text, expectedOperationNumber: 0 }),
       });
       expect(response.ok).toBe(true);
+      return id;
     },
   };
 }
@@ -59,6 +61,31 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     expect((await c.request('test/status')).launches).toBe(1);
     await c.request('cancel', {});
   });
+  it('counts cache writes once and preserves the usage baseline through checkpoint recovery', async () => {
+    const c = conversation();
+    const first = await c.send();
+    const usage = { input: 100, cached: 40, cacheWrite: 50, output: 10 };
+    await c.request('test/usage', usage);
+    await expect
+      .poll(async () => (await c.request('snapshot')).executions[first].cacheWrite)
+      .toBe(50);
+    await c.request('test/usage', usage);
+    expect((await c.request('snapshot')).executions[first]).toMatchObject(usage);
+    await expect
+      .poll(async () => (await c.request('diagnostics')).state, { timeout: 15000 })
+      .toBe('waiting_for_user');
+    await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
+    await expect.poll(async () => (await c.request('diagnostics')).state).toBe('absent');
+    const second = await c.send();
+    await c.request('test/usage', { input: 200, cached: 80, cacheWrite: 100, output: 20 });
+    await expect
+      .poll(async () => (await c.request('snapshot')).executions[second].cacheWrite)
+      .toBe(50);
+    expect((await c.request('snapshot')).executions[second]).toMatchObject(usage);
+    expect((await c.request('snapshot')).executions[first]).toMatchObject(usage);
+    await c.request('cancel', {});
+  });
+
   it('compacts broadcast state without losing archived usage or dispatch fences', async () => {
     const c = conversation();
     const ids = Array.from({ length: 150 }, () => randomUUID());
