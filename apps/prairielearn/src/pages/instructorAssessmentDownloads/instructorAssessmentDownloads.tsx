@@ -377,39 +377,30 @@ async function pipeCursorToArchive<T>(
   }
 
   try {
-    let directoryAdded = false;
     // Submission files can be tens of megabytes each. Keep only one row in memory.
-    for await (const rows of cursor.iterate(1)) {
-      for (const row of rows) {
-        controller.signal.throwIfAborted();
-        if (!directoryAdded) {
-          // Start cursor iteration before writing so early output failures also close it.
-          await appendFile('', prefix);
-          directoryAdded = true;
-        }
+    for await (const [row] of cursor.iterate(1)) {
+      controller.signal.throwIfAborted();
 
-        // Sort files to ensure consistent ordering; this is done
-        // for backwards compatibility and may not be necessary.
-        const files = extractFiles(row)?.sort((a, b) =>
-          (a.filename ?? '').localeCompare(b.filename ?? ''),
-        );
+      // Sort files to ensure consistent ordering; this is done
+      // for backwards compatibility and may not be necessary.
+      const files = extractFiles(row)?.sort((a, b) =>
+        (a.filename ?? '').localeCompare(b.filename ?? ''),
+      );
 
-        if (!files) continue;
+      if (!files) continue;
 
-        for (const file of files) {
-          // Exclude any files that are missing a name or contents.
-          // We allow empty files, so we specifically check for null, not truthiness.
-          if (!file.filename || file.contents == null) continue;
+      for (const file of files) {
+        // Exclude any files that are missing a name or contents.
+        // We allow empty files, so we specifically check for null, not truthiness.
+        if (!file.filename || file.contents == null) continue;
 
-          // append() queues buffers without applying backpressure. Wait until this
-          // file has been consumed before fetching or decoding more submissions.
-          await appendFile(file.contents, prefix + file.filename);
-        }
+        // append() queues buffers without applying backpressure. Wait until this
+        // file has been consumed before fetching or decoding more submissions.
+        await appendFile(file.contents, prefix + file.filename);
       }
     }
-    if (!directoryAdded) await appendFile('', prefix);
-    await archive.finalize();
-    await archiveFinished;
+    await appendFile('', prefix);
+    await Promise.all([archive.finalize(), archiveFinished]);
   } finally {
     archive.destroy();
     await archiveFinished.catch(() => {});

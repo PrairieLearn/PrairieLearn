@@ -38,12 +38,11 @@ const stringifier = stringifyStream<Workspace>({
   },
 });
 
+// Fetch one row at a time with cursor.stream(1) for large records.
 await pipeline(cursor.stream(100), stringifier, output);
 ```
 
-`stringifyStream` limits each input record queue to one record and runs asynchronous transformations one at a time. CSV output uses byte-based buffering, though a single oversized record can exceed that threshold. Errors and cancellation propagate through the transformation and stringifier.
-
-For records containing large fields, use `cursor.stream(1)` to also limit how many database rows are fetched together. The CSV stream cannot limit buffering in its source.
+`stringifyStream` respects backpressure and processes asynchronous transformations one at a time. For large records, also limit buffering in the source stream.
 
 Note that this works best when the source stream is producing data asynchronously, such as though an async iterator. If you use a synchronous data source like `Readable.from([...])`, the conversion will still occur synchronously. If you have a large array of data in memory and want to convert it to a CSV, you can use `stringifyNonblocking`:
 
