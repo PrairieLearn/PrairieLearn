@@ -154,9 +154,13 @@ function UnpublishedBannerComponent({
   navContext: NavContext;
   resLocals: UntypedResLocals;
 }) {
-  if (navContext.type !== 'instructor') return null;
-  if (!navContext.page) return null;
-  if (!['instance_admin', 'assessment', 'students'].includes(navContext.page)) return null;
+  if (
+    navContext.type !== 'instructor' ||
+    !navContext.page ||
+    !['instance_admin', 'assessment', 'students'].includes(navContext.page)
+  ) {
+    return null;
+  }
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
   const { course_instance: courseInstance, urlPrefix } = resLocals;
@@ -236,6 +240,8 @@ export function PageLayout({
     enableNavbar?: boolean;
     /** Whether the navbar should hide all controls associated with the current session. */
     hideNavbarSessionControls?: boolean;
+    /** Enables instructor support on pages without a course authorization context. */
+    showInstructorSupport?: boolean;
     /**
      * Forces the side nav to be in a specific state when the page loads,
      * regardless of the user's previous preference.
@@ -371,6 +377,7 @@ export function PageLayout({
                     navbarType: navContext.type,
                     sideNavEnabled,
                     hideSessionControls: resolvedOptions.hideNavbarSessionControls,
+                    showInstructorSupport: resolvedOptions.showInstructorSupport,
                   })}
                 </div>`
               : ''
@@ -397,6 +404,7 @@ export function PageLayout({
             <div
               class="${clsx(
                 sideNavEnabled && 'app-main-container',
+                resolvedOptions.fullHeight && 'app-main-container-full-height',
                 !sideNavEnabled && resolvedOptions.fullWidth && 'w-100',
                 !sideNavEnabled && resolvedOptions.fullHeight && 'h-100',
                 'd-flex flex-column',
@@ -471,6 +479,7 @@ export function PageLayout({
                   resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   resolvedOptions.contentPadding && 'pb-3',
                   resolvedOptions.fullHeight && 'h-100',
+                  resolvedOptions.fullHeight && 'app-content-full-height',
                 )}"
               >
                 ${renderHtml(

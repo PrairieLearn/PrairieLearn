@@ -8,6 +8,6 @@ export let io: Emitter;
 let client: Redis;
 
 export function init() {
-  client = new Redis(config.redisUrl);
+  client = new Redis<'legacy'>(config.redisUrl);
   io = new Emitter(client);
 }

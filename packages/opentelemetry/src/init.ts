@@ -321,8 +321,8 @@ function getSampler(config: OpenTelemetryConfig): Sampler {
  * information available until we've loaded our config.
  *
  * Note that even when `openTelemetryEnabled` is `false`, we'll still configure
- * the `NodeTraceProvider` and instrumentations, as Sentry relies on that for
- * scope isolation. However, we won't actually set up any exporters.
+ * the `NodeTracerProvider` and instrumentations so the context and tracing APIs
+ * remain available. However, we won't actually set up any exporters.
  */
 export async function init(config: OpenTelemetryConfig) {
   incomingHttpRequestHook = config.incomingHttpRequestHook;

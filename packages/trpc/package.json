@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/trpc",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -29,17 +29,17 @@
     "react-bootstrap": "3.0.0-beta.5"
   },
   "dependencies": {
-    "@types/react": "^19.2.18"
+    "@types/react": "^19.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
-    "@types/react-dom": "^19.2.4",
+    "@types/node": "^24.19.0",
+    "@types/react-dom": "^19.3.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.0",
-    "jsdom": "^29.1.1",
-    "react-dom": "^19.2.8",
-    "vitest": "^5.0.0"
+    "@vitest/coverage-v8": "^5.0.2",
+    "jsdom": "^30.1.1",
+    "react-dom": "^19.3.0",
+    "vitest": "^5.0.2"
   },
   "sideEffects": false
 }

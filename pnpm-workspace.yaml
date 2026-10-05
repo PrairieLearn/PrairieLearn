@@ -3,6 +3,12 @@ packages:
   - 'packages/*'
 
 overrides:
+  # These tools need the JS compiler API, which TypeScript 7 does not provide.
+  'typescript-cp>typescript': npm:@typescript/typescript6@^6.0.2
+  'cosmiconfig>typescript': npm:@typescript/typescript6@^6.0.2
+  # We use Sentry's runtime SDK, not its bundler-plugin entry points. Omit the
+  # plugins and their CLI/parser dependencies to reduce install size.
+  '@sentry/node>@sentry/bundler-plugins': '-'
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
@@ -10,6 +16,7 @@ overrides:
   'dependency-cruiser>enhanced-resolve': ^5.22.1
   'dependency-cruiser>picomatch': ^4.0.4
   'dependency-cruiser>semver': ^7.8.1
+  'jsdoc-type-pratt-parser>@types/node': ^24
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
