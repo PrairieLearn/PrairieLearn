@@ -1,7 +1,13 @@
+#content:has(.instance-question-manual-grading) {
+  display: flex;
+  flex-direction: column;
+}
+
 .instance-question-manual-grading {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 auto;
+  height: auto;
   min-height: 0;
   container-name: manual-grading;
   container-type: inline-size;
