@@ -109,7 +109,7 @@ export function InstanceQuestionGradingActions({
                 <Dropdown.Toggle aria-label="Grade options" split />
                 <Dropdown.Menu align="end" className="mw-100" style={{ width: 'max-content' }}>
                   <Dropdown.Item
-                    className="text-wrap text-break"
+                    className="text-wrap"
                     as="button"
                     type="submit"
                     name="__action"
@@ -119,7 +119,7 @@ export function InstanceQuestionGradingActions({
                   </Dropdown.Item>
                   <Dropdown.Divider />
                   <Dropdown.Item
-                    className="text-wrap text-break"
+                    className="text-wrap"
                     as="button"
                     type="submit"
                     name="__action"
@@ -128,7 +128,7 @@ export function InstanceQuestionGradingActions({
                     All ungraded instance questions in submission group
                   </Dropdown.Item>
                   <Dropdown.Item
-                    className="text-wrap text-break"
+                    className="text-wrap"
                     as="button"
                     type="submit"
                     name="__action"
@@ -136,7 +136,7 @@ export function InstanceQuestionGradingActions({
                   >
                     All instance questions in submission group
                   </Dropdown.Item>
-                  <Dropdown.Header className="text-wrap text-break">
+                  <Dropdown.Header className="text-wrap">
                     AI can make mistakes. Review submission groups before grading.
                   </Dropdown.Header>
                 </Dropdown.Menu>
@@ -183,7 +183,7 @@ export function InstanceQuestionGradingActions({
                 {graders.map((grader) => (
                   <Dropdown.Item
                     key={grader.id}
-                    className="text-wrap text-break"
+                    className="text-wrap"
                     as="button"
                     type="submit"
                     name="__action"
@@ -193,7 +193,7 @@ export function InstanceQuestionGradingActions({
                   </Dropdown.Item>
                 ))}
                 <Dropdown.Item
-                  className="text-wrap text-break"
+                  className="text-wrap"
                   as="button"
                   type="submit"
                   name="__action"
@@ -202,7 +202,7 @@ export function InstanceQuestionGradingActions({
                   Tag for grading without assigned grader
                 </Dropdown.Item>
                 <Dropdown.Item
-                  className="text-wrap text-break"
+                  className="text-wrap"
                   as="button"
                   type="submit"
                   name="__action"
