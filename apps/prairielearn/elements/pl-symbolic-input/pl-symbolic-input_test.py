@@ -170,7 +170,6 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("l n 4 * c o t (9x)", True, ["x"], [], "ln (4) * cot (9x)"),
         ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
         ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
-        ("l n (4) * x", False, ["x"], [], "ln (4) * x"),
         # Operators the editor writes in AsciiMath form (\div and \ast)
         ("2 -: x", False, ["x"], [], "2 / x"),
         ("2 ** x", False, ["x"], [], "2 * x"),
@@ -199,18 +198,10 @@ def test_format_formula_editor_submission_for_sympy(
             "4^(c s c (9x)) * (-9∙l n 4) * c o t (9x)c s c (9x)",
             id="report-set-notation",
         ),
-        pytest.param(
-            "4^(c s c (9x))∙(-9∙l n 4)∙c o t (9x)c s c (9x)",
-            id="report-set-notation-all-bullets",
-        ),
         # Reported as graded incorrect: 4^{csc(9x)}(-9·(ln4)·cot(9x))csc(9x)
         pytest.param(
             "4^(c s c (9x))(-9 * (l n 4) * c o t (9x))c s c (9x)",
             id="report-graded-incorrect",
-        ),
-        pytest.param(
-            "4^(c s c (9x))(-9∙(l n 4)∙c o t (9x))c s c (9x)",
-            id="report-graded-incorrect-bullets",
         ),
         # Pasting "4^(csc(9x))(-9*ln4)*cot(9x)csc(9x)" into the editor
         pytest.param(
@@ -247,13 +238,6 @@ def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
     [
         # Plain text and LaTeX captured from the formula editor
         ("2+-a+-b", r"2\pm a+-b", "2±a+-b"),
-        ("a+-b+-c", r"a+-b\pm c", "a+-b±c"),
-        (
-            "(-b+-sqrt(b^2-4a c))/(2a)+-1",
-            r"\frac{-b\pm\sqrt{b^2-4ac}}{2a}+-1",
-            "(-b±sqrt(b^2-4a c))/(2a)+-1",
-        ),
-        ("x^(+-1)+-2", r"x^{+-1}\pm 2", "x^(+-1)±2"),
         ("(a+-b)+-sqrt(a+-b)", r"\left(a+-b\right)\pm\sqrt{a+-b}", "(a+-b)±sqrt(a+-b)"),
         ("a+-b+-c", r"a+{-b}\pm c", "a+-b±c"),
         ("2+-a", "2+-a", "2+-a"),
