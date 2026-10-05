@@ -47,7 +47,7 @@
 }
 @media (min-width: 768px) {
   body:has(.course-agent-panel) {
-    --course-agent-width: min(38rem, 45vw);
+    --course-agent-width: min(38rem, 35vw);
   }
   body:has(.course-agent-panel[data-open='true']) .app-main {
     margin-right: var(--course-agent-width);

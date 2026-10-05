@@ -69,7 +69,7 @@ export const ConfigSchema = z.object({
   courseAgent: z
     .object({
       workerUrl: z.url(),
-      serviceToken: z.string().min(32),
+      serviceToken: z.string().min(32).nullable().default(null),
     })
     .nullable()
     .default(null),

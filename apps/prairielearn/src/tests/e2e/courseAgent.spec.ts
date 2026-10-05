@@ -13,7 +13,10 @@ const test = createTest({
   },
 });
 test.skip(!process.env.COURSE_AGENT_FIXTURE_URL, 'Run the local course-agent fixture first.');
-test('course owners can chat, steer and stop in the browser', async ({ page, courseInstance }) => {
+test('course owners can chat, steer and stop in the browser', async ({
+  page,
+  courseInstance,
+}, testInfo) => {
   test.setTimeout(60_000);
   const courseId = courseInstance.course_id;
   await insertCoursePermissionsByUserUid({
@@ -41,6 +44,14 @@ test('course owners can chat, steer and stop in the browser', async ({ page, cou
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Stop', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('runtime.png'), fullPage: true });
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await expect(page.getByRole('complementary', { name: 'Course agent' })).toHaveCSS(
+    'width',
+    '350px',
+  );
+  await page.screenshot({ path: testInfo.outputPath('runtime-narrow.png'), fullPage: true });
+
   await updateCourseColumn({
     courseId,
     columnName: 'branch',
@@ -57,3 +68,32 @@ test('course owners can chat, steer and stop in the browser', async ({ page, cou
   await page.getByRole('button', { name: 'Open course agent' }).click();
   await expect(page.getByText('What would you like to work on?', { exact: true })).toBeVisible();
 });
+
+const unavailableTest = createTest({
+  isEnterprise: true,
+  features: { 'course-agent': true },
+  courseAgent: { workerUrl: 'http://localhost:8791', serviceToken: null },
+});
+
+unavailableTest(
+  'explains the missing connection token without opening chat',
+  async ({ page, courseInstance }) => {
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid: 'dev@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/settings`);
+    const launcher = page.getByRole('button', { name: 'Open course agent' });
+    await expect(launcher).toBeVisible();
+    await expect(launcher).toBeDisabled();
+    const trigger = launcher.locator('..');
+    await trigger.hover();
+    await expect(page.getByRole('tooltip')).toContainText('connection token is not configured');
+    await page.getByRole('navigation', { name: 'Global navigation' }).hover();
+    await trigger.focus();
+    await expect(page.getByRole('tooltip')).toContainText('connection token is not configured');
+    await expect(page.getByLabel('Message', { exact: true })).toHaveCount(0);
+  },
+);

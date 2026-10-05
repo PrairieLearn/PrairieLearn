@@ -14,6 +14,7 @@ export function renderCourseAgentPanel({
   timezone,
   initialPanelState,
   canStartNewWork,
+  disabledReason,
 }: {
   courseId: string;
   userId: string;
@@ -22,6 +23,7 @@ export function renderCourseAgentPanel({
   timezone: string;
   initialPanelState: CourseAgentPanelState;
   canStartNewWork: boolean;
+  disabledReason: string | null;
 }) {
   return renderHtml(
     <Hydrate>
@@ -32,6 +34,7 @@ export function renderCourseAgentPanel({
         timezone={timezone}
         initialPanelState={initialPanelState}
         canStartNewWork={canStartNewWork}
+        disabledReason={disabledReason}
         csrfToken={generatePrefixCsrfToken(
           { url: `/pl/course/${courseId}/trpc`, authn_user_id: authnUserId },
           config.secretKey,

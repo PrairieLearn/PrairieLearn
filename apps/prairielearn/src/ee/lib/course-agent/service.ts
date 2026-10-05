@@ -17,8 +17,15 @@ import { hasCourseAgentOwnerAccess } from './access.js';
 import { workerResponseError } from './errors.js';
 import { createCloudflareProvider } from './provider.js';
 
+/** A missing connection token keeps the launcher visible without exposing credentials. */
+export function unavailableReason(): string | null {
+  return config.courseAgent?.serviceToken
+    ? null
+    : 'Course agent is unavailable because its connection token is not configured. Contact your administrator.';
+}
+
 function integration() {
-  if (!config.courseAgent || !isEnterprise()) {
+  if (!config.courseAgent?.serviceToken || !isEnterprise()) {
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
       message: 'Course agent is not configured.',

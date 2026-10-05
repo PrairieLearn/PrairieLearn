@@ -17,6 +17,7 @@ import { createCourseTrpcClient } from '../../../trpc/course/client.js';
 import { TRPCProvider } from '../../../trpc/course/context.js';
 
 import { Conversation } from './Conversation.js';
+import { UnavailableCourseAgent } from './UnavailableCourseAgent.js';
 
 function subscribeMobile(onChange: () => void) {
   const query = window.matchMedia('(max-width: 767.98px)');
@@ -36,6 +37,7 @@ export function CourseAgentPanel({
   timezone,
   initialPanelState,
   canStartNewWork,
+  disabledReason,
 }: {
   courseId: string;
   userId: string;
@@ -44,9 +46,11 @@ export function CourseAgentPanel({
   timezone: string;
   initialPanelState: CourseAgentPanelState;
   canStartNewWork: boolean;
+  disabledReason: string | null;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [client] = useState(() => createCourseTrpcClient({ courseId, csrfToken }));
+  if (disabledReason) return <UnavailableCourseAgent reason={disabledReason} />;
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={client} queryClient={queryClient}>
