@@ -11,6 +11,7 @@ import html
 import operator
 import re
 import string
+import unicodedata
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -259,6 +260,32 @@ class _Constants:
         "cap": operator.and_,
         "∩": operator.and_,
     })
+
+    # Unicode operators that must be mapped before unidecode, which would otherwise
+    # turn them into "[?]" (misreported as set notation), drop them, or change their
+    # meaning (e.g. the multiplication sign becomes the letter "x").
+    unicode_operators: Final[FrozenDict[str, str]] = FrozenDict({
+        "·": "*",  # middle dot
+        "×": "*",  # ruff:ignore[ambiguous-unicode-character-string]
+        "•": "*",  # bullet
+        "∗": "*",  # ruff:ignore[ambiguous-unicode-character-string]
+        "∙": "*",  # bullet operator
+        "⋅": "*",  # dot operator
+        "✕": "*",  # multiplication x
+        "✖": "*",  # heavy multiplication x
+        "\u2062": "*",  # invisible times
+        "➕": "+",  # ruff:ignore[ambiguous-unicode-character-string]
+        "\u2064": "+",  # invisible plus
+        "—": "-",  # em dash
+        "―": "-",  # horizontal bar
+        "➖": "-",  # ruff:ignore[ambiguous-unicode-character-string]
+        "➗": "/",  # heavy division sign
+        "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
+        "\u2061": "",  # function application
+    })
+
+    # Operators that give two values; unidecode would turn "±" into "+-".
+    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
 
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
@@ -849,14 +876,35 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
 
 
 def _normalize_expr(expr: str) -> tuple[str, list[int]]:
-    """Normalize expr and build a mapping from normalized indices to original indices."""
+    """Normalize expr and build a mapping from normalized indices to original indices.
+
+    Returns:
+        A tuple of the normalized expression and, for each of its characters, the
+        index of the character in expr that it came from.
+
+    Raises:
+        HasInvalidSymbolError: If expr contains a character that cannot be transliterated.
+    """
+    const = _Constants
     parts: list[str] = []
     offsets: list[int] = []
     for ind, char in enumerate(expr):
         normalized_char = char
+        if char in const.unicode_operators:
+            normalized_char = const.unicode_operators[char]
+        elif char in const.plus_minus_operators or unicodedata.decomposition(
+            char
+        ).startswith(("<super>", "<sub>")):
+            # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
+            # formula editor writes exponents and subscripts with "^" and "_".
+            raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
-        if char not in _Constants.set_operators:
+        elif char not in const.set_operators:
             normalized_char = full_unidecode(greek_unicode_transform(char))
+            # unidecode uses "[?]" for characters it doesn't know, which would
+            # otherwise be misreported as set notation.
+            if normalized_char == "[?]" and char != normalized_char:
+                raise HasInvalidSymbolError(char)
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
@@ -938,6 +986,7 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
+        HasInvalidExpressionError: If the expression contains "***".
         HasSetNotationError: If the expression contains interval or set characters.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
@@ -955,6 +1004,11 @@ def evaluate_with_source(
     ind = normalized_expr.find("#")
     if ind != -1:
         raise HasCommentError(char_offsets[ind])
+
+    # Python would read "***" (e.g. the formula editor's \star) as "**" followed by
+    # "*", and report the syntax error at an offset into SymPy's transformed code.
+    if stars := re.search(r"\*{3,}", normalized_expr):
+        raise HasInvalidExpressionError(char_offsets[stars.start()])
 
     # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_sets and any(
