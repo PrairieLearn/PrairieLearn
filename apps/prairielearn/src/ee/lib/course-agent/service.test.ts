@@ -60,6 +60,11 @@ const conversation = {
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
+  maxConcurrentPerUser: 2,
+  maxConcurrentPerCourse: 5,
+  maxRequestsPerHour: 30,
+  dailyCostLimit: 20,
+  pricing: { 'fixture-model': { input: 0, cachedInput: 0, cacheWrite: 0, output: 0 } },
 };
 
 test('reports an unsent message without leaking a configure transport error', async () => {
@@ -72,5 +77,26 @@ test('reports an unsent message without leaking a configure transport error', as
         'Course agent connection failed. Your message was not sent. Check the Worker is running, then retry the send.',
     });
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+});
+
+test.each(['{}', 'not JSON'])(
+  'rejects malformed configuration response %s before sending',
+  async (body) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
+    await withConfig({ isEnterprise: true, courseAgent: settings }, async () => {
+      await expect(provider(scope, conversation, true)).rejects.toMatchObject({
+        status: 502,
+        message:
+          'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
+      });
+    });
+  },
+);
+
+test('accepts a configured model with complete pricing', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ model: 'fixture-model' })));
+  await withConfig({ isEnterprise: true, courseAgent: settings }, async () => {
+    await expect(provider(scope, conversation, true)).resolves.toBeDefined();
   });
 });

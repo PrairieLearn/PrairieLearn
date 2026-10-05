@@ -68,7 +68,7 @@ it('scopes conversations and serializes stale/duplicate admissions', async () =>
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
-  pricing: { 'fixture-model': { input: 2, cachedInput: 0.5, output: 10 } },
+  pricing: { 'fixture-model': { input: 2, cachedInput: 0.5, cacheWrite: 0, output: 10 } },
   maxConcurrentPerUser: 1,
   maxConcurrentPerCourse: 1,
   maxRequestsPerHour: 3,
@@ -139,6 +139,7 @@ it('serializes admissions, keeps missing usage unknown, and does not double-coun
             model: 'fixture-model',
             input: 1000,
             cached: 200,
+            cacheWrite: 0,
             output: 100,
           },
         },
@@ -191,6 +192,7 @@ it('uses shared AI prices, preserves recorded rates, and leaves unsupported mode
         model: 'gpt-6-astra',
         input: 1000,
         cached: 200,
+        cacheWrite: 0,
         output: 100,
       },
     },
@@ -214,7 +216,7 @@ it('uses shared AI prices, preserves recorded rates, and leaves unsupported mode
     {
       courseAgent: {
         ...settings,
-        pricing: { 'gpt-6-astra': { input: 20, cachedInput: 5, output: 100 } },
+        pricing: { 'gpt-6-astra': { input: 20, cachedInput: 5, cacheWrite: 0, output: 100 } },
       },
     },
     async () => {

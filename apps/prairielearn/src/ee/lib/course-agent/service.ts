@@ -117,7 +117,16 @@ export async function provider(
       }
       throw workerResponseError(response.status);
     }
-    const model = z.object({ model: z.string().min(1) }).parse(await response.json());
+    const parsed = z
+      .object({ model: z.string().min(1) })
+      .safeParse(await response.json().catch(() => null));
+    if (!parsed.success) {
+      throw new ChatError(
+        502,
+        'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
+      );
+    }
+    const model = parsed.data;
     if (!modelPricing(model.model)) {
       throw new TRPCError({
         code: 'PRECONDITION_FAILED',

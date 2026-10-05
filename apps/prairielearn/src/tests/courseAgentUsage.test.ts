@@ -31,7 +31,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
-  pricing: { fixture: { input: 1, cachedInput: 0.1, output: 1 } },
+  pricing: { fixture: { input: 1, cachedInput: 0.1, cacheWrite: 0, output: 1 } },
   maxConcurrentPerUser: 1,
   maxConcurrentPerCourse: 1,
   maxRequestsPerHour: 100,
@@ -61,7 +61,15 @@ function receipts(id: string, dispatchId: string, status: 'running' | 'completed
   return {
     ...empty,
     executions: {
-      [id]: { dispatchId, status, model: 'fixture', input: 100, cached: 0, output: 10 },
+      [id]: {
+        dispatchId,
+        status,
+        model: 'fixture',
+        input: 100,
+        cached: 0,
+        cacheWrite: 0,
+        output: 10,
+      },
     },
   };
 }
@@ -236,7 +244,7 @@ it('blocks unknown completed cost until the saved usage has a configured price',
         {
           courseAgent: {
             ...settings,
-            pricing: { 'unpriced-model': { input: 1, cachedInput: 0.1, output: 1 } },
+            pricing: { 'unpriced-model': { input: 1, cachedInput: 0.1, cacheWrite: 0, output: 1 } },
           },
         },
         async () => {
@@ -368,4 +376,50 @@ it('keeps the first terminal status while merging later same-dispatch usage', as
     expect(merged.finished_at).toEqual(completed.finished_at);
     expect(merged.input_tokens).toBe(200);
   });
+});
+
+it('prices cache writes once and blocks admission when an older receipt lacks their count', async () => {
+  const source = await conversation();
+  const id = randomUUID();
+  await insertExecution(source.id, id);
+  const receipt = {
+    status: 'completed' as const,
+    model: 'fixture',
+    input: 100,
+    cached: 40,
+    cacheWrite: 50,
+    output: 10,
+  };
+  const snapshot = { ...empty, executions: { [id]: receipt } };
+  const legacy = { ...snapshot, executions: { [id]: { ...receipt, cacheWrite: undefined } } };
+  const original = provider.createCloudflareProvider;
+  const mocked = vi.spyOn(provider, 'createCloudflareProvider').mockImplementation((...args) => ({
+    ...original(...args),
+    getSnapshot: async () => legacy,
+  }));
+  try {
+    await withConfig(
+      {
+        courseAgent: {
+          ...settings,
+          pricing: { fixture: { input: 2, cachedInput: 0.5, cacheWrite: 2.5, output: 10 } },
+        },
+      },
+      async () => {
+        await recordUsage(source, snapshot);
+        await recordUsage(source, snapshot);
+        expect((await selectOptionalExecution(source.id, id))!.estimated_cost).toBeCloseTo(
+          0.000265,
+          8,
+        );
+        await recordUsage(source, legacy);
+        expect((await selectOptionalExecution(source.id, id))!.estimated_cost).toBeNull();
+        await expect(
+          admit(source, { id: randomUUID(), text: 'Next', expectedOperationNumber: 0 }),
+        ).rejects.toThrow('unknown cost');
+      },
+    );
+  } finally {
+    mocked.mockRestore();
+  }
 });

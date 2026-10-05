@@ -135,7 +135,13 @@ SET
   input_tokens = GREATEST(e.input_tokens, v.input),
   cached_input_tokens = GREATEST(e.cached_input_tokens, v.cached),
   output_tokens = GREATEST(e.output_tokens, v.output),
-  estimated_cost = GREATEST(e.estimated_cost, v.cost),
+  -- A receipt with unknown usage invalidates a previous estimate (e.g. an older
+  -- Worker that omitted cache-write counts). Admission must fail closed.
+  estimated_cost = CASE
+    WHEN v.input IS NOT NULL
+    AND v.cost IS NULL THEN NULL
+    ELSE GREATEST(e.estimated_cost, v.cost)
+  END,
   model = v.model,
   pricing = COALESCE(e.pricing, v.pricing),
   finished_at = CASE

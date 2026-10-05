@@ -116,9 +116,9 @@ requests; they do not cap one turn's eventual cost.
 For the fixture, add pricing to PL's `courseAgent` settings:
 
 ```json
-{ "pricing": { "fixture-model": { "input": 0, "cachedInput": 0, "output": 0 } } }
+{ "pricing": { "fixture-model": { "input": 0, "cachedInput": 0, "cacheWrite": 0, "output": 0 } } }
 ```
 
-Real model prices are per million tokens. Unknown pricing or unconfirmed usage
+Real model prices are per million tokens; overrides must include `input`, `cachedInput`, `cacheWrite`, and `output` rates. Unknown pricing or unconfirmed usage
 blocks new work until configured or reconciled. Disabling `course-agent` blocks
 new messages and conversations while preserving history, Stop, and cleanup.

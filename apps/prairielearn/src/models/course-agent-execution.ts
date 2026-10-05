@@ -48,7 +48,7 @@ export const saveExecutions = (
     output: number | null;
     cost: number | null;
     model: string;
-    pricing: { input: number; cachedInput: number; output: number } | null;
+    pricing: { input: number; cachedInput: number; cacheWrite?: number; output: number } | null;
   }[],
 ) => execute(sql.update, { conversation_id, updates: JSON.stringify(updates) });
 export const selectUsageSummary = (conversation_id: string) =>
