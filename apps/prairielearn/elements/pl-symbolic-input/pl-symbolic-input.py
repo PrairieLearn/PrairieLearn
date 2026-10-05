@@ -1,6 +1,7 @@
 import pathlib
 import random
 import re
+from collections.abc import Iterable
 from enum import Enum
 from sys import get_int_max_str_digits
 from typing import assert_never
@@ -588,6 +589,9 @@ def format_submission_for_sympy(
     if sub is None:
         return None, None
 
+    # The formula editor writes \lvert, \rvert and \mid as U+2223 (DIVIDES).
+    sub = sub.replace("∣", "|")  # ruff:ignore[ambiguous-unicode-character-string]
+
     pattern = re.compile(
         r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
     )
@@ -652,6 +656,10 @@ def format_formula_editor_submission_for_sympy(
     # Remove invisible LaTeX formatting operators
     text = sub.replace("{:", "").replace(":}", "")
 
+    # The editor writes \div as "-:" and \ast as " ** ". Powers are always written
+    # with "^", so " ** " can only be a multiplication.
+    text = text.replace("-:", "/").replace(" ** ", " * ")
+
     # Build list of all multi-character tokens that should be recognized as units
     known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
 
@@ -664,6 +672,11 @@ def format_formula_editor_submission_for_sympy(
     # Add spaces between letters and numbers for implicit multiplication,
     # but preserve tokens like "f2" that are custom function names
     text = _add_multiplication_spaces(text, known_tokens)
+
+    function_names = psu.get_builtin_functions(allow_trig_functions=allow_trig) | set(
+        custom_functions
+    )
+    text = _wrap_bare_function_arguments(text, function_names)
 
     return text
 
@@ -798,6 +811,74 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
         ):
             result.append(" ")
 
+    return "".join(result)
+
+
+def _find_bare_argument_end(text: str, start: int) -> int | None:
+    """
+    Find the explicit "*" that ends a function argument starting at `start`.
+
+    Returns:
+        The index of the "*", or None if the argument ends some other way.
+    """
+    depth = 0
+    i = start
+    while i < len(text):
+        char = text[i]
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            if depth == 0:
+                return None
+            depth -= 1
+        elif depth == 0:
+            if text.startswith("**", i):
+                i += 2
+                continue
+            if char == "*":
+                return i
+            if char in "+-/,":
+                return None
+        i += 1
+    return None
+
+
+def _wrap_bare_function_arguments(text: str, function_names: Iterable[str]) -> str:
+    r"""
+    Parenthesize unparenthesized function arguments that are followed by "*".
+
+    The formula editor displays `{\ln 4}\cdot x` as ln(4)·x but submits it as
+    "ln 4 * x". SymPy's implicit function application ends the argument at "+",
+    "-", or "/", but not at "*", so it would parse this as ln(4x).
+
+    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)"
+
+    Returns:
+        The text with those arguments wrapped in parentheses
+    """
+    names = sorted(function_names, key=len, reverse=True)
+    if not names:
+        return text
+    pattern = re.compile(
+        r"(?<![A-Za-z_])(?:" + "|".join(map(re.escape, names)) + r")\s+(?=[^\s(])"
+    )
+
+    result = []
+    pos = 0
+    while (match := pattern.search(text, pos)) is not None:
+        start = match.end()
+        result.append(text[pos:start])
+        end = _find_bare_argument_end(text, start)
+        if end is None:
+            pos = start
+            continue
+        argument = text[start:end].rstrip()
+        result.append(
+            f"({_wrap_bare_function_arguments(argument, names)})"
+            + text[start + len(argument) : end]
+        )
+        pos = end
+    result.append(text[pos:])
     return "".join(result)
 
 

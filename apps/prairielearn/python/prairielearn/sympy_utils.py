@@ -11,6 +11,7 @@ import html
 import operator
 import re
 import string
+import unicodedata
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -34,7 +35,7 @@ from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
-from prairielearn.misc_utils import full_unidecode
+from prairielearn.misc_utils import escape_unicode_string, full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
@@ -181,6 +182,32 @@ class _Constants:
         "∩": operator.and_,
     })
 
+    # Unicode operators that must be mapped before unidecode, which would otherwise
+    # turn them into "[?]" (misreported as set notation), drop them, or change their
+    # meaning (e.g. the multiplication sign becomes the letter "x").
+    unicode_operators: Final[FrozenDict[str, str]] = FrozenDict({
+        "·": "*",  # middle dot
+        "×": "*",  # ruff:ignore[ambiguous-unicode-character-string]
+        "•": "*",  # bullet
+        "∗": "*",  # ruff:ignore[ambiguous-unicode-character-string]
+        "∙": "*",  # bullet operator
+        "⋅": "*",  # dot operator
+        "✕": "*",  # multiplication x
+        "✖": "*",  # heavy multiplication x
+        "\u2062": "*",  # invisible times
+        "➕": "+",  # ruff:ignore[ambiguous-unicode-character-string]
+        "\u2064": "+",  # invisible plus
+        "—": "-",  # em dash
+        "―": "-",  # horizontal bar
+        "➖": "-",  # ruff:ignore[ambiguous-unicode-character-string]
+        "➗": "/",  # heavy division sign
+        "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
+        "\u2061": "",  # function application
+    })
+
+    # Operators with no single meaning; unidecode would turn "±" into "+-".
+    ambiguous_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
+
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
         "cup": "|",
@@ -316,6 +343,12 @@ class HasCommentError(BaseSympyError):
 @dataclass
 class HasInvalidSymbolError(BaseSympyError):
     symbol: str
+
+
+@dataclass
+class HasInvalidCharacterError(BaseSympyError):
+    offset: int
+    character: str
 
 
 # Deprecated / unused, kept for backwards compatibility.
@@ -728,14 +761,36 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
 
 
 def _normalize_expr(expr: str) -> tuple[str, list[int]]:
-    """Normalize expr and build a mapping from normalized indices to original indices."""
+    """Normalize expr and build a mapping from normalized indices to original indices.
+
+    Returns:
+        A tuple of the normalized expression and, for each of its characters, the
+        index of the character in expr that it came from.
+
+    Raises:
+        HasInvalidCharacterError: If expr contains a character that cannot be transliterated.
+    """
+    const = _Constants
     parts: list[str] = []
     offsets: list[int] = []
     for ind, char in enumerate(expr):
         normalized_char = char
+        if char in const.unicode_operators:
+            normalized_char = const.unicode_operators[char]
+        elif char in const.ambiguous_operators or unicodedata.decomposition(
+            char
+        ).startswith(("<super>", "<sub>")):
+            # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
+            # writes exponents and subscripts with "^" and "_", so these only come
+            # from pasted text.
+            raise HasInvalidCharacterError(ind, char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
-        if char not in _Constants.set_operators:
+        elif char not in const.set_operators:
             normalized_char = full_unidecode(greek_unicode_transform(char))
+            # unidecode uses "[?]" for characters it doesn't know, which would
+            # otherwise be misreported as set notation.
+            if normalized_char == "[?]" and char != normalized_char:
+                raise HasInvalidCharacterError(ind, char)
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
@@ -1385,6 +1440,12 @@ def try_parse_string_as_sympy(
     except HasCommentError as exc:
         return SympyParseFailure(
             f'Your answer must not contain the character "#". '
+            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
+        )
+    except HasInvalidCharacterError as exc:
+        return SympyParseFailure(
+            f'Your answer contains the unsupported character "{html.escape(escape_unicode_string(exc.character))}". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
