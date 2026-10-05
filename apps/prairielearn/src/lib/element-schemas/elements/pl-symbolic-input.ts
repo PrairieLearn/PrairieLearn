@@ -16,8 +16,8 @@ const plSymbolicInputAttributesSchema = z
     'allow-sets': booleanFormat()
       .meta({ deprecated: true, description: 'Use allowed-types instead.' })
       .optional(),
-    'allowed-types': z.string().regex(allowedTypesPattern).default('expression').optional(),
     'allow-trig-functions': booleanFormat().optional(),
+    'allowed-types': z.string().regex(allowedTypesPattern).default('expression').optional(),
     'answers-name': z.string(),
     'aria-label': z.string().optional(),
     'blank-value': z.string().optional(),
