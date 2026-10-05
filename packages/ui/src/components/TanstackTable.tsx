@@ -8,6 +8,7 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { run } from '@prairielearn/run';
 
+import { useStickyTableHeader } from '../hooks/use-sticky-table-header.js';
 import type {
   TanstackTableCell,
   TanstackTableHeader,
@@ -92,6 +93,7 @@ interface TanstackTableProps<RowDataModel extends RowData> {
   table: TanstackTableInstance<RowDataModel>;
   title: string;
   virtualized?: boolean;
+  stickyHeaderControlsRef?: React.RefObject<HTMLDivElement | null>;
   filters?: Record<string, (props: { header: TanstackTableHeader<RowDataModel> }) => ReactNode>;
   rowHeight?: number;
   noResultsState?: ReactNode;
@@ -107,6 +109,7 @@ const DEFAULT_FILTER_MAP = {};
  * @param params.table - The table model
  * @param params.title - The title of the table
  * @param params.virtualized - Whether to virtualize rows and columns (defaults to true)
+ * @param params.stickyHeaderControlsRef - Controls above a non-virtualized table, styled with position: sticky and top: 0. Requires document scrolling (no nested vertical scroll container or fixed navbar above the controls). On short viewports both controls and headers return to normal flow.
  * @param params.filters - The filters for the table
  * @param params.rowHeight - The height of the rows in the table
  * @param params.noResultsState - The no results state for the table
@@ -122,10 +125,19 @@ export function TanstackTable<RowDataModel extends RowData>({
   noResultsState = DefaultNoResultsState,
   emptyState = DefaultEmptyState,
   scrollRef,
+  stickyHeaderControlsRef,
 }: TanstackTableProps<RowDataModel>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = scrollRef ?? parentRef;
+  const headerRef = useRef<HTMLTableSectionElement>(null);
+  const elementRef = useRef<HTMLTableElement>(null);
+  useStickyTableHeader({
+    controlsRef: virtualized ? undefined : stickyHeaderControlsRef,
+    scrollRef: scrollContainerRef,
+    headerRef,
+    tableRef: elementRef,
+  });
 
   const rows = [...table.getTopRows(), ...table.getCenterRows(), ...table.getBottomRows()];
   const rowVirtualizer = useVirtualizer({
@@ -299,16 +311,22 @@ export function TanstackTable<RowDataModel extends RowData>({
           }}
         >
           <table
+            ref={elementRef}
             className="table table-hover mb-0"
             style={{ display: 'grid', tableLayout: 'fixed' }}
             aria-label={title}
             role="grid"
           >
             <thead
-              className={clsx('w-100 border-top', virtualized && 'position-sticky top-0')}
+              ref={headerRef}
+              className={clsx('border-top', virtualized && 'position-sticky top-0')}
               style={{
                 display: 'grid',
-                zIndex: 1,
+                width: '100%',
+                position: stickyHeaderControlsRef && !virtualized ? 'relative' : undefined,
+                background:
+                  stickyHeaderControlsRef && !virtualized ? 'var(--bs-body-bg)' : undefined,
+                zIndex: stickyHeaderControlsRef && !virtualized ? 3 : 1,
                 borderBottom: 'var(--bs-border-width) solid rgba(0, 0, 0, 0.15)',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
               }}
