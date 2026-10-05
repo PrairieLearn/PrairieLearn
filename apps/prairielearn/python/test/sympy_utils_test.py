@@ -722,8 +722,8 @@ class TestExceptions:
             text, self.VARIABLES
         ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
 
-    # Unknown to unidecode, ambiguous, superscript, and subscript characters
-    @pytest.mark.parametrize("text", ["2⋆n", "2±n", "n²", "n₁"])
+    # Unknown to unidecode, superscript, and subscript characters
+    @pytest.mark.parametrize("text", ["2⋆n", "n²", "n₁"])
     def test_unsupported_characters(self, text: str) -> None:
         with pytest.raises(psu.HasInvalidCharacterError) as exc_info:
             psu.convert_string_to_sympy(text, self.VARIABLES)
@@ -732,6 +732,16 @@ class TestExceptions:
         result = psu.try_parse_string_as_sympy(text, self.VARIABLES)
         assert isinstance(result, psu.SympyParseFailure)
         assert "unsupported character" in result.error
+
+    @pytest.mark.parametrize("text", ["2±n", "2∓n"])
+    def test_plus_minus_rejected(self, text: str) -> None:
+        with pytest.raises(psu.HasPlusMinusError) as exc_info:
+            psu.convert_string_to_sympy(text, self.VARIABLES)
+        assert exc_info.value.offset == 1
+
+        result = psu.try_parse_string_as_sympy(text, self.VARIABLES)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "gives two values" in result.error
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
