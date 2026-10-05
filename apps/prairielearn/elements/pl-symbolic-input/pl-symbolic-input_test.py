@@ -174,6 +174,8 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         # Operators the editor writes in AsciiMath form (\div and \ast)
         ("2 -: x", False, ["x"], [], "2 / x"),
         ("2 ** x", False, ["x"], [], "2 * x"),
+        # \star is " *** ", which must not end a function argument
+        ("l n 4 *** x", False, ["x"], [], "ln 4 *** x"),
     ],
 )
 def test_format_formula_editor_submission_for_sympy(
@@ -273,7 +275,7 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
         raw_submitted_answers={"test": "2+-a", "test-latex": r"2\pm a"},
     )
     symbolic_input.parse(element_html, data)
-    assert "gives two values" in data["format_errors"]["test"]
+    assert 'invalid symbol "±"' in data["format_errors"]["test"]
 
     data = make_question_data(
         submitted_answers={"test": "2+-a"},
