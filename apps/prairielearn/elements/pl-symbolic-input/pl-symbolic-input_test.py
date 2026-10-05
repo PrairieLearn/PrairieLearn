@@ -240,6 +240,50 @@ def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+@pytest.mark.parametrize(
+    ("submission", "latex", "expected"),
+    [
+        # Plain text and LaTeX captured from the formula editor
+        ("2+-a+-b", r"2\pm a+-b", "2±a+-b"),
+        ("a+-b+-c", r"a+-b\pm c", "a+-b±c"),
+        (
+            "(-b+-sqrt(b^2-4a c))/(2a)+-1",
+            r"\frac{-b\pm\sqrt{b^2-4ac}}{2a}+-1",
+            "(-b±sqrt(b^2-4a c))/(2a)+-1",
+        ),
+        ("x^(+-1)+-2", r"x^{+-1}\pm 2", "x^(+-1)±2"),
+        ("(a+-b)+-sqrt(a+-b)", r"\left(a+-b\right)\pm\sqrt{a+-b}", "(a+-b)±sqrt(a+-b)"),
+        ("a+-b+-c", r"a+{-b}\pm c", "a+-b±c"),
+        ("2+-a", "2+-a", "2+-a"),
+        ("2+-a", None, "2+-a"),
+        # The plain text and LaTeX don't match up
+        ("2+-a", r"2\pm a\pm b", None),
+    ],
+)
+def test_restore_plus_minus(
+    submission: str, latex: str | None, expected: str | None
+) -> None:
+    assert symbolic_input._restore_plus_minus(submission, latex) == expected
+
+
+def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> None:
+    element_html = build_element_html('variables="a"', 'formula-editor="true"')
+    data = make_question_data(
+        submitted_answers={"test": "2+-a"},
+        raw_submitted_answers={"test": "2+-a", "test-latex": r"2\pm a"},
+    )
+    symbolic_input.parse(element_html, data)
+    assert "gives two values" in data["format_errors"]["test"]
+
+    data = make_question_data(
+        submitted_answers={"test": "2+-a"},
+        raw_submitted_answers={"test": "2+-a", "test-latex": "2+-a"},
+    )
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 2 - sympy.Symbol("a")
+
+
 def test_parse_without_variables_attribute_with_assumptions() -> None:
     """Test that parse works when no variables attribute is specified but correct answer has assumptions.
 
