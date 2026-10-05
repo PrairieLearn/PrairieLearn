@@ -87,6 +87,11 @@ hover or focus it for an explanation. Failed tools stay collapsed until opened.
 - **Recovery failed:** use **Retry cleanup** if offered. An unavailable checkpoint
   requires a new conversation.
 
+Closing the panel detaches PL's live connection. A running Codex turn continues
+in Cloudflare, but host-executed tools require an open panel. No PL observer or
+polling task stays behind. Completed work becomes visible on reconnect; in this
+layer a reload starts a new conversation.
+
 The fixture covers chat and recovery behavior. Real model inference, Docker
 networking, and GitHub access need the real-sandbox path. To run focused checks:
 

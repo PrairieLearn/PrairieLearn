@@ -2761,8 +2761,6 @@ if (shouldStartServer) {
     });
 
     if (isEnterprise()) {
-      const { stopObservers } = await import('./ee/lib/course-agent/observer.js');
-      stopObservers();
       const { closeEvents } = await import('./ee/lib/course-agent/events.js');
       await closeEvents();
     }
@@ -2825,8 +2823,6 @@ if (shouldStartServer) {
  */
 export async function close() {
   if (isEnterprise()) {
-    const { stopObservers } = await import('./ee/lib/course-agent/observer.js');
-    stopObservers();
     const { closeEvents } = await import('./ee/lib/course-agent/events.js');
     await closeEvents();
   }

@@ -90,11 +90,9 @@ export const courseAgentRouter = t.router({
       const operationNumber = await admit(c, input.message);
       const execution = (await selectOptionalExecution(c.id, input.message.id))!;
       const title = formatCourseAgentDate(c.created_at, ctx.course.display_timezone);
-      const { observe } = await import('../../ee/lib/course-agent/observer.js');
       let dispatched = false;
       try {
         await nameConversation(c.id, title);
-        await observe(c, chat);
         dispatched = true;
         await chat.send(
           { ...input.message, dispatchId: execution.dispatch_id },
