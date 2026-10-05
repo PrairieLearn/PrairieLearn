@@ -19,8 +19,8 @@ import { type AgentScope, selectConversation } from '../../../models/course-agen
 import { connectionFailure } from './errors.js';
 import { subscribe } from './events.js';
 import { dispatchHostTool } from './host-tools.js';
+import { reconcileOperations } from './lifecycle.js';
 import { prepare, provider, snapshot } from './service.js';
-import { recordUsage } from './usage.js';
 
 const router = Router({ mergeParams: true });
 const ParamsSchema = z.object({ conversation_id: IdSchema });
@@ -69,7 +69,7 @@ router.get(
           const c = await selectConversation(scope, conversation_id);
           const next = await snapshot(c, await chat.getSnapshot(signal));
           next.diagnostics = await chat.getDiagnostics(signal);
-          next.usage = await recordUsage(c, next);
+          await reconcileOperations(c, chat, next);
           if (!res.write(`data: ${JSON.stringify(next)}\n\n`)) {
             await once(res, 'drain', {
               signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),

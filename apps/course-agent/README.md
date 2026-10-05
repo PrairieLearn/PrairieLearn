@@ -15,7 +15,7 @@ flowchart LR
 ## Scope
 
 - Saved conversations, selection, and unsent drafts across navigation and reloads.
-- Token/cost statistics and request limits; conversation repository/branch changes require a new conversation.
+- Repository/branch changes require a new conversation. Accounting and limits are deferred.
 - Review and approve committed text changes, publish to GitHub, then run Course Sync.
 - Course Sync validates content; failures retain the commit for an approved correction. No automatic rollback.
 - No skill installation or management.
@@ -89,6 +89,14 @@ Failed tools stay collapsed until opened.
 - **Recovery failed:** use **Retry cleanup** if offered. An unavailable checkpoint
   requires a new conversation.
 
+Closing the panel detaches PL's live connection. A running Codex turn continues
+in Cloudflare, but host-executed tools require an open panel. No PL observer or
+polling task stays behind. Completed work becomes visible on reconnect; a reload
+reopens the saved conversation. A `push_sync` request captures its files and
+approval gate in Cloudflare even if PL is disconnected. Reopening prepares that
+retained request for review. After approval, publication and Course Sync finish
+without requiring the browser to remain open.
+
 The fixture covers chat and recovery behavior. Real model inference, Docker
 networking, and GitHub access need the real-sandbox path. To run focused checks:
 
@@ -100,30 +108,15 @@ pnpm --filter @prairielearn/course-agent test:lifecycle
 Lifecycle tests need the fixture running. The optional `demo` command sends one
 scripted prompt; the browser is the interactive test path.
 
-## Saved conversations and usage
+## Saved conversations
 
-```mermaid
-flowchart LR
-  Chat[Instructor chat] --> History[(Saved conversations and drafts)]
-  Request[Send or steer] --> Limits[Admission limits]
-  Limits --> Sandbox[Codex sandbox]
-  Sandbox --> Stats[Token usage and estimated cost]
-```
+Conversation selection and panel state survive navigation. Unsent drafts and read
+markers are kept in the browser. The catalog shows the last observed running and
+completed state; reconnecting refreshes it from Cloudflare. No background polling
+runs after leaving the panel.
 
-Open **Statistics** after a turn; usage should not double-count after reload.
-Defaults allow two active requests per user, five per course, 30 requests per
-hour, and a $20 daily estimate limit per user and per course. These limit new
-requests; they do not cap one turn's eventual cost.
-
-For the fixture, add pricing to PL's `courseAgent` settings:
-
-```json
-{ "pricing": { "fixture-model": { "input": 0, "cachedInput": 0, "cacheWrite": 0, "output": 0 } } }
-```
-
-Real model prices are per million tokens; overrides must include `input`, `cachedInput`, `cacheWrite`, and `output` rates. Unknown pricing or unconfirmed usage
-blocks new work until configured or reconciled. Disabling `course-agent` blocks
-new messages and conversations while preserving history, Stop, and cleanup.
+Disabling `course-agent` blocks new messages and conversations while preserving
+history, Stop, and cleanup.
 
 ## Review and publish
 

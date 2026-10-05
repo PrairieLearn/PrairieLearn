@@ -16,10 +16,12 @@ import {
   type AgentScope,
   createConversation,
   nameConversation,
+  rejectOperation,
+  reserveOperation,
   selectConversation,
   selectConversationActivity,
+  selectOptionalOperation,
 } from '../../models/course-agent-conversation.js';
-import { rejectExecution, selectOptionalExecution } from '../../models/course-agent-execution.js';
 import { selectOptionalProposal } from '../../models/course-agent-proposal.js';
 
 import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.js';
@@ -107,24 +109,27 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const c = await selectConversation(ctx.scope, input.conversationId);
       const chat = await ctx.service.provider(ctx.scope, c, true);
-      const { admit, recordUsage } = await import('../../ee/lib/course-agent/usage.js');
-      await recordUsage(c, await chat.getSnapshot(AbortSignal.timeout(10000)));
-      const operationNumber = await admit(c, input.message);
-      const execution = (await selectOptionalExecution(c.id, input.message.id))!;
+      const { reconcileOperations } = await import('../../ee/lib/course-agent/lifecycle.js');
+      await reconcileOperations(c, chat, await chat.getSnapshot(AbortSignal.timeout(10000)));
+      const operationNumber = await reserveOperation(
+        c,
+        input.message.id,
+        { kind: 'message', text: input.message.text },
+        input.message.expectedOperationNumber,
+      );
+      const operation = (await selectOptionalOperation(c.id, input.message.id))!;
       const title = formatCourseAgentDate(c.created_at, ctx.course.display_timezone);
-      const { observe } = await import('../../ee/lib/course-agent/observer.js');
       let dispatched = false;
       try {
         await nameConversation(c.id, title);
-        await observe(c, chat, (tool) => ctx.service.prepare(ctx.scope, c, tool));
         dispatched = true;
         await chat.send(
-          { ...input.message, dispatchId: execution.dispatch_id },
+          { ...input.message, dispatchId: operation.dispatch_id },
           AbortSignal.timeout(120000),
         );
       } catch (error) {
         if (!dispatched || (error instanceof ChatError && [400, 409].includes(error.status))) {
-          await rejectExecution(c.id, input.message.id, execution.dispatch_id);
+          await rejectOperation(c.id, input.message.id, operation.dispatch_id);
         }
         throw error;
       }

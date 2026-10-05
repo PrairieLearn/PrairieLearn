@@ -105,10 +105,10 @@ function Panel({
       }
     },
   });
-  // Catalog refresh only observes persisted execution status; it never retries publication or starts work.
+  // Refresh on navigation and live state changes; closed panels do not poll.
   const conversations = useQuery({
     ...trpc.courseAgent.list.queryOptions(),
-    refetchInterval: panel.open ? 3000 : 30_000,
+    enabled: panel.open,
   });
   const canStartNewWork = conversations.data?.canStartNewWork ?? initiallyEnabled;
   // Only the full-screen mobile panel is modal; the server initially renders desktop markup.
@@ -235,7 +235,12 @@ function Panel({
             renderPicker={(startingAgent) => (
               <>
                 <div className="d-flex gap-2 mb-3 course-agent-picker">
-                  <Dropdown className="flex-grow-1">
+                  <Dropdown
+                    className="flex-grow-1"
+                    onToggle={(open) => {
+                      if (open) void conversations.refetch();
+                    }}
+                  >
                     <Dropdown.Toggle
                       variant="light"
                       className="course-agent-selector w-100 d-flex justify-content-between align-items-center text-start"

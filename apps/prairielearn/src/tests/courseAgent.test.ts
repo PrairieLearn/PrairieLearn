@@ -8,28 +8,28 @@ import * as namedLocks from '@prairielearn/named-locks';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import * as agentEvents from '../ee/lib/course-agent/events.js';
-import * as agentObserver from '../ee/lib/course-agent/observer.js';
+import { reconcileOperations } from '../ee/lib/course-agent/lifecycle.js';
+import { createCloudflareProvider } from '../ee/lib/course-agent/provider.js';
 import * as agentProvider from '../ee/lib/course-agent/provider.js';
 import { PublishRejected, Publisher } from '../ee/lib/course-agent/publish.js';
 import {
   authorize,
   complete,
-  provider as configuredProvider,
   newWorkEnabled,
   prepare,
   snapshot,
 } from '../ee/lib/course-agent/service.js';
-import { admit, estimatedCost, recordUsage } from '../ee/lib/course-agent/usage.js';
-import { config } from '../lib/config.js';
 import * as courseLibrary from '../lib/course.js';
 import { features } from '../lib/features/index.js';
 import { createServerJob } from '../lib/server-jobs.js';
 import {
   createConversation,
+  rejectOperation,
   reserveOperation,
   selectConversation,
+  selectConversationActivity,
+  selectOptionalOperation,
 } from '../models/course-agent-conversation.js';
-import { insertExecution, selectOptionalExecution } from '../models/course-agent-execution.js';
 import {
   decideProposal,
   insertProposal,
@@ -86,11 +86,6 @@ it('scopes conversations and serializes stale/duplicate admissions', async () =>
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
-  pricing: { 'fixture-model': { input: 2, cachedInput: 0.5, cacheWrite: 0, output: 10 } },
-  maxConcurrentPerUser: 1,
-  maxConcurrentPerCourse: 1,
-  maxRequestsPerHour: 3,
-  dailyCostLimit: 20,
 };
 
 async function setupConversation() {
@@ -157,68 +152,6 @@ it('requires current owner access for both the effective and authenticated user'
     },
   );
 });
-it('serializes admissions, keeps missing usage unknown, and does not double-count snapshots', async () => {
-  const { conversation } = await setupConversation();
-  const { conversation: second } = await setupConversation();
-  const mocked = vi
-    .spyOn(globalThis, 'fetch')
-    .mockImplementation(async () =>
-      Response.json({ messages: [], operationNumber: 0, executions: {} }),
-    );
-  try {
-    await withConfig({ courseAgent: settings }, async () => {
-      const a = { id: randomUUID(), text: 'a', expectedOperationNumber: 0 };
-      const b = { id: randomUUID(), text: 'b', expectedOperationNumber: 0 };
-      const admitted = await Promise.allSettled([admit(conversation, a), admit(second, b)]);
-      expect(admitted.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
-      const winner = admitted[0].status === 'fulfilled' ? conversation : second;
-      const operation = admitted[0].status === 'fulfilled' ? a : b;
-      expect((await selectOptionalExecution(winner.id, operation.id))?.input_tokens).toBeNull();
-      await admit(winner, operation);
-      const snapshot = {
-        messages: [],
-        operationNumber: 1,
-        executions: {
-          [operation.id]: {
-            status: 'completed' as const,
-            model: 'fixture-model',
-            input: 1000,
-            cached: 200,
-            cacheWrite: 0,
-            output: 100,
-          },
-        },
-      };
-      await recordUsage(winner, snapshot);
-      await recordUsage(winner, snapshot);
-      const execution = (await selectOptionalExecution(winner.id, operation.id))!;
-      expect(execution.input_tokens).toBe(1000);
-      expect(execution.estimated_cost).toBeCloseTo(0.0027);
-      expect(
-        estimatedCost(
-          { input: null, cached: null, output: null },
-          settings.pricing['fixture-model'],
-        ),
-      ).toBeNull();
-      const stale = {
-        ...snapshot,
-        executions: {
-          [operation.id]: {
-            ...snapshot.executions[operation.id],
-            status: 'running' as const,
-            input: 500,
-            output: 0,
-          },
-        },
-      };
-      await recordUsage(winner, stale);
-      expect((await selectOptionalExecution(winner.id, operation.id))?.status).toBe('completed');
-    });
-  } finally {
-    mocked.mockRestore();
-  }
-});
-
 it('uses the existing PL GitHub client token for proposal validation', async () => {
   const { conversation, scope, user } = await setupConversation();
   await insertCoursePermissionsByUserUid({
@@ -276,67 +209,6 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
     fetcher.mockRestore();
     notify.mockRestore();
   }
-});
-
-it('uses shared AI prices, preserves recorded rates, and leaves unsupported models unknown', async () => {
-  const { conversation } = await setupConversation();
-  expect(await recordUsage(conversation, { messages: [], operationNumber: 0 })).toEqual({
-    input: 0,
-    output: 0,
-    estimatedCost: 0,
-  });
-  const id = randomUUID();
-  await insertExecution(conversation.id, id);
-  const snapshot = {
-    messages: [],
-    operationNumber: 0,
-    executions: {
-      [id]: {
-        status: 'completed' as const,
-        model: 'gpt-6-astra',
-        input: 1000,
-        cached: 200,
-        cacheWrite: 0,
-        output: 100,
-      },
-    },
-  };
-  await withConfig(
-    {
-      courseAgent: { ...settings, pricing: {} },
-      costPerMillionTokens: {
-        ...config.costPerMillionTokens,
-        'gpt-6-astra': { input: 2, cachedInput: 0.5, cacheWrite: 0, output: 10 },
-      },
-    },
-    async () => {
-      await recordUsage(conversation, snapshot);
-      expect((await selectOptionalExecution(conversation.id, id))?.estimated_cost).toBeCloseTo(
-        0.0027,
-      );
-    },
-  );
-  await withConfig(
-    {
-      courseAgent: {
-        ...settings,
-        pricing: { 'gpt-6-astra': { input: 20, cachedInput: 5, cacheWrite: 0, output: 100 } },
-      },
-    },
-    async () => {
-      await recordUsage(conversation, snapshot);
-      expect((await selectOptionalExecution(conversation.id, id))?.estimated_cost).toBeCloseTo(
-        0.0027,
-      );
-    },
-  );
-  const unknown = randomUUID();
-  await insertExecution(conversation.id, unknown);
-  await recordUsage(conversation, {
-    ...snapshot,
-    executions: { [unknown]: { ...snapshot.executions[id], model: 'unsupported-fixture-model' } },
-  });
-  expect((await selectOptionalExecution(conversation.id, unknown))?.estimated_cost).toBeNull();
 });
 
 it('returns unsupported file modes to the agent, retries delivery, and only exposes supported approvals', async () => {
@@ -609,7 +481,6 @@ it.each([
     const original = agentProvider.createCloudflareProvider;
     const mocks = [
       vi.spyOn(agentEvents, 'notify').mockResolvedValue(),
-      vi.spyOn(agentObserver, 'observe').mockResolvedValue(),
       vi
         .spyOn(globalThis, 'fetch')
         .mockImplementation(async () => Response.json({ model: 'fixture-model' })),
@@ -751,43 +622,51 @@ it('uses the authenticated owner feature grant while retaining recovery after di
   }
 });
 
-it('requires exact configured model pricing before starting an execution', async () => {
-  const { scope, user, conversation } = await setupConversation();
-  await insertCoursePermissionsByUserUid({
-    course_id: scope.course_id,
-    uid: user.uid,
-    course_role: 'Owner',
-    authn_user_id: user.id,
+it('fences uncertain sends, retries rejected dispatches and retains terminal status', async () => {
+  const { scope, conversation } = await setupConversation();
+  const operationId = randomUUID();
+  await reserveOperation(conversation, operationId, { kind: 'message', text: 'hello' }, 0);
+  const first = (await selectOptionalOperation(conversation.id, operationId))!;
+  await execute(sql.age_operation, { id: first.id });
+  const chat = {
+    ...createCloudflareProvider(new URL('http://localhost:8791'), 'test'),
+    getSnapshot: vi.fn().mockResolvedValue({ messages: [], operationNumber: 0, executions: {} }),
+    reconcileAdmissions: vi.fn().mockResolvedValue({ rejected: [] }),
+  };
+  const empty = { messages: [], operationNumber: 0 };
+  await reconcileOperations(conversation, chat, empty);
+  expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('admitted');
+  chat.reconcileAdmissions.mockResolvedValue({ rejected: [first.dispatch_id] });
+  await reconcileOperations(conversation, chat, empty);
+  expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('rejected');
+  expect(
+    await reserveOperation(conversation, operationId, { kind: 'message', text: 'hello' }, 0),
+  ).toBe(1);
+  const retry = (await selectOptionalOperation(conversation.id, operationId))!;
+  expect(retry.dispatch_id).not.toBe(first.dispatch_id);
+  await rejectOperation(conversation.id, operationId, first.dispatch_id);
+  expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('admitted');
+  const receipt = {
+    dispatchId: retry.dispatch_id,
+    status: 'completed' as const,
+    model: 'fixture',
+    input: 0,
+    cached: 0,
+    output: 0,
+  };
+  chat.getSnapshot.mockResolvedValue({ ...empty, executions: { [operationId]: receipt } });
+  await reconcileOperations(conversation, chat, empty);
+  expect(chat.getSnapshot).toHaveBeenLastCalledWith(expect.any(AbortSignal), [operationId]);
+  await reconcileOperations(conversation, chat, {
+    ...empty,
+    executions: { [operationId]: { ...receipt, status: 'running' } },
   });
-  await updateCourseColumn({
-    courseId: scope.course_id,
-    columnName: 'repository',
-    value: 'https://github.com/org/course.git',
-    authnUserId: user.id,
-  });
-  await updateCourseColumn({
-    courseId: scope.course_id,
-    columnName: 'branch',
-    value: 'main',
-    authnUserId: user.id,
-  });
-  const request = vi
-    .spyOn(globalThis, 'fetch')
-    .mockImplementation(async () => Response.json({ model: 'unpriced-model' }));
-  try {
-    await withConfig(
-      { isEnterprise: true, courseAgent: settings, features: { 'course-agent': true } },
-      async () => {
-        await expect(configuredProvider(scope, conversation, true)).rejects.toThrow(
-          'Configure course agent pricing for unpriced-model',
-        );
-        request.mockImplementation(async () => Response.json({ model: 'fixture-model' }));
-        await expect(configuredProvider(scope, conversation, true)).resolves.toBeDefined();
-      },
-    );
-  } finally {
-    request.mockRestore();
-  }
+  expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('completed');
+  const activity = (await selectConversationActivity(scope)).find(
+    (row) => row.conversation.id === conversation.id,
+  )!;
+  expect(activity.running).toBe(false);
+  expect(activity.finished_at).toBeInstanceOf(Date);
 });
 
 it('shows publication progress only while a webserver owns the publication lock', async () => {

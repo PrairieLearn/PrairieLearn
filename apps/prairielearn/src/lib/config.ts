@@ -70,11 +70,6 @@ export const ConfigSchema = z.object({
     .object({
       workerUrl: z.url(),
       serviceToken: z.string().min(32).nullable().default(null),
-      maxConcurrentPerUser: z.number().int().positive().default(2),
-      maxConcurrentPerCourse: z.number().int().positive().default(5),
-      maxRequestsPerHour: z.number().int().positive().default(30),
-      dailyCostLimit: z.number().positive().default(20),
-      pricing: z.record(z.string(), TokenPricingSchema).default({}),
     })
     .nullable()
     .default(null),

@@ -36,3 +36,10 @@ WHERE
     LIMIT
       1
   );
+
+-- BLOCK age_operation
+UPDATE course_agent_operations
+SET
+  admitted_at = now() - interval '3 minutes'
+WHERE
+  id = $id;

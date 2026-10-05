@@ -36,9 +36,9 @@ import { selectCourseById } from '../../../models/course.js';
 import { hasCourseAgentOwnerAccess } from './access.js';
 import { workerResponseError } from './errors.js';
 import { notify } from './events.js';
+import { admitResult, reconcileOperations } from './lifecycle.js';
 import { createCloudflareProvider } from './provider.js';
 import { type Publication, PublishRejected, Publisher } from './publish.js';
-import { admitResult, modelPricing, recordUsage } from './usage.js';
 
 /** Report missing configuration without exposing credentials to the browser. */
 export function unavailableReason(): string | null {
@@ -155,13 +155,6 @@ export async function provider(
         'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
       );
     }
-    const model = parsed.data;
-    if (!modelPricing(model.model)) {
-      throw new TRPCError({
-        code: 'PRECONDITION_FAILED',
-        message: `Configure course agent pricing for ${model.model} before starting work.`,
-      });
-    }
   } else {
     await authorize(scope);
   }
@@ -248,7 +241,7 @@ export async function prepare(
         const state = await chat.getSnapshot(AbortSignal.timeout(10000));
         let dispatchId: string | undefined;
         if (state.pendingTool?.id === tool.id) {
-          await recordUsage(conversation, state);
+          await reconcileOperations(conversation, chat, state);
           if (!Object.values(state.executions ?? {}).some((value) => value.status === 'running')) {
             await provider(scope, conversation, true);
           }
@@ -519,10 +512,8 @@ export async function complete(
         if (!row.delivered && row.outcome) {
           const chat = await provider(scope, conversation, true);
           const state = await chat.getSnapshot(AbortSignal.timeout(10000));
-          await recordUsage(conversation, state);
+          await reconcileOperations(conversation, chat, state);
           const dispatchId = await admitResult(conversation, input.id, state);
-          const { observe } = await import('./observer.js');
-          await observe(conversation, chat, (tool) => prepare(scope, conversation, tool));
           await chat.deliverToolResult(
             {
               id: input.id,

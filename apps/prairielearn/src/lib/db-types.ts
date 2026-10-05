@@ -716,12 +716,24 @@ export const CourseAgentConversationSchema = z.object({
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
 export const CourseAgentOperationSchema = z.object({
+  admitted_at: DateFromISOString,
   conversation_id: IdSchema,
   created_at: DateFromISOString,
+  dispatch_id: z.string(),
+  finished_at: DateFromISOString.nullable(),
   id: IdSchema,
   operation_id: z.string(),
   operation_number: z.number(),
   payload: z.json(),
+  status: z.enum([
+    'admitted',
+    'running',
+    'completed',
+    'cancelled',
+    'failed',
+    'interrupted',
+    'rejected',
+  ]),
 });
 export type CourseAgentOperation = z.infer<typeof CourseAgentOperationSchema>;
 export const CourseAgentProposalSchema = z.object({
@@ -745,24 +757,6 @@ export const CourseAgentProposalSchema = z.object({
   synced_sha: z.string().nullable(),
 });
 export type CourseAgentProposal = z.infer<typeof CourseAgentProposalSchema>;
-export const CourseAgentExecutionSchema = z.object({
-  admitted_at: DateFromISOString,
-  cached_input_tokens: z.coerce.number().nullable(),
-  conversation_id: IdSchema,
-  created_at: DateFromISOString,
-  dispatch_id: z.string(),
-  estimated_cost: z.number().nullable(),
-  finished_at: DateFromISOString.nullable(),
-  id: IdSchema,
-  input_tokens: z.coerce.number().nullable(),
-  model: z.string().nullable(),
-  operation_id: z.string(),
-  output_tokens: z.coerce.number().nullable(),
-  pricing: z.json().nullable(),
-  status: z.enum(['admitted', 'running', 'completed', 'cancelled', 'failed', 'interrupted']),
-});
-export type CourseAgentExecution = z.infer<typeof CourseAgentExecutionSchema>;
-
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -1862,7 +1856,6 @@ export const TableNames = [
   'chunks',
   'client_fingerprints',
   'course_agent_conversations',
-  'course_agent_executions',
   'course_agent_operations',
   'course_agent_proposals',
   'course_instance_access_rules',

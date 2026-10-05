@@ -13,11 +13,6 @@ const test = createTest({
   courseAgent: {
     workerUrl: 'http://localhost:8791',
     serviceToken: 'local-fixture-service-token-not-a-secret',
-    pricing: { 'fixture-model': { input: 0, cachedInput: 0, cacheWrite: 0, output: 0 } },
-    maxConcurrentPerUser: 2,
-    maxConcurrentPerCourse: 5,
-    maxRequestsPerHour: 30,
-    dailyCostLimit: 20,
   },
 });
 test.skip(!process.env.COURSE_AGENT_FIXTURE_URL, 'Run the local course-agent fixture first.');
@@ -102,10 +97,8 @@ test('conversation and unsent draft persist across course pages', async ({
   await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page.getByRole('button', { name: 'Conversation', exact: true }).click();
   await expect(page.getByLabel('Working', { exact: true })).toBeVisible();
-  const unread = page.getByLabel('New response', { exact: true });
-  await expect(unread).toBeVisible({ timeout: 20000 });
-  const dot = await unread.boundingBox();
-  expect(dot!.width).toBe(dot!.height);
+  // Hidden conversations retain their last observed status until reopened.
+  await expect(page.getByLabel('New response', { exact: true })).toHaveCount(0);
   const selector = await page
     .getByRole('button', { name: 'Conversation', exact: true })
     .boundingBox();
@@ -122,7 +115,13 @@ test('conversation and unsent draft persist across course pages', async ({
   expect(history.indexOf('Use a different approach.')).toBeLessThan(
     history.indexOf('Keep counting.'),
   );
-  expect(history.indexOf('Keep counting.')).toBeLessThan(history.indexOf('Finished.'));
+  await expect(page.getByText('Finished.', { exact: false })).toBeVisible({ timeout: 20000 });
+  const completedHistory = await page
+    .getByRole('complementary', { name: 'Course agent' })
+    .innerText();
+  expect(completedHistory.indexOf('Keep counting.')).toBeLessThan(
+    completedHistory.indexOf('Finished.'),
+  );
   await expect(page.getByText('Started.', { exact: true })).toHaveCount(1);
   await composer.fill('Keep this draft.');
   await page.getByRole('link', { name: 'Questions', exact: true }).click();
@@ -679,11 +678,6 @@ const unavailableTest = createTest({
   courseAgent: {
     workerUrl: 'http://localhost:8791',
     serviceToken: null,
-    maxConcurrentPerUser: 2,
-    maxConcurrentPerCourse: 5,
-    maxRequestsPerHour: 30,
-    dailyCostLimit: 20,
-    pricing: {},
   },
 });
 
@@ -717,11 +711,6 @@ const noPublishingTokenTest = createTest({
   courseAgent: {
     workerUrl: 'http://localhost:8791',
     serviceToken: 'local-fixture-service-token-not-a-secret',
-    maxConcurrentPerUser: 2,
-    maxConcurrentPerCourse: 5,
-    maxRequestsPerHour: 30,
-    dailyCostLimit: 20,
-    pricing: {},
   },
 });
 
