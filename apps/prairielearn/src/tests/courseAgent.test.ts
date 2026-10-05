@@ -130,7 +130,12 @@ it('requires current owner access for both the effective and authenticated user'
   const { scope, user } = await setupConversation();
   const other = await selectOrInsertUserByUid('course-agent-other@example.com');
   await withConfig(
-    { isEnterprise: true, courseAgent: settings, features: { 'course-agent': true } },
+    {
+      isEnterprise: true,
+      courseAgent: settings,
+      features: { 'course-agent': true },
+      githubClientToken: 'test',
+    },
     async () => {
       await insertCoursePermissionsByUserUid({
         course_id: scope.course_id,
@@ -442,59 +447,101 @@ it('returns unsupported file modes to the agent, retries delivery, and only expo
   }
 });
 
-it('keeps a transient preparation failure retryable and exposes its saved recovery action', async () => {
-  const { conversation, scope, user } = await setupConversation();
+it('blocks new work without publishing configuration while allowing history and recovery', async () => {
+  const { scope, user } = await setupConversation();
   await insertCoursePermissionsByUserUid({
     course_id: scope.course_id,
     uid: user.uid,
     course_role: 'Owner',
     authn_user_id: user.id,
   });
-  const id = randomUUID(),
-    baseSha = 'a'.repeat(40),
-    proposedSha = 'b'.repeat(40);
-  const tool = {
-    id,
-    sequence: 1,
-    name: 'push_sync',
-    args: {
-      id,
-      baseSha,
-      proposedSha,
-      files: [],
-      diff: '',
-      status: 'pending',
-      digest: createHash('sha256')
-        .update(proposalContent(baseSha, proposedSha, []))
-        .digest('hex'),
+  await withConfig(
+    {
+      isEnterprise: true,
+      courseAgent: settings,
+      features: { 'course-agent': true },
+      githubClientToken: null,
     },
-  };
-  const preparation = vi
-    .spyOn(Publisher.prototype, 'prepare')
-    .mockRejectedValueOnce(new Error('Temporary GitHub outage'))
-    .mockResolvedValue('');
-  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
-  try {
-    await withConfig(
-      { isEnterprise: true, courseAgent: settings, githubClientToken: 'test' },
-      async () => {
-        await expect(prepare(scope, conversation, tool)).rejects.toThrow('Temporary GitHub outage');
-        expect((await selectOptionalProposal(conversation.id, id))!.outcome).toBeNull();
-        expect(
-          (await snapshot(conversation, { messages: [], operationNumber: 0 })).preparation?.id,
-        ).toBe(id);
-        await prepare(scope, conversation, tool);
-        expect((await selectOptionalProposal(conversation.id, id))!.prepared).toBe(true);
-        expect(
-          (await snapshot(conversation, { messages: [], operationNumber: 0 })).approvals,
-        ).toHaveLength(1);
-      },
-    );
-  } finally {
-    preparation.mockRestore();
-    notify.mockRestore();
-  }
+    async () => {
+      await expect(authorize(scope, true)).rejects.toThrow(
+        'GitHub publishing token is not configured',
+      );
+      await authorize(scope);
+    },
+  );
 });
+
+it.each(['transient', 'unconfigured'] as const)(
+  'keeps a %s preparation failure retryable and exposes its saved recovery action',
+  async (failure) => {
+    const { conversation, scope, user } = await setupConversation();
+    await insertCoursePermissionsByUserUid({
+      course_id: scope.course_id,
+      uid: user.uid,
+      course_role: 'Owner',
+      authn_user_id: user.id,
+    });
+    const id = randomUUID(),
+      baseSha = 'a'.repeat(40),
+      proposedSha = 'b'.repeat(40);
+    const tool = {
+      id,
+      sequence: 1,
+      name: 'push_sync',
+      args: {
+        id,
+        baseSha,
+        proposedSha,
+        files: [],
+        diff: '',
+        status: 'pending',
+        digest: createHash('sha256')
+          .update(proposalContent(baseSha, proposedSha, []))
+          .digest('hex'),
+      },
+    };
+    const preparation = vi.spyOn(Publisher.prototype, 'prepare').mockResolvedValue('');
+    if (failure === 'transient') {
+      preparation.mockRejectedValueOnce(new Error('Temporary GitHub outage'));
+    }
+    const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
+    try {
+      await withConfig(
+        {
+          isEnterprise: true,
+          courseAgent: settings,
+          features: { 'course-agent': true },
+          githubClientToken: failure === 'unconfigured' ? null : 'test',
+        },
+        async () => {
+          await expect(prepare(scope, conversation, tool)).rejects.toThrow(
+            failure === 'unconfigured'
+              ? 'GitHub publishing token is not configured'
+              : 'Temporary GitHub outage',
+          );
+          expect((await selectOptionalProposal(conversation.id, id))!.error).toContain(
+            failure === 'unconfigured'
+              ? 'Configure githubClientToken'
+              : 'Could not prepare the code change. Retry preparation.',
+          );
+          expect(preparation).toHaveBeenCalledTimes(failure === 'unconfigured' ? 0 : 1);
+          expect((await selectOptionalProposal(conversation.id, id))!.outcome).toBeNull();
+          expect(
+            (await snapshot(conversation, { messages: [], operationNumber: 0 })).preparation?.id,
+          ).toBe(id);
+          await withConfig({ githubClientToken: 'test' }, () => prepare(scope, conversation, tool));
+          expect((await selectOptionalProposal(conversation.id, id))!.prepared).toBe(true);
+          expect(
+            (await snapshot(conversation, { messages: [], operationNumber: 0 })).approvals,
+          ).toHaveLength(1);
+        },
+      );
+    } finally {
+      preparation.mockRestore();
+      notify.mockRestore();
+    }
+  },
+);
 
 it.each([
   'transient',
@@ -681,7 +728,12 @@ it('uses the authenticated owner feature grant while retaining recovery after di
   await features.enable('course-agent', { user_id: authn.id });
   try {
     await withConfig(
-      { isEnterprise: true, courseAgent: settings, features: { 'course-agent': false } },
+      {
+        isEnterprise: true,
+        courseAgent: settings,
+        githubClientToken: 'test',
+        features: { 'course-agent': false },
+      },
       async () => {
         expect(await newWorkEnabled(actingScope, course)).toBe(true);
         expect(await newWorkEnabled(scope, course)).toBe(false);

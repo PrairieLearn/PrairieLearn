@@ -297,9 +297,14 @@ test('failed preparation returns a native tool error and never displays an appro
   });
   expect(approval.ok).toBe(true);
   await expect(page.getByText('Code change request', { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole('group').getByText(/^Initialize the course repository/),
-  ).toBeVisible();
+  const failureDetails = page.getByRole('group').getByText(/^Initialize the course repository/);
+  await expect(failureDetails).toBeHidden();
+  await page
+    .locator('details')
+    .filter({ hasText: 'Initialize the course repository' })
+    .locator('summary')
+    .click();
+  await expect(failureDetails).toBeVisible();
   await expect(page.getByRole('button', { name: 'Approve', exact: true })).toHaveCount(0);
   await expect(page.getByText('Code change · Review requested', { exact: true })).toHaveCount(0);
   await expect
@@ -452,6 +457,18 @@ test('failed preparation returns a native tool error and never displays an appro
     await expect(pendingBar.getByRole('button', { name: action, exact: true })).toBeEnabled();
     await page.unroute('**/trpc/courseAgent.decide');
   }
+  await page.unroute('**/course-agent/*/events');
+  await page.route('**/course-agent/*/events', (route) =>
+    route.fulfill({
+      contentType: 'text/event-stream',
+      body: `data: ${JSON.stringify({ messages: [{ id: 'review-summary', role: 'assistant', parts: [{ type: 'text', text: 'The course changes are ready for your review.' }] }], operationNumber: 0, blocked: true, approval: proposal, approvals: [proposal], diagnostics: { state: 'waiting_for_user' }, publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
+    }),
+  );
+  await page.reload();
+  await expect(page.getByText('The course changes are ready for your review.')).toBeVisible();
+  await expect(pendingBar).toBeVisible();
+  await page.getByLabel('Message', { exact: true }).fill('');
+  await page.screenshot({ path: testInfo.outputPath('course-agent-approval.png'), fullPage: true });
   for (const status of ['approved', 'denied']) {
     await page.unroute('**/course-agent/*/events');
     const approval = { ...proposal, status };
@@ -689,6 +706,48 @@ unavailableTest(
     await page.getByRole('navigation', { name: 'Global navigation' }).hover();
     await trigger.focus();
     await expect(page.getByRole('tooltip')).toContainText('connection token is not configured');
+    await expect(page.getByLabel('Message', { exact: true })).toHaveCount(0);
+  },
+);
+
+const noPublishingTokenTest = createTest({
+  isEnterprise: true,
+  features: { 'course-agent': true },
+  githubClientToken: null,
+  courseAgent: {
+    workerUrl: 'http://localhost:8791',
+    serviceToken: 'local-fixture-service-token-not-a-secret',
+    maxConcurrentPerUser: 2,
+    maxConcurrentPerCourse: 5,
+    maxRequestsPerHour: 30,
+    dailyCostLimit: 20,
+    pricing: {},
+  },
+});
+
+noPublishingTokenTest(
+  'explains missing GitHub publishing access before starting chat',
+  async ({ page, courseInstance }) => {
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid: 'dev@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/settings`);
+    const launcher = page.getByRole('button', { name: 'Open course agent' });
+    await expect(launcher).toBeVisible();
+    await expect(launcher).toBeDisabled();
+    const trigger = launcher.locator('..');
+    await trigger.hover();
+    await expect(page.getByRole('tooltip')).toContainText(
+      'GitHub publishing token is not configured',
+    );
+    await page.getByRole('navigation', { name: 'Global navigation' }).hover();
+    await trigger.focus();
+    await expect(page.getByRole('tooltip')).toContainText(
+      'GitHub publishing token is not configured',
+    );
     await expect(page.getByLabel('Message', { exact: true })).toHaveCount(0);
   },
 );

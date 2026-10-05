@@ -6,6 +6,8 @@ import { Transcript } from './Transcript.js';
 it('keeps failed tool output collapsed while preserving its error indicator and details', () => {
   const html = renderToStaticMarkup(
     <Transcript
+      approvals={[]}
+      renderCodeChange={() => null}
       messages={[
         {
           id: 'failed-command',

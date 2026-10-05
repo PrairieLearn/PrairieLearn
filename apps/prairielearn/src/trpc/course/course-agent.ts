@@ -29,9 +29,24 @@ const procedure = t.procedure
   .use(requireNotExampleCourse)
   .use(async ({ ctx, next }) => {
     if (!isEnterprise()) throw new TRPCError({ code: 'FORBIDDEN' });
-    const { authorize, destination, provider, prepare, complete, newWorkEnabled } =
-      await import('../../ee/lib/course-agent/service.js');
-    const service = { authorize, destination, provider, prepare, complete, newWorkEnabled };
+    const {
+      authorize,
+      destination,
+      provider,
+      prepare,
+      complete,
+      newWorkEnabled,
+      unavailableReason,
+    } = await import('../../ee/lib/course-agent/service.js');
+    const service = {
+      authorize,
+      destination,
+      provider,
+      prepare,
+      complete,
+      newWorkEnabled,
+      unavailableReason,
+    };
     const scope: AgentScope = {
       course_id: ctx.course.id,
       user_id: ctx.authz_data.user.id,
@@ -66,7 +81,9 @@ export const courseAgentRouter = t.router({
       }),
     )
     .query(async ({ ctx }) => ({
-      canStartNewWork: await ctx.service.newWorkEnabled(ctx.scope, ctx.course),
+      canStartNewWork:
+        (await ctx.service.newWorkEnabled(ctx.scope, ctx.course)) &&
+        !ctx.service.unavailableReason(),
       conversations: (await selectConversationActivity(ctx.scope)).map(
         ({ conversation, running, finished_at }) => ({
           ...conversation,

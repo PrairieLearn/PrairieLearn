@@ -39,11 +39,15 @@ import { createCloudflareProvider } from './provider.js';
 import { type Publication, PublishRejected, Publisher } from './publish.js';
 import { admitResult, modelPricing, recordUsage } from './usage.js';
 
-/** A missing connection token keeps the launcher visible without exposing credentials. */
+/** Report missing configuration without exposing credentials to the browser. */
 export function unavailableReason(): string | null {
-  return config.courseAgent?.serviceToken
-    ? null
-    : 'Course agent is unavailable because its connection token is not configured. Contact your administrator.';
+  if (!config.courseAgent?.serviceToken) {
+    return 'Course agent is unavailable because its connection token is not configured. Contact your administrator.';
+  }
+  if (!config.githubClientToken) {
+    return 'Course agent is unavailable because its GitHub publishing token is not configured. Contact your administrator.';
+  }
+  return null;
 }
 
 function integration() {
@@ -80,6 +84,10 @@ export async function authorize(scope: AgentScope, newWork = false) {
   }
   if (!(await hasCourseAgentOwnerAccess(scope))) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Course owner access is required.' });
+  }
+  if (newWork) {
+    const reason = unavailableReason();
+    if (reason) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: reason });
   }
   return course;
 }
@@ -151,7 +159,8 @@ function publisher(conversation: CourseAgentConversation) {
   if (!token) {
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
-      message: 'GitHub integration is not configured on this server.',
+      message:
+        'GitHub publishing token is not configured on this server. Configure githubClientToken, then retry preparation.',
     });
   }
   return new Publisher(conversation, { token });
@@ -208,7 +217,10 @@ export async function prepare(
         } catch (error) {
           if (!(error instanceof PublishRejected)) {
             await proposals.saveProposalProgress(row.id, {
-              error: 'Could not prepare the code change. Retry preparation.',
+              error:
+                error instanceof TRPCError && error.code === 'PRECONDITION_FAILED'
+                  ? error.message
+                  : 'Could not prepare the code change. Retry preparation.',
             });
             throw error;
           }
