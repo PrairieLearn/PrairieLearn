@@ -205,8 +205,8 @@ class _Constants:
         "\u2061": "",  # function application
     })
 
-    # Operators with no single meaning; unidecode would turn "±" into "+-".
-    ambiguous_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
+    # Operators that give two values; unidecode would turn "±" into "+-".
+    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
 
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
@@ -347,6 +347,12 @@ class HasInvalidSymbolError(BaseSympyError):
 
 @dataclass
 class HasInvalidCharacterError(BaseSympyError):
+    offset: int
+    character: str
+
+
+@dataclass
+class HasPlusMinusError(BaseSympyError):
     offset: int
     character: str
 
@@ -769,6 +775,7 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
 
     Raises:
         HasInvalidCharacterError: If expr contains a character that cannot be transliterated.
+        HasPlusMinusError: If expr contains "±" or "∓".
     """
     const = _Constants
     parts: list[str] = []
@@ -777,9 +784,9 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
-        elif char in const.ambiguous_operators or unicodedata.decomposition(
-            char
-        ).startswith(("<super>", "<sub>")):
+        elif char in const.plus_minus_operators:
+            raise HasPlusMinusError(ind, char)
+        elif unicodedata.decomposition(char).startswith(("<super>", "<sub>")):
             # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
             # writes exponents and subscripts with "^" and "_", so these only come
             # from pasted text.
@@ -1440,6 +1447,12 @@ def try_parse_string_as_sympy(
     except HasCommentError as exc:
         return SympyParseFailure(
             f'Your answer must not contain the character "#". '
+            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
+        )
+    except HasPlusMinusError as exc:
+        return SympyParseFailure(
+            f'Your answer uses "{exc.character}", which gives two values, but this question expects a single expression. '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
