@@ -1,4 +1,4 @@
-import { type RefObject, useEffect } from 'react';
+import { type RefObject, useEffect, useRef } from 'react';
 
 export function useStickyTableHeader({
   controlsRef,
@@ -11,13 +11,34 @@ export function useStickyTableHeader({
   headerRef: RefObject<HTMLTableSectionElement | null>;
   tableRef: RefObject<HTMLTableElement | null>;
 }) {
+  const activeElementsRef = useRef<{
+    controls: HTMLDivElement | null;
+    scroller: HTMLDivElement | null;
+    header: HTMLTableSectionElement | null;
+    table: HTMLTableElement | null;
+  } | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
   // Retain one semantic header and reserve its space while it is viewport-fixed.
   // Translating on every scroll event lags behind compositor-driven scrolling.
   useEffect(() => {
-    const controls = controlsRef?.current;
+    const controls = controlsRef?.current ?? null;
     const scroller = scrollRef.current;
     const header = headerRef.current;
     const table = tableRef.current;
+    const elements = { controls, scroller, header, table };
+
+    if (
+      activeElementsRef.current?.controls === controls &&
+      activeElementsRef.current?.scroller === scroller &&
+      activeElementsRef.current?.header === header &&
+      activeElementsRef.current?.table === table
+    ) {
+      return;
+    }
+
+    cleanupRef.current?.();
+    activeElementsRef.current = elements;
     if (!controls || !scroller || !header || !table) return;
 
     let frame = 0;
@@ -71,12 +92,15 @@ export function useStickyTableHeader({
     observer.observe(controls);
     observer.observe(scroller);
     observer.observe(header);
+    // The cleanup is retained so stable ref objects can switch DOM targets after later renders.
+    /* eslint-disable @eslint-react/web-api-no-leaked-event-listener */
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
     scroller.addEventListener('scroll', scrollBody, { passive: true });
     header.addEventListener('scroll', scrollHeader, { passive: true });
+    /* eslint-enable @eslint-react/web-api-no-leaked-event-listener */
     position();
-    return () => {
+    cleanupRef.current = () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('scroll', schedule);
@@ -86,5 +110,14 @@ export function useStickyTableHeader({
       reset();
       controls.style.position = originalControlsPosition;
     };
-  }, [controlsRef, scrollRef, headerRef, tableRef]);
+  });
+
+  useEffect(
+    () => () => {
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+      activeElementsRef.current = null;
+    },
+    [],
+  );
 }
