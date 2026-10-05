@@ -34,6 +34,10 @@ import {
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import {
+  getUpcomingStudentAssessments,
+  selectStudentAssessments,
+} from '../../lib/student-assessments.js';
 import { getUrl } from '../../lib/url.js';
 import { selectOptionalEnrollmentByUserId, setEnrollmentStatus } from '../../models/enrollment.js';
 import {
@@ -48,6 +52,7 @@ import {
   type StudentHomePageCourseCandidateRow,
   StudentHomePageCourseCandidateRowSchema,
   type StudentHomePageCourseData,
+  type UpcomingAssessmentDeadline,
 } from './home.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -256,6 +261,62 @@ router.get(
       })
       .filter((entry): entry is StudentHomePageCourse => entry !== null);
 
+    const upcomingAssessmentDeadlines = (
+      await Promise.all(
+        studentCourses
+          .filter((entry) => entry.access_type === 'joined')
+          .map(async (entry): Promise<UpcomingAssessmentDeadline[]> => {
+            const { authzData, courseInstance } = await constructCourseOrInstanceContext({
+              user: res.locals.authn_user,
+              course_id: null,
+              course_instance_id: entry.course_instance.id,
+              ip: req.ip ?? null,
+              req_date: res.locals.req_date,
+              is_administrator: res.locals.is_administrator,
+            });
+            if (
+              authzData == null ||
+              courseInstance == null ||
+              !hasRole(authzData, ['Student']) ||
+              authzData.course_role !== 'None'
+            ) {
+              return [];
+            }
+
+            const assessments = await selectStudentAssessments({
+              courseInstance,
+              userId: res.locals.authn_user.id,
+              authzData,
+              reqDate: res.locals.req_date,
+            });
+
+            return getUpcomingStudentAssessments(
+              assessments,
+              res.locals.req_date,
+              courseInstance.display_timezone,
+            ).map((assessment) => ({
+              assessmentSetColor: assessment.assessment_set_color,
+              assessmentTitle: assessment.title,
+              courseInstanceId: courseInstance.id,
+              courseInstanceLongName: entry.course_instance.long_name,
+              courseShortName: entry.course.short_name,
+              creditDateString: assessment.authz_result.credit_date_string,
+              deadline: assessment.authz_result.credit_end_date,
+              label: assessment.label,
+              link: assessment.link,
+              status: assessment.status,
+            }));
+          }),
+      )
+    )
+      .flat()
+      .sort(
+        (a, b) =>
+          a.deadline.getTime() - b.deadline.getTime() ||
+          a.courseShortName.localeCompare(b.courseShortName) ||
+          a.label.localeCompare(b.label),
+      );
+
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
       { user_id: res.locals.authn_user.id },
@@ -301,6 +362,7 @@ router.get(
             unreadNewsItems={unreadNewsItems}
             blogUrl={config.newsFeedBlogUrl}
             now={res.locals.req_date}
+            upcomingAssessmentDeadlines={upcomingAssessmentDeadlines}
           />
         ),
       }),

@@ -2853,19 +2853,38 @@ describe('formatDateShort', () => {
     {
       name: 'America/Chicago timezone (12:00 UTC = 07:00 CDT)',
       date: '2025-03-15T12:00:00Z',
+      baseDate: '2025-03-01T12:00:00Z',
       timezone: 'America/Chicago',
       patterns: [/07:00/, /Sat/, /Mar/, /15/],
     },
     {
       name: 'UTC timezone',
       date: '2025-03-15T14:30:00Z',
+      baseDate: '2025-03-01T14:30:00Z',
       timezone: 'UTC',
       patterns: [/14:30/, /Sat/, /Mar/, /15/],
     },
-  ])('$name', ({ date, timezone, patterns }) => {
-    const result = formatDateShort(new Date(date), timezone);
+  ])('$name', ({ date, baseDate, timezone, patterns }) => {
+    const result = formatDateShort(new Date(date), timezone, new Date(baseDate));
     for (const pattern of patterns) {
       expect(result).toMatch(pattern);
     }
+  });
+
+  it.each([
+    {
+      name: 'today',
+      date: '2025-03-15T12:00:00Z',
+      baseDate: '2025-03-15T10:00:00Z',
+      expected: '07:00, today',
+    },
+    {
+      name: 'tomorrow',
+      date: '2025-03-16T12:00:00Z',
+      baseDate: '2025-03-15T12:00:00Z',
+      expected: '07:00, tomorrow',
+    },
+  ])('uses a relative date for $name in the display timezone', ({ date, baseDate, expected }) => {
+    expect(formatDateShort(new Date(date), 'America/Chicago', new Date(baseDate))).toBe(expected);
   });
 });
