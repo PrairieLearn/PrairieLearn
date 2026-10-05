@@ -49,16 +49,9 @@ def file(data):
             .to((params_dict["pF"][0], -params_dict["pF"][1]))
         )
 
-        # Left edge: line pF -> pA closes the loop
+        # Switch A: pA -> pF along the left edge (closed for a long time — normally-closed)
         drawing += (
-            elm.Line()
-            .at((params_dict["pF"][0], -params_dict["pF"][1]))
-            .to((params_dict["pA"][0], -params_dict["pA"][1]))
-        )
-
-        # Switch A: pA -> pF along the left edge (closed for a long time)
-        drawing += (
-            elm.Switch()
+            elm.Switch(nc=True)
             .at((params_dict["pA"][0], -params_dict["pA"][1]))
             .to((params_dict["pF"][0], -params_dict["pF"][1]))
             .label("A")
