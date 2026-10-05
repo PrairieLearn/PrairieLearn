@@ -1,8 +1,8 @@
 import pathlib
 import random
 import re
-from collections.abc import Iterable
 from enum import Enum
+from functools import cache
 from sys import get_int_max_str_digits
 from typing import assert_never
 
@@ -673,8 +673,9 @@ def format_formula_editor_submission_for_sympy(
     # but preserve tokens like "f2" that are custom function names
     text = _add_multiplication_spaces(text, known_tokens)
 
-    function_names = psu.get_builtin_functions(allow_trig_functions=allow_trig) | set(
-        custom_functions
+    function_names = frozenset(
+        psu.get_builtin_functions(allow_trig_functions=allow_trig)
+        | set(custom_functions)
     )
     text = _wrap_bare_function_arguments(text, function_names)
 
@@ -843,7 +844,21 @@ def _find_bare_argument_end(text: str, start: int) -> int | None:
     return None
 
 
-def _wrap_bare_function_arguments(text: str, function_names: Iterable[str]) -> str:
+@cache
+def _bare_function_argument_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+    """
+    Match a function name followed by whitespace and an argument that doesn't start with "(".
+
+    Returns:
+        The compiled pattern, cached per set of function names
+    """
+    names = sorted(function_names, key=len, reverse=True)
+    return re.compile(
+        r"(?<![A-Za-z_])(?:" + "|".join(map(re.escape, names)) + r")\s+(?=[^\s(])"
+    )
+
+
+def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
     r"""
     Parenthesize unparenthesized function arguments that are followed by "*".
 
@@ -856,12 +871,9 @@ def _wrap_bare_function_arguments(text: str, function_names: Iterable[str]) -> s
     Returns:
         The text with those arguments wrapped in parentheses
     """
-    names = sorted(function_names, key=len, reverse=True)
-    if not names:
+    if not function_names:
         return text
-    pattern = re.compile(
-        r"(?<![A-Za-z_])(?:" + "|".join(map(re.escape, names)) + r")\s+(?=[^\s(])"
-    )
+    pattern = _bare_function_argument_pattern(function_names)
 
     result = []
     pos = 0
@@ -874,7 +886,7 @@ def _wrap_bare_function_arguments(text: str, function_names: Iterable[str]) -> s
             continue
         argument = text[start:end].rstrip()
         result.append(
-            f"({_wrap_bare_function_arguments(argument, names)})"
+            f"({_wrap_bare_function_arguments(argument, function_names)})"
             + text[start + len(argument) : end]
         )
         pos = end

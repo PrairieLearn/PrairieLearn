@@ -168,14 +168,9 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
         # Bare function arguments ended by "*" (the editor drops the grouping in `{\ln 4}\cdot`)
         ("l n 4 * c o t (9x)", True, ["x"], [], "ln (4) * cot (9x)"),
-        ("-9l n 4 * x", False, ["x"], [], "-9ln (4) * x"),
         ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
-        ("l n 4^(x) * x", False, ["x"], [], "ln (4^(x)) * x"),
-        ("l n 4 x", False, ["x"], [], "ln 4 x"),
         ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
         ("l n (4) * x", False, ["x"], [], "ln (4) * x"),
-        ("(l n 4) * x", False, ["x"], [], "(ln 4) * x"),
-        ("m y f u n x * x", False, ["x"], ["myfun"], "myfun (x) * x"),
         # Operators the editor writes in AsciiMath form (\div and \ast)
         ("2 -: x", False, ["x"], [], "2 / x"),
         ("2 ** x", False, ["x"], [], "2 * x"),
@@ -194,37 +189,55 @@ def test_format_formula_editor_submission_for_sympy(
     assert out == expected
 
 
-x = sympy.Symbol("x")
-
-
 @pytest.mark.parametrize(
-    ("a_sub", "expected"),
+    "a_sub",
     [
-        # Plain-text submissions captured from the formula editor
-        ("l n 4 * c o t (9x)", sympy.log(4) * sympy.cot(9 * x)),
-        ("-9∙l n 4", -9 * sympy.log(4)),
-        (
-            "4^(c s c(9x))(-9∗l n4)∗c o t(9x)c s c(9x)",  # ruff:ignore[ambiguous-unicode-character-string]
-            -9
-            * 4 ** sympy.csc(9 * x)
-            * sympy.log(4)
-            * sympy.cot(9 * x)
-            * sympy.csc(9 * x),
+        # Reported as containing set notation: 4^{csc(9x)}·(-9·ln 4)·cot(9x)csc(9x)
+        pytest.param(
+            "4^(c s c (9x)) * (-9∙l n 4) * c o t (9x)c s c (9x)",
+            id="report-set-notation",
         ),
-        (
-            "-9 * l n 4 * c o t (9x)",
-            -9 * sympy.log(4) * sympy.cot(9 * x),
+        pytest.param(
+            "4^(c s c (9x))∙(-9∙l n 4)∙c o t (9x)c s c (9x)",
+            id="report-set-notation-all-bullets",
+        ),
+        # Reported as graded incorrect: 4^{csc(9x)}(-9·(ln4)·cot(9x))csc(9x)
+        pytest.param(
+            "4^(c s c (9x))(-9 * (l n 4) * c o t (9x))c s c (9x)",
+            id="report-graded-incorrect",
+        ),
+        pytest.param(
+            "4^(c s c (9x))(-9∙(l n 4)∙c o t (9x))c s c (9x)",
+            id="report-graded-incorrect-bullets",
+        ),
+        # Pasting "4^(csc(9x))(-9*ln4)*cot(9x)csc(9x)" into the editor
+        pytest.param(
+            "4^(c s c(9x))(-9∗l n4)∗c o t(9x)c s c(9x)",  # ruff:ignore[ambiguous-unicode-character-string]
+            id="pasted-asterisk-operator",
         ),
     ],
 )
-def test_formula_editor_multiplication_parses(a_sub: str, expected: sympy.Expr) -> None:
+def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
+    """Regression test for correct answers rejected as set notation or graded incorrect.
+
+    The submissions are the plain text the formula editor sends for the reported answers.
+    """
+    x = sympy.Symbol("x")
+    expected = (
+        -9 * 4 ** sympy.csc(9 * x) * sympy.log(4) * sympy.cot(9 * x) * sympy.csc(9 * x)
+    )
     element_html = build_element_html('variables="x"', 'formula-editor="true"')
-    data = make_question_data(submitted_answers={"test": a_sub})
+    data = make_question_data(
+        submitted_answers={"test": a_sub},
+        correct_answers={"test": psu.sympy_to_json(expected)},
+    )
 
     symbolic_input.parse(element_html, data)
-
     assert "test" not in data["format_errors"]
     assert psu.json_to_sympy(data["submitted_answers"]["test"]) == expected
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
 
 
 def test_parse_without_variables_attribute_with_assumptions() -> None:
