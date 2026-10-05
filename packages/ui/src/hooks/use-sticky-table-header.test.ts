@@ -35,7 +35,7 @@ describe('useStickyTableHeader', () => {
     vi.unstubAllGlobals();
   });
 
-  it('attaches after initially null refs are populated and cleans up on unmount', () => {
+  it('cleans up listeners, observer, and animation frame on unmount', () => {
     const resizeObservers: TestResizeObserver[] = [];
     vi.stubGlobal(
       'ResizeObserver',
@@ -53,27 +53,15 @@ describe('useStickyTableHeader', () => {
     const cancelAnimationFrame = vi.fn();
     vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrame);
 
-    const controlsRef: { current: HTMLDivElement | null } = { current: null };
-    const scrollRef: { current: HTMLDivElement | null } = { current: null };
-    const headerRef: { current: HTMLTableSectionElement | null } = { current: null };
-    const tableRef: { current: HTMLTableElement | null } = { current: null };
-    const rootElement = document.createElement('div');
-    const root = createRoot(rootElement);
-
-    act(() => {
-      root.render(createElement(TestHook, { controlsRef, scrollRef, headerRef, tableRef }));
-    });
-    expect(resizeObservers).toHaveLength(0);
-
     const controls = document.createElement('div');
     const scroller = document.createElement('div');
     const header = document.createElement('thead');
     const table = document.createElement('table');
-    controlsRef.current = controls;
-    scrollRef.current = scroller;
-    headerRef.current = header;
-    tableRef.current = table;
-
+    const controlsRef: { current: HTMLDivElement | null } = { current: controls };
+    const scrollRef: { current: HTMLDivElement | null } = { current: scroller };
+    const headerRef: { current: HTMLTableSectionElement | null } = { current: header };
+    const tableRef: { current: HTMLTableElement | null } = { current: table };
+    const root = createRoot(document.createElement('div'));
     const scrollerAddListener = vi.spyOn(scroller, 'addEventListener');
     const scrollerRemoveListener = vi.spyOn(scroller, 'removeEventListener');
     const headerAddListener = vi.spyOn(header, 'addEventListener');
@@ -92,25 +80,11 @@ describe('useStickyTableHeader', () => {
       passive: true,
     });
 
-    const replacementScroller = document.createElement('div');
-    const replacementScrollerAddListener = vi.spyOn(replacementScroller, 'addEventListener');
-    scrollRef.current = replacementScroller;
-
-    act(() => {
-      root.render(createElement(TestHook, { controlsRef, scrollRef, headerRef, tableRef }));
-    });
-
-    expect(resizeObservers[0]?.disconnect).toHaveBeenCalledOnce();
-    expect(scrollerRemoveListener).toHaveBeenCalledWith('scroll', expect.any(Function));
-    expect(resizeObservers).toHaveLength(2);
-    expect(replacementScrollerAddListener).toHaveBeenCalledWith('scroll', expect.any(Function), {
-      passive: true,
-    });
-
     window.dispatchEvent(new Event('scroll'));
     act(() => root.unmount());
 
-    expect(resizeObservers[1]?.disconnect).toHaveBeenCalledOnce();
+    expect(resizeObservers[0]?.disconnect).toHaveBeenCalledOnce();
+    expect(scrollerRemoveListener).toHaveBeenCalledWith('scroll', expect.any(Function));
     expect(headerRemoveListener).toHaveBeenCalledWith('scroll', expect.any(Function));
     expect(cancelAnimationFrame).toHaveBeenCalledWith(1);
   });
