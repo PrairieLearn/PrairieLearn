@@ -324,8 +324,16 @@
               "format": "uri"
             },
             "serviceToken": {
-              "type": "string",
-              "minLength": 32
+              "default": null,
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "maxConcurrentPerUser": {
               "default": 2,
@@ -377,7 +385,7 @@
               }
             }
           },
-          "required": ["workerUrl", "serviceToken"],
+          "required": ["workerUrl"],
           "additionalProperties": false
         },
         {
