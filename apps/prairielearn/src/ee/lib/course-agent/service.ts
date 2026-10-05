@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 
-import type { ChatSnapshot } from '@prairielearn/course-agent-contract';
+import { ChatError, type ChatSnapshot } from '@prairielearn/course-agent-contract';
 
 import { config } from '../../../lib/config.js';
 import type { Course, CourseAgentConversation } from '../../../lib/db-types.js';
@@ -99,7 +99,12 @@ export async function provider(
         body: JSON.stringify(destination(course)),
         signal: AbortSignal.timeout(10000),
       },
-    );
+    ).catch(() => {
+      throw new ChatError(
+        502,
+        'Course agent connection failed. Your message was not sent. Check the Worker is running, then retry the send.',
+      );
+    });
     if (!response.ok) {
       if (response.status === 409) {
         throw new TRPCError({

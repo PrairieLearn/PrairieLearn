@@ -78,6 +78,7 @@ export interface ChatSnapshot {
       model: string;
       input: number | null;
       cached: number | null;
+      cacheWrite?: number | null;
       output: number | null;
     }
   >;

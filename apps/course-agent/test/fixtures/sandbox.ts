@@ -314,6 +314,23 @@ export class TestSandbox extends DurableObject {
     await this.save(state);
   }
 
+  async reportUsage(usage: { input: number; cached: number; cacheWrite: number; output: number }) {
+    const state = await this.state();
+    const breakdown = {
+      inputTokens: usage.input,
+      cachedInputTokens: usage.cached,
+      cacheWriteInputTokens: usage.cacheWrite,
+      outputTokens: usage.output,
+      reasoningOutputTokens: 0,
+      totalTokens: usage.input + usage.output,
+    };
+    this.emit('thread/tokenUsage/updated', {
+      threadId: 'native-thread',
+      turnId: state.turns.at(-1)!.id,
+      tokenUsage: { total: breakdown, last: breakdown },
+    });
+  }
+
   async requestHostTool(tool: string, args: Record<string, string>) {
     const state = await this.state();
     state.waitingTool = true;
