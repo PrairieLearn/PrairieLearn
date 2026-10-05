@@ -334,59 +334,6 @@
                   "type": "null"
                 }
               ]
-            },
-            "maxConcurrentPerUser": {
-              "default": 2,
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
-            },
-            "maxConcurrentPerCourse": {
-              "default": 5,
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
-            },
-            "maxRequestsPerHour": {
-              "default": 30,
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "maximum": 9007199254740991
-            },
-            "dailyCostLimit": {
-              "default": 20,
-              "type": "number",
-              "exclusiveMinimum": 0
-            },
-            "pricing": {
-              "default": {},
-              "type": "object",
-              "propertyNames": {
-                "type": "string"
-              },
-              "additionalProperties": {
-                "type": "object",
-                "properties": {
-                  "input": {
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "cachedInput": {
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "cacheWrite": {
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "output": {
-                    "type": "number",
-                    "minimum": 0
-                  }
-                },
-                "required": ["input", "cachedInput", "cacheWrite", "output"],
-                "additionalProperties": false
-              }
             }
           },
           "required": ["workerUrl"],
