@@ -21,6 +21,7 @@ import { subscribe } from './events.js';
 import { dispatchHostTool } from './host-tools.js';
 import { reconcileOperations } from './lifecycle.js';
 import { prepare, provider, snapshot } from './service.js';
+import { recordUsage } from './usage.js';
 
 const router = Router({ mergeParams: true });
 const ParamsSchema = z.object({ conversation_id: IdSchema });
@@ -70,6 +71,7 @@ router.get(
           const next = await snapshot(c, await chat.getSnapshot(signal));
           next.diagnostics = await chat.getDiagnostics(signal);
           await reconcileOperations(c, chat, next);
+          next.usage = await recordUsage(c, next);
           if (!res.write(`data: ${JSON.stringify(next)}\n\n`)) {
             await once(res, 'drain', {
               signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),

@@ -10,6 +10,7 @@ import {
   ChatError,
   type ChatProvider,
   type ChatSnapshot,
+  conversationUsageSchema,
   sandboxDiagnosticsSchema,
 } from '@prairielearn/course-agent-contract';
 import * as Sentry from '@prairielearn/sentry';
@@ -231,6 +232,10 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
       return {
         messages,
         executions: value.executions,
+        conversationUsage:
+          value.conversationUsage === undefined
+            ? undefined
+            : conversationUsageSchema.parse(value.conversationUsage),
         blocked: value.blocked,
         operationNumber: z.number().int().nonnegative().parse(value.operationNumber),
         pendingTool: value.pendingTool,

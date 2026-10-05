@@ -36,9 +36,10 @@ import { selectCourseById } from '../../../models/course.js';
 import { hasCourseAgentOwnerAccess } from './access.js';
 import { workerResponseError } from './errors.js';
 import { notify } from './events.js';
-import { admitResult, reconcileOperations } from './lifecycle.js';
+import { reconcileOperations } from './lifecycle.js';
 import { createCloudflareProvider } from './provider.js';
 import { type Publication, PublishRejected, Publisher } from './publish.js';
+import { admitResult, modelPricing, recordUsage } from './usage.js';
 
 /** Report missing configuration without exposing credentials to the browser. */
 export function unavailableReason(): string | null {
@@ -155,6 +156,12 @@ export async function provider(
         'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
       );
     }
+    if (!modelPricing(parsed.data.model)) {
+      throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: `Configure shared model pricing for ${parsed.data.model} before starting work.`,
+      });
+    }
   } else {
     await authorize(scope);
   }
@@ -242,6 +249,7 @@ export async function prepare(
         let dispatchId: string | undefined;
         if (state.pendingTool?.id === tool.id) {
           await reconcileOperations(conversation, chat, state);
+          await recordUsage(conversation, state);
           if (!Object.values(state.executions ?? {}).some((value) => value.status === 'running')) {
             await provider(scope, conversation, true);
           }
@@ -513,6 +521,7 @@ export async function complete(
           const chat = await provider(scope, conversation, true);
           const state = await chat.getSnapshot(AbortSignal.timeout(10000));
           await reconcileOperations(conversation, chat, state);
+          await recordUsage(conversation, state);
           const dispatchId = await admitResult(conversation, input.id, state);
           await chat.deliverToolResult(
             {

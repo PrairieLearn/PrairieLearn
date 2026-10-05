@@ -15,7 +15,8 @@ flowchart LR
 ## Scope
 
 - Saved conversations, selection, and unsent drafts across navigation and reloads.
-- Repository/branch changes require a new conversation. Accounting and limits are deferred.
+- Repository/branch changes require a new conversation.
+- Conversation token/cost totals and user-scoped hourly spending and concurrency limits.
 - Review and approve committed text changes, publish to GitHub, then run Course Sync.
 - Course Sync validates content; failures retain the commit for an approved correction. No automatic rollback.
 - No skill installation or management.
@@ -43,9 +44,12 @@ Configure PrairieLearn in `config.json`:
 {
   "isEnterprise": true,
   "features": { "course-agent": true },
+  "nonVolatileRedisUrl": "redis://localhost:6379",
   "courseAgent": {
     "workerUrl": "http://localhost:8791",
-    "serviceToken": "local-fixture-service-token-not-a-secret"
+    "serviceToken": "local-fixture-service-token-not-a-secret",
+    "maxConcurrentPerUser": 2,
+    "hourlyCostLimit": 10
   }
 }
 ```
@@ -154,3 +158,30 @@ For fixture review coverage, with the fixture running:
 ```sh
 COURSE_AGENT_FIXTURE_URL=http://localhost:8791 pnpm --filter @prairielearn/prairielearn test:e2e src/tests/e2e/courseAgent.spec.ts
 ```
+
+## Usage and limits
+
+Open **Statistics** to see cumulative tokens and estimated cost. Prices come from
+PL's shared `costPerMillionTokens` configuration, and the conversation retains
+its original rates. There are no per-message billing rows.
+
+PL records usage while the selected conversation is connected and reconciles the
+user's unobserved work before admitting another message or cold continuation.
+Closing the panel leaves no accounting watcher or polling task in PL. A disconnected
+turn can temporarily outpace the stored estimate.
+
+Redis applies newly observed spending to that user's current fixed hour across
+courses. Watermarks survive hour boundaries, so replaying a snapshot is free;
+a delta observed after reconnect counts in the reconnect hour. This is admission
+accounting, not exact historical hourly billing. Non-volatile Redis is required;
+missing usage, prices, or unavailable accounting blocks new work.
+
+Defaults allow two active conversations per user and $10 of estimated usage per
+hour. Steering shares its conversation's slot. Already-running turns finish even
+if they exceed the threshold; it is a soft guard, not a hard spending cap.
+
+To test locally, send a fixture prompt, open Statistics, then reload: totals
+should remain unchanged. Temporarily set `hourlyCostLimit` below the displayed
+cost and try another message: it should be blocked without stopping work already
+in flight. Restore the setting afterwards. The fixture uses a priced model name
+with scripted usage and performs no inference.

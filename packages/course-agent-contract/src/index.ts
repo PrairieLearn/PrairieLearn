@@ -106,19 +106,25 @@ export const approvalDecisionSchema = z.object({
   decision: z.enum(['approve', 'deny']),
 });
 export type ApprovalDecision = z.infer<typeof approvalDecisionSchema>;
+export const conversationUsageSchema = z.object({
+  version: z.number().int().nonnegative(),
+  model: z.string().min(1),
+  input: z.number().int().nonnegative().nullable(),
+  cached: z.number().int().nonnegative().nullable(),
+  cacheWrite: z.number().int().nonnegative().nullable(),
+  output: z.number().int().nonnegative().nullable(),
+});
+export type ConversationUsage = z.infer<typeof conversationUsageSchema>;
 export interface ChatSnapshot {
+  /** Dispatch acknowledgments support retries; token attribution is conversation-wide. */
   executions?: Record<
     string,
     {
       dispatchId?: string;
       status: 'running' | 'completed' | 'cancelled' | 'failed' | 'interrupted';
-      model: string;
-      input: number | null;
-      cached: number | null;
-      cacheWrite?: number | null;
-      output: number | null;
     }
   >;
+  conversationUsage?: ConversationUsage;
   usage?: { input: number | null; output: number | null; estimatedCost: number | null };
   messages: UIMessage[];
   operationNumber: number;

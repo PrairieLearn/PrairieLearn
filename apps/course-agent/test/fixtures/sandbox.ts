@@ -190,6 +190,7 @@ export class TestSandbox extends DurableObject {
         const tokens = {
           inputTokens: 100 * state.turns.length,
           cachedInputTokens: 0,
+          cacheWriteInputTokens: 0,
           outputTokens: 20 * state.turns.length,
           totalTokens: 120 * state.turns.length,
           reasoningOutputTokens: 0,

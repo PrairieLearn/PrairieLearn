@@ -70,6 +70,9 @@ export const ConfigSchema = z.object({
     .object({
       workerUrl: z.url(),
       serviceToken: z.string().min(32).nullable().default(null),
+      maxConcurrentPerUser: z.number().int().positive().default(2),
+      // A soft admission guard, matching AI grading's fixed-hour Redis accounting.
+      hourlyCostLimit: z.number().positive().default(10),
     })
     .nullable()
     .default(null),

@@ -55,11 +55,14 @@ const conversation = {
   repository: 'org/course',
   branch: 'main',
   operation_number: 0,
+  usage: null,
   created_at: new Date(),
 };
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
+  maxConcurrentPerUser: 2,
+  hourlyCostLimit: 10,
 };
 
 test('reports an unsent message without leaking a configure transport error', async () => {
@@ -90,7 +93,7 @@ test.each(['{}', 'not JSON'])(
 );
 
 test('validates the configured model response', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ model: 'fixture-model' })));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ model: 'gpt-6-astra' })));
   await withConfig({ isEnterprise: true, courseAgent: settings }, async () => {
     await expect(provider(scope, conversation, true)).resolves.toBeDefined();
   });

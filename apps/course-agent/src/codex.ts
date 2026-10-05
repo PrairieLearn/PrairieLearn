@@ -1,6 +1,10 @@
 import type { DirectoryBackup, getSandbox } from '@cloudflare/sandbox';
 
-import type { CleanupDiagnostics, PendingTool } from '@prairielearn/course-agent-contract';
+import type {
+  CleanupDiagnostics,
+  ConversationUsage,
+  PendingTool,
+} from '@prairielearn/course-agent-contract';
 
 import { AppServer } from './app-server.js';
 import { safeFailure } from './cleanup-error.js';
@@ -37,23 +41,11 @@ export interface CodexState {
     cacheWrite?: number;
     output: number;
   };
-  /**
-   * Prompt/continuation receipts correlate acceptance and incremental token totals.
-   * Terminal entries are archived to SQLite, so broadcasts stay bounded without
-   * forgetting an old dispatch when PL reconciles usage or retries a request.
-   */
-  executions?: Record<
-    string,
-    {
-      dispatchId?: string;
-      status: Run['status'];
-      model: string;
-      input: number | null;
-      cached: number | null;
-      cacheWrite?: number | null;
-      output: number | null;
-    }
-  >;
+  /** Lifetime totals stay in the DO and never rewind with an R2 filesystem checkpoint. */
+  usage?: ConversationUsage;
+  usagePending?: boolean;
+  /** Acceptance/outcome receipts fence retries independently of billing. */
+  executions?: Record<string, { dispatchId?: string; status: Run['status'] }>;
   /**
    * Corrections belong to an existing turn. Persist before sending turn/steer:
    * after a lost acknowledgment native history decides whether it was accepted.

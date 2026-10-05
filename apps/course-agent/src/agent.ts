@@ -40,6 +40,7 @@ import { HostTools } from './host-tools.js';
 import { ReceiptStore } from './receipt-store.js';
 import type { Sandbox } from './sandbox.js';
 import { getTool, isPreparedTool, toolResult } from './tools.js';
+import { accumulateUsage } from './usage.js';
 
 export interface Env {
   Sandbox: DurableObjectNamespace<Sandbox>;
@@ -388,10 +389,28 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         if (!parsed.success) return new Response('Invalid receipt IDs', { status: 400 });
         ids = parsed.data;
       }
+      const historicalUsageUnknown =
+        !!this.state.run || Object.keys(this.state.executions ?? {}).length > 0;
       return Response.json(
         {
           messages: this.snapshotMessages(),
           executions: this.executionReceipts(ids),
+          conversationUsage: this.state.usage
+            ? {
+                ...this.state.usage,
+                ...(this.state.usagePending
+                  ? { input: null, cached: null, cacheWrite: null, output: null }
+                  : {}),
+              }
+            : {
+                version: 0,
+                model: this.env.CODEX_MODEL,
+                // Older conversations have no aggregate; their historical spending is unknown.
+                input: historicalUsageUnknown ? null : 0,
+                cached: historicalUsageUnknown ? null : 0,
+                cacheWrite: historicalUsageUnknown ? null : 0,
+                output: historicalUsageUnknown ? null : 0,
+              },
           operationNumber: 0, // PL supplies the authoritative operation number.
           blocked: !!this.state.pendingTool || this.toolPreparing,
           pendingTool: this.state.pendingTool,
@@ -497,11 +516,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         [input.id]: {
           dispatchId: input.dispatchId,
           status: 'completed',
-          model: this.env.CODEX_MODEL!,
-          input: 0,
-          cached: 0,
-          cacheWrite: 0,
-          output: 0,
         },
       },
     });
@@ -918,6 +932,15 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       this.saveState({ ...this.state, run: { ...this.state.run!, status } });
       return;
     }
+    // A proved failure before submission consumed no model work. Transport loss
+    // after submission keeps missing counters unknown until native reconciliation.
+    if (this.state.run?.id === run.id && !this.state.run.submitted && this.state.usagePending) {
+      this.saveState({
+        ...this.state,
+        usagePending: false,
+        usage: this.state.usage && { ...this.state.usage, version: this.state.usage.version + 1 },
+      });
+    }
     if (this.state.executions?.[run.messageId]) {
       this.saveState({
         ...this.state,
@@ -1292,6 +1315,9 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     if (!this.env.CODEX_MODEL) {
       throw new Error('Configure CODEX_MODEL before running the course agent.');
     }
+    if (this.state.usage && this.state.usage.model !== this.env.CODEX_MODEL) {
+      throw new Error('The conversation model changed. Start a new conversation.');
+    }
     checkDispatch();
     if (!this.state.sandbox && this.state.checkpoint) {
       this.saveState({ ...this.state, usageTotal: this.state.checkpoint.usageTotal });
@@ -1310,16 +1336,24 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     };
     this.saveState({
       ...this.state,
+      // Until Codex reports this turn's counters, missing usage stays unknown.
+      // Prior totals remain stored so a late report can still add its delta.
+      usage: {
+        ...(this.state.usage ?? {
+          model: this.env.CODEX_MODEL,
+          input: 0,
+          cached: 0,
+          cacheWrite: 0,
+          output: 0,
+        }),
+        version: (this.state.usage?.version ?? 0) + 1,
+      },
+      usagePending: true,
       executions: {
         ...this.state.executions,
         [run.messageId]: {
           dispatchId,
           status: 'running',
-          model: this.env.CODEX_MODEL,
-          input: null,
-          cached: null,
-          cacheWrite: null,
-          output: null,
         },
       },
       run,
@@ -1416,37 +1450,9 @@ export class Chat extends AIChatAgent<Env, CodexState> {
                 ]);
               },
               onUsage: (total) => {
-                const before =
-                  this.state.usageTotal?.threadId === total.threadId
-                    ? this.state.usageTotal
-                    : { input: 0, cached: 0, cacheWrite: 0, output: 0 };
-                const current = this.state.executions?.[run.messageId];
-                if (
-                  current &&
-                  total.input >= before.input &&
-                  total.cached >= before.cached &&
-                  (before.cacheWrite === undefined || total.cacheWrite >= before.cacheWrite) &&
-                  total.output >= before.output
-                ) {
-                  this.saveState({
-                    ...this.state,
-                    usageTotal: total,
-                    executions: {
-                      ...this.state.executions,
-                      [run.messageId]: {
-                        ...current,
-                        input: (current.input ?? 0) + total.input - before.input,
-                        cached: (current.cached ?? 0) + total.cached - before.cached,
-                        // Older checkpoints lack a cache-write baseline; that cost remains unknown.
-                        cacheWrite:
-                          before.cacheWrite === undefined ||
-                          (current.input !== null && current.cacheWrite == null)
-                            ? null
-                            : (current.cacheWrite ?? 0) + total.cacheWrite - before.cacheWrite,
-                        output: (current.output ?? 0) + total.output - before.output,
-                      },
-                    },
-                  });
+                const usage = accumulateUsage(this.state.usage!, this.state.usageTotal, total);
+                if (usage) {
+                  this.saveState({ ...this.state, usage, usageTotal: total, usagePending: false });
                 }
               },
               onTurnStarted: (turnId) =>

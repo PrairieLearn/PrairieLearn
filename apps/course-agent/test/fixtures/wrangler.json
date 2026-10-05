@@ -8,7 +8,7 @@
     "UI_ORIGIN": "http://localhost:4315",
     "CODEX_API_KEY": "fake-key-no-inference",
     "PL_SERVICE_TOKEN": "local-fixture-service-token-not-a-secret",
-    "CODEX_MODEL": "fixture-model"
+    "CODEX_MODEL": "gpt-6-astra"
   },
   "durable_objects": {
     "bindings": [

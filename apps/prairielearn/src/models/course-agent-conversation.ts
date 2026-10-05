@@ -16,6 +16,7 @@ import {
   type CourseAgentConversation,
   CourseAgentConversationSchema,
   CourseAgentOperationSchema,
+  type CourseAgentUsage,
 } from '../lib/db-types.js';
 
 import { insertAuditEvent } from './audit-event.js';
@@ -187,3 +188,24 @@ export async function reserveContinuation(
     return (await selectOptionalOperation(row.id, operation_id))!.dispatch_id;
   });
 }
+
+/** Latest cumulative snapshot, not an increment: repeated/out-of-order deliveries are safe. */
+export const saveConversationUsage = async (id: string, usage: CourseAgentUsage) => {
+  await execute(sql.update_conversation_usage, {
+    id,
+    usage: JSON.stringify(usage),
+    version: usage.version,
+  });
+  return queryRow(sql.select_conversation_by_id, { id }, CourseAgentConversationSchema);
+};
+export const selectUserAccountingConversations = (user_id: string) =>
+  queryRows(sql.select_user_accounting_conversations, { user_id }, CourseAgentConversationSchema);
+export const selectUserCapacity = (user_id: string, id: string) =>
+  queryRow(
+    sql.select_user_capacity,
+    { user_id, id },
+    z.object({ active: z.number(), current_active: z.boolean(), unknown: z.boolean() }),
+  );
+
+export const selectConversationForUpdate = (id: string) =>
+  queryRow(sql.select_conversation_for_update, { id }, CourseAgentConversationSchema);

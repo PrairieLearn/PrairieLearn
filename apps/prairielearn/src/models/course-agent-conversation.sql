@@ -192,3 +192,97 @@ WHERE
   AND o.dispatch_id = v.dispatch_id
   AND o.status IN ('admitted', 'running')
   AND o.status <> v.status;
+
+-- BLOCK update_conversation_usage
+UPDATE course_agent_conversations
+SET
+  usage = $usage::jsonb
+WHERE
+  id = $id
+  AND (
+    usage IS NULL
+    OR (usage ->> 'version')::bigint < $version
+    OR (
+      (usage ->> 'version')::bigint = $version
+      AND usage -> 'pricing' = 'null'::jsonb
+    )
+  );
+
+-- BLOCK select_conversation_by_id
+SELECT
+  *
+FROM
+  course_agent_conversations
+WHERE
+  id = $id;
+
+-- BLOCK select_user_accounting_conversations
+SELECT
+  c.*
+FROM
+  course_agent_conversations AS c
+  JOIN courses AS course ON course.id = c.course_id
+  AND course.deleted_at IS NULL
+WHERE
+  c.user_id = $user_id
+  AND (
+    c.usage IS NOT NULL
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        course_agent_operations AS o
+      WHERE
+        o.conversation_id = c.id
+    )
+  );
+
+-- BLOCK select_user_capacity
+WITH
+  activity AS (
+    SELECT
+      c.id,
+      EXISTS (
+        SELECT
+          1
+        FROM
+          course_agent_operations AS o
+        WHERE
+          o.conversation_id = c.id
+          AND o.status IN ('admitted', 'running')
+      ) AS active,
+      EXISTS (
+        SELECT
+          1
+        FROM
+          course_agent_operations AS o
+        WHERE
+          o.conversation_id = c.id
+          AND o.status <> 'rejected'
+      )
+      AND (
+        c.usage IS NULL
+        OR c.usage -> 'estimatedCost' = 'null'::jsonb
+      ) AS unknown
+    FROM
+      course_agent_conversations AS c
+      JOIN courses AS course ON course.id = c.course_id
+      AND course.deleted_at IS NULL
+    WHERE
+      c.user_id = $user_id
+  )
+SELECT
+  count(*) FILTER (
+    WHERE
+      active
+  )::integer AS active,
+  COALESCE(
+    bool_or(active) FILTER (
+      WHERE
+        id = $id
+    ),
+    false
+  ) AS current_active,
+  COALESCE(bool_or(unknown), false) AS unknown
+FROM
+  activity;

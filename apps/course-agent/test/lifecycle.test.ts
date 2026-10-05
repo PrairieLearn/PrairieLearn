@@ -85,29 +85,35 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
   it('counts cache writes once and preserves the usage baseline through checkpoint recovery', async () => {
     const c = conversation();
     const first = await c.send();
-    const usage = { input: 100, cached: 40, cacheWrite: 50, output: 10 };
+    const usage = { input: 100, cached: 40, cacheWrite: 50, output: 20 };
     await c.request('test/usage', usage);
     await expect
-      .poll(async () => (await c.request('snapshot')).executions[first].cacheWrite)
+      .poll(async () => (await c.request('snapshot')).conversationUsage.cacheWrite)
       .toBe(50);
     await c.request('test/usage', usage);
-    expect((await c.request('snapshot')).executions[first]).toMatchObject(usage);
+    expect((await c.request('snapshot')).conversationUsage).toMatchObject(usage);
     await expect
       .poll(async () => (await c.request('diagnostics')).state, { timeout: 15000 })
       .toBe('waiting_for_user');
     await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
     await expect.poll(async () => (await c.request('diagnostics')).state).toBe('absent');
     const second = await c.send();
-    await c.request('test/usage', { input: 200, cached: 80, cacheWrite: 100, output: 20 });
+    await c.request('test/usage', { input: 200, cached: 80, cacheWrite: 100, output: 40 });
     await expect
-      .poll(async () => (await c.request('snapshot')).executions[second].cacheWrite)
-      .toBe(50);
-    expect((await c.request('snapshot')).executions[second]).toMatchObject(usage);
-    expect((await c.request('snapshot')).executions[first]).toMatchObject(usage);
+      .poll(async () => (await c.request('snapshot')).conversationUsage.cacheWrite)
+      .toBe(100);
+    expect((await c.request('snapshot')).conversationUsage).toMatchObject({
+      input: 200,
+      cached: 80,
+      cacheWrite: 100,
+      output: 40,
+    });
+    expect((await c.request('snapshot')).executions[first].input).toBeUndefined();
+    expect((await c.request('snapshot')).executions[second].input).toBeUndefined();
     await c.request('cancel', {});
   });
 
-  it('compacts broadcast state without losing archived usage or dispatch fences', async () => {
+  it('compacts broadcast state without losing archived dispatch receipts or fences', async () => {
     const c = conversation();
     const ids = Array.from({ length: 150 }, () => randomUUID());
     const dispatches = ids.map(() => randomUUID());
@@ -133,6 +139,8 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     expect(Object.keys(state.rejectedDispatches)).toHaveLength(100);
     const saved = await c.request(`snapshot?ids=${encodeURIComponent(JSON.stringify([ids[0]]))}`);
     expect(saved.executions[ids[0]]).toEqual(receipts[ids[0]]);
+    expect(saved.conversationUsage.input).toBeNull();
+    expect(saved.conversationUsage.output).toBeNull();
     expect(
       await c.request('reconcile-admissions', {
         admissions: [{ id: ids[0], dispatchId: dispatches[0] }],

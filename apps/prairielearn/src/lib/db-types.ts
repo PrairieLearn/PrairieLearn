@@ -3,6 +3,7 @@
 
 import { z } from 'zod';
 
+import { conversationUsageSchema } from '@prairielearn/course-agent-contract';
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
@@ -703,6 +704,18 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+export const CourseAgentUsageSchema = conversationUsageSchema.extend({
+  estimatedCost: z.number().nonnegative().nullable(),
+  pricing: z
+    .object({
+      cachedInput: z.number(),
+      cacheWrite: z.number(),
+      input: z.number(),
+      output: z.number(),
+    })
+    .nullable(),
+});
+export type CourseAgentUsage = z.infer<typeof CourseAgentUsageSchema>;
 export const CourseAgentConversationSchema = z.object({
   branch: z.string(),
   course_id: IdSchema,
@@ -712,6 +725,7 @@ export const CourseAgentConversationSchema = z.object({
   operation_number: z.number(),
   repository: z.string(),
   title: z.string(),
+  usage: CourseAgentUsageSchema.nullable(),
   user_id: IdSchema,
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
