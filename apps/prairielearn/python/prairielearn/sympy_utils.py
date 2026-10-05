@@ -35,7 +35,7 @@ from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
-from prairielearn.misc_utils import escape_unicode_string, full_unidecode
+from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
@@ -343,18 +343,6 @@ class HasCommentError(BaseSympyError):
 @dataclass
 class HasInvalidSymbolError(BaseSympyError):
     symbol: str
-
-
-@dataclass
-class HasInvalidCharacterError(BaseSympyError):
-    offset: int
-    character: str
-
-
-@dataclass
-class HasPlusMinusError(BaseSympyError):
-    offset: int
-    character: str
 
 
 # Deprecated / unused, kept for backwards compatibility.
@@ -774,8 +762,7 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         index of the character in expr that it came from.
 
     Raises:
-        HasInvalidCharacterError: If expr contains a character that cannot be transliterated.
-        HasPlusMinusError: If expr contains "±" or "∓".
+        HasInvalidSymbolError: If expr contains a character that cannot be transliterated.
     """
     const = _Constants
     parts: list[str] = []
@@ -784,20 +771,19 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
-        elif char in const.plus_minus_operators:
-            raise HasPlusMinusError(ind, char)
-        elif unicodedata.decomposition(char).startswith(("<super>", "<sub>")):
-            # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
-            # writes exponents and subscripts with "^" and "_", so these only come
-            # from pasted text.
-            raise HasInvalidCharacterError(ind, char)
+        elif char in const.plus_minus_operators or unicodedata.decomposition(
+            char
+        ).startswith(("<super>", "<sub>")):
+            # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
+            # formula editor writes exponents and subscripts with "^" and "_".
+            raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
         elif char not in const.set_operators:
             normalized_char = full_unidecode(greek_unicode_transform(char))
             # unidecode uses "[?]" for characters it doesn't know, which would
             # otherwise be misreported as set notation.
             if normalized_char == "[?]" and char != normalized_char:
-                raise HasInvalidCharacterError(ind, char)
+                raise HasInvalidSymbolError(char)
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
@@ -855,6 +841,7 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
+        HasInvalidExpressionError: If the expression contains "***".
         HasSetNotationError: If the expression contains interval or set characters.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
@@ -872,6 +859,11 @@ def evaluate_with_source(
     ind = normalized_expr.find("#")
     if ind != -1:
         raise HasCommentError(char_offsets[ind])
+
+    # Python would read "***" (e.g. the formula editor's \star) as "**" followed by
+    # "*", and report the syntax error at an offset into SymPy's transformed code.
+    if stars := re.search(r"\*{3,}", normalized_expr):
+        raise HasInvalidExpressionError(char_offsets[stars.start()])
 
     # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_sets and any(
@@ -1447,18 +1439,6 @@ def try_parse_string_as_sympy(
     except HasCommentError as exc:
         return SympyParseFailure(
             f'Your answer must not contain the character "#". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasPlusMinusError as exc:
-        return SympyParseFailure(
-            f'Your answer uses "{exc.character}", which gives two values, but this question expects a single expression. '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasInvalidCharacterError as exc:
-        return SympyParseFailure(
-            f'Your answer contains the unsupported character "{html.escape(escape_unicode_string(exc.character))}". '
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )

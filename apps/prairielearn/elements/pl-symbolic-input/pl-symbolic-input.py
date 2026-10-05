@@ -486,8 +486,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             submitted_answer, data["raw_submitted_answers"].get(name + "-latex")
         )
         if submitted_answer is None:
+            # Same message as a SymPy parse error without a known location
             data["format_errors"][name] = (
-                'Your answer\'s "±" could not be read. Please re-enter it.'
+                "Your answer has a syntax error. "
+                "This issue might be caused by mismatched parentheses or some other misplaced symbol."
             )
             data["submitted_answers"][name] = None
             return
@@ -860,7 +862,8 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
-_ARGUMENT_TOKEN_PATTERN = re.compile(r"\*\*|.", re.DOTALL)
+# Only the characters that can end a function argument or change the nesting depth
+_ARGUMENT_TOKEN_PATTERN = re.compile(r"\*+|[()\[\]{}+\-/,]")
 
 
 def _find_bare_argument_end(text: str, start: int) -> int | None:
@@ -871,20 +874,23 @@ def _find_bare_argument_end(text: str, start: int) -> int | None:
         The index of the "*", or None if the argument ends some other way.
     """
     depth = 0
-    # "**" is matched as one token, so a power never ends the argument
+    # A run of "*" is matched as one token, so only a lone "*" ends the argument
     for match in _ARGUMENT_TOKEN_PATTERN.finditer(text, start):
-        token = match.group(0)
-        if token in "([{":
-            depth += 1
-        elif token in ")]}":
-            if depth == 0:
-                return None
-            depth -= 1
-        elif depth == 0:
-            if token == "*":
-                return match.start()
-            if token in "+-/,":
-                return None
+        match match.group(0):
+            case "(" | "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                if depth == 0:
+                    return None
+                depth -= 1
+            case "*":
+                if depth == 0:
+                    return match.start()
+            case "+" | "-" | "/" | ",":
+                if depth == 0:
+                    return None
+            case _:
+                pass
     return None
 
 
