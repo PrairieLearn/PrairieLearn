@@ -64,7 +64,6 @@ body:has(div.app-main-container) {
 }
 
 /* Let full-height content shrink below its intrinsic height so inner scroll regions can scroll. */
-.app-main-container-full-height,
 .app-content-full-height {
   min-height: 0;
 }

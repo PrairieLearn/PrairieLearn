@@ -408,7 +408,6 @@ export function PageLayout({
             <div
               class="${clsx(
                 sideNavEnabled && 'app-main-container',
-                resolvedOptions.fullHeight && 'app-main-container-full-height',
                 !sideNavEnabled && resolvedOptions.fullWidth && 'w-100',
                 !sideNavEnabled && resolvedOptions.fullHeight && 'h-100',
                 'd-flex flex-column',
