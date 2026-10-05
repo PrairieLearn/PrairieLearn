@@ -438,7 +438,8 @@
           '7',
           '8',
           '9',
-          '+',
+          // "a \pm b" is the finite set {a + b, a - b}, so it's only offered with sets
+          allowSets ? { latex: '+', variants: ['\\pm', '\\mp'] } : '+',
           '[separator]',
           allowSets ? makeShortcutProxy({ latex: '\\{ #? \\}', insert: '\\{{#@}\\}' }, mf) : 'e',
           ...onlyIfSets(','),

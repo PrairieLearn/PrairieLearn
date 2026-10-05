@@ -892,11 +892,12 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
-        elif char in const.plus_minus_operators or unicodedata.decomposition(
-            char
-        ).startswith(("<super>", "<sub>")):
-            # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
-            # formula editor writes exponents and subscripts with "^" and "_".
+        elif char in const.plus_minus_operators:
+            # Kept as-is for evaluate_with_source, which expands them into a set.
+            pass
+        elif unicodedata.decomposition(char).startswith(("<super>", "<sub>")):
+            # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
+            # writes exponents and subscripts with "^" and "_".
             raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
         elif char not in const.set_operators:
@@ -986,14 +987,50 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
-        HasInvalidExpressionError: If the expression contains "***".
-        HasSetNotationError: If the expression contains interval or set characters.
+        HasInvalidExpressionError: If the expression contains "***", or combines "±" or "∓" with set notation.
+        HasSetNotationError: If the expression contains interval or set characters, or "±" or "∓" without sets.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
     normalized_expr, char_offsets = _normalize_expr(expr)
+
+    plus_minus_index = next(
+        (
+            ind
+            for ind, char in enumerate(normalized_expr)
+            if char in _Constants.plus_minus_operators
+        ),
+        None,
+    )
+    if plus_minus_index is not None:
+        offset = char_offsets[plus_minus_index]
+        if not allow_sets:
+            raise HasSetNotationError
+        # "a ± b" is the set {a + b, a - b}. Every "±" takes the same sign and
+        # every "∓" the opposite one, so "a ± b ∓ c" is {a + b - c, a - b + c}.
+        # The one-character replacements keep error offsets aligned with expr.
+        results = [
+            evaluate_with_source(
+                expr.translate(str.maketrans({"±": plus, "∓": minus})),
+                locals_for_eval,
+                allow_complex=allow_complex,
+                allow_sets=True,
+                simplify_expression=simplify_expression,
+                allow_extra_symbols=allow_extra_symbols,
+            )
+            for plus, minus in (("+", "-"), ("-", "+"))
+        ]
+        values = [value for value, _ in results]
+        if any(isinstance(value, sympy.Set) for value in values):
+            raise HasInvalidExpressionError(offset)
+        codes = [code for _, code in results]
+        return sympy.FiniteSet(*values), (
+            f"FiniteSet({codes[0]}, {codes[1]})"
+            if all(isinstance(code, str) for code in codes)
+            else codes[0]
+        )
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates

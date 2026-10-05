@@ -953,6 +953,28 @@ class TestExceptions:
         assert f'invalid symbol "{text[1]}"' in result.error
         assert f"<pre>{text}\n ^" in result.error
 
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("1 ± n", "{1 + n, 1 - n}"),
+            ("±n", "{n, -n}"),
+            # Every ± takes the same sign, and every ∓ the opposite one
+            ("1 ± n ∓ 2", "{n - 1, 3 - n}"),
+            ("sqrt(4 ± n)", "{sqrt(4 + n), sqrt(4 - n)}"),
+            ("n ± 0", "{n}"),
+        ],
+    )
+    def test_plus_minus_gives_finite_set(self, text: str, expected: str) -> None:
+        assert psu.convert_string_to_sympy(
+            text, self.VARIABLES, allow_sets=True
+        ) == psu.convert_string_to_sympy(expected, self.VARIABLES, allow_sets=True)
+
+    @pytest.mark.parametrize("text", ["{1 ± n, 2}", "(1 ± n, 2)", "{1} | {1 ± n}"])
+    def test_plus_minus_rejected_with_set_notation(self, text: str) -> None:
+        result = psu.try_parse_string_as_sympy(text, self.VARIABLES, allow_sets=True)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "with set notation" in result.error
+
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
         with pytest.raises(psu.HasConflictingVariableError):
