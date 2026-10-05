@@ -30,7 +30,13 @@ export interface Run {
 export interface CodexState {
   rejectedDispatches?: Record<string, true>;
   repository?: { repository: string; branch: string };
-  usageTotal?: { threadId: string; input: number; cached: number; output: number };
+  usageTotal?: {
+    threadId: string;
+    input: number;
+    cached: number;
+    cacheWrite?: number;
+    output: number;
+  };
   /**
    * Prompt/continuation receipts correlate acceptance and incremental token totals.
    * Terminal entries are archived to SQLite, so broadcasts stay bounded without
@@ -44,6 +50,7 @@ export interface CodexState {
       model: string;
       input: number | null;
       cached: number | null;
+      cacheWrite?: number | null;
       output: number | null;
     }
   >;

@@ -74,16 +74,7 @@ export const ConfigSchema = z.object({
       maxConcurrentPerCourse: z.number().int().positive().default(5),
       maxRequestsPerHour: z.number().int().positive().default(30),
       dailyCostLimit: z.number().positive().default(20),
-      pricing: z
-        .record(
-          z.string(),
-          z.object({
-            input: z.number().nonnegative(),
-            cachedInput: z.number().nonnegative(),
-            output: z.number().nonnegative(),
-          }),
-        )
-        .default({}),
+      pricing: z.record(z.string(), TokenPricingSchema).default({}),
     })
     .nullable()
     .default(null),

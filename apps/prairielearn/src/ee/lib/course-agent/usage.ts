@@ -23,20 +23,42 @@ export function modelPricing(model: string) {
     config.courseAgent?.pricing[model] ??
     (
       config.costPerMillionTokens as Partial<
-        Record<string, { input: number; cachedInput: number; output: number }>
+        Record<string, { input: number; cachedInput: number; cacheWrite: number; output: number }>
       >
     )[model]
   );
 }
 export function estimatedCost(
-  usage: { input: number | null; cached: number | null; output: number | null },
-  price: { input: number; cachedInput: number; output: number } | undefined,
+  usage: {
+    input: number | null;
+    cached: number | null;
+    cacheWrite?: number | null;
+    output: number | null;
+  },
+  price: { input: number; cachedInput: number; cacheWrite?: number; output: number } | undefined,
 ) {
-  if (price?.input === 0 && price.cachedInput === 0 && price.output === 0) return 0;
-  if (!price || usage.input === null || usage.output === null || usage.cached === null) return null;
+  if (
+    price?.input === 0 &&
+    price.cachedInput === 0 &&
+    price.cacheWrite === 0 &&
+    price.output === 0
+  ) {
+    return 0;
+  }
+  if (
+    price?.cacheWrite === undefined ||
+    usage.input === null ||
+    usage.output === null ||
+    usage.cached === null ||
+    usage.cacheWrite == null
+  ) {
+    return null;
+  }
+  // Codex includes cache reads and writes in inputTokens; each subset has its own rate.
   return (
-    ((usage.input - usage.cached) * price.input +
+    ((usage.input - usage.cached - usage.cacheWrite) * price.input +
       usage.cached * price.cachedInput +
+      usage.cacheWrite * price.cacheWrite +
       usage.output * price.output) /
     1_000_000
   );
@@ -90,8 +112,12 @@ export async function recordUsage(conversation: CourseAgentConversation, snapsho
     if (!value || (value.dispatchId && value.dispatchId !== existing.dispatch_id)) continue;
     if (value.status === 'running' && !['admitted', 'running'].includes(existing.status)) continue;
     const price =
-      (existing.pricing as { input: number; cachedInput: number; output: number } | null) ??
-      modelPricing(value.model);
+      (existing.pricing as {
+        input: number;
+        cachedInput: number;
+        cacheWrite?: number;
+        output: number;
+      } | null) ?? modelPricing(value.model);
     const cost = estimatedCost(value, price);
     if (
       existing.status === value.status &&
@@ -102,7 +128,9 @@ export async function recordUsage(conversation: CourseAgentConversation, snapsho
         (existing.cached_input_tokens !== null && existing.cached_input_tokens >= value.cached)) &&
       (value.output === null ||
         (existing.output_tokens !== null && existing.output_tokens >= value.output)) &&
-      (cost === null || (existing.estimated_cost !== null && existing.estimated_cost >= cost))
+      (cost === null
+        ? existing.estimated_cost === null
+        : existing.estimated_cost !== null && existing.estimated_cost >= cost)
     ) {
       continue;
     }

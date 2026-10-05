@@ -29,7 +29,13 @@ export async function openCodexTurn(
     runId: string;
     write: (chunk: UIMessageChunk) => void;
     onTurnStarted: (turnId: string) => void;
-    onUsage?: (value: { threadId: string; input: number; cached: number; output: number }) => void;
+    onUsage?: (value: {
+      threadId: string;
+      input: number;
+      cached: number;
+      cacheWrite: number;
+      output: number;
+    }) => void;
     onToolCall: (params: DynamicToolCallParams) => Promise<DynamicToolCallResponse>;
   },
 ) {
@@ -122,6 +128,7 @@ export async function openCodexTurn(
         threadId: thread.id,
         input: usage.inputTokens,
         cached: usage.cachedInputTokens,
+        cacheWrite: usage.cacheWriteInputTokens,
         output: usage.outputTokens,
       });
     } else if (event.method === 'turn/started') {

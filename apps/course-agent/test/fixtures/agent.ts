@@ -69,6 +69,10 @@ export class Chat extends ProductionChat {
       await this.fixture().configureLaunch(await request.json());
       return new Response(null, { status: 204 });
     }
+    if (path.endsWith('/test/usage')) {
+      await this.fixture().reportUsage(await request.json());
+      return new Response(null, { status: 204 });
+    }
     if (path.endsWith('/test/host-tool')) {
       const { name, input } = await request.json<{
         name: string;

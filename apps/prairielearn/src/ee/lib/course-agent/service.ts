@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import {
   type ApprovalDecision,
+  ChatError,
   type ChatSnapshot,
   type PendingTool,
   approvalDisplaySchema,
@@ -129,7 +130,12 @@ export async function provider(
         body: JSON.stringify(destination(course)),
         signal: AbortSignal.timeout(10000),
       },
-    );
+    ).catch(() => {
+      throw new ChatError(
+        502,
+        'Course agent connection failed. Your message was not sent. Check the Worker is running, then retry the send.',
+      );
+    });
     if (!response.ok) {
       if (response.status === 409) {
         throw new TRPCError({
@@ -140,7 +146,16 @@ export async function provider(
       }
       throw workerResponseError(response.status);
     }
-    const model = z.object({ model: z.string().min(1) }).parse(await response.json());
+    const parsed = z
+      .object({ model: z.string().min(1) })
+      .safeParse(await response.json().catch(() => null));
+    if (!parsed.success) {
+      throw new ChatError(
+        502,
+        'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
+      );
+    }
+    const model = parsed.data;
     if (!modelPricing(model.model)) {
       throw new TRPCError({
         code: 'PRECONDITION_FAILED',
