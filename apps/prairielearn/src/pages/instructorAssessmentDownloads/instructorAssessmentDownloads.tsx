@@ -1,3 +1,4 @@
+import { once } from 'node:events';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
@@ -5,7 +6,7 @@ import { ZipArchive } from 'archiver';
 import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 
-import { stringifyStream } from '@prairielearn/csv';
+import { Stringifier, stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import {
   MINUTE_IN_MILLISECONDS,
@@ -364,29 +365,55 @@ async function pipeCursorToArchive<T>(
     '',
   );
   const prefix = `${dirname}/`;
-  archive.append('', { name: prefix });
-  archive.pipe(res);
+  const controller = new AbortController();
+  const archiveFinished = pipeline(archive, res);
+  void archiveFinished.catch((err) => controller.abort(err));
 
-  for await (const rows of cursor.iterate(100)) {
-    for (const row of rows) {
-      // Sort files to ensure consistent ordering; this is done
-      // for backwards compatibility and may not be necessary.
-      const files = extractFiles(row)?.sort((a, b) =>
-        (a.filename ?? '').localeCompare(b.filename ?? ''),
-      );
+  async function appendFile(contents: string | Buffer, name: string) {
+    controller.signal.throwIfAborted();
+    const added = once(archive, 'entry', { signal: controller.signal });
+    archive.append(contents, { name });
+    await added;
+  }
 
-      if (!files) continue;
+  try {
+    let directoryAdded = false;
+    // Submission files can be tens of megabytes each. Keep only one row in memory.
+    for await (const rows of cursor.iterate(1)) {
+      for (const row of rows) {
+        controller.signal.throwIfAborted();
+        if (!directoryAdded) {
+          // Start cursor iteration before writing so early output failures also close it.
+          await appendFile('', prefix);
+          directoryAdded = true;
+        }
 
-      for (const file of files) {
-        // Exclude any files that are missing a name or contents.
-        // We allow empty files, so we specifically check for null, not truthiness.
-        if (!file.filename || file.contents == null) continue;
+        // Sort files to ensure consistent ordering; this is done
+        // for backwards compatibility and may not be necessary.
+        const files = extractFiles(row)?.sort((a, b) =>
+          (a.filename ?? '').localeCompare(b.filename ?? ''),
+        );
 
-        archive.append(file.contents, { name: prefix + file.filename });
+        if (!files) continue;
+
+        for (const file of files) {
+          // Exclude any files that are missing a name or contents.
+          // We allow empty files, so we specifically check for null, not truthiness.
+          if (!file.filename || file.contents == null) continue;
+
+          // append() queues buffers without applying backpressure. Wait until this
+          // file has been consumed before fetching or decoding more submissions.
+          await appendFile(file.contents, prefix + file.filename);
+        }
       }
     }
+    if (!directoryAdded) await appendFile('', prefix);
+    await archive.finalize();
+    await archiveFinished;
+  } finally {
+    archive.destroy();
+    await archiveFinished.catch(() => {});
   }
-  await archive.finalize();
 }
 
 router.get(
@@ -462,6 +489,18 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
     columns: columns.map(([header, key]) => ({ header, key })),
     transform,
   });
+}
+
+/** Stream large submission rows without prefetching a batch of file contents. */
+function streamSubmissionRows<T>(cursor: sqldb.CursorIterator<T>, transform: (row: T) => unknown) {
+  return Readable.from(
+    (async function* () {
+      for await (const rows of cursor.iterate(1)) {
+        yield transform(rows[0]);
+      }
+    })(),
+    { highWaterMark: 1 },
+  );
 }
 
 async function sendInstancesCsv(
@@ -723,8 +762,7 @@ router.get(
 
       res.attachment(req.params.filename);
       await pipeline(
-        cursor.stream(100),
-        stringifyWithColumns(columns, (row: AssessmentInstanceSubmissionRow) => ({
+        streamSubmissionRows(cursor, (row) => ({
           ...row,
           assessment_label: assessmentName,
           qid: qidWithSharingName(res.locals, row),
@@ -750,6 +788,11 @@ router.get(
                   items: row.rubric_grading_items ?? [],
                 },
         })),
+        new Stringifier({
+          header: true,
+          columns: columns.map(([header, key]) => ({ header, key })),
+          writableHighWaterMark: 1,
+        }),
         res,
       );
     } else if (req.params.filename === filenames.filesForManualGradingZipFilename) {
