@@ -325,7 +325,6 @@ function SpreadsheetEditor({
   const [activeCell, setActiveCell] = useState<CellPosition | null>(null);
   const [selectedRange, setSelectedRange] = useState<CellRange | null>(null);
   const [formulaText, setFormulaText] = useState('');
-  const [formulaFocused, setFormulaFocused] = useState(false);
   const [announcement, setAnnouncement] = useState(initialStateRef.current.error);
   const [past, setPast] = useState<SpreadsheetRawSubmission[]>([]);
   const [future, setFuture] = useState<SpreadsheetRawSubmission[]>([]);
@@ -348,6 +347,7 @@ function SpreadsheetEditor({
   const pointerRef = useRef<CellRange | null>(null);
   const pointingDragRef = useRef(false);
   const [expanded, setExpanded] = useState(false);
+  const [tileEditing, setTileEditing] = useState(false);
   const expandButtonRef = useRef<HTMLButtonElement>(null);
 
   const sheet = config.template.sheets[activeSheetIndex];
@@ -713,8 +713,9 @@ function SpreadsheetEditor({
     return { rowIndex, inputs, results, errors };
   });
 
+  // Shown for the active cell's formula whether or not it is being edited.
   const pointedRanges = run(() => {
-    if (!formulaFocused || !formulaText.startsWith('=')) return [];
+    if (!activeCell || !formulaText.startsWith('=')) return [];
     return formulaReferences(tokenizeFormula(formulaText.slice(1))).flatMap((reference) => {
       const resolved = resolveReference(reference.token.text, sheet);
       if (!resolved || (resolved.sheetName !== null && resolved.sheetName !== sheet.name)) {
@@ -1232,8 +1233,8 @@ function SpreadsheetEditor({
           formula in the formula bar, use the Up and Down arrow keys to choose a suggested function
           and Enter or Tab to insert it. Where the formula expects a value, click or drag across
           cells to insert a cell reference; right after that, the arrow keys move the reference and
-          Shift with the arrow keys resizes it. Tab and Shift+Tab move between the missing parts of
-          a formula.
+          Shift with the arrow keys resizes it.
+          {tileEditing && ' Tab and Shift+Tab move between the missing parts of a formula.'}
         </p>
         <div className="pl-spreadsheet-toolbar" role="toolbar" aria-label="Spreadsheet actions">
           <button
@@ -1268,10 +1269,23 @@ function SpreadsheetEditor({
           >
             Fill right
           </button>
+          <div className="form-check form-switch ms-auto mb-0 align-self-center">
+            <input
+              id={`${instructionsId}-tile-editing`}
+              className="form-check-input"
+              type="checkbox"
+              role="switch"
+              checked={tileEditing}
+              onChange={(event) => setTileEditing(event.currentTarget.checked)}
+            />
+            <label className="form-check-label small" htmlFor={`${instructionsId}-tile-editing`}>
+              Tile editing
+            </label>
+          </div>
           <button
             ref={expandButtonRef}
             type="button"
-            className="btn btn-sm btn-outline-secondary ms-auto"
+            className="btn btn-sm btn-outline-secondary"
             aria-label={expanded ? 'Exit full screen' : 'Open spreadsheet full screen'}
             title={expanded ? 'Exit full screen' : 'Open full screen'}
             onClick={() => setExpanded(!expanded)}
@@ -1290,6 +1304,7 @@ function SpreadsheetEditor({
           <FormulaInput
             ref={formulaInputRef}
             id={`${instructionsId}-formula`}
+            tiles={tileEditing}
             adornment={
               <>
                 {selectionText && (
@@ -1319,9 +1334,7 @@ function SpreadsheetEditor({
               if (activeCell) updateDraft(activeCell.row, activeCell.column, value);
             }}
             onAnnounce={setAnnouncement}
-            onFocus={() => setFormulaFocused(true)}
             onBlur={() => {
-              setFormulaFocused(false);
               editOriginRef.current = 'bar';
               if (skipFormulaBlurRef.current) {
                 skipFormulaBlurRef.current = false;

@@ -69,11 +69,16 @@ export function getCompletion(formula: string, caret: number): FormulaCompletion
   };
 }
 
-/** Replaces the completed identifier, returning the new formula and caret position. */
+/**
+ * Replaces the completed identifier, returning the new formula and caret position. With
+ * `argumentHoles`, a comma is inserted for each required argument so the tile view lays
+ * out a hole for each.
+ */
 export function applyCompletion(
   formula: string,
   completion: FormulaCompletion,
   signature: FormulaFunctionSignature,
+  { argumentHoles = true }: { argumentHoles?: boolean } = {},
 ): { formula: string; caret: number } {
   const before = formula.slice(0, completion.start);
   const after = formula.slice(completion.end);
@@ -90,7 +95,9 @@ export function applyCompletion(
   // Commas for every required argument lay out a hole for each, which Tab steps through.
   // Text after the call is closed off so that it doesn't become the last argument.
   const required = signature.args.findIndex((argument) => argument.optional);
-  const commas = ','.repeat((required === -1 ? signature.args.length : required) - 1);
+  const commas = argumentHoles
+    ? ','.repeat((required === -1 ? signature.args.length : required) - 1)
+    : '';
   const close = after.trim() === '' ? '' : ')';
   const opening = `${signature.name}(`;
   return {

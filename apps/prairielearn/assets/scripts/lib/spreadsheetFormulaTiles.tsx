@@ -1,6 +1,10 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
+import {
+  formulaReferences,
+  formulaTokens,
+} from '../../../src/lib/client/spreadsheetFormula/lexer.js';
 import type {
   FormulaHole,
   FormulaStructure,
@@ -28,7 +32,12 @@ const HOLE_LABELS: Record<FormulaHole['kind'], string> = {
  * offsets, splitting it so that selected characters are highlighted and the caret is
  * drawn between characters.
  */
-function renderText(text: string, start: number, selection: FormulaSelection | null): ReactNode[] {
+function renderText(
+  text: string,
+  start: number,
+  selection: FormulaSelection | null,
+  className?: string,
+): ReactNode[] {
   const end = start + text.length;
   const cuts = new Set([start, end]);
   if (selection) {
@@ -49,6 +58,7 @@ function renderText(text: string, start: number, selection: FormulaSelection | n
         key={from}
         data-start={from}
         className={clsx(
+          className,
           selection &&
             selection.start !== selection.end &&
             from >= selection.start &&
@@ -61,6 +71,50 @@ function renderText(text: string, start: number, selection: FormulaSelection | n
     );
   }
   return nodes;
+}
+
+/**
+ * Draws a formula as plain text with each reference in the color of its outline in the
+ * grid, with the caret and selection of the hidden input that is actually being edited.
+ */
+export function FormulaText({
+  value,
+  selection,
+}: {
+  value: string;
+  /** The input's selection while it is focused. */
+  selection: FormulaSelection | null;
+}) {
+  const caret = selection && selection.start === selection.end ? selection.start : null;
+  const segments: { start: number; end: number; colorIndex: number | null }[] = [];
+  let offset = 0;
+  for (const { token, colorIndex } of formulaReferences(formulaTokens(value) ?? [])) {
+    if (token.start > offset) segments.push({ start: offset, end: token.start, colorIndex: null });
+    segments.push({ start: token.start, end: token.end, colorIndex });
+    offset = token.end;
+  }
+  if (offset < value.length || segments.length === 0) {
+    segments.push({ start: offset, end: value.length, colorIndex: null });
+  }
+  const nodes: ReactNode[] = [];
+  for (const { start, end, colorIndex } of segments) {
+    if (caret === start)
+      {nodes.push(<span key={`caret-${start}`} className="pl-spreadsheet-caret" />);}
+    nodes.push(
+      ...renderText(
+        value.slice(start, end),
+        start,
+        selection,
+        clsx(
+          colorIndex !== null && `pl-spreadsheet-reference pl-spreadsheet-ref-fill-${colorIndex}`,
+        ),
+      ),
+    );
+  }
+  if (caret === value.length && caret > 0) {
+    nodes.push(<span key="caret-end" className="pl-spreadsheet-caret" />);
+  }
+  return <>{nodes}</>;
 }
 
 function pieceStart(piece: FormulaPiece) {
