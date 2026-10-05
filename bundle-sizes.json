@@ -159,6 +159,11 @@
     "gzip": 755,
     "brotli": 638
   },
+  "stylesheets/instructorAssessmentManualGradingInstanceQuestion.css": {
+    "raw": 986,
+    "gzip": 408,
+    "brotli": 321
+  },
   "stylesheets/instructorAssessmentQuestions.css": {
     "raw": 1691,
     "gzip": 717,
@@ -175,9 +180,9 @@
     "brotli": 356
   },
   "stylesheets/pageLayout.css": {
-    "raw": 7023,
-    "gzip": 1714,
-    "brotli": 1433
+    "raw": 7155,
+    "gzip": 1744,
+    "brotli": 1465
   },
   "stylesheets/prairielearn-ui.css": {
     "raw": 2962,
