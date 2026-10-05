@@ -860,6 +860,9 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
+_ARGUMENT_TOKEN_PATTERN = re.compile(r"\*\*|.", re.DOTALL)
+
+
 def _find_bare_argument_end(text: str, start: int) -> int | None:
     """
     Find the explicit "*" that ends a function argument starting at `start`.
@@ -868,24 +871,20 @@ def _find_bare_argument_end(text: str, start: int) -> int | None:
         The index of the "*", or None if the argument ends some other way.
     """
     depth = 0
-    i = start
-    while i < len(text):
-        char = text[i]
-        if char in "([{":
+    # "**" is matched as one token, so a power never ends the argument
+    for match in _ARGUMENT_TOKEN_PATTERN.finditer(text, start):
+        token = match.group(0)
+        if token in "([{":
             depth += 1
-        elif char in ")]}":
+        elif token in ")]}":
             if depth == 0:
                 return None
             depth -= 1
         elif depth == 0:
-            if text.startswith("**", i):
-                i += 2
-                continue
-            if char == "*":
-                return i
-            if char in "+-/,":
+            if token == "*":
+                return match.start()
+            if token in "+-/,":
                 return None
-        i += 1
     return None
 
 
@@ -922,18 +921,21 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
     result = []
     pos = 0
-    while (match := pattern.search(text, pos)) is not None:
+    for match in pattern.finditer(text):
+        # Functions inside an argument that was already wrapped are handled by
+        # the recursive call on that (strictly shorter) argument.
+        if match.start() < pos:
+            continue
         start = match.end()
-        result.append(text[pos:start])
         end = _find_bare_argument_end(text, start)
         if end is None:
-            pos = start
             continue
         argument = text[start:end].rstrip()
-        result.append(
-            f"({_wrap_bare_function_arguments(argument, function_names)})"
-            + text[start + len(argument) : end]
-        )
+        result.extend((
+            text[pos:start],
+            f"({_wrap_bare_function_arguments(argument, function_names)})",
+            text[start + len(argument) : end],
+        ))
         pos = end
     result.append(text[pos:])
     return "".join(result)
