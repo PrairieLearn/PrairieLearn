@@ -13,11 +13,19 @@
               "format": "uri"
             },
             "serviceToken": {
-              "type": "string",
-              "minLength": 32
+              "default": null,
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
-          "required": ["workerUrl", "serviceToken"],
+          "required": ["workerUrl"],
           "additionalProperties": false
         },
         {
