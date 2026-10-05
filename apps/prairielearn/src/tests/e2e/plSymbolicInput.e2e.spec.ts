@@ -134,3 +134,32 @@ test.describe('pl-symbolic-input prefix insertion', () => {
     });
   });
 });
+
+test.describe('pl-symbolic-input unicode multiplication keys', () => {
+  test.beforeEach(async ({ page, courseInstance }) => {
+    await openSymbolicInputEditorQuestion(page, courseInstance);
+  });
+
+  test('inserts unicode multiplication keys as \\cdot', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await expect(formulaEditor).toBeVisible();
+
+    // Bullet (e.g. Option+8 on macOS), bullet operator, and asterisk operator.
+    // Playwright can't press non-ASCII keys, so dispatch the keydown directly.
+    for (const key of ['•', '∙', '∗']) {
+      await fillFormulaEditor(formulaEditor, '');
+      await formulaEditor.press('2');
+      await formulaEditor.evaluate((el, key) => {
+        el.shadowRoot
+          ?.querySelector('[part="keyboard-sink"]')
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }),
+          );
+      }, key);
+      await page.keyboard.press('y');
+
+      await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^\{2\}\\cdot y$/);
+      await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('2 * y');
+    }
+  });
+});

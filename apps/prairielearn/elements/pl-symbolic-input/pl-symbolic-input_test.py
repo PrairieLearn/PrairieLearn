@@ -61,6 +61,8 @@ def make_question_data(
         ("|x+|-x+1+2+3+4||", "abs(x+abs(-x+1+2+3+4))"),
         ("|x+|x+1+2+3+4 ||", "abs(x+abs(x+1+2+3+4 ))"),
         ("", ""),
+        # The formula editor writes \lvert and \rvert as U+2223
+        ("2\u2223x\u2223", "2abs(x)"),
     ],
 )
 def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
@@ -164,6 +166,19 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
         # Formatting operators
         ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
+        # Bare function arguments ended by "*" (the editor drops the grouping in `{\ln 4}\cdot`)
+        ("l n 4 * c o t (9x)", True, ["x"], [], "ln (4) * cot (9x)"),
+        ("-9l n 4 * x", False, ["x"], [], "-9ln (4) * x"),
+        ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
+        ("l n 4^(x) * x", False, ["x"], [], "ln (4^(x)) * x"),
+        ("l n 4 x", False, ["x"], [], "ln 4 x"),
+        ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
+        ("l n (4) * x", False, ["x"], [], "ln (4) * x"),
+        ("(l n 4) * x", False, ["x"], [], "(ln 4) * x"),
+        ("m y f u n x * x", False, ["x"], ["myfun"], "myfun (x) * x"),
+        # Operators the editor writes in AsciiMath form (\div and \ast)
+        ("2 -: x", False, ["x"], [], "2 / x"),
+        ("2 ** x", False, ["x"], [], "2 * x"),
     ],
 )
 def test_format_formula_editor_submission_for_sympy(
@@ -177,6 +192,39 @@ def test_format_formula_editor_submission_for_sympy(
         sub, allow_trig, variables, custom_functions
     )
     assert out == expected
+
+
+x = sympy.Symbol("x")
+
+
+@pytest.mark.parametrize(
+    ("a_sub", "expected"),
+    [
+        # Plain-text submissions captured from the formula editor
+        ("l n 4 * c o t (9x)", sympy.log(4) * sympy.cot(9 * x)),
+        ("-9∙l n 4", -9 * sympy.log(4)),
+        (
+            "4^(c s c(9x))(-9∗l n4)∗c o t(9x)c s c(9x)",  # ruff:ignore[ambiguous-unicode-character-string]
+            -9
+            * 4 ** sympy.csc(9 * x)
+            * sympy.log(4)
+            * sympy.cot(9 * x)
+            * sympy.csc(9 * x),
+        ),
+        (
+            "-9 * l n 4 * c o t (9x)",
+            -9 * sympy.log(4) * sympy.cot(9 * x),
+        ),
+    ],
+)
+def test_formula_editor_multiplication_parses(a_sub: str, expected: sympy.Expr) -> None:
+    element_html = build_element_html('variables="x"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": a_sub})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == expected
 
 
 def test_parse_without_variables_attribute_with_assumptions() -> None:
