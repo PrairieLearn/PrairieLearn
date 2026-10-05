@@ -5,3 +5,13 @@ This directory contains the various applications that make up the PrairieLearn p
 - [`prairielearn`](./prairielearn): The PrairieLearn application (frontend & backend).
 - [`grader-host`](./grader-host): The production runner for external grading jobs. `prairielearn` contains a separate implementation that's used during local development.
 - [`workspace-host`](./workspace-host): The runner for workspace containers.
+
+- [`course-agent`](./course-agent): The instructor course agent's local Cloudflare Worker and sandbox development environment. See its README for setup and browser testing.
+
+```mermaid
+flowchart LR
+  PL[prairielearn] --> CA[course-agent]
+  CA --> Sandbox[Codex sandbox]
+  PL --> Grader[grader-host]
+  PL --> Workspace[workspace-host]
+```

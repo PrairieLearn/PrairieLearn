@@ -1,153 +1,124 @@
-# Course agent development
+# Course agent
 
-The course agent runs Codex in a Cloudflare Linux sandbox and exposes a browser
-chat panel in PrairieLearn. Enable it only for courses whose owners should have
-access. This directory contains the local Worker configuration and test fixtures.
+A feature-gated instructor chat that runs Codex in a course checkout. Course owners
+can ask questions, edit files in the sandbox, steer a running turn, and stop it.
 
-## Where the code runs
-
-| Code                                               | Runtime                                    | Responsibility                                                                                   |
-| -------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `worker.ts`                                        | Cloudflare Worker                          | Authenticate requests and route them to a conversation.                                          |
-| `agent.ts`                                         | Chat Durable Object                        | Persist messages and execution receipts; coordinate Send, steering, Stop, recovery, and cleanup. |
-| `app-server.ts`                                    | Chat Durable Object                        | Correlate Codex JSON-RPC acknowledgments and route native notifications.                         |
-| `codex-turn.ts`, `codex-events.ts`                 | Chat Durable Object                        | Control one native turn and translate its events into AI SDK message parts.                      |
-| `codex.ts`                                         | Chat Durable Object                        | Start/connect the sandbox's Codex process and restore or create filesystem checkpoints.          |
-| `sandbox.ts`, `outbound.ts`                        | Cloudflare Worker / Sandbox Durable Object | Enforce outbound destinations and inject credentials outside the container.                      |
-| Codex CLI                                          | Linux sandbox                              | Read and modify the course checkout; run commands.                                               |
-| `apps/prairielearn/src/ee/lib/course-agent/`       | PL webserver                               | Authorize course owners and bridge browser requests to the Worker.                               |
-| `apps/prairielearn/src/ee/components/courseAgent/` | Browser                                    | Display saved messages and live output; send follow-ups, steering, and Stop.                     |
-
-`cleanupDiagnosticsSchema` describes one stored stop/backup/destroy attempt in
-Chat's sandbox state. `sandboxDiagnosticsSchema` describes the complete response
-from `/diagnostics`: that attempt plus lifecycle state, checkpoint warnings, and
-computed expiration times. Neither contains raw SDK exceptions or signed URLs.
-
-## Start with the deterministic fixture
-
-The fixture runs the real Chat Durable Object and its persistence/transport in
-local workerd. A fake Sandbox Durable Object simulates Codex responses, token
-usage, lost acknowledgments, cancellation, and R2 checkpoint contents. It needs
-no Docker, OpenAI key, GitHub access, or network publication. It verifies control
-flow; it does not verify the real Codex process, sandbox isolation, or GitHub.
-
-From the repository root:
-
-```sh
-pnpm install
-make build
-make start-support
-pnpm --filter @prairielearn/course-agent dev:fixture
+```mermaid
+flowchart LR
+  Instructor[Instructor chat] --> PL[PrairieLearn]
+  PL --> Chat[Cloudflare conversation]
+  Chat --> Sandbox[Codex sandbox]
+  Sandbox --> Repo[Course checkout]
+  Chat <--> R2[Idle checkpoint]
 ```
 
-The fixture uses port **8791**. In another terminal, add these local settings to
-`config.json` (or your usual PrairieLearn config file):
+## Scope
+
+- Saved conversations, selection, and unsent drafts across navigation and reloads.
+- Token/cost statistics and request limits; conversation repository/branch changes require a new conversation.
+- Sandbox file edits only: no approval, GitHub publication, or Course Sync.
+- No skill installation or management.
+
+## Local setup
+
+Start from the repository root. Install dependencies and build after switching
+branches; keep Docker running for the real sandbox.
+
+```sh
+make deps
+make start-support
+```
+
+Choose a runtime:
+
+| Runtime      | Start in a separate terminal                           | What to expect                                                                                |
+| ------------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Fixture      | `pnpm --filter @prairielearn/course-agent dev:fixture` | Port 8791. Scripted responses; no Docker, credentials, or GitHub writes.                      |
+| Real sandbox | `pnpm --filter @prairielearn/course-agent dev`         | Port 8790. Codex clones and works in your course repository. Requires Docker and credentials. |
+
+Configure PrairieLearn in `config.json`:
 
 ```json
 {
+  "isEnterprise": true,
+  "features": { "course-agent": true },
   "courseAgent": {
     "workerUrl": "http://localhost:8791",
     "serviceToken": "local-fixture-service-token-not-a-secret"
-  },
-  "features": { "course-agent": true }
+  }
 }
 ```
 
-Start PL with `pnpm --filter @prairielearn/prairielearn dev`. Use an enterprise
-development license, sign in as a course owner, and open a non-example course
-configured with repository `https://github.com/example/course` and branch `main`.
-The fixture binds its conversations to this destination; it never clones it.
-Open the stars button, send a message, send a correction while the answer streams,
-and use Stop. Saved conversations, drafts, and panel selection survive course-page navigation.
-The statistics dialog includes token totals and estimated cost.
+Then start PL in another terminal:
 
-Fixture lifecycle checks:
+```sh
+pnpm --filter @prairielearn/prairielearn dev
+```
+
+Sign in as a **course owner** and open a non-example course. For the fixture, set
+the course repository to `https://github.com/example/course` and branch to `main`.
+For the real sandbox, use the course's actual GitHub repository and branch.
+
+For real execution, copy `.dev.vars.example` to `.dev.vars` and fill in
+`PL_SERVICE_TOKEN`, `CODEX_MODEL`, `CODEX_API_KEY`, and `GITHUB_CLIENT_TOKEN`.
+The service token must match PL's and contain at least 32 characters. Set PL's
+`workerUrl` to `http://localhost:8790`. Keep credentials untracked; local R2
+emulation does not require remote R2 keys. `wrangler.local.jsonc` is for local
+sandbox development.
+
+## Try it in the browser
+
+1. Open the stars button and send “Read infoCourse.json and summarize this course.”
+2. Send a correction while the response streams, then try **Stop**.
+3. With the real sandbox, ask it to edit a scratch file and read it back.
+4. Reload or navigate to another course page: the conversation should remain.
+   Create a second conversation, leave a draft, and switch back to check both are retained.
+5. Leave a completed turn idle for over 10 minutes, then follow up without
+   reloading. The sandbox should restore its files from a checkpoint.
+
+The stars button stays visible but disabled when its connection token is missing;
+hover or focus it for an explanation. Failed tools stay collapsed until opened.
+
+## Troubleshooting
+
+- **Port already in use:** stop the earlier PL/Worker instance before starting another.
+- **Cannot send:** check owner access, the feature flag, course repository/branch,
+  and the matching service token. A changed repository or branch requires a new conversation.
+- **Recovery failed:** use **Retry cleanup** if offered. An unavailable checkpoint
+  requires a new conversation.
+
+The fixture covers chat and recovery behavior. Real model inference, Docker
+networking, and GitHub access need the real-sandbox path. To run focused checks:
 
 ```sh
 pnpm --filter @prairielearn/course-agent test
 pnpm --filter @prairielearn/course-agent test:lifecycle
-pnpm test apps/prairielearn/src/ee/components/courseAgent/chat-transport.test.ts apps/prairielearn/src/ee/lib/course-agent/routes.test.ts
 ```
 
-The lifecycle tests require the fixture running on 8791. They advance its test
-clock instead of sleeping for production deadlines. `scripts/start-fixture.sh`
-starts it and waits for readiness in CI. `pnpm --filter @prairielearn/course-agent
-demo` is an optional one-shot HTTP smoke test: create a conversation, send one
-prompt, and print its saved transcript. The browser is the interactive test path.
-
-## Run the real sandbox locally
-
-Docker must be running. Copy `apps/course-agent/.dev.vars.example` to
-`apps/course-agent/.dev.vars` and fill in:
-
-- `PL_SERVICE_TOKEN`: a random secret of at least 32 characters, matching PL's
-  `courseAgent.serviceToken`.
-- `CODEX_MODEL` and `CODEX_API_KEY`: the model and its API credential.
-- `GITHUB_CLIENT_TOKEN`: access to read your course repository.
-
-Keep `.dev.vars` untracked. Local R2 emulation does not need remote R2 keys.
-Run `pnpm --filter @prairielearn/course-agent dev` and point PL's `workerUrl` to
-`http://localhost:8790`. Configure the course's actual GitHub repository and branch.
-The explicitly named `wrangler.local.jsonc` uses development resources; package
-scripts do not expose a deployment shortcut.
-
-Send a prompt that reads a known course file, then one that edits a scratch file
-and runs a command. Check that live text, tool output, steering, and Stop appear
-in the browser. Sandbox file edits stay in that workspace at this layer.
-
-## Recovery and troubleshooting
-
-- A completed turn enters `waiting_for_user`. After **10 idle minutes**, Chat
-  checkpoints `/workspace` to R2 and destroys the sandbox. A follow-up restores
-  that checkpoint into a new sandbox and resumes the native thread.
-- **Six hours since the last user interaction** is a separate hard cleanup
-  deadline, including while the agent runs. `SANDBOX_IDLE_MS` and `USER_IDLE_MS`
-  in `src/codex.ts` control these deadlines. The app-server's 15-second timeout
-  controls RPC acknowledgments, not how long Codex may work.
-- Stop asks Codex to interrupt. Navigating away or closing a stream only detaches
-  observation. Lost acknowledgments are reconciled against native history;
-  mutating requests are not blindly replayed.
-- Failed cleanup exposes **Retry cleanup**. A missing/expired checkpoint requires
-  a new conversation. A changed course repository or branch invalidates new work
-  in the old conversation; history, Stop, and cleanup remain available.
-- For `bind(): Address already in use`, inspect `lsof -nP -iTCP:8790 -sTCP:LISTEN`
-  (or 8791 for the fixture). Stop your earlier dev instance or use another port
-  and update PL's URL. Do not run two Workers with the same port/persistence path.
-- Wrangler prints the path to its local log. PL logs failed connections and
-  authorization; the statistics dialog shows sanitized lifecycle diagnostics.
-  Never copy credentials or signed checkpoint URLs into issue reports.
-
-## Codex protocol types
-
-The sandbox Dockerfile and development dependency pin the same Codex CLI version.
-`make update-codex-protocol` invokes that CLI's experimental TypeScript generator,
-selects the payload types this integration uses through the TypeScript parser,
-and preserves upstream directories and comments under `src/generated/`. NodeNext
-imports gain `.js` extensions and the repository's Prettier settings are applied.
-`make check-codex-protocol` detects stale, missing, and obsolete generated files.
-Update the CLI dependency and Dockerfile together when changing versions.
+Lifecycle tests need the fixture running. The optional `demo` command sends one
+scripted prompt; the browser is the interactive test path.
 
 ## Saved conversations and usage
 
-Configure `courseAgent.pricing` before sending work, including the fixture model:
-
-```json
-{ "fixture-model": { "input": 0, "cachedInput": 0, "output": 0 } }
+```mermaid
+flowchart LR
+  Chat[Instructor chat] --> History[(Saved conversations and drafts)]
+  Request[Send or steer] --> Limits[Admission limits]
+  Limits --> Sandbox[Codex sandbox]
+  Sandbox --> Stats[Token usage and estimated cost]
 ```
 
-Pricing is per million tokens. Production prices must match the chosen model;
-unknown pricing blocks admission rather than counting the work as free. Defaults
-allow two concurrent requests per user, five per course, 30 requests per hour,
-and a $20 daily estimate limit applied separately to each user across courses
-and each course across owners. Usage in the overlap is counted in both scopes,
-not added together into a combined budget. Unknown completed costs block their
-user and course scopes until reconciled. These are admission limits, not a hard limit on
-one turn's eventual cost. Unconfirmed receipts remain charged as active until
-reconciled; one unavailable conversation must not silently free its slot.
+Open **Statistics** after a turn; usage should not double-count after reload.
+Defaults allow two active requests per user, five per course, 30 requests per
+hour, and a $20 daily estimate limit per user and per course. These limit new
+requests; they do not cap one turn's eventual cost.
 
-In the browser, reload while a response streams, navigate to another course page,
-switch conversations, and return to an unsent draft. Confirm each survives and
-that the statistics dialog updates without duplicating token usage. Turn off the
-feature flag and verify history, Stop, and cleanup remain usable while new work
-is disabled. `courseAgent.test.ts` and `courseAgentUsage.test.ts` cover database
-ownership, operation retries, admission races, and accounting reconciliation.
+For the fixture, add pricing to PL's `courseAgent` settings:
+
+```json
+{ "pricing": { "fixture-model": { "input": 0, "cachedInput": 0, "output": 0 } } }
+```
+
+Real model prices are per million tokens. Unknown pricing or unconfirmed usage
+blocks new work until configured or reconciled. Disabling `course-agent` blocks
+new messages and conversations while preserving history, Stop, and cleanup.
