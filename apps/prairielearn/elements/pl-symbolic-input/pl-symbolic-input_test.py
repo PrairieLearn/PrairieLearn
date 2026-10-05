@@ -106,6 +106,40 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     ) == sympy.FiniteSet(1, 2)
 
 
+@pytest.mark.parametrize(
+    ("formula_editor", "submission"),
+    [
+        # Formula editor plain text for \frac{-b\pm\sqrt{b^2-4ac}}{2a}
+        ("true", "(-b±sqrt(b^2-4a c))/(2a)"),
+        ("false", "(-b ± sqrt(b^2 - 4*a*c))/(2*a)"),
+    ],
+)
+def test_plus_minus_grades_as_finite_set(formula_editor: str, submission: str) -> None:
+    element_html = build_element_html(
+        'variables="a, b, c"',
+        'allowed-types="finite-set"',
+        f'formula-editor="{formula_editor}"',
+        'correct-answer="{(-b + sqrt(b^2 - 4*a*c))/(2*a), (-b - sqrt(b^2 - 4*a*c))/(2*a)}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_plus_minus_is_rejected_without_sets() -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(submitted_answers={"test": "1 ± x"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "gives two values" in data["format_errors"]["test"]
+
+
 def test_set_notation_is_rejected_by_default() -> None:
     element_html = build_element_html()
     data = make_question_data(submitted_answers={"test": "{1, 2}"})
