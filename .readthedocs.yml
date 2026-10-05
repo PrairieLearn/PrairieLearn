@@ -15,8 +15,7 @@ build:
     install:
       - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --frozen --group docs
     pre_build:
-      - curl -fsSL https://d2lang.com/install.sh | sh -s --
-      - cp $HOME/.local/bin/d2 $READTHEDOCS_VIRTUALENV_PATH/bin/d2
+      - D2_VERSION=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/terrastruct/d2/releases/latest | sed 's|.*/||') && curl -fsSL https://github.com/terrastruct/d2/releases/download/$D2_VERSION/d2-$D2_VERSION-linux-amd64.tar.gz | tar -xz --strip-components=2 -C $READTHEDOCS_VIRTUALENV_PATH/bin d2-$D2_VERSION/bin/d2
 
 mkdocs:
   configuration: mkdocs.yml
