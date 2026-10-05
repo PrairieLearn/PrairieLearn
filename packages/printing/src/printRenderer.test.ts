@@ -435,6 +435,17 @@ describe('PrintRenderer', () => {
     ).rejects.toThrow('The printable page failed: No pagination error was provided');
   });
 
+  it('does not open a browser when closed before an admitted render starts', async () => {
+    const renderer = new PrintRenderer();
+    const render = renderer.renderPdf({ url: 'http://localhost:3000/print', timeoutMs: 0 });
+    const failure = render.catch((error: unknown) => error);
+
+    await renderer.close();
+
+    expect(await failure).toMatchObject({ message: 'The print renderer has been closed' });
+    expect(playwrightMocks.launch).not.toHaveBeenCalled();
+  });
+
   it('rejects missing and unsuccessful page responses', async () => {
     createBrowserHarness({ response: null });
     await expect(
