@@ -150,6 +150,7 @@ export class PrintRenderer {
     const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs;
     return this.worker.run(
       (queueWaitMs) => {
+        if (this.closed) throw new Error('The print renderer has been closed');
         const remainingTimeoutMs = timeoutMs === 0 ? 0 : Math.max(1, timeoutMs - queueWaitMs);
         return this.renderWithPermit({ ...options, timeoutMs: remainingTimeoutMs }, output);
       },
