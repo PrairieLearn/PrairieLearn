@@ -65,7 +65,8 @@ export async function admitResult(
   id: string,
   snapshot: ChatSnapshot,
 ) {
-  if (Object.values(snapshot.executions ?? {}).some((receipt) => receipt.status === 'running'))
-    {return undefined;}
+  if (Object.values(snapshot.executions ?? {}).some((receipt) => receipt.status === 'running')) {
+    return undefined;
+  }
   return reserveContinuation(conversation, id);
 }
