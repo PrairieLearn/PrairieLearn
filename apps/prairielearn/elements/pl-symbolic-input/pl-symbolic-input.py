@@ -590,13 +590,16 @@ def _restore_plus_minus(submission: str, latex: str | None) -> str | None:
     Returns:
         The submission with "±" restored, or None if the two can't be matched up
     """
-    if latex is None or not re.search(r"\\pm(?![a-zA-Z])", latex):
+    if latex is None:
         return submission
 
     from_plus_minus = [
         match.group(0).startswith("\\")
         for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
     ]
+    if not any(from_plus_minus):
+        return submission
+
     parts = submission.split("+-")
     if len(parts) - 1 != len(from_plus_minus):
         return None
