@@ -290,7 +290,15 @@ test('navigation preserves a new-conversation selection before the settings requ
 const unavailableTest = createTest({
   isEnterprise: true,
   features: { 'course-agent': true },
-  courseAgent: { workerUrl: 'http://localhost:8791', serviceToken: null },
+  courseAgent: {
+    workerUrl: 'http://localhost:8791',
+    serviceToken: null,
+    maxConcurrentPerUser: 2,
+    maxConcurrentPerCourse: 5,
+    maxRequestsPerHour: 30,
+    dailyCostLimit: 20,
+    pricing: {},
+  },
 });
 
 unavailableTest(
