@@ -106,20 +106,25 @@ def generate(data):
     R1, R2 = R[0] * ureg.ohm, R[1] * ureg.ohm
     C = random.randint(5, 15) * ureg.microfarad
 
+    # LaTeX labels for the circuit figure
     data["params"]["V_label"] = f"$V = {V:~L}$"
     data["params"]["R1_label"] = f"$R_1 = {R1:~L}$"
     data["params"]["R2_label"] = f"$R_2 = {R2:~L}$"
     data["params"]["C_label"] = f"$C = {C:~L}$"
 
-    # Physics: switch B is open and switch A has been closed for a long time,
-    # so the capacitor branch carries no current and the capacitor voltage
-    # equals the voltage across R2 in the steady-state divider:
-    #   Q = C * V * R2 / (R1 + R2)
-    # NOTE (reviewers): the original demo used Q = C * V, which corresponds to
-    # the capacitor sitting across the full source (R2 unbounded). The drawn
-    # topology has C in parallel with R2, so the divider formula is used here.
-    # If the intended pedagogy is Q = C*V, adjust per review.
-    Q = C * V * R2 / (R1 + R2)
+    # Magnitudes for pl-variable-output display (per #10712 pattern)
+    data["params"]["V_quantity"] = int(V.magnitude)
+    data["params"]["R1_quantity"] = int(R1.magnitude)
+    data["params"]["R2_quantity"] = int(R2.magnitude)
+    data["params"]["C_quantity"] = int(C.magnitude)
+
+    # Physics: switch B is open, so the capacitor branch is fully disconnected
+    # and carries no current; switch A closed for a long time charges the
+    # capacitor directly across the source:
+    #   Q = C * V
+    # (Matches the original demo's answer key and the stated switch
+    # conditions — see review discussion on #15929.)
+    Q = C * V
     data["correct_answers"]["charge"] = str(Q.to_base_units())
 
     # Circuit geometry (unchanged from the original pl-drawing version)
