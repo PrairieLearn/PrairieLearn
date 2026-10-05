@@ -704,6 +704,64 @@ class TestExceptions:
         with pytest.raises(psu.HasSetNotationError):
             psu.convert_string_to_sympy(text, allow_sets=False)
 
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("2·n", "2*n"),
+            ("2×n", "2*n"),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2•n", "2*n"),
+            ("2∗n", "2*n"),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2∙n", "2*n"),
+            ("2⋅n", "2*n"),
+            ("2✕n", "2*n"),
+            ("2\u2062n", "2*n"),
+            ("2➕n", "2+n"),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2\u2064n", "2+n"),
+            ("2—n", "2-n"),
+            ("2➖n", "2-n"),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2➗n", "2/n"),
+            ("2∕n", "2/n"),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("ln\u2061(n)", "log(n)"),
+            ("-9∙ln(4)", "-9*log(4)"),
+        ],
+    )
+    @pytest.mark.parametrize("allow_sets", [False, True])
+    def test_unicode_operators(
+        self, text: str, expected: str, *, allow_sets: bool
+    ) -> None:
+        assert psu.convert_string_to_sympy(
+            text, self.VARIABLES, allow_sets=allow_sets
+        ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
+
+    @pytest.mark.parametrize(
+        ("text", "offset"),
+        [
+            ("2⋆n", 1),
+            ("n≤2", 1),
+            ("2±n", 1),
+            ("2∓n", 1),
+            ("∞", 0),
+            # Superscripts and subscripts, which unidecode would turn into digits
+            ("n²", 1),
+            ("(n+1)³", 5),
+            ("n⁻¹", 1),
+            ("nⁿ", 1),
+            ("n₁", 1),
+        ],
+    )
+    @pytest.mark.parametrize("allow_sets", [False, True])
+    def test_unsupported_characters(
+        self, text: str, offset: int, *, allow_sets: bool
+    ) -> None:
+        with pytest.raises(psu.HasInvalidCharacterError) as exc_info:
+            psu.convert_string_to_sympy(text, self.VARIABLES, allow_sets=allow_sets)
+        assert exc_info.value.offset == offset
+
+        result = psu.try_parse_string_as_sympy(text, self.VARIABLES)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "unsupported character" in result.error
+        assert "set notation" not in result.error
+
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
         with pytest.raises(psu.HasConflictingVariableError):
