@@ -36,7 +36,7 @@ import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import {
   type CourseInstanceJsonInput,
   MAX_STUDENT_LABELS_PER_COURSE_INSTANCE,
-  MAX_STUDENT_LABEL_NAME_LENGTH,
+  StudentLabelJsonSchema,
 } from '../../schemas/infoCourseInstance.js';
 
 import {
@@ -133,7 +133,7 @@ const upsert = t.procedure
   .input(
     z.object({
       labelId: IdSchema.optional(),
-      name: z.string().trim().min(1, 'Label name is required').max(MAX_STUDENT_LABEL_NAME_LENGTH),
+      name: StudentLabelJsonSchema.shape.name,
       color: ColorJsonSchema,
       uids: z.array(z.string()).max(MAX_LABEL_UIDS).optional(),
       origHash: z.string().nullable(),
