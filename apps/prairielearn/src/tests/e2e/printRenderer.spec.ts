@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net';
 
 import type { Page } from '@playwright/test';
 
-import { PrintRenderer } from '@prairielearn/printing';
+import { PrintRenderer } from '../../lib/printing/printRenderer.js';
 
 import { expect, test } from './fixtures.js';
 

@@ -48,40 +48,39 @@ function rewriteCssIdReferences(
 ): string {
   if (!css.includes('#') || css.includes('${') || idRenames.size === 0) return css;
 
-  let parseError = false;
+  const state = { parseError: false, changed: false };
   let ast: csstree.CssNode;
   try {
     ast = csstree.parse(css, {
       context,
       parseCustomProperty: true,
       onParseError: () => {
-        parseError = true;
+        state.parseError = true;
       },
     });
   } catch {
     return css;
   }
-  if (parseError) return css;
+  if (state.parseError) return css;
 
-  let changed = false;
   csstree.walk(ast, (node) => {
     if (node.type === 'IdSelector') {
       const renamedId = idRenames.get(csstree.ident.decode(node.name));
       if (renamedId) {
         node.name = csstree.ident.encode(renamedId);
-        changed = true;
+        state.changed = true;
       }
     }
     if (node.type === 'Url' && node.value.startsWith('#')) {
       const renamedId = idRenames.get(node.value.slice(1));
       if (renamedId) {
         node.value = `#${renamedId}`;
-        changed = true;
+        state.changed = true;
       }
     }
   });
 
-  return changed ? csstree.generate(ast) : css;
+  return state.changed ? csstree.generate(ast) : css;
 }
 
 function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<string, string>) {

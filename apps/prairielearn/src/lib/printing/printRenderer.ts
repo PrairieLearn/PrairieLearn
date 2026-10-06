@@ -94,7 +94,7 @@ class Semaphore {
 export interface PrintRendererOptions {
   /**
    * A Playwright browser server to connect to instead of launching Chromium locally. The server
-   * and package Playwright versions must match.
+   * and application Playwright versions must match.
    */
   browserWSEndpoint?: string;
   /** Renders that would wait behind more than this many others fail immediately. */
@@ -238,17 +238,20 @@ export class PrintRenderer {
     const renderOrigin = new URL(url).origin;
     const browser = await this.getBrowser(remainingTimeoutMs());
 
-    let context: BrowserContext | null = null;
+    const state: { context: BrowserContext | null; timedOut: boolean } = {
+      context: null,
+      timedOut: false,
+    };
     let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
-    let timedOut = false;
 
     const render = async () => {
-      context = await browser.newContext({
+      const context = await browser.newContext({
         ignoreHTTPSErrors: true,
         serviceWorkers: 'block',
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
         ...(cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
       });
+      state.context = context;
 
       // Only same-origin GET requests may use the forwarded cookie. Realtime traffic is refused
       // outright: with WebSockets closed, socket.io would otherwise fall back to HTTP long-polling,
@@ -325,16 +328,16 @@ export class PrintRenderer {
       if (deadline === null) return await render();
       const deadlineExpired = new Promise<never>((_resolve, reject) => {
         deadlineTimer = setTimeout(() => {
-          timedOut = true;
+          state.timedOut = true;
           reject(new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`));
         }, remainingTimeoutMs());
       });
       return await Promise.race([render(), deadlineExpired]);
     } finally {
       if (deadlineTimer) clearTimeout(deadlineTimer);
-      const openContext: BrowserContext | null = context;
+      const openContext = state.context;
       // A context created after the deadline may still be pending, so discard its browser.
-      if (timedOut && !openContext) this.discardBrowser(browser);
+      if (state.timedOut && !openContext) this.discardBrowser(browser);
       if (openContext) {
         await this.discardContext(browser, openContext);
       }
