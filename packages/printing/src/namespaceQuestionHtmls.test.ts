@@ -94,6 +94,29 @@ describe('namespaceQuestionHtmls', () => {
     expect($first('script').html()).toContain('const mode = "answer"');
   });
 
+  it('rewrites script selectors with quotes inside the argument', () => {
+    const [first] = namespaceQuestionHtmls([
+      {
+        namespace: 'question-1',
+        html: `
+          <div id="details"></div>
+          <script>
+            document.querySelector("[data-x='a'] #details");
+            $("[name='ans'] #details");
+          </script>
+        `,
+      },
+      {
+        namespace: 'question-2',
+        html: '<div id="details"></div>',
+      },
+    ]);
+
+    const script = load(first, undefined, false)('script').html();
+    expect(script).toContain(String.raw`querySelector("[data-x=\"a\"] #question-1-details")`);
+    expect(script).toContain(String.raw`$("[name=\"ans\"] #question-1-details")`);
+  });
+
   it('preserves template selectors in scripts', () => {
     const interpolationPrefix = '$';
     const script = `document.querySelector(\`#${interpolationPrefix}{id}\`);`;
