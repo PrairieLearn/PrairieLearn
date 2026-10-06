@@ -126,7 +126,7 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
                     onChange={() => onToggle(item.uid)}
                   />
                   <Form.Check.Label className="d-flex align-items-center gap-2 flex-grow-1">
-                    <span className="d-flex flex-column">
+                    <span className="d-flex flex-column text-break" style={{ minWidth: 0 }}>
                       <span>{item.uid}</span>
                       {item.name && <span className="text-muted small">{item.name}</span>}
                     </span>

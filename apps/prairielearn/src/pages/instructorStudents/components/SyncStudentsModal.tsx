@@ -56,7 +56,7 @@ function getCurrentStatusLabel(status: EnumEnrollmentStatus): string {
 
 function renderSyncItemBadge(item: StudentSyncItem) {
   return (
-    <span className="badge rounded-pill bg-light text-body border">
+    <span className="badge rounded-pill bg-light text-body border align-self-end">
       {item.currentStatus ? getCurrentStatusLabel(item.currentStatus) : 'New'}
     </span>
   );
@@ -505,10 +505,10 @@ export function SyncStudentsModal({
                     description="New students will be invited. Blocked or removed students will be re-enrolled."
                     checkboxIdPrefix="sync-add"
                     renderItemExtra={(item) => (
-                      <>
+                      <span className="d-flex flex-column gap-1">
                         {renderSyncItemBadge(item)}
                         {renderLabelChanges(item)}
-                      </>
+                      </span>
                     )}
                     onToggle={toggleAdd}
                     onSelectAll={() =>
