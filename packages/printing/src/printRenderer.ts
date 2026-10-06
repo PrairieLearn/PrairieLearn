@@ -255,24 +255,28 @@ export class PrintRenderer {
       // and a handful of open polls can occupy every HTTP/1.1 connection to the server and starve
       // the page's own script and image loads.
       await context.route('**/*', async (route) => {
-        const request = route.request();
-        const requestUrl = new URL(request.url());
-        if (
-          request.method() !== 'GET' ||
-          requestUrl.origin !== renderOrigin ||
-          requestUrl.pathname.startsWith(SOCKET_IO_PATH)
-        ) {
-          await route.abort('blockedbyclient');
-          return;
+        try {
+          const request = route.request();
+          const requestUrl = new URL(request.url());
+          if (
+            request.method() !== 'GET' ||
+            requestUrl.origin !== renderOrigin ||
+            requestUrl.pathname.startsWith(SOCKET_IO_PATH)
+          ) {
+            await route.abort('blockedbyclient');
+            return;
+          }
+          // Playwright only routes the first request in a redirect chain, so a redirect could
+          // otherwise leave the allowed origin without passing through these checks again.
+          const response = await route.fetch({ maxRedirects: 0 });
+          if (response.status() >= 300 && response.status() < 400) {
+            await route.abort('blockedbyclient');
+            return;
+          }
+          await route.fulfill({ response });
+        } catch {
+          await route.abort('failed').catch(() => undefined);
         }
-        // Playwright only routes the first request in a redirect chain, so a redirect could
-        // otherwise leave the allowed origin without passing through these checks again.
-        const response = await route.fetch({ maxRedirects: 0 });
-        if (response.status() >= 300 && response.status() < 400) {
-          await route.abort('blockedbyclient');
-          return;
-        }
-        await route.fulfill({ response });
       });
       await context.routeWebSocket('**/*', async (webSocket) => {
         await webSocket.close({ code: 1008, reason: 'WebSockets are disabled while printing' });

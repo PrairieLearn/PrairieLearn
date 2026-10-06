@@ -205,6 +205,27 @@ describe('PrintRenderer', () => {
     });
   });
 
+  it('aborts requests when fetching their response fails', async () => {
+    const harness = createBrowserHarness();
+    await new PrintRenderer().renderPdf({ url: 'http://localhost:3000/print' });
+    const routeHandler = harness.getRouteHandler();
+    expect(routeHandler).toBeDefined();
+
+    const abort = vi.fn(async () => undefined);
+    await routeHandler!({
+      request: () => ({
+        method: () => 'GET',
+        url: () => 'http://localhost:3000/assets/question.png',
+      }),
+      fetch: vi.fn(async () => {
+        throw new Error('Connection reset');
+      }),
+      abort,
+    } as unknown as Route);
+
+    expect(abort).toHaveBeenCalledExactlyOnceWith('failed');
+  });
+
   it('connects once to a remote browser server when configured', async () => {
     const harness = createBrowserHarness();
     const renderer = new PrintRenderer({ browserWSEndpoint: 'ws://printing-browser:3000/' });
