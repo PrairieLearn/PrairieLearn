@@ -160,9 +160,9 @@
     "brotli": 638
   },
   "stylesheets/instructorAssessmentManualGradingInstanceQuestion.css": {
-    "raw": 986,
-    "gzip": 408,
-    "brotli": 321
+    "raw": 778,
+    "gzip": 338,
+    "brotli": 284
   },
   "stylesheets/instructorAssessmentQuestions.css": {
     "raw": 1691,
@@ -180,9 +180,9 @@
     "brotli": 356
   },
   "stylesheets/pageLayout.css": {
-    "raw": 7155,
-    "gzip": 1744,
-    "brotli": 1465
+    "raw": 7061,
+    "gzip": 1730,
+    "brotli": 1450
   },
   "stylesheets/prairielearn-ui.css": {
     "raw": 2962,
@@ -355,14 +355,14 @@
     "brotli": 335009
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionGradingConflictModal.ts": {
-    "raw": 890205,
-    "gzip": 275592,
-    "brotli": 236695
+    "raw": 890527,
+    "gzip": 275645,
+    "brotli": 236738
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionGradingPanel.ts": {
-    "raw": 888716,
-    "gzip": 274988,
-    "brotli": 236173
+    "raw": 889038,
+    "gzip": 275040,
+    "brotli": 236219
   },
   "scripts/esm-bundles/hydrated-components/AssessmentModulesPage.ts": {
     "raw": 1450420,
