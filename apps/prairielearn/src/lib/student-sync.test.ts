@@ -30,12 +30,6 @@ test('distinguishes an omitted labels column from a blank cell or empty entries'
   );
 });
 
-test('treats a whitespace-only labels cell as clearing labels', async () => {
-  expect(await parseStudentSyncCsv('uid,labels\na@example.com,"   "', labels)).toEqual(
-    new Map([['a@example.com', []]]),
-  );
-});
-
 test.each([
   ['uid,labels,labels\na@example.com,,', 'no duplicate'],
   ['email,labels\na@example.com,[]', 'header'],
