@@ -163,3 +163,29 @@ test.describe('pl-symbolic-input unicode multiplication keys', () => {
     }
   });
 });
+
+test.describe('pl-symbolic-input plus-minus', () => {
+  test.beforeEach(async ({ page, courseInstance }) => {
+    await openSymbolicInputEditorQuestion(page, courseInstance);
+  });
+
+  test('rejects \\pm but accepts a typed "+-"', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    const plusMinusError = page.locator('[data-bs-content*="invalid symbol"]');
+    await expect(formulaEditor).toBeVisible();
+
+    await formulaEditor.press('2');
+    await page.keyboard.insertText('\u00b1');
+    await page.keyboard.press('y');
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('2\\pm y');
+    await page.getByRole('button', { name: 'Save only' }).click();
+    await expect(formulaEditor).toHaveClass(/is-invalid/);
+    await expect(plusMinusError.first()).toBeAttached();
+
+    await fillFormulaEditor(formulaEditor, '');
+    for (const key of '2+-y') await formulaEditor.press(key);
+    await page.getByRole('button', { name: 'Save only' }).click();
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('2+-y');
+    await expect(formulaEditor).not.toHaveClass(/is-invalid/);
+  });
+});
