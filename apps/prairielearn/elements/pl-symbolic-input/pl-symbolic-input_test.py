@@ -707,6 +707,24 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+def test_unsimplified_set_submission_grades_after_json_round_trip() -> None:
+    answer = "{x + 1, x - 1}"
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'display-simplified-expression="false"',
+        f'correct-answer="{answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": answer})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',

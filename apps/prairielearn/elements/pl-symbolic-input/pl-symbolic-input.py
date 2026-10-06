@@ -906,20 +906,37 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
 
 
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
-    """
-    Check two answers for equivalence. Finite set elements and interval endpoints
-    are compared as expressions, so "x(x ± 1)" matches "{x^2 - x, x^2 + x}".
-    Other sets must match exactly.
+    """Compare set components as expressions instead of by structure."""
+    if a == b:
+        return True
 
-    Returns:
-        Whether the answers are equivalent.
-    """
     if isinstance(a, sympy.FiniteSet) and isinstance(b, sympy.FiniteSet):
-        # SymPy can keep equivalent elements apart (e.g. x(x+1) and x^2+x), so
-        # compare by containment both ways instead of by size.
-        return all(
-            any(_sympy_values_equal(x, y) for y in b.args) for x in a.args
-        ) and all(any(_sympy_values_equal(x, y) for y in a.args) for x in b.args)
+        if len(a.args) != len(b.args):
+            return False
+
+        unmatched = set(b.args)
+        remaining = []
+        for value in a.args:
+            if value in unmatched:
+                unmatched.remove(value)
+            else:
+                remaining.append(value)
+
+        for value in remaining:
+            match = next(
+                (
+                    candidate
+                    for candidate in unmatched
+                    if _sympy_values_equal(value, candidate)
+                ),
+                None,
+            )
+            if match is None:
+                return False
+            unmatched.remove(match)
+
+        return True
+
     if isinstance(a, sympy.Interval) and isinstance(b, sympy.Interval):
         return (
             a.left_open == b.left_open
@@ -927,9 +944,11 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
             and _sympy_values_equal(a.start, b.start)
             and _sympy_values_equal(a.end, b.end)
         )
-    if isinstance(a, sympy.Expr) and not isinstance(b, sympy.Set):
+
+    if isinstance(a, sympy.Expr) and isinstance(b, sympy.Expr):
         return a.equals(b) is True
-    return a == b
+
+    return False
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
