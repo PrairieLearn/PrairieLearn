@@ -207,6 +207,12 @@ test('synchronizes students from a CSV file on mobile', async ({ page, courseIns
     authzData,
     requiredRole: ['System'],
   });
+  await inviteStudentByUid({
+    uid: 'csv-file-keep@example.com',
+    courseInstance,
+    authzData,
+    requiredRole: ['System'],
+  });
   const labels = await selectStudentLabelsInCourseInstance(courseInstance);
   const section = labels.find((label) => label.name === 'Section A');
   expect(section).toBeDefined();
