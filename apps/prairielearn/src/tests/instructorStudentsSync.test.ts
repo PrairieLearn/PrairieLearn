@@ -106,7 +106,7 @@ describe('CSV student synchronization', { concurrent: false }, () => {
   });
 
   test('rejects tampered labels before starting a job', async () => {
-    const request = await preview('uid,labels\ncsv-invalid@example.com,"[""Section A""]"');
+    const request = await preview('uid,labels\ncsv-invalid@example.com,Section A');
     request.csv.labelUpdates[0].labelIds = [labels[1].id];
     assert.equal((await submit(request)).status, 400);
     assert.isNull(await find('csv-invalid@example.com'));
@@ -120,7 +120,7 @@ describe('CSV student synchronization', { concurrent: false }, () => {
       authzData,
       requiredRole: ['System'],
     });
-    const request = await preview(`uid,labels\n${uid},"[""Section A""]"`);
+    const request = await preview(`uid,labels\n${uid},Section A`);
     await studentLabels.addLabelToEnrollment({ enrollment, label: labels[1], authzData });
     await finish(request, 'Error');
     assert.deepEqual(await studentLabels.selectStudentLabelsForEnrollment(enrollment), [labels[1]]);
@@ -147,7 +147,7 @@ describe('CSV student synchronization', { concurrent: false }, () => {
           })
         : [];
       const request = await preview(
-        `uid,labels\n${uid},"[""Extra time""]"\ncsv-after-${kind}@example.com,"[""Section A""]"`,
+        `uid,labels\n${uid},Extra time\ncsv-after-${kind}@example.com,Section A`,
       );
       const addLabel = studentLabels.addLabelToEnrollment;
       const spy = vi

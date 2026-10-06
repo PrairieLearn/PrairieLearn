@@ -53,7 +53,7 @@ export async function parseStudentSyncCsv(
         ) {
           throw new HttpStatusError(
             400,
-            'Use a uid header and an optional labels header, with no duplicate or extra columns. Put label names in a JSON array in the labels cell; label1, label2, … columns are not supported.',
+            'Use a uid header and an optional labels header, with no duplicate or extra columns. Separate label names with semicolons in the labels cell; label1, label2, … columns are not supported.',
           );
         }
         continue;
@@ -75,28 +75,11 @@ export async function parseStudentSyncCsv(
       if (labelsIndex === -1) {
         rows.set(uid, undefined);
       } else {
-        const value = row[labelsIndex].trim();
-        let parsed: unknown = [];
-        if (value !== '') {
-          try {
-            parsed = JSON.parse(value);
-          } catch (error) {
-            if (!(error instanceof SyntaxError)) throw error;
-            throw new HttpStatusError(
-              400,
-              `Row ending on line ${info.lines}: ${uid}: labels must be a JSON array of label names, such as ["Section A", "Extra time"].`,
-              { cause: error },
-            );
-          }
-        }
-        const names = z.array(z.string()).safeParse(parsed);
-        if (!names.success) {
-          throw new HttpStatusError(
-            400,
-            `Row ending on line ${info.lines}: ${uid}: labels must be a JSON array of label names, such as ["Section A", "Extra time"].`,
-          );
-        }
-        const labelIds = names.data.map((name) => {
+        const names = row[labelsIndex]
+          .split(';')
+          .map((name) => name.trim())
+          .filter(Boolean);
+        const labelIds = names.map((name) => {
           const id = labelsByName.get(name);
           if (!id) {
             throw new HttpStatusError(

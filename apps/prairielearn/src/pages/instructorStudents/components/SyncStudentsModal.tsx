@@ -365,20 +365,18 @@ export function SyncStudentsModal({
               {format === 'csv-file' && (
                 <div className="mb-3">
                   <p>
-                    Use one row per student. In the labels column, enter a JSON array of label
-                    names, such as <code>["Section A", "Extra time"]</code>. Labels must already
-                    exist in this course instance. Spreadsheet CSV exports escape the quotation
-                    marks as shown below.
+                    Use one row per student. In the labels column, separate label names with
+                    semicolons, such as <code>Section A;Extra time</code>. Labels must already exist
+                    in this course instance and cannot contain semicolons.
                   </p>
                   <pre className="bg-body-tertiary p-2" style={{ whiteSpace: 'pre-wrap' }}>
                     {
-                      'uid,labels\nadam@example.com,"[""Section 1"", ""Arts""]"\nben@example.com,"[""Section 1"", ""Science""]"'
+                      'uid,labels\nadam@example.com,Section 1;Arts\nben@example.com,Section 1;Science'
                     }
                   </pre>
                   <p className="mb-0">
                     The labels column replaces each student's labels. Include every label to retain.
-                    An empty cell or <code>[]</code> clears labels. Omit the labels column to
-                    preserve existing labels.
+                    An empty cell clears labels. Omit the labels column to preserve existing labels.
                   </p>
                 </div>
               )}

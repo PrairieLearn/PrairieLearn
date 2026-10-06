@@ -248,9 +248,7 @@ test('synchronizes students from a CSV file on mobile', async ({ page, courseIns
   await input.setInputFiles({
     name: 'students.csv',
     mimeType: 'text/csv',
-    buffer: Buffer.from(
-      '\uFEFF' + `uid,labels\n${existingUid},"[""Unknown""]"`.replaceAll('\n', '\r\n'),
-    ),
+    buffer: Buffer.from('\uFEFF' + `uid,labels\n${existingUid},Unknown`.replaceAll('\n', '\r\n')),
   });
   // Preview phase.
   await compare.click();
@@ -258,7 +256,7 @@ test('synchronizes students from a CSV file on mobile', async ({ page, courseIns
   await expect(input).toHaveAttribute('aria-invalid', 'true');
   const csvText =
     '\uFEFF' +
-    `uid,labels\n${existingUid},"[""Extra time""]"\n${newUid},"[""Section A"", ""Extra time""]"\n${clearUid},`.replaceAll(
+    `uid,labels\n${existingUid},Extra time\n${newUid},Section A;Extra time\n${clearUid},`.replaceAll(
       '\n',
       '\r\n',
     );

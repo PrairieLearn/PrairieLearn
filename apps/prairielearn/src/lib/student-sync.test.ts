@@ -4,14 +4,11 @@ import { parseStudentSyncCsv } from './student-sync.js';
 
 const labels = [
   { id: '1', name: 'Section A' },
-  { id: '2', name: 'Arts, "humanities"; science|math' },
+  { id: '2', name: 'Arts, "humanities" | science' },
 ];
 
-test('parses JSON label arrays with BOM, CRLF, punctuation, and repeated labels', async () => {
-  const cell = JSON.stringify([labels[0].name, labels[1].name, labels[0].name]).replaceAll(
-    '"',
-    '""',
-  );
+test('parses semicolon-separated labels with BOM, CRLF, punctuation, whitespace, and duplicates', async () => {
+  const cell = ` ${labels[0].name}; ;${labels[1].name};${labels[0].name}; `.replaceAll('"', '""');
   const rows = await parseStudentSyncCsv(
     `\ufeffUID,labels\r\nstudent@example.com,"${cell}"\r\n`,
     labels,
@@ -19,11 +16,13 @@ test('parses JSON label arrays with BOM, CRLF, punctuation, and repeated labels'
   expect(rows.get('student@example.com')).toEqual(['1', '2']);
 });
 
-test('distinguishes an omitted labels column from a blank cell or empty array', async () => {
+test('distinguishes an omitted labels column from a blank cell or empty entries', async () => {
   expect(
     (await parseStudentSyncCsv('uid\na@example.com', labels)).get('a@example.com'),
   ).toBeUndefined();
-  expect(await parseStudentSyncCsv('uid,labels\na@example.com,\nb@example.com,[]', labels)).toEqual(
+  expect(
+    await parseStudentSyncCsv('uid,labels\na@example.com,\nb@example.com, ; ; ', labels),
+  ).toEqual(
     new Map([
       ['a@example.com', []],
       ['b@example.com', []],
@@ -44,23 +43,13 @@ test.each([
   ['uid,label1\na@example.com,Section A', 'not supported'],
   ['uid\na@example.com\na@example.com', 'more than once'],
   ['uid\ninvalid', 'valid student UID'],
-  ['uid,labels\na@example.com,"[""Unknown""]"', 'a@example.com: unknown label'],
-  ['uid,labels\na@example.com,"[""section a""]"', 'a@example.com: unknown label'],
+  ['uid,labels\na@example.com,Unknown', 'a@example.com: unknown label'],
+  ['uid,labels\na@example.com,section a', 'a@example.com: unknown label'],
   ['uid,labels\na@example.com', 'Invalid CSV'],
   ['uid,labels', 'at least one student'],
 ])('rejects invalid CSV: %s', async (text, message) => {
   await expect(parseStudentSyncCsv(text, labels)).rejects.toThrow(message);
 });
-
-test.each(['[', '"Section A"'])(
-  'rejects labels that are not a JSON string array: %s',
-  async (value) => {
-    const cell = value.replaceAll('"', '""');
-    await expect(
-      parseStudentSyncCsv(`uid,labels\na@example.com,"${cell}"`, labels),
-    ).rejects.toThrow('Row ending on line 2: a@example.com: labels must be a JSON array');
-  },
-);
 
 test('enforces the existing student limit', async () => {
   const text =
