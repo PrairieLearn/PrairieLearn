@@ -80,6 +80,11 @@ it('stores cumulative totals, pins shared prices, and accepts lost Redis increme
       expect((await recordUsage(conversation, state)).estimatedCost).toBeCloseTo(0.0028);
       await Promise.all(Array.from({ length: 10 }, () => recordUsage(conversation, state)));
       await recordUsage(conversation, empty);
+      await recordUsage(conversation, {
+        ...state,
+        conversationUsage: { ...state.conversationUsage!, version: 10, input: 0 },
+      });
+      expect((await selectConversation(scope, conversation.id)).usage_version).toBe(1);
       expect(await rateLimiter.getIntervalUsage(`user:${conversation.user_id}`)).toBeCloseTo(
         0.0028,
       );
@@ -99,14 +104,17 @@ it('stores cumulative totals, pins shared prices, and accepts lost Redis increme
             .spyOn(rateLimiter, 'addToIntervalUsage')
             .mockRejectedValueOnce(new Error('Redis unavailable'));
           await expect(recordUsage(conversation, next)).rejects.toThrow('Redis unavailable');
-          expect((await selectConversation(scope, conversation.id)).usage!.version).toBe(2);
+          expect((await selectConversation(scope, conversation.id)).usage_version).toBe(2);
           failure.mockRestore();
-          expect(
-            (await selectConversation(scope, conversation.id)).usage!.estimatedCost,
-          ).toBeCloseTo(0.0048);
+          expect((await selectConversation(scope, conversation.id)).usage_cost).toBeCloseTo(0.0048);
           await recordUsage(conversation, next);
           await recordUsage(conversation, next);
-          expect((await selectConversation(scope, conversation.id)).usage!.pricing).toEqual(price);
+          expect(await selectConversation(scope, conversation.id)).toMatchObject({
+            usage_input_price: price.input,
+            usage_cache_read_price: price.cachedInput,
+            usage_cache_write_price: price.cacheWrite,
+            usage_output_price: price.output,
+          });
           expect(await rateLimiter.getIntervalUsage(`user:${conversation.user_id}`)).toBeCloseTo(
             0.0028,
           );
@@ -133,18 +141,8 @@ it('charges only new usage after a pending report and across fixed-hour boundari
           conversationUsage: { ...empty.conversationUsage!, version: 1, input: 1000 },
         };
         await recordUsage(conversation, first);
-        const pending = {
-          ...empty,
-          conversationUsage: {
-            ...empty.conversationUsage!,
-            version: 2,
-            input: null,
-            cached: null,
-            cacheWrite: null,
-            output: null,
-          },
-        };
-        expect((await recordUsage(conversation, pending)).estimatedCost).toBeNull();
+        const pending = { ...first, conversationUsage: { ...first.conversationUsage, version: 2 } };
+        expect((await recordUsage(conversation, pending)).estimatedCost).toBeCloseTo(0.002);
         vi.setSystemTime(hour + 3601000);
         await recordUsage(conversation, pending);
         expect(await rateLimiter.getIntervalUsage(`user:${conversation.user_id}`)).toBe(0);
@@ -164,7 +162,7 @@ it('charges only new usage after a pending report and across fixed-hour boundari
     },
   );
 });
-it('serializes concurrent admissions, allows identical retries, and blocks unknown usage and overspending', async () => {
+it('serializes concurrent admissions, allows identical retries, and blocks overspending', async () => {
   const { conversation: first, scope } = await setup();
   const second = await createConversation(scope, {
     title: 'Second',
@@ -221,23 +219,11 @@ it('serializes concurrent admissions, allows identical retries, and blocks unkno
             status: 'completed' as const,
           },
         };
-        const unknown: ChatSnapshot = {
-          ...empty,
-          executions: receipt,
-          conversationUsage: { ...empty.conversationUsage!, version: 1, input: null },
-        };
-        states.set(winner.external_id, unknown);
-        await reconcileOperations(winner, chat, unknown);
-        await recordUsage(winner, unknown);
-        await expect(
-          admit(
-            loser,
-            inputs[1 - index],
-            providers.createCloudflareProvider(new URL(settings.workerUrl), loser.external_id),
-          ),
-        ).rejects.toThrow('unknown cost');
+        const completed: ChatSnapshot = { ...empty, executions: receipt };
+        states.set(winner.external_id, completed);
+        await reconcileOperations(winner, chat, completed);
         const costly: ChatSnapshot = {
-          ...unknown,
+          ...completed,
           conversationUsage: { ...empty.conversationUsage!, version: 2, input: 6_000_000 },
         };
         states.set(winner.external_id, costly);
@@ -256,11 +242,23 @@ it('serializes concurrent admissions, allows identical retries, and blocks unkno
     provider.mockRestore();
   }
 });
-it('does not treat unreported tokens as free usage even with zero prices', () => {
-  expect(
-    estimatedCost(
-      { ...empty.conversationUsage!, input: null },
-      { input: 0, cachedInput: 0, cacheWrite: 0, output: 0 },
-    ),
-  ).toBeNull();
+it('starts with zero totals and keeps missing model pricing distinct from zero usage', async () => {
+  const { conversation, scope } = await setup();
+  expect(conversation).toMatchObject({
+    usage_input_tokens: 0,
+    usage_output_tokens: 0,
+    usage_cost: 0,
+  });
+  expect(estimatedCost(empty.conversationUsage, price)).toBe(0);
+  expect(estimatedCost(empty.conversationUsage, undefined)).toBeNull();
+  const unpriced = {
+    ...empty,
+    conversationUsage: { ...empty.conversationUsage!, model: 'unpriced' },
+  };
+  expect((await recordUsage(conversation, unpriced)).estimatedCost).toBeNull();
+  expect(await selectConversation(scope, conversation.id)).toMatchObject({
+    usage_model: 'unpriced',
+    usage_input_tokens: 0,
+    usage_cost: null,
+  });
 });

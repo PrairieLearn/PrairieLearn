@@ -196,17 +196,31 @@ WHERE
 -- BLOCK update_conversation_usage
 UPDATE course_agent_conversations
 SET
-  usage = $usage::jsonb
+  usage_model = $usage_model,
+  usage_version = $usage_version,
+  usage_input_tokens = $usage_input_tokens,
+  usage_input_tokens_cache_read = $usage_input_tokens_cache_read,
+  usage_input_tokens_cache_write = $usage_input_tokens_cache_write,
+  usage_output_tokens = $usage_output_tokens,
+  usage_cost = $usage_cost,
+  usage_input_price = $usage_input_price,
+  usage_cache_read_price = $usage_cache_read_price,
+  usage_cache_write_price = $usage_cache_write_price,
+  usage_output_price = $usage_output_price
 WHERE
   id = $id
   AND (
-    usage IS NULL
-    OR (usage ->> 'version')::bigint < $version
+    usage_model IS NULL
+    OR usage_version < $usage_version
     OR (
-      (usage ->> 'version')::bigint = $version
-      AND usage -> 'pricing' = 'null'::jsonb
+      usage_version = $usage_version
+      AND usage_cost IS NULL
     )
-  );
+  )
+  AND usage_input_tokens <= $usage_input_tokens
+  AND usage_input_tokens_cache_read <= $usage_input_tokens_cache_read
+  AND usage_input_tokens_cache_write <= $usage_input_tokens_cache_write
+  AND usage_output_tokens <= $usage_output_tokens;
 
 -- BLOCK select_conversation_by_id
 SELECT
@@ -234,8 +248,7 @@ WHERE
       o.conversation_id = c.id
       AND (
         o.status IN ('admitted', 'running')
-        OR c.usage IS NULL
-        OR c.usage -> 'estimatedCost' = 'null'::jsonb
+        OR c.usage_cost IS NULL
       )
   );
 
@@ -262,10 +275,7 @@ WITH
           o.conversation_id = c.id
           AND o.status <> 'rejected'
       )
-      AND (
-        c.usage IS NULL
-        OR c.usage -> 'estimatedCost' = 'null'::jsonb
-      ) AS unknown
+      AND (c.usage_cost IS NULL) AS unknown
     FROM
       course_agent_conversations AS c
       JOIN courses AS course ON course.id = c.course_id

@@ -23,12 +23,9 @@ export function accumulateUsage(
   return {
     model: current.model,
     version: current.version + 1,
-    input: current.input === null ? null : current.input + total.input - before.input,
-    cached: current.cached === null ? null : current.cached + total.cached - before.cached,
-    cacheWrite:
-      current.cacheWrite === null
-        ? null
-        : current.cacheWrite + total.cacheWrite - before.cacheWrite,
-    output: current.output === null ? null : current.output + total.output - before.output,
+    input: current.input + total.input - before.input,
+    cached: current.cached + total.cached - before.cached,
+    cacheWrite: current.cacheWrite + total.cacheWrite - before.cacheWrite,
+    output: current.output + total.output - before.output,
   };
 }

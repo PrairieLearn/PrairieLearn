@@ -55,7 +55,17 @@ const conversation = {
   repository: 'org/course',
   branch: 'main',
   operation_number: 0,
-  usage: null,
+  usage_cache_read_price: null,
+  usage_cache_write_price: null,
+  usage_cost: 0,
+  usage_input_price: null,
+  usage_input_tokens: 0,
+  usage_input_tokens_cache_read: 0,
+  usage_input_tokens_cache_write: 0,
+  usage_model: null,
+  usage_output_price: null,
+  usage_output_tokens: 0,
+  usage_version: 0,
   created_at: new Date(),
 };
 const settings = {

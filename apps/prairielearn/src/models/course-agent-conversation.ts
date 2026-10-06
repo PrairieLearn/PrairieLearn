@@ -17,7 +17,6 @@ import {
   CourseAgentConversationSchema,
   type CourseAgentOperation,
   CourseAgentOperationSchema,
-  type CourseAgentUsage,
 } from '../lib/db-types.js';
 
 import { insertAuditEvent } from './audit-event.js';
@@ -196,11 +195,26 @@ export async function reserveContinuation(
 }
 
 /** Latest cumulative snapshot, not an increment: repeated/out-of-order deliveries are safe. */
-export const saveConversationUsage = async (id: string, usage: CourseAgentUsage) => {
+export const saveConversationUsage = async (
+  id: string,
+  usage: Pick<
+    CourseAgentConversation,
+    | 'usage_model'
+    | 'usage_version'
+    | 'usage_input_tokens'
+    | 'usage_input_tokens_cache_read'
+    | 'usage_input_tokens_cache_write'
+    | 'usage_output_tokens'
+    | 'usage_cost'
+    | 'usage_input_price'
+    | 'usage_cache_read_price'
+    | 'usage_cache_write_price'
+    | 'usage_output_price'
+  >,
+) => {
   await execute(sql.update_conversation_usage, {
     id,
-    usage: JSON.stringify(usage),
-    version: usage.version,
+    ...usage,
   });
   return queryRow(sql.select_conversation_by_id, { id }, CourseAgentConversationSchema);
 };

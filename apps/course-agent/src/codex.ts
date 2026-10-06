@@ -43,7 +43,6 @@ export interface CodexState {
   };
   /** Lifetime totals stay in the DO and never rewind with an R2 filesystem checkpoint. */
   usage?: ConversationUsage;
-  usagePending?: boolean;
   /** Acceptance/outcome receipts fence retries independently of billing. */
   executions?: Record<string, { dispatchId?: string; status: Run['status'] }>;
   /**

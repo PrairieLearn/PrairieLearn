@@ -421,21 +421,14 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         {
           messages: this.snapshotMessages(),
           executions: this.executionReceipts(ids),
-          conversationUsage: this.state.usage
-            ? {
-                ...this.state.usage,
-                ...(this.state.usagePending
-                  ? { input: null, cached: null, cacheWrite: null, output: null }
-                  : {}),
-              }
-            : {
-                version: 0,
-                model: this.env.CODEX_MODEL,
-                input: 0,
-                cached: 0,
-                cacheWrite: 0,
-                output: 0,
-              },
+          conversationUsage: this.state.usage ?? {
+            version: 0,
+            model: this.env.CODEX_MODEL,
+            input: 0,
+            cached: 0,
+            cacheWrite: 0,
+            output: 0,
+          },
           operationNumber: 0, // PL supplies the authoritative operation number.
           blocked: !!this.state.pendingTool || this.toolPreparing,
           pendingTool: this.state.pendingTool,
@@ -956,15 +949,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       this.saveState({ ...this.state, run: { ...this.state.run!, status } });
       return;
     }
-    // A proved failure before submission consumed no model work. Transport loss
-    // after submission keeps missing counters unknown until native reconciliation.
-    if (this.state.run?.id === run.id && !this.state.run.submitted && this.state.usagePending) {
-      this.saveState({
-        ...this.state,
-        usagePending: false,
-        usage: this.state.usage && { ...this.state.usage, version: this.state.usage.version + 1 },
-      });
-    }
     if (this.state.executions?.[run.messageId]) {
       this.saveState({
         ...this.state,
@@ -1358,8 +1342,8 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     };
     this.saveState({
       ...this.state,
-      // Until Codex reports this turn's counters, missing usage stays unknown.
-      // Prior totals remain stored so a late report can still add its delta.
+      // Keep the last reported totals while work runs. Delayed reports can temporarily
+      // undercount the soft spending limit; admission never cancels an in-flight turn.
       usage: {
         ...(this.state.usage ?? {
           model: this.env.CODEX_MODEL,
@@ -1370,7 +1354,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         }),
         version: (this.state.usage?.version ?? 0) + 1,
       },
-      usagePending: true,
       executions: {
         ...this.state.executions,
         [run.messageId]: {
@@ -1474,7 +1457,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
               onUsage: (total) => {
                 const usage = accumulateUsage(this.state.usage!, this.state.usageTotal, total);
                 if (usage) {
-                  this.saveState({ ...this.state, usage, usageTotal: total, usagePending: false });
+                  this.saveState({ ...this.state, usage, usageTotal: total });
                 }
               },
               onTurnStarted: (turnId) =>

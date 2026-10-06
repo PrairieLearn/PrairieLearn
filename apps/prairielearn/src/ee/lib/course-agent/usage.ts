@@ -6,7 +6,7 @@ import { logger } from '@prairielearn/logger';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import type { CourseAgentConversation, CourseAgentUsage } from '../../../lib/db-types.js';
+import type { CourseAgentConversation } from '../../../lib/db-types.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 import {
   reserveContinuation,
@@ -39,24 +39,15 @@ export const rateLimiter = new RedisRateLimiter({
   intervalSeconds: 3600,
 });
 export function modelPricing(model: string) {
-  const prices: Partial<Record<string, NonNullable<CourseAgentUsage['pricing']>>> =
+  const prices: Partial<Record<string, (typeof config.costPerMillionTokens)['gpt-6-astra']>> =
     config.costPerMillionTokens;
   return prices[model];
 }
 export function estimatedCost(
   usage: ChatSnapshot['conversationUsage'],
-  price: CourseAgentUsage['pricing'],
+  price: ReturnType<typeof modelPricing> | null,
 ) {
-  if (
-    !usage ||
-    !price ||
-    usage.input === null ||
-    usage.cached === null ||
-    usage.cacheWrite === null ||
-    usage.output === null
-  ) {
-    return null;
-  }
+  if (!usage || !price) return null;
   return (
     ((usage.input - usage.cached - usage.cacheWrite) * price.input +
       usage.cached * price.cachedInput +
@@ -77,35 +68,47 @@ export async function recordUsage(conversation: CourseAgentConversation, snapsho
   // Pin rates under the same row lock as the snapshot, including concurrent first reports.
   const { saved, delta } = await runInTransactionAsync(async () => {
     conversation = await selectConversationForUpdate(conversation.id);
-    const price = conversation.usage?.pricing ?? modelPricing(usage.model) ?? null;
-    if (conversation.usage && conversation.usage.model !== usage.model) {
+    const price =
+      conversation.usage_input_price === null
+        ? (modelPricing(usage.model) ?? null)
+        : {
+            input: conversation.usage_input_price,
+            cachedInput: conversation.usage_cache_read_price!,
+            cacheWrite: conversation.usage_cache_write_price!,
+            output: conversation.usage_output_price!,
+          };
+    if (conversation.usage_model !== null && conversation.usage_model !== usage.model) {
       throw new TRPCError({
         code: 'PRECONDITION_FAILED',
         message: 'The conversation model changed. Start a new conversation.',
       });
     }
     const cost = estimatedCost(usage, price);
-    // Pending turns temporarily report unknown counters. Preserve the known
-    // baseline so their next report adds only new spending, not the whole total.
-    const lastKnownCost = conversation.usage?.lastKnownCost ?? 0;
     const saved = await saveConversationUsage(conversation.id, {
-      ...usage,
-      pricing: price,
-      estimatedCost: cost,
-      lastKnownCost: Math.max(lastKnownCost, cost ?? 0),
+      usage_model: usage.model,
+      usage_version: usage.version,
+      usage_input_tokens: usage.input,
+      usage_input_tokens_cache_read: usage.cached,
+      usage_input_tokens_cache_write: usage.cacheWrite,
+      usage_output_tokens: usage.output,
+      usage_cost: cost,
+      usage_input_price: price?.input ?? null,
+      usage_cache_read_price: price?.cachedInput ?? null,
+      usage_cache_write_price: price?.cacheWrite ?? null,
+      usage_output_price: price?.output ?? null,
     });
-    return {
-      saved,
-      delta: saved.usage!.lastKnownCost - lastKnownCost,
-    };
+    return { saved, delta: (saved.usage_cost ?? 0) - (conversation.usage_cost ?? 0) };
   });
-  const current = saved.usage!;
   // The database commits first. If Redis fails, this delta is not retried:
   // conversation accounting stays accurate, but the soft hourly limit can undercount.
   if (delta > 0) {
     await rateLimiter.addToIntervalUsage(`user:${saved.user_id}`, delta);
   }
-  return { input: current.input, output: current.output, estimatedCost: current.estimatedCost };
+  return {
+    input: saved.usage_input_tokens,
+    output: saved.usage_output_tokens,
+    estimatedCost: saved.usage_cost,
+  };
 }
 
 /** Reconcile the user's unobserved work on admission, without keeping detached watchers. */

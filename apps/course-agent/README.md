@@ -163,12 +163,14 @@ COURSE_AGENT_FIXTURE_URL=http://localhost:8791 pnpm --filter @prairielearn/prair
 
 Open **Statistics** to see cumulative tokens and estimated cost. Prices come from
 PL's shared `costPerMillionTokens` configuration, and the conversation retains
-its original rates. There are no per-message billing rows.
+its original rates. PostgreSQL stores token counters, cost, model, version, and pinned
+rates in individual columns. There are no per-message billing rows.
 
 PL records usage while the selected conversation is connected and reconciles the
 user's unobserved work before admitting another message or cold continuation.
 Closing the panel leaves no accounting watcher or polling task in PL. A disconnected
-turn can temporarily outpace the stored estimate.
+turn can temporarily outpace the stored estimate. New conversations start at zero;
+a running turn retains its last reported totals until Codex reports more usage.
 
 Redis applies newly observed spending to that user's current fixed hour across
 courses using PL's existing Redis rate limiter. PL computes each delta under a
@@ -177,7 +179,7 @@ delta observed after reconnect counts in the reconnect hour. PostgreSQL commits
 before the Redis increment: if that increment fails, the conversation retains
 its correct cost, but the hourly limit undercounts that delta. This best-effort
 limit is admission accounting, not exact historical hourly billing. Non-volatile
-Redis is required; missing usage, prices, or unavailable accounting blocks new work.
+Redis is required; missing prices or unavailable accounting blocks new work.
 
 Defaults allow two active conversations per user and $10 of estimated usage per
 hour. Steering shares its conversation's slot. Already-running turns finish even

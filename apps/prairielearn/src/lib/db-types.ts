@@ -3,7 +3,6 @@
 
 import { z } from 'zod';
 
-import { conversationUsageSchema } from '@prairielearn/course-agent-contract';
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
@@ -704,19 +703,6 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
-const CourseAgentUsageSchema = conversationUsageSchema.extend({
-  estimatedCost: z.number().nonnegative().nullable(),
-  lastKnownCost: z.number().nonnegative(),
-  pricing: z
-    .object({
-      cachedInput: z.number(),
-      cacheWrite: z.number(),
-      input: z.number(),
-      output: z.number(),
-    })
-    .nullable(),
-});
-export type CourseAgentUsage = z.infer<typeof CourseAgentUsageSchema>;
 export const CourseAgentConversationSchema = z.object({
   branch: z.string(),
   course_id: IdSchema,
@@ -726,7 +712,17 @@ export const CourseAgentConversationSchema = z.object({
   operation_number: z.number(),
   repository: z.string(),
   title: z.string(),
-  usage: CourseAgentUsageSchema.nullable(),
+  usage_cache_read_price: z.number().nonnegative().nullable(),
+  usage_cache_write_price: z.number().nonnegative().nullable(),
+  usage_cost: z.number().nonnegative().nullable(),
+  usage_input_price: z.number().nonnegative().nullable(),
+  usage_input_tokens: z.coerce.number().int().nonnegative(),
+  usage_input_tokens_cache_read: z.coerce.number().int().nonnegative(),
+  usage_input_tokens_cache_write: z.coerce.number().int().nonnegative(),
+  usage_model: z.string().nullable(),
+  usage_output_price: z.number().nonnegative().nullable(),
+  usage_output_tokens: z.coerce.number().int().nonnegative(),
+  usage_version: z.coerce.number().int().nonnegative(),
   user_id: IdSchema,
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;

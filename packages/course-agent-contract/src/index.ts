@@ -109,10 +109,10 @@ export type ApprovalDecision = z.infer<typeof approvalDecisionSchema>;
 export const conversationUsageSchema = z.object({
   version: z.number().int().nonnegative(),
   model: z.string().min(1),
-  input: z.number().int().nonnegative().nullable(),
-  cached: z.number().int().nonnegative().nullable(),
-  cacheWrite: z.number().int().nonnegative().nullable(),
-  output: z.number().int().nonnegative().nullable(),
+  input: z.number().int().nonnegative(),
+  cached: z.number().int().nonnegative(),
+  cacheWrite: z.number().int().nonnegative(),
+  output: z.number().int().nonnegative(),
 });
 export type ConversationUsage = z.infer<typeof conversationUsageSchema>;
 export interface ChatSnapshot {
