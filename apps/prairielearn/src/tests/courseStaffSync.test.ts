@@ -1,7 +1,12 @@
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { setTimeout } from 'node:timers/promises';
 
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { z } from 'zod';
+
+import { loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { parseCourseStaffCsv } from '../lib/course-staff-csv.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -11,10 +16,17 @@ import {
   selectCourseUsers,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
-import { generateAndEnrollUsers, selectEnrollmentsForUsersInCourse } from '../models/enrollment.js';
+import {
+  generateAndEnrollUsers,
+  selectEnrollmentsForUsersInCourse,
+  setEnrollmentStatus,
+} from '../models/enrollment.js';
+import { selectOptionalUserByUid } from '../models/user.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 function createClient(instructor = false) {
   return createCourseTrpcClient({
@@ -162,5 +174,193 @@ describe('Course staff CSV preview', { concurrent: false }, () => {
       text: `uid,course\n${removed.uid},None`,
     });
     expect(updateOnly.removalEnrollments).toEqual([]);
+  });
+
+  test('confirms additions, exact role changes, and permission removal atomically', async () => {
+    const client = createClient();
+    const instance = await selectCourseInstanceById('1');
+    const uid = 'csv-added@example.com';
+    const text = `uid,course,${instance.short_name}\n${uid},Editor,Editor`;
+    const preview = await client.courseStaff.preview.mutate({ text });
+    expect(
+      await client.courseStaff.sync.mutate({ text, confirmationToken: preview.confirmationToken }),
+    ).toEqual({ add: 1, update: 0, remove: 0, unchanged: 0 });
+    const added = (await client.courseStaff.list.query()).find((row) => row.user.uid === uid)!;
+    expect(added.course_permission.course_role).toBe('Editor');
+    expect(added.course_instance_roles).toMatchObject([
+      { id: '1', course_instance_role: 'Student Data Editor' },
+    ]);
+    const reducedText = `uid,course,${instance.short_name}\n${uid},None,None`;
+    const reduced = await client.courseStaff.preview.mutate({ text: reducedText });
+    await client.courseStaff.sync.mutate({
+      text: reducedText,
+      confirmationToken: reduced.confirmationToken,
+    });
+    const kept = (await client.courseStaff.list.query()).find((row) => row.user.uid === uid)!;
+    expect(kept.course_permission.course_role).toBe('None');
+    expect(kept.course_instance_roles).toBeNull();
+  });
+
+  test('refuses tampered confirmation tokens and a different CSV', async () => {
+    const client = createClient();
+    const text = 'uid,course\ntoken-test@example.com,None';
+    const preview = await client.courseStaff.preview.mutate({ text });
+    for (const input of [
+      { text, confirmationToken: `invalid${preview.confirmationToken}` },
+      { text: text.replace('None', 'Owner'), confirmationToken: preview.confirmationToken },
+    ]) {
+      await expect(client.courseStaff.sync.mutate(input)).rejects.toMatchObject({
+        data: { code: 'BAD_REQUEST' },
+      });
+    }
+  });
+
+  test('rejects stale permissions without applying any other CSV row', async () => {
+    const client = createClient();
+    const uid = 'csv-conflict@example.com';
+    const user = await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid,
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    const text = `uid,course\nrollback@example.com,Editor\n${uid},None`;
+    const preview = await client.courseStaff.preview.mutate({ text });
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: user.id,
+      course_role: 'Editor',
+      authn_user_id: '1',
+    });
+    await expect(
+      client.courseStaff.sync.mutate({ text, confirmationToken: preview.confirmationToken }),
+    ).rejects.toMatchObject({ data: { code: 'CONFLICT' } });
+    const staff = await client.courseStaff.list.query();
+    expect(staff.some((row) => row.user.uid === 'rollback@example.com')).toBe(false);
+    expect(staff.find((row) => row.user.uid === uid)!.course_permission.course_role).toBe('Editor');
+  });
+
+  test('removes staff and their reviewed enrollments', async () => {
+    const [user] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: user.uid,
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    const client = createClient();
+    const text = `uid,course\n${user.uid},`;
+    const preview = await client.courseStaff.preview.mutate({ text });
+    expect(preview.removalEnrollments).toHaveLength(1);
+    await client.courseStaff.sync.mutate({ text, confirmationToken: preview.confirmationToken });
+    expect((await client.courseStaff.list.query()).some((row) => row.user.id === user.id)).toBe(
+      false,
+    );
+    expect(await selectEnrollmentsForUsersInCourse({ courseId: '1', userIds: [user.id] })).toEqual(
+      [],
+    );
+  });
+
+  test('rejects removal when enrollment status changes after preview', async () => {
+    const [user] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: user.uid,
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    const [{ enrollment }] = await selectEnrollmentsForUsersInCourse({
+      courseId: '1',
+      userIds: [user.id],
+    });
+    const client = createClient();
+    const text = `uid,course\n${user.uid},`;
+    const preview = await client.courseStaff.preview.mutate({ text });
+    await setEnrollmentStatus({
+      enrollment,
+      status: 'blocked',
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    await expect(
+      client.courseStaff.sync.mutate({ text, confirmationToken: preview.confirmationToken }),
+    ).rejects.toMatchObject({ data: { code: 'CONFLICT' } });
+    expect((await client.courseStaff.list.query()).some((row) => row.user.id === user.id)).toBe(
+      true,
+    );
+    expect(
+      (await selectEnrollmentsForUsersInCourse({ courseId: '1', userIds: [user.id] }))[0].enrollment
+        .status,
+    ).toBe('blocked');
+  });
+
+  test('preserves permissions for course instance columns omitted from confirmation', async () => {
+    const client = createClient();
+    const user = await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'omitted@example.com',
+      course_role: 'Editor',
+      authn_user_id: '1',
+    });
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: user.id,
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '1',
+    });
+    const text = 'uid,course\nomitted@example.com,Viewer';
+    const preview = await client.courseStaff.preview.mutate({ text });
+    await client.courseStaff.sync.mutate({ text, confirmationToken: preview.confirmationToken });
+    expect(
+      (await client.courseStaff.list.query()).find((row) => row.user.id === user.id),
+    ).toMatchObject({
+      course_permission: { course_role: 'Viewer' },
+      course_instance_roles: [{ course_instance_role: 'Student Data Editor' }],
+    });
+  });
+
+  test('rolls back earlier writes when a concurrent permission change invalidates confirmation', async () => {
+    const client = createClient();
+    const user = await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'concurrent@example.com',
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    const text = 'uid,course\nconcurrent@example.com,None\nconcurrent-rollback@example.com,Editor';
+    const preview = await client.courseStaff.preview.mutate({ text });
+    const confirmation = await runInTransactionAsync(async () => {
+      await updateCoursePermissionsRole({
+        course_id: '1',
+        user_id: user.id,
+        course_role: 'Editor',
+        authn_user_id: '1',
+      });
+      const pending = client.courseStaff.sync
+        .mutate({ text, confirmationToken: preview.confirmationToken })
+        .then(
+          () => ({ ok: true }),
+          (error: unknown) => ({ ok: false, error }),
+        );
+      // Release the competing write only after confirmation reaches its permission write.
+      let blocked = false;
+      for (let attempt = 0; attempt < 200; attempt++) {
+        blocked = await queryScalar(sql.confirmation_waiting_on_current_transaction, z.boolean());
+        if (blocked) break;
+        await setTimeout(25);
+      }
+      expect(blocked).toBe(true);
+      return { pending };
+    });
+    expect(await confirmation.pending).toMatchObject({
+      ok: false,
+      error: { data: { code: 'CONFLICT' } },
+    });
+    expect(await selectOptionalUserByUid('concurrent-rollback@example.com')).toBeNull();
+    const staff = await client.courseStaff.list.query();
+    expect(staff.find((row) => row.user.id === user.id)!.course_permission.course_role).toBe(
+      'Editor',
+    );
   });
 });

@@ -1,0 +1,2 @@
+-- BLOCK set_serializable_transaction
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;

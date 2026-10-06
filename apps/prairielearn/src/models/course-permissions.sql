@@ -461,3 +461,157 @@ WHERE
   )
 LIMIT
   1;
+
+-- BLOCK insert_staff_users
+INSERT INTO
+  users (uid)
+SELECT
+  input.uid
+FROM
+  jsonb_to_recordset($updates::jsonb) AS input (uid text)
+ORDER BY
+  input.uid
+ON CONFLICT (uid) DO NOTHING;
+
+-- BLOCK upsert_staff_course_permissions
+WITH
+  changed AS (
+    INSERT INTO
+      course_permissions AS cp (user_id, course_id, course_role)
+    SELECT
+      u.id,
+      $course_id,
+      input."courseRole"::enum_course_role
+    FROM
+      jsonb_to_recordset($updates::jsonb) AS input (uid text, "courseRole" text)
+      JOIN users AS u ON (u.uid = input.uid)
+    ORDER BY
+      u.id
+    ON CONFLICT (user_id, course_id) DO UPDATE
+    SET
+      course_role = EXCLUDED.course_role
+    WHERE
+      cp.course_role IS DISTINCT FROM EXCLUDED.course_role
+    RETURNING
+      cp.*
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    new_state
+  )
+SELECT
+  $authn_user_id,
+  cp.course_id,
+  cp.user_id,
+  'course_permissions',
+  cp.id,
+  'upsert',
+  to_jsonb(cp.*)
+FROM
+  changed AS cp;
+
+-- BLOCK delete_staff_instance_permissions
+WITH
+  changed AS (
+    DELETE FROM course_instance_permissions AS cip USING jsonb_to_recordset($updates::jsonb) AS input (uid text, "courseInstanceChanges" jsonb),
+    jsonb_to_recordset(input."courseInstanceChanges") AS change ("courseInstanceId" bigint, role text),
+    users AS u,
+    course_permissions AS cp
+    WHERE
+      u.uid = input.uid
+      AND cp.user_id = u.id
+      AND cp.course_id = $course_id
+      AND cip.course_permission_id = cp.id
+      AND cip.course_instance_id = change."courseInstanceId"
+      AND change.role = 'None'
+    RETURNING
+      cip.*,
+      cp.user_id
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    old_state
+  )
+SELECT
+  $authn_user_id,
+  $course_id,
+  cip.user_id,
+  'course_instance_permissions',
+  cip.id,
+  'delete',
+  to_jsonb(cip.*) - 'user_id'
+FROM
+  changed AS cip;
+
+-- BLOCK upsert_staff_instance_permissions
+WITH
+  changed AS (
+    INSERT INTO
+      course_instance_permissions AS cip (
+        course_permission_id,
+        course_instance_id,
+        course_instance_role
+      )
+    SELECT
+      cp.id,
+      ci.id,
+      change.role::enum_course_instance_role
+    FROM
+      jsonb_to_recordset($updates::jsonb) AS input (uid text, "courseInstanceChanges" jsonb)
+      CROSS JOIN LATERAL jsonb_to_recordset(input."courseInstanceChanges") AS change ("courseInstanceId" bigint, role text)
+      JOIN users AS u ON (u.uid = input.uid)
+      JOIN course_permissions AS cp ON (
+        cp.user_id = u.id
+        AND cp.course_id = $course_id
+      )
+      JOIN course_instances AS ci ON (
+        ci.id = change."courseInstanceId"
+        AND ci.course_id = cp.course_id
+        AND ci.deleted_at IS NULL
+      )
+    WHERE
+      change.role <> 'None'
+    ORDER BY
+      cp.id,
+      ci.id
+    ON CONFLICT (course_instance_id, course_permission_id) DO UPDATE
+    SET
+      course_instance_role = EXCLUDED.course_instance_role
+    WHERE
+      cip.course_instance_role IS DISTINCT FROM EXCLUDED.course_instance_role
+    RETURNING
+      cip.*
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    new_state
+  )
+SELECT
+  $authn_user_id,
+  $course_id,
+  cp.user_id,
+  'course_instance_permissions',
+  cip.id,
+  'upsert',
+  to_jsonb(cip.*)
+FROM
+  changed AS cip
+  JOIN course_permissions AS cp ON (cp.id = cip.course_permission_id);
