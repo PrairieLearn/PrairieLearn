@@ -35,6 +35,33 @@ describe('useStickyTableHeader', () => {
     vi.unstubAllGlobals();
   });
 
+  it('positions the fixed header below the sticky controls inset', () => {
+    vi.stubGlobal('ResizeObserver', TestResizeObserver);
+
+    const controls = document.createElement('div');
+    const scroller = document.createElement('div');
+    const header = document.createElement('thead');
+    const table = document.createElement('table');
+    vi.spyOn(controls, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 8, 500, 100));
+    vi.spyOn(scroller, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 80, 500, 800));
+    vi.spyOn(header, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 500, 40));
+    Object.defineProperty(scroller, 'clientWidth', { value: 500 });
+    const controlsRef: { current: HTMLDivElement | null } = { current: controls };
+    const scrollRef: { current: HTMLDivElement | null } = { current: scroller };
+    const headerRef: { current: HTMLTableSectionElement | null } = { current: header };
+    const tableRef: { current: HTMLTableElement | null } = { current: table };
+    const root = createRoot(document.createElement('div'));
+
+    act(() => {
+      root.render(createElement(TestHook, { controlsRef, scrollRef, headerRef, tableRef }));
+    });
+
+    expect(header.style.position).toBe('fixed');
+    expect(header.style.top).toBe('108px');
+
+    act(() => root.unmount());
+  });
+
   it('cleans up listeners, observer, and animation frame on unmount', () => {
     const resizeObservers: TestResizeObserver[] = [];
     vi.stubGlobal(

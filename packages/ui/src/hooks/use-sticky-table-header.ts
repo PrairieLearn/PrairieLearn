@@ -36,14 +36,15 @@ export function useStickyTableHeader({
       const headerHeight = header.getBoundingClientRect().height;
       const compact = controlsHeight + headerHeight > window.innerHeight / 2;
       controls.style.position = compact ? 'static' : originalControlsPosition;
-      if (compact || bounds.top >= controlsHeight || bounds.bottom <= 0) {
+      const controlsBottom = controls.getBoundingClientRect().bottom;
+      if (compact || bounds.top >= controlsBottom || bounds.bottom <= 0) {
         reset();
         return;
       }
       fixed = true;
       table.style.paddingTop = `${headerHeight}px`;
       header.style.position = 'fixed';
-      header.style.top = `${Math.min(controlsHeight, bounds.bottom - headerHeight)}px`;
+      header.style.top = `${Math.min(controlsBottom, bounds.bottom - headerHeight)}px`;
       header.style.left = `${bounds.left}px`;
       header.style.width = `${scroller.clientWidth}px`;
       header.style.overflowX = 'hidden';
