@@ -7,7 +7,7 @@ import type { CourseInstance, EnumCourseInstanceRole, EnumCourseRole } from './d
 
 type CourseStaff = Awaited<ReturnType<typeof selectCourseUsers>>[number];
 
-export interface CourseStaffSyncState {
+interface CourseStaffSyncState {
   coursePermissionId: string;
   userId: string;
   courseRole: EnumCourseRole | null;
@@ -18,7 +18,7 @@ export interface CourseStaffSyncState {
   }[];
 }
 
-export interface CourseStaffSyncRoleChange {
+interface CourseStaffSyncRoleChange {
   courseInstanceId: string;
   shortName: string;
   previousRole: EnumCourseInstanceRole;
