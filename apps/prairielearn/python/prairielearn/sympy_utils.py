@@ -1076,10 +1076,6 @@ def _evaluate_with_source_str(
         if any(isinstance(value, sympy.Set) for value in values):
             raise HasInvalidExpressionError(offset)
         (_, plus_code), (_, minus_code) = results
-        # "a ± 0" is just "a", not the one-element set {a}.
-        plus_value, minus_value = values
-        if plus_value == minus_value:
-            return plus_value, plus_code
         return sympy.FiniteSet(*values), f"FiniteSet({plus_code}, {minus_code})"
 
     # Check for escape and comment characters after normalization, since some

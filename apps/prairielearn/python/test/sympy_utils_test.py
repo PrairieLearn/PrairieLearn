@@ -967,14 +967,6 @@ class TestExceptions:
             text, self.VARIABLES, allow_sets=True
         ) == psu.convert_string_to_sympy(expected, self.VARIABLES, allow_sets=True)
 
-    @pytest.mark.parametrize(("text", "expected"), [("n ± 0", "n"), ("±0", "0")])
-    def test_plus_minus_with_equal_branches_gives_expression(
-        self, text: str, expected: str
-    ) -> None:
-        assert psu.convert_string_to_sympy(
-            text, self.VARIABLES, allow_sets=True
-        ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
-
     def test_plus_minus_rejected_with_set_notation(self) -> None:
         with pytest.raises(psu.HasInvalidExpressionError):
             psu.convert_string_to_sympy("{1 ± n, 2}", self.VARIABLES, allow_sets=True)

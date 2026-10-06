@@ -142,22 +142,6 @@ def test_plus_minus_grades_as_finite_set(
     assert data["partial_scores"]["test"]["score"] == 1
 
 
-def test_plus_minus_zero_grades_as_expression() -> None:
-    element_html = build_element_html(
-        'variables="x"',
-        'allowed-types="expression, finite-set"',
-        'correct-answer="x"',
-    )
-    data = make_question_data(submitted_answers={"test": "x ± 0"})
-
-    symbolic_input.prepare(element_html, data)
-    symbolic_input.parse(element_html, data)
-    assert "test" not in data["format_errors"]
-
-    symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 1
-
-
 @pytest.mark.parametrize(
     ("allow_sets", "sub", "expected"),
     [
