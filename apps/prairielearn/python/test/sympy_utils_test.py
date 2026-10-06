@@ -730,8 +730,8 @@ class TestExceptions:
             text, self.VARIABLES
         ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
 
-    # Unknown to unidecode, superscript, and subscript characters
-    @pytest.mark.parametrize("text", ["2⋆n", "n²", "n₁"])
+    # Unknown to unidecode, plus-minus, superscript, and subscript characters
+    @pytest.mark.parametrize("text", ["2⋆n", "2±n", "n²", "n₁"])
     def test_unsupported_characters(self, text: str) -> None:
         with pytest.raises(psu.HasInvalidSymbolError) as exc_info:
             psu.convert_string_to_sympy(text, self.VARIABLES)
