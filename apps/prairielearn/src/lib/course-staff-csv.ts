@@ -19,6 +19,15 @@ import {
 
 type CourseStaff = Awaited<ReturnType<typeof selectCourseUsers>>[number];
 
+function escapeSpreadsheetCell(value: string): string {
+  // Escape literal leading apostrophes too, so importing can remove exactly one prefix.
+  return /^['=+\-@\t\r\n]/.test(value) ? `'${value}` : value;
+}
+
+function restoreSpreadsheetCell(value: string): string {
+  return /^'['=+\-@\t\r\n]/.test(value) ? value.slice(1) : value;
+}
+
 export async function stringifyCourseStaffCsv({
   courseInstances,
   staff,
@@ -43,7 +52,7 @@ export async function stringifyCourseStaffCsv({
   }
   // Arrays preserve positional headers even for an instance named "course".
   const records = [
-    ['uid', 'course', ...instances.map((instance) => instance.short_name)],
+    ['uid', 'course', ...instances.map((instance) => escapeSpreadsheetCell(instance.short_name))],
     ...[...staff]
       .sort((a, b) => a.user.uid.localeCompare(b.user.uid))
       .map((row) => {
@@ -51,7 +60,7 @@ export async function stringifyCourseStaffCsv({
           (row.course_instance_roles ?? []).map((role) => [role.id, role.course_instance_role]),
         );
         return [
-          row.user.uid,
+          escapeSpreadsheetCell(row.user.uid),
           row.course_permission.course_role ?? 'None',
           ...instances.map((instance) => roles.get(instance.id) ?? 'None'),
         ];
@@ -109,16 +118,16 @@ export async function parseCourseStaffCsv(text: string): Promise<{
           );
         }
         // Reserved headers are positional: an instance can itself be named "course".
-        const instanceNames = row.slice(2);
+        const instanceNames = row.slice(2).map(restoreSpreadsheetCell);
         if (instanceNames.includes('') || new Set(instanceNames).size !== instanceNames.length) {
           throw new HttpStatusError(400, 'Course instance headers must be nonempty and unique.');
         }
-        headers = row;
+        headers = [...row.slice(0, 2), ...instanceNames];
         continue;
       }
 
       const line = info.lines;
-      const uid = row[0];
+      const uid = restoreSpreadsheetCell(row[0]);
       if (!uid) {
         throw new HttpStatusError(400, `Row ending on line ${line}: enter a staff UID.`);
       }

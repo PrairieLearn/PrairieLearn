@@ -70,6 +70,58 @@ test('exports an empty roster as a header-only file', async () => {
   expect(await stringifyCourseStaffCsv({ courseInstances: [], staff: [] })).toBe('uid,course\n');
 });
 
+test.each([
+  ['=1+2', "'=1+2"],
+  ['+staff', "'+staff"],
+  ['-staff', "'-staff"],
+  ['@staff', "'@staff"],
+  ['\tstaff', "'\tstaff"],
+  ['\rstaff', '"\'\rstaff"'],
+  ['\nstaff', '"\'\nstaff"'],
+  ["'=staff", "''=staff"],
+  ["'staff", "''staff"],
+  ["''staff", "'''staff"],
+  ['staff@example.com', 'staff@example.com'],
+])(
+  'escapes spreadsheet cells and preserves UID and instance name %j on import',
+  async (value, cell) => {
+    const text = await stringifyCourseStaffCsv({
+      courseInstances: [{ id: '10', short_name: value }],
+      staff: [
+        {
+          user: { uid: value },
+          course_permission: { course_role: 'Viewer' },
+          course_instance_roles: null,
+        },
+      ],
+    });
+    expect(text).toBe(`uid,course,${cell}\n${cell},Viewer,None\n`);
+    const parsed = await parseCourseStaffCsv(text);
+    expect(parsed.courseInstanceNames).toEqual([value]);
+    expect(parsed.operations).toMatchObject([
+      {
+        uid: value,
+        courseInstanceRoles: [{ shortName: value, role: 'None' }],
+      },
+    ]);
+  },
+);
+
+test('restores escaped identities before checking duplicates and removal', async () => {
+  await expect(parseCourseStaffCsv("uid,course\n=staff,Viewer\n'=staff,Viewer")).rejects.toThrow(
+    'appears more than once',
+  );
+  await expect(
+    parseCourseStaffCsv("uid,course,=section,'=section\na,Viewer,None,None"),
+  ).rejects.toThrow('nonempty and unique');
+  expect((await parseCourseStaffCsv("uid,course\n '=staff ,\n''=staff,")).operations).toMatchObject(
+    [
+      { uid: '=staff', action: 'remove' },
+      { uid: "'=staff", action: 'remove' },
+    ],
+  );
+});
+
 test('rejects inconsistent duplicate instance names during export', async () => {
   await expect(
     stringifyCourseStaffCsv({
