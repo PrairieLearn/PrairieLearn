@@ -671,7 +671,8 @@ def format_submission_for_sympy(
     Args:
         sub: The text submission to format
         allow_sets: If true, leave any residual ``|`` characters in place
-            so the SymPy parser can interpret them as set-union operators.
+            so the SymPy parser can interpret them as set-union operators, and
+            replace ``+/-`` and ``-/+`` with ``±`` and ``∓``.
 
     Returns:
         A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
@@ -682,6 +683,10 @@ def format_submission_for_sympy(
 
     # The formula editor writes \lvert, \rvert and \mid as U+2223 (DIVIDES).
     sub = sub.replace("∣", "|")  # ruff:ignore[ambiguous-unicode-character-string]
+
+    # "+-" already means "+(-...)", so "+/-" is the plain-text spelling of "±".
+    if allow_sets:
+        sub = sub.replace("+/-", "±").replace("-/+", "∓")
 
     pattern = re.compile(
         r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
@@ -900,6 +905,33 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
+def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
+    """
+    Check two answers for equivalence. Finite set elements and interval endpoints
+    are compared as expressions, so "x(x ± 1)" matches "{x^2 - x, x^2 + x}".
+    Other sets must match exactly.
+
+    Returns:
+        Whether the answers are equivalent.
+    """
+    if isinstance(a, sympy.FiniteSet) and isinstance(b, sympy.FiniteSet):
+        # SymPy can keep equivalent elements apart (e.g. x(x+1) and x^2+x), so
+        # compare by containment both ways instead of by size.
+        return all(
+            any(_sympy_values_equal(x, y) for y in b.args) for x in a.args
+        ) and all(any(_sympy_values_equal(x, y) for y in a.args) for x in b.args)
+    if isinstance(a, sympy.Interval) and isinstance(b, sympy.Interval):
+        return (
+            a.left_open == b.left_open
+            and a.right_open == b.right_open
+            and _sympy_values_equal(a.start, b.start)
+            and _sympy_values_equal(a.end, b.end)
+        )
+    if isinstance(a, sympy.Expr) and not isinstance(b, sympy.Set):
+        return a.equals(b) is True
+    return a == b
+
+
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
@@ -993,10 +1025,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             assert isinstance(a_sub_sympy, sympy.Expr)
             assert isinstance(a_tru_sympy, sympy.Expr)
 
-        if isinstance(a_tru_sympy, sympy.Set) or isinstance(a_sub_sympy, sympy.Set):
-            return a_tru_sympy == a_sub_sympy, None
-
-        return a_tru_sympy.equals(a_sub_sympy) is True, None
+        return _sympy_values_equal(a_tru_sympy, a_sub_sympy), None
 
     try:
         pl.grade_answer_parameterized(

@@ -992,13 +992,44 @@ def evaluate_with_source(
 
     Returns:
         A tuple of the SymPy expression and the code that was used to generate it.
+    """
+    res, code = _evaluate_with_source_str(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+    if simplify_expression:
+        return res, code
+    return res, compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+
+
+# A "±" or "∓" with another sign on either side, e.g. "±±x" or "x ± -1"
+_PLUS_MINUS_NEXT_TO_SIGN_PATTERN = re.compile(r"[+\-±∓]\s*[±∓]|[±∓]\s*[+\-]")
+
+
+def _evaluate_with_source_str(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+) -> tuple[SympyValue, str]:
+    """Evaluate expr like `evaluate_with_source`, but return the source before it is compiled.
+
+    Returns:
+        A tuple of the SymPy expression and the code string that generates it.
 
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
         HasInvalidExpressionError: If the expression contains "***", a unicode
             multiplication sign next to another multiplication sign, or "±" or "∓"
-            combined with set notation.
+            combined with set notation or next to another sign.
         HasSetNotationError: If the expression contains interval or set characters, or "±" or "∓" without sets.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
@@ -1019,11 +1050,19 @@ def evaluate_with_source(
         offset = char_offsets[plus_minus_index]
         if not allow_sets:
             raise HasSetNotationError
+        # Without this, "±±x" would be the one-element set {x}.
+        if match := _PLUS_MINUS_NEXT_TO_SIGN_PATTERN.search(normalized_expr):
+            sign_index = (
+                match.start()
+                if match.group()[0] in _Constants.plus_minus_operators
+                else match.end() - 1
+            )
+            raise HasInvalidExpressionError(char_offsets[sign_index])
         # "a ± b" is the set {a + b, a - b}. Every "±" takes the same sign and
         # every "∓" the opposite one, so "a ± b ∓ c" is {a + b - c, a - b + c}.
         # The one-character replacements keep error offsets aligned with expr.
         results = [
-            evaluate_with_source(
+            _evaluate_with_source_str(
                 expr.translate(str.maketrans({"±": plus, "∓": minus})),
                 locals_for_eval,
                 allow_complex=allow_complex,
@@ -1036,12 +1075,8 @@ def evaluate_with_source(
         values = [value for value, _ in results]
         if any(isinstance(value, sympy.Set) for value in values):
             raise HasInvalidExpressionError(offset)
-        codes = [code for _, code in results]
-        return sympy.FiniteSet(*values), (
-            f"FiniteSet({codes[0]}, {codes[1]})"
-            if all(isinstance(code, str) for code in codes)
-            else codes[0]
-        )
+        (_, plus_code), (_, minus_code) = results
+        return sympy.FiniteSet(*values), f"FiniteSet({plus_code}, {minus_code})"
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates
@@ -1173,12 +1208,15 @@ def evaluate_with_source(
 
         raise
 
-    if not simplify_expression:
-        code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+    compiled_code = (
+        code
+        if simplify_expression
+        else compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+    )
 
     # Now that it's safe, get sympy expression
     try:
-        res = sympy_parser.eval_expr(code, local_dict, global_dict)
+        res = sympy_parser.eval_expr(compiled_code, local_dict, global_dict)
     except TypeError as exc:
         # SymPy raises TypeError for semantically invalid set operations that are
         # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).

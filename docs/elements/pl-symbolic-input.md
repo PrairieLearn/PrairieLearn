@@ -75,7 +75,7 @@ If `allowed-types` includes `set`, `finite-set`, or `interval`, or is set to `al
 - Interval set notation, including $\infty$ (e.g `(-sin(x), +sin(x))`, `(-infty, 5]`, `[2, oo]`)
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
   intersection (`cap` or `&`), and difference (`-`)
-- `±` and `∓`, which give the finite set of both values (e.g. `(-b ± sqrt(b^2-4ac))/(2a)` is the set of both roots). Every `±` takes the same sign and every `∓` the opposite sign, so `a ± b ∓ c` is `{a + b - c, a - b + c}`. This requires `finite-set` (or `set`/`all`), and can't be combined with other set notation. In the formula editor, `±` and `∓` are long-press variants of the `+` key.
+- `±` and `∓`, which give the finite set of both values (e.g. `(-b ± sqrt(b^2-4ac))/(2a)` is the set of both roots). Every `±` takes the same sign and every `∓` the opposite sign, so `a ± b ∓ c` is `{a + b - c, a - b + c}`. This requires `finite-set` (or `set`/`all`), and can't be combined with other set notation or placed next to another sign (e.g. `±±x` or `x ± -1`). Without the formula editor, `+/-` and `-/+` can be typed for `±` and `∓` (`+-` still means `+(-...)`). In the formula editor, `±` and `∓` are long-press variants of the `+` key.
 
 ### Allowed answer types
 
@@ -94,6 +94,8 @@ The empty set (`{}`) is accepted by `set`, `finite-set`, and `interval`. Multipl
 Classification happens after simplification. For example, `[0, 2] U {1}` simplifies to `[0, 2]` and is accepted by `interval`, while `[0, 2] & {1}` simplifies to `{1}` and is accepted by `finite-set`.
 
 When a symbolic set operation remains unevaluated, its nested set types must also be allowed. For example, `{[1, 2]} - {[x, y]}` requires both `finite-set` and `interval`.
+
+Finite sets are graded by comparing their elements for equivalence, and intervals by comparing their endpoints, so `x(x ± 1)` matches `{x^2 - x, x^2 + x}`. Other set operations, such as unions, must match exactly after simplification.
 
 ### Migrating from deprecated attributes
 

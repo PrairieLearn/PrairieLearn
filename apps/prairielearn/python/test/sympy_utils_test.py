@@ -7,6 +7,7 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+from sympy.parsing import sympy_parser
 
 
 def _caret_template(template_expr: str) -> tuple[str, str]:
@@ -941,7 +942,7 @@ class TestExceptions:
             text, self.VARIABLES
         ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
 
-    # Unknown to unidecode, plus-minus, superscript, and subscript characters
+    # Unknown to unidecode, superscript, and subscript characters
     @pytest.mark.parametrize("text", ["2⋆n", "n²", "n₁"])
     def test_unsupported_characters(self, text: str) -> None:
         with pytest.raises(psu.HasInvalidSymbolError) as exc_info:
@@ -974,6 +975,39 @@ class TestExceptions:
         result = psu.try_parse_string_as_sympy(text, self.VARIABLES, allow_sets=True)
         assert isinstance(result, psu.SympyParseFailure)
         assert "invalid expression" in result.error
+
+    @pytest.mark.parametrize(
+        ("text", "offset"),
+        [
+            ("±±n", 0),
+            ("±∓n", 0),
+            ("1 +± n", 3),
+            ("1 ± -n", 2),
+            ("1 —± n", 3),
+        ],
+    )
+    def test_plus_minus_rejected_next_to_sign(self, text: str, offset: int) -> None:
+        with pytest.raises(psu.HasInvalidExpressionError) as exc_info:
+            psu.convert_string_to_sympy(text, self.VARIABLES, allow_sets=True)
+        assert exc_info.value.offset == offset
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_plus_minus_source_matches_value(
+        self, *, simplify_expression: bool
+    ) -> None:
+        value, source = psu.convert_string_to_sympy_with_source(
+            "1 ± n",
+            self.VARIABLES,
+            allow_sets=True,
+            simplify_expression=simplify_expression,
+        )
+        if simplify_expression:
+            assert isinstance(source, str)
+            assert source.startswith("FiniteSet(")
+        local_dict = {"n": sympy.Symbol("n")}
+        global_dict: dict[str, Any] = {}
+        exec("from sympy import *", global_dict)
+        assert sympy_parser.eval_expr(source, local_dict, global_dict) == value
 
     @pytest.mark.parametrize("text", ["2±n", "2∓n"])
     def test_plus_minus_requires_sets(self, text: str) -> None:

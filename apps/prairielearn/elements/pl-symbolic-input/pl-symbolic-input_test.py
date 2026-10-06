@@ -116,6 +116,7 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
             r"\frac{-b\pm\sqrt{b^2-4ac}}{2a}",
         ),
         ("false", "(-b ± sqrt(b^2 - 4*a*c))/(2*a)", None),
+        ("false", "(-b +/- sqrt(b^2 - 4*a*c))/(2*a)", None),
     ],
 )
 def test_plus_minus_grades_as_finite_set(
@@ -138,6 +139,50 @@ def test_plus_minus_grades_as_finite_set(
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize(
+    ("allow_sets", "sub", "expected"),
+    [
+        (True, "x +/- 1", "x ± 1"),
+        (True, "x -/+ 1", "x ∓ 1"),
+        (False, "x +/- 1", "x +/- 1"),
+    ],
+)
+def test_format_submission_for_sympy_plus_minus_spelling(
+    allow_sets: bool, sub: str, expected: str
+) -> None:
+    out, error_msg = symbolic_input.format_submission_for_sympy(
+        sub, allow_sets=allow_sets
+    )
+    assert (out, error_msg) == (expected, None)
+
+
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "score"),
+    [
+        ("{x^2 - x, x^2 + x}", "x(x ± 1)", 1),
+        ("{x + 1}", "x ± 1", 0),
+        ("(x^2 + x, oo)", "(x(x + 1), oo)", 1),
+        ("(x^2 + x, oo)", "[x(x + 1), oo)", 0),
+    ],
+)
+def test_sets_are_graded_by_equivalence(
+    correct_answer: str, submission: str, score: int
+) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        'allowed-types="finite-set, interval"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == score
 
 
 def test_plus_minus_is_rejected_without_sets() -> None:
