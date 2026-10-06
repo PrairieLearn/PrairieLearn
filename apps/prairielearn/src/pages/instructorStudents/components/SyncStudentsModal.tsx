@@ -366,7 +366,7 @@ export function SyncStudentsModal({
                   <p>
                     Use one row per student. In the labels column, separate label names with
                     semicolons, such as <code>Section A;Extra time</code>. Labels must already exist
-                    in this course instance and cannot contain semicolons.
+                    in this course instance.
                   </p>
                   <pre className="bg-body-tertiary p-2" style={{ whiteSpace: 'pre-wrap' }}>
                     {
@@ -402,7 +402,6 @@ export function SyncStudentsModal({
                       })}
                     />
                     <Form.Text id="sync-file-help">
-                      Choose a CSV saved with UTF-8 encoding, such as Excel’s CSV UTF-8 format.
                       Maximum CSV length: 1,000,000 characters.
                     </Form.Text>
                     {errors.csvFile?.message && (

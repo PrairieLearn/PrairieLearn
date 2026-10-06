@@ -34,7 +34,7 @@ test.each([
   ['uid,labels,labels\na@example.com,,', 'no duplicate'],
   ['email,labels\na@example.com,[]', 'header'],
   ['uid,name\na@example.com,Adam', 'header'],
-  ['uid,label1\na@example.com,Section A', 'not supported'],
+  ['uid,label1\na@example.com,Section A', 'header'],
   ['uid\na@example.com\na@example.com', 'more than once'],
   ['uid\ninvalid', 'valid student UID'],
   ['uid,labels\na@example.com,Unknown', 'a@example.com: unknown label'],

@@ -53,7 +53,7 @@ export async function parseStudentSyncCsv(
         ) {
           throw new HttpStatusError(
             400,
-            'Use a uid header and an optional labels header, with no duplicate or extra columns. Separate label names with semicolons in the labels cell; label1, label2, … columns are not supported.',
+            'Use a uid header and an optional labels header, with no duplicate or extra columns. Separate label names with semicolons in the labels cell.',
           );
         }
         continue;
