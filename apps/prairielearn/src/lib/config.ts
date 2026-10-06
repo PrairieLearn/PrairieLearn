@@ -799,6 +799,10 @@ export async function loadConfig(paths: string[]) {
     throw new Error('redisUrl must be set when courseAgent is configured');
   }
 
+  if (config.courseAgent && !config.nonVolatileRedisUrl) {
+    throw new Error('nonVolatileRedisUrl must be set when courseAgent is configured');
+  }
+
   if (
     config.courseAgent &&
     !DEV_MODE &&
