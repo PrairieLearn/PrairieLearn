@@ -57,7 +57,7 @@ async function setup() {
   });
   return { scope, conversation };
 }
-it('stores cumulative totals, pins shared prices, and retries Redis after PostgreSQL succeeds', async () => {
+it('stores cumulative totals, pins shared prices, and accepts lost Redis increments', async () => {
   const { conversation, scope } = await setup();
   await withConfig(
     {
@@ -78,7 +78,7 @@ it('stores cumulative totals, pins shared prices, and retries Redis after Postgr
         },
       };
       expect((await recordUsage(conversation, state)).estimatedCost).toBeCloseTo(0.0028);
-      await recordUsage(conversation, state);
+      await Promise.all(Array.from({ length: 10 }, () => recordUsage(conversation, state)));
       await recordUsage(conversation, empty);
       expect(await rateLimiter.getIntervalUsage(`user:${conversation.user_id}`)).toBeCloseTo(
         0.0028,
@@ -96,19 +96,71 @@ it('stores cumulative totals, pins shared prices, and retries Redis after Postgr
         },
         async () => {
           const failure = vi
-            .spyOn(rateLimiter, 'reconcileCumulativeUsage')
+            .spyOn(rateLimiter, 'addToIntervalUsage')
             .mockRejectedValueOnce(new Error('Redis unavailable'));
           await expect(recordUsage(conversation, next)).rejects.toThrow('Redis unavailable');
           expect((await selectConversation(scope, conversation.id)).usage!.version).toBe(2);
           failure.mockRestore();
+          expect(
+            (await selectConversation(scope, conversation.id)).usage!.estimatedCost,
+          ).toBeCloseTo(0.0048);
           await recordUsage(conversation, next);
           await recordUsage(conversation, next);
           expect((await selectConversation(scope, conversation.id)).usage!.pricing).toEqual(price);
           expect(await rateLimiter.getIntervalUsage(`user:${conversation.user_id}`)).toBeCloseTo(
-            0.0048,
+            0.0028,
           );
         },
       );
+    },
+  );
+});
+it('charges only new usage after a pending report and across fixed-hour boundaries', async () => {
+  const { conversation } = await setup();
+  await withConfig(
+    {
+      courseAgent: settings,
+      cacheKeyPrefix: randomUUID(),
+      costPerMillionTokens: { ...config.costPerMillionTokens, 'gpt-6-astra': price },
+    },
+    async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      try {
+        const hour = Math.floor(Date.now() / 3600000) * 3600000;
+        vi.setSystemTime(hour + 1000);
+        const first = {
+          ...empty,
+          conversationUsage: { ...empty.conversationUsage!, version: 1, input: 1000 },
+        };
+        await recordUsage(conversation, first);
+        const pending = {
+          ...empty,
+          conversationUsage: {
+            ...empty.conversationUsage!,
+            version: 2,
+            input: null,
+            cached: null,
+            cacheWrite: null,
+            output: null,
+          },
+        };
+        expect((await recordUsage(conversation, pending)).estimatedCost).toBeNull();
+        vi.setSystemTime(hour + 3601000);
+        await recordUsage(conversation, pending);
+        expect(await rateLimiter.getIntervalUsage(`user:${conversation.user_id}`)).toBe(0);
+        const next = {
+          ...empty,
+          conversationUsage: { ...empty.conversationUsage!, version: 3, input: 2000 },
+        };
+        await recordUsage(conversation, next);
+        await recordUsage(conversation, first);
+        await recordUsage(conversation, next);
+        expect(await rateLimiter.getIntervalUsage(`user:${conversation.user_id}`)).toBeCloseTo(
+          0.002,
+        );
+      } finally {
+        vi.useRealTimers();
+      }
     },
   );
 });

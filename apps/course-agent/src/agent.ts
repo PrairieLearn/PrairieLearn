@@ -389,8 +389,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         if (!parsed.success) return new Response('Invalid receipt IDs', { status: 400 });
         ids = parsed.data;
       }
-      const historicalUsageUnknown =
-        !!this.state.run || Object.keys(this.state.executions ?? {}).length > 0;
       return Response.json(
         {
           messages: this.snapshotMessages(),
@@ -405,11 +403,10 @@ export class Chat extends AIChatAgent<Env, CodexState> {
             : {
                 version: 0,
                 model: this.env.CODEX_MODEL,
-                // Older conversations have no aggregate; their historical spending is unknown.
-                input: historicalUsageUnknown ? null : 0,
-                cached: historicalUsageUnknown ? null : 0,
-                cacheWrite: historicalUsageUnknown ? null : 0,
-                output: historicalUsageUnknown ? null : 0,
+                input: 0,
+                cached: 0,
+                cacheWrite: 0,
+                output: 0,
               },
           operationNumber: 0, // PL supplies the authoritative operation number.
           blocked: !!this.state.pendingTool || this.toolPreparing,

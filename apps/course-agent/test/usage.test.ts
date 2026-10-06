@@ -29,11 +29,3 @@ test('restoring an older native baseline retains already-spent lifetime usage', 
   });
   expect(after).toMatchObject({ input: 170, cached: 35, cacheWrite: 50, output: 17 });
 });
-test('missing cache-write baselines stay unknown', () => {
-  expect(
-    accumulateUsage(initial, { ...native, cacheWrite: undefined }, native)?.cacheWrite,
-  ).toBeNull();
-  expect(
-    accumulateUsage(initial, undefined, { ...native, cacheWrite: undefined })?.cacheWrite,
-  ).toBeNull();
-});

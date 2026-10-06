@@ -16,9 +16,7 @@ export function accumulateUsage(
     total.input < before.input ||
     total.cached < before.cached ||
     total.output < before.output ||
-    (total.cacheWrite !== undefined &&
-      before.cacheWrite !== undefined &&
-      total.cacheWrite < before.cacheWrite)
+    total.cacheWrite < before.cacheWrite
   ) {
     return;
   }
@@ -28,9 +26,7 @@ export function accumulateUsage(
     input: current.input === null ? null : current.input + total.input - before.input,
     cached: current.cached === null ? null : current.cached + total.cached - before.cached,
     cacheWrite:
-      current.cacheWrite === null ||
-      total.cacheWrite === undefined ||
-      before.cacheWrite === undefined
+      current.cacheWrite === null
         ? null
         : current.cacheWrite + total.cacheWrite - before.cacheWrite,
     output: current.output === null ? null : current.output + total.output - before.output,

@@ -3,7 +3,7 @@ import memoize from 'p-memoize';
 import { z } from 'zod';
 
 interface RedisRateLimiterOptions {
-  redis: () => Redis | Promise<Redis>;
+  redis: () => Redis;
   keyPrefix: () => string;
   /**
    * NOTE: changing the interval after deployment will result in unexpected
@@ -25,11 +25,7 @@ interface RedisRateLimiterOptions {
 export class RedisRateLimiter {
   constructor(private options: RedisRateLimiterOptions) {}
 
-  private redis?: Redis;
-  private getRedis = memoize(async () => {
-    this.redis = await this.options.redis();
-    return this.redis;
-  });
+  private getRedis = memoize(async () => this.options.redis());
 
   private getKey(key: string): string {
     const keyPrefix = this.options.keyPrefix();
@@ -79,45 +75,8 @@ export class RedisRateLimiter {
     return z.coerce.number().parse(usage);
   }
 
-  /**
-   * Reconcile an absolute cumulative total into the current interval. The
-   * watermark outlives interval buckets: repeats, stale snapshots, and retries
-   * after a partial PostgreSQL/Redis failure cannot charge the same work twice.
-   */
-  async reconcileCumulativeUsage(
-    key: string,
-    identity: string,
-    amount: number,
-    version: number,
-  ): Promise<number> {
-    z.number().nonnegative().parse(amount);
-    z.number().int().nonnegative().parse(version);
-    const redis = await this.getRedis();
-    const result = await redis.eval(
-      `
-      local prior = redis.call('HMGET', KEYS[1], 'amount', 'version')
-      local amount = tonumber(ARGV[1])
-      local version = tonumber(ARGV[2])
-      local previous = tonumber(prior[1]) or 0
-      local previousVersion = tonumber(prior[2]) or -1
-      if version <= previousVersion then return redis.call('GET', KEYS[2]) or '0' end
-      if amount < previous then return redis.error_reply('Cumulative usage decreased') end
-      local usage = redis.call('INCRBYFLOAT', KEYS[2], amount - previous)
-      redis.call('EXPIRE', KEYS[2], ARGV[3], 'NX')
-      redis.call('HSET', KEYS[1], 'amount', ARGV[1], 'version', ARGV[2])
-      return usage
-    `,
-      2,
-      `${this.options.keyPrefix()}rate-limiter:watermark:${identity}`,
-      this.getKey(key),
-      amount,
-      version,
-      this.getTtl(),
-    );
-    return z.coerce.number().parse(result);
-  }
-
   async close() {
-    await this.redis?.quit().catch(() => this.redis?.disconnect());
+    const redis = await this.getRedis();
+    await redis.quit().catch(() => {});
   }
 }

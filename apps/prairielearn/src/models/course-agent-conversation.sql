@@ -225,16 +225,18 @@ FROM
   AND course.deleted_at IS NULL
 WHERE
   c.user_id = $user_id
-  AND (
-    c.usage IS NOT NULL
-    OR EXISTS (
-      SELECT
-        1
-      FROM
-        course_agent_operations AS o
-      WHERE
-        o.conversation_id = c.id
-    )
+  AND EXISTS (
+    SELECT
+      1
+    FROM
+      course_agent_operations AS o
+    WHERE
+      o.conversation_id = c.id
+      AND (
+        o.status IN ('admitted', 'running')
+        OR c.usage IS NULL
+        OR c.usage -> 'estimatedCost' = 'null'::jsonb
+      )
   );
 
 -- BLOCK select_user_capacity

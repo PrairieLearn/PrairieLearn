@@ -171,10 +171,13 @@ Closing the panel leaves no accounting watcher or polling task in PL. A disconne
 turn can temporarily outpace the stored estimate.
 
 Redis applies newly observed spending to that user's current fixed hour across
-courses. Watermarks survive hour boundaries, so replaying a snapshot is free;
-a delta observed after reconnect counts in the reconnect hour. This is admission
-accounting, not exact historical hourly billing. Non-volatile Redis is required;
-missing usage, prices, or unavailable accounting blocks new work.
+courses using PL's existing Redis rate limiter. PL computes each delta under a
+conversation row lock, so repeated or stale snapshots do not add cost again. A
+delta observed after reconnect counts in the reconnect hour. PostgreSQL commits
+before the Redis increment: if that increment fails, the conversation retains
+its correct cost, but the hourly limit undercounts that delta. This best-effort
+limit is admission accounting, not exact historical hourly billing. Non-volatile
+Redis is required; missing usage, prices, or unavailable accounting blocks new work.
 
 Defaults allow two active conversations per user and $10 of estimated usage per
 hour. Steering shares its conversation's slot. Already-running turns finish even

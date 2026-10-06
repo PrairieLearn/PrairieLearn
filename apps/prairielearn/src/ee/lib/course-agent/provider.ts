@@ -232,10 +232,7 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
       return {
         messages,
         executions: value.executions,
-        conversationUsage:
-          value.conversationUsage === undefined
-            ? undefined
-            : conversationUsageSchema.parse(value.conversationUsage),
+        conversationUsage: conversationUsageSchema.parse(value.conversationUsage),
         blocked: value.blocked,
         operationNumber: z.number().int().nonnegative().parse(value.operationNumber),
         pendingTool: value.pendingTool,

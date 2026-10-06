@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { Redis } from 'ioredis';
 
 import type { ChatProvider, ChatSnapshot, SendRequest } from '@prairielearn/course-agent-contract';
+import { logger } from '@prairielearn/logger';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
@@ -22,32 +23,25 @@ import { createCloudflareProvider } from './provider.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const rateLimiter = new RedisRateLimiter({
-  redis: async () => {
+  redis: () => {
     if (!config.nonVolatileRedisUrl) {
       throw new Error('Non-volatile Redis is required for course-agent accounting.');
     }
     const redis = new Redis<'legacy'>(config.nonVolatileRedisUrl, {
-      lazyConnect: true,
       maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
       connectTimeout: 10000,
       commandTimeout: 10000,
     });
-    try {
-      await redis.connect();
-    } catch (error) {
-      redis.disconnect();
-      throw error;
-    }
+    redis.on('error', (error) => logger.error('Course agent Redis error', error));
     return redis;
   },
   keyPrefix: () => `${config.cacheKeyPrefix}course-agent:`,
   intervalSeconds: 3600,
 });
 export function modelPricing(model: string) {
-  return (
-    config.costPerMillionTokens as Partial<Record<string, NonNullable<CourseAgentUsage['pricing']>>>
-  )[model];
+  const prices: Partial<Record<string, NonNullable<CourseAgentUsage['pricing']>>> =
+    config.costPerMillionTokens;
+  return prices[model];
 }
 export function estimatedCost(
   usage: ChatSnapshot['conversationUsage'],
@@ -71,7 +65,7 @@ export function estimatedCost(
     1_000_000
   );
 }
-/** PG and Redis each reconcile the same absolute total, so either write may be retried independently. */
+/** Save absolute conversation usage, then apply its new cost to the existing hourly limiter. */
 export async function recordUsage(conversation: CourseAgentConversation, snapshot: ChatSnapshot) {
   const usage = snapshot.conversationUsage;
   if (!usage) {
@@ -81,7 +75,7 @@ export async function recordUsage(conversation: CourseAgentConversation, snapsho
     });
   }
   // Pin rates under the same row lock as the snapshot, including concurrent first reports.
-  const saved = await runInTransactionAsync(async () => {
+  const { saved, delta } = await runInTransactionAsync(async () => {
     conversation = await selectConversationForUpdate(conversation.id);
     const price = conversation.usage?.pricing ?? modelPricing(usage.model) ?? null;
     if (conversation.usage && conversation.usage.model !== usage.model) {
@@ -90,21 +84,26 @@ export async function recordUsage(conversation: CourseAgentConversation, snapsho
         message: 'The conversation model changed. Start a new conversation.',
       });
     }
-    return saveConversationUsage(conversation.id, {
+    const cost = estimatedCost(usage, price);
+    // Pending turns temporarily report unknown counters. Preserve the known
+    // baseline so their next report adds only new spending, not the whole total.
+    const lastKnownCost = conversation.usage?.lastKnownCost ?? 0;
+    const saved = await saveConversationUsage(conversation.id, {
       ...usage,
       pricing: price,
-      estimatedCost: estimatedCost(usage, price),
+      estimatedCost: cost,
+      lastKnownCost: Math.max(lastKnownCost, cost ?? 0),
     });
+    return {
+      saved,
+      delta: saved.usage!.lastKnownCost - lastKnownCost,
+    };
   });
   const current = saved.usage!;
-  // A prior PG success must not suppress this retry after a Redis failure.
-  if (current.estimatedCost !== null) {
-    await rateLimiter.reconcileCumulativeUsage(
-      `user:${saved.user_id}`,
-      saved.external_id,
-      current.estimatedCost,
-      current.version,
-    );
+  // The database commits first. If Redis fails, this delta is not retried:
+  // conversation accounting stays accurate, but the soft hourly limit can undercount.
+  if (delta > 0) {
+    await rateLimiter.addToIntervalUsage(`user:${saved.user_id}`, delta);
   }
   return { input: current.input, output: current.output, estimatedCost: current.estimatedCost };
 }
@@ -113,20 +112,9 @@ export async function recordUsage(conversation: CourseAgentConversation, snapsho
 async function refreshUser(conversation: CourseAgentConversation) {
   const settings = config.courseAgent!;
   const rows = await selectUserAccountingConversations(conversation.user_id);
-  // Reconcile known snapshots too: an earlier Redis write may have failed after PG succeeded.
   for (let offset = 0; offset < rows.length; offset += 5) {
     const results = await Promise.allSettled(
       rows.slice(offset, offset + 5).map(async (c) => {
-        if (c.usage?.estimatedCost != null) {
-          await rateLimiter.reconcileCumulativeUsage(
-            `user:${c.user_id}`,
-            c.external_id,
-            c.usage.estimatedCost,
-            c.usage.version,
-          );
-        }
-        const active = await selectUserCapacity(c.user_id, c.id);
-        if (!active.current_active && c.usage?.estimatedCost != null) return;
         const chat = createCloudflareProvider(new URL(settings.workerUrl), c.external_id);
         const state = await chat.getSnapshot(AbortSignal.timeout(10000));
         await reconcileOperations(c, chat, state);

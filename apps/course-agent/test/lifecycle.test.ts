@@ -123,10 +123,6 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
         {
           dispatchId: dispatches[index],
           status: 'completed',
-          model: 'fixture-model',
-          input: 10,
-          cached: 0,
-          output: 2,
         },
       ]),
     );
@@ -139,8 +135,6 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     expect(Object.keys(state.rejectedDispatches)).toHaveLength(100);
     const saved = await c.request(`snapshot?ids=${encodeURIComponent(JSON.stringify([ids[0]]))}`);
     expect(saved.executions[ids[0]]).toEqual(receipts[ids[0]]);
-    expect(saved.conversationUsage.input).toBeNull();
-    expect(saved.conversationUsage.output).toBeNull();
     expect(
       await c.request('reconcile-admissions', {
         admissions: [{ id: ids[0], dispatchId: dispatches[0] }],

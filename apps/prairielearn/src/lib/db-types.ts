@@ -706,6 +706,7 @@ export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
 const CourseAgentUsageSchema = conversationUsageSchema.extend({
   estimatedCost: z.number().nonnegative().nullable(),
+  lastKnownCost: z.number().nonnegative(),
   pricing: z
     .object({
       cachedInput: z.number(),

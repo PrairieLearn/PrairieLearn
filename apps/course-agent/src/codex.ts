@@ -38,7 +38,7 @@ export interface CodexState {
     threadId: string;
     input: number;
     cached: number;
-    cacheWrite?: number;
+    cacheWrite: number;
     output: number;
   };
   /** Lifetime totals stay in the DO and never rewind with an R2 filesystem checkpoint. */
