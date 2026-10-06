@@ -1,14 +1,18 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
+import { COURSE_STAFF_CSV_MAX_BYTES, parseCourseStaffCsv } from '../../lib/course-staff-csv.js';
+import { computeCourseStaffSyncPreview } from '../../lib/course-staff-sync.js';
 import {
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
+  type EnumCourseRole,
   EnumCourseRoleSchema,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -42,6 +46,7 @@ export interface CourseStaffError {
   InsertByUserUids: never;
   BulkDelete: never;
   BulkEditAccess: never;
+  Preview: never;
 }
 
 const MAX_UIDS = 100;
@@ -73,10 +78,18 @@ function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: 
   }
 }
 
-async function assertCanDeleteUser(authzData: StaffAuthzData, userId: string, courseId: string) {
+async function assertCanDeleteUser(
+  authzData: StaffAuthzData,
+  userId: string,
+  courseId: string,
+  courseRole?: EnumCourseRole | null,
+) {
   assertCanModifyUser(authzData, userId, 'remove themselves from the course staff');
   if (!authzData.is_administrator && !authzData.is_institution_administrator) {
-    const role = await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
+    const role =
+      courseRole !== undefined
+        ? courseRole
+        : await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
     if (role === 'Owner') {
       throw new TRPCError({
         code: 'FORBIDDEN',
@@ -351,6 +364,46 @@ const bulkEditAccess = t.procedure
     });
   });
 
+const preview = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(z.object({ text: z.string().min(1).max(COURSE_STAFF_CSV_MAX_BYTES) }))
+  .mutation(async ({ input, ctx }) => {
+    try {
+      const csv = await parseCourseStaffCsv(input.text);
+      const [courseInstances, staff] = await Promise.all([
+        getAccessibleInstances(ctx),
+        selectCourseUsers({ course_id: ctx.course.id }),
+      ]);
+      const result = computeCourseStaffSyncPreview({ csv, courseInstances, staff });
+      for (const row of result.rows) {
+        if (row.action === 'remove' && row.expected) {
+          await assertCanDeleteUser(
+            ctx.authz_data,
+            row.expected.userId,
+            ctx.course.id,
+            row.expected.courseRole,
+          );
+        } else if (
+          row.action === 'update' &&
+          row.expected &&
+          row.previousCourseRole !== row.courseRole
+        ) {
+          assertCanModifyUser(
+            ctx.authz_data,
+            row.expected.userId,
+            'change their own course content access',
+          );
+        }
+      }
+      return result;
+    } catch (error) {
+      if (error instanceof HttpStatusError) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+      }
+      throw error;
+    }
+  });
+
 export const courseStaffRouter = t.router({
   list,
   updateCourseRole,
@@ -359,4 +412,5 @@ export const courseStaffRouter = t.router({
   insertByUserUids,
   bulkDelete,
   bulkEditAccess,
+  preview,
 });
