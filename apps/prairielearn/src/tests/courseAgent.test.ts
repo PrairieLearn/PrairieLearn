@@ -494,10 +494,6 @@ it.each([
           executions: {
             [id]: {
               status: 'running',
-              model: 'fixture',
-              input: null,
-              cached: null,
-              output: null,
             },
           },
         }),
