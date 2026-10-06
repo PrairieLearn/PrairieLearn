@@ -296,8 +296,8 @@ export function InstanceQuestion({
     `,
     content: html`
       <h1 class="visually-hidden">Instance Question Manual Grading</h1>
-      <div class="instance-question-manual-grading">
-        <div class="instance-question-manual-grading-header px-3 pt-3">
+      <div class="instance-question-manual-grading d-flex flex-column flex-grow-1">
+        <div class="d-flex flex-shrink-0 align-items-center justify-content-between gap-2 p-3">
           <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
               <li class="breadcrumb-item">
