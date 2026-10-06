@@ -38,11 +38,6 @@ const snapshotSchema = z.object({
     z.object({
       dispatchId: z.uuid().optional(),
       status: z.enum(['running', 'completed', 'cancelled', 'failed', 'interrupted']),
-      model: z.string(),
-      input: z.number().nonnegative().nullable(),
-      cached: z.number().nonnegative().nullable(),
-      cacheWrite: z.number().nonnegative().nullable().optional(),
-      output: z.number().nonnegative().nullable(),
     }),
   ),
 });
