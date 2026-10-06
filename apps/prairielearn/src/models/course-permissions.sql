@@ -565,8 +565,8 @@ WITH
         course_instance_role
       )
     SELECT
-      cp.id,
-      ci.id,
+      cp.id AS course_permission_id,
+      ci.id AS course_instance_id,
       change.role::enum_course_instance_role
     FROM
       jsonb_to_recordset($updates::jsonb) AS input (uid text, "courseInstanceChanges" jsonb)
