@@ -15,6 +15,7 @@ import {
 import {
   type CourseAgentConversation,
   CourseAgentConversationSchema,
+  type CourseAgentOperation,
   CourseAgentOperationSchema,
 } from '../lib/db-types.js';
 
@@ -63,10 +64,15 @@ export async function createConversation(
     return row;
   });
 }
+/**
+ * Lock the conversation before checking its observed operation number. An
+ * identical saved operation is a retry; different input under the same UUID is
+ * rejected. Admission and its operation row share the caller's transaction.
+ */
 export async function reserveOperation(
   conversation: CourseAgentConversation,
   operation_id: string,
-  payload: Record<string, unknown>,
+  payload: CourseAgentOperation['payload'],
   expected: number,
   gate = true,
 ) {
@@ -159,7 +165,7 @@ export const rejectOperation = (id: string, operation_id: string, dispatch_id: s
   execute(sql.reject_operation, { id, operation_id, dispatch_id });
 export const saveOperationStatuses = (
   id: string,
-  updates: { operation_id: string; dispatch_id: string; status: string }[],
+  updates: { operation_id: string; dispatch_id: string; status: CourseAgentOperation['status'] }[],
 ) => execute(sql.update_operation_statuses, { id, updates: JSON.stringify(updates) });
 
 /** Reserve a cold tool-result continuation independently of usage accounting. */

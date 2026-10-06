@@ -271,7 +271,12 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
     `${currentRepository.owner}/${currentRepository.repo}` !== conversation.repository ||
     course.branch !== conversation.branch;
   const rows = await proposals.selectProposals(conversation.id);
-  const operations = await selectConversationOperations(conversation.id);
+  const operations = new Map(
+    (await selectConversationOperations(conversation.id)).map((operation) => [
+      operation.operation_id,
+      operation,
+    ]),
+  );
   const prepared = rows.filter((row) => row.prepared);
   const current = prepared.find((r) => !r.delivered) ?? prepared.at(-1);
   const preparation = rows.find((row) => !row.prepared && !row.delivered);
@@ -315,7 +320,7 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
       ? 'The course repository or branch changed. Start a new conversation.'
       : undefined,
     messages: value.messages.map((message) => {
-      const operation = operations.find((operation) => operation.operation_id === message.id);
+      const operation = operations.get(message.id);
       return operation
         ? {
             ...message,

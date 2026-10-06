@@ -28,7 +28,7 @@ export async function reconcileOperations(
     const receipt = snapshot.executions?.[row.operation_id];
     return (
       row.status === 'admitted' &&
-      (!receipt || (receipt.dispatchId && receipt.dispatchId !== row.dispatch_id)) &&
+      receipt?.dispatchId !== row.dispatch_id &&
       row.admitted_at.getTime() < Date.now() - 2 * 60_000
     );
   });
@@ -49,7 +49,7 @@ export async function reconcileOperations(
   const updates: Parameters<typeof saveOperationStatuses>[1] = [];
   for (const row of stored) {
     const receipt = snapshot.executions?.[row.operation_id];
-    if (!receipt || (receipt.dispatchId && receipt.dispatchId !== row.dispatch_id)) continue;
+    if (receipt?.dispatchId !== row.dispatch_id) continue;
     updates.push({
       operation_id: row.operation_id,
       dispatch_id: row.dispatch_id,

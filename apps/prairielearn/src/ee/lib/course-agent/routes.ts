@@ -9,7 +9,9 @@ import { createUIMessageStreamResponse } from 'ai';
 import { type ErrorRequestHandler, Router } from 'express';
 import { z } from 'zod';
 
+import { ChatError } from '@prairielearn/course-agent-contract';
 import { HttpStatusError } from '@prairielearn/error';
+import * as Sentry from '@prairielearn/sentry';
 import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 
 import { extractPageContext } from '../../../lib/client/page-context.js';
@@ -51,6 +53,9 @@ router.get(
     let dirty = true;
     const fail = (error?: unknown) => {
       if (signal.aborted) return;
+      if (error && !(error instanceof ChatError) && !(error instanceof TRPCError)) {
+        Sentry.captureException(error);
+      }
       if (!res.destroyed && !res.writableEnded) {
         res.write(`event: connection-error\ndata: ${JSON.stringify(connectionFailure(error))}\n\n`);
         res.end();

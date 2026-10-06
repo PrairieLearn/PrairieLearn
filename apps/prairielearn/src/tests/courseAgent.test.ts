@@ -654,6 +654,13 @@ it('fences uncertain sends, retries rejected dispatches and retains terminal sta
     cached: 0,
     output: 0,
   };
+  for (const dispatchId of [first.dispatch_id, undefined]) {
+    await reconcileOperations(conversation, chat, {
+      ...empty,
+      executions: { [operationId]: { ...receipt, dispatchId } },
+    });
+    expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('admitted');
+  }
   chat.getSnapshot.mockResolvedValue({ ...empty, executions: { [operationId]: receipt } });
   await reconcileOperations(conversation, chat, empty);
   expect(chat.getSnapshot).toHaveBeenLastCalledWith(expect.any(AbortSignal), [operationId]);

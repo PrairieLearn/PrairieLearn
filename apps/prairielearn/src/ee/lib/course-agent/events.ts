@@ -2,6 +2,8 @@ import { EventEmitter } from 'node:events';
 
 import { Redis } from 'ioredis';
 
+import { run } from '@prairielearn/run';
+
 import { config } from '../../../lib/config.js';
 
 const channel = 'course-agent:changed';
@@ -10,7 +12,7 @@ listeners.setMaxListeners(0);
 let clients: Promise<{ pub: Redis; sub: Redis }> | undefined;
 
 function connect() {
-  return (clients ??= (async () => {
+  return (clients ??= run(async () => {
     if (!config.redisUrl) throw new Error('Redis is required for course-agent events.');
     const pub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
     const sub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
@@ -24,7 +26,7 @@ function connect() {
       throw error;
     }
     return { pub, sub };
-  })().catch((error) => {
+  }).catch((error) => {
     clients = undefined;
     throw error;
   }));
