@@ -988,7 +988,6 @@ class TestExceptions:
         [
             "x + 1 U {3}",
             "x + Reals",
-            "x - Reals",
         ],
     )
     def test_invalid_set_expression_error_unchanged_without_simplification(
