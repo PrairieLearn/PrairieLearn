@@ -576,10 +576,6 @@ it.each([
           executions: {
             [id]: {
               status: 'running',
-              model: 'fixture',
-              input: null,
-              cached: null,
-              output: null,
             },
           },
         }),
@@ -744,10 +740,6 @@ it('fences uncertain sends, retries rejected dispatches and retains terminal sta
   const receipt = {
     dispatchId: retry.dispatch_id,
     status: 'completed' as const,
-    model: 'fixture',
-    input: 0,
-    cached: 0,
-    output: 0,
   };
   for (const dispatchId of [first.dispatch_id, undefined]) {
     await reconcileOperations(conversation, chat, {
