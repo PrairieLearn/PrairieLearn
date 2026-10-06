@@ -55,6 +55,14 @@ export const ConfigSchema = z.object({
   workspaceDevContainerHostname: z.string().default('host.docker.internal'),
   workspaceHostPort: z.number().default(8081),
   workspaceHostPruneContainersSec: z.number().default(60),
+  /**
+   * Path to Docker's data directory as seen by this process. When null, use
+   * DockerRootDir in EC2 and skip disk checks elsewhere (e.g. Docker Desktop).
+   */
+  workspaceHostDockerDataDir: z.string().nullable().default(null),
+  /** Minimum available bytes on Docker's filesystem. 10 GB = 10,000,000,000 bytes. */
+  workspaceHostMinAvailableDiskBytes: z.number().int().nonnegative().default(10_000_000_000),
+  workspaceHostDiskSpaceCheckIntervalSec: z.number().positive().default(60),
   workspaceHostMinPortRange: z.number().default(1024),
   /**
    * Docker on Windows doesn't support ports above 45000.
