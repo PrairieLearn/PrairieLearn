@@ -7,7 +7,11 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
-import { COURSE_STAFF_CSV_MAX_BYTES, parseCourseStaffCsv } from '../../lib/course-staff-csv.js';
+import {
+  COURSE_STAFF_CSV_MAX_BYTES,
+  parseCourseStaffCsv,
+  stringifyCourseStaffCsv,
+} from '../../lib/course-staff-csv.js';
 import { computeCourseStaffSyncPreview } from '../../lib/course-staff-sync.js';
 import {
   type EnumCourseInstanceRole,
@@ -47,6 +51,7 @@ export interface CourseStaffError {
   BulkDelete: never;
   BulkEditAccess: never;
   Preview: never;
+  Export: never;
 }
 
 const MAX_UIDS = 100;
@@ -404,6 +409,19 @@ const preview = t.procedure
     }
   });
 
+const exportCsv = t.procedure
+  .use(requireCoursePermissionPreviewOrCourseInstancePermissionView)
+  .query(async ({ ctx }) => {
+    const [courseInstances, staff] = await Promise.all([
+      getAccessibleInstances(ctx),
+      selectCourseUsers({ course_id: ctx.course.id }),
+    ]);
+    return {
+      filename: 'course-staff.csv',
+      text: await stringifyCourseStaffCsv({ courseInstances, staff }),
+    };
+  });
+
 export const courseStaffRouter = t.router({
   list,
   updateCourseRole,
@@ -413,4 +431,5 @@ export const courseStaffRouter = t.router({
   bulkDelete,
   bulkEditAccess,
   preview,
+  export: exportCsv,
 });

@@ -3,15 +3,67 @@ import { Readable } from 'node:stream';
 import { CsvError } from 'csv-parse';
 import { z } from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
+import { stringify } from '@prairielearn/csv';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+
+import type { selectCourseUsers } from '../models/course-permissions.js';
 
 import { createCsvParser } from './csv.js';
 import {
+  type CourseInstance,
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
   type EnumCourseRole,
   EnumCourseRoleSchema,
 } from './db-types.js';
+
+type CourseStaff = Awaited<ReturnType<typeof selectCourseUsers>>[number];
+
+export async function stringifyCourseStaffCsv({
+  courseInstances,
+  staff,
+}: {
+  courseInstances: Pick<CourseInstance, 'id' | 'short_name'>[];
+  staff: {
+    user: Pick<CourseStaff['user'], 'uid'>;
+    course_permission: Pick<CourseStaff['course_permission'], 'course_role'>;
+    course_instance_roles:
+      | Pick<
+          NonNullable<CourseStaff['course_instance_roles']>[number],
+          'id' | 'course_instance_role'
+        >[]
+      | null;
+  }[];
+}): Promise<string> {
+  const instances = [...courseInstances].sort((a, b) => a.short_name.localeCompare(b.short_name));
+  if (new Set(instances.map((instance) => instance.short_name)).size !== instances.length) {
+    throw new AugmentedError('Assertion: Duplicate course instance short names found in database', {
+      data: { courseInstanceIds: instances.map((instance) => instance.id) },
+    });
+  }
+  // Arrays preserve positional headers even for an instance named "course".
+  const records = [
+    ['uid', 'course', ...instances.map((instance) => instance.short_name)],
+    ...[...staff]
+      .sort((a, b) => a.user.uid.localeCompare(b.user.uid))
+      .map((row) => {
+        const roles = new Map(
+          (row.course_instance_roles ?? []).map((role) => [role.id, role.course_instance_role]),
+        );
+        return [
+          row.user.uid,
+          row.course_permission.course_role ?? 'None',
+          ...instances.map((instance) => roles.get(instance.id) ?? 'None'),
+        ];
+      }),
+  ];
+  return await new Promise<string>((resolve, reject) => {
+    stringify(records, (error, output) => {
+      if (error) reject(error);
+      else resolve(output);
+    });
+  });
+}
 
 export const COURSE_STAFF_CSV_MAX_ROWS = 5000;
 export const COURSE_STAFF_CSV_MAX_BYTES = 1024 * 1024;

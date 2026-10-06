@@ -4,7 +4,83 @@ import {
   COURSE_STAFF_CSV_MAX_BYTES,
   COURSE_STAFF_CSV_MAX_ROWS,
   parseCourseStaffCsv,
+  stringifyCourseStaffCsv,
 } from './course-staff-csv.js';
+
+test('exports complete roles, explicit None, and only supplied instances in deterministic order', async () => {
+  const text = await stringifyCourseStaffCsv({
+    courseInstances: [
+      { id: '20', short_name: 'Sp27' },
+      { id: '10', short_name: 'Fa26' },
+    ],
+    staff: [
+      {
+        user: { uid: 'z@example.com' },
+        course_permission: { course_role: null },
+        course_instance_roles: null,
+      },
+      {
+        user: { uid: 'a@example.com' },
+        course_permission: { course_role: 'Owner' },
+        course_instance_roles: [
+          { id: '10', course_instance_role: 'Student Data Editor' },
+          { id: '99', course_instance_role: 'Student Data Viewer' },
+        ],
+      },
+    ],
+  });
+  expect(text).toBe(
+    'uid,course,Fa26,Sp27\na@example.com,Owner,Student Data Editor,None\nz@example.com,None,None,None\n',
+  );
+  expect((await parseCourseStaffCsv(text)).operations.map((row) => row.action)).toEqual([
+    'update',
+    'update',
+  ]);
+});
+
+test('exports quoted names and a course instance named course with importable positional headers', async () => {
+  const text = await stringifyCourseStaffCsv({
+    courseInstances: [
+      { id: '10', short_name: 'course' },
+      { id: '20', short_name: 'Spring, "2027"' },
+    ],
+    staff: [
+      {
+        user: { uid: 'a@example.com' },
+        course_permission: { course_role: 'Viewer' },
+        course_instance_roles: [],
+      },
+    ],
+  });
+  const parsed = await parseCourseStaffCsv(text);
+  expect(parsed.courseInstanceNames).toEqual(['course', 'Spring, "2027"']);
+  expect(parsed.operations).toMatchObject([
+    {
+      action: 'update',
+      courseRole: 'Viewer',
+      courseInstanceRoles: [
+        { shortName: 'course', role: 'None' },
+        { shortName: 'Spring, "2027"', role: 'None' },
+      ],
+    },
+  ]);
+});
+
+test('exports an empty roster as a header-only file', async () => {
+  expect(await stringifyCourseStaffCsv({ courseInstances: [], staff: [] })).toBe('uid,course\n');
+});
+
+test('rejects inconsistent duplicate instance names during export', async () => {
+  await expect(
+    stringifyCourseStaffCsv({
+      courseInstances: [
+        { id: '10', short_name: 'Fa26' },
+        { id: '20', short_name: 'Fa26' },
+      ],
+      staff: [],
+    }),
+  ).rejects.toThrow('Duplicate course instance short names');
+});
 
 test('preserves instance names and normalizes aliases in spreadsheet CSV', async () => {
   expect(

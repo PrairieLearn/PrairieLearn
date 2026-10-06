@@ -3,8 +3,10 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
+import { parseCourseStaffCsv } from '../lib/course-staff-csv.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
+  insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   selectCourseUsers,
   updateCoursePermissionsRole,
@@ -69,6 +71,32 @@ describe('Course staff CSV preview', { concurrent: false }, () => {
     await expect(
       createClient(true).courseStaff.preview.mutate({ text: 'uid,course\na,None' }),
     ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+  });
+
+  test('staff with Viewer access can export even though they cannot import', async () => {
+    const result = await createClient(true).courseStaff.export.query();
+    expect(result.filename).toBe('course-staff.csv');
+    const csv = await parseCourseStaffCsv(result.text);
+    expect(csv.operations).toMatchObject([
+      { uid: 'instructor@example.com', action: 'update', courseRole: 'Viewer' },
+    ]);
+  });
+
+  test('exporting and reimporting the same permissions produces no changes', async () => {
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      course_instance_id: '1',
+      user_id: '2',
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '1',
+    });
+    const client = createClient();
+    const before = await selectCourseUsers({ course_id: '1' });
+    const exported = await client.courseStaff.export.query();
+    expect(exported.text).toContain('Student Data Editor');
+    const preview = await client.courseStaff.preview.mutate({ text: exported.text });
+    expect(preview.summary).toEqual({ add: 0, update: 0, remove: 0, unchanged: before.length });
+    expect(await selectCourseUsers({ course_id: '1' })).toEqual(before);
   });
 
   test('allows an Owner to preview unchanged own access but rejects changing or removing it', async () => {
