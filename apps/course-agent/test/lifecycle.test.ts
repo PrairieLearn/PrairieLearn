@@ -84,6 +84,12 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
   });
   it('counts cache writes once and preserves the usage baseline through checkpoint recovery', async () => {
     const c = conversation();
+    expect((await c.request('snapshot')).conversationUsage).toMatchObject({
+      input: 0,
+      cached: 0,
+      cacheWrite: 0,
+      output: 0,
+    });
     const first = await c.send();
     const usage = { input: 100, cached: 40, cacheWrite: 50, output: 20 };
     await c.request('test/usage', usage);
@@ -98,6 +104,7 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
     await expect.poll(async () => (await c.request('diagnostics')).state).toBe('absent');
     const second = await c.send();
+    expect((await c.request('snapshot')).conversationUsage).toMatchObject(usage);
     await c.request('test/usage', { input: 200, cached: 80, cacheWrite: 100, output: 40 });
     await expect
       .poll(async () => (await c.request('snapshot')).conversationUsage.cacheWrite)

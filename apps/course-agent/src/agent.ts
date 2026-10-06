@@ -338,7 +338,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         for (const admission of parsed.data.admissions) {
           const receipt = this.executionReceipts([admission.id])[admission.id];
           if (
-            (receipt && (!receipt.dispatchId || receipt.dispatchId === admission.dispatchId)) ||
+            receipt?.dispatchId === admission.dispatchId ||
             this.state.steering?.[admission.id] ||
             (this.state.run?.messageId === admission.id && this.state.run.status === 'running')
           ) {

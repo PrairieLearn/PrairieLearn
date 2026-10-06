@@ -190,3 +190,7 @@ should remain unchanged. Temporarily set `hourlyCostLimit` below the displayed
 cost and try another message: it should be blocked without stopping work already
 in flight. Restore the setting afterwards. The fixture uses a priced model name
 with scripted usage and performs no inference.
+
+Development databases that already applied an earlier version of the unmerged
+accounting migration need to be recreated before testing this branch. No data
+backfill or old checkpoint format is supported for this unreleased feature.
