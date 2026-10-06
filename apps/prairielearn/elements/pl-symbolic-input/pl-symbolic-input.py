@@ -905,37 +905,29 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
+def _all_have_equivalent(
+    values: tuple[sympy.Basic, ...], candidates: tuple[sympy.Basic, ...]
+) -> bool:
+    structural_candidates = set(candidates)
+    return all(
+        value in structural_candidates
+        or any(_sympy_values_equal(value, candidate) for candidate in candidates)
+        for value in values
+    )
+
+
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
     """Compare set components as expressions instead of by structure."""
     if a == b:
         return True
 
     if isinstance(a, sympy.FiniteSet) and isinstance(b, sympy.FiniteSet):
-        if len(a.args) != len(b.args):
-            return False
-
-        unmatched = set(b.args)
-        remaining = []
-        for value in a.args:
-            if value in unmatched:
-                unmatched.remove(value)
-            else:
-                remaining.append(value)
-
-        for value in remaining:
-            match = next(
-                (
-                    candidate
-                    for candidate in unmatched
-                    if _sympy_values_equal(value, candidate)
-                ),
-                None,
-            )
-            if match is None:
-                return False
-            unmatched.remove(match)
-
-        return True
+        # Without simplification, a set can list equivalent elements separately
+        # (e.g. {x + 0, x - 0} is {x}), so match elements in both directions
+        # instead of pairing them one-to-one.
+        return _all_have_equivalent(a.args, b.args) and _all_have_equivalent(
+            b.args, a.args
+        )
 
     if isinstance(a, sympy.Interval) and isinstance(b, sympy.Interval):
         return (
