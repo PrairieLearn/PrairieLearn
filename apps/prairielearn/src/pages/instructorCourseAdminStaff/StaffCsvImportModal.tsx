@@ -1,13 +1,45 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { inferRouterOutputs } from '@trpc/server';
 import { useState } from 'react';
 import { Accordion, Alert, Button, Form, Modal, Table } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
+import { assertNever } from '@prairielearn/utils';
 
 import { useTRPC } from '../../trpc/course/context.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
+import type { CourseRouter } from '../../trpc/course/trpc.js';
+
+type PreviewRow = inferRouterOutputs<CourseRouter>['courseStaff']['preview']['rows'][number];
+type ChangedRow = PreviewRow & { action: 'add' | 'update' | 'remove' };
+
+function StaffChanges({ row }: { row: ChangedRow }) {
+  const action = row.action;
+  switch (action) {
+    case 'remove':
+      return <>Remove staff and all permissions</>;
+    case 'add':
+    case 'update':
+      return (
+        <ul className="mb-0 ps-3">
+          {(row.action === 'add' || row.previousCourseRole !== row.courseRole) && (
+            <li>
+              Course: {row.previousCourseRole ?? 'None'} → {row.courseRole}
+            </li>
+          )}
+          {row.courseInstanceChanges.map((change) => (
+            <li key={change.courseInstanceId}>
+              {change.shortName}: {change.previousRole} → {change.role}
+            </li>
+          ))}
+        </ul>
+      );
+    default:
+      return assertNever(action);
+  }
+}
 
 export function StaffCsvImportModal({ onHide }: { onHide: () => void }) {
   const trpc = useTRPC();
@@ -26,7 +58,13 @@ export function StaffCsvImportModal({ onHide }: { onHide: () => void }) {
     onSuccess: () => queryClient.invalidateQueries(trpc.courseStaff.list.queryFilter()),
   });
   const pending = preview.isPending || sync.isPending;
-  const changedRows = preview.data?.rows.filter((row) => row.action !== 'unchanged') ?? [];
+  const changedRows =
+    preview.data?.rows.filter((row): row is ChangedRow => row.action !== 'unchanged') ?? [];
+  const uidByUserId = new Map(
+    (preview.data?.rows ?? []).flatMap((row) =>
+      row.expected ? [[row.expected.userId, row.uid] as const] : [],
+    ),
+  );
   const unchangedRows = preview.data?.rows.filter((row) => row.action === 'unchanged') ?? [];
 
   const submit = handleSubmit(async ({ file }) => {
@@ -49,9 +87,15 @@ export function StaffCsvImportModal({ onHide }: { onHide: () => void }) {
   });
 
   return (
-    <Modal size="lg" backdrop={pending ? 'static' : true} show onHide={pending ? () => {} : onHide}>
+    <Modal
+      aria-labelledby="staff-csv-import-title"
+      size="lg"
+      backdrop={pending ? 'static' : true}
+      show
+      onHide={pending ? () => {} : onHide}
+    >
       <Modal.Header closeButton={!pending}>
-        <Modal.Title>Import staff CSV</Modal.Title>
+        <Modal.Title id="staff-csv-import-title">Import staff CSV</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {sync.isSuccess ? (
@@ -126,11 +170,7 @@ export function StaffCsvImportModal({ onHide }: { onHide: () => void }) {
                     <ul className="mb-0">
                       {preview.data.removalEnrollments.map((enrollment) => (
                         <li key={enrollment.enrollmentId}>
-                          {
-                            preview.data.rows.find(
-                              (row) => row.expected?.userId === enrollment.userId,
-                            )?.uid
-                          }
+                          {uidByUserId.get(enrollment.userId!)}
                           {' — '}
                           {enrollment.shortName} ({enrollment.status})
                           {enrollment.instanceDeleted && ' — deleted instance'}
@@ -165,32 +205,11 @@ export function StaffCsvImportModal({ onHide }: { onHide: () => void }) {
                                         add: 'Add',
                                         update: 'Update',
                                         remove: 'Remove',
-                                        unchanged: 'Unchanged',
                                       }[row.action]
                                     }
                                   </td>
                                   <td>
-                                    {row.action === 'remove' ? (
-                                      'Remove staff and all permissions'
-                                    ) : row.action === 'unchanged' ? (
-                                      'No changes'
-                                    ) : 'courseInstanceChanges' in row ? (
-                                      <ul className="mb-0 ps-3">
-                                        {(row.action === 'add' ||
-                                          row.previousCourseRole !== row.courseRole) && (
-                                          <li>
-                                            Course: {row.previousCourseRole ?? 'None'} →{' '}
-                                            {row.courseRole}
-                                          </li>
-                                        )}
-                                        {row.courseInstanceChanges.map((change) => (
-                                          <li key={change.courseInstanceId}>
-                                            {change.shortName}: {change.previousRole} →{' '}
-                                            {change.role}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    ) : null}
+                                    <StaffChanges row={row} />
                                   </td>
                                 </tr>
                               ))}
@@ -207,7 +226,7 @@ export function StaffCsvImportModal({ onHide }: { onHide: () => void }) {
                       </Accordion.Header>
                       <Accordion.Body>
                         <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
-                          <Table size="sm" className="mb-0">
+                          <Table size="sm" className="mb-0" responsive>
                             <thead>
                               <tr>
                                 <th scope="col">UID</th>

@@ -13,6 +13,43 @@ import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 
+test('supports upload and preview with the keyboard on a small screen', async ({
+  page,
+  courseInstance,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/staff`);
+  const importButton = page.getByRole('button', { name: 'Import CSV', exact: true });
+  await expect(importButton).toBeInViewport();
+  await importButton.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const file = dialog.getByLabel('CSV file');
+  await file.setInputFiles({
+    name: 'mobile.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(
+      'uid,course\nlong-staff-identifier-for-responsive-preview@example.com,Viewer\n',
+    ),
+  });
+  const preview = dialog.getByRole('button', { name: 'Preview changes', exact: true });
+  await preview.focus();
+  await page.keyboard.press('Enter');
+  const changes = dialog.getByRole('button', { name: 'Users with changes (1)', exact: true });
+  await expect(changes).toHaveAttribute('aria-expanded', 'true');
+  await changes.focus();
+  await page.keyboard.press('Enter');
+  await expect(changes).toHaveAttribute('aria-expanded', 'false');
+  await page.keyboard.press('Enter');
+  await expect(changes).toHaveAttribute('aria-expanded', 'true');
+  await expect(dialog.getByRole('button', { name: 'Confirm sync', exact: true })).toBeInViewport();
+  await expect(dialog).toHaveAccessibleName('Import staff CSV');
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(importButton).toBeFocused();
+});
+
 test('exports staff as a downloadable CSV', async ({ page, courseInstance }) => {
   const uid = 'csv-export@example.com';
   await insertCoursePermissionsByUserUid({

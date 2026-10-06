@@ -320,6 +320,55 @@ describe('Course staff CSV preview', { concurrent: false }, () => {
     });
   });
 
+  test('concurrent imports with opposite row orders commit one complete result', async () => {
+    const client = createClient();
+    const instance = await selectCourseInstanceById('1');
+    const uids = ['opposite-a@example.com', 'opposite-b@example.com'];
+    for (const uid of uids) {
+      const user = await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid,
+        course_role: 'Viewer',
+        authn_user_id: '1',
+      });
+      await insertCourseInstancePermissions({
+        course_id: '1',
+        course_instance_id: instance.id,
+        user_id: user.id,
+        course_instance_role: 'Student Data Editor',
+        authn_user_id: '1',
+      });
+    }
+    const texts = [
+      `uid,course,${instance.short_name}\n${uids[0]},Viewer,None\n${uids[1]},Viewer,None`,
+      `uid,course,${instance.short_name}\n${uids[1]},Viewer,Viewer\n${uids[0]},Viewer,Viewer`,
+    ];
+    const previews = await Promise.all(
+      texts.map((text) => client.courseStaff.preview.mutate({ text })),
+    );
+    const results = await Promise.allSettled(
+      texts.map((text, index) =>
+        client.courseStaff.sync.mutate({
+          text,
+          confirmationToken: previews[index].confirmationToken,
+        }),
+      ),
+    );
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.find((result) => result.status === 'rejected')).toMatchObject({
+      reason: { data: { code: 'CONFLICT' } },
+    });
+    const winningIndex = results.findIndex((result) => result.status === 'fulfilled');
+    const staff = await selectCourseUsers({ course_id: '1' });
+    for (const uid of uids) {
+      const row = staff.find((row) => row.user.uid === uid)!;
+      const role =
+        row.course_instance_roles?.find((role) => role.id === instance.id)?.course_instance_role ??
+        'None';
+      expect(role).toBe(winningIndex === 0 ? 'None' : 'Student Data Viewer');
+    }
+  });
+
   test('rolls back earlier writes when a concurrent permission change invalidates confirmation', async () => {
     const client = createClient();
     const user = await insertCoursePermissionsByUserUid({
