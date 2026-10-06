@@ -2,6 +2,7 @@ import pathlib
 import random
 import re
 from enum import Enum
+from functools import lru_cache
 from sys import get_int_max_str_digits
 from typing import assert_never
 
@@ -719,6 +720,12 @@ def format_formula_editor_submission_for_sympy(
     # but preserve tokens like "f2" that are custom function names
     text = _add_multiplication_spaces(text, known_tokens)
 
+    function_names = frozenset(
+        psu.get_builtin_functions(allow_trig_functions=allow_trig)
+        | set(custom_functions)
+    )
+    text = _wrap_bare_function_arguments(text, function_names)
+
     return text
 
 
@@ -852,6 +859,100 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
         ):
             result.append(" ")
 
+    return "".join(result)
+
+
+# Only the characters that can end a function argument or change the nesting depth
+_ARGUMENT_TOKEN_PATTERN = re.compile(r"\*+|[()\[\]{}+\-/,]")
+
+
+def _find_bare_argument_end(text: str, start: int, end: int) -> int | None:
+    """
+    Find the explicit "*" before `end` that ends a function argument starting at `start`.
+
+    Returns:
+        The index of the "*", or None if the argument ends some other way.
+    """
+    depth = 0
+    # A run of "*" is matched as one token, so only a lone "*" ends the argument
+    for match in _ARGUMENT_TOKEN_PATTERN.finditer(text, start, end):
+        match match.group(0):
+            case "(" | "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                if depth == 0:
+                    return None
+                depth -= 1
+            case "*":
+                if depth == 0:
+                    return match.start()
+            case "+" | "-" | "/" | ",":
+                if depth == 0:
+                    return None
+            case _:
+                pass
+    return None
+
+
+@lru_cache(maxsize=128)
+def _bare_function_argument_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+    """
+    Match a function name followed by whitespace and an argument that doesn't start with "(".
+
+    Returns:
+        The compiled pattern, cached per set of function names
+    """
+    names = sorted(function_names, key=len, reverse=True)
+    return re.compile(
+        r"(?<![A-Za-z_])(?:" + "|".join(map(re.escape, names)) + r")\s+(?=[^\s(])"
+    )
+
+
+def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
+    r"""
+    Parenthesize unparenthesized function arguments that are followed by "*".
+
+    The formula editor displays `{\ln 4}\cdot x` as ln(4)·x but submits it as
+    "ln 4 * x". SymPy's implicit function application ends the argument at "+",
+    "-", or "/", but not at "*", so it would parse this as ln(4x).
+
+    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)"
+
+    Returns:
+        The text with those arguments wrapped in parentheses
+    """
+    if not function_names:
+        return text
+    pattern = _bare_function_argument_pattern(function_names)
+
+    # Each "(" sorts before a ")" at the same index, which only happens for an
+    # empty argument. This is a loop rather than recursion on each wrapped
+    # argument so that deeply nested input can't exceed the recursion limit.
+    insertions: list[tuple[int, str]] = []
+    # Ends of the wrapped arguments that enclose the current match. A function
+    # inside a wrapped argument only sees the text up to the end of that argument.
+    limits: list[int] = []
+    for match in pattern.finditer(text):
+        while limits and match.start() >= limits[-1]:
+            limits.pop()
+        limit = limits[-1] if limits else len(text)
+        # The match's lookahead character must also be inside the argument
+        if match.end() >= limit:
+            continue
+        start = match.end()
+        end = _find_bare_argument_end(text, start, limit)
+        if end is None:
+            continue
+        argument_end = start + len(text[start:end].rstrip())
+        insertions.extend(((start, "("), (argument_end, ")")))
+        limits.append(argument_end)
+
+    result = []
+    pos = 0
+    for index, paren in sorted(insertions):
+        result.extend((text[pos:index], paren))
+        pos = index
+    result.append(text[pos:])
     return "".join(result)
 
 
