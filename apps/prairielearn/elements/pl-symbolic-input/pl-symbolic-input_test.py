@@ -146,7 +146,7 @@ def test_plus_minus_is_rejected_without_sets() -> None:
 
     symbolic_input.parse(element_html, data)
 
-    assert "gives two values" in data["format_errors"]["test"]
+    assert "contains set notation" in data["format_errors"]["test"]
 
 
 def test_set_notation_is_rejected_by_default() -> None:
@@ -440,7 +440,7 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
         raw_submitted_answers={"test": "2+-a", "test-latex": r"2\pm a"},
     )
     symbolic_input.parse(element_html, data)
-    assert 'invalid symbol "±"' in data["format_errors"]["test"]
+    assert "contains set notation" in data["format_errors"]["test"]
 
     data = make_question_data(
         submitted_answers={"test": "2+-a"},

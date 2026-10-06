@@ -942,7 +942,7 @@ class TestExceptions:
         ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
 
     # Unknown to unidecode, plus-minus, superscript, and subscript characters
-    @pytest.mark.parametrize("text", ["2⋆n", "2±n", "n²", "n₁"])
+    @pytest.mark.parametrize("text", ["2⋆n", "n²", "n₁"])
     def test_unsupported_characters(self, text: str) -> None:
         with pytest.raises(psu.HasInvalidSymbolError) as exc_info:
             psu.convert_string_to_sympy(text, self.VARIABLES)
@@ -973,7 +973,12 @@ class TestExceptions:
     def test_plus_minus_rejected_with_set_notation(self, text: str) -> None:
         result = psu.try_parse_string_as_sympy(text, self.VARIABLES, allow_sets=True)
         assert isinstance(result, psu.SympyParseFailure)
-        assert "with set notation" in result.error
+        assert "invalid expression" in result.error
+
+    @pytest.mark.parametrize("text", ["2±n", "2∓n"])
+    def test_plus_minus_requires_sets(self, text: str) -> None:
+        with pytest.raises(psu.HasSetNotationError):
+            psu.convert_string_to_sympy(text, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
