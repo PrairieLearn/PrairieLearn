@@ -100,6 +100,67 @@ function textSection(title: string, content: string): TextPart {
   };
 }
 
+export async function prepareQuestionPrompt(
+  prompt: string,
+  section: 'question' | 'answer' = 'question',
+): Promise<UserContentParts> {
+  if (section === 'answer') {
+    prompt = prompt.trim();
+    if (!prompt) return [];
+  }
+  const $ = cheerio.load(prompt, null, false);
+  const imageSources = new Set(
+    $('img[src]')
+      .toArray()
+      .map((image) => $(image).attr('src')!)
+      .filter((src) => src.trim()),
+  );
+  const imageFiles = new Map(
+    await Promise.all(
+      [...imageSources].map(async (src) => {
+        const url = new URL(
+          src,
+          config.serverCanonicalHost ??
+            `${config.serverType}://${config.hostname}:${config.serverPort}`,
+        );
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to load ${section} image ${url}: ${response.status}`);
+        }
+        const image = Buffer.from(await response.arrayBuffer());
+        const mediaType = response.headers.get('content-type')?.split(';')[0] ?? 'image/png';
+        return [src, { data: image.toString('base64'), mediaType }] as const;
+      }),
+    ),
+  );
+  const imageParts: UserContentParts = [];
+  $('img[src]').each((index, image) => {
+    const src = $(image).attr('src')!;
+    const file = imageFiles.get(src);
+    if (!file) return;
+    const label = `${section === 'question' ? 'Question' : 'Answer'} image ${index + 1}`;
+    const alt = $(image).attr('alt');
+    imageParts.push(
+      { type: 'text', text: alt ? `${label}: ${alt}` : label },
+      {
+        type: 'file',
+        data: file.data,
+        filename: `${section}-image-${index + 1}.${mime.getExtension(file.mediaType) ?? 'png'}`,
+        mediaType: file.mediaType,
+        providerOptions: { openai: { imageDetail: 'auto' } },
+      },
+    );
+    $(image).replaceWith(`[${label}]`);
+  });
+  return [
+    textSection(
+      section === 'question' ? 'Question' : 'Instructor reference answer',
+      imageParts.length > 0 ? $.html() : prompt,
+    ),
+    ...imageParts,
+  ];
+}
+
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
@@ -111,8 +172,8 @@ export async function generatePrompt({
   params,
   true_answer,
 }: {
-  questionPrompt: string;
-  questionAnswer: string;
+  questionPrompt: string | UserContentParts;
+  questionAnswer: string | UserContentParts;
   /** If true, the prompt will include that rotation correction was applied prior to grading. */
   rotationCorrected?: boolean;
   submission_text: string;
@@ -193,10 +254,18 @@ export async function generatePrompt({
     content.push(textSection('Rubric items', rubricItems));
   }
 
-  content.push(textSection('Question', questionPrompt));
+  if (typeof questionPrompt === 'string') {
+    content.push(textSection('Question', questionPrompt));
+  } else {
+    content.push(...questionPrompt);
+  }
 
-  if (questionAnswer.trim()) {
-    content.push(textSection('Instructor reference answer', questionAnswer.trim()));
+  if (typeof questionAnswer === 'string') {
+    if (questionAnswer.trim()) {
+      content.push(textSection('Instructor reference answer', questionAnswer.trim()));
+    }
+  } else {
+    content.push(...questionAnswer);
   }
 
   content.push(

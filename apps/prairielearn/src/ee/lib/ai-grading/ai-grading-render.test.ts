@@ -4,6 +4,19 @@ import { describe, expect, it } from 'vitest';
 import { stripHtmlForAiGrading } from './ai-grading-render.js';
 
 describe('stripHtmlForAiGrading', () => {
+  it('preserves images and containers containing only images', async () => {
+    const result = await stripHtmlForAiGrading(
+      '<img src="standalone.png" alt="Standalone"><div><p><img src="diagram.png" alt="Diagram"></p><span></span></div>',
+    );
+
+    const $ = cheerio.load(result);
+    expect($('img').length).toBe(2);
+    expect($('img').first().attr('src')).toBe('standalone.png');
+    expect($('div > p > img').attr('src')).toBe('diagram.png');
+    expect($('div > p > img').attr('alt')).toBe('Diagram');
+    expect($('span').length).toBe(0);
+  });
+
   it('removes elements with aria-hidden="true"', async () => {
     const result = await stripHtmlForAiGrading(
       '<div><span aria-hidden="true">Hidden</span><span>Visible</span></div>',

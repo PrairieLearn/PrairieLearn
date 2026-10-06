@@ -120,10 +120,10 @@ export async function stripHtmlForAiGrading(html: string) {
     stripBootstrapAttributes(el);
   });
 
-  // Remove all elements that have no text content.
+  // Remove elements that have neither text content nor images.
   $('*').each((_, el) => {
     if (!isTag(el)) return;
-    if ($(el).text().trim() === '') {
+    if (el.name !== 'img' && $(el).text().trim() === '' && $(el).find('img').length === 0) {
       $(el).remove();
     }
   });
