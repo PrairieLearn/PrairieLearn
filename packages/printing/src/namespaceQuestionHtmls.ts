@@ -46,9 +46,23 @@ function rewriteCssIdReferences(
   context: 'declarationList' | 'selectorList' | 'stylesheet' | 'value',
   idRenames: ReadonlyMap<string, string>,
 ): string {
-  if (!css.includes('#') || idRenames.size === 0) return css;
+  if (!css.includes('#') || css.includes('${') || idRenames.size === 0) return css;
 
-  const ast = csstree.parse(css, { context, parseCustomProperty: true });
+  let parseError = false;
+  let ast: csstree.CssNode;
+  try {
+    ast = csstree.parse(css, {
+      context,
+      parseCustomProperty: true,
+      onParseError: () => {
+        parseError = true;
+      },
+    });
+  } catch {
+    return css;
+  }
+  if (parseError) return css;
+
   let changed = false;
   csstree.walk(ast, (node) => {
     if (node.type === 'IdSelector') {
