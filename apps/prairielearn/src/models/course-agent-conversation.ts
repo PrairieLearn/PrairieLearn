@@ -15,6 +15,7 @@ import {
 import {
   type CourseAgentConversation,
   CourseAgentConversationSchema,
+  type CourseAgentOperation,
   CourseAgentOperationSchema,
 } from '../lib/db-types.js';
 
@@ -71,7 +72,7 @@ export async function createConversation(
 export async function reserveOperation(
   conversation: CourseAgentConversation,
   operation_id: string,
-  payload: Record<string, unknown>,
+  payload: CourseAgentOperation['payload'],
   expected: number,
 ) {
   return runInTransactionAsync(async () => {

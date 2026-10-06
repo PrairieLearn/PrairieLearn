@@ -721,7 +721,7 @@ export const CourseAgentOperationSchema = z.object({
   id: IdSchema,
   operation_id: z.string(),
   operation_number: z.number(),
-  payload: z.json(),
+  payload: z.object({ kind: z.literal('message'), text: z.string() }),
 });
 export type CourseAgentOperation = z.infer<typeof CourseAgentOperationSchema>;
 
