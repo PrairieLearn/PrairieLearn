@@ -200,6 +200,9 @@ class _Constants:
         "\u2061": "",  # function application
     })
 
+    # Operators that give two values; unidecode would turn "±" into "+-".
+    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
+
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
         "cup": "|",
@@ -763,12 +766,12 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
-        elif not char.isascii() and unicodedata.decomposition(char).startswith((
-            "<super>",
-            "<sub>",
-        )):
-            # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
-            # writes exponents and subscripts with "^" and "_".
+        elif char in const.plus_minus_operators or (
+            not char.isascii()
+            and unicodedata.decomposition(char).startswith(("<super>", "<sub>"))
+        ):
+            # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
+            # formula editor writes exponents and subscripts with "^" and "_".
             raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
         elif char not in const.set_operators:
