@@ -36,15 +36,13 @@ test('prompt acceptance honors the caller deadline during a cold sandbox restore
 test('rejects malformed Worker receipts at the JSON boundary', async () => {
   vi.stubGlobal(
     'fetch',
-    vi
-      .fn()
-      .mockResolvedValue(
-        Response.json({
-          messages: [],
-          operationNumber: 0,
-          executions: { invalid: { status: 'finished' } },
-        }),
-      ),
+    vi.fn().mockResolvedValue(
+      Response.json({
+        messages: [],
+        operationNumber: 0,
+        executions: { invalid: { status: 'finished' } },
+      }),
+    ),
   );
   const chat = createCloudflareProvider(new URL('http://localhost:8791'), 'test');
   await expect(chat.getSnapshot(AbortSignal.timeout(1000))).rejects.toThrow();
