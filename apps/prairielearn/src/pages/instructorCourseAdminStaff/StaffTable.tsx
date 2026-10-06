@@ -41,6 +41,8 @@ import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
 import type { CourseRouter } from '../../trpc/course/trpc.js';
 
+import { StaffCsvImportModal } from './StaffCsvImportModal.js';
+
 type CourseUsersRow = inferRouterOutputs<CourseRouter>['courseStaff']['list'][number];
 type ColumnFilter = (props: { header: TanstackTableHeader<CourseUsersRow> }) => ReactNode;
 
@@ -883,6 +885,7 @@ function StaffTableInner({
   canEdit,
   uidsLimit,
 }: StaffTableInnerProps) {
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const trpc = useTRPC();
   const { data: liveUsers } = useQuery({
     ...trpc.courseStaff.list.queryOptions(),
@@ -1202,6 +1205,12 @@ function StaffTableInner({
           userId={userId}
         />
       )}
+      {canEdit && (
+        <Button type="button" variant="light" size="sm" onClick={() => setShowCsvImport(true)}>
+          <i className="bi bi-upload me-2" aria-hidden="true" />
+          Import CSV
+        </Button>
+      )}
       {canEdit && <AddUsersButton uidsLimit={uidsLimit} courseInstances={courseInstances} />}
     </>
   );
@@ -1274,6 +1283,7 @@ function StaffTableInner({
 
   return (
     <div className="d-flex flex-column h-100">
+      {showCsvImport && <StaffCsvImportModal onHide={() => setShowCsvImport(false)} />}
       <AppErrorAlert
         error={getAppError<CourseStaffError['Export']>(exportQuery.error)}
         render={{ UNKNOWN: ({ message }) => message }}
