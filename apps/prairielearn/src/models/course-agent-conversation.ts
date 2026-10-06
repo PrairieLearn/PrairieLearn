@@ -193,3 +193,7 @@ export async function reserveContinuation(
     return (await selectOptionalOperation(row.id, operation_id))!.dispatch_id;
   });
 }
+
+/** A result returned to a live native turn finishes the decision without admitting another execution. */
+export const completeDecisionOperation = (id: string, operation_id: string) =>
+  execute(sql.complete_decision_operation, { id, operation_id });

@@ -28,6 +28,7 @@ import { isEnterprise } from '../../../lib/license.js';
 import { selectJobSequenceStatus, selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import {
   type AgentScope,
+  completeDecisionOperation,
   selectConversationOperations,
 } from '../../../models/course-agent-conversation.js';
 import * as proposals from '../../../models/course-agent-proposal.js';
@@ -537,6 +538,7 @@ export async function complete(
             },
             AbortSignal.timeout(120000),
           );
+          if (!dispatchId) await completeDecisionOperation(conversation.id, input.id);
           await proposals.saveProposalProgress(row.id, { delivered: true, error: row.error });
         }
       } catch (error) {

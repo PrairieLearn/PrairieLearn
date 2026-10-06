@@ -6,6 +6,61 @@ import { z } from 'zod';
 import { type Approval, ChatError, proposalContent } from '@prairielearn/course-agent-contract';
 import { run } from '@prairielearn/run';
 
+const treeSchema = z.object({
+  truncated: z.boolean(),
+  tree: z.array(
+    z.object({
+      path: z.string(),
+      mode: z.string(),
+      sha: z.string(),
+      type: z.enum(['blob', 'tree', 'commit']),
+    }),
+  ),
+});
+const blobSchema = z.object({ content: z.string(), encoding: z.string() });
+const commitSchema = z.object({
+  parents: z.array(z.object({ sha: z.string() })),
+  tree: z.object({ sha: z.string() }),
+});
+const historySchema = z.object({
+  errors: z.unknown().optional(),
+  data: z
+    .object({
+      repository: z
+        .object({
+          ref: z
+            .object({
+              target: z
+                .object({
+                  history: z.object({
+                    nodes: z.array(z.object({ oid: z.string(), message: z.string() })),
+                    pageInfo: z.object({
+                      hasNextPage: z.boolean(),
+                      endCursor: z.string().nullable(),
+                    }),
+                  }),
+                })
+                .nullable(),
+            })
+            .nullable(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .nullish(),
+});
+const publicationSchema = z.object({
+  errors: z.unknown().optional(),
+  data: z
+    .object({
+      createCommitOnBranch: z
+        .object({ commit: z.object({ oid: z.string() }) })
+        .nullable()
+        .optional(),
+    })
+    .nullish(),
+});
+
 const EMPTY_BASE = '0'.repeat(40);
 export interface Destination {
   repository: string;
@@ -56,7 +111,7 @@ export class Publisher {
     this.options = options;
   }
 
-  private async request(path: string, body?: unknown) {
+  private async request(path: string, body?: unknown): Promise<unknown> {
     const response = await (this.options.fetch ?? fetch)(`https://api.github.com${path}`, {
       method: body ? 'POST' : 'GET',
       headers: {
@@ -103,10 +158,9 @@ export class Publisher {
       );
     }
     const root = `/repos/${this.destination.repository}`;
-    const tree = (await this.request(`${root}/git/trees/${approval.baseSha}?recursive=1`)) as {
-      truncated: boolean;
-      tree: { path: string; mode: string; sha: string }[];
-    };
+    const tree = treeSchema.parse(
+      await this.request(`${root}/git/trees/${approval.baseSha}?recursive=1`),
+    );
     if (tree.truncated) throw new PublishRejected('Repository tree exceeds supported limits.');
     const seen = new Set<string>();
     let diff = '';
@@ -141,10 +195,7 @@ export class Publisher {
       const before = await run(async () => {
         if (!previous) return '';
 
-        const blob = (await this.request(`${root}/git/blobs/${previous.sha}`)) as {
-          content: string;
-          encoding: string;
-        };
+        const blob = blobSchema.parse(await this.request(`${root}/git/blobs/${previous.sha}`));
         if (blob.encoding !== 'base64') {
           throw new PublishRejected('Unsupported GitHub blob encoding.');
         }
@@ -195,31 +246,19 @@ export class Publisher {
           'Publication history exceeds reconciliation limit; operator review required.',
         );
       }
-      const result = (await this.request('/graphql', {
-        query:
-          'query($owner:String!,$name:String!,$ref:String!,$cursor:String){repository(owner:$owner,name:$name){ref(qualifiedName:$ref){target{... on Commit{history(first:100,after:$cursor){nodes{oid message} pageInfo{hasNextPage endCursor}}}}}}}',
-        variables: {
-          owner: this.destination.repository.split('/')[0],
-          name: this.destination.repository.split('/')[1],
-          ref: `refs/heads/${this.destination.branch}`,
-          cursor,
-        },
-      })) as {
-        errors?: unknown;
-        data?: {
-          repository?: {
-            ref?: {
-              target: {
-                history: {
-                  nodes: { oid: string; message: string }[];
-                  pageInfo: { hasNextPage: boolean; endCursor: string };
-                };
-              };
-            };
-          };
-        };
-      };
-      const history = result.data?.repository?.ref?.target.history;
+      const result = historySchema.parse(
+        await this.request('/graphql', {
+          query:
+            'query($owner:String!,$name:String!,$ref:String!,$cursor:String){repository(owner:$owner,name:$name){ref(qualifiedName:$ref){target{... on Commit{history(first:100,after:$cursor){nodes{oid message} pageInfo{hasNextPage endCursor}}}}}}}',
+          variables: {
+            owner: this.destination.repository.split('/')[0],
+            name: this.destination.repository.split('/')[1],
+            ref: `refs/heads/${this.destination.branch}`,
+            cursor,
+          },
+        }),
+      );
+      const history = result.data?.repository?.ref?.target?.history;
       if (
         !history &&
         (definiteGraphqlRejection(result.errors, 'repository') ||
@@ -237,24 +276,25 @@ export class Publisher {
       }
       for (const commit of history.nodes) {
         if (commit.message.trimEnd() === this.message(job)) {
-          const candidate = (await this.request(
-            `${'/repos/'}${this.destination.repository}/git/commits/${commit.oid}`,
-          )) as { parents: { sha: string }[]; tree: { sha: string } };
+          const candidate = commitSchema.parse(
+            await this.request(`/repos/${this.destination.repository}/git/commits/${commit.oid}`),
+          );
           if (
             candidate.parents.length !== 1 ||
             candidate.parents[0]?.sha !== job.approval.baseSha
           ) {
             throw new PublishRejected('Prior publication could not be verified.');
           }
-          const base = (await this.request(
-            `/repos/${this.destination.repository}/git/trees/${job.approval.baseSha}?recursive=1`,
-          )) as {
-            truncated: boolean;
-            tree: { path: string; mode: string; sha: string; type: string }[];
-          };
-          const after = (await this.request(
-            `/repos/${this.destination.repository}/git/trees/${candidate.tree.sha}?recursive=1`,
-          )) as typeof base;
+          const base = treeSchema.parse(
+            await this.request(
+              `/repos/${this.destination.repository}/git/trees/${job.approval.baseSha}?recursive=1`,
+            ),
+          );
+          const after = treeSchema.parse(
+            await this.request(
+              `/repos/${this.destination.repository}/git/trees/${candidate.tree.sha}?recursive=1`,
+            ),
+          );
           if (base.truncated || after.truncated) {
             throw new PublishRejected('Prior publication tree could not be verified.');
           }
@@ -307,36 +347,35 @@ export class Publisher {
     if (!job.candidate) throw new Error('Proposal has not been validated.');
     const prior = await this.published(job);
     if (prior) return prior;
-    const result = (await this.request('/graphql', {
-      query:
-        'mutation($input:CreateCommitOnBranchInput!){createCommitOnBranch(input:$input){commit{oid}}}',
-      variables: {
-        input: {
-          branch: {
-            repositoryNameWithOwner: job.destination.repository,
-            branchName: job.destination.branch,
-          },
-          expectedHeadOid: job.approval.baseSha,
-          message: {
-            headline: `Approved course-agent change ${job.id}`,
-            body: `Proposal: ${job.approval.digest}`,
-          },
-          fileChanges: {
-            additions: job.approval.files.flatMap((file) =>
-              file.content === null
-                ? []
-                : [{ path: file.path, contents: Buffer.from(file.content).toString('base64') }],
-            ),
-            deletions: job.approval.files
-              .filter((f) => f.content === null)
-              .map((f) => ({ path: f.path })),
+    const result = publicationSchema.parse(
+      await this.request('/graphql', {
+        query:
+          'mutation($input:CreateCommitOnBranchInput!){createCommitOnBranch(input:$input){commit{oid}}}',
+        variables: {
+          input: {
+            branch: {
+              repositoryNameWithOwner: job.destination.repository,
+              branchName: job.destination.branch,
+            },
+            expectedHeadOid: job.approval.baseSha,
+            message: {
+              headline: `Approved course-agent change ${job.id}`,
+              body: `Proposal: ${job.approval.digest}`,
+            },
+            fileChanges: {
+              additions: job.approval.files.flatMap((file) =>
+                file.content === null
+                  ? []
+                  : [{ path: file.path, contents: Buffer.from(file.content).toString('base64') }],
+              ),
+              deletions: job.approval.files
+                .filter((f) => f.content === null)
+                .map((f) => ({ path: f.path })),
+            },
           },
         },
-      },
-    })) as {
-      errors?: unknown;
-      data?: { createCommitOnBranch?: { commit: { oid: string } } };
-    };
+      }),
+    );
     const sha = result.data?.createCommitOnBranch?.commit.oid;
     if (sha) return sha;
     if (definiteGraphqlRejection(result.errors, 'createCommitOnBranch')) {

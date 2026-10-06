@@ -192,3 +192,14 @@ WHERE
   AND o.dispatch_id = v.dispatch_id
   AND o.status IN ('admitted', 'running')
   AND o.status <> v.status;
+
+-- BLOCK complete_decision_operation
+UPDATE course_agent_operations
+SET
+  status = 'completed',
+  finished_at = now()
+WHERE
+  conversation_id = $id
+  AND operation_id = $operation_id
+  AND payload ->> 'kind' = 'decision'
+  AND status = 'admitted';

@@ -113,7 +113,7 @@ router.get(
           dispatchHostTool(call, (incoming) =>
             prepare(scope, conversation, {
               id: incoming.id,
-              sequence: incoming.sequence!,
+              sequence: incoming.sequence,
               name: incoming.name,
               args: incoming.input,
             }),

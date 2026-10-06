@@ -13,6 +13,7 @@ import {
   sandboxDiagnosticsSchema,
 } from '@prairielearn/course-agent-contract';
 import * as Sentry from '@prairielearn/sentry';
+import { assertNever } from '@prairielearn/utils';
 
 import { config } from '../../../lib/config.js';
 
@@ -37,10 +38,18 @@ const snapshotSchema = z.object({
   messages: z.array(z.unknown()),
   operationNumber: z.number().int().nonnegative(),
   blocked: z.boolean(),
-  pendingTool: z.object({
-    id: z.uuid(), sequence: z.number().int().positive(), name: z.string(), args: z.unknown(),
-    result: z.string().optional(), resultSuccess: z.boolean().optional(), prepared: z.boolean().optional(), error: z.string().optional(),
-  }).optional(),
+  pendingTool: z
+    .object({
+      id: z.uuid(),
+      sequence: z.number().int().positive(),
+      name: z.string(),
+      args: z.unknown(),
+      result: z.string().optional(),
+      resultSuccess: z.boolean().optional(),
+      prepared: z.boolean().optional(),
+      error: z.string().optional(),
+    })
+    .optional(),
   executions: z.record(
     z.string(),
     z.object({
@@ -57,6 +66,11 @@ const snapshotSchema = z.object({
 const watchMessageSchema = z.union([
   hostToolCallSchema,
   z.object({ type: z.enum(['cf_agent_state', 'cf_agent_chat_messages']) }),
+]);
+
+const deliveryMessageSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('host-tool-delivered'), id: z.uuid() }),
+  z.object({ type: z.literal('host-tool-delivery-error'), id: z.uuid() }),
 ]);
 
 /** Isolate Cloudflare transport behind the provider contract; the browser only sees HTTP and AI SDK SSE. */
@@ -210,19 +224,25 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
               }),
             );
           const receive = (data: WebSocket.RawData) => {
-            let frame;
+            let value: unknown;
             try {
-              frame = JSON.parse(String(data));
+              value = JSON.parse(String(data));
             } catch {
               return;
             }
+            const parsed = deliveryMessageSchema.safeParse(value);
+            if (!parsed.success) return;
+            const frame = parsed.data;
             if (frame.id !== outcome.id) return;
-            if (frame.type === 'host-tool-delivered') {
-              resolve();
-              return;
-            }
-            if (frame.type === 'host-tool-delivery-error') {
-              reject(new Error('Tool result delivery failed. Retry completion.'));
+            switch (frame.type) {
+              case 'host-tool-delivered':
+                resolve();
+                break;
+              case 'host-tool-delivery-error':
+                reject(new Error('Tool result delivery failed. Retry completion.'));
+                break;
+              default:
+                assertNever(frame);
             }
           };
           cleanup = () => {
