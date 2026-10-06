@@ -825,6 +825,9 @@ importers:
       cropperjs:
         specifier: ^2.2.0
         version: 2.2.0
+      css-tree:
+        specifier: ^3.2.1
+        version: 3.2.1
       csv-parse:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1038,6 +1041,9 @@ importers:
       pg:
         specifier: ^8.23.0
         version: 8.23.0
+      playwright:
+        specifier: ^1.62.1
+        version: 1.63.0
       prettier:
         specifier: ^3.9.9
         version: 3.9.9
@@ -1231,6 +1237,9 @@ importers:
       '@types/cookie-parser':
         specifier: ^1.4.10 <2
         version: 1.4.10(@types/express@4.17.25)
+      '@types/css-tree':
+        specifier: ^3.2.0
+        version: 3.2.0
       '@types/d3':
         specifier: ^7.4.3
         version: 7.4.3
@@ -2449,37 +2458,6 @@ importers:
       typescript-cp:
         specifier: ^0.1.11
         version: 0.1.11(@typescript/typescript6@6.0.2)
-
-  packages/printing:
-    dependencies:
-      cheerio:
-        specifier: ^1.2.0
-        version: 1.2.0
-      css-tree:
-        specifier: ^3.2.1
-        version: 3.2.1
-      playwright:
-        specifier: ^1.62.1
-        version: 1.63.0
-    devDependencies:
-      '@prairielearn/tsconfig':
-        specifier: workspace:^
-        version: link:../tsconfig
-      '@types/css-tree':
-        specifier: ^3.2.0
-        version: 3.2.0
-      '@types/node':
-        specifier: ^24.13.3
-        version: 24.19.0
-      '@typescript/native':
-        specifier: npm:typescript@^7.0.2
-        version: typescript@7.0.2
-      '@vitest/coverage-v8':
-        specifier: ^5.0.0
-        version: 5.0.2(vitest@5.0.2)
-      vitest:
-        specifier: ^5.0.0
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/public-fetch:
     dependencies:

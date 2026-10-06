@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method -- The browser harness methods are Vitest spies passed to expect. */
 import type { Browser, BrowserContext, Page, Response, Route, WebSocketRoute } from 'playwright';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -86,9 +87,7 @@ function createBrowserHarness({
     getPeakOpenContexts: () => peakOpenContexts,
     getOpenContexts: () => openContexts,
     disconnect: () => {
-      const handler = vi
-        .mocked(browser.on)
-        .mock.calls.find(([event]) => event === 'disconnected')?.[1] as (() => void) | undefined;
+      const handler = vi.mocked(browser.on).mock.calls.at(0)?.[1] as (() => void) | undefined;
       if (!handler) throw new Error('The renderer did not listen for browser disconnects');
       handler();
     },
