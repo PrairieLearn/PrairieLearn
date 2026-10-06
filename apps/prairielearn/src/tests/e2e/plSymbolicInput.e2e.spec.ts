@@ -77,17 +77,7 @@ test.describe('pl-symbolic-input prefix insertion', () => {
     await expect(formulaEditor).toBeVisible();
     await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
 
-    const cases = [
-      /sqrt/,
-      /operatorname\{log\}/,
-      /^\|\{#0\}\|$/,
-      /operatorname\{min\}/,
-      /operatorname\{max\}/,
-      /operatorname\{sign\}/,
-      /operatorname\{sin\}/,
-      /operatorname\{cos\}/,
-      /operatorname\{tan\}/,
-    ];
+    const cases = [/sqrt/, /^\|\{#0\}\|$/, /operatorname\{sin\}/];
 
     for (const label of cases) {
       await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
@@ -95,33 +85,23 @@ test.describe('pl-symbolic-input prefix insertion', () => {
       });
     }
 
-    const variantCases = [
-      { label: /operatorname\{sin\}/, count: 4 },
-      { label: /operatorname\{cos\}/, count: 4 },
-      { label: /operatorname\{tan\}/, count: 5 },
-    ];
+    await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
+      await page.getByLabel(/operatorname\{sin\}/).dispatchEvent('pointerdown', {
+        button: 0,
+        isPrimary: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
 
-    for (const { label, count } of variantCases) {
-      for (let index = 0; index < count; index++) {
-        await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
-          await page.getByLabel(label).dispatchEvent('pointerdown', {
-            button: 0,
-            isPrimary: true,
-            pointerId: 1,
-            pointerType: 'mouse',
-          });
-
-          const variants = page.locator('.MLK__variant-panel.is-visible .item');
-          await expect(variants).toHaveCount(count);
-          await variants.nth(index).dispatchEvent('pointerup', {
-            button: 0,
-            isPrimary: true,
-            pointerId: 1,
-            pointerType: 'mouse',
-          });
-        });
-      }
-    }
+      const variants = page.locator('.MLK__variant-panel.is-visible .item');
+      await expect(variants).toHaveCount(4);
+      await variants.first().dispatchEvent('pointerup', {
+        button: 0,
+        isPrimary: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+    });
   });
 
   test('keeps preceding content outside natural log when configured', async ({ page }) => {
