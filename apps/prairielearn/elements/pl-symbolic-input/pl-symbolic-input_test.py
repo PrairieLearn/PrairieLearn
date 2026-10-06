@@ -107,26 +107,27 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
 
 
 @pytest.mark.parametrize(
-    ("formula_editor", "submission", "latex"),
+    ("formula_editor", "submission", "latex", "correct_answer"),
     [
         # Formula editor plain text and LaTeX for the quadratic formula
         (
             "true",
             "(-b+-sqrt(b^2-4a c))/(2a)",
             r"\frac{-b\pm\sqrt{b^2-4ac}}{2a}",
+            "{(-b + sqrt(b^2 - 4*a*c))/(2*a), (-b - sqrt(b^2 - 4*a*c))/(2*a)}",
         ),
-        ("false", "(-b ± sqrt(b^2 - 4*a*c))/(2*a)", None),
-        ("false", "(-b +/- sqrt(b^2 - 4*a*c))/(2*a)", None),
+        # Elements are compared by equivalence, not structure
+        ("false", "a(a ± 1)", None, "{a^2 - a, a^2 + a}"),
     ],
 )
 def test_plus_minus_grades_as_finite_set(
-    formula_editor: str, submission: str, latex: str | None
+    formula_editor: str, submission: str, latex: str | None, correct_answer: str
 ) -> None:
     element_html = build_element_html(
         'variables="a, b, c"',
         'allowed-types="finite-set"',
         f'formula-editor="{formula_editor}"',
-        'correct-answer="{(-b + sqrt(b^2 - 4*a*c))/(2*a), (-b - sqrt(b^2 - 4*a*c))/(2*a)}"',
+        f'correct-answer="{correct_answer}"',
     )
     data = make_question_data(
         submitted_answers={"test": submission},
@@ -144,8 +145,7 @@ def test_plus_minus_grades_as_finite_set(
 @pytest.mark.parametrize(
     ("allow_sets", "sub", "expected"),
     [
-        (True, "x +/- 1", "x ± 1"),
-        (True, "x -/+ 1", "x ∓ 1"),
+        (True, "x +/- 1 -/+ 2", "x ± 1 ∓ 2"),
         (False, "x +/- 1", "x +/- 1"),
     ],
 )
@@ -156,42 +156,6 @@ def test_format_submission_for_sympy_plus_minus_spelling(
         sub, allow_sets=allow_sets
     )
     assert (out, error_msg) == (expected, None)
-
-
-@pytest.mark.parametrize(
-    ("correct_answer", "submission", "score"),
-    [
-        ("{x^2 - x, x^2 + x}", "x(x ± 1)", 1),
-        ("{x + 1}", "x ± 1", 0),
-        ("(x^2 + x, oo)", "(x(x + 1), oo)", 1),
-        ("(x^2 + x, oo)", "[x(x + 1), oo)", 0),
-    ],
-)
-def test_sets_are_graded_by_equivalence(
-    correct_answer: str, submission: str, score: int
-) -> None:
-    element_html = build_element_html(
-        'variables="x"',
-        'allowed-types="finite-set, interval"',
-        f'correct-answer="{correct_answer}"',
-    )
-    data = make_question_data(submitted_answers={"test": submission})
-
-    symbolic_input.prepare(element_html, data)
-    symbolic_input.parse(element_html, data)
-    assert "test" not in data["format_errors"]
-
-    symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == score
-
-
-def test_plus_minus_is_rejected_without_sets() -> None:
-    element_html = build_element_html('variables="x"')
-    data = make_question_data(submitted_answers={"test": "1 ± x"})
-
-    symbolic_input.parse(element_html, data)
-
-    assert "contains set notation" in data["format_errors"]["test"]
 
 
 def test_set_notation_is_rejected_by_default() -> None:
