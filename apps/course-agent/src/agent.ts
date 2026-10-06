@@ -337,7 +337,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         for (const admission of parsed.data.admissions) {
           const receipt = this.executionReceipts([admission.id])[admission.id];
           if (
-            (receipt && (!receipt.dispatchId || receipt.dispatchId === admission.dispatchId)) ||
+            receipt?.dispatchId === admission.dispatchId ||
             this.state.steering?.[admission.id] ||
             (this.state.run?.messageId === admission.id && this.state.run.status === 'running')
           ) {
@@ -525,11 +525,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         [input.id]: {
           dispatchId: input.dispatchId,
           status: 'completed',
-          model: this.env.CODEX_MODEL!,
-          input: 0,
-          cached: 0,
-          cacheWrite: 0,
-          output: 0,
         },
       },
     });
@@ -882,7 +877,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     const previous = this.state.checkpoint?.backup.id;
     this.saveState({
       ...this.state,
-      checkpoint: { ...checkpoint, usageTotal: this.state.usageTotal },
+      checkpoint,
       lastCheckpointError: undefined,
       obsoleteCheckpoints: [
         ...new Set([
@@ -1318,9 +1313,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       throw new Error('Configure CODEX_MODEL before running the course agent.');
     }
     checkDispatch();
-    if (!this.state.sandbox && this.state.checkpoint) {
-      this.saveState({ ...this.state, usageTotal: this.state.checkpoint.usageTotal });
-    }
     const fresh = !this.state.sandbox && !this.state.checkpoint;
     const sandbox = this.state.sandbox ?? {
       id: crypto.randomUUID(),
@@ -1340,11 +1332,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         [run.messageId]: {
           dispatchId,
           status: 'running',
-          model: this.env.CODEX_MODEL,
-          input: null,
-          cached: null,
-          cacheWrite: null,
-          output: null,
         },
       },
       run,
@@ -1439,40 +1426,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
                   ),
                   client!.disconnected,
                 ]);
-              },
-              onUsage: (total) => {
-                const before =
-                  this.state.usageTotal?.threadId === total.threadId
-                    ? this.state.usageTotal
-                    : { input: 0, cached: 0, cacheWrite: 0, output: 0 };
-                const current = this.state.executions?.[run.messageId];
-                if (
-                  current &&
-                  total.input >= before.input &&
-                  total.cached >= before.cached &&
-                  (before.cacheWrite === undefined || total.cacheWrite >= before.cacheWrite) &&
-                  total.output >= before.output
-                ) {
-                  this.saveState({
-                    ...this.state,
-                    usageTotal: total,
-                    executions: {
-                      ...this.state.executions,
-                      [run.messageId]: {
-                        ...current,
-                        input: (current.input ?? 0) + total.input - before.input,
-                        cached: (current.cached ?? 0) + total.cached - before.cached,
-                        // Older checkpoints lack a cache-write baseline; that cost remains unknown.
-                        cacheWrite:
-                          before.cacheWrite === undefined ||
-                          (current.input !== null && current.cacheWrite == null)
-                            ? null
-                            : (current.cacheWrite ?? 0) + total.cacheWrite - before.cacheWrite,
-                        output: (current.output ?? 0) + total.output - before.output,
-                      },
-                    },
-                  });
-                }
               },
               onTurnStarted: (turnId) =>
                 this.setRun({ ...this.state.run!, turnId, accepted: true }),

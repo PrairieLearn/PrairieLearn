@@ -30,30 +30,11 @@ export interface Run {
 export interface CodexState {
   rejectedDispatches?: Record<string, true>;
   repository?: { repository: string; branch: string };
-  usageTotal?: {
-    threadId: string;
-    input: number;
-    cached: number;
-    cacheWrite?: number;
-    output: number;
-  };
   /**
-   * Prompt/continuation receipts correlate acceptance and incremental token totals.
-   * Terminal entries are archived to SQLite, so broadcasts stay bounded without
-   * forgetting an old dispatch when PL reconciles usage or retries a request.
+   * Dispatch status receipts correlate native acceptance with PL retries.
+   * Terminal entries are archived to SQLite so broadcasts remain bounded.
    */
-  executions?: Record<
-    string,
-    {
-      dispatchId?: string;
-      status: Run['status'];
-      model: string;
-      input: number | null;
-      cached: number | null;
-      cacheWrite?: number | null;
-      output: number | null;
-    }
-  >;
+  executions?: Record<string, { dispatchId?: string; status: Run['status'] }>;
   /**
    * Corrections belong to an existing turn. Persist before sending turn/steer:
    * after a lost acknowledgment native history decides whether it was accepted.
@@ -83,7 +64,6 @@ export interface CodexState {
   checkpoint?: {
     backup: DirectoryBackup;
     threadId?: string;
-    usageTotal?: CodexState['usageTotal'];
   };
   obsoleteCheckpoints?: string[];
   lastCheckpointError?: string;
