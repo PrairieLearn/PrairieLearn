@@ -40,9 +40,48 @@ async function expectPrefixInsertion(
   await expect(page.locator(`#symbolic-input-latex-${answersName}`)).toHaveValue(/^3.*y.+$/);
 }
 
-test.describe('pl-symbolic-input prefix insertion', () => {
+test.describe('pl-symbolic-input formula editor', () => {
   test.beforeEach(async ({ page, courseInstance }) => {
     await openSymbolicInputEditorQuestion(page, courseInstance);
+  });
+
+  test('uses configured accessible labels for formula editors', async ({ page }) => {
+    const explicitlyLabelledEditor = page.locator('#symbolic-input-x');
+    await expect(explicitlyLabelledEditor).toHaveAttribute(
+      'aria-label',
+      'Symbolic expression for x',
+    );
+    expect(await explicitlyLabelledEditor.getAttribute('aria-labelledby')).toBeNull();
+
+    const visiblyLabelledEditor = page.locator('#symbolic-input-z');
+    await expect(visiblyLabelledEditor).toHaveAttribute(
+      'aria-labelledby',
+      /^pl-symbolic-input-.+-label$/,
+    );
+    const labelId = await visiblyLabelledEditor.getAttribute('aria-labelledby');
+    await expect(page.locator(`[id="${labelId}"]`)).toBeVisible();
+  });
+
+  test('submits formula editor values changed without an input event', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await formulaEditor.evaluate((element) => {
+      // Accessibility APIs can update MathLive without emitting an input event.
+      (element as HTMLElement & { value: string }).value = 'y';
+    });
+
+    await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('');
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('');
+
+    const requestPromise = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' && request.postData()?.includes('__action=grade') === true,
+    );
+    await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+    const request = await requestPromise;
+    const body = request.postDataJSON() as Record<string, string>;
+    expect(body.x).toBe('y');
+    expect(body['x-latex']).toBe('y');
   });
 
   test('keeps preceding content outside typed square roots and absolute values', async ({

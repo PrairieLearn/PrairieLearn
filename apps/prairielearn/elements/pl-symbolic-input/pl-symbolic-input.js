@@ -627,6 +627,7 @@
 
     updateSubmissionData();
     mf.addEventListener('input', updateSubmissionData);
+    mf.closest('form')?.addEventListener('submit', updateSubmissionData);
 
     // Disable access to manual "\" macro mode
     mf.addEventListener(
