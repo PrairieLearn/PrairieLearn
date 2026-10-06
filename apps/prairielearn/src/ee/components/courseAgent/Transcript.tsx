@@ -4,7 +4,6 @@ import { type UIMessage } from 'ai';
 import { type ReactNode } from 'react';
 
 import { type ApprovalDisplay } from '@prairielearn/course-agent-contract';
-
 import { run } from '@prairielearn/run';
 
 import { formatCourseAgentDate } from '../../../lib/course-agent-date.js';
