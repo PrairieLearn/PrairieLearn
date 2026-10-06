@@ -521,6 +521,36 @@ def test_symbolic_set_difference_round_trips_when_set_notation_is_enabled() -> N
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "expected_score"),
+    [
+        ("{x + 1, x - 1}", "{x + 1, x - 1}", 1),
+        ("[x - 1, x + 1]", "[x - 1, x + 1]", 1),
+        ("{x + 1}", "{x - 1}", 0),
+        ("[x - 1, x + 1]", "(x - 1, x + 1]", 0),
+    ],
+)
+def test_unsimplified_set_submission_grades_after_json_round_trip(
+    correct_answer: str,
+    submission: str,
+    expected_score: int,
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'display-simplified-expression="false"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == expected_score
+
+
 def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',

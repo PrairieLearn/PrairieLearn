@@ -1068,6 +1068,33 @@ class TestExceptions:
             assert match is not None, f"error message has no caret: {error_msg}"
             assert expected_caret == match.group(1)
 
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "x + 1 U {3}",
+            "x + Reals",
+            "x - Reals",
+        ],
+    )
+    def test_invalid_set_expression_error_unchanged_without_simplification(
+        self, text: str
+    ) -> None:
+        simplified_error = psu.validate_string_as_sympy(
+            text,
+            ["x"],
+            allow_sets=True,
+        )
+        unsimplified_error = psu.validate_string_as_sympy(
+            text,
+            ["x"],
+            allow_sets=True,
+            simplify_expression=False,
+        )
+
+        assert unsimplified_error == simplified_error
+        assert simplified_error is not None
+        assert "syntax error" in simplified_error
+
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.
 
