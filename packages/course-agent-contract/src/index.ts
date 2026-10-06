@@ -75,11 +75,6 @@ export interface ChatSnapshot {
     {
       dispatchId?: string;
       status: 'running' | 'completed' | 'cancelled' | 'failed' | 'interrupted';
-      model: string;
-      input: number | null;
-      cached: number | null;
-      cacheWrite?: number | null;
-      output: number | null;
     }
   >;
   usage?: { input: number | null; output: number | null; estimatedCost: number | null };
