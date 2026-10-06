@@ -87,9 +87,11 @@ function rewriteCssIdReferences(
 function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<string, string>) {
   const rewriteSelectorCall = (call: string, quote: string, selector: string) => {
     const namespacedSelector = rewriteCssIdReferences(selector, 'selectorList', idRenames);
-    return namespacedSelector === selector
-      ? call
-      : call.replace(`${quote}${selector}${quote}`, () => `${quote}${namespacedSelector}${quote}`);
+    if (namespacedSelector === selector) return call;
+    const escapedSelector = namespacedSelector
+      .replaceAll('\\', '\\\\')
+      .replaceAll(quote, `\\${quote}`);
+    return call.replace(`${quote}${selector}${quote}`, () => `${quote}${escapedSelector}${quote}`);
   };
 
   return scriptHtml
@@ -103,10 +105,10 @@ function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<st
       },
     )
     .replaceAll(
-      /\b(?:querySelector(?:All)?|closest|matches)\(\s*(["'`])([^"'`]+)\1\s*\)/g,
+      /\b(?:querySelector(?:All)?|closest|matches)\(\s*(["'`])((?:(?!\1)[\s\S])+)\1\s*\)/g,
       rewriteSelectorCall,
     )
-    .replaceAll(/\$\(\s*(["'`])([^"'`]+)\1\s*\)/g, rewriteSelectorCall);
+    .replaceAll(/\$\(\s*(["'`])((?:(?!\1)[\s\S])+)\1\s*\)/g, rewriteSelectorCall);
 }
 
 function attributeSelector(attribute: string): string {
