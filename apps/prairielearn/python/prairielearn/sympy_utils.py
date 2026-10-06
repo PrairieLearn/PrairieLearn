@@ -923,35 +923,47 @@ def evaluate_with_source(
 
         raise
 
+    evaluation_code: str | CodeType = code
     if not simplify_expression:
-        code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+        evaluation_code = compile(
+            sympy_parser.evaluateFalse(evaluation_code), "<string>", "eval"
+        )
 
     # Now that it's safe, get sympy expression
     try:
-        res = sympy_parser.eval_expr(code, local_dict, global_dict)
-    except TypeError as exc:
+        res = sympy_parser.eval_expr(evaluation_code, local_dict, global_dict)
+        sympy_check(
+            res,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+    except BaseSympyError:
+        raise
+    except (AttributeError, TypeError) as exc:
         # SymPy raises TypeError for semantically invalid set operations that are
         # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
         # Because the AST check above already ran, TypeErrors here are expected to
         # come from SymPy's own type system, not from Python infrastructure bugs.
-        index = _find_type_error_offset(normalized_expr, char_offsets, exc)
+        index = _find_evaluation_error_offset(
+            normalized_expr,
+            char_offsets,
+            exc,
+            code,
+            local_dict,
+            global_dict,
+            retry_with_simplification=not simplify_expression,
+        )
+
         if index != -1:
             raise HasParseError(index) from exc
-        # if we can't localize the type error, report to staff.
+        # If we can't localize the evaluation error, report it to staff.
         raise BaseSympyError from exc
     except Exception as exc:
         raise BaseSympyError from exc
 
-    # Finally, check for invalid symbols
-    sympy_check(
-        res,
-        locals_for_eval,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-        allow_extra_symbols=allow_extra_symbols,
-    )
-
-    return res, code
+    return res, evaluation_code
 
 
 def convert_string_to_sympy(
@@ -1158,6 +1170,38 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
         ind = find_symbol_offset(expr, candidate)
         if ind != -1:
             return offsets[ind]
+
+    return -1
+
+
+def _find_evaluation_error_offset(
+    expr: str,
+    offsets: list[int],
+    exc: AttributeError | TypeError,
+    code: str,
+    local_dict: DICT,
+    global_dict: DICT,
+    *,
+    retry_with_simplification: bool,
+) -> int:
+    """Return the source offset for a SymPy evaluation error, if available."""
+    index = (
+        _find_type_error_offset(expr, offsets, exc)
+        if isinstance(exc, TypeError)
+        else -1
+    )
+    if index != -1 or not retry_with_simplification:
+        return index
+
+    # evaluateFalse can raise different exceptions than normal evaluation for the
+    # same invalid set expression. Retry normally so that these errors get the same
+    # location and student-facing message in both display modes.
+    try:
+        sympy_parser.eval_expr(code, local_dict, global_dict)
+    except TypeError as simplified_exc:
+        return _find_type_error_offset(expr, offsets, simplified_exc)
+    except Exception:
+        pass
 
     return -1
 

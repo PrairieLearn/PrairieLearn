@@ -801,6 +801,49 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
+def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
+    """Compare set components as expressions instead of by structure."""
+    if isinstance(a, sympy.FiniteSet) and isinstance(b, sympy.FiniteSet):
+        if len(a.args) != len(b.args):
+            return False
+
+        unmatched = set(b.args)
+        remaining = []
+        for value in a.args:
+            if value in unmatched:
+                unmatched.remove(value)
+            else:
+                remaining.append(value)
+
+        for value in remaining:
+            match = next(
+                (
+                    candidate
+                    for candidate in unmatched
+                    if _sympy_values_equal(value, candidate)
+                ),
+                None,
+            )
+            if match is None:
+                return False
+            unmatched.remove(match)
+
+        return True
+
+    if isinstance(a, sympy.Interval) and isinstance(b, sympy.Interval):
+        return (
+            a.left_open == b.left_open
+            and a.right_open == b.right_open
+            and _sympy_values_equal(a.start, b.start)
+            and _sympy_values_equal(a.end, b.end)
+        )
+
+    if isinstance(a, sympy.Expr) and isinstance(b, sympy.Expr):
+        return a.equals(b) is True
+
+    return a == b
+
+
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
@@ -893,10 +936,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             assert isinstance(a_sub_sympy, sympy.Expr)
             assert isinstance(a_tru_sympy, sympy.Expr)
 
-        if isinstance(a_tru_sympy, sympy.Set) or isinstance(a_sub_sympy, sympy.Set):
-            return a_tru_sympy == a_sub_sympy, None
-
-        return a_tru_sympy.equals(a_sub_sympy) is True, None
+        return _sympy_values_equal(a_tru_sympy, a_sub_sympy), None
 
     try:
         pl.grade_answer_parameterized(
