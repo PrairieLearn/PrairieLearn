@@ -12,7 +12,7 @@ import { Button, ButtonGroup, Dropdown, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
-import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import {
   type ColumnFilterEntry,
   IndeterminateCheckbox,
@@ -889,6 +889,26 @@ function StaffTableInner({
     initialData: courseUsers,
     staleTime: Infinity,
   });
+  const exportQuery = useQuery({
+    ...trpc.courseStaff.export.queryOptions(),
+    enabled: false,
+  });
+
+  async function exportCsv() {
+    const result = await exportQuery.refetch();
+    if (!result.isSuccess) return;
+
+    const url = URL.createObjectURL(
+      new Blob([result.data.text], { type: 'text/csv;charset=utf-8' }),
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = result.data.filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -1161,9 +1181,19 @@ function StaffTableInner({
     } satisfies Record<string, ColumnFilter>;
   }, [courseInstances]);
 
-  const headerButtons = canEdit ? (
+  const headerButtons = (
     <>
-      {selectedUsers.length > 0 && (
+      <Button
+        type="button"
+        variant="light"
+        size="sm"
+        disabled={exportQuery.isFetching}
+        onClick={exportCsv}
+      >
+        <i className="bi bi-download me-2" aria-hidden="true" />
+        {exportQuery.isFetching ? 'Exporting…' : 'Export CSV'}
+      </Button>
+      {canEdit && selectedUsers.length > 0 && (
         <SelectionToolbar
           selectedUsers={selectedUsers}
           courseInstances={courseInstances}
@@ -1172,9 +1202,9 @@ function StaffTableInner({
           userId={userId}
         />
       )}
-      <AddUsersButton uidsLimit={uidsLimit} courseInstances={courseInstances} />
+      {canEdit && <AddUsersButton uidsLimit={uidsLimit} courseInstances={courseInstances} />}
     </>
-  ) : null;
+  );
 
   const instanceVisibilityPresets = useMemo(
     () => ({
@@ -1244,6 +1274,10 @@ function StaffTableInner({
 
   return (
     <div className="d-flex flex-column h-100">
+      <AppErrorAlert
+        error={getAppError<CourseStaffError['Export']>(exportQuery.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+      />
       <div className="staff-table flex-grow-1" style={{ minHeight: 0 }}>
         <TanstackTableCard
           table={table}
