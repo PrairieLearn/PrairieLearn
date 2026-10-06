@@ -8,6 +8,7 @@ import {
   createUIMessageStreamResponse,
   readUIMessageStream,
 } from 'ai';
+import { z } from 'zod';
 
 import {
   ChatError,
@@ -17,9 +18,11 @@ import {
   type ToolOutcome,
   admissionReconciliationSchema,
   dispatchRequestSchema,
+  hostToolResultSchema,
   preparedToolSchema,
   toolOutcomeSchema,
 } from '@prairielearn/course-agent-contract';
+
 
 import { type AppServer, AppServerError, within } from './app-server.js';
 import { cleanupError } from './cleanup-error.js';
@@ -58,12 +61,29 @@ interface Expiration {
   attempt?: number;
   retryOf?: string;
 }
+const hostFrameSchema = z.union([
+  z.object({ type: z.literal('host-tools-ready') }),
+  z.object({ type: z.literal('host-tool-prepared'), id: z.uuid() }),
+  z.object({ type: z.literal('host-tool-preparation-error'), id: z.uuid() }),
+  z.object({ type: z.literal('host-tool-result'), id: z.uuid(), outcome: toolOutcomeSchema }),
+  hostToolResultSchema,
+]);
 const MAX_CLEANUP_ATTEMPTS = 3;
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : 'Codex failed.');
 const expiredMessage =
   'User interaction deadline reached. Sandbox cleanup started; another turn must wait for confirmed destruction.';
 const interruptedMessage =
   'Task interrupted. It was not automatically repeated. You can send another message to continue.';
+
+function messageDispatchId(message: UIMessage | undefined) {
+  const metadata = message?.metadata;
+  return metadata &&
+    typeof metadata === 'object' &&
+    'dispatchId' in metadata &&
+    typeof metadata.dispatchId === 'string'
+    ? metadata.dispatchId
+    : undefined;
+}
 
 /**
  * One durable conversation: SQLite owns history, lifecycle state, and execution receipts.
@@ -128,14 +148,23 @@ export class Chat extends AIChatAgent<Env, CodexState> {
   /** Explicit tool frames share the watch socket; SDK chat messages keep their normal path. */
   override async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message === 'string' && message.length <= 1_000_000) {
-      let frame;
+      let value: unknown;
       try {
-        frame = JSON.parse(message);
+        value = JSON.parse(message);
       } catch {
         return;
       }
-      if (typeof frame?.type === 'string' && frame.type.startsWith('host-tool')) {
+      if (
+        value &&
+        typeof value === 'object' &&
+        'type' in value &&
+        typeof value.type === 'string' &&
+        value.type.startsWith('host-tool')
+      ) {
         if (!(connection.state as { hostPeer?: boolean } | null)?.hostPeer) return;
+        const parsedFrame = hostFrameSchema.safeParse(value);
+        if (!parsedFrame.success) return;
+        const frame = parsedFrame.data;
         if (frame.type === 'host-tools-ready') {
           connection.setState({ ...connection.state, hostExecutor: true });
           this.dispatchTool(connection);
@@ -164,7 +193,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
               pendingTool: { ...tool, error: 'Retry preparation.' },
             });
           }
-        } else if (frame.type === 'host-tool-result' && frame.outcome) {
+        } else if (frame.type === 'host-tool-result' && 'outcome' in frame) {
           const parsed = toolOutcomeSchema.safeParse(frame.outcome);
           if (!parsed.success || frame.id !== parsed.data.id) return;
           const operation = this.controlTail.then(() => this.deliverToolResult(parsed.data));
@@ -532,7 +561,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       throw new ChatError(409, 'This dispatch was rejected before execution. Retry your message.');
     }
     const existing = this.messages.find((message) => message.id === input.id);
-    const oldDispatch = (existing?.metadata as { dispatchId?: string } | undefined)?.dispatchId;
+    const oldDispatch = messageDispatchId(existing);
     if (existing && !continuation && !(oldDispatch && this.rejectedDispatch(oldDispatch))) {
       return;
     }
@@ -704,8 +733,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     const success = input.success !== false;
     const receipt = this.state.toolReceipts?.[input.id];
     if (receipt !== undefined) {
-      const saved = typeof receipt === 'string' ? { result: receipt, success: true } : receipt;
-      if (saved.result !== input.result || saved.success !== success) {
+      if (receipt.result !== input.result || receipt.success !== success) {
         throw new ChatError(409, 'A different tool result was already delivered.');
       }
       return;
@@ -792,7 +820,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     }
     const run = this.state.run!;
     this.toolPreparing = true;
-    let payload;
+    let payload: unknown;
     try {
       payload = await getTool(name).prepare(this.sandbox(run.sandboxId), args);
     } finally {
@@ -1120,8 +1148,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
    */
   async expireSandbox(expiration: Expiration) {
     const { id, reason, attempt = 0 } = expiration;
-    // A deployment can leave callbacks from the old absolute-lifetime policy.
-    if (!['idle', 'interaction', 'retry', 'startup-cancel'].includes(reason)) return;
     const state = this.state.sandbox;
     if (!state || state.id !== id) return;
     if (expiration.retryOf && expiration.retryOf !== state.cleanup?.id) return;
@@ -1280,7 +1306,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       .map((part) => part.text)
       .join('\n');
     if (!message || !prompt) throw new Error('Send a text prompt to Codex.');
-    const dispatchId = (message.metadata as { dispatchId?: string } | undefined)?.dispatchId;
+    const dispatchId = messageDispatchId(message);
     const checkDispatch = () => {
       if (dispatchId && this.rejectedDispatch(dispatchId)) {
         throw new ChatError(409, 'Message rejected before execution. Retry your message.');

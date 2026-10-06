@@ -51,17 +51,16 @@ function github(value: Publication) {
     if (String(url).includes('/git/trees/result-tree')) {
       return Response.json({
         truncated: false,
-        tree: value.approval.files
-          .filter((f) => f.content !== null)
-          .map((f) => {
-            const b = Buffer.from(f.content!);
-            return {
-              path: f.path,
-              mode: f.mode,
-              type: 'blob',
-              sha: createHash('sha1').update(`blob ${b.length}\0`).update(b).digest('hex'),
-            };
-          }),
+        tree: value.approval.files.flatMap((f) => {
+          if (f.content === null) return [];
+          const b = Buffer.from(f.content);
+          return {
+            path: f.path,
+            mode: f.mode,
+            type: 'blob',
+            sha: createHash('sha1').update(`blob ${b.length}\0`).update(b).digest('hex'),
+          };
+        }),
       });
     }
     if (String(url).includes('/git/trees/')) {
@@ -83,7 +82,7 @@ function github(value: Publication) {
           repository: {
             ref: {
               target: {
-                history: { nodes: commits, pageInfo: { hasNextPage: false } },
+                history: { nodes: commits, pageInfo: { hasNextPage: false, endCursor: null } },
               },
             },
           },
@@ -287,7 +286,7 @@ test('rejects a deleted binary base blob permanently instead of offering identic
       String(url).includes('/git/trees/')
         ? Response.json({
             truncated: false,
-            tree: [{ path: 'hello.txt', mode: '100644', sha: 'blob' }],
+            tree: [{ path: 'hello.txt', mode: '100644', sha: 'blob', type: 'blob' }],
           })
         : Response.json({ encoding: 'base64', content: Buffer.from([0, 255]).toString('base64') }),
   });

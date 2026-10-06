@@ -288,3 +288,14 @@ SELECT
   COALESCE(bool_or(unknown), FALSE) AS unknown
 FROM
   activity;
+
+-- BLOCK complete_decision_operation
+UPDATE course_agent_operations
+SET
+  status = 'completed',
+  finished_at = now()
+WHERE
+  conversation_id = $id
+  AND operation_id = $operation_id
+  AND payload ->> 'kind' = 'decision'
+  AND status = 'admitted';

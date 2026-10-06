@@ -31,3 +31,20 @@ test('prompt acceptance honors the caller deadline during a cold sandbox restore
   await sending;
   expect(controller.signal.aborted).toBe(false);
 });
+
+// A malformed receipt must not become an acknowledgment that releases a PL admission.
+test('rejects malformed Worker receipts at the JSON boundary', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      Response.json({
+        messages: [],
+        operationNumber: 0,
+        blocked: false,
+        executions: { invalid: { status: 'finished' } },
+      }),
+    ),
+  );
+  const chat = createCloudflareProvider(new URL('http://localhost:8791'), 'test');
+  await expect(chat.getSnapshot(AbortSignal.timeout(1000))).rejects.toThrow();
+});

@@ -24,6 +24,7 @@ export const pushSyncTool: DynamicToolSpec = {
     additionalProperties: false,
   },
 };
+const capturedFilesSchema = approvalSchema.pick({ diff: true, files: true });
 const commits = z.object({
   baseSha: z.string().regex(/^[a-f0-9]{40}$/),
   proposedSha: z.string().regex(/^[a-f0-9]{40}$/),
@@ -54,7 +55,7 @@ writeFileSync("${path}", JSON.stringify({ diff, files }));
   try {
     const result = await sandbox.exec(`node - <<'CAPTURE'\n${script}\nCAPTURE`, { timeout: 10000 });
     if (!result.success) throw new Error('Could not capture committed text files.');
-    captured = JSON.parse((await sandbox.readFile(path)).content);
+    captured = capturedFilesSchema.parse(JSON.parse((await sandbox.readFile(path)).content));
   } finally {
     await sandbox.deleteFile(path);
   }

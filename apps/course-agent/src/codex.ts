@@ -55,7 +55,7 @@ export interface CodexState {
   pendingTool?: PendingTool;
   toolSequence?: number;
   /** Completed results fence retries after a lost native result-delivery acknowledgment. */
-  toolReceipts?: Record<string, string | { result: string; success: boolean }>;
+  toolReceipts?: Record<string, { result: string; success: boolean }>;
   sandbox?: {
     id: string;
     phase:

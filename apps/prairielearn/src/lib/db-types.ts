@@ -739,7 +739,15 @@ export const CourseAgentOperationSchema = z.object({
   id: IdSchema,
   operation_id: z.string(),
   operation_number: z.number(),
-  payload: z.json(),
+  payload: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('message'), text: z.string() }),
+    z.object({
+      decision: z.enum(['approve', 'deny']),
+      digest: z.string(),
+      kind: z.literal('decision'),
+    }),
+    z.object({ kind: z.literal('result') }),
+  ]),
   status: z.enum([
     'admitted',
     'running',
