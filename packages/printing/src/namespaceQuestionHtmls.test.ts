@@ -94,6 +94,47 @@ describe('namespaceQuestionHtmls', () => {
     expect($first('script').html()).toContain('const mode = "answer"');
   });
 
+  it('preserves template selectors in scripts', () => {
+    const interpolationPrefix = '$';
+    const script = `document.querySelector(\`#${interpolationPrefix}{id}\`);`;
+    const [first] = namespaceQuestionHtmls([
+      {
+        namespace: 'question-1',
+        html: `<div id="details"></div><script>${script}</script>`,
+      },
+      {
+        namespace: 'question-2',
+        html: '<div id="details"></div>',
+      },
+    ]);
+
+    const $first = load(first, undefined, false);
+    expect($first('#question-1-details')).toHaveLength(1);
+    expect($first('script').html()).toBe(script);
+  });
+
+  it('preserves CSS with parse errors', () => {
+    const [first] = namespaceQuestionHtmls([
+      {
+        namespace: 'question-1',
+        html: `
+          <div id="details"></div>
+          <style>#details { color: red; ??? }</style>
+          <script>document.querySelector('#details #?');</script>
+        `,
+      },
+      {
+        namespace: 'question-2',
+        html: '<div id="details"></div>',
+      },
+    ]);
+
+    const $first = load(first, undefined, false);
+    expect($first('#question-1-details')).toHaveLength(1);
+    expect($first('style').html()).toBe('#details { color: red; ??? }');
+    expect($first('script').html()).toBe("document.querySelector('#details #?');");
+  });
+
   it('allocates generated IDs without colliding with existing IDs', () => {
     const [first, second] = namespaceQuestionHtmls([
       {
