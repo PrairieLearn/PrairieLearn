@@ -803,6 +803,9 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
 
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
     """Compare set components as expressions instead of by structure."""
+    if a == b:
+        return True
+
     if isinstance(a, sympy.FiniteSet) and isinstance(b, sympy.FiniteSet):
         if len(a.args) != len(b.args):
             return False
@@ -841,7 +844,7 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
     if isinstance(a, sympy.Expr) and isinstance(b, sympy.Expr):
         return a.equals(b) is True
 
-    return a == b
+    return False
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
