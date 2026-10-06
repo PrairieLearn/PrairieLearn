@@ -2,6 +2,8 @@
 
 import { type UIMessage } from 'ai';
 
+import { run } from '@prairielearn/run';
+
 import { formatCourseAgentDate } from '../../../lib/course-agent-date.js';
 import { ActivityStatus } from '../ai/ActivityStatus.js';
 import { ChatMessage } from '../ai/ChatMessage.js';
@@ -19,6 +21,7 @@ export function Transcript({
   userName: string;
   timezone: string;
 }) {
+  const metadataById = new Map(messages.map((message) => [message.id, message.metadata]));
   return buildTranscript(messages).map((entry) =>
     entry.role === 'user' ? (
       <ChatMessage
@@ -34,15 +37,15 @@ export function Transcript({
         </div>
         <div className="small text-muted px-1 mt-1">
           {userName}
-          {(() => {
-            const metadata = messages.find((m) => m.id === entry.id)?.metadata;
+          {run(() => {
+            const metadata = metadataById.get(entry.id);
             return metadata &&
               typeof metadata === 'object' &&
               'created_at' in metadata &&
               typeof metadata.created_at === 'string' ? (
               <> · {formatCourseAgentDate(new Date(metadata.created_at), timezone, false)}</>
             ) : null;
-          })()}
+          })}
         </div>
       </ChatMessage>
     ) : (

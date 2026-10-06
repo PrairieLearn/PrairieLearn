@@ -9,7 +9,7 @@ import {
   type ChatConnection,
   ChatError,
   type ChatProvider,
-  type ChatSnapshot,
+  hostToolCallSchema,
   sandboxDiagnosticsSchema,
 } from '@prairielearn/course-agent-contract';
 import * as Sentry from '@prairielearn/sentry';
@@ -28,6 +28,27 @@ const resumeEventSchema = z.discriminatedUnion('type', [
     probeId: z.string().optional(),
   }),
   z.object({ type: z.literal('cf_agent_stream_pending') }),
+]);
+
+const snapshotSchema = z.object({
+  messages: z.array(z.unknown()),
+  operationNumber: z.number().int().nonnegative(),
+  executions: z.record(
+    z.string(),
+    z.object({
+      dispatchId: z.uuid().optional(),
+      status: z.enum(['running', 'completed', 'cancelled', 'failed', 'interrupted']),
+      model: z.string(),
+      input: z.number().nonnegative().nullable(),
+      cached: z.number().nonnegative().nullable(),
+      cacheWrite: z.number().nonnegative().nullable().optional(),
+      output: z.number().nonnegative().nullable(),
+    }),
+  ),
+});
+const watchMessageSchema = z.union([
+  hostToolCallSchema,
+  z.object({ type: z.enum(['cf_agent_state', 'cf_agent_chat_messages']) }),
 ]);
 
 /** Isolate Cloudflare transport behind the provider contract; the browser only sees HTTP and AI SDK SSE. */
@@ -82,14 +103,17 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
       };
       signal.addEventListener('abort', close, { once: true });
       socket.on('message', (data) => {
-        let message;
+        let value: unknown;
         try {
-          message = JSON.parse(String(data));
+          value = JSON.parse(String(data));
         } catch {
           close();
           failed();
           return;
         }
+        const parsed = watchMessageSchema.safeParse(value);
+        if (!parsed.success) return;
+        const message = parsed.data;
         if (message.type === 'host-tool-call') {
           void execute(message)
             .then((result) => {
@@ -129,13 +153,13 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
         ? `snapshot?ids=${encodeURIComponent(JSON.stringify(operationIds))}`
         : 'snapshot';
       const response = await request(path, 'GET', signal);
-      const value = (await response.json()) as ChatSnapshot;
+      const value = snapshotSchema.parse(await response.json());
       const messages =
         value.messages.length > 0 ? await validateUIMessages({ messages: value.messages }) : [];
       return {
         messages,
         executions: value.executions,
-        operationNumber: z.number().int().nonnegative().parse(value.operationNumber),
+        operationNumber: value.operationNumber,
       };
     },
     async getDiagnostics(signal) {
