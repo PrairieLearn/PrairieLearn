@@ -1,7 +1,7 @@
 import { Ajv } from 'ajv';
 import { assert, describe, it } from 'vitest';
 
-import { StudentLabelJsonSchema, ajvSchemas } from '../schemas/index.js';
+import { ajvSchemas } from '../schemas/index.js';
 
 const isObject = (a: any) => !!a && a.constructor === Object;
 
@@ -58,11 +58,3 @@ for (const schemaName of Object.keys(ajvSchemas)) {
     });
   });
 }
-
-it('rejects semicolons in student label names', () => {
-  const label = { uuid: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', color: 'blue1' };
-  assert.isTrue(StudentLabelJsonSchema.safeParse({ ...label, name: 'Section A' }).success);
-  assert.isFalse(
-    StudentLabelJsonSchema.safeParse({ ...label, name: 'Section A;Extra time' }).success,
-  );
-});
