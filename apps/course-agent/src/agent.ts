@@ -23,7 +23,6 @@ import {
   toolOutcomeSchema,
 } from '@prairielearn/course-agent-contract';
 
-
 import { type AppServer, AppServerError, within } from './app-server.js';
 import { cleanupError } from './cleanup-error.js';
 import { type CodexTurn, openCodexTurn } from './codex-turn.js';
