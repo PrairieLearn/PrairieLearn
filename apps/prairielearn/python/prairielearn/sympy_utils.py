@@ -182,9 +182,10 @@ class _Constants:
         "∩": operator.and_,
     })
 
-    # Unicode operators that must be mapped before unidecode, which would otherwise
-    # turn them into "[?]" (misreported as set notation), drop them, or change their
-    # meaning (e.g. the multiplication sign becomes the letter "x").
+    # Unicode operators that the formula editor or common pastes produce. They must
+    # be mapped before unidecode, which would otherwise turn them into "[?]"
+    # (misreported as set notation), drop them, or change their meaning (e.g. the
+    # multiplication sign becomes the letter "x").
     unicode_operators: Final[FrozenDict[str, str]] = FrozenDict({
         "·": "*",  # middle dot
         "×": "*",  # ruff:ignore[ambiguous-unicode-character-string]
@@ -192,21 +193,12 @@ class _Constants:
         "∗": "*",  # ruff:ignore[ambiguous-unicode-character-string]
         "∙": "*",  # bullet operator
         "⋅": "*",  # dot operator
-        "✕": "*",  # multiplication x
-        "✖": "*",  # heavy multiplication x
         "\u2062": "*",  # invisible times
-        "➕": "+",  # ruff:ignore[ambiguous-unicode-character-string]
-        "\u2064": "+",  # invisible plus
         "—": "-",  # em dash
         "―": "-",  # horizontal bar
-        "➖": "-",  # ruff:ignore[ambiguous-unicode-character-string]
-        "➗": "/",  # heavy division sign
         "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
         "\u2061": "",  # function application
     })
-
-    # Operators that give two values; unidecode would turn "±" into "+-".
-    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
 
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
@@ -763,19 +755,22 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
 
     Raises:
         HasInvalidSymbolError: If expr contains a character that cannot be transliterated.
+        HasInvalidExpressionError: If a unicode multiplication sign is next to another
+            multiplication sign, which would otherwise be read as "**".
     """
     const = _Constants
     parts: list[str] = []
     offsets: list[int] = []
+    # Index of the "*" that ends the normalized text so far, and whether it was
+    # mapped from a unicode multiplication sign
+    prev_star: tuple[int, bool] | None = None
     for ind, char in enumerate(expr):
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
-        elif char in const.plus_minus_operators or unicodedata.decomposition(
-            char
-        ).startswith(("<super>", "<sub>")):
-            # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
-            # formula editor writes exponents and subscripts with "^" and "_".
+        elif unicodedata.decomposition(char).startswith(("<super>", "<sub>")):
+            # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
+            # writes exponents and subscripts with "^" and "_".
             raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
         elif char not in const.set_operators:
@@ -784,6 +779,15 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
             # otherwise be misreported as set notation.
             if normalized_char == "[?]" and char != normalized_char:
                 raise HasInvalidSymbolError(char)
+
+        if normalized_char == "*":
+            from_unicode = char != "*"
+            if prev_star is not None and (from_unicode or prev_star[1]):
+                raise HasInvalidExpressionError(ind if from_unicode else prev_star[0])
+            prev_star = (ind, from_unicode)
+        elif normalized_char:
+            prev_star = None
+
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
@@ -841,7 +845,8 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
-        HasInvalidExpressionError: If the expression contains "***".
+        HasInvalidExpressionError: If the expression contains "***" or a unicode
+            multiplication sign next to another multiplication sign.
         HasSetNotationError: If the expression contains interval or set characters.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
