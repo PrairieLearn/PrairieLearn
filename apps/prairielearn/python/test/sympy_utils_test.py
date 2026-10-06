@@ -298,6 +298,24 @@ class TestSympy:
             custom_functions=self.FUNCTION_NAMES,
         )
 
+    @pytest.mark.parametrize(
+        ("a_sub", "sympy_ref"),
+        [
+            ("{1} U {2}", sympy.FiniteSet(1, 2)),
+            ("{1} cap {1, 2}", sympy.FiniteSet(1)),
+            ("{1, 2} - {1}", sympy.FiniteSet(2)),
+            ("{1} + {5}", sympy.FiniteSet(1, 5)),
+        ],
+    )
+    def test_set_operations_without_simplification(
+        self, a_sub: str, sympy_ref: sympy.Set
+    ) -> None:
+        assert sympy_ref == psu.convert_string_to_sympy(
+            a_sub,
+            simplify_expression=False,
+            allow_sets=True,
+        )
+
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
