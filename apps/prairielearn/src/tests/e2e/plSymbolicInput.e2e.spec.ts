@@ -171,7 +171,7 @@ test.describe('pl-symbolic-input plus-minus', () => {
 
   test('rejects \\pm but accepts a typed "+-"', async ({ page }) => {
     const formulaEditor = page.locator('#symbolic-input-x');
-    const plusMinusError = page.locator('[data-bs-content*="invalid symbol"]');
+    const plusMinusError = page.locator('[data-bs-content*="contains set notation"]');
     await expect(formulaEditor).toBeVisible();
 
     await formulaEditor.press('2');
