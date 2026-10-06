@@ -239,17 +239,17 @@ FROM
   AND course.deleted_at IS NULL
 WHERE
   c.user_id = $user_id
-  AND EXISTS (
-    SELECT
-      1
-    FROM
-      course_agent_operations AS o
-    WHERE
-      o.conversation_id = c.id
-      AND (
-        o.status IN ('admitted', 'running')
-        OR c.usage_cost IS NULL
-      )
+  AND (
+    c.usage_cost IS NULL
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        course_agent_operations AS o
+      WHERE
+        o.conversation_id = c.id
+        AND o.status IN ('admitted', 'running')
+    )
   );
 
 -- BLOCK select_user_capacity
@@ -266,16 +266,7 @@ WITH
           o.conversation_id = c.id
           AND o.status IN ('admitted', 'running')
       ) AS active,
-      EXISTS (
-        SELECT
-          1
-        FROM
-          course_agent_operations AS o
-        WHERE
-          o.conversation_id = c.id
-          AND o.status <> 'rejected'
-      )
-      AND (c.usage_cost IS NULL) AS unknown
+      c.usage_cost IS NULL AS unknown
     FROM
       course_agent_conversations AS c
       JOIN courses AS course ON course.id = c.course_id

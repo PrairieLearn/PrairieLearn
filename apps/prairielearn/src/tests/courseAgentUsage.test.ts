@@ -14,6 +14,7 @@ import {
   createConversation,
   selectConversation,
   selectOptionalOperation,
+  selectUserCapacity,
 } from '../models/course-agent-conversation.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
@@ -261,4 +262,5 @@ it('starts with zero totals and keeps missing model pricing distinct from zero u
     usage_input_tokens: 0,
     usage_cost: null,
   });
+  expect((await selectUserCapacity(conversation.user_id, conversation.id)).unknown).toBe(true);
 });
