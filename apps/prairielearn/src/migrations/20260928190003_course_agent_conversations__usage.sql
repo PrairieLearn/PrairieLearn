@@ -38,4 +38,4 @@ ADD CONSTRAINT course_agent_conversations_usage_check CHECK (
       AND usage_output_price >= 0
     )
   )
-);
+) NOT VALID;
