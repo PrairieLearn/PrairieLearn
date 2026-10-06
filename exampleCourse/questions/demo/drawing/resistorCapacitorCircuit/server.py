@@ -42,12 +42,8 @@ def file(data):
             .to((params_dict["pE"][0], -params_dict["pE"][1]))
         )
 
-        # Bottom edge left: line pE -> pF
-        drawing += (
-            elm.Line()
-            .at((params_dict["pE"][0], -params_dict["pE"][1]))
-            .to((params_dict["pF"][0], -params_dict["pF"][1]))
-        )
+        # Bottom edge left stub: line pF -> pG (original leaves pG..pE span open —
+        # the branch loop below closes the circuit through capacitor C)
 
         # Switch A: pA -> pF along the left edge (closed for a long time — normally-closed)
         drawing += (
