@@ -268,8 +268,12 @@ async
           await pruneStoppedContainers();
           await pruneRunawayContainers();
           await updateLoadCount();
+          // Development may share Docker with unrelated workloads.
+          if (config.runningInEc2) {
+            await docker.pruneVolumes();
+          }
         } catch (err) {
-          logger.error('Error pruning containers', err);
+          logger.error('Error pruning containers and volumes', err);
           Sentry.captureException(err);
         }
 
@@ -454,7 +458,7 @@ async function killAndRemoveWorkspace(workspace_id: string | number, container: 
     }
 
     try {
-      await container.remove();
+      await container.remove({ v: true });
     } catch (err) {
       Sentry.captureException(err);
       logger.error('Error removing stopped container', err);
