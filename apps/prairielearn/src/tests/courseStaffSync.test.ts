@@ -11,6 +11,7 @@ import {
   selectCourseUsers,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
+import { generateAndEnrollUsers, selectEnrollmentsForUsersInCourse } from '../models/enrollment.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -123,5 +124,43 @@ describe('Course staff CSV preview', { concurrent: false }, () => {
         message: expect.stringContaining('Only administrators can'),
       });
     }
+  });
+
+  test('previews enrollment deletion only for removed staff, including instances omitted from the CSV', async () => {
+    const [removed, kept] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
+    for (const user of [removed, kept]) {
+      await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: user.uid,
+        course_role: 'Viewer',
+        authn_user_id: '1',
+      });
+    }
+    const before = await selectEnrollmentsForUsersInCourse({
+      courseId: '1',
+      userIds: [removed.id, kept.id],
+    });
+    const instance = await selectCourseInstanceById('1');
+    const result = await createClient().courseStaff.preview.mutate({
+      text: `uid,course\n${removed.uid},\n${kept.uid},None`,
+    });
+    const enrollment = before.find((row) => row.enrollment.user_id === removed.id)!.enrollment;
+    expect(result.removalEnrollments).toEqual([
+      {
+        enrollmentId: enrollment.id,
+        userId: removed.id,
+        courseInstanceId: '1',
+        shortName: instance.short_name,
+        instanceDeleted: false,
+        status: 'joined',
+      },
+    ]);
+    expect(
+      await selectEnrollmentsForUsersInCourse({ courseId: '1', userIds: [removed.id, kept.id] }),
+    ).toEqual(before);
+    const updateOnly = await createClient().courseStaff.preview.mutate({
+      text: `uid,course\n${removed.uid},None`,
+    });
+    expect(updateOnly.removalEnrollments).toEqual([]);
   });
 });

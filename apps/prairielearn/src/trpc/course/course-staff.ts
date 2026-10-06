@@ -34,6 +34,7 @@ import {
   updateCoursePermissionsRole,
   upsertCourseInstancePermissionsRole,
 } from '../../models/course-permissions.js';
+import { selectEnrollmentsForUsersInCourse } from '../../models/enrollment.js';
 
 import {
   type createContext,
@@ -400,7 +401,27 @@ const preview = t.procedure
           );
         }
       }
-      return result;
+      const removedUserIds = result.rows.flatMap((row) =>
+        row.action === 'remove' && row.expected ? [row.expected.userId] : [],
+      );
+      const enrollments =
+        removedUserIds.length > 0
+          ? await selectEnrollmentsForUsersInCourse({
+              courseId: ctx.course.id,
+              userIds: removedUserIds,
+            })
+          : [];
+      return {
+        ...result,
+        removalEnrollments: enrollments.map(({ enrollment, course_instance: courseInstance }) => ({
+          enrollmentId: enrollment.id,
+          userId: enrollment.user_id,
+          courseInstanceId: courseInstance.id,
+          shortName: courseInstance.short_name,
+          instanceDeleted: courseInstance.deleted_at !== null,
+          status: enrollment.status,
+        })),
+      };
     } catch (error) {
       if (error instanceof HttpStatusError) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
