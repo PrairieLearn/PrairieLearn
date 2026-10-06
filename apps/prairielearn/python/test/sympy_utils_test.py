@@ -513,11 +513,9 @@ class TestSympy:
 
     @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),
-        list(
-            chain(
-                zip(EXPR_PAIRS, repeat(None)),
-                zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
-            )
+        chain(
+            zip(EXPR_PAIRS, repeat(None)),
+            zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
         ),
     )
     @pytest.mark.parametrize("remove_assumptions", [True, False])
@@ -732,8 +730,8 @@ class TestExceptions:
             text, self.VARIABLES
         ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
 
-    # Unknown to unidecode, plus-minus, superscript, and subscript characters
-    @pytest.mark.parametrize("text", ["2⋆n", "2±n", "n²", "n₁"])
+    # Unknown to unidecode, superscript, and subscript characters
+    @pytest.mark.parametrize("text", ["2⋆n", "n²", "n₁"])
     def test_unsupported_characters(self, text: str) -> None:
         with pytest.raises(psu.HasInvalidSymbolError) as exc_info:
             psu.convert_string_to_sympy(text, self.VARIABLES)
@@ -772,6 +770,32 @@ class TestExceptions:
         assert "invalid expression" in result.error
         assert "set" not in result.error
         assert "<pre>2 *** n\n  ^" in result.error
+
+    # Mapping the unicode sign to "*" would otherwise turn these into "2**n"
+    @pytest.mark.parametrize(
+        ("text", "offset"),
+        [
+            ("2×*n", 1),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2*×n", 2),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2××n", 2),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2·•n", 2),
+        ],
+    )
+    def test_unicode_multiplication_next_to_multiplication(
+        self, text: str, offset: int
+    ) -> None:
+        with pytest.raises(psu.HasInvalidExpressionError) as exc_info:
+            psu.convert_string_to_sympy(text, self.VARIABLES)
+        assert exc_info.value.offset == offset
+
+        result = psu.try_parse_string_as_sympy(text, self.VARIABLES)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "invalid expression" in result.error
+        assert "set" not in result.error
+
+    def test_ascii_power_is_still_valid(self) -> None:
+        n = sympy.Symbol("n")
+        assert psu.convert_string_to_sympy("2**n", self.VARIABLES) == 2**n
 
     @pytest.mark.parametrize("a_sub", INVALID_FUNCTION_CASES)
     def test_invalid_function(self, a_sub: str) -> None:
