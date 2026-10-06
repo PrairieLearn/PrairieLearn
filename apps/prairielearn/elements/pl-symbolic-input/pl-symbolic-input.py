@@ -807,31 +807,17 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
         return True
 
     if isinstance(a, sympy.FiniteSet) and isinstance(b, sympy.FiniteSet):
-        if len(a.args) != len(b.args):
-            return False
-
-        unmatched = set(b.args)
-        remaining = []
-        for value in a.args:
-            if value in unmatched:
-                unmatched.remove(value)
-            else:
-                remaining.append(value)
-
-        for value in remaining:
-            match = next(
-                (
-                    candidate
-                    for candidate in unmatched
-                    if _sympy_values_equal(value, candidate)
-                ),
-                None,
-            )
-            if match is None:
-                return False
-            unmatched.remove(match)
-
-        return True
+        # Without simplification, a set can list equivalent members separately
+        # (e.g. {x + 0, x - 0} is {x}), so sets of different sizes can be equal.
+        # Members with an exact match in the other set are already covered.
+        a_members, b_members = set(a.args), set(b.args)
+        return all(
+            any(_sympy_values_equal(value, candidate) for candidate in b_members)
+            for value in a_members - b_members
+        ) and all(
+            any(_sympy_values_equal(value, candidate) for candidate in a_members)
+            for value in b_members - a_members
+        )
 
     if isinstance(a, sympy.Interval) and isinstance(b, sympy.Interval):
         return (
