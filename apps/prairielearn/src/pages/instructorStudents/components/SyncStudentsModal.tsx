@@ -18,7 +18,6 @@ import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import type { StudentSyncError } from '../../../trpc/courseInstance/student-sync.js';
 import {
-  MAX_SYNC_CSV_FILE_BYTES,
   MAX_SYNC_CSV_TEXT_LENGTH,
   type StudentRow,
   type SyncCsv,
@@ -395,14 +394,7 @@ export function SyncStudentsModal({
                       }
                       aria-describedby="sync-file-help"
                       {...register('csvFile', {
-                        validate: (files) => {
-                          const file = files.item(0);
-                          if (!file) return 'Select a CSV file.';
-                          return (
-                            file.size <= MAX_SYNC_CSV_FILE_BYTES ||
-                            'This file exceeds the 3 MB limit. Select a smaller CSV file.'
-                          );
-                        },
+                        validate: (files) => !!files.item(0) || 'Select a CSV file.',
                         onChange: () => {
                           clearErrors('csvFile');
                           previewMutation.reset();
@@ -411,7 +403,7 @@ export function SyncStudentsModal({
                     />
                     <Form.Text id="sync-file-help">
                       Choose a CSV saved with UTF-8 encoding, such as Excel’s CSV UTF-8 format.
-                      Maximum file size: 3 MB.
+                      Maximum CSV length: 1,000,000 characters.
                     </Form.Text>
                     {errors.csvFile?.message && (
                       <Form.Control.Feedback type="invalid" id="sync-file-error">

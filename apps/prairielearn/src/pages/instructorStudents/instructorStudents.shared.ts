@@ -29,8 +29,6 @@ const SyncLabelUpdateSchema = z.object({
 });
 export type SyncLabelUpdate = z.infer<typeof SyncLabelUpdateSchema>;
 export const MAX_SYNC_CSV_TEXT_LENGTH = 1_000_000;
-// UTF-8 uses at most three bytes per UTF-16 code unit.
-export const MAX_SYNC_CSV_FILE_BYTES = MAX_SYNC_CSV_TEXT_LENGTH * 3;
 
 export const SyncCsvSchema = z.object({
   text: z.string().min(1).max(MAX_SYNC_CSV_TEXT_LENGTH),
