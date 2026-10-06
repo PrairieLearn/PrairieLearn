@@ -277,6 +277,8 @@ router.get(
             if (
               authzData == null ||
               courseInstance == null ||
+              authzData.course_instance_role == null ||
+              authzData.has_course_instance_permission_view == null ||
               !hasRole(authzData, ['Student']) ||
               authzData.course_role !== 'None'
             ) {
@@ -286,7 +288,13 @@ router.get(
             const assessments = await selectStudentAssessments({
               courseInstance,
               userId: res.locals.authn_user.id,
-              authzData,
+              authzData: {
+                user: authzData.user,
+                mode: authzData.mode,
+                course_role: authzData.course_role,
+                course_instance_role: authzData.course_instance_role,
+                has_course_instance_permission_view: authzData.has_course_instance_permission_view,
+              },
               reqDate: res.locals.req_date,
             });
 
@@ -296,10 +304,10 @@ router.get(
               courseInstance.display_timezone,
             ).map((assessment) => ({
               assessmentSetColor: assessment.assessment_set_color,
-              assessmentTitle: assessment.title,
+              assessmentTitle: assessment.title ?? '',
               courseInstanceId: courseInstance.id,
-              courseInstanceLongName: entry.course_instance.long_name,
-              courseShortName: entry.course.short_name,
+              courseInstanceLongName: entry.course_instance.long_name ?? '',
+              courseShortName: entry.course.short_name ?? '',
               creditDateString: assessment.authz_result.credit_date_string,
               deadline: assessment.authz_result.credit_end_date,
               label: assessment.label,
