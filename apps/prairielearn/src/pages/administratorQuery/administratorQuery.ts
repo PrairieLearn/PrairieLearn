@@ -1,6 +1,8 @@
+import { pipeline } from 'node:stream/promises';
+
 import { Router } from 'express';
 
-import { stringify } from '@prairielearn/csv';
+import { stringifyNonblocking } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -45,10 +47,13 @@ router.get(
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
       if (query_run?.result != null) {
-        stringify(query_run.result.rows, {
-          header: true,
-          columns: query_run.result.columns,
-        }).pipe(res);
+        await pipeline(
+          stringifyNonblocking(query_run.result.rows, {
+            header: true,
+            columns: query_run.result.columns,
+          }),
+          res,
+        );
       } else {
         res.send('');
       }
