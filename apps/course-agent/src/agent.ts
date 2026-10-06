@@ -58,6 +58,16 @@ const expiredMessage =
 const interruptedMessage =
   'Task interrupted. It was not automatically repeated. You can send another message to continue.';
 
+function messageDispatchId(message: UIMessage | undefined) {
+  const metadata = message?.metadata;
+  return metadata &&
+    typeof metadata === 'object' &&
+    'dispatchId' in metadata &&
+    typeof metadata.dispatchId === 'string'
+    ? metadata.dispatchId
+    : undefined;
+}
+
 /**
  * One durable conversation: SQLite owns history, lifecycle state, and execution receipts.
  * Live sockets/promises belong to this instance only; recovery consults Codex native history.
@@ -120,13 +130,19 @@ export class Chat extends AIChatAgent<Env, CodexState> {
   /** Explicit tool frames share the watch socket; SDK chat messages keep their normal path. */
   override async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message === 'string' && message.length <= 1_000_000) {
-      let frame;
+      let frame: unknown;
       try {
         frame = JSON.parse(message);
       } catch {
         return;
       }
-      if (typeof frame?.type === 'string' && frame.type.startsWith('host-tool')) {
+      if (
+        frame &&
+        typeof frame === 'object' &&
+        'type' in frame &&
+        typeof frame.type === 'string' &&
+        frame.type.startsWith('host-tool')
+      ) {
         if (!(connection.state as { hostPeer?: boolean } | null)?.hostPeer) return;
         if (frame.type === 'host-tools-ready') {
           connection.setState({ ...connection.state, hostExecutor: true });
@@ -418,7 +434,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       throw new ChatError(409, 'This dispatch was rejected before execution. Retry your message.');
     }
     const existing = this.messages.find((message) => message.id === input.id);
-    const oldDispatch = (existing?.metadata as { dispatchId?: string } | undefined)?.dispatchId;
+    const oldDispatch = messageDispatchId(existing);
     if (existing && !(oldDispatch && this.rejectedDispatch(oldDispatch))) {
       return;
     }
@@ -834,8 +850,6 @@ export class Chat extends AIChatAgent<Env, CodexState> {
    */
   async expireSandbox(expiration: Expiration) {
     const { id, reason, attempt = 0 } = expiration;
-    // A deployment can leave callbacks from the old absolute-lifetime policy.
-    if (!['idle', 'interaction', 'retry', 'startup-cancel'].includes(reason)) return;
     const state = this.state.sandbox;
     if (!state || state.id !== id) return;
     if (expiration.retryOf && expiration.retryOf !== state.cleanup?.id) return;
@@ -980,7 +994,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       .map((part) => part.text)
       .join('\n');
     if (!message || !prompt) throw new Error('Send a text prompt to Codex.');
-    const dispatchId = (message.metadata as { dispatchId?: string } | undefined)?.dispatchId;
+    const dispatchId = messageDispatchId(message);
     const checkDispatch = () => {
       if (dispatchId && this.rejectedDispatch(dispatchId)) {
         throw new ChatError(409, 'Message rejected before execution. Retry your message.');

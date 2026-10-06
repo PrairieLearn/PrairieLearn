@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const sendRequestSchema = z.object({
   id: z.uuid(),
-  expectedOperationNumber: z.number().int().nonnegative().default(0),
+  expectedOperationNumber: z.number().int().nonnegative(),
   text: z.string().trim().min(1).max(100_000),
 });
 export type SendRequest = z.infer<typeof sendRequestSchema>;

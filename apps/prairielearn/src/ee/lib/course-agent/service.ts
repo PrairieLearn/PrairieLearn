@@ -128,14 +128,19 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
     !repository ||
     `${repository.owner}/${repository.repo}` !== conversation.repository ||
     course.branch !== conversation.branch;
-  const operations = await selectConversationOperations(conversation.id);
+  const operations = new Map(
+    (await selectConversationOperations(conversation.id)).map((operation) => [
+      operation.operation_id,
+      operation,
+    ]),
+  );
   return {
     ...value,
     newWorkUnavailable: changed
       ? 'The course repository or branch changed. Start a new conversation.'
       : undefined,
     messages: value.messages.map((message) => {
-      const operation = operations.find((operation) => operation.operation_id === message.id);
+      const operation = operations.get(message.id);
       return operation
         ? {
             ...message,
