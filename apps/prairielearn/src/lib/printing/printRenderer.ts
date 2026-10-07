@@ -14,6 +14,8 @@ export class QuestionBlockSizeOverflowError extends Error {
 
 const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
+const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 64;
+const DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS = 4;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
 const SOCKET_IO_PATH = '/socket.io/';
 
@@ -96,6 +98,8 @@ export interface PrintRendererOptions {
   cloudflare?: { accountId: string; apiToken: string };
   /** Renders that would wait behind more than this many others fail immediately. */
   maxQueuedRenders?: number;
+  /** Independent browser contexts that may render at once. */
+  maxConcurrentRenders?: number;
   /** Default end-to-end deadline for one render, including its time in the queue. */
   timeoutMs?: number;
   /** How long a browser context may take to close before the whole browser is discarded. */
@@ -134,14 +138,19 @@ export class PrintRenderer {
 
   constructor({
     cloudflare,
-    maxQueuedRenders = DEFAULT_MAX_QUEUED_RENDERS,
+    maxQueuedRenders,
+    maxConcurrentRenders,
     timeoutMs = DEFAULT_RENDER_TIMEOUT_MS,
     contextCloseGraceMs = DEFAULT_CONTEXT_CLOSE_GRACE_MS,
   }: PrintRendererOptions = {}) {
     this.cloudflare = cloudflare;
     this.defaultTimeoutMs = timeoutMs;
     this.contextCloseGraceMs = contextCloseGraceMs;
-    this.worker = new Semaphore(1, maxQueuedRenders);
+    this.worker = new Semaphore(
+      maxConcurrentRenders ?? (cloudflare ? DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS : 1),
+      maxQueuedRenders ??
+        (cloudflare ? DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS : DEFAULT_MAX_QUEUED_RENDERS),
+    );
   }
 
   renderPdf(options: RenderPdfOptions): Promise<Buffer> {
