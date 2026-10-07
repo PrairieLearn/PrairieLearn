@@ -201,6 +201,22 @@ describe('Course staff CSV preview', { concurrent: false }, () => {
     expect(kept.course_instance_roles).toBeNull();
   });
 
+  test('confirms an instance role for a new UID with no course role', async () => {
+    const client = createClient();
+    const instance = await selectCourseInstanceById('1');
+    const uid = 'csv-instance-only@example.com';
+    const text = `uid,course,${instance.short_name}\n${uid},None,Editor`;
+    const preview = await client.courseStaff.preview.mutate({ text });
+    expect(
+      await client.courseStaff.sync.mutate({ text, confirmationToken: preview.confirmationToken }),
+    ).toEqual({ add: 1, update: 0, remove: 0, unchanged: 0 });
+    const added = (await client.courseStaff.list.query()).find((row) => row.user.uid === uid)!;
+    expect(added.course_permission.course_role).toBe('None');
+    expect(added.course_instance_roles).toMatchObject([
+      { id: instance.id, course_instance_role: 'Student Data Editor' },
+    ]);
+  });
+
   test('refuses tampered confirmation tokens and a different CSV', async () => {
     const client = createClient();
     const text = 'uid,course\ntoken-test@example.com,None';
