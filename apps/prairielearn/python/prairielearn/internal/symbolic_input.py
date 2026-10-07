@@ -1,7 +1,7 @@
 """Internal parsing helpers shared by symbolic-input elements."""
 
 import re
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Literal
@@ -9,6 +9,27 @@ from typing import Literal
 import sympy
 
 import prairielearn.sympy_utils as psu
+
+
+@dataclass(frozen=True, slots=True)
+class SourceText:
+    """Text whose character offsets refer to positions in the raw source."""
+
+    text: str
+    offsets: tuple[int, ...]
+
+    def __post_init__(self) -> None:
+        """Validate that the text and source map stay aligned."""
+        if len(self.text) != len(self.offsets):
+            raise ValueError("SourceText must have one source offset per character")
+
+    def __iter__(self) -> Iterator[int]:
+        """Iterate over the raw source offsets."""
+        return iter(self.offsets)
+
+    @classmethod
+    def from_text(cls, text: str) -> "SourceText":
+        return cls(text, tuple(range(len(text))))
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,7 +43,7 @@ class SymbolicSubmissionParseSuccess:
     json: psu.SympyJson | Literal[""]
 
 
-type SymbolicInputNormalizationResult = psu.SourceText | psu.SympyParseFailure
+type SymbolicInputNormalizationResult = SourceText | psu.SympyParseFailure
 type SymbolicSubmissionParseResult = (
     SymbolicSubmissionParseSuccess | psu.SympyParseFailure
 )
@@ -31,9 +52,7 @@ type SymbolicSubmissionParseResult = (
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
 
 
-def _restore_plus_minus_source(
-    source: psu.SourceText, latex: str
-) -> psu.SourceText | None:
+def _restore_plus_minus_source(source: SourceText, latex: str) -> SourceText | None:
     r"""Restore formula-editor ``+-`` sequences that came from ``\pm``."""
     from_plus_minus = [
         match.group(0).startswith("\\")
@@ -60,10 +79,10 @@ def _restore_plus_minus_source(
         last_end = match.end()
     parts.append(source.text[last_end:])
     offsets.extend(source.offsets[last_end:])
-    return psu.SourceText("".join(parts), tuple(offsets))
+    return SourceText("".join(parts), tuple(offsets))
 
 
-def _delete_literal(source: psu.SourceText, literal: str) -> psu.SourceText:
+def _delete_literal(source: SourceText, literal: str) -> SourceText:
     parts: list[str] = []
     offsets: list[int] = []
     last_end = 0
@@ -73,10 +92,10 @@ def _delete_literal(source: psu.SourceText, literal: str) -> psu.SourceText:
         last_end = match.end()
     parts.append(source.text[last_end:])
     offsets.extend(source.offsets[last_end:])
-    return psu.SourceText("".join(parts), tuple(offsets))
+    return SourceText("".join(parts), tuple(offsets))
 
 
-def _replace_editor_operators(source: psu.SourceText, raw_text: str) -> psu.SourceText:
+def _replace_editor_operators(source: SourceText, raw_text: str) -> SourceText:
     parts: list[str] = []
     offsets: list[int] = []
     index = 0
@@ -101,7 +120,7 @@ def _replace_editor_operators(source: psu.SourceText, raw_text: str) -> psu.Sour
         parts.append(source.text[index])
         offsets.append(source.offsets[index])
         index += 1
-    return psu.SourceText("".join(parts), tuple(offsets))
+    return SourceText("".join(parts), tuple(offsets))
 
 
 def _build_formula_editor_tokens(
@@ -126,9 +145,7 @@ def _build_formula_editor_tokens(
     return [token for token in tokens if len(token) > 1 and token != "**"]
 
 
-def _merge_spaced_source(
-    source: psu.SourceText, tokens: Sequence[str]
-) -> psu.SourceText:
+def _merge_spaced_source(source: SourceText, tokens: Sequence[str]) -> SourceText:
     spaced = [(token, " ".join(token)) for token in tokens]
     spaced.sort(key=lambda item: -len(item[1]))
 
@@ -149,12 +166,12 @@ def _merge_spaced_source(
             parts.append(source.text[index])
             offsets.append(source.offsets[index])
             index += 1
-    return psu.SourceText("".join(parts), tuple(offsets))
+    return SourceText("".join(parts), tuple(offsets))
 
 
 def _add_multiplication_spaces_source(
-    source: psu.SourceText, protected_tokens: Sequence[str]
-) -> psu.SourceText:
+    source: SourceText, protected_tokens: Sequence[str]
+) -> SourceText:
     protected_positions: set[int] = set()
     for token in protected_tokens:
         if not re.search(r"\d", token):
@@ -176,7 +193,7 @@ def _add_multiplication_spaces_source(
         ):
             parts.append(" ")
             offsets.append(source.offsets[index + 1])
-    return psu.SourceText("".join(parts), tuple(offsets))
+    return SourceText("".join(parts), tuple(offsets))
 
 
 @lru_cache(maxsize=128)
@@ -190,8 +207,8 @@ def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[s
 
 
 def _wrap_bare_function_arguments_source(
-    source: psu.SourceText, function_names: frozenset[str]
-) -> psu.SourceText:
+    source: SourceText, function_names: frozenset[str]
+) -> SourceText:
     if not function_names:
         return source
     pattern = _bare_function_token_pattern(function_names)
@@ -248,17 +265,17 @@ def _wrap_bare_function_arguments_source(
         position = index
     parts.append(source.text[position:])
     offsets.extend(source.offsets[position:])
-    return psu.SourceText("".join(parts), tuple(offsets))
+    return SourceText("".join(parts), tuple(offsets))
 
 
 def _format_formula_editor_source(
-    source: psu.SourceText,
+    source: SourceText,
     raw_text: str,
     variables: Sequence[str],
     custom_functions: Sequence[str],
     *,
     allow_trig_functions: bool,
-) -> psu.SourceText:
+) -> SourceText:
     source = _delete_literal(_delete_literal(source, "{:"), ":}")
     source = _replace_editor_operators(source, raw_text)
     known_tokens = _build_formula_editor_tokens(
@@ -281,8 +298,8 @@ _ABSOLUTE_VALUE_PATTERN = re.compile(
 
 
 def _convert_absolute_values_source(
-    source: psu.SourceText, *, allow_sets: bool
-) -> psu.SourceText:
+    source: SourceText, *, allow_sets: bool
+) -> SourceText:
     original_text = source.text
     search_from = 0
     while match := _ABSOLUTE_VALUE_PATTERN.search(source.text, search_from):
@@ -299,7 +316,7 @@ def _convert_absolute_values_source(
             + source.offsets[match.start() + 1 : match.end() - 1]
             + (closing_offset,)
         )
-        source = psu.SourceText(
+        source = SourceText(
             source.text[: match.start()] + replacement + source.text[match.end() :],
             source.offsets[: match.start()]
             + replacement_offsets
@@ -324,10 +341,10 @@ def normalize_symbolic_input(
     allow_trig_functions: bool,
     allow_complex: bool,
     allow_sets: bool,
-) -> psu.SourceText:
+) -> SourceText:
     """Normalize a symbolic-input submission in its required transformation order."""
     source = psu._normalize_unicode_source(
-        psu.SourceText.from_text(text), formula_editor=formula_editor
+        SourceText.from_text(text), formula_editor=formula_editor
     )
     if formula_editor:
         if latex is not None:
@@ -395,6 +412,40 @@ def try_normalize_symbolic_input(
         return result
 
 
+def _try_parse_normalized_source_as_sympy(
+    source: SourceText,
+    raw_text: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_complex: bool = False,
+    allow_hidden: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: list[str] | None = None,
+    imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
+    assumptions: psu.AssumptionsDictT | None = None,
+) -> psu.SympyParseResult:
+    """Parse text that has already passed through symbolic-input normalization."""
+    return psu._try_parse_as_sympy(
+        raw_text,
+        lambda: psu._convert_source_to_sympy_with_source(
+            source,
+            raw_text,
+            variables,
+            allow_hidden=allow_hidden,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig_functions,
+            custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions,
+        )[0],
+        allow_complex=allow_complex,
+        imaginary_unit=imaginary_unit,
+    )
+
+
 def try_parse_symbolic_submission(
     submission: str | None,
     variables: Iterable[str] | None,
@@ -448,7 +499,7 @@ def try_parse_symbolic_submission(
             assumptions=assumptions,
         )
     else:
-        result = psu.try_parse_normalized_source_as_sympy(
+        result = _try_parse_normalized_source_as_sympy(
             normalized,
             submission,
             variable_list,

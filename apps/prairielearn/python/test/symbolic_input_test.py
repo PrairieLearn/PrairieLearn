@@ -11,7 +11,7 @@ def _normalize_symbolic_input(
     *,
     formula_editor: bool = False,
     allow_sets: bool = False,
-) -> psu.SourceText:
+) -> symbolic_input.SourceText:
     return symbolic_input.normalize_symbolic_input(
         text,
         ["alpha", "x", "y", "j"],
@@ -25,7 +25,7 @@ def _normalize_symbolic_input(
 
 
 def _format_absolute_values(submission: str, *, allow_sets: bool = False) -> str:
-    source = psu.SourceText.from_text(
+    source = symbolic_input.SourceText.from_text(
         submission.replace(
             "∣",  # ruff:ignore[ambiguous-unicode-character-string]
             "|",
@@ -44,7 +44,7 @@ def _format_formula_editor_submission(
     allow_trig: bool,
 ) -> str:
     source = psu._normalize_unicode_source(
-        psu.SourceText.from_text(submission), formula_editor=True
+        symbolic_input.SourceText.from_text(submission), formula_editor=True
     )
     return symbolic_input._format_formula_editor_source(
         source,
@@ -183,7 +183,7 @@ def test_format_formula_editor_submission(
 )
 def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
     source = symbolic_input._restore_plus_minus_source(
-        psu.SourceText.from_text(submission), latex
+        symbolic_input.SourceText.from_text(submission), latex
     )
     assert (None if source is None else source.text) == expected
 
@@ -258,7 +258,8 @@ def test_symbolic_input_normalization_preserves_source_offsets(
     expected_offsets: tuple[int, ...],
 ) -> None:
     source = _normalize_symbolic_input(text, formula_editor=formula_editor)
-    assert source == psu.SourceText(expected_text, expected_offsets)
+    assert source == symbolic_input.SourceText(expected_text, expected_offsets)
+    assert tuple(source) == expected_offsets
 
 
 def test_symbolic_input_normalization_combines_stages_in_order() -> None:
@@ -266,7 +267,7 @@ def test_symbolic_input_normalization_combines_stages_in_order() -> None:
     source = _normalize_symbolic_input(raw, formula_editor=True)
     assert source.text == "abs(ln (2) * x)**2 + 2*e+3 + 3*j"
 
-    result = psu.try_parse_normalized_source_as_sympy(
+    result = symbolic_input._try_parse_normalized_source_as_sympy(
         source,
         raw,
         ["x", "j"],
@@ -296,7 +297,7 @@ def test_formula_editor_does_not_merge_normalized_unicode_multiplication() -> No
 def test_symbolic_input_normalization_preserves_set_unions() -> None:
     text = "[0,1] | (2,3) | [4,5]"
     source = _normalize_symbolic_input(text, allow_sets=True)
-    assert source == psu.SourceText.from_text(text)
+    assert source == symbolic_input.SourceText.from_text(text)
 
 
 def test_parse_symbolic_submission_serializes_result() -> None:

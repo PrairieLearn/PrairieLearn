@@ -20,6 +20,7 @@ from tokenize import NAME, NUMBER, OP, TokenError
 from types import CodeType
 from types import MappingProxyType as FrozenDict
 from typing import (
+    TYPE_CHECKING,
     Any,
     Final,
     Literal,
@@ -35,6 +36,9 @@ from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
 from prairielearn.misc_utils import full_unidecode
+
+if TYPE_CHECKING:
+    from prairielearn.internal.symbolic_input import SourceText
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
@@ -90,23 +94,6 @@ class SympyParseFailure:
 
 
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
-
-
-@dataclass(frozen=True, slots=True)
-class SourceText:
-    """Text whose character offsets refer to positions in the raw source."""
-
-    text: str
-    offsets: tuple[int, ...]
-
-    def __post_init__(self) -> None:
-        """Validate that the text and source map stay aligned."""
-        if len(self.text) != len(self.offsets):
-            raise ValueError("SourceText must have one source offset per character")
-
-    @classmethod
-    def from_text(cls, text: str) -> "SourceText":
-        return cls(text, tuple(range(len(text))))
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -783,13 +770,13 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
 
 
 def _normalize_unicode_source(
-    source: SourceText, *, formula_editor: bool = False
-) -> SourceText:
+    source: "SourceText", *, formula_editor: bool = False
+) -> "SourceText":
     """Normalize Unicode while retaining the raw offset of every output character."""
     const = _Constants
     parts: list[str] = []
-    offsets: list[int] = []
-    for char, offset in zip(source.text, source.offsets, strict=True):
+    normalized_offsets: list[int] = []
+    for char, offset in zip(source.text, source, strict=True):
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
@@ -813,15 +800,15 @@ def _normalize_unicode_source(
                 normalized_char = f" {' '.join(normalized_char)} "
 
         parts.append(normalized_char)
-        offsets.extend([offset] * len(normalized_char))
-    return SourceText("".join(parts), tuple(offsets))
+        normalized_offsets.extend([offset] * len(normalized_char))
+    return type(source)("".join(parts), tuple(normalized_offsets))
 
 
 # The lookahead allows overlapping pairs, so a Unicode sign after "**" is checked.
 _MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
 
 
-def _validate_multiplication(original_expr: str, source: SourceText) -> None:
+def _validate_multiplication(original_expr: str, source: "SourceText") -> None:
     """Reject multiplication signs that normalization would turn into exponentiation."""
     for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, source.text):
         left_offset = source.offsets[match.start("left")]
@@ -835,12 +822,12 @@ def _validate_multiplication(original_expr: str, source: SourceText) -> None:
 
 
 def _rewrite_pattern_source(
-    source: SourceText,
+    source: "SourceText",
     pattern: re.Pattern[str],
     replacement: Callable[
         [re.Match[str], tuple[int, ...]], tuple[str, tuple[int, ...]]
     ],
-) -> SourceText:
+) -> "SourceText":
     parts: list[str] = []
     offsets: list[int] = []
     last_end = 0
@@ -855,16 +842,16 @@ def _rewrite_pattern_source(
         last_end = match.end()
     parts.append(source.text[last_end:])
     offsets.extend(source.offsets[last_end:])
-    return SourceText("".join(parts), tuple(offsets))
+    return type(source)("".join(parts), tuple(offsets))
 
 
 def _validate_and_rewrite_source(
-    source: SourceText,
+    source: "SourceText",
     raw_text: str,
     *,
     allow_complex: bool,
     allow_sets: bool,
-) -> SourceText:
+) -> "SourceText":
     _validate_multiplication(raw_text, source)
 
     for symbol in _Constants.plus_minus_operators:
@@ -913,7 +900,9 @@ def _validate_and_rewrite_source(
 
 def _normalize_source(
     text: str, *, allow_complex: bool, allow_sets: bool
-) -> SourceText:
+) -> "SourceText":
+    from prairielearn.internal.symbolic_input import SourceText
+
     source = _normalize_unicode_source(SourceText.from_text(text))
     return _validate_and_rewrite_source(
         source,
@@ -954,7 +943,7 @@ def evaluate_with_source(
 
 
 def _evaluate_normalized_source(
-    source: SourceText,
+    source: "SourceText",
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool,
@@ -963,7 +952,7 @@ def _evaluate_normalized_source(
     allow_extra_symbols: bool,
 ) -> tuple[sympy.Expr, str | CodeType]:
     normalized_expr = source.text
-    char_offsets = list(source.offsets)
+    char_offsets = list(source)
 
     local_dict = {
         k: v
@@ -1152,7 +1141,7 @@ def convert_string_to_sympy_with_source(
 
 
 def _convert_source_to_sympy_with_source(
-    source: SourceText | None,
+    source: "SourceText | None",
     expr: str,
     variables: Iterable[str] | None = None,
     *,
@@ -1450,40 +1439,6 @@ def try_parse_string_as_sympy(
             simplify_expression=simplify_expression,
             assumptions=assumptions,
         ),
-        allow_complex=allow_complex,
-        imaginary_unit=imaginary_unit,
-    )
-
-
-def try_parse_normalized_source_as_sympy(
-    source: SourceText,
-    raw_expr: str,
-    variables: Iterable[str] | None,
-    *,
-    allow_complex: bool = False,
-    allow_hidden: bool = False,
-    allow_sets: bool = False,
-    allow_trig_functions: bool = True,
-    custom_functions: list[str] | None = None,
-    imaginary_unit: str | None = None,
-    simplify_expression: bool = True,
-    assumptions: AssumptionsDictT | None = None,
-) -> SympyParseResult:
-    """Parse source that has already passed through symbolic-input normalization."""
-    return _try_parse_as_sympy(
-        raw_expr,
-        lambda: _convert_source_to_sympy_with_source(
-            source,
-            raw_expr,
-            variables,
-            allow_hidden=allow_hidden,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-            allow_trig_functions=allow_trig_functions,
-            custom_functions=custom_functions,
-            simplify_expression=simplify_expression,
-            assumptions=assumptions,
-        )[0],
         allow_complex=allow_complex,
         imaginary_unit=imaginary_unit,
     )
