@@ -3,12 +3,12 @@ import type { Browser, BrowserContext, Page, Response, Route, WebSocketRoute } f
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const playwrightMocks = vi.hoisted(() => ({
-  connect: vi.fn(),
+  connectOverCDP: vi.fn(),
   launch: vi.fn(),
 }));
 
 vi.mock('playwright', () => ({
-  chromium: { connect: playwrightMocks.connect, launch: playwrightMocks.launch },
+  chromium: { connectOverCDP: playwrightMocks.connectOverCDP, launch: playwrightMocks.launch },
 }));
 
 import {
@@ -89,7 +89,7 @@ function createBrowserHarness({
     close: vi.fn(async () => undefined),
     on: vi.fn(),
   } as unknown as Browser;
-  playwrightMocks.connect.mockResolvedValue(browser);
+  playwrightMocks.connectOverCDP.mockResolvedValue(browser);
   playwrightMocks.launch.mockResolvedValue(browser);
 
   return {
@@ -118,7 +118,7 @@ function createGate() {
 
 describe('PrintRenderer', () => {
   beforeEach(() => {
-    playwrightMocks.connect.mockReset();
+    playwrightMocks.connectOverCDP.mockReset();
     playwrightMocks.launch.mockReset();
   });
 
@@ -139,7 +139,7 @@ describe('PrintRenderer', () => {
 
     expect(first).toEqual(Buffer.from('%PDF-test'));
     expect(second).toEqual(Buffer.from('%PDF-test'));
-    expect(playwrightMocks.connect).not.toHaveBeenCalled();
+    expect(playwrightMocks.connectOverCDP).not.toHaveBeenCalled();
     expect(playwrightMocks.launch).toHaveBeenCalledExactlyOnceWith({
       headless: true,
       timeout: 1234,
@@ -269,17 +269,17 @@ describe('PrintRenderer', () => {
     expect(abort).toHaveBeenCalledExactlyOnceWith('failed');
   });
 
-  it('connects once to a remote browser server when configured', async () => {
+  it('connects once to Cloudflare Browser Run when configured', async () => {
     const harness = createBrowserHarness();
-    const renderer = new PrintRenderer({ browserWSEndpoint: 'ws://printing-browser:3000/' });
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
 
     await renderPdf(renderer, { url: 'http://localhost:3000/print?paper_size=Letter' });
     await renderPdf(renderer, { url: 'http://localhost:3000/print?paper_size=A4' });
 
-    expect(playwrightMocks.connect).toHaveBeenCalledExactlyOnceWith('ws://printing-browser:3000/', {
-      exposeNetwork: '<loopback>',
-      timeout: 120_000,
-    });
+    expect(playwrightMocks.connectOverCDP).toHaveBeenCalledExactlyOnceWith(
+      'wss://api.cloudflare.com/client/v4/accounts/account/browser-run/devtools/browser?keep_alive=60000',
+      { headers: { Authorization: 'Bearer token' }, timeout: 120_000 },
+    );
     expect(playwrightMocks.launch).not.toHaveBeenCalled();
     expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
   });
