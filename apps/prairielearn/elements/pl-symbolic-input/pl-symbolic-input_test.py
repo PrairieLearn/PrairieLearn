@@ -273,10 +273,18 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
 
 
 def test_formula_editor_deeply_nested_bare_arguments() -> None:
-    element_html = build_element_html('variables="x,y,z"', 'formula-editor="true"')
-    data = make_question_data(
-        submitted_answers={"test": "s i n 2(" * 1200 + "x" + " * y)" * 1200 + " * z"}
+    depth = 1200
+    submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"
+    expected = "sin (2(" * depth + "x" + " * y))" * depth + " * z"
+    assert (
+        symbolic_input.format_formula_editor_submission_for_sympy(
+            submission, True, ["x", "y", "z"], []
+        )
+        == expected
     )
+
+    element_html = build_element_html('variables="x,y,z"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": submission})
     symbolic_input.parse(element_html, data)
     assert "syntax error" in data["format_errors"]["test"]
 

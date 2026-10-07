@@ -862,49 +862,19 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
-# Only the characters that can end a function argument or change the nesting depth
-_ARGUMENT_TOKEN_PATTERN = re.compile(r"\*+|[()\[\]{}+\-/,]")
-
-
-def _find_bare_argument_end(text: str, start: int, end: int) -> int | None:
-    """
-    Find the explicit "*" before `end` that ends a function argument starting at `start`.
-
-    Returns:
-        The index of the "*", or None if the argument ends some other way.
-    """
-    depth = 0
-    # A run of "*" is matched as one token, so only a lone "*" ends the argument
-    for match in _ARGUMENT_TOKEN_PATTERN.finditer(text, start, end):
-        match match.group(0):
-            case "(" | "[" | "{":
-                depth += 1
-            case ")" | "]" | "}":
-                if depth == 0:
-                    return None
-                depth -= 1
-            case "*":
-                if depth == 0:
-                    return match.start()
-            case "+" | "-" | "/" | ",":
-                if depth == 0:
-                    return None
-            case _:
-                pass
-    return None
-
-
 @lru_cache(maxsize=128)
-def _bare_function_argument_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
     """
-    Match a function name followed by whitespace and an argument that doesn't start with "(".
+    Match bare function starts and tokens that affect their argument boundaries.
 
     Returns:
         The compiled pattern, cached per set of function names
     """
     names = sorted(function_names, key=len, reverse=True)
     return re.compile(
-        r"(?<![A-Za-z_])(?:" + "|".join(map(re.escape, names)) + r")\s+(?=[^\s(])"
+        r"(?P<function>(?<![A-Za-z_])(?:"
+        + "|".join(map(re.escape, names))
+        + r")\s+(?=[^\s(]))|(?P<token>\*+|[()\[\]{}+\-/,])"
     )
 
 
@@ -923,29 +893,36 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
     """
     if not function_names:
         return text
-    pattern = _bare_function_argument_pattern(function_names)
+    pattern = _bare_function_token_pattern(function_names)
 
     # Each "(" sorts before a ")" at the same index, which only happens for an
-    # empty argument. This is a loop rather than recursion on each wrapped
-    # argument so that deeply nested input can't exceed the recursion limit.
+    # empty argument.
     insertions: list[tuple[int, str]] = []
-    # Ends of the wrapped arguments that enclose the current match. A function
-    # inside a wrapped argument only sees the text up to the end of that argument.
-    limits: list[int] = []
+    # Only the first bare function at a given nesting depth can claim the next
+    # multiplication operator; any later one is inside its implicit argument.
+    pending_arguments: dict[int, int] = {}
+    depth = 0
     for match in pattern.finditer(text):
-        while limits and match.start() >= limits[-1]:
-            limits.pop()
-        limit = limits[-1] if limits else len(text)
-        # The match's lookahead character must also be inside the argument
-        if match.end() >= limit:
+        if match.lastgroup == "function":
+            pending_arguments.setdefault(depth, match.end())
             continue
-        start = match.end()
-        end = _find_bare_argument_end(text, start, limit)
-        if end is None:
-            continue
-        argument_end = start + len(text[start:end].rstrip())
-        insertions.extend(((start, "("), (argument_end, ")")))
-        limits.append(argument_end)
+
+        token = match.group(0)
+        match token:
+            case "(" | "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
+            case "*":
+                start = pending_arguments.pop(depth, None)
+                if start is not None:
+                    argument_end = start + len(text[start : match.start()].rstrip())
+                    insertions.extend(((start, "("), (argument_end, ")")))
+            case "+" | "-" | "/" | ",":
+                pending_arguments.pop(depth, None)
+            case _:
+                pass
 
     result = []
     pos = 0
