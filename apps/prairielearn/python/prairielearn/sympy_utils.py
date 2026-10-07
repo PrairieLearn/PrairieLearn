@@ -39,6 +39,10 @@ from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
+    "Your answer has a syntax error. "
+    "This issue might be caused by mismatched parentheses or some other misplaced symbol."
+)
 
 SympyMapT = dict[str, sympy.Basic | complex]
 _FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
@@ -199,6 +203,9 @@ class _Constants:
         "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
         "\u2061": "",  # function application
     })
+
+    # Operators that give two values; unidecode would turn "±" into "+-".
+    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
 
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
@@ -763,12 +770,12 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
-        elif not char.isascii() and unicodedata.decomposition(char).startswith((
-            "<super>",
-            "<sub>",
-        )):
-            # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
-            # writes exponents and subscripts with "^" and "_".
+        elif char in const.plus_minus_operators or (
+            not char.isascii()
+            and unicodedata.decomposition(char).startswith(("<super>", "<sub>"))
+        ):
+            # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
+            # formula editor writes exponents and subscripts with "^" and "_".
             raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
         elif char not in const.set_operators:
@@ -1437,10 +1444,7 @@ def try_parse_string_as_sympy(
         # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
         # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
         if exc.offset == -1:
-            return SympyParseFailure(
-                "Your answer has a syntax error. "
-                "This issue might be caused by mismatched parentheses or some other misplaced symbol."
-            )
+            return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
         return SympyParseFailure(
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"

@@ -481,12 +481,18 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
 
     if formula_editor:
-        submitted_answer = format_formula_editor_submission_for_sympy(
+        formatted_answer = format_formula_editor_submission_for_sympy(
             submitted_answer,
             allow_trig,
             variables,
             custom_functions,
+            latex=data["raw_submitted_answers"].get(name + "-latex"),
         )
+        if submitted_answer is not None and formatted_answer is None:
+            data["format_errors"][name] = psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION
+            data["submitted_answers"][name] = None
+            return
+        submitted_answer = formatted_answer
 
     # Pre-processing to make submission parseable by SymPy
     a_sub, error_msg = format_submission_for_sympy(
@@ -564,6 +570,36 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
+_PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
+
+
+def _restore_plus_minus(submission: str, latex: str) -> str | None:
+    r"""
+    Turn the "+-" that the formula editor writes for `\pm` back into "±".
+
+    The editor's plain text uses "+-" for both `\pm` and a typed "+" followed by
+    "-". Both appear in the same order in the submitted LaTeX, so the k-th "+-" in
+    the plain text comes from the k-th `\pm` or "+-" in the LaTeX.
+
+    Returns:
+        The submission with "±" restored, or None if the two can't be matched up
+    """
+    from_plus_minus = [
+        match.group(0).startswith("\\")
+        for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
+    ]
+    parts = submission.split("+-")
+    if len(parts) - 1 != len(from_plus_minus):
+        return None
+    if not any(from_plus_minus):
+        return submission
+
+    result = [parts[0]]
+    for is_plus_minus, part in zip(from_plus_minus, parts[1:], strict=True):
+        result.extend(("±" if is_plus_minus else "+-", part))
+    return "".join(result)
+
+
 def format_submission_for_sympy(
     sub: str | None, *, allow_sets: bool = False
 ) -> tuple[str | None, str | None]:
@@ -631,29 +667,39 @@ def format_formula_editor_submission_for_sympy(
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
+    *,
+    latex: str | None = None,
 ) -> str | None:
-    """
+    r"""
     Format raw formula editor input to be compatible with SymPy.
 
     The formula editor outputs text with several quirks that need correction:
-    1. Invisible "{:" and ":}" operators from LaTeX copy-paste
-    2. Multi-character names are space-separated: "s i n" instead of "sin"
-    3. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
+    1. The formula editor serializes ``\pm`` as "+-", which is restored when raw
+       LaTeX is provided
+    2. Invisible "{:" and ":}" operators from LaTeX copy-paste
+    3. Multi-character names are space-separated: "s i n" instead of "sin"
+    4. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
 
     Args:
         sub: Raw text from the formula editor
         allow_trig: Whether trig functions (sin, cos, etc.) are available
         variables: List of allowed variable names
         custom_functions: List of custom function names
+        latex: Raw LaTeX from the formula editor
 
     Returns:
-        Formatted text ready for SymPy parsing, or None if input is None
+        Formatted text ready for SymPy parsing, or None if input is None or the
+        text and LaTeX representations can't be matched
     """
     if sub is None:
         return None
 
+    text = sub if latex is None else _restore_plus_minus(sub, latex)
+    if text is None:
+        return None
+
     # Remove invisible LaTeX formatting operators
-    text = sub.replace("{:", "").replace(":}", "")
+    text = text.replace("{:", "").replace(":}", "")
 
     # The editor writes \div as "-:" and \ast as " ** ". Powers are always written
     # with "^", so " ** " can only be a multiplication.
