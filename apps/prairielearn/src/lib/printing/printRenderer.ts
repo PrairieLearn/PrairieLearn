@@ -122,10 +122,8 @@ export interface RenderPageOptions {
 export type RenderPdfOptions = RenderPageOptions;
 
 /**
- * Renders printable pages with a single, long-lived Chromium. Renders run one at a time so that a
- * burst of print requests never multiplies browser memory; each render gets its own short-lived
- * browser context for cookie isolation. The browser is launched on first use, relaunched after a
- * crash or disconnect, and closed by `close()` during shutdown.
+ * Reuses one browser connection with a bounded number of isolated rendering contexts. The browser
+ * is opened on first use, reopened after a disconnect, and closed during shutdown.
  */
 export class PrintRenderer {
   private readonly cloudflare: PrintRendererOptions['cloudflare'];
