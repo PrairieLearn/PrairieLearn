@@ -176,6 +176,7 @@ class _Constants:
         "FiniteSet": sympy.FiniteSet,
         "Union": sympy.Union,
         "Intersection": sympy.Intersection,
+        "Complement": sympy.Complement,
     })
 
     set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
@@ -599,6 +600,9 @@ class CheckAST(ast.NodeVisitor):
                     (ASTSympyType.SCALAR, ASTSympyType.SCALAR),
                     (2 * [ASTSympyType.SCALAR] + 2 * [ASTSympyType.BOOL]),
                 )
+                return ASTSympyType.SET
+            case "Complement":
+                self._enforce_signature(name, args, 2 * [ASTSympyType.SET])
                 return ASTSympyType.SET
             case "Union" | "Intersection":
                 if not args:

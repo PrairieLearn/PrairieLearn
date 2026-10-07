@@ -500,6 +500,27 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+def test_symbolic_set_difference_round_trips_when_set_notation_is_enabled() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x, y"',
+        'correct-answer="{x} - {y}"',
+    )
+    data = make_question_data(submitted_answers={"test": "{x} - {y}"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    x, y = sympy.symbols("x y")
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(
+        data["submitted_answers"]["test"], allow_sets=True
+    ) == sympy.Complement(sympy.FiniteSet(x), sympy.FiniteSet(y))
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',

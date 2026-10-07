@@ -194,6 +194,11 @@ class TestSympy:
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
         ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
         ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
+        ("{m} - {n}", sympy.Complement(sympy.FiniteSet(M), sympy.FiniteSet(N))),
+        (
+            "[0, 1] - {m}",
+            sympy.Complement(sympy.Interval(0, 1), sympy.FiniteSet(M)),
+        ),
         (
             "({m, 3} U (m + 1, 4])",
             sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
@@ -470,6 +475,7 @@ class TestSympy:
             ("Interval", (0, 1)),
             ("Union", (sympy.EmptySet, sympy.EmptySet)),
             ("Intersection", (sympy.EmptySet, sympy.EmptySet)),
+            ("Complement", (sympy.EmptySet, sympy.EmptySet)),
         ],
     )
     def test_sets_reserveds_respected_by_json_conversion(
@@ -501,6 +507,7 @@ class TestSympy:
             sympy.symbols("Interval"),
             sympy.symbols("Union"),
             sympy.symbols("Intersection"),
+            sympy.symbols("Complement"),
         ],
     )
     def test_sets_disabled_reserveds_pass_json_conversion(
@@ -998,6 +1005,8 @@ class TestExceptions:
         "!Intersection(1, 2)",
         "!Intersection({}, 2)",
         "!Intersection( )",
+        "!Complement(1, 2)",
+        "!Complement({1})",
         "1 !U 2",
         "1 !| 2",
         "1 !cup 2",
