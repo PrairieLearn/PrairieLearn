@@ -172,6 +172,8 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("2 ** ** x", False, ["x"], [], "2 * ** x"),
         # \star is " *** ", which must not end a function argument
         ("l n 4 *** x", False, ["x"], [], "ln 4 *** x"),
+        # Without LaTeX, typed "+-" is unchanged
+        ("2+-a -: x", False, ["a"], [], "2+-a / x"),
     ],
 )
 def test_format_formula_editor_submission_for_sympy(
@@ -233,14 +235,11 @@ def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
         ("(a+-b)+-sqrt(a+-b)", r"\left(a+-b\right)\pm\sqrt{a+-b}", "(a+-b)±sqrt(a+-b)"),
         ("a+-b+-c", r"a+{-b}\pm c", "a+-b±c"),
         ("2+-a", "2+-a", "2+-a"),
-        ("2+-a", None, "2+-a"),
         # The plain text and LaTeX don't match up
         ("2+-a", r"2\pm a\pm b", None),
     ],
 )
-def test_restore_plus_minus(
-    submission: str, latex: str | None, expected: str | None
-) -> None:
+def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
     assert symbolic_input._restore_plus_minus(submission, latex) == expected
 
 

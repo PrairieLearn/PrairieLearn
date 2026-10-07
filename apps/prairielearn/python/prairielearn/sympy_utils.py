@@ -39,6 +39,10 @@ from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
+    "Your answer has a syntax error. "
+    "This issue might be caused by mismatched parentheses or some other misplaced symbol."
+)
 
 SympyMapT = dict[str, sympy.Basic | complex]
 _FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
@@ -1440,10 +1444,7 @@ def try_parse_string_as_sympy(
         # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
         # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
         if exc.offset == -1:
-            return SympyParseFailure(
-                "Your answer has a syntax error. "
-                "This issue might be caused by mismatched parentheses or some other misplaced symbol."
-            )
+            return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
         return SympyParseFailure(
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
