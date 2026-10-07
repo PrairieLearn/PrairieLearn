@@ -113,7 +113,7 @@
       "default": 60,
       "type": "number"
     },
-    "workspaceHostMinAvailableDiskMb": {
+    "workspaceHostMinAvailableDiskMB": {
       "default": 10000,
       "type": "number",
       "minimum": 0
