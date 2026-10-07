@@ -862,6 +862,27 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
+_TRAILING_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_]\w*$")
+
+
+def _is_implicit_multiplication_paren(
+    argument: str, function_names: frozenset[str]
+) -> bool:
+    """
+    Whether a "(" after `argument` multiplies it rather than calling a function or grouping an exponent.
+
+    Returns:
+        True if `argument` ends with a number, a closing bracket, or a name that isn't a function.
+    """
+    argument = argument.rstrip()
+    if not argument:
+        return False
+    if argument[-1].isdigit() or argument[-1] in ")]}":
+        return True
+    name = _TRAILING_IDENTIFIER_PATTERN.search(argument)
+    return name is not None and name.group(0) not in function_names
+
+
 @lru_cache(maxsize=128)
 def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
     """
@@ -880,13 +901,15 @@ def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[s
 
 def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
     r"""
-    Parenthesize unparenthesized function arguments that are followed by "*".
+    Parenthesize unparenthesized function arguments that are followed by "*" or "(".
 
     The formula editor displays `{\ln 4}\cdot x` as ln(4)·x but submits it as
     "ln 4 * x". SymPy's implicit function application ends the argument at "+",
-    "-", or "/", but not at "*", so it would parse this as ln(4x).
+    "-", or "/", but not at "*", so it would parse this as ln(4x). It also can't
+    end the argument at a "(" that multiplies it, so "ln 8(x+1)" is a syntax error.
 
-    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)"
+    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)", and "ln 8(x+1)"
+    becomes "ln (8)(x+1)"
 
     Returns:
         The text with those arguments wrapped in parentheses
@@ -909,7 +932,16 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
         token = match.group(0)
         match token:
-            case "(" | "[" | "{":
+            case "(":
+                start = pending_arguments.get(depth)
+                if start is not None and _is_implicit_multiplication_paren(
+                    text[start : match.start()], function_names
+                ):
+                    pending_arguments.pop(depth)
+                    argument_end = start + len(text[start : match.start()].rstrip())
+                    insertions.extend(((start, "("), (argument_end, ")")))
+                depth += 1
+            case "[" | "{":
                 depth += 1
             case ")" | "]" | "}":
                 pending_arguments.pop(depth, None)
