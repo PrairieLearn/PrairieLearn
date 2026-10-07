@@ -481,40 +481,34 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
 
-    if formula_editor:
-        formatted_answer = format_formula_editor_submission_for_sympy(
-            submitted_answer,
-            allow_trig,
-            variables,
-            custom_functions,
-            latex=data["raw_submitted_answers"].get(name + "-latex"),
-        )
-        if submitted_answer is not None and formatted_answer is None:
-            data["format_errors"][name] = psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION
-            data["submitted_answers"][name] = None
-            return
-        submitted_answer = formatted_answer
-
-    # Pre-processing to make submission parseable by SymPy
-    a_sub, error_msg = format_submission_for_sympy(
-        submitted_answer, allow_sets=allow_sets
-    )
-    if error_msg is not None:
-        data["format_errors"][name] = error_msg
-        data["submitted_answers"][name] = None
-        return
-
-    if a_sub is None:
+    if submitted_answer is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return
 
-    if isinstance(a_sub, str) and a_sub.strip() == "":
+    normalized = psu.try_normalize_symbolic_input(
+        submitted_answer,
+        variables,
+        custom_functions,
+        formula_editor=formula_editor,
+        latex=data["raw_submitted_answers"].get(name + "-latex"),
+        allow_trig_functions=allow_trig,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+    if isinstance(normalized, psu.SympyParseFailure):
+        data["format_errors"][name] = normalized.error
+        data["submitted_answers"][name] = None
+        return
+
+    parse_raw_answer = submitted_answer
+    if normalized.text.strip() == "":
         if allow_blank:
-            a_sub = blank_value
-            if a_sub.strip() == "":  # Handle blank case
+            if blank_value.strip() == "":
                 data["submitted_answers"][name] = ""
                 return
+            parse_raw_answer = blank_value
+            normalized = None
         else:
             data["format_errors"][name] = "No submitted answer."
             data["submitted_answers"][name] = None
@@ -526,18 +520,33 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    result = psu.try_parse_string_as_sympy(
-        a_sub,
-        variables,
-        allow_hidden=True,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-        allow_trig_functions=allow_trig,
-        imaginary_unit=imaginary_unit,
-        custom_functions=custom_functions,
-        simplify_expression=simplify_expression,
-        assumptions=assumptions_dict,
-    )
+    if normalized is None:
+        result = psu.try_parse_string_as_sympy(
+            parse_raw_answer,
+            variables,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
+            imaginary_unit=imaginary_unit,
+            custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions_dict,
+        )
+    else:
+        result = psu.try_parse_normalized_source_as_sympy(
+            normalized,
+            parse_raw_answer,
+            variables,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
+            imaginary_unit=imaginary_unit,
+            custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions_dict,
+        )
 
     if isinstance(result, psu.SympyParseFailure):
         data["format_errors"][name] = result.error
