@@ -917,7 +917,9 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
             case "*":
                 start = pending_arguments.pop(depth, None)
                 if start is not None:
-                    argument_end = start + len(text[start : match.start()].rstrip())
+                    argument_end = match.start()
+                    while argument_end > start and text[argument_end - 1].isspace():
+                        argument_end -= 1
                     insertions.extend(((start, "("), (argument_end, ")")))
             case "+" | "-" | "/" | ",":
                 pending_arguments.pop(depth, None)
