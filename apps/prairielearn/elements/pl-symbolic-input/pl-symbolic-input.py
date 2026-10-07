@@ -652,7 +652,11 @@ def format_submission_for_sympy(
             continue
 
         sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
-        search_from = 0
+        # Matches never contain "|", so nothing before the nearest bar to the
+        # left of the replacement can start a new match. Resuming there instead
+        # of at 0 keeps this loop linear in the number of bars.
+        prev_bar = sub.rfind("|", 0, match.start())
+        search_from = prev_bar if prev_bar != -1 else match.start()
 
     if not allow_sets and "|" in sub:
         return (
