@@ -15,7 +15,7 @@ from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from functools import lru_cache, wraps
+from functools import wraps
 from tokenize import NAME, NUMBER, OP, TokenError
 from types import CodeType
 from types import MappingProxyType as FrozenDict
@@ -107,14 +107,6 @@ class SourceText:
     @classmethod
     def from_text(cls, text: str) -> "SourceText":
         return cls(text, tuple(range(len(text))))
-
-
-@dataclass(frozen=True, slots=True)
-class SymbolicInputNormalizationError(Exception):
-    message: str
-
-
-type SymbolicInputNormalizationResult = SourceText | SympyParseFailure
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -790,39 +782,6 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
     return f" {last_conjunction} ".join(comma_sep.rsplit(", ", maxsplit=1))
 
 
-_PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
-
-
-def _restore_plus_minus_source(source: SourceText, latex: str) -> SourceText | None:
-    r"""Restore formula-editor ``+-`` sequences that came from ``\pm``."""
-    from_plus_minus = [
-        match.group(0).startswith("\\")
-        for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
-    ]
-    matches = list(re.finditer(r"\+-", source.text))
-    if len(matches) != len(from_plus_minus):
-        return None
-    if not any(from_plus_minus):
-        return source
-
-    parts: list[str] = []
-    offsets: list[int] = []
-    last_end = 0
-    for match, is_plus_minus in zip(matches, from_plus_minus, strict=True):
-        parts.append(source.text[last_end : match.start()])
-        offsets.extend(source.offsets[last_end : match.start()])
-        if is_plus_minus:
-            parts.append("±")
-            offsets.append(source.offsets[match.start()])
-        else:
-            parts.append(match.group(0))
-            offsets.extend(source.offsets[match.start() : match.end()])
-        last_end = match.end()
-    parts.append(source.text[last_end:])
-    offsets.extend(source.offsets[last_end:])
-    return SourceText("".join(parts), tuple(offsets))
-
-
 def _normalize_unicode_source(
     source: SourceText, *, formula_editor: bool = False
 ) -> SourceText:
@@ -856,256 +815,6 @@ def _normalize_unicode_source(
         parts.append(normalized_char)
         offsets.extend([offset] * len(normalized_char))
     return SourceText("".join(parts), tuple(offsets))
-
-
-def _delete_literal(source: SourceText, literal: str) -> SourceText:
-    parts: list[str] = []
-    offsets: list[int] = []
-    last_end = 0
-    for match in re.finditer(re.escape(literal), source.text):
-        parts.append(source.text[last_end : match.start()])
-        offsets.extend(source.offsets[last_end : match.start()])
-        last_end = match.end()
-    parts.append(source.text[last_end:])
-    offsets.extend(source.offsets[last_end:])
-    return SourceText("".join(parts), tuple(offsets))
-
-
-def _replace_editor_operators(source: SourceText, raw_text: str) -> SourceText:
-    parts: list[str] = []
-    offsets: list[int] = []
-    i = 0
-    while i < len(source.text):
-        if source.text.startswith("-:", i):
-            parts.append("/")
-            offsets.append(source.offsets[i])
-            i += 2
-            continue
-        if source.text.startswith(" ** ", i):
-            left_star_offset = source.offsets[i + 1]
-            right_star_offset = source.offsets[i + 2]
-            if raw_text[left_star_offset] == "*" and raw_text[right_star_offset] == "*":
-                parts.append(" * ")
-                offsets.extend((
-                    source.offsets[i],
-                    left_star_offset,
-                    source.offsets[i + 3],
-                ))
-                i += 4
-                continue
-        parts.append(source.text[i])
-        offsets.append(source.offsets[i])
-        i += 1
-    return SourceText("".join(parts), tuple(offsets))
-
-
-def _build_formula_editor_tokens(
-    variables: Iterable[str],
-    custom_functions: Iterable[str],
-    *,
-    allow_trig: bool,
-) -> list[str]:
-    tokens = (
-        list(STANDARD_OPERATORS)
-        + list(_Constants.functions)
-        + list(custom_functions)
-        + list(variables)
-    )
-    if allow_trig:
-        tokens += list(_Constants.trig_functions)
-
-    tokens += [
-        greek_unicode_transform(token)
-        for token in tokens
-        if greek_unicode_transform(token) != token
-    ]
-    return [token for token in tokens if len(token) > 1 and token != "**"]
-
-
-def _merge_spaced_source(source: SourceText, tokens: list[str]) -> SourceText:
-    spaced = [(token, " ".join(token)) for token in tokens]
-    spaced.sort(key=lambda item: -len(item[1]))
-
-    parts: list[str] = []
-    offsets: list[int] = []
-    i = 0
-    while i < len(source.text):
-        for token, spaced_token in spaced:
-            if source.text.startswith(spaced_token, i):
-                parts.append(token)
-                offsets.extend(
-                    source.offsets[i + char_index * 2]
-                    for char_index in range(len(token))
-                )
-                i += len(spaced_token)
-                break
-        else:
-            parts.append(source.text[i])
-            offsets.append(source.offsets[i])
-            i += 1
-    return SourceText("".join(parts), tuple(offsets))
-
-
-def _add_multiplication_spaces_source(
-    source: SourceText, protected_tokens: list[str]
-) -> SourceText:
-    protected_positions: set[int] = set()
-    for token in protected_tokens:
-        if not re.search(r"\d", token):
-            continue
-        for match in re.finditer(re.escape(token), source.text):
-            protected_positions.update(range(match.start(), match.end()))
-
-    parts: list[str] = []
-    offsets: list[int] = []
-    for i, char in enumerate(source.text):
-        parts.append(char)
-        offsets.append(source.offsets[i])
-        if i + 1 >= len(source.text):
-            continue
-        if (
-            char.isalpha()
-            and source.text[i + 1].isdigit()
-            and i + 1 not in protected_positions
-        ):
-            parts.append(" ")
-            offsets.append(source.offsets[i + 1])
-    return SourceText("".join(parts), tuple(offsets))
-
-
-@lru_cache(maxsize=128)
-def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
-    names = sorted(function_names, key=len, reverse=True)
-    return re.compile(
-        r"(?P<function>(?<![A-Za-z_])(?:"
-        + "|".join(map(re.escape, names))
-        + r")\s+(?=[^\s(]))|(?P<token>\*+|[()\[\]{}+\-/,])"
-    )
-
-
-def _wrap_bare_function_arguments_source(
-    source: SourceText, function_names: frozenset[str]
-) -> SourceText:
-    if not function_names:
-        return source
-    pattern = _bare_function_token_pattern(function_names)
-    insertions: list[tuple[int, str, int]] = []
-    pending_arguments: dict[int, int] = {}
-    depth = 0
-    for match in pattern.finditer(source.text):
-        if match.lastgroup == "function":
-            pending_arguments.setdefault(depth, match.end())
-            continue
-
-        token = match.group(0)
-        match token:
-            case "(" | "[" | "{":
-                depth += 1
-            case ")" | "]" | "}":
-                pending_arguments.pop(depth, None)
-                depth -= 1
-            case "*":
-                start = pending_arguments.pop(depth, None)
-                if start is not None:
-                    argument_start = start
-                    while (
-                        argument_start < match.start()
-                        and source.text[argument_start].isspace()
-                    ):
-                        argument_start += 1
-                    argument_end = match.start()
-                    while (
-                        argument_end > argument_start
-                        and source.text[argument_end - 1].isspace()
-                    ):
-                        argument_end -= 1
-                    open_offset = source.offsets[
-                        min(argument_start, len(source.offsets) - 1)
-                    ]
-                    close_offset = source.offsets[max(argument_end - 1, 0)]
-                    insertions.extend((
-                        (start, "(", open_offset),
-                        (argument_end, ")", close_offset),
-                    ))
-            case "+" | "-" | "/" | ",":
-                pending_arguments.pop(depth, None)
-            case _:
-                pass
-
-    parts: list[str] = []
-    offsets: list[int] = []
-    pos = 0
-    for index, paren, offset in sorted(insertions):
-        parts.extend((source.text[pos:index], paren))
-        offsets.extend(source.offsets[pos:index])
-        offsets.append(offset)
-        pos = index
-    parts.append(source.text[pos:])
-    offsets.extend(source.offsets[pos:])
-    return SourceText("".join(parts), tuple(offsets))
-
-
-def _format_formula_editor_source(
-    source: SourceText,
-    raw_text: str,
-    variables: Iterable[str],
-    custom_functions: Iterable[str],
-    *,
-    allow_trig: bool,
-) -> SourceText:
-    source = _delete_literal(_delete_literal(source, "{:"), ":}")
-    source = _replace_editor_operators(source, raw_text)
-    known_tokens = _build_formula_editor_tokens(
-        variables, custom_functions, allow_trig=allow_trig
-    )
-    source = _merge_spaced_source(source, known_tokens)
-    source = _add_multiplication_spaces_source(source, known_tokens)
-    function_names = frozenset(
-        get_builtin_functions(allow_trig_functions=allow_trig) | set(custom_functions)
-    )
-    return _wrap_bare_function_arguments_source(source, function_names)
-
-
-_ABSOLUTE_VALUE_PATTERN = re.compile(
-    r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
-)
-
-
-def _convert_absolute_values_source(
-    source: SourceText, *, allow_sets: bool
-) -> SourceText:
-    original_text = source.text
-    search_from = 0
-    while True:
-        match = _ABSOLUTE_VALUE_PATTERN.search(source.text, search_from)
-        if match is None:
-            break
-        content = source.text[match.start() + 1 : match.end() - 1]
-        if allow_sets and "," in content:
-            search_from = match.start() + 1
-            continue
-
-        opening_offset = source.offsets[match.start()]
-        closing_offset = source.offsets[match.end() - 1]
-        replacement = f"abs({content})"
-        replacement_offsets = (
-            (opening_offset,) * 4
-            + source.offsets[match.start() + 1 : match.end() - 1]
-            + (closing_offset,)
-        )
-        source = SourceText(
-            source.text[: match.start()] + replacement + source.text[match.end() :],
-            source.offsets[: match.start()]
-            + replacement_offsets
-            + source.offsets[match.end() :],
-        )
-        search_from = 0
-
-    if not allow_sets and "|" in source.text:
-        raise SymbolicInputNormalizationError(
-            f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_text}</code>."
-        )
-    return source
 
 
 # The lookahead allows overlapping pairs, so a Unicode sign after "**" is checked.
@@ -1203,109 +912,15 @@ def _validate_and_rewrite_source(
 
 
 def _normalize_source(
-    text: str,
-    variables: Iterable[str],
-    custom_functions: Iterable[str],
-    *,
-    formula_editor: bool,
-    latex: str | None,
-    allow_trig_functions: bool,
-    allow_complex: bool,
-    allow_sets: bool,
-    convert_absolute_values: bool,
+    text: str, *, allow_complex: bool, allow_sets: bool
 ) -> SourceText:
-    variables = tuple(variables)
-    custom_functions = tuple(custom_functions)
-    source = SourceText.from_text(text)
-    source = _normalize_unicode_source(source, formula_editor=formula_editor)
-    if formula_editor:
-        if latex is not None:
-            restored = _restore_plus_minus_source(source, latex)
-            if restored is None:
-                raise SymbolicInputNormalizationError(
-                    SYMPY_PARSE_ERROR_WITHOUT_LOCATION
-                )
-            source = restored
-        source = _format_formula_editor_source(
-            source,
-            text,
-            variables,
-            custom_functions,
-            allow_trig=allow_trig_functions,
-        )
-    if convert_absolute_values:
-        source = _convert_absolute_values_source(source, allow_sets=allow_sets)
+    source = _normalize_unicode_source(SourceText.from_text(text))
     return _validate_and_rewrite_source(
         source,
         text,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
     )
-
-
-def normalize_symbolic_input(
-    text: str,
-    variables: Iterable[str],
-    custom_functions: Iterable[str],
-    *,
-    formula_editor: bool,
-    latex: str | None,
-    allow_trig_functions: bool,
-    allow_complex: bool,
-    allow_sets: bool,
-) -> SourceText:
-    """Normalize a symbolic-input submission in its required transformation order."""
-    return _normalize_source(
-        text,
-        variables,
-        custom_functions,
-        formula_editor=formula_editor,
-        latex=latex,
-        allow_trig_functions=allow_trig_functions,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-        convert_absolute_values=True,
-    )
-
-
-def try_normalize_symbolic_input(
-    text: str,
-    variables: Iterable[str],
-    custom_functions: Iterable[str],
-    *,
-    formula_editor: bool,
-    latex: str | None,
-    allow_trig_functions: bool,
-    allow_complex: bool,
-    allow_sets: bool,
-) -> SymbolicInputNormalizationResult:
-    """Normalize a submission, returning existing user-facing parse failures."""
-    try:
-        return normalize_symbolic_input(
-            text,
-            variables,
-            custom_functions,
-            formula_editor=formula_editor,
-            latex=latex,
-            allow_trig_functions=allow_trig_functions,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-        )
-    except SymbolicInputNormalizationError as exc:
-        return SympyParseFailure(exc.message)
-    except BaseSympyError as exc:
-
-        def raise_normalization_error(error: BaseSympyError = exc) -> sympy.Expr:
-            raise error
-
-        result = _try_parse_as_sympy(
-            text,
-            raise_normalization_error,
-            allow_complex=allow_complex,
-            imaginary_unit=None,
-        )
-        assert isinstance(result, SympyParseFailure)
-        return result
 
 
 def evaluate_with_source(
@@ -1325,14 +940,8 @@ def evaluate_with_source(
     """
     source = _normalize_source(
         expr,
-        (),
-        (),
-        formula_editor=False,
-        latex=None,
-        allow_trig_functions=False,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
-        convert_absolute_values=False,
     )
     return _evaluate_normalized_source(
         source,
