@@ -506,7 +506,7 @@ async function checkDiskSpace() {
     const { DockerRootDir } = await docker.info();
     const { bavail, bsize } = await fs.statfs(DockerRootDir);
     const availableBytes = bavail * bsize;
-    if (availableBytes < 10_000_000_000) {
+    if (availableBytes < config.workspaceHostMinAvailableDiskBytes) {
       await markSelfUnhealthy(`Low Docker disk space: ${availableBytes} bytes available`);
     }
   } catch (err) {
