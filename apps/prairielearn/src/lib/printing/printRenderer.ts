@@ -94,11 +94,6 @@ class Semaphore {
 export interface PrintRendererOptions {
   /** Cloudflare Browser Run credentials. */
   cloudflare?: { accountId: string; apiToken: string };
-  /**
-   * A Playwright browser server to connect to instead of launching Chromium locally. The server
-   * and application Playwright versions must match.
-   */
-  browserWSEndpoint?: string;
   /** Renders that would wait behind more than this many others fail immediately. */
   maxQueuedRenders?: number;
   /** Default end-to-end deadline for one render, including its time in the queue. */
@@ -114,6 +109,8 @@ export interface RenderPageOptions {
   /** Browser-paginated HTML to serve at `url`. */
   html: string;
   cookieHeader?: string;
+  /** Execute question scripts while preparing a new preview. */
+  runScripts?: boolean;
   /** Overrides the renderer's default deadline. `0` disables the deadline. */
   timeoutMs?: number;
 }
@@ -128,7 +125,6 @@ export type RenderPdfOptions = RenderPageOptions;
  */
 export class PrintRenderer {
   private readonly cloudflare: PrintRendererOptions['cloudflare'];
-  private readonly browserWSEndpoint: string | undefined;
   private readonly defaultTimeoutMs: number;
   private readonly contextCloseGraceMs: number;
   private readonly worker: Semaphore;
@@ -138,13 +134,11 @@ export class PrintRenderer {
 
   constructor({
     cloudflare,
-    browserWSEndpoint,
     maxQueuedRenders = DEFAULT_MAX_QUEUED_RENDERS,
     timeoutMs = DEFAULT_RENDER_TIMEOUT_MS,
     contextCloseGraceMs = DEFAULT_CONTEXT_CLOSE_GRACE_MS,
   }: PrintRendererOptions = {}) {
     this.cloudflare = cloudflare;
-    this.browserWSEndpoint = browserWSEndpoint;
     this.defaultTimeoutMs = timeoutMs;
     this.contextCloseGraceMs = contextCloseGraceMs;
     this.worker = new Semaphore(1, maxQueuedRenders);
@@ -204,12 +198,7 @@ export class PrintRenderer {
         { headers: { Authorization: `Bearer ${this.cloudflare.apiToken}` }, timeout: timeoutMs },
       );
     }
-    return this.browserWSEndpoint
-      ? chromium.connect(this.browserWSEndpoint, {
-          exposeNetwork: '<loopback>',
-          timeout: timeoutMs,
-        })
-      : chromium.launch({ headless: true, timeout: timeoutMs });
+    return chromium.launch({ headless: true, timeout: timeoutMs });
   }
 
   private forgetBrowser(browser: Browser): void {
@@ -245,14 +234,22 @@ export class PrintRenderer {
   }
 
   private async renderWithPermit<T>(
-    { url, browserOrigin, html, cookieHeader, timeoutMs = DEFAULT_RENDER_TIMEOUT_MS }: RenderPageOptions,
+    {
+      url,
+      browserOrigin,
+      html,
+      cookieHeader,
+      runScripts = false,
+      timeoutMs = DEFAULT_RENDER_TIMEOUT_MS,
+    }: RenderPageOptions,
     output: PrintablePageOutput<T>,
   ): Promise<T> {
     const deadline = timeoutMs === 0 ? null : Date.now() + timeoutMs;
     const remainingTimeoutMs = () => (deadline === null ? 0 : Math.max(1, deadline - Date.now()));
     const localUrl = new URL(url);
     const navigationUrl = this.cloudflare
-      ? new URL(`${localUrl.pathname}${localUrl.search}`, browserOrigin ?? 'https://example.com').href
+      ? new URL(`${localUrl.pathname}${localUrl.search}`, browserOrigin ?? 'https://example.com')
+          .href
       : url;
     const renderOrigin = new URL(navigationUrl).origin;
     const browser = await this.getBrowser(remainingTimeoutMs());
@@ -267,7 +264,7 @@ export class PrintRenderer {
       const context = await browser.newContext({
         ignoreHTTPSErrors: true,
         serviceWorkers: 'block',
-        javaScriptEnabled: true,
+        javaScriptEnabled: runScripts,
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
         ...(!this.cloudflare && cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
       });
@@ -337,11 +334,13 @@ export class PrintRenderer {
         throw new Error(`The printable page returned HTTP ${response.status()}`);
       }
 
-      await page.waitForFunction(
-        () => ['ready', 'error'].includes(document.documentElement.dataset.printStatus ?? ''),
-        undefined,
-        { timeout: remainingTimeoutMs() },
-      );
+      if (runScripts) {
+        await page.waitForFunction(
+          () => ['ready', 'error'].includes(document.documentElement.dataset.printStatus ?? ''),
+          undefined,
+          { timeout: remainingTimeoutMs() },
+        );
+      }
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
