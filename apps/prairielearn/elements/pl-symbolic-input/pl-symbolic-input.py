@@ -705,8 +705,9 @@ def _build_known_tokens(
         if psu.greek_unicode_transform(token) != token
     ]
 
-    # Filter out single-letter tokens
-    tokens = [token for token in tokens if len(token) > 1]
+    # Filter out single-letter tokens. The editor writes powers with "^", so merging
+    # "* *" into "**" would only turn adjacent multiplication signs into a Python power.
+    tokens = [token for token in tokens if len(token) > 1 and token != "**"]
 
     return tokens
 

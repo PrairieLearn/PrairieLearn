@@ -787,7 +787,7 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
 _MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
 
 
-def _validate_unicode_multiplication(
+def _validate_multiplication(
     original_expr: str, normalized_expr: str, char_offsets: list[int]
 ) -> None:
     """Reject multiplication signs that normalization would turn into exponentiation."""
@@ -797,6 +797,8 @@ def _validate_unicode_multiplication(
         if original_expr[right_offset] != "*":
             raise HasInvalidExpressionError(right_offset)
         if original_expr[left_offset] != "*":
+            raise HasInvalidExpressionError(left_offset)
+        if match.start("right") > match.end("left"):
             raise HasInvalidExpressionError(left_offset)
 
 
@@ -852,9 +854,9 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
-        HasInvalidExpressionError: If the expression contains "***" or a unicode
-            multiplication sign separated only by whitespace from another
-            multiplication sign.
+        HasInvalidExpressionError: If the expression contains "***", whitespace
+            between two multiplication signs, or a unicode multiplication sign next
+            to another multiplication sign.
         HasSetNotationError: If the expression contains interval or set characters.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
@@ -862,7 +864,7 @@ def evaluate_with_source(
         BaseSympyError: If the expression cannot be evaluated.
     """
     normalized_expr, char_offsets = _normalize_expr(expr)
-    _validate_unicode_multiplication(expr, normalized_expr, char_offsets)
+    _validate_multiplication(expr, normalized_expr, char_offsets)
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates

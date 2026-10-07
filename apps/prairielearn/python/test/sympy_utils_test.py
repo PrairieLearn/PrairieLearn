@@ -771,7 +771,7 @@ class TestExceptions:
         assert "set" not in result.error
         assert "<pre>2 *** n\n  ^" in result.error
 
-    # Mapping the unicode sign to "*" would otherwise turn these into "2**n"
+    # Normalization must not turn unicode or whitespace-separated signs into "**".
     @pytest.mark.parametrize(
         ("text", "offset"),
         [
@@ -782,11 +782,10 @@ class TestExceptions:
             ("2∙ *n", 1),
             ("2* ∙n", 3),
             ("2∙ ∙n", 3),
+            ("2* *n", 1),
         ],
     )
-    def test_unicode_multiplication_next_to_multiplication(
-        self, text: str, offset: int
-    ) -> None:
+    def test_ambiguous_multiplication(self, text: str, offset: int) -> None:
         with pytest.raises(psu.HasInvalidExpressionError) as exc_info:
             psu.convert_string_to_sympy(text, self.VARIABLES)
         assert exc_info.value.offset == offset

@@ -169,6 +169,7 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         # Operators the editor writes in AsciiMath form (\div and \ast)
         ("2 -: x", False, ["x"], [], "2 / x"),
         ("2 ** x", False, ["x"], [], "2 * x"),
+        ("2 ** ** x", False, ["x"], [], "2 * ** x"),
         # \star is " *** ", which must not end a function argument
         ("l n 4 *** x", False, ["x"], [], "ln 4 *** x"),
     ],
