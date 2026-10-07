@@ -63,6 +63,11 @@ body:has(div.app-main-container) {
   overflow-y: auto;
 }
 
+/* Let full-height content shrink below its intrinsic height so inner scroll regions can scroll. */
+.app-content-full-height {
+  min-height: 0;
+}
+
 .side-nav-group {
   display: flex;
   flex-direction: column;

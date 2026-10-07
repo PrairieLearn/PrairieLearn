@@ -20,7 +20,7 @@ const defaultRateLimiter = new RedisRateLimiter({
     if (!config.nonVolatileRedisUrl) {
       throw new Error('nonVolatileRedisUrl must be set in config');
     }
-    const redis = new Redis(config.nonVolatileRedisUrl);
+    const redis = new Redis<'legacy'>(config.nonVolatileRedisUrl);
     redis.on('error', (err) => logger.error('Cheating report Redis error', { err }));
     return redis;
   },

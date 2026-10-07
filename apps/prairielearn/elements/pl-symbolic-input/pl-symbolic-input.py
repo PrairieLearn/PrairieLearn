@@ -588,6 +588,9 @@ def format_submission_for_sympy(
     if sub is None:
         return None, None
 
+    # The formula editor writes \lvert, \rvert and \mid as U+2223 (DIVIDES).
+    sub = sub.replace("∣", "|")  # ruff:ignore[ambiguous-unicode-character-string]
+
     pattern = re.compile(
         r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
     )
@@ -652,6 +655,10 @@ def format_formula_editor_submission_for_sympy(
     # Remove invisible LaTeX formatting operators
     text = sub.replace("{:", "").replace(":}", "")
 
+    # The editor writes \div as "-:" and \ast as " ** ". Powers are always written
+    # with "^", so " ** " can only be a multiplication.
+    text = text.replace("-:", "/").replace(" ** ", " * ")
+
     # Build list of all multi-character tokens that should be recognized as units
     known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
 
@@ -698,8 +705,9 @@ def _build_known_tokens(
         if psu.greek_unicode_transform(token) != token
     ]
 
-    # Filter out single-letter tokens
-    tokens = [token for token in tokens if len(token) > 1]
+    # Filter out single-letter tokens. The editor writes powers with "^", so merging
+    # "* *" into "**" would only turn adjacent multiplication signs into a Python power.
+    tokens = [token for token in tokens if len(token) > 1 and token != "**"]
 
     return tokens
 

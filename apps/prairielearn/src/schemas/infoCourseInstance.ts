@@ -59,6 +59,7 @@ export const StudentLabelJsonSchema = z
       .trim()
       .min(1)
       .max(MAX_STUDENT_LABEL_NAME_LENGTH)
+      .regex(/^[^;]*$/, 'Student label names cannot contain semicolons')
       .describe('The name of the student label.'),
     color: ColorJsonSchema,
   })

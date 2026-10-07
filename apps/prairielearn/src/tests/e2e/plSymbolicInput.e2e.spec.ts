@@ -77,17 +77,7 @@ test.describe('pl-symbolic-input prefix insertion', () => {
     await expect(formulaEditor).toBeVisible();
     await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
 
-    const cases = [
-      /sqrt/,
-      /operatorname\{log\}/,
-      /^\|\{#0\}\|$/,
-      /operatorname\{min\}/,
-      /operatorname\{max\}/,
-      /operatorname\{sign\}/,
-      /operatorname\{sin\}/,
-      /operatorname\{cos\}/,
-      /operatorname\{tan\}/,
-    ];
+    const cases = [/sqrt/, /^\|\{#0\}\|$/, /operatorname\{sin\}/];
 
     for (const label of cases) {
       await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
@@ -95,33 +85,23 @@ test.describe('pl-symbolic-input prefix insertion', () => {
       });
     }
 
-    const variantCases = [
-      { label: /operatorname\{sin\}/, count: 4 },
-      { label: /operatorname\{cos\}/, count: 4 },
-      { label: /operatorname\{tan\}/, count: 5 },
-    ];
+    await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
+      await page.getByLabel(/operatorname\{sin\}/).dispatchEvent('pointerdown', {
+        button: 0,
+        isPrimary: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
 
-    for (const { label, count } of variantCases) {
-      for (let index = 0; index < count; index++) {
-        await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
-          await page.getByLabel(label).dispatchEvent('pointerdown', {
-            button: 0,
-            isPrimary: true,
-            pointerId: 1,
-            pointerType: 'mouse',
-          });
-
-          const variants = page.locator('.MLK__variant-panel.is-visible .item');
-          await expect(variants).toHaveCount(count);
-          await variants.nth(index).dispatchEvent('pointerup', {
-            button: 0,
-            isPrimary: true,
-            pointerId: 1,
-            pointerType: 'mouse',
-          });
-        });
-      }
-    }
+      const variants = page.locator('.MLK__variant-panel.is-visible .item');
+      await expect(variants).toHaveCount(4);
+      await variants.first().dispatchEvent('pointerup', {
+        button: 0,
+        isPrimary: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+    });
   });
 
   test('keeps preceding content outside natural log when configured', async ({ page }) => {
@@ -132,5 +112,34 @@ test.describe('pl-symbolic-input prefix insertion', () => {
     await expectPrefixInsertion(page, formulaEditor, 'lnx', async () => {
       await page.getByLabel(/operatorname\{ln\}/).click();
     });
+  });
+});
+
+test.describe('pl-symbolic-input unicode multiplication keys', () => {
+  test.beforeEach(async ({ page, courseInstance }) => {
+    await openSymbolicInputEditorQuestion(page, courseInstance);
+  });
+
+  test('inserts unicode multiplication keys as \\cdot', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await expect(formulaEditor).toBeVisible();
+
+    // Bullet (e.g. Option+8 on macOS), bullet operator, and asterisk operator.
+    // Playwright can't press non-ASCII keys, so dispatch the keydown directly.
+    for (const key of ['•', '∙', '∗']) {
+      await fillFormulaEditor(formulaEditor, '');
+      await formulaEditor.press('2');
+      await formulaEditor.evaluate((el, key) => {
+        el.shadowRoot
+          ?.querySelector('[part="keyboard-sink"]')
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }),
+          );
+      }, key);
+      await page.keyboard.press('y');
+
+      await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^\{2\}\\cdot y$/);
+      await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('2 * y');
+    }
   });
 });

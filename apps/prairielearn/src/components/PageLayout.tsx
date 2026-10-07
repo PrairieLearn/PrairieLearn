@@ -154,9 +154,13 @@ function UnpublishedBannerComponent({
   navContext: NavContext;
   resLocals: UntypedResLocals;
 }) {
-  if (navContext.type !== 'instructor') return null;
-  if (!navContext.page) return null;
-  if (!['instance_admin', 'assessment', 'students'].includes(navContext.page)) return null;
+  if (
+    navContext.type !== 'instructor' ||
+    !navContext.page ||
+    !['instance_admin', 'assessment', 'students'].includes(navContext.page)
+  ) {
+    return null;
+  }
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
   const { course_instance: courseInstance, urlPrefix } = resLocals;
@@ -220,7 +224,11 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Sets the html and body tag heights to 100% */
+    /**
+     * Fills the available height below navigation. Content can provide its own scroll regions;
+     * with side navigation, the main container remains the scroll parent for overflowing content
+     * (for example, when panes switch to a stacked layout).
+     */
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
@@ -474,6 +482,7 @@ export function PageLayout({
                   resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   resolvedOptions.contentPadding && 'pb-3',
                   resolvedOptions.fullHeight && 'h-100',
+                  resolvedOptions.fullHeight && 'app-content-full-height flex-grow-1',
                 )}"
               >
                 ${renderHtml(
