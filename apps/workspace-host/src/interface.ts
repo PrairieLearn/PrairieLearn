@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs/promises';
+import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
 import * as os from 'node:os';
@@ -33,7 +33,6 @@ import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
-import { DiskSpaceMonitor } from './lib/disk-space.js';
 import { parseDockerLogs } from './lib/docker.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as socketServer from './lib/socket-server.js';
@@ -108,8 +107,6 @@ const workspace_server_settings: WorkspaceServerSettings = {};
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
-let diskSpaceMonitor: DiskSpaceMonitor | undefined;
-let unhealthyReason: Error | string | null = null;
 
 async function updateLoadCount() {
   const params = { instance_id: workspace_server_settings.instance_id };
@@ -130,7 +127,6 @@ app.use(bodyParser.json());
 app.get(
   '/status',
   asyncHandler(async (req, res) => {
-    const diskSpaceHealthy = (await diskSpaceMonitor?.check()) ?? false;
     const containers = await docker.listContainers({ all: true }).catch(() => null);
 
     let db_status: string | null | undefined;
@@ -141,8 +137,9 @@ app.get(
       db_status = null;
     }
 
-    if (!containers || !db_status || !diskSpaceHealthy || unhealthyReason !== null) {
-      // Docker, database access, and sufficient disk space are all required.
+    if (!containers || !db_status) {
+      // We must have both Docker and database access in order to consider
+      // ourselves healthy.
       res.status(500);
     } else {
       res.status(200);
@@ -150,7 +147,6 @@ app.get(
     res.json({
       docker: containers,
       postgres: db_status,
-      disk_space: diskSpaceHealthy ? 'ok' : null,
     });
   }),
 );
@@ -282,18 +278,13 @@ async
       setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
     },
     async () => {
-      // Register before checking disk space so even a new host can be marked
-      // unhealthy. Only advertise readiness after the initial check succeeds.
+      // Add ourselves to the workspace hosts directory. After we
+      // do this we will start receiving requests so everything else
+      // must be initialized before this.
       await sqldb.execute(sql.insert_workspace_hosts, {
         hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
         instance_id: workspace_server_settings.instance_id,
       });
-      diskSpaceMonitor = new DiskSpaceMonitor(docker, markSelfUnhealthy);
-      if (await diskSpaceMonitor.init()) {
-        await sqldb.execute(sql.mark_host_ready, {
-          instance_id: workspace_server_settings.instance_id,
-        });
-      }
     },
     async () => {
       // If we have any running workspaces, we're probably recovering from a
@@ -346,7 +337,7 @@ async
     },
   ])
   .then(() => {
-    logger.info(unhealthyReason === null ? 'Workspace host ready' : 'Workspace host unhealthy');
+    logger.info('Workspace host ready');
   })
   .catch(async function (err) {
     Sentry.captureException(err);
@@ -492,14 +483,11 @@ async function killAndRemoveWorkspace(workspace_id: string | number, container: 
  * @param reason The reason that this host is unhealthy
  */
 async function markSelfUnhealthy(reason: Error | string) {
-  if (unhealthyReason === null) {
-    unhealthyReason = reason;
-    Sentry.captureException(reason);
-  }
   try {
+    Sentry.captureException(reason);
     const params = {
       instance_id: workspace_server_settings.instance_id,
-      unhealthy_reason: unhealthyReason.toString(),
+      unhealthy_reason: reason,
     };
     await sqldb.execute(sql.mark_host_unhealthy, params);
     logger.warn('Marked self as unhealthy', reason);
@@ -507,6 +495,23 @@ async function markSelfUnhealthy(reason: Error | string) {
     // This could error if we don't even have a DB connection. In that case, we
     // should let the main server mark us as unhealthy.
     logger.error('Could not mark self as unhealthy', err);
+  }
+}
+
+async function checkDiskSpace() {
+  // Docker Desktop's data directory may not be accessible from this process.
+  if (!config.runningInEc2) return;
+
+  try {
+    const { DockerRootDir } = await docker.info();
+    const { bavail, bsize } = await fs.statfs(DockerRootDir);
+    const availableBytes = bavail * bsize;
+    if (availableBytes < 10_000_000_000) {
+      await markSelfUnhealthy(`Low Docker disk space: ${availableBytes} bytes available`);
+    }
+  } catch (err) {
+    logger.error('Error checking Docker disk space', err);
+    Sentry.captureException(err);
   }
 }
 
@@ -845,7 +850,7 @@ async function _pullImage(workspace: Workspace) {
   });
 }
 
-async function _createContainer(workspace: Workspace): Promise<Docker.Container | null> {
+async function _createContainer(workspace: Workspace): Promise<Docker.Container> {
   const { local_name, remote_name, launch_port, settings } = workspace;
 
   const jobDirectory = config.workspaceHostHomeDirRoot;
@@ -940,8 +945,6 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container 
     config.workspaceJobsDirectoryOwnerUid,
     config.workspaceJobsDirectoryOwnerGid,
   );
-  // Pulling an image or another concurrent launch may have used the remaining space.
-  if (!(await checkDiskSpaceForLaunch(workspace.id, workspace))) return null;
   const container = await docker.createContainer({
     Image: settings.workspace_image,
     ExposedPorts: {
@@ -1011,44 +1014,13 @@ function safeUpdateWorkspaceState(
   });
 }
 
-async function checkDiskSpaceForLaunch(
-  workspaceId: string | number,
-  launch?: Pick<Workspace, 'launch_uuid' | 'version'>,
-): Promise<boolean> {
-  if (unhealthyReason === null && (await diskSpaceMonitor?.check()) && unhealthyReason === null) {
-    return true;
-  }
-
-  // A delayed request must not stop a running workspace or a newer launch on another host.
-  await sqldb.runInTransactionAsync(async () => {
-    const pendingLaunch = await sqldb.queryOptionalRow(
-      sql.select_and_lock_pending_launch,
-      {
-        workspace_id: workspaceId,
-        instance_id: workspace_server_settings.instance_id,
-        launch_uuid: launch?.launch_uuid ?? null,
-        version: launch?.version ?? null,
-      },
-      WorkspaceRowSchema,
-    );
-    if (pendingLaunch) {
-      await workspaceUtils.updateWorkspaceState(
-        workspaceId,
-        'stopped',
-        'Workspace host is unavailable. Click "Reboot" to try again.',
-      );
-    }
-  });
-  return false;
-}
-
 /** Called by the main server the first time a workspace is used by a user */
 async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
-  // The main server may have assigned this workspace just before we became unhealthy.
-  if (!(await checkDiskSpaceForLaunch(workspace_id))) return;
+  // Check before pulling or creating a container so failed launches also trigger a check.
+  await checkDiskSpace();
 
   const uuid = crypto.randomUUID();
   const params = {
@@ -1107,7 +1079,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       return; // don't set host to unhealthy
     }
 
-    let container: Docker.Container | null;
+    let container: Docker.Container | undefined;
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
       container = await _createContainer(workspace);
@@ -1120,8 +1092,6 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       );
       return; // don't set host to unhealthy
     }
-
-    if (!container) return;
 
     try {
       await _startContainer(workspace.id, container);

@@ -225,21 +225,6 @@
       "default": 60,
       "type": "number"
     },
-    "workspaceHostDockerDataDir": {
-      "default": null,
-      "type": ["string", "null"]
-    },
-    "workspaceHostMinAvailableDiskBytes": {
-      "default": 10000000000,
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 9007199254740991
-    },
-    "workspaceHostDiskSpaceCheckIntervalSec": {
-      "default": 60,
-      "type": "number",
-      "exclusiveMinimum": 0
-    },
     "workspaceHostMinPortRange": {
       "default": 1024,
       "type": "number"

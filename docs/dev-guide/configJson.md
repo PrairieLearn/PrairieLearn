@@ -76,21 +76,6 @@ For example, if your IPv4 is `192.168.1.60` and PL is running on port `3000`, yo
 
 ## Workspaces and external graders
 
-Workspace hosts in EC2 check available space on the filesystem containing Docker's
-data directory before becoming ready, every 60 seconds, and before new workspace
-launches and container creation. With less than 10 GB (10,000,000,000 bytes) available,
-the host becomes unhealthy and stops accepting launches while existing workspaces
-drain through the normal host lifecycle. A failed disk check also marks the host
-unhealthy. Freeing space does not restore readiness.
-
-`workspaceHostMinAvailableDiskBytes` sets the threshold in bytes; `0` disables these
-checks. `workspaceHostDiskSpaceCheckIntervalSec` sets the monitoring interval in
-seconds. By default, EC2 hosts use the Docker daemon's `DockerRootDir`. Set
-`workspaceHostDockerDataDir` to override this with a path visible to the workspace
-host process. Outside EC2, checks are disabled unless this path is explicitly set,
-because Docker Desktop and containerized development can keep Docker's data
-directory outside the process's filesystem.
-
 ### Running PrairieLearn natively
 
 !!! note

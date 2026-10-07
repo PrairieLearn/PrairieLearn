@@ -60,23 +60,13 @@ INSERT INTO
     ready_at
   )
 VALUES
-  ($instance_id, $hostname, 'launching', NOW(), NULL)
+  ($instance_id, $hostname, 'ready', NOW(), NOW())
 ON CONFLICT (instance_id) DO UPDATE
 SET
   hostname = EXCLUDED.hostname,
   state = EXCLUDED.state,
   state_changed_at = EXCLUDED.state_changed_at,
   ready_at = EXCLUDED.ready_at;
-
--- BLOCK mark_host_ready
-UPDATE workspace_hosts
-SET
-  state = 'ready',
-  state_changed_at = NOW(),
-  ready_at = NOW()
-WHERE
-  instance_id = $instance_id
-  AND state = 'launching';
 
 -- BLOCK lock_workspace_host_for_load_count_update
 SELECT
@@ -114,26 +104,6 @@ FROM
 WHERE
   w.id = $workspace_id
   AND wh.instance_id = $instance_id;
-
--- BLOCK select_and_lock_pending_launch
-SELECT
-  w.*
-FROM
-  workspaces AS w
-  JOIN workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
-WHERE
-  w.id = $workspace_id
-  AND wh.instance_id = $instance_id
-  AND w.state = 'launching'
-  AND (
-    $launch_uuid::text IS NULL
-    OR (
-      w.launch_uuid = $launch_uuid
-      AND w.version = $version
-    )
-  )
-FOR NO KEY UPDATE OF
-  w;
 
 -- BLOCK set_workspace_launch_uuid
 UPDATE workspaces AS w
