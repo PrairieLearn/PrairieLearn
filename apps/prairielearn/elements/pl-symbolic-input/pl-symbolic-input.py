@@ -2,6 +2,7 @@ import pathlib
 import random
 import re
 from enum import Enum
+from functools import lru_cache
 from sys import get_int_max_str_digits
 from typing import assert_never
 
@@ -718,6 +719,12 @@ def format_formula_editor_submission_for_sympy(
     # but preserve tokens like "f2" that are custom function names
     text = _add_multiplication_spaces(text, known_tokens)
 
+    function_names = frozenset(
+        psu.get_builtin_functions(allow_trig_functions=allow_trig)
+        | set(custom_functions)
+    )
+    text = _wrap_bare_function_arguments(text, function_names)
+
     return text
 
 
@@ -852,6 +859,79 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
         ):
             result.append(" ")
 
+    return "".join(result)
+
+
+@lru_cache(maxsize=128)
+def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+    """
+    Match bare function starts and tokens that affect their argument boundaries.
+
+    Returns:
+        The compiled pattern, cached per set of function names
+    """
+    names = sorted(function_names, key=len, reverse=True)
+    return re.compile(
+        r"(?P<function>(?<![A-Za-z_])(?:"
+        + "|".join(map(re.escape, names))
+        + r")\s+(?=[^\s(]))|(?P<token>\*+|[()\[\]{}+\-/,])"
+    )
+
+
+def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
+    r"""
+    Parenthesize unparenthesized function arguments that are followed by "*".
+
+    The formula editor displays `{\ln 4}\cdot x` as ln(4)·x but submits it as
+    "ln 4 * x". SymPy's implicit function application ends the argument at "+",
+    "-", or "/", but not at "*", so it would parse this as ln(4x).
+
+    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)"
+
+    Returns:
+        The text with those arguments wrapped in parentheses
+    """
+    if not function_names:
+        return text
+    pattern = _bare_function_token_pattern(function_names)
+
+    # Each "(" sorts before a ")" at the same index, which only happens for an
+    # empty argument.
+    insertions: list[tuple[int, str]] = []
+    # Only the first bare function at a given nesting depth can claim the next
+    # multiplication operator; any later one is inside its implicit argument.
+    pending_arguments: dict[int, int] = {}
+    depth = 0
+    for match in pattern.finditer(text):
+        if match.lastgroup == "function":
+            pending_arguments.setdefault(depth, match.end())
+            continue
+
+        token = match.group(0)
+        match token:
+            case "(" | "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
+            case "*":
+                start = pending_arguments.pop(depth, None)
+                if start is not None:
+                    argument_end = match.start()
+                    while argument_end > start and text[argument_end - 1].isspace():
+                        argument_end -= 1
+                    insertions.extend(((start, "("), (argument_end, ")")))
+            case "+" | "-" | "/" | ",":
+                pending_arguments.pop(depth, None)
+            case _:
+                pass
+
+    result = []
+    pos = 0
+    for index, paren in sorted(insertions):
+        result.extend((text[pos:index], paren))
+        pos = index
+    result.append(text[pos:])
     return "".join(result)
 
 

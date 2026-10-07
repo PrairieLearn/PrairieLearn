@@ -166,6 +166,10 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
         # Formatting operators
         ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
+        # Bare function arguments ended by "*" (the editor drops the grouping in `{\ln 4}\cdot`)
+        ("l n 4 * c o t (9x)", True, ["x"], [], "ln (4) * cot (9x)"),
+        ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
+        ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
         # Operators the editor writes in AsciiMath form (\div and \ast)
         ("2 -: x", False, ["x"], [], "2 / x"),
         ("2 ** x", False, ["x"], [], "2 * x"),
@@ -197,6 +201,12 @@ def test_format_formula_editor_submission_for_sympy(
             "4^(c s c (9x)) * (-9∙l n 4) * c o t (9x)c s c (9x)",
             id="report-set-notation",
         ),
+        # Reported as graded incorrect: the editor submits `{\ln 4}\cdot` as "ln 4 *",
+        # which would otherwise be parsed as ln(4*cot(9x)*csc(9x))
+        pytest.param(
+            "-9 * 4^(c s c (9x)) * l n 4 * c o t (9x) * c s c (9x)",
+            id="report-graded-incorrect",
+        ),
         # Pasting "4^(csc(9x))(-9*ln4)*cot(9x)csc(9x)" into the editor
         pytest.param(
             "4^(c s c(9x))(-9∗l n4)∗c o t(9x)c s c(9x)",  # ruff:ignore[ambiguous-unicode-character-string]
@@ -205,7 +215,7 @@ def test_format_formula_editor_submission_for_sympy(
     ],
 )
 def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
-    """Regression test for correct answers rejected as set notation.
+    """Regression test for correct answers rejected as set notation or graded incorrect.
 
     The submissions are the plain text the formula editor sends for the reported answers.
     """
@@ -260,6 +270,23 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
     symbolic_input.parse(element_html, data)
     assert "test" not in data["format_errors"]
     assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 2 - sympy.Symbol("a")
+
+
+def test_formula_editor_deeply_nested_bare_arguments() -> None:
+    depth = 1200
+    submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"
+    expected = "sin (2(" * depth + "x" + " * y))" * depth + " * z"
+    assert (
+        symbolic_input.format_formula_editor_submission_for_sympy(
+            submission, True, ["x", "y", "z"], []
+        )
+        == expected
+    )
+
+    element_html = build_element_html('variables="x,y,z"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": submission})
+    symbolic_input.parse(element_html, data)
+    assert "syntax error" in data["format_errors"]["test"]
 
 
 def test_parse_without_variables_attribute_with_assumptions() -> None:
