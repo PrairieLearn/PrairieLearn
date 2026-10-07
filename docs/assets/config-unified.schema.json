@@ -225,8 +225,8 @@
       "default": 60,
       "type": "number"
     },
-    "workspaceHostMinAvailableDiskBytes": {
-      "default": 10000000000,
+    "workspaceHostMinAvailableDiskMb": {
+      "default": 10000,
       "type": "number",
       "minimum": 0
     },

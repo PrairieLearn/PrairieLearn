@@ -55,8 +55,7 @@ export const ConfigSchema = z.object({
   workspaceDevContainerHostname: z.string().default('host.docker.internal'),
   workspaceHostPort: z.number().default(8081),
   workspaceHostPruneContainersSec: z.number().default(60),
-  /** Minimum available disk space in bytes; defaults to 10 GB. */
-  workspaceHostMinAvailableDiskBytes: z.number().nonnegative().default(10_000_000_000),
+  workspaceHostMinAvailableDiskMb: z.number().nonnegative().default(10_000),
   workspaceHostMinPortRange: z.number().default(1024),
   /**
    * Docker on Windows doesn't support ports above 45000.
