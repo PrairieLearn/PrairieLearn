@@ -330,6 +330,13 @@ export class PrintRenderer {
         throw new Error(`The printable page reported an unexpected status: ${printState.status}`);
       }
 
+      if (html !== undefined) {
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+          await Promise.all(Array.from(document.images, (image) => image.decode()));
+        });
+      }
+
       return await output.produce(page);
     };
 
