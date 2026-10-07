@@ -11,6 +11,7 @@ import html
 import operator
 import re
 import string
+import unicodedata
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -179,6 +180,24 @@ class _Constants:
         "∪": operator.or_,  # ruff:ignore[ambiguous-unicode-character-string]
         "cap": operator.and_,
         "∩": operator.and_,
+    })
+
+    # Unicode operators that the formula editor or common pastes produce. They must
+    # be mapped before unidecode, which would otherwise turn them into "[?]"
+    # (misreported as set notation), drop them, or change their meaning (e.g. the
+    # multiplication sign becomes the letter "x").
+    unicode_operators: Final[FrozenDict[str, str]] = FrozenDict({
+        "·": "*",  # middle dot
+        "×": "*",  # ruff:ignore[ambiguous-unicode-character-string]
+        "•": "*",  # bullet
+        "∗": "*",  # ruff:ignore[ambiguous-unicode-character-string]
+        "∙": "*",  # bullet operator
+        "⋅": "*",  # dot operator
+        "\u2062": "*",  # invisible times
+        "—": "-",  # em dash
+        "―": "-",  # horizontal bar
+        "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
+        "\u2061": "",  # function application
     })
 
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
@@ -728,17 +747,59 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
 
 
 def _normalize_expr(expr: str) -> tuple[str, list[int]]:
-    """Normalize expr and build a mapping from normalized indices to original indices."""
+    """Normalize expr and build a mapping from normalized indices to original indices.
+
+    Returns:
+        A tuple of the normalized expression and, for each of its characters, the
+        index of the character in expr that it came from.
+
+    Raises:
+        HasInvalidSymbolError: If expr contains a character that cannot be transliterated.
+    """
+    const = _Constants
     parts: list[str] = []
     offsets: list[int] = []
     for ind, char in enumerate(expr):
         normalized_char = char
+        if char in const.unicode_operators:
+            normalized_char = const.unicode_operators[char]
+        elif not char.isascii() and unicodedata.decomposition(char).startswith((
+            "<super>",
+            "<sub>",
+        )):
+            # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
+            # writes exponents and subscripts with "^" and "_".
+            raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
-        if char not in _Constants.set_operators:
+        elif char not in const.set_operators:
             normalized_char = full_unidecode(greek_unicode_transform(char))
+            # unidecode uses "[?]" for characters it doesn't know, which would
+            # otherwise be misreported as set notation.
+            if normalized_char == "[?]" and char != normalized_char:
+                raise HasInvalidSymbolError(char)
+
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
+
+
+# The lookahead allows overlapping pairs, so a Unicode sign after "**" is checked.
+_MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
+
+
+def _validate_multiplication(
+    original_expr: str, normalized_expr: str, char_offsets: list[int]
+) -> None:
+    """Reject multiplication signs that normalization would turn into exponentiation."""
+    for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, normalized_expr):
+        left_offset = char_offsets[match.start("left")]
+        right_offset = char_offsets[match.start("right")]
+        if original_expr[right_offset] != "*":
+            raise HasInvalidExpressionError(right_offset)
+        if original_expr[left_offset] != "*":
+            raise HasInvalidExpressionError(left_offset)
+        if match.start("right") > match.end("left"):
+            raise HasInvalidExpressionError(left_offset)
 
 
 def _regex_sub_expr_and_map_offsets(
@@ -793,6 +854,9 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
+        HasInvalidExpressionError: If the expression contains "***", whitespace
+            between two multiplication signs, or a unicode multiplication sign next
+            to another multiplication sign.
         HasSetNotationError: If the expression contains interval or set characters.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
@@ -800,6 +864,7 @@ def evaluate_with_source(
         BaseSympyError: If the expression cannot be evaluated.
     """
     normalized_expr, char_offsets = _normalize_expr(expr)
+    _validate_multiplication(expr, normalized_expr, char_offsets)
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates
@@ -810,6 +875,11 @@ def evaluate_with_source(
     ind = normalized_expr.find("#")
     if ind != -1:
         raise HasCommentError(char_offsets[ind])
+
+    # Python would read "***" (e.g. the formula editor's \star) as "**" followed by
+    # "*", and report the syntax error at an offset into SymPy's transformed code.
+    if stars := re.search(r"\*{3,}", normalized_expr):
+        raise HasInvalidExpressionError(char_offsets[stars.start()])
 
     # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_sets and any(

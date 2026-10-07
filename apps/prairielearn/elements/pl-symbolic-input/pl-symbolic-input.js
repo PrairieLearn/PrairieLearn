@@ -307,6 +307,9 @@
     },
   ];
 
+  // Bullet (U+2022), bullet operator (U+2219), and asterisk operator (U+2217)
+  const unicodeMultiplicationKeys = new Set(['•', '∙', '∗']);
+
   const isSelected = (mf) => {
     const firstSelection = mf.selection?.ranges?.[0];
     return firstSelection && firstSelection[1] !== firstSelection[0];
@@ -635,6 +638,11 @@
         if (ev.key === '\\') {
           ev.preventDefault();
           mf.executeCommand(['insert', '\\backslash']);
+        } else if (unicodeMultiplicationKeys.has(ev.key)) {
+          // MathLive would insert these as \bullet, \textbullet, or \ast, which are
+          // not submitted as multiplication. Treat them like the "×" keyboard key.
+          ev.preventDefault();
+          mf.executeCommand(['insert', '{#@}\\cdot']);
         } else if (ev.key === 'Escape') {
           ev.preventDefault();
         }
