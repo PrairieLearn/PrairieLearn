@@ -588,12 +588,11 @@ def _restore_plus_minus(submission: str, latex: str) -> str | None:
         match.group(0).startswith("\\")
         for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
     ]
-    if not any(from_plus_minus):
-        return submission
-
     parts = submission.split("+-")
     if len(parts) - 1 != len(from_plus_minus):
         return None
+    if not any(from_plus_minus):
+        return submission
 
     result = [parts[0]]
     for is_plus_minus, part in zip(from_plus_minus, parts[1:], strict=True):

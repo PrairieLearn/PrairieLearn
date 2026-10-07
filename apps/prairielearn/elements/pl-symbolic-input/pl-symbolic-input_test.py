@@ -237,6 +237,7 @@ def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
         ("2+-a", "2+-a", "2+-a"),
         # The plain text and LaTeX don't match up
         ("2+-a", r"2\pm a\pm b", None),
+        ("2+-a+-b", "2+-a", None),
     ],
 )
 def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
