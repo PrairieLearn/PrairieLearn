@@ -776,7 +776,7 @@ def _normalize_unicode_source(
     const = _Constants
     parts: list[str] = []
     normalized_offsets: list[int] = []
-    for char, offset in zip(source.text, source, strict=True):
+    for offset, char in source:
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
@@ -952,7 +952,7 @@ def _evaluate_normalized_source(
     allow_extra_symbols: bool,
 ) -> tuple[sympy.Expr, str | CodeType]:
     normalized_expr = source.text
-    char_offsets = list(source)
+    char_offsets = [offset for offset, _char in source]
 
     local_dict = {
         k: v

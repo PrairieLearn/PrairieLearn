@@ -259,7 +259,7 @@ def test_symbolic_input_normalization_preserves_source_offsets(
 ) -> None:
     source = _normalize_symbolic_input(text, formula_editor=formula_editor)
     assert source == symbolic_input.SourceText(expected_text, expected_offsets)
-    assert tuple(source) == expected_offsets
+    assert tuple(source) == tuple(zip(expected_offsets, expected_text, strict=True))
 
 
 def test_symbolic_input_normalization_combines_stages_in_order() -> None:

@@ -23,9 +23,9 @@ class SourceText:
         if len(self.text) != len(self.offsets):
             raise ValueError("SourceText must have one source offset per character")
 
-    def __iter__(self) -> Iterator[int]:
-        """Iterate over the raw source offsets."""
-        return iter(self.offsets)
+    def __iter__(self) -> Iterator[tuple[int, str]]:
+        """Iterate over the raw source offsets of each char."""
+        return zip(self.offsets, self.text, strict=True)
 
     @classmethod
     def from_text(cls, text: str) -> "SourceText":
