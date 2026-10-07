@@ -92,6 +92,8 @@ class Semaphore {
 }
 
 export interface PrintRendererOptions {
+  /** Cloudflare Browser Run credentials. */
+  cloudflare?: { accountId: string; apiToken: string };
   /**
    * A Playwright browser server to connect to instead of launching Chromium locally. The server
    * and application Playwright versions must match.
@@ -107,6 +109,8 @@ export interface PrintRendererOptions {
 
 export interface RenderPageOptions {
   url: string;
+  /** Public page origin used by Cloudflare; the request itself is intercepted. */
+  browserOrigin?: string;
   /** Browser-paginated HTML to serve at `url`. */
   html: string;
   cookieHeader?: string;
@@ -123,6 +127,7 @@ export type RenderPdfOptions = RenderPageOptions;
  * crash or disconnect, and closed by `close()` during shutdown.
  */
 export class PrintRenderer {
+  private readonly cloudflare: PrintRendererOptions['cloudflare'];
   private readonly browserWSEndpoint: string | undefined;
   private readonly defaultTimeoutMs: number;
   private readonly contextCloseGraceMs: number;
@@ -132,11 +137,13 @@ export class PrintRenderer {
   private closed = false;
 
   constructor({
+    cloudflare,
     browserWSEndpoint,
     maxQueuedRenders = DEFAULT_MAX_QUEUED_RENDERS,
     timeoutMs = DEFAULT_RENDER_TIMEOUT_MS,
     contextCloseGraceMs = DEFAULT_CONTEXT_CLOSE_GRACE_MS,
   }: PrintRendererOptions = {}) {
+    this.cloudflare = cloudflare;
     this.browserWSEndpoint = browserWSEndpoint;
     this.defaultTimeoutMs = timeoutMs;
     this.contextCloseGraceMs = contextCloseGraceMs;
@@ -191,6 +198,12 @@ export class PrintRenderer {
   }
 
   private openBrowser(timeoutMs: number): Promise<Browser> {
+    if (this.cloudflare) {
+      return chromium.connectOverCDP(
+        `wss://api.cloudflare.com/client/v4/accounts/${this.cloudflare.accountId}/browser-run/devtools/browser?keep_alive=60000`,
+        { headers: { Authorization: `Bearer ${this.cloudflare.apiToken}` }, timeout: timeoutMs },
+      );
+    }
     return this.browserWSEndpoint
       ? chromium.connect(this.browserWSEndpoint, {
           exposeNetwork: '<loopback>',
@@ -232,12 +245,16 @@ export class PrintRenderer {
   }
 
   private async renderWithPermit<T>(
-    { url, html, cookieHeader, timeoutMs = DEFAULT_RENDER_TIMEOUT_MS }: RenderPageOptions,
+    { url, browserOrigin, html, cookieHeader, timeoutMs = DEFAULT_RENDER_TIMEOUT_MS }: RenderPageOptions,
     output: PrintablePageOutput<T>,
   ): Promise<T> {
     const deadline = timeoutMs === 0 ? null : Date.now() + timeoutMs;
     const remainingTimeoutMs = () => (deadline === null ? 0 : Math.max(1, deadline - Date.now()));
-    const renderOrigin = new URL(url).origin;
+    const localUrl = new URL(url);
+    const navigationUrl = this.cloudflare
+      ? new URL(`${localUrl.pathname}${localUrl.search}`, browserOrigin ?? 'https://example.com').href
+      : url;
+    const renderOrigin = new URL(navigationUrl).origin;
     const browser = await this.getBrowser(remainingTimeoutMs());
 
     const state: { context: BrowserContext | null; timedOut: boolean } = {
@@ -250,9 +267,9 @@ export class PrintRenderer {
       const context = await browser.newContext({
         ignoreHTTPSErrors: true,
         serviceWorkers: 'block',
-        javaScriptEnabled: false,
+        javaScriptEnabled: true,
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
-        ...(cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
+        ...(!this.cloudflare && cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
       });
       state.context = context;
 
@@ -264,7 +281,7 @@ export class PrintRenderer {
         try {
           const request = route.request();
           const requestUrl = new URL(request.url());
-          if (requestUrl.href === url && request.isNavigationRequest()) {
+          if (requestUrl.href === navigationUrl && request.isNavigationRequest()) {
             await route.fulfill({ status: 200, contentType: 'text/html', body: html });
             return;
           }
@@ -278,12 +295,29 @@ export class PrintRenderer {
           }
           // Playwright only routes the first request in a redirect chain, so a redirect could
           // otherwise leave the allowed origin without passing through these checks again.
-          const response = await route.fetch({ maxRedirects: 0 });
-          if (response.status() >= 300 && response.status() < 400) {
-            await route.abort('blockedbyclient');
-            return;
+          if (this.cloudflare) {
+            const assetUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, localUrl.origin);
+            const response = await fetch(assetUrl, {
+              headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+              redirect: 'manual',
+            });
+            if (response.status >= 300 && response.status < 400) {
+              await route.abort('blockedbyclient');
+              return;
+            }
+            await route.fulfill({
+              status: response.status,
+              contentType: response.headers.get('content-type') ?? 'application/octet-stream',
+              body: Buffer.from(await response.arrayBuffer()),
+            });
+          } else {
+            const response = await route.fetch({ maxRedirects: 0 });
+            if (response.status() >= 300 && response.status() < 400) {
+              await route.abort('blockedbyclient');
+              return;
+            }
+            await route.fulfill({ response });
           }
-          await route.fulfill({ response });
         } catch {
           await route.abort('failed').catch(() => undefined);
         }
@@ -294,7 +328,7 @@ export class PrintRenderer {
 
       const page = await context.newPage();
       await page.emulateMedia({ media: 'screen' });
-      const response = await page.goto(url, {
+      const response = await page.goto(navigationUrl, {
         waitUntil: 'load',
         timeout: remainingTimeoutMs(),
       });
@@ -303,6 +337,11 @@ export class PrintRenderer {
         throw new Error(`The printable page returned HTTP ${response.status()}`);
       }
 
+      await page.waitForFunction(
+        () => ['ready', 'error'].includes(document.documentElement.dataset.printStatus ?? ''),
+        undefined,
+        { timeout: remainingTimeoutMs() },
+      );
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
