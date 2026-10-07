@@ -158,6 +158,34 @@ describe('PrintRenderer', () => {
     });
   });
 
+  it('prints pre-paginated HTML without running page scripts or loading the preview route', async () => {
+    const harness = createBrowserHarness();
+    const url = 'http://localhost:3000/paper/preview?paper_size=Letter';
+    const html = '<html data-print-status="ready"><body>Prepared pages</body></html>';
+
+    await new PrintRenderer().renderPdf({ url, html });
+
+    expect(harness.browser.newContext).toHaveBeenCalledExactlyOnceWith({
+      ignoreHTTPSErrors: true,
+      serviceWorkers: 'block',
+      javaScriptEnabled: false,
+    });
+    expect(harness.pages[0].waitForFunction).not.toHaveBeenCalled();
+    const fulfill = vi.fn(async () => undefined);
+    const fetch = vi.fn();
+    await harness.getRouteHandler()!({
+      request: () => ({ url: () => url, isNavigationRequest: () => true }),
+      fulfill,
+      fetch,
+    } as unknown as Route);
+    expect(fulfill).toHaveBeenCalledExactlyOnceWith({
+      status: 200,
+      contentType: 'text/html',
+      body: html,
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('allows same-origin GET requests and blocks everything else', async () => {
     const harness = createBrowserHarness();
     await new PrintRenderer().renderPdf({ url: 'http://localhost:3000/print?paper_size=A4' });

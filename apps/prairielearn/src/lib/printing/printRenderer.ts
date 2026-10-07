@@ -107,6 +107,8 @@ export interface PrintRendererOptions {
 
 export interface RenderPageOptions {
   url: string;
+  /** Pre-paginated HTML to serve at `url` instead of requesting it from the application. */
+  html?: string;
   cookieHeader?: string;
   /** Overrides the renderer's default deadline. `0` disables the deadline. */
   timeoutMs?: number;
@@ -230,7 +232,7 @@ export class PrintRenderer {
   }
 
   private async renderWithPermit<T>(
-    { url, cookieHeader, timeoutMs = DEFAULT_RENDER_TIMEOUT_MS }: RenderPageOptions,
+    { url, html, cookieHeader, timeoutMs = DEFAULT_RENDER_TIMEOUT_MS }: RenderPageOptions,
     output: PrintablePageOutput<T>,
   ): Promise<T> {
     const deadline = timeoutMs === 0 ? null : Date.now() + timeoutMs;
@@ -248,6 +250,7 @@ export class PrintRenderer {
       const context = await browser.newContext({
         ignoreHTTPSErrors: true,
         serviceWorkers: 'block',
+        ...(html !== undefined ? { javaScriptEnabled: false } : {}),
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
         ...(cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
       });
@@ -261,6 +264,10 @@ export class PrintRenderer {
         try {
           const request = route.request();
           const requestUrl = new URL(request.url());
+          if (html !== undefined && requestUrl.href === url && request.isNavigationRequest()) {
+            await route.fulfill({ status: 200, contentType: 'text/html', body: html });
+            return;
+          }
           if (
             request.method() !== 'GET' ||
             requestUrl.origin !== renderOrigin ||
@@ -297,14 +304,16 @@ export class PrintRenderer {
         throw new Error(`The printable page returned HTTP ${response.status()}`);
       }
 
-      await page.waitForFunction(
-        () => {
-          const status = document.documentElement.dataset.printStatus;
-          return status === 'ready' || status === 'error';
-        },
-        undefined,
-        { timeout: remainingTimeoutMs() },
-      );
+      if (html === undefined) {
+        await page.waitForFunction(
+          () => {
+            const status = document.documentElement.dataset.printStatus;
+            return status === 'ready' || status === 'error';
+          },
+          undefined,
+          { timeout: remainingTimeoutMs() },
+        );
+      }
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
