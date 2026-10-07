@@ -53,6 +53,11 @@ math-field::part(content) {
   min-width: 5ch;
   /* Keep the content at a readable size, especially for exponents */
   font-size: 1.2rem;
+  /* Tall glyphs (e.g. a placeholder box in a numerator) extend slightly past
+     the line box; give them headroom so the content's overflow clipping does
+     not cut them off. */
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 /* Ensure that the tooltips appear above any bootstrap elements */
@@ -63,4 +68,20 @@ math-field::part(virtual-keyboard-toggle) {
 .form-control.is-invalid.no-validation-icon {
   background-image: none;
   padding-right: 0.1rem;
+}
+
+/* Per-error prompts under the formula editor. The prompt whose highlight
+   contains the caret is emphasized so students can tell which prompt matches
+   which highlight in the field. */
+.pl-symbolic-input-error-item {
+  display: block;
+}
+
+.pl-symbolic-input-error-item + .pl-symbolic-input-error-item {
+  margin-top: 0.375rem;
+}
+
+.pl-symbolic-input-error-item.pl-symbolic-input-error-active {
+  color: #a71d2a;
+  font-weight: 600;
 }
