@@ -779,6 +779,9 @@ class TestExceptions:
             ("2*×n", 2),  # ruff:ignore[ambiguous-unicode-character-string]
             ("2××n", 2),  # ruff:ignore[ambiguous-unicode-character-string]
             ("2·•n", 2),
+            ("2∙ *n", 1),
+            ("2* ∙n", 3),
+            ("2∙ ∙n", 3),
         ],
     )
     def test_unicode_multiplication_next_to_multiplication(

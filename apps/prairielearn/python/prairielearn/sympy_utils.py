@@ -755,20 +755,18 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
 
     Raises:
         HasInvalidSymbolError: If expr contains a character that cannot be transliterated.
-        HasInvalidExpressionError: If a unicode multiplication sign is next to another
-            multiplication sign, which would otherwise be read as "**".
     """
     const = _Constants
     parts: list[str] = []
     offsets: list[int] = []
-    # Index of the "*" that ends the normalized text so far, and whether it was
-    # mapped from a unicode multiplication sign
-    prev_star: tuple[int, bool] | None = None
     for ind, char in enumerate(expr):
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
-        elif unicodedata.decomposition(char).startswith(("<super>", "<sub>")):
+        elif not char.isascii() and unicodedata.decomposition(char).startswith((
+            "<super>",
+            "<sub>",
+        )):
             # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
             # writes exponents and subscripts with "^" and "_".
             raise HasInvalidSymbolError(char)
@@ -780,17 +778,26 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
             if normalized_char == "[?]" and char != normalized_char:
                 raise HasInvalidSymbolError(char)
 
-        if normalized_char == "*":
-            from_unicode = char != "*"
-            if prev_star is not None and (from_unicode or prev_star[1]):
-                raise HasInvalidExpressionError(ind if from_unicode else prev_star[0])
-            prev_star = (ind, from_unicode)
-        elif normalized_char:
-            prev_star = None
-
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
+
+
+# The lookahead allows overlapping pairs, so a Unicode sign after "**" is checked.
+_MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
+
+
+def _validate_unicode_multiplication(
+    original_expr: str, normalized_expr: str, char_offsets: list[int]
+) -> None:
+    """Reject multiplication signs that normalization would turn into exponentiation."""
+    for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, normalized_expr):
+        left_offset = char_offsets[match.start("left")]
+        right_offset = char_offsets[match.start("right")]
+        if original_expr[right_offset] != "*":
+            raise HasInvalidExpressionError(right_offset)
+        if original_expr[left_offset] != "*":
+            raise HasInvalidExpressionError(left_offset)
 
 
 def _regex_sub_expr_and_map_offsets(
@@ -846,7 +853,8 @@ def evaluate_with_source(
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
         HasInvalidExpressionError: If the expression contains "***" or a unicode
-            multiplication sign next to another multiplication sign.
+            multiplication sign separated only by whitespace from another
+            multiplication sign.
         HasSetNotationError: If the expression contains interval or set characters.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
@@ -854,6 +862,7 @@ def evaluate_with_source(
         BaseSympyError: If the expression cannot be evaluated.
     """
     normalized_expr, char_offsets = _normalize_expr(expr)
+    _validate_unicode_multiplication(expr, normalized_expr, char_offsets)
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates
