@@ -284,6 +284,25 @@ describe('PrintRenderer', () => {
     expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
   });
 
+  it('runs four Cloudflare renders concurrently and queues the next one', async () => {
+    const gate = createGate();
+    const harness = createBrowserHarness({
+      pdf: async () => {
+        await gate.opened;
+        return Buffer.from('%PDF-test');
+      },
+    });
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+    const renders = Array.from({ length: 5 }, (_, index) =>
+      renderPdf(renderer, { url: `http://localhost:3000/print/${index}` }),
+    );
+    await vi.waitFor(() => expect(harness.pages).toHaveLength(4));
+    expect(harness.getPeakOpenContexts()).toBe(4);
+    gate.open();
+    await Promise.all(renders);
+    expect(harness.pages).toHaveLength(5);
+  });
+
   it('renders one page at a time and queues the rest', async () => {
     const gate = createGate();
     const harness = createBrowserHarness({
