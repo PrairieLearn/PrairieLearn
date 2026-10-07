@@ -151,7 +151,6 @@ test.describe('pl-symbolic-input plus-minus', () => {
 
   test('rejects \\pm but accepts a typed "+-"', async ({ page }) => {
     const formulaEditor = page.locator('#symbolic-input-x');
-    const plusMinusError = page.locator('[data-bs-content*="invalid symbol"]');
     await expect(formulaEditor).toBeVisible();
 
     await formulaEditor.press('2');
@@ -160,6 +159,7 @@ test.describe('pl-symbolic-input plus-minus', () => {
     await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('2\\pm y');
     await page.getByRole('button', { name: 'Save only' }).click();
     await expect(formulaEditor).toHaveClass(/is-invalid/);
+    const plusMinusError = page.locator('[data-bs-content*="invalid symbol"]');
     await expect(plusMinusError.first()).toBeAttached();
 
     await fillFormulaEditor(formulaEditor, '');
