@@ -27,7 +27,8 @@ ON CONFLICT (course_instance_id, provider) DO UPDATE
 SET
   encrypted_secret_key = EXCLUDED.encrypted_secret_key,
   created_at = NOW(),
-  created_by = EXCLUDED.created_by
+  created_by = EXCLUDED.created_by,
+  config_version = course_instance_ai_grading_credentials.config_version + 1
 RETURNING
   *;
 

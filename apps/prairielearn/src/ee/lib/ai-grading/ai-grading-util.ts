@@ -56,7 +56,7 @@ import { safeMustacheRender } from '../../../lib/mustache.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
-import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import {
   type CounterClockwiseRotationDegrees,
   type InstanceQuestionAIGradingInfo,
@@ -592,6 +592,7 @@ export async function insertAiGradingJob({
       completion: sanitizeObject(response),
       rotation_correction_degrees: null,
       model: model_id,
+      provider: AI_GRADING_MODEL_PROVIDERS[model_id],
       prompt_tokens: response.usage.inputTokens ?? 0,
       completion_tokens: response.usage.outputTokens ?? 0,
       cost: calculateResponseCost({ model: model_id, usage: response.usage }),
@@ -678,6 +679,7 @@ export async function insertAiGradingJobWithRotationCorrection({
       completion: sanitizeObject(gradingResponseWithRotationCorrection),
       rotation_correction_degrees: rotationCorrectionDegrees,
       model: model_id,
+      provider: AI_GRADING_MODEL_PROVIDERS[model_id],
       prompt_tokens,
       completion_tokens,
       cost,
@@ -780,7 +782,11 @@ export async function setAiGradingLastSelectedModel(
   assessment_question_id: string,
   model_id: AiGradingModelId,
 ) {
-  await execute(sql.set_ai_grading_last_selected_model, { assessment_question_id, model_id });
+  await execute(sql.set_ai_grading_last_selected_model, {
+    assessment_question_id,
+    model_id,
+    provider: AI_GRADING_MODEL_PROVIDERS[model_id],
+  });
 }
 
 const rateLimiter = new RedisRateLimiter({

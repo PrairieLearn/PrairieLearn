@@ -1,5 +1,5 @@
 import { difference } from 'es-toolkit';
-import { afterAll, beforeAll, describe, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type z from 'zod';
 
 import { describeDatabase } from '@prairielearn/postgres-tools';
@@ -23,7 +23,12 @@ const extraDatabaseColumnExceptions: Record<string, string[]> = {
 };
 
 // Schemas not associated with a table.
-const customSchemas = new Set(['IdSchema', 'IntervalSchema', 'QuestionPreferenceValuesSchema']);
+const customSchemas = new Set([
+  'AiGradingModelCapabilitiesSchema',
+  'IdSchema',
+  'IntervalSchema',
+  'QuestionPreferenceValuesSchema',
+]);
 const unusedSchemas = new Set([
   'JsonCommentSchema',
   // TODO: Make this the primary schema after renaming "alternative_groups" to
@@ -55,6 +60,52 @@ function tableNameToSchemaName(tableName: string) {
     .join('');
   return `${pascal}Schema`;
 }
+
+describe('AI grading data contracts', () => {
+  const job = {
+    base_url: null,
+    completion: {},
+    completion_tokens: 200,
+    cost: 0.01,
+    course_id: '1',
+    course_instance_id: '1',
+    grading_job_id: '1',
+    id: '1',
+    job_sequence_id: null,
+    model: 'historical-model',
+    prompt: [],
+    prompt_tokens: 1000,
+    provider: null,
+    rotation_correction_degrees: null,
+  };
+
+  it('reads historical jobs without provider provenance', () => {
+    expect(DbSchemas.AiGradingJobSchema.parse(job)).toEqual(job);
+  });
+
+  it('preserves unknown cost and the custom endpoint independently of the model ID', () => {
+    const customJob = {
+      ...job,
+      base_url: 'https://llm.example.edu/v1',
+      cost: null,
+      provider: 'openai-compatible',
+    };
+    expect(DbSchemas.AiGradingJobSchema.parse(customJob)).toEqual(customJob);
+  });
+
+  it('accepts partial capability preferences and rejects invalid capability values', () => {
+    expect(
+      DbSchemas.AiGradingModelCapabilitiesSchema.parse({
+        'university/model': { images: 'unsupported' },
+      }),
+    ).toEqual({ 'university/model': { images: 'unsupported' } });
+    expect(
+      DbSchemas.AiGradingModelCapabilitiesSchema.safeParse({
+        'university/model': { images: 'sometimes' },
+      }).success,
+    ).toBe(false);
+  });
+});
 
 describe('Database Schema Sync Test', () => {
   beforeAll(async () => {

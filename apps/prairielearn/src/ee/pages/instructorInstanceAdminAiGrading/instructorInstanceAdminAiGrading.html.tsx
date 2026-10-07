@@ -30,7 +30,10 @@ function AddApiKeyModal({
   onSuccess,
 }: {
   show: boolean;
-  providerOptions: readonly { value: string; label: string }[];
+  providerOptions: readonly {
+    value: Exclude<EnumAiGradingProvider, 'openai-compatible'>;
+    label: string;
+  }[];
   credentials: AiGradingApiKeyCredential[];
   onHide: () => void;
   onExited: () => void;
@@ -51,7 +54,10 @@ function AddApiKeyModal({
     watch,
     reset,
     formState: { errors },
-  } = useForm<{ provider: string; apiKey: string }>({
+  } = useForm<{
+    provider: Exclude<EnumAiGradingProvider, 'openai-compatible'>;
+    apiKey: string;
+  }>({
     defaultValues: {
       provider: providerOptions[0].value,
       apiKey: '',
@@ -78,7 +84,7 @@ function AddApiKeyModal({
       <form
         onSubmit={handleSubmit((data) =>
           addMutation.mutate({
-            provider: data.provider as EnumAiGradingProvider,
+            provider: data.provider,
             secret_key: data.apiKey.trim(),
           }),
         )}

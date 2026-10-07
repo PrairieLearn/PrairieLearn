@@ -77,7 +77,7 @@ const addCredentialMutation = t.procedure
   .concat(aiGradingFeatureProcedure)
   .input(
     z.object({
-      provider: EnumAiGradingProviderSchema,
+      provider: EnumAiGradingProviderSchema.exclude(['openai-compatible']),
       secret_key: z.string().trim().min(1),
     }),
   )

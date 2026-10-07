@@ -13,7 +13,12 @@ import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
-export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
+export const EnumAiGradingProviderSchema = z.enum([
+  'openai',
+  'google',
+  'anthropic',
+  'openai-compatible',
+]);
 export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
 export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
@@ -328,9 +333,10 @@ export const AiGradingCreditPoolChangeSchema = z.object({
 export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
 
 export const AiGradingJobSchema = z.object({
+  base_url: z.string().nullable(),
   completion: z.any(),
   completion_tokens: z.number(),
-  cost: z.number(),
+  cost: z.number().nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema,
   grading_job_id: IdSchema,
@@ -339,6 +345,7 @@ export const AiGradingJobSchema = z.object({
   model: z.string(),
   prompt: z.unknown(),
   prompt_tokens: z.number(),
+  provider: EnumAiGradingProviderSchema.nullable(),
   rotation_correction_degrees: z.record(z.string(), z.number()).nullable(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
@@ -523,7 +530,10 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_last_selected_config_version: z.number().int().positive().nullable(),
+  ai_grading_last_selected_credential_id: IdSchema.nullable(),
   ai_grading_last_selected_model: z.string().nullable(),
+  ai_grading_last_selected_provider: EnumAiGradingProviderSchema.nullable(),
   ai_grading_mode: z.boolean(),
   allow_real_time_grading: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
@@ -776,12 +786,23 @@ export const CourseInstanceAccessRuleSchema = z.object({
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
+export const AiGradingModelCapabilitiesSchema = z.record(
+  z.string(),
+  z.object({
+    images: z.enum(['supported', 'unsupported', 'unknown']).optional(),
+    pdf: z.enum(['supported', 'unsupported', 'unknown']).optional(),
+  }),
+);
+
 export const CourseInstanceAiGradingCredentialSchema = z.object({
+  base_url: z.string().nullable(),
+  config_version: z.number().int().positive(),
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   created_by: IdSchema,
   encrypted_secret_key: z.string(),
   id: IdSchema,
+  model_capabilities: AiGradingModelCapabilitiesSchema,
   provider: EnumAiGradingProviderSchema,
 });
 export type CourseInstanceAiGradingCredential = z.infer<

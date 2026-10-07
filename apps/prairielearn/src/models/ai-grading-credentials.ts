@@ -36,7 +36,7 @@ export async function upsertCredential({
   created_by,
 }: {
   course_instance_id: string;
-  provider: EnumAiGradingProvider;
+  provider: Exclude<EnumAiGradingProvider, 'openai-compatible'>;
   encrypted_secret_key: string;
   created_by: string;
 }) {

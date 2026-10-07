@@ -47,6 +47,7 @@ INSERT INTO
     completion,
     rotation_correction_degrees,
     model,
+    provider,
     prompt_tokens,
     completion_tokens,
     cost,
@@ -61,6 +62,7 @@ VALUES
     $completion,
     $rotation_correction_degrees,
     $model,
+    $provider,
     $prompt_tokens,
     $completion_tokens,
     $cost,
@@ -289,7 +291,10 @@ WHERE
 -- BLOCK set_ai_grading_last_selected_model
 UPDATE assessment_questions
 SET
-  ai_grading_last_selected_model = $model_id
+  ai_grading_last_selected_model = $model_id,
+  ai_grading_last_selected_provider = $provider,
+  ai_grading_last_selected_credential_id = NULL,
+  ai_grading_last_selected_config_version = NULL
 WHERE
   id = $assessment_question_id;
 

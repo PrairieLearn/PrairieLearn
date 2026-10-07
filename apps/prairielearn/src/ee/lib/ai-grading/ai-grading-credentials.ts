@@ -1,3 +1,5 @@
+import { assertNever } from '@prairielearn/utils';
+
 import { config } from '../../../lib/config.js';
 import { type CourseInstance, type EnumAiGradingProvider } from '../../../lib/db-types.js';
 import { decryptFromStorage } from '../../../lib/encrypted-storage.js';
@@ -43,13 +45,21 @@ export async function resolveAiGradingKeys(
   };
 
   for (const cred of credentials) {
-    const decryptedKey = decryptFromStorage(cred.encrypted_secret_key);
-    if (cred.provider === 'openai') {
-      keys.openai = { apiKey: decryptedKey, organization: null };
-    } else if (cred.provider === 'google') {
-      keys.google = { apiKey: decryptedKey };
-    } else {
-      keys.anthropic = { apiKey: decryptedKey };
+    switch (cred.provider) {
+      case 'openai':
+        keys.openai = { apiKey: decryptFromStorage(cred.encrypted_secret_key), organization: null };
+        break;
+      case 'google':
+        keys.google = { apiKey: decryptFromStorage(cred.encrypted_secret_key) };
+        break;
+      case 'anthropic':
+        keys.anthropic = { apiKey: decryptFromStorage(cred.encrypted_secret_key) };
+        break;
+      case 'openai-compatible':
+        // Custom endpoints are enabled after all hosts can read their configuration.
+        break;
+      default:
+        assertNever(cred.provider);
     }
   }
 

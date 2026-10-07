@@ -129,6 +129,7 @@ export const AI_GRADING_PROVIDER_DISPLAY_NAMES: Record<EnumAiGradingProvider, st
   openai: 'OpenAI',
   google: 'Google',
   anthropic: 'Anthropic',
+  'openai-compatible': 'Custom provider',
 };
 
 export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) => ({
