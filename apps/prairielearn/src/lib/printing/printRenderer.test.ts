@@ -11,7 +11,21 @@ vi.mock('playwright', () => ({
   chromium: { connect: playwrightMocks.connect, launch: playwrightMocks.launch },
 }));
 
-import { PrintRenderer, QuestionBlockSizeOverflowError } from './printRenderer.js';
+import {
+  PrintRenderer,
+  QuestionBlockSizeOverflowError,
+  type RenderPdfOptions,
+} from './printRenderer.js';
+
+const READY_HTML =
+  '<!doctype html><html data-print-status="ready"><body>Prepared pages</body></html>';
+
+function renderPdf(
+  renderer: PrintRenderer,
+  options: Omit<RenderPdfOptions, 'html'> & { html?: string },
+): Promise<Buffer> {
+  return renderer.renderPdf({ ...options, html: options.html ?? READY_HTML });
+}
 
 interface HarnessOptions {
   response?: Response | null;
@@ -117,11 +131,11 @@ describe('PrintRenderer', () => {
     const harness = createBrowserHarness();
     const renderer = new PrintRenderer({ timeoutMs: 1234 });
 
-    const first = await renderer.renderPdf({
+    const first = await renderPdf(renderer, {
       url: 'https://localhost:3000/print?paper_size=Letter',
       cookieHeader: 'session=test',
     });
-    const second = await renderer.renderPdf({ url: 'https://localhost:3000/print?paper_size=A4' });
+    const second = await renderPdf(renderer, { url: 'https://localhost:3000/print?paper_size=A4' });
 
     expect(first).toEqual(Buffer.from('%PDF-test'));
     expect(second).toEqual(Buffer.from('%PDF-test'));
@@ -134,11 +148,13 @@ describe('PrintRenderer', () => {
     expect(harness.browser.newContext).toHaveBeenNthCalledWith(1, {
       ignoreHTTPSErrors: true,
       serviceWorkers: 'block',
+      javaScriptEnabled: false,
       extraHTTPHeaders: { cookie: 'session=test' },
     });
     expect(harness.browser.newContext).toHaveBeenNthCalledWith(2, {
       ignoreHTTPSErrors: true,
       serviceWorkers: 'block',
+      javaScriptEnabled: false,
     });
     for (const context of harness.contexts) expect(context.close).toHaveBeenCalledOnce();
     expect(harness.browser.close).not.toHaveBeenCalled();
@@ -163,7 +179,7 @@ describe('PrintRenderer', () => {
     const url = 'http://localhost:3000/paper/preview?paper_size=Letter';
     const html = '<html data-print-status="ready"><body>Prepared pages</body></html>';
 
-    await new PrintRenderer().renderPdf({ url, html });
+    await renderPdf(new PrintRenderer(), { url, html });
 
     expect(harness.browser.newContext).toHaveBeenCalledExactlyOnceWith({
       ignoreHTTPSErrors: true,
@@ -188,7 +204,7 @@ describe('PrintRenderer', () => {
 
   it('allows same-origin GET requests and blocks everything else', async () => {
     const harness = createBrowserHarness();
-    await new PrintRenderer().renderPdf({ url: 'http://localhost:3000/print?paper_size=A4' });
+    await renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print?paper_size=A4' });
     const routeHandler = harness.getRouteHandler();
     expect(routeHandler).toBeDefined();
 
@@ -234,7 +250,7 @@ describe('PrintRenderer', () => {
 
   it('aborts requests when fetching their response fails', async () => {
     const harness = createBrowserHarness();
-    await new PrintRenderer().renderPdf({ url: 'http://localhost:3000/print' });
+    await renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print' });
     const routeHandler = harness.getRouteHandler();
     expect(routeHandler).toBeDefined();
 
@@ -257,8 +273,8 @@ describe('PrintRenderer', () => {
     const harness = createBrowserHarness();
     const renderer = new PrintRenderer({ browserWSEndpoint: 'ws://printing-browser:3000/' });
 
-    await renderer.renderPdf({ url: 'http://localhost:3000/print?paper_size=Letter' });
-    await renderer.renderPdf({ url: 'http://localhost:3000/print?paper_size=A4' });
+    await renderPdf(renderer, { url: 'http://localhost:3000/print?paper_size=Letter' });
+    await renderPdf(renderer, { url: 'http://localhost:3000/print?paper_size=A4' });
 
     expect(playwrightMocks.connect).toHaveBeenCalledExactlyOnceWith('ws://printing-browser:3000/', {
       exposeNetwork: '<loopback>',
@@ -279,7 +295,7 @@ describe('PrintRenderer', () => {
     const renderer = new PrintRenderer();
 
     const renders = [0, 1, 2].map((index) =>
-      renderer.renderPdf({ url: `http://localhost:3000/print/${index}` }),
+      renderPdf(renderer, { url: `http://localhost:3000/print/${index}` }),
     );
     await vi.waitFor(() => expect(harness.pages).toHaveLength(1));
     expect(harness.browser.newContext).toHaveBeenCalledOnce();
@@ -305,12 +321,12 @@ describe('PrintRenderer', () => {
     });
     const renderer = new PrintRenderer({ maxQueuedRenders: 2 });
     const accepted = [0, 1, 2].map((index) =>
-      renderer.renderPdf({ url: `http://localhost:3000/print/${index}`, timeoutMs: 0 }),
+      renderPdf(renderer, { url: `http://localhost:3000/print/${index}`, timeoutMs: 0 }),
     );
 
     try {
       await expect(
-        renderer.renderPdf({ url: 'http://localhost:3000/print/overloaded', timeoutMs: 0 }),
+        renderPdf(renderer, { url: 'http://localhost:3000/print/overloaded', timeoutMs: 0 }),
       ).rejects.toThrow('Too many print renders are already waiting');
     } finally {
       gate.open();
@@ -327,11 +343,11 @@ describe('PrintRenderer', () => {
       },
     });
     const renderer = new PrintRenderer();
-    const active = renderer.renderPdf({ url: 'http://localhost:3000/print/active', timeoutMs: 0 });
+    const active = renderPdf(renderer, { url: 'http://localhost:3000/print/active', timeoutMs: 0 });
 
     try {
       await expect(
-        renderer.renderPdf({ url: 'http://localhost:3000/print/waiting', timeoutMs: 10 }),
+        renderPdf(renderer, { url: 'http://localhost:3000/print/waiting', timeoutMs: 10 }),
       ).rejects.toThrow('Timed out after 10 ms waiting to render the PDF');
     } finally {
       gate.open();
@@ -349,8 +365,8 @@ describe('PrintRenderer', () => {
     const renderer = new PrintRenderer();
 
     const results = await Promise.allSettled([
-      renderer.renderPdf({ url: 'http://localhost:3000/print/stalled', timeoutMs: 20 }),
-      renderer.renderPdf({ url: 'http://localhost:3000/print/succeeds', timeoutMs: 2000 }),
+      renderPdf(renderer, { url: 'http://localhost:3000/print/stalled', timeoutMs: 20 }),
+      renderPdf(renderer, { url: 'http://localhost:3000/print/succeeds', timeoutMs: 2000 }),
     ]);
 
     expect(results[0]).toMatchObject({
@@ -372,8 +388,14 @@ describe('PrintRenderer', () => {
     });
     const renderer = new PrintRenderer();
 
-    const first = renderer.renderPdf({ url: 'http://localhost:3000/print/stalled', timeoutMs: 20 });
-    const second = renderer.renderPdf({ url: 'http://localhost:3000/print/next', timeoutMs: 2000 });
+    const first = renderPdf(renderer, {
+      url: 'http://localhost:3000/print/stalled',
+      timeoutMs: 20,
+    });
+    const second = renderPdf(renderer, {
+      url: 'http://localhost:3000/print/next',
+      timeoutMs: 2000,
+    });
 
     try {
       await vi.waitFor(() => expect(harness.contexts[0].close).toHaveBeenCalledOnce());
@@ -397,11 +419,11 @@ describe('PrintRenderer', () => {
     });
     const renderer = new PrintRenderer();
 
-    await renderer.renderPdf({ url: 'http://localhost:3000/print/first' });
+    await renderPdf(renderer, { url: 'http://localhost:3000/print/first' });
     expect(firstBrowser.browser.close).toHaveBeenCalledOnce();
 
     createBrowserHarness();
-    await renderer.renderPdf({ url: 'http://localhost:3000/print/second' });
+    await renderPdf(renderer, { url: 'http://localhost:3000/print/second' });
     expect(playwrightMocks.launch).toHaveBeenCalledTimes(2);
   });
 
@@ -413,13 +435,13 @@ describe('PrintRenderer', () => {
     const renderer = new PrintRenderer({ contextCloseGraceMs: 10 });
 
     await expect(
-      renderer.renderPdf({ url: 'http://localhost:3000/print/stalled', timeoutMs: 20 }),
+      renderPdf(renderer, { url: 'http://localhost:3000/print/stalled', timeoutMs: 20 }),
     ).rejects.toThrow('Timed out after 20 ms rendering the PDF');
     await vi.waitFor(() => expect(harness.browser.close).toHaveBeenCalledOnce());
 
     // The next render gets a fresh browser instead of the discarded one.
     createBrowserHarness();
-    await renderer.renderPdf({ url: 'http://localhost:3000/print/next' });
+    await renderPdf(renderer, { url: 'http://localhost:3000/print/next' });
     expect(playwrightMocks.launch).toHaveBeenCalledTimes(2);
   });
 
@@ -427,9 +449,9 @@ describe('PrintRenderer', () => {
     const harness = createBrowserHarness();
     const renderer = new PrintRenderer();
 
-    await renderer.renderPdf({ url: 'http://localhost:3000/print/first' });
+    await renderPdf(renderer, { url: 'http://localhost:3000/print/first' });
     harness.disconnect();
-    await renderer.renderPdf({ url: 'http://localhost:3000/print/second' });
+    await renderPdf(renderer, { url: 'http://localhost:3000/print/second' });
 
     expect(playwrightMocks.launch).toHaveBeenCalledTimes(2);
   });
@@ -438,7 +460,7 @@ describe('PrintRenderer', () => {
     const harness = createBrowserHarness({ printStatus: 'error', printError: 'Paged.js failed' });
 
     await expect(
-      new PrintRenderer().renderPdf({ url: 'http://localhost:3000/print?paper_size=Letter' }),
+      renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print?paper_size=Letter' }),
     ).rejects.toThrow('The printable page failed: Paged.js failed');
     expect(harness.contexts[0].close).toHaveBeenCalledOnce();
     expect(harness.browser.close).not.toHaveBeenCalled();
@@ -452,7 +474,7 @@ describe('PrintRenderer', () => {
       printErrorCode: 'question-block-size-overflow',
     });
 
-    const render = new PrintRenderer().renderPdf({
+    const render = renderPdf(new PrintRenderer(), {
       url: 'http://localhost:3000/print?paper_size=Letter',
     });
     await expect(render).rejects.toBeInstanceOf(QuestionBlockSizeOverflowError);
@@ -468,7 +490,7 @@ describe('PrintRenderer', () => {
       printErrorCode: 'unknown-print-error',
     });
 
-    const render = new PrintRenderer().renderPdf({
+    const render = renderPdf(new PrintRenderer(), {
       url: 'http://localhost:3000/print?paper_size=Letter',
     });
     await expect(render).rejects.not.toBeInstanceOf(QuestionBlockSizeOverflowError);
@@ -479,13 +501,13 @@ describe('PrintRenderer', () => {
     createBrowserHarness({ printStatus: 'error' });
 
     await expect(
-      new PrintRenderer().renderPdf({ url: 'http://localhost:3000/print?paper_size=Letter' }),
+      renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print?paper_size=Letter' }),
     ).rejects.toThrow('The printable page failed: No pagination error was provided');
   });
 
   it('does not open a browser when closed before an admitted render starts', async () => {
     const renderer = new PrintRenderer();
-    const render = renderer.renderPdf({ url: 'http://localhost:3000/print', timeoutMs: 0 });
+    const render = renderPdf(renderer, { url: 'http://localhost:3000/print', timeoutMs: 0 });
     const failure = render.catch((error: unknown) => error);
 
     await renderer.close();
@@ -497,12 +519,12 @@ describe('PrintRenderer', () => {
   it('rejects missing and unsuccessful page responses', async () => {
     createBrowserHarness({ response: null });
     await expect(
-      new PrintRenderer().renderPdf({ url: 'http://localhost:3000/print?paper_size=Letter' }),
+      renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print?paper_size=Letter' }),
     ).rejects.toThrow('The printable page did not return a response');
 
     createBrowserHarness({ response: { ok: () => false, status: () => 403 } as Response });
     await expect(
-      new PrintRenderer().renderPdf({ url: 'http://localhost:3000/print?paper_size=A4' }),
+      renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print?paper_size=A4' }),
     ).rejects.toThrow('The printable page returned HTTP 403');
   });
 
@@ -515,15 +537,15 @@ describe('PrintRenderer', () => {
       },
     });
     const renderer = new PrintRenderer();
-    const active = renderer.renderPdf({ url: 'http://localhost:3000/print/active', timeoutMs: 0 });
-    const queued = renderer.renderPdf({ url: 'http://localhost:3000/print/queued', timeoutMs: 0 });
+    const active = renderPdf(renderer, { url: 'http://localhost:3000/print/active', timeoutMs: 0 });
+    const queued = renderPdf(renderer, { url: 'http://localhost:3000/print/queued', timeoutMs: 0 });
     await vi.waitFor(() => expect(harness.pages).toHaveLength(1));
 
     await renderer.close();
 
     await expect(queued).rejects.toThrow('The print renderer has been closed');
     expect(harness.browser.close).toHaveBeenCalledOnce();
-    await expect(renderer.renderPdf({ url: 'http://localhost:3000/print/late' })).rejects.toThrow(
+    await expect(renderPdf(renderer, { url: 'http://localhost:3000/print/late' })).rejects.toThrow(
       'The print renderer has been closed',
     );
     gate.open();

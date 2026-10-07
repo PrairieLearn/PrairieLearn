@@ -107,8 +107,8 @@ export interface PrintRendererOptions {
 
 export interface RenderPageOptions {
   url: string;
-  /** Pre-paginated HTML to serve at `url` instead of requesting it from the application. */
-  html?: string;
+  /** Browser-paginated HTML to serve at `url`. */
+  html: string;
   cookieHeader?: string;
   /** Overrides the renderer's default deadline. `0` disables the deadline. */
   timeoutMs?: number;
@@ -250,7 +250,7 @@ export class PrintRenderer {
       const context = await browser.newContext({
         ignoreHTTPSErrors: true,
         serviceWorkers: 'block',
-        ...(html !== undefined ? { javaScriptEnabled: false } : {}),
+        javaScriptEnabled: false,
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
         ...(cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
       });
@@ -264,7 +264,7 @@ export class PrintRenderer {
         try {
           const request = route.request();
           const requestUrl = new URL(request.url());
-          if (html !== undefined && requestUrl.href === url && request.isNavigationRequest()) {
+          if (requestUrl.href === url && request.isNavigationRequest()) {
             await route.fulfill({ status: 200, contentType: 'text/html', body: html });
             return;
           }
@@ -293,7 +293,6 @@ export class PrintRenderer {
       });
 
       const page = await context.newPage();
-      await output.prepare?.(page);
       await page.emulateMedia({ media: 'screen' });
       const response = await page.goto(url, {
         waitUntil: 'load',
@@ -304,16 +303,6 @@ export class PrintRenderer {
         throw new Error(`The printable page returned HTTP ${response.status()}`);
       }
 
-      if (html === undefined) {
-        await page.waitForFunction(
-          () => {
-            const status = document.documentElement.dataset.printStatus;
-            return status === 'ready' || status === 'error';
-          },
-          undefined,
-          { timeout: remainingTimeoutMs() },
-        );
-      }
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
@@ -330,12 +319,10 @@ export class PrintRenderer {
         throw new Error(`The printable page reported an unexpected status: ${printState.status}`);
       }
 
-      if (html !== undefined) {
-        await page.evaluate(async () => {
-          await document.fonts.ready;
-          await Promise.all(Array.from(document.images, (image) => image.decode()));
-        });
-      }
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+        await Promise.all(Array.from(document.images, (image) => image.decode()));
+      });
 
       return await output.produce(page);
     };
