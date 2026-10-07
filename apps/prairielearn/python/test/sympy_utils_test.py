@@ -56,6 +56,17 @@ def test_evaluate() -> None:
         psu.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
 
 
+def test_evaluate_with_set_variable() -> None:
+    set_value = sympy.FiniteSet(1, 2)
+    locals_for_eval: psu.LocalsForEval = {
+        "functions": {},
+        "variables": {"A": set_value},
+        "helpers": {},
+    }
+
+    assert psu.evaluate("A | A", locals_for_eval, allow_sets=True) == set_value
+
+
 class TestSympy:
     SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
@@ -343,6 +354,44 @@ class TestSympy:
             allow_sets=True,
             custom_functions=list(self.FUNCTION_NAMES),
         )
+
+    @pytest.mark.parametrize(
+        "operator",
+        [
+            "U",
+            "cup",
+            "∪",  # ruff:ignore[ambiguous-unicode-character-string]
+            "|",
+            "cap",
+            "∩",
+            "&",
+        ],
+    )
+    def test_set_operators_reject_scalar_variables(self, operator: str) -> None:
+        text = f"x {operator} y"
+        result = psu.try_parse_string_as_sympy(
+            text,
+            ["x", "y"],
+            allow_sets=True,
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "expecting a set, but got a number" in result.error
+        assert (
+            f"<pre>{psu.point_to_error(text, text.index(operator))}</pre>"
+            in result.error
+        )
+
+    def test_set_operators_accept_sets_containing_scalar_variables(self) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "{x} U {y}",
+            ["x", "y"],
+            allow_sets=True,
+        )
+
+        x, y = sympy.symbols("x y")
+        assert isinstance(result, psu.SympyParseSuccess)
+        assert result.expr == sympy.FiniteSet(x, y)
 
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
         result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)

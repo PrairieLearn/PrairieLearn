@@ -106,6 +106,22 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     ) == sympy.FiniteSet(1, 2)
 
 
+@pytest.mark.parametrize("submission", ["x U y", "x cap y"])
+def test_set_operators_reject_scalar_variables(submission: str) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x,y"',
+        'correct-answer="{x,y}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "expecting a set, but got a number" in data["format_errors"]["test"]
+    assert data["submitted_answers"]["test"] is None
+
+
 @pytest.mark.parametrize(
     ("sub", "allow_trig", "variables", "custom_functions", "expected"),
     [
