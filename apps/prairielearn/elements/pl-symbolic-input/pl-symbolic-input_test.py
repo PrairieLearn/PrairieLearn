@@ -104,6 +104,153 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     ) == sympy.FiniteSet(1, 2)
 
 
+def test_set_notation_is_rejected_by_default() -> None:
+    element_html = build_element_html()
+    data = make_question_data(submitted_answers={"test": "{1, 2}"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert data["format_errors"]["test"] == (
+        "Your answer contains set notation, but set notation is not allowed for this question."
+    )
+
+
+@pytest.mark.parametrize(
+    ("allowed_types", "submission"),
+    [
+        ("finite-set, expression", "{1, 2}"),
+        ("finite-set, expression", "x + 1"),
+        ("set", "[0, 5] - {x}"),
+        ("all", "[1, 2]"),
+    ],
+)
+def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'allowed-types="{allowed_types}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+
+def test_parse_rejects_disallowed_value_types() -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        'allowed-types="finite-set"',
+    )
+    data = make_question_data(submitted_answers={"test": "x + 1"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert data["format_errors"]["test"] == (
+        "Your answer uses expression, which this input does not accept. "
+        "Allowed types: finite-set."
+    )
+
+
+def test_prepare_rejects_allow_sets_with_allowed_types() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'allowed-types="all"',
+    )
+
+    with pytest.raises(ValueError, match=r"'allow-sets'.*'allowed-types'"):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+@pytest.mark.parametrize(
+    ("attributes", "correct_answers"),
+    [
+        (['correct-answer="{1, 2}"'], None),
+        ([], {"test": "{1, 2}"}),
+        ([], {"test": psu.sympy_to_json(sympy.FiniteSet(1, 2), allow_sets=True)}),
+    ],
+)
+def test_prepare_rejects_disallowed_correct_answer_type(
+    attributes: list[str], correct_answers: dict[str, Any] | None
+) -> None:
+    element_html = build_element_html('allowed-types="interval"', *attributes)
+    data = make_question_data(correct_answers=correct_answers)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Parsing correct answer.*uses finite-set.*Allowed types: interval",
+    ):
+        symbolic_input.prepare(element_html, data)
+
+
+def test_prepare_accepts_allowed_correct_answer_type() -> None:
+    element_html = build_element_html(
+        'allowed-types="interval"',
+        'correct-answer="[1, 2] U [3, 4]"',
+    )
+    data = make_question_data()
+
+    symbolic_input.prepare(element_html, data)
+
+    assert data["correct_answers"]["test"] == "[1, 2] U [3, 4]"
+
+
+@pytest.mark.parametrize(
+    ("allowed_types", "correct_answer", "expected_type"),
+    [
+        ("all", "5", sympy.Expr),
+        ("expression", "infty", sympy.Expr),
+        ("finite-set", "{5}", sympy.FiniteSet),
+        ("interval", "(5, 6)", sympy.Interval),
+    ],
+)
+def test_incorrect_answer_uses_an_allowed_type_and_avoids_collision(
+    monkeypatch: pytest.MonkeyPatch,
+    allowed_types: str,
+    correct_answer: str,
+    expected_type: type[sympy.Basic],
+) -> None:
+    monkeypatch.setattr(symbolic_input.random, "randint", lambda _start, _end: 5)
+    element_html = build_element_html(f'allowed-types="{allowed_types}"')
+    data = make_question_data(correct_answers={"test": correct_answer})
+    data["test_type"] = "incorrect"
+
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    submitted_answer = psu.json_to_sympy(
+        data["submitted_answers"]["test"], allow_sets=True
+    )
+    assert isinstance(submitted_answer, expected_type)
+    assert submitted_answer != psu.convert_string_to_sympy(
+        correct_answer, allow_sets=True
+    )
+
+
+def test_correct_answer_generation_round_trips_set_domains() -> None:
+    element_html = build_element_html('allow-sets="true"')
+    data = make_question_data(
+        correct_answers={
+            "test": psu.sympy_to_json(sympy.S.Reals, allow_sets=True),
+        }
+    )
+    data["test_type"] = "correct"
+
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert (
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
+        == sympy.S.Reals
+    )
+
+
 @pytest.mark.parametrize(
     ("sub", "allow_trig", "variables", "custom_functions", "expected"),
     [
@@ -399,6 +546,6 @@ def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     data = make_question_data(submitted_answers={"test": "1"})
 
     with pytest.raises(
-        ValueError, match=(r"'additional-simplifications'.*'allow-sets'")
+        ValueError, match=(r"'additional-simplifications'.*'allowed-types'")
     ):
         symbolic_input.prepare(element_html, data)
