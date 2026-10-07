@@ -937,13 +937,14 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
     """Compare set components as expressions instead of by structure."""
-    if a == b:
+    if a is b or a == b:
         return True
 
-    if isinstance(a, sympy.FiniteSet) and isinstance(b, sympy.FiniteSet):
-        # Without simplification, a set can list equivalent members separately
-        # (e.g. {x + 0, x - 0} is {x}), so sets of different sizes can be equal.
-        # Members with an exact match in the other set are already covered.
+    if isinstance(a, (sympy.FiniteSet, sympy.Union, sympy.Intersection)) and type(
+        a
+    ) is type(b):
+        # Set members and commutative set-operation components can be equivalent
+        # without being structurally equal. Exact matches are already covered.
         a_members, b_members = set(a.args), set(b.args)
         return all(
             any(_sympy_values_equal(value, candidate) for candidate in b_members)
@@ -959,6 +960,12 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
             and a.right_open == b.right_open
             and _sympy_values_equal(a.start, b.start)
             and _sympy_values_equal(a.end, b.end)
+        )
+
+    if isinstance(a, sympy.Complement) and isinstance(b, sympy.Complement):
+        return len(a.args) == len(b.args) and all(
+            _sympy_values_equal(a_arg, b_arg)
+            for a_arg, b_arg in zip(a.args, b.args, strict=True)
         )
 
     if isinstance(a, sympy.Expr) and isinstance(b, sympy.Expr):

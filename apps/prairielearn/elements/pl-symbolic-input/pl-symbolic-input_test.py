@@ -528,6 +528,32 @@ def test_unsimplified_set_submission_grades_after_json_round_trip(
     assert data["partial_scores"]["test"]["score"] == expected_score
 
 
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "expected_score"),
+    [
+        ("[0, (x + 1)^2] U {y}", "[0, x^2 + 2*x + 1] U {y}", 1),
+        ("[0, x] U {y}", "(0, x + 0] U {y}", 0),
+    ],
+)
+def test_unsimplified_composite_set_submission_grades_after_json_round_trip(
+    correct_answer: str, submission: str, expected_score: int
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x, y"',
+        'display-simplified-expression="false"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == expected_score
+
+
 def test_unsimplified_symbolic_set_difference_round_trips() -> None:
     element_html = build_element_html(
         'allow-sets="true"',
