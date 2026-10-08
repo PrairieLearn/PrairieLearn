@@ -6,7 +6,6 @@ from prairielearn.sympy_utils import ...
 """
 
 import ast
-import copy
 import html
 import operator
 import re
@@ -57,6 +56,17 @@ Examples:
 """
 
 ASTWhiteListT = tuple[type[ast.AST], ...]
+
+
+def _load_sympy_globals() -> FrozenDict[str, Any]:
+    # Based on code here:
+    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
+    sympy_globals: DICT = {}
+    exec("from sympy import *", sympy_globals)
+    return FrozenDict(sympy_globals)
+
+
+_SYMPY_GLOBALS: Final[FrozenDict[str, Any]] = _load_sympy_globals()
 
 
 class SympyJson(TypedDict):
@@ -932,14 +942,8 @@ def evaluate_with_source(
         for k, v in cast(SympyMapT, inner_dict).items()
     }
 
-    # Based on code here:
-    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
-
-    # Global dict is set up to be very permissive for parsing purposes
-    # (makes it cleaner to call this function with a custom locals dict).
-    # This line shouldn't be dangerous, as it's just loading the global dict.
-    global_dict = {}
-    exec("from sympy import *", global_dict)
+    # Keep mutations made during one parse from affecting later parses.
+    global_dict = dict(_SYMPY_GLOBALS)
 
     transformations = (
         *sympy_parser.standard_transformations,
@@ -971,7 +975,11 @@ def evaluate_with_source(
         raise HasParseError(-1) from exc
 
     # First do AST check, mainly for security
-    parsed_locals_to_eval = copy.deepcopy(locals_for_eval)
+    parsed_locals_to_eval: LocalsForEval = {
+        "functions": locals_for_eval["functions"].copy(),
+        "variables": locals_for_eval["variables"].copy(),
+        "helpers": locals_for_eval["helpers"].copy(),
+    }
 
     # Add locals that appear after sympy stringification
     # This check is only for safety, so won't change what gets parsed

@@ -56,6 +56,23 @@ def test_evaluate() -> None:
         psu.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
 
 
+def test_evaluate_does_not_mutate_locals() -> None:
+    z = sympy.Symbol("z")
+    f = sympy.Function("f")
+    locals_for_eval: psu.LocalsForEval = {
+        "functions": {"f": f},
+        "variables": {"z": z},
+        "helpers": {},
+    }
+
+    assert psu.evaluate("f(z)", locals_for_eval=locals_for_eval) == f(z)
+    assert locals_for_eval == {
+        "functions": {"f": f},
+        "variables": {"z": z},
+        "helpers": {},
+    }
+
+
 class TestSympy:
     SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
