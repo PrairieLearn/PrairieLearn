@@ -6,7 +6,7 @@ import { appErrorFormatter } from '@prairielearn/trpc/server';
 
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
+export function createContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'assessment'>;
 
   return {
@@ -15,6 +15,7 @@ export function createContext({ res }: CreateExpressContextOptions) {
     assessment: locals.assessment,
     authz_data: locals.authz_data,
     authn_user: locals.authn_user,
+    cookieHeader: req.get('cookie'),
     locals,
   };
 }

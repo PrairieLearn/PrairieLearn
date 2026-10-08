@@ -219,6 +219,7 @@ nav:
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
           - 'Remote exams': 'assessment/remoteExams.md'
+          - 'Printable exams': 'assessment/printableExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
           - 'Overview': question/overview.md
