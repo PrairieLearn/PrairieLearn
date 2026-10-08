@@ -277,7 +277,7 @@ describe('PrintRenderer', () => {
     await renderPdf(renderer, { url: 'http://localhost:3000/print?paper_size=A4' });
 
     expect(playwrightMocks.connectOverCDP).toHaveBeenCalledExactlyOnceWith(
-      'wss://api.cloudflare.com/client/v4/accounts/account/browser-run/devtools/browser?keep_alive=60000',
+      'wss://api.cloudflare.com/client/v4/accounts/account/browser-run/devtools/browser?keep_alive=180000',
       { headers: { Authorization: 'Bearer token' }, timeout: 120_000 },
     );
     expect(playwrightMocks.launch).not.toHaveBeenCalled();

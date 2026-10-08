@@ -7,13 +7,11 @@ Utilities for rendering printable HTML as PDFs and namespacing question HTML so 
 `PrintRenderer` turns a paginated printable page into a PDF (`renderPdf`). Create one renderer per process and keep it for the life of the process. For example, from a caller in `src/lib`:
 
 ```ts
+import { getPrintingCloudflareConfig } from './config.js';
 import { PrintRenderer } from './printing/printRenderer.js';
 
 const renderer = new PrintRenderer({
-  cloudflare: {
-    accountId: config.printingCloudflareAccountId,
-    apiToken: config.printingCloudflareApiToken,
-  },
+  cloudflare: getPrintingCloudflareConfig(),
 });
 const pdf = await renderer.renderPdf({
   url: previewUrl,
@@ -25,7 +23,7 @@ await renderer.close(); // during shutdown
 
 The renderer connects to one Cloudflare browser on first use and runs up to four independent contexts concurrently. Another 64 requests may wait, bounded by the 120-second end-to-end deadline. Local development uses one Chromium render at a time and a queue of 16. Set `maxConcurrentRenders` or `maxQueuedRenders` to override those limits. Each render has its own short-lived context. A browser that disconnects is reconnected on the next render, and `close()` rejects queued renders and closes the browser.
 
-Set `printingCloudflareAccountId` and `printingCloudflareApiToken` to use Cloudflare Browser Run. The token needs Browser Run Edit permission. The renderer connects over CDP and forwards same-origin asset GET requests from the application server without sending the instructor's cookie to Cloudflare. Without Cloudflare credentials, a Playwright-compatible Chromium executable must be installed locally for development and tests.
+Set both `printingCloudflareAccountId` and `printingCloudflareApiToken` on chunk servers to use Cloudflare Browser Run. Production servers that are not chunk consumers ignore the credentials; local development can still use them. If both are unset, the renderer uses local Chromium. A missing or empty value in either setting is a configuration error. The token needs Browser Run Edit permission. The renderer connects over CDP and forwards same-origin asset GET requests from the application server without sending the instructor's cookie to Cloudflare. Without Cloudflare credentials, a Playwright-compatible Chromium executable must be installed locally for development and tests.
 
 Set `runScripts: true` when preparing a fresh preview from server-generated question HTML. PDF exports use the completed, script-free page snapshot with scripts disabled. Word exports enable scripts for their browser-side document builder after validating the static snapshot.
 

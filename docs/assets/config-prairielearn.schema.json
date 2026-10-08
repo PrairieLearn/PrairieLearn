@@ -170,6 +170,14 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "printingCloudflareAccountId": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "printingCloudflareApiToken": {
+      "default": null,
+      "type": ["string", "null"]
+    },
     "runMigrations": {
       "default": true,
       "type": "boolean"
