@@ -128,21 +128,6 @@ ORDER BY
   iq_stable_order,
   iq.id;
 
--- BLOCK update_instance_questions
-UPDATE instance_questions AS iq
-SET
-  requires_manual_grading = CASE
-    WHEN $update_requires_manual_grading THEN $requires_manual_grading
-    ELSE requires_manual_grading
-  END,
-  assigned_grader = CASE
-    WHEN $update_assigned_grader THEN $assigned_grader
-    ELSE assigned_grader
-  END
-WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND iq.id = ANY ($instance_question_ids::bigint[]);
-
 -- BLOCK select_rubric_settings_context_keys
 SELECT DISTINCT
   ON (v.id) ARRAY(

@@ -16,6 +16,7 @@ import {
   AssessmentSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
+  type Rubric,
 } from './db-types.js';
 import { insertIssue } from './issues.js';
 
@@ -78,23 +79,11 @@ export async function updateInstanceQuestionGrade({
       return;
     }
 
-    const computedPoints = run(() => {
-      if (assessment.type === 'Exam') {
-        return computeInstanceQuestionPointsExam({
-          assessmentQuestion,
-          instanceQuestion,
-          submissionScore,
-        });
-      }
-      if (assessment.type === 'Homework') {
-        return computeInstanceQuestionPointsHomework({
-          assessment,
-          assessmentQuestion,
-          instanceQuestion,
-          submissionScore,
-        });
-      }
-      throw new Error(`Unknown assessment type: ${assessment.type}`);
+    const computedPoints = computeInstanceQuestionPoints({
+      assessment,
+      assessmentQuestion,
+      instanceQuestion,
+      submissionScore,
     });
     const points = (computedPoints.auto_points ?? 0) + (instanceQuestion.manual_points ?? 0);
 
@@ -110,6 +99,75 @@ export async function updateInstanceQuestionGrade({
     });
     await updateInstanceQuestionStats({ instanceQuestion });
   });
+}
+
+function computeInstanceQuestionPoints({
+  assessment,
+  assessmentQuestion,
+  instanceQuestion,
+  submissionScore,
+}: {
+  assessment: Assessment;
+  assessmentQuestion: AssessmentQuestion;
+  instanceQuestion: InstanceQuestion;
+  submissionScore: number;
+}): InstanceQuestionsPoints {
+  if (assessment.type === 'Exam') {
+    return computeInstanceQuestionPointsExam({
+      assessmentQuestion,
+      instanceQuestion,
+      submissionScore,
+    });
+  }
+  return computeInstanceQuestionPointsHomework({
+    assessment,
+    assessmentQuestion,
+    instanceQuestion,
+    submissionScore,
+  });
+}
+
+/** The additional points a pending submission could earn if awarded full credit. */
+export function computeInstanceQuestionPendingPoints({
+  assessment,
+  assessmentQuestion,
+  instanceQuestion,
+  rubric = null,
+  autoGradingPending,
+}: {
+  assessment: Assessment;
+  assessmentQuestion: AssessmentQuestion;
+  instanceQuestion: InstanceQuestion;
+  rubric?: Rubric | null;
+  autoGradingPending: boolean;
+}): number {
+  if (instanceQuestion.status === 'unanswered') return 0;
+  const manualReplacesAuto =
+    rubric?.replace_auto_points || (!rubric && !assessmentQuestion.max_manual_points);
+  const manualPending = instanceQuestion.requires_manual_grading
+    ? Math.max(
+        0,
+        (manualReplacesAuto
+          ? (assessmentQuestion.max_points ?? 0) - (instanceQuestion.auto_points ?? 0)
+          : (assessmentQuestion.max_manual_points ?? 0)) +
+          (rubric?.max_extra_points ?? 0) -
+          (instanceQuestion.manual_points ?? 0),
+      )
+    : 0;
+  const autoPending = run(() => {
+    if (!autoGradingPending || !assessmentQuestion.max_auto_points) return 0;
+    const perfectGrade = computeInstanceQuestionPoints({
+      assessment,
+      assessmentQuestion,
+      instanceQuestion,
+      submissionScore: 1,
+    });
+    return Math.max(0, (perfectGrade.auto_points ?? 0) - (instanceQuestion.auto_points ?? 0));
+  });
+  if (instanceQuestion.requires_manual_grading && manualReplacesAuto) {
+    return Math.max(manualPending, autoPending);
+  }
+  return manualPending + autoPending;
 }
 
 function computeInstanceQuestionPointsExam({

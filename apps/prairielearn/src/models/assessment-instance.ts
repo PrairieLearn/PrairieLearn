@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryScalar, queryScalars } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
 
@@ -56,6 +57,23 @@ export async function selectAssessmentInstanceById(
 
 export async function selectAssessmentHasInstances(assessment_id: string): Promise<boolean> {
   return await queryScalar(sql.select_assessment_has_instances, { assessment_id }, z.boolean());
+}
+
+/** Select conservative candidates; the pending-score refresh checks the latest submission. */
+export async function selectAssessmentInstanceIdsForPendingScoreRefresh({
+  course_instance_id = null,
+  start_id = null,
+  end_id = null,
+}: {
+  course_instance_id?: string | null;
+  start_id?: string | null;
+  end_id?: string | null;
+}): Promise<string[]> {
+  return await queryScalars(
+    sql.select_assessment_instance_ids_for_pending_score_refresh,
+    { course_instance_id, start_id, end_id },
+    IdSchema,
+  );
 }
 
 export async function insertGroupAssessmentInstance({

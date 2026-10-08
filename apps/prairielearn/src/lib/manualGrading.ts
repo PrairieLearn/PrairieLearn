@@ -13,7 +13,10 @@ import { IdSchema } from '@prairielearn/zod';
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
-import { updateAssessmentInstanceGrade } from './assessment-grading.js';
+import {
+  updateAssessmentInstanceGrade,
+  updateAssessmentInstancesScorePending,
+} from './assessment-grading.js';
 import {
   type Assessment,
   type AssessmentQuestion,
@@ -310,6 +313,12 @@ export async function updateAssessmentQuestionRubric({
       { assessment_question_id },
       AssessmentQuestionSchema,
     );
+    // Match submission/grading lock order before recomputing any question scores.
+    const assessmentInstanceIds = await sqldb.queryScalars(
+      sql.lock_assessment_instances_for_manual_grading,
+      { assessment_question_id, instance_question_ids: null },
+      IdSchema,
+    );
 
     if (use_rubric) {
       const max_points =
@@ -392,7 +401,14 @@ export async function updateAssessmentQuestionRubric({
     }
 
     if (tag_for_manual_grading) {
-      await sqldb.execute(sql.tag_for_manual_grading, { assessment_question_id });
+      await updateInstanceQuestionsManualGrading({
+        assessment_question_id,
+        instance_question_ids: null,
+        requires_manual_grading: true,
+        authn_user_id,
+      });
+    } else {
+      await updateAssessmentInstancesScorePending(assessmentInstanceIds, authn_user_id);
     }
   });
 }
@@ -619,6 +635,11 @@ export async function updateInstanceQuestionScore({
           : 0);
       score.manual_score_perc = undefined;
       manual_rubric_grading_id = manual_rubric_grading.id;
+      if (manual_rubric_grading.replace_auto_points && current_submission.max_auto_points) {
+        // A rubric applied to the total supersedes unresolved automatic grading.
+        new_auto_points ??= current_submission.auto_points ?? 0;
+        new_auto_score_perc = (new_auto_points * 100) / current_submission.max_auto_points;
+      }
     } else if (
       current_submission.manual_rubric_id &&
       score.points == null &&
@@ -631,6 +652,17 @@ export async function updateInstanceQuestionScore({
     } else {
       // If the manual_points will be updated and the rubric grading has not been set, clear the rubric grading.
       manual_rubric_grading_id = null;
+    }
+
+    if (
+      current_submission.max_auto_points &&
+      score.manual_score_perc == null &&
+      score.manual_points == null &&
+      (score.score_perc != null || score.points != null)
+    ) {
+      // A total-score override supersedes unresolved automatic grading for this submission.
+      new_auto_points ??= current_submission.auto_points ?? 0;
+      new_auto_score_perc = (new_auto_points * 100) / current_submission.max_auto_points;
     }
 
     if (score.manual_score_perc != null) {
@@ -717,6 +749,11 @@ export async function updateInstanceQuestionScore({
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
           is_ai_graded,
         });
+        if (new_auto_points != null) {
+          await sqldb.execute(sql.cancel_superseded_automatic_grading, {
+            submission_id: current_submission.submission_id,
+          });
+        }
       }
     }
 
@@ -752,5 +789,42 @@ export async function updateInstanceQuestionScore({
       grading_job_id,
       modified_at_conflict: current_submission.modified_at_conflict,
     };
+  });
+}
+
+export async function updateInstanceQuestionsManualGrading({
+  assessment_question_id,
+  instance_question_ids,
+  requires_manual_grading,
+  assigned_grader,
+  authn_user_id,
+}: {
+  assessment_question_id: string;
+  instance_question_ids: string[] | null;
+  requires_manual_grading?: boolean;
+  assigned_grader?: string | null;
+  authn_user_id: string;
+}) {
+  await sqldb.runInTransactionAsync(async () => {
+    // Submission and grading paths lock the assessment instance before its questions.
+    const assessmentInstanceIds =
+      requires_manual_grading !== undefined
+        ? await sqldb.queryScalars(
+            sql.lock_assessment_instances_for_manual_grading,
+            { assessment_question_id, instance_question_ids },
+            IdSchema,
+          )
+        : [];
+    await sqldb.execute(sql.update_instance_questions_manual_grading, {
+      assessment_question_id,
+      instance_question_ids,
+      update_requires_manual_grading: requires_manual_grading !== undefined,
+      requires_manual_grading: requires_manual_grading ?? null,
+      update_assigned_grader: assigned_grader !== undefined,
+      assigned_grader: assigned_grader ?? null,
+    });
+    if (requires_manual_grading !== undefined) {
+      await updateAssessmentInstancesScorePending(assessmentInstanceIds, authn_user_id);
+    }
   });
 }

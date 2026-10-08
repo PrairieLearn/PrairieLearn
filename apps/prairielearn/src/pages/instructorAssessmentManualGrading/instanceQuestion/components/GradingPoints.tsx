@@ -93,7 +93,7 @@ export function GradingPoints({
         </InputGroup>
       )}
 
-      {!inputVisible && (
+      {!inputVisible && type === 'manual' && (
         <input
           key={`${type}-${usePercentage ? 'percentage' : 'points'}-hidden-input`}
           type="number"
@@ -106,7 +106,7 @@ export function GradingPoints({
         />
       )}
 
-      {showPercentage && (
+      {showPercentage && (type === 'manual' || editing) && (
         <input
           key={`${type}-${usePercentage ? 'points' : 'percentage'}-hidden-input`}
           type="number"
