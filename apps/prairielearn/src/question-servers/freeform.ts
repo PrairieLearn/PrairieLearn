@@ -57,6 +57,7 @@ const debug = debugfn('prairielearn:freeform');
 type Phase = 'generate' | 'prepare' | 'render' | 'parse' | 'grade' | 'test' | 'file';
 
 interface QuestionProcessingContext {
+  maxFileBytes?: number;
   course: Course;
   question: Question;
   course_dir: string;
@@ -372,6 +373,7 @@ async function execPythonServer(
       pythonFile,
       pythonFunction,
       pythonArgs,
+      context.maxFileBytes,
     );
     debug('execPythonServer(): completed');
     return { result, output };
@@ -516,6 +518,7 @@ async function processQuestionPhase<T>(
       'question.html',
       phase,
       [pythonContext, data],
+      context.maxFileBytes,
     );
     result = res.result;
     output = res.output;
@@ -553,7 +556,7 @@ async function processQuestionPhase<T>(
     // to change the top-level shape of the data.
     data: result?.data ?? data,
     html: result?.html ?? '',
-    fileData: Buffer.from(result?.file ?? '', 'base64'),
+    fileData: decodeGeneratedFile(result?.file ?? '', context.maxFileBytes),
     renderedElementNames: result?.processed_elements ?? [],
   };
 }
@@ -702,7 +705,7 @@ async function processQuestionServer<T extends ExecutionData>(
   } else if (phase === 'file') {
     // Convert ret_val from base64 back to buffer (this always works,
     // whether or not ret_val is valid base64)
-    const buf = Buffer.from(result, 'base64');
+    const buf = decodeGeneratedFile(result, context.maxFileBytes);
 
     // If the buffer has non-zero length...
     if (buf.length > 0) {
@@ -1560,19 +1563,36 @@ export async function render({
   });
 }
 
-export async function file(
-  filename: string,
-  variant: Variant,
-  submission: Submission | null,
-  question: Question,
-  course: Course,
-  caller: QuestionCaller,
-): QuestionServerReturnValue<Buffer> {
+function decodeGeneratedFile(base64: string, maxFileBytes?: number): Buffer {
+  if (maxFileBytes !== undefined && Buffer.byteLength(base64, 'base64') > maxFileBytes) {
+    throw new Error(`Generated file exceeds the size limit of ${maxFileBytes} bytes`);
+  }
+  return Buffer.from(base64, 'base64');
+}
+
+export async function file({
+  filename,
+  variant,
+  submission,
+  question,
+  course,
+  caller,
+  maxFileBytes,
+}: {
+  filename: string;
+  variant: Variant;
+  submission: Submission | null;
+  question: Question;
+  course: Course;
+  caller: QuestionCaller;
+  maxFileBytes?: number;
+}): QuestionServerReturnValue<Buffer> {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
     if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
 
     const context = await getContext(question, course);
+    if (maxFileBytes !== undefined) context.maxFileBytes = maxFileBytes;
     const userContext = await buildQuestionUserContext({
       question,
       course,
@@ -1615,7 +1635,7 @@ export async function file(
     span.setAttribute('cache.status', cacheHit ? 'hit' : 'miss');
 
     const { courseIssues, fileDataBase64 } = cachedData;
-    const fileData = Buffer.from(fileDataBase64, 'base64');
+    const fileData = decodeGeneratedFile(fileDataBase64, maxFileBytes);
     return { courseIssues, data: fileData };
   });
 }

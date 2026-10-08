@@ -117,6 +117,7 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
         variant_course: context.variantCourse,
         user_id: context.userId,
         authn_user_id: context.authnUserId,
+        maxFileBytes: MAX_IMAGE_BYTES,
       });
     } else {
       // Same-origin URLs must identify an asset for this question, never an arbitrary server route.

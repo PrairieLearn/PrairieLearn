@@ -13,6 +13,7 @@ interface ExecutorRequest {
   fcn: string;
   args: any[];
   forbidden_modules: string[];
+  max_file_bytes?: number;
 }
 
 export interface ExecutorResults {
@@ -83,6 +84,7 @@ export async function handleInput(
       request.file,
       request.fcn,
       request.args,
+      request.max_file_bytes,
     ));
   } catch (err: any) {
     callErr = err;
