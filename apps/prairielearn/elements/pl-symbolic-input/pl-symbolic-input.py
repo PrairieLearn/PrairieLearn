@@ -634,15 +634,11 @@ def format_submission_for_sympy(
     bar_pattern = re.compile(r"\|")
     search_from = 0
     preceding_bars: list[int] = []
-    while True:
+    while match := pattern.search(sub, search_from):
         # Find matches of |...| where:
         # when ignoring spaces, it either:
         # - starts with letter/number/opening paren/plus/minus and ends with letter/number/closing/exclamation mark paren
         # - is a single leter/number
-        match = pattern.search(sub, search_from)
-        if not match:
-            break
-
         # Retain passed bars so nested matches can resume from the nearest one
         # without repeatedly scanning the processed prefix.
         preceding_bars.extend(
