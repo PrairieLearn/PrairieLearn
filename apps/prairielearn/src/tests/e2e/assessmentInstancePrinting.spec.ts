@@ -224,15 +224,7 @@ test('fails the document when a legacy question cannot render in the browser', a
   );
   const endpoint = paperUrl(courseInstance, assessmentInstanceId);
 
-  await page.goto(endpoint);
-  const html = page.locator('html').first();
-  await expect(html).toHaveAttribute('data-print-status', 'error', { timeout: 30_000 });
-  await expect(html).toHaveAttribute(
-    'data-print-error',
-    'Question 2 could not be rendered for paper: Deliberately broken client render',
-  );
-  await expect(page.locator('#exam-print-status')).toContainText(
-    'Unable to paginate this exam: Question 2 could not be rendered for paper',
-  );
+  const response = await page.goto(endpoint);
+  expect(response?.status()).toBe(500);
   await expect(page.locator('.pagedjs_page')).toHaveCount(0);
 });

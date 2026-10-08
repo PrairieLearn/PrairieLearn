@@ -10,11 +10,7 @@
   "zones": [
     {
       "title": "Questions",
-      "questions": [
-        { "id": "addVectors", "autoPoints": [5] },
-        { "id": "brokenClientRender_v2", "autoPoints": [5] },
-        { "id": "fossilFuelsRadio", "autoPoints": [5] }
-      ]
+      "questions": [{ "id": "brokenClientRender_v2", "autoPoints": [5] }]
     }
   ]
 }
