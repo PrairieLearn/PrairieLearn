@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { Packer } from 'docx';
 import * as unzipper from 'unzipper';
@@ -61,7 +62,7 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   });
   await page.addStyleTag({ content: '@page { size: Letter; }' });
   await page.addScriptTag({
-    path: path.join(appDirectory, 'node_modules/pagedjs/dist/paged.polyfill.min.js'),
+    path: fileURLToPath(new URL('../dist/paged.polyfill.min.js', import.meta.resolve('pagedjs'))),
   });
   await page.addScriptTag({
     path: path.join(buildDirectory, manifest['scripts/examPrintingClient.ts'].assetPath),
