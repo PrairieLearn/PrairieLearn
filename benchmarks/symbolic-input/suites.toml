@@ -8,6 +8,16 @@ lifecycles = ["warm"]
 gc_modes = ["normal"]
 workers = [1]
 
+[comparison]
+default_duration = "5m"
+corpus_cycles = 0
+epoch_seconds = 300
+batch_size_per_worker = 256
+warmup_cases = 512
+lifecycles = ["warm"]
+gc_modes = ["normal"]
+workers = [1]
+
 [standard]
 default_duration = "15m"
 corpus_cycles = 0
