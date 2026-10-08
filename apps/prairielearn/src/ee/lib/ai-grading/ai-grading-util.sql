@@ -170,12 +170,10 @@ WITH
       feedback = mrsnagj.feedback
     FROM
       deleted_grading_jobs AS dgj
-      LEFT JOIN most_recent_submission_manual_grading_jobs AS mrsmgj ON TRUE
-      LEFT JOIN most_recent_submission_non_ai_grading_jobs AS mrsnagj ON TRUE
+      LEFT JOIN most_recent_submission_manual_grading_jobs AS mrsmgj ON (mrsmgj.submission_id = dgj.submission_id)
+      LEFT JOIN most_recent_submission_non_ai_grading_jobs AS mrsnagj ON (mrsnagj.submission_id = dgj.submission_id)
     WHERE
       s.id = dgj.submission_id
-      AND mrsmgj.submission_id = s.id
-      AND mrsnagj.submission_id = s.id
   ),
   most_recent_instance_question_manual_grading_jobs AS (
     SELECT DISTINCT
