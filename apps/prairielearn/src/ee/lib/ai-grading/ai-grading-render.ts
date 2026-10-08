@@ -132,7 +132,7 @@ export async function stripHtmlForAiGrading(html: string) {
   if (result.length > 10000) {
     // Prevent denial of service attacks by skipping Prettier formatting
     // if the HTML is too large. 10,000 characters was chosen arbitrarily.
-    return html.trim();
+    return result.trim();
   }
 
   return (await formatHtmlWithPrettier(result)).trim();

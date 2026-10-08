@@ -4,6 +4,21 @@ import { describe, expect, it } from 'vitest';
 import { stripHtmlForAiGrading } from './ai-grading-render.js';
 
 describe('stripHtmlForAiGrading', () => {
+  it('preserves cleaned HTML when a large inline image exceeds the formatting limit', async () => {
+    const src = `data:image/png;base64,${'A'.repeat(10000)}`;
+    const result = await stripHtmlForAiGrading(
+      `<div id="question" class="question"><script>alert('hidden')</script><span aria-hidden="true">Hidden</span><img src="${src}" alt="Diagram"></div>`,
+    );
+
+    const $ = cheerio.load(result);
+    expect(result.length).toBeGreaterThan(10000);
+    expect($('img').attr('src')).toBe(src);
+    expect($('script').length).toBe(0);
+    expect($('[aria-hidden="true"]').length).toBe(0);
+    expect($('div').attr('id')).toBeUndefined();
+    expect($('div').attr('class')).toBeUndefined();
+  });
+
   it('preserves images and containers containing only images', async () => {
     const result = await stripHtmlForAiGrading(
       '<img src="standalone.png" alt="Standalone"><div><p><img src="diagram.png" alt="Diagram"></p><span></span></div>',
