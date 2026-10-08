@@ -16,6 +16,47 @@ test.beforeEach(async ({ page, courseInstance }) => {
   );
 });
 
+for (const hasImage of [false, true]) {
+  test(`renders read-only submissions with ${hasImage ? 'an image and empty optional slots' : 'no images'}`, async ({
+    page,
+  }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+
+    await expect(page.locator('.js-hidden-capture-input')).toHaveCount(3);
+    await expect(page.locator('.js-hidden-capture-input').first()).toHaveValue('');
+    if (hasImage) {
+      await uploadCropTestImage(page);
+    }
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+
+    const submission = page.getByTestId('submission-block');
+    await expect(submission).toBeVisible();
+    await expect(submission.locator('.js-hidden-capture-input')).toHaveCount(0);
+    await expect(submission.getByText('No image captured yet.', { exact: false })).toHaveCount(
+      hasImage ? 2 : 3,
+    );
+    await expect(
+      submission.getByText('No image captured yet.', { exact: false }).first(),
+    ).toBeVisible();
+    await expect(submission.getByText('Loading...', { exact: true })).toHaveCount(0);
+    await expect(submission.getByAltText('Captured image preview')).toHaveCount(hasImage ? 1 : 0);
+    if (hasImage) {
+      const preview = submission.getByAltText('Captured image preview');
+      await expect(preview).toBeVisible();
+      await expect
+        .poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth))
+        .toBeGreaterThan(0);
+    }
+    await expect(page.locator('.js-hidden-capture-input')).toHaveCount(3);
+    await expect(page.locator('.js-hidden-capture-input').first()).toHaveValue(
+      hasImage ? /^data:image\/jpeg;base64,/ : '',
+    );
+    await submission.screenshot({ path: test.info().outputPath('read-only-submission.png') });
+    expect(pageErrors).toEqual([]);
+  });
+}
+
 test('converts HEIC to a resized JPEG and submits it', async ({ page }) => {
   const converterRequests: string[] = [];
   page.on('request', (request) => {
