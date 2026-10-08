@@ -48,7 +48,6 @@ def _format_formula_editor_submission(
     )
     return symbolic_input._format_formula_editor_source(
         source,
-        submission,
         variables,
         custom_functions,
         allow_trig_functions=allow_trig,
@@ -258,8 +257,9 @@ def test_symbolic_input_normalization_preserves_source_offsets(
     expected_offsets: tuple[int, ...],
 ) -> None:
     source = _normalize_symbolic_input(text, formula_editor=formula_editor)
-    assert source == symbolic_input.SourceText(expected_text, expected_offsets)
-    assert tuple(source) == tuple(zip(expected_offsets, expected_text, strict=True))
+    assert source.raw_text == text
+    assert source.text == expected_text
+    assert tuple(token.raw_offset for token in source.tokens) == expected_offsets
 
 
 def test_symbolic_input_normalization_combines_stages_in_order() -> None:

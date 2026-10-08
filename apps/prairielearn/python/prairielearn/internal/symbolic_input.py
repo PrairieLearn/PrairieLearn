@@ -1,7 +1,7 @@
 """Internal parsing helpers shared by symbolic-input elements."""
 
 import re
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Literal
@@ -12,24 +12,53 @@ import prairielearn.sympy_utils as psu
 
 
 @dataclass(frozen=True, slots=True)
-class SourceText:
-    """Text whose character offsets refer to positions in the raw source."""
+class SourceToken:
+    """One transformed character and its position in the raw source."""
 
     text: str
-    offsets: tuple[int, ...]
+    raw_offset: int
 
     def __post_init__(self) -> None:
-        """Validate that the text and source map stay aligned."""
-        if len(self.text) != len(self.offsets):
-            raise ValueError("SourceText must have one source offset per character")
+        """Validate that this token represents one transformed character."""
+        if len(self.text) != 1:
+            raise ValueError("SourceToken must contain exactly one character")
 
-    def __iter__(self) -> Iterator[tuple[int, str]]:
-        """Iterate over the raw source offsets of each char."""
-        return zip(self.offsets, self.text, strict=True)
+    def rewrite(self, text: str) -> tuple["SourceToken", ...]:
+        return tuple(SourceToken(char, self.raw_offset) for char in text)
+
+
+@dataclass(frozen=True, slots=True)
+class SourceText:
+    """Transformed tokens that retain positions in the immutable raw source."""
+
+    raw_text: str
+    tokens: tuple[SourceToken, ...]
+
+    def __post_init__(self) -> None:
+        """Validate that token provenance refers to the raw source in order."""
+        if any(
+            token.raw_offset < 0 or token.raw_offset >= len(self.raw_text)
+            for token in self.tokens
+        ):
+            raise ValueError("SourceText offsets must refer to the raw source")
+        if any(
+            left.raw_offset > right.raw_offset
+            for left, right in zip(self.tokens, self.tokens[1:], strict=False)
+        ):
+            raise ValueError("SourceText offsets must be nondecreasing")
+
+    @property
+    def text(self) -> str:
+        return "".join(token.text for token in self.tokens)
 
     @classmethod
     def from_text(cls, text: str) -> "SourceText":
-        return cls(text, tuple(range(len(text))))
+        return cls(
+            text, tuple(SourceToken(char, offset) for offset, char in enumerate(text))
+        )
+
+    def replace(self, tokens: Iterable[SourceToken]) -> "SourceText":
+        return SourceText(self.raw_text, tuple(tokens))
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,63 +93,55 @@ def _restore_plus_minus_source(source: SourceText, latex: str) -> SourceText | N
     if not any(from_plus_minus):
         return source
 
-    parts: list[str] = []
-    offsets: list[int] = []
+    tokens: list[SourceToken] = []
     last_end = 0
     for match, is_plus_minus in zip(matches, from_plus_minus, strict=True):
-        parts.append(source.text[last_end : match.start()])
-        offsets.extend(source.offsets[last_end : match.start()])
+        tokens.extend(source.tokens[last_end : match.start()])
         if is_plus_minus:
-            parts.append("±")
-            offsets.append(source.offsets[match.start()])
+            tokens.extend(source.tokens[match.start()].rewrite("±"))
         else:
-            parts.append(match.group(0))
-            offsets.extend(source.offsets[match.start() : match.end()])
+            tokens.extend(source.tokens[match.start() : match.end()])
         last_end = match.end()
-    parts.append(source.text[last_end:])
-    offsets.extend(source.offsets[last_end:])
-    return SourceText("".join(parts), tuple(offsets))
+    tokens.extend(source.tokens[last_end:])
+    return source.replace(tokens)
 
 
 def _delete_literal(source: SourceText, literal: str) -> SourceText:
-    parts: list[str] = []
-    offsets: list[int] = []
+    tokens: list[SourceToken] = []
     last_end = 0
     for match in re.finditer(re.escape(literal), source.text):
-        parts.append(source.text[last_end : match.start()])
-        offsets.extend(source.offsets[last_end : match.start()])
+        tokens.extend(source.tokens[last_end : match.start()])
         last_end = match.end()
-    parts.append(source.text[last_end:])
-    offsets.extend(source.offsets[last_end:])
-    return SourceText("".join(parts), tuple(offsets))
+    tokens.extend(source.tokens[last_end:])
+    return source.replace(tokens)
 
 
-def _replace_editor_operators(source: SourceText, raw_text: str) -> SourceText:
-    parts: list[str] = []
-    offsets: list[int] = []
+def _replace_editor_operators(source: SourceText) -> SourceText:
+    text = source.text
+    tokens: list[SourceToken] = []
     index = 0
-    while index < len(source.text):
-        if source.text.startswith("-:", index):
-            parts.append("/")
-            offsets.append(source.offsets[index])
+    while index < len(text):
+        if text.startswith("-:", index):
+            tokens.extend(source.tokens[index].rewrite("/"))
             index += 2
             continue
-        if source.text.startswith(" ** ", index):
-            left_star_offset = source.offsets[index + 1]
-            right_star_offset = source.offsets[index + 2]
-            if raw_text[left_star_offset] == "*" and raw_text[right_star_offset] == "*":
-                parts.append(" * ")
-                offsets.extend((
-                    source.offsets[index],
-                    left_star_offset,
-                    source.offsets[index + 3],
+        if text.startswith(" ** ", index):
+            left_star = source.tokens[index + 1]
+            right_star = source.tokens[index + 2]
+            if (
+                source.raw_text[left_star.raw_offset] == "*"
+                and source.raw_text[right_star.raw_offset] == "*"
+            ):
+                tokens.extend((
+                    source.tokens[index],
+                    left_star,
+                    source.tokens[index + 3],
                 ))
                 index += 4
                 continue
-        parts.append(source.text[index])
-        offsets.append(source.offsets[index])
+        tokens.append(source.tokens[index])
         index += 1
-    return SourceText("".join(parts), tuple(offsets))
+    return source.replace(tokens)
 
 
 def _build_formula_editor_tokens(
@@ -149,51 +170,47 @@ def _merge_spaced_source(source: SourceText, tokens: Sequence[str]) -> SourceTex
     spaced = [(token, " ".join(token)) for token in tokens]
     spaced.sort(key=lambda item: -len(item[1]))
 
-    parts: list[str] = []
-    offsets: list[int] = []
+    merged_tokens: list[SourceToken] = []
+    text = source.text
     index = 0
-    while index < len(source.text):
+    while index < len(text):
         for token, spaced_token in spaced:
-            if source.text.startswith(spaced_token, index):
-                parts.append(token)
-                offsets.extend(
-                    source.offsets[index + char_index * 2]
-                    for char_index in range(len(token))
-                )
+            if text.startswith(spaced_token, index):
+                for char_index, char in enumerate(token):
+                    merged_tokens.extend(
+                        source.tokens[index + char_index * 2].rewrite(char)
+                    )
                 index += len(spaced_token)
                 break
         else:
-            parts.append(source.text[index])
-            offsets.append(source.offsets[index])
+            merged_tokens.append(source.tokens[index])
             index += 1
-    return SourceText("".join(parts), tuple(offsets))
+    return source.replace(merged_tokens)
 
 
 def _add_multiplication_spaces_source(
     source: SourceText, protected_tokens: Sequence[str]
 ) -> SourceText:
+    text = source.text
     protected_positions: set[int] = set()
     for token in protected_tokens:
         if not re.search(r"\d", token):
             continue
-        for match in re.finditer(re.escape(token), source.text):
+        for match in re.finditer(re.escape(token), text):
             protected_positions.update(range(match.start(), match.end()))
 
-    parts: list[str] = []
-    offsets: list[int] = []
-    for index, character in enumerate(source.text):
-        parts.append(character)
-        offsets.append(source.offsets[index])
-        if index + 1 >= len(source.text):
+    tokens: list[SourceToken] = []
+    for index, token in enumerate(source.tokens):
+        tokens.append(token)
+        if index + 1 >= len(source.tokens):
             continue
         if (
-            character.isalpha()
-            and source.text[index + 1].isdigit()
+            token.text.isalpha()
+            and source.tokens[index + 1].text.isdigit()
             and index + 1 not in protected_positions
         ):
-            parts.append(" ")
-            offsets.append(source.offsets[index + 1])
-    return SourceText("".join(parts), tuple(offsets))
+            tokens.extend(source.tokens[index + 1].rewrite(" "))
+    return source.replace(tokens)
 
 
 @lru_cache(maxsize=128)
@@ -211,11 +228,12 @@ def _wrap_bare_function_arguments_source(
 ) -> SourceText:
     if not function_names:
         return source
+    text = source.text
     pattern = _bare_function_token_pattern(function_names)
-    insertions: list[tuple[int, str, int]] = []
+    insertions: list[tuple[int, SourceToken]] = []
     pending_arguments: dict[int, int] = {}
     depth = 0
-    for match in pattern.finditer(source.text):
+    for match in pattern.finditer(text):
         if match.lastgroup == "function":
             pending_arguments.setdefault(depth, match.end())
             continue
@@ -233,51 +251,51 @@ def _wrap_bare_function_arguments_source(
                     argument_start = start
                     while (
                         argument_start < match.start()
-                        and source.text[argument_start].isspace()
+                        and text[argument_start].isspace()
                     ):
                         argument_start += 1
                     argument_end = match.start()
                     while (
                         argument_end > argument_start
-                        and source.text[argument_end - 1].isspace()
+                        and text[argument_end - 1].isspace()
                     ):
                         argument_end -= 1
-                    open_offset = source.offsets[
-                        min(argument_start, len(source.offsets) - 1)
+                    open_token = source.tokens[
+                        min(argument_start, len(source.tokens) - 1)
+                    ].rewrite("(")[0]
+                    close_token = source.tokens[max(argument_end - 1, 0)].rewrite(")")[
+                        0
                     ]
-                    close_offset = source.offsets[max(argument_end - 1, 0)]
                     insertions.extend((
-                        (start, "(", open_offset),
-                        (argument_end, ")", close_offset),
+                        (start, open_token),
+                        (argument_end, close_token),
                     ))
             case "+" | "-" | "/" | ",":
                 pending_arguments.pop(depth, None)
             case _:
                 pass
 
-    parts: list[str] = []
-    offsets: list[int] = []
+    tokens: list[SourceToken] = []
     position = 0
-    for index, parenthesis, offset in sorted(insertions):
-        parts.extend((source.text[position:index], parenthesis))
-        offsets.extend(source.offsets[position:index])
-        offsets.append(offset)
+    for index, parenthesis in sorted(
+        insertions, key=lambda insertion: (insertion[0], insertion[1].text)
+    ):
+        tokens.extend(source.tokens[position:index])
+        tokens.append(parenthesis)
         position = index
-    parts.append(source.text[position:])
-    offsets.extend(source.offsets[position:])
-    return SourceText("".join(parts), tuple(offsets))
+    tokens.extend(source.tokens[position:])
+    return source.replace(tokens)
 
 
 def _format_formula_editor_source(
     source: SourceText,
-    raw_text: str,
     variables: Sequence[str],
     custom_functions: Sequence[str],
     *,
     allow_trig_functions: bool,
 ) -> SourceText:
     source = _delete_literal(_delete_literal(source, "{:"), ":}")
-    source = _replace_editor_operators(source, raw_text)
+    source = _replace_editor_operators(source)
     known_tokens = _build_formula_editor_tokens(
         variables,
         custom_functions,
@@ -308,19 +326,15 @@ def _convert_absolute_values_source(
             search_from = match.start() + 1
             continue
 
-        opening_offset = source.offsets[match.start()]
-        closing_offset = source.offsets[match.end() - 1]
-        replacement = f"abs({content})"
-        replacement_offsets = (
-            (opening_offset,) * 4
-            + source.offsets[match.start() + 1 : match.end() - 1]
-            + (closing_offset,)
+        replacement_tokens = (
+            source.tokens[match.start()].rewrite("abs(")
+            + source.tokens[match.start() + 1 : match.end() - 1]
+            + source.tokens[match.end() - 1].rewrite(")")
         )
-        source = SourceText(
-            source.text[: match.start()] + replacement + source.text[match.end() :],
-            source.offsets[: match.start()]
-            + replacement_offsets
-            + source.offsets[match.end() :],
+        source = source.replace(
+            source.tokens[: match.start()]
+            + replacement_tokens
+            + source.tokens[match.end() :]
         )
         search_from = 0
 
@@ -356,7 +370,6 @@ def normalize_symbolic_input(
             source = restored
         source = _format_formula_editor_source(
             source,
-            text,
             variables,
             custom_functions,
             allow_trig_functions=allow_trig_functions,
@@ -364,7 +377,6 @@ def normalize_symbolic_input(
     source = _convert_absolute_values_source(source, allow_sets=allow_sets)
     return psu._validate_and_rewrite_source(
         source,
-        text,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
     )
