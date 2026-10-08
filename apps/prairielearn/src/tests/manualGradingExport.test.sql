@@ -90,6 +90,7 @@ INSERT INTO
     instance_question_id,
     question_id,
     course_id,
+    course_instance_id,
     user_id,
     authn_user_id,
     variant_seed
@@ -98,14 +99,16 @@ SELECT
   iq.id,
   aq.question_id,
   q.course_id,
+  a.course_instance_id,
   ai.user_id,
-  ai.user_id,
+  ai.user_id AS authn_user_id,
   'export'
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
   JOIN questions AS q ON q.id = aq.question_id
   JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
+  JOIN assessments AS a ON a.id = ai.assessment_id
 WHERE
   iq.id = $instance_question_id
 RETURNING
@@ -167,7 +170,7 @@ WITH
         0,
         0,
         0,
-        false,
+        FALSE,
         TIMESTAMPTZ '2020-01-01 00:00:00 UTC'
       )
     RETURNING
@@ -240,8 +243,8 @@ WITH
         score
       )
     SELECT
-      ng.id,
-      ri.id,
+      ng.id AS rubric_grading_id,
+      ri.id AS rubric_item_id,
       ri.description,
       ri.points,
       $score
@@ -289,7 +292,7 @@ INSERT INTO
     open
   )
 VALUES
-  ($assessment_id, $instance_question_id, true, true);
+  ($assessment_id, $instance_question_id, TRUE, TRUE);
 
 -- BLOCK delete_rubric_item
 UPDATE rubric_items

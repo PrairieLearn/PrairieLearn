@@ -16,7 +16,7 @@ import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.
 import {
   type AiGradingGeneralStats,
   type GradingJobInfo,
-  GradingJobInfoSchema,
+  RawGradingJobInfoSchema,
   type WithAIGradingStats,
 } from './types.js';
 
@@ -98,7 +98,8 @@ export async function fillInstanceQuestionColumnEntries<
     instance_question.ai_grading = aiGradingJob ?? null;
 
     if (manualGradingJob) {
-      instance_question.last_human_grader = manualGradingJob.grader_name;
+      instance_question.last_human_grader =
+        manualGradingJob.latest_update.grader.name ?? manualGradingJob.latest_update.grader.uid;
     }
 
     if (aiGradingJob) {
@@ -213,8 +214,9 @@ export async function calculateAiGradingStats(
 }
 
 /**
- * Select the latest human grading job and AI grading job
- * information, including rubric grading information for each input instance question.
+ * Reconstruct human and AI grading results for the latest submission. Grading
+ * jobs contain updates, so unchanged scores and feedback come from earlier jobs
+ * of the same method, with their provenance preserved.
  * @param instance_questions the array of instance questions (including their ids)
  * @returns a record mapping each id to its grading jobs
  */
@@ -224,16 +226,60 @@ export async function selectGradingJobsInfo<T extends { id: string }>(
   const grading_jobs = await queryRows(
     sql.select_ai_and_human_grading_jobs_and_rubric,
     { instance_question_ids: instance_questions.map((iq) => iq.id) },
-    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
+    RawGradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
   );
-  // Construct mapping from instance question id to grading job info
-  return grading_jobs.reduce(
+  const historyByInstanceQuestion = grading_jobs.reduce(
     (acc, item) => {
       acc[item.instance_question_id] ??= [];
       acc[item.instance_question_id].push(item);
       return acc;
     },
-    {} as Record<string, GradingJobInfo[]>,
+    {} as Record<string, typeof grading_jobs>,
+  );
+
+  const source = (job: (typeof grading_jobs)[number]) => ({
+    grading_job_id: job.grading_job_id,
+    graded_at: job.graded_at,
+    grader: job.grader,
+  });
+
+  return Object.fromEntries(
+    Object.entries(historyByInstanceQuestion).map(([id, history]) => [
+      id,
+      ['Manual', 'AI'].flatMap((method): GradingJobInfo[] => {
+        const jobs = history.filter((job) => job.grading_method === method);
+        const latest = jobs.at(0);
+        if (!latest) return [];
+        const scoreJob = jobs.find((job) => job.manual_points != null);
+        const autoPointsJob = jobs.find((job) => job.auto_points != null);
+        let feedback: GradingJobInfo['feedback'] = null;
+        const feedbackSources = new Map<string, GradingJobInfo['latest_update']>();
+        for (const job of jobs.slice().reverse()) {
+          if (job.feedback == null) continue;
+          feedback ??= {};
+          Object.assign(feedback, job.feedback);
+          for (const key of Object.keys(job.feedback)) {
+            feedbackSources.set(key, source(job));
+          }
+        }
+        return [
+          {
+            ...(scoreJob ?? latest),
+            auto_points: autoPointsJob?.auto_points ?? null,
+            feedback,
+            // A feedback-only update can retain the other method's rubric. Only
+            // the job that assigned manual points establishes rubric provenance.
+            manual_rubric_grading_id: scoreJob?.manual_rubric_grading_id ?? null,
+            rubric_items: scoreJob?.rubric_items ?? [],
+            rubric_grading: scoreJob?.rubric_grading ?? null,
+            rubric_grading_items: scoreJob?.rubric_grading_items ?? [],
+            latest_update: source(latest),
+            auto_points_source: autoPointsJob ? source(autoPointsJob) : null,
+            feedback_sources: Object.fromEntries(feedbackSources),
+          },
+        ];
+      }),
+    ]),
   );
 }
 

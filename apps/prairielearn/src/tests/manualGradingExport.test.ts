@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { fillInstanceQuestionColumnEntries } from '../ee/lib/ai-grading/ai-grading-stats.js';
+import { deleteAiGradingJobs } from '../ee/lib/ai-grading/ai-grading-util.js';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import {
   StaffInstanceQuestionGroupSchema,
@@ -17,9 +18,10 @@ import {
   type Assessment,
   type AssessmentQuestion,
   AssessmentQuestionSchema,
+  GradingJobSchema,
   RubricItemSchema,
 } from '../lib/db-types.js';
-import { selectRubricData } from '../lib/manualGrading.js';
+import { selectRubricData, updateInstanceQuestionScore } from '../lib/manualGrading.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
@@ -37,6 +39,12 @@ import {
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const conflictSql = sqldb.loadSqlEquiv(
+  new URL(
+    '../pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.ts',
+    import.meta.url,
+  ).href,
+);
 
 async function selectExportRow(
   assessment: Assessment,
@@ -100,6 +108,44 @@ async function insertIndividualInstanceQuestion({
     },
     IdSchema,
   );
+}
+
+async function createGradingExportFixture() {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: '1',
+    tid: 'hw9-internalExternalManual',
+  });
+  const aq = await selectAssessmentQuestion(assessment.id, 'manualGrade/codeUpload');
+  const [student, grader] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
+  const iqId = await insertIndividualInstanceQuestion({
+    assessment_id: assessment.id,
+    assessment_question_id: aq.id,
+    user_id: student.id,
+    assigned_grader: null,
+    last_grader: null,
+  });
+  const variantId = await sqldb.queryScalar(
+    sql.insert_variant,
+    { instance_question_id: iqId },
+    IdSchema,
+  );
+  const submissionId = await sqldb.queryScalar(
+    sql.insert_submission,
+    {
+      variant_id: variantId,
+      date: '2020-01-02T00:00:00Z',
+      manual_rubric_grading_id: null,
+    },
+    IdSchema,
+  );
+  return {
+    assessment,
+    aq,
+    grader,
+    iqId,
+    submissionId,
+    options: { assessment, studentLabels: [], instanceQuestionGroups: [], rubricData: null },
+  };
 }
 
 describe('Manual grading exports', { timeout: 60_000 }, () => {
@@ -602,5 +648,114 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
         assert.equal(csv['Point Difference (AI - Human)'], '2');
       }
     }
+  });
+
+  test('preserves manual scores and feedback across partial edits with separate provenance', async () => {
+    const { assessment, aq, grader, iqId, submissionId, options } =
+      await createGradingExportFixture();
+    const [updater] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
+    const grade = (
+      score: Parameters<typeof updateInstanceQuestionScore>[0]['score'],
+      is_ai_graded = false,
+      authn_user_id = grader.id,
+    ) =>
+      updateInstanceQuestionScore({
+        assessment,
+        instance_question_id: iqId,
+        submission_id: submissionId,
+        check_modified_at: null,
+        score,
+        authn_user_id,
+        is_ai_graded,
+      });
+    const humanScore = await grade({
+      manual_points: 3,
+      auto_points: 0,
+      feedback: { manual: 'Original human feedback', extra: 'Retained human feedback' },
+    });
+    await grade({ manual_points: 2, feedback: { manual: 'AI feedback' } }, true);
+    const feedbackUpdate = await grade({ feedback: { manual: 'Updated human feedback' } });
+    const autoUpdate = await grade({ auto_points: 1 }, false, updater.id);
+    const row = await selectExportRow(assessment, aq, iqId);
+    const json = getManualGradingJsonData(row, options);
+    assert.equal(json.manual_points, 2);
+    assert.equal(json.human_grading?.manual_points, 3);
+    assert.equal(json.human_grading?.grading_job_id, humanScore.grading_job_id);
+    assert.equal(json.human_grading?.grader?.uid, grader.uid);
+    assert.equal(row.instance_question.last_human_grader, updater.name ?? updater.uid);
+    assert.equal(json.human_grading?.latest_update?.grading_job_id, autoUpdate.grading_job_id);
+    assert.equal(json.human_grading?.auto_points_source?.grading_job_id, autoUpdate.grading_job_id);
+    assert.deepEqual(json.human_grading?.feedback, {
+      manual: 'Updated human feedback',
+      extra: 'Retained human feedback',
+    });
+    assert.equal(
+      json.human_grading?.feedback_sources.manual?.grading_job_id,
+      feedbackUpdate.grading_job_id,
+    );
+    assert.equal(
+      json.human_grading?.feedback_sources.extra?.grading_job_id,
+      humanScore.grading_job_id,
+    );
+    assert.equal(json.ai_grading_comparison.points_ai_minus_human, -1);
+    const csv = await csvToRecord(getManualGradingCsvData(row, options));
+    assert.equal(csv['Human Manual Points'], '3');
+    assert.equal(csv['Point Difference (AI - Human)'], '-1');
+    assert.deepEqual(JSON.parse(csv['Human Grading']), json.human_grading);
+
+    await grade({ manual_points: 4 });
+    const scoreEdit = getManualGradingJsonData(
+      await selectExportRow(assessment, aq, iqId),
+      options,
+    );
+    assert.equal(scoreEdit.human_grading?.manual_points, 4);
+    assert.deepEqual(scoreEdit.human_grading?.feedback, json.human_grading?.feedback);
+  });
+
+  test('excludes inactive conflict attempts while retaining conflict details and AI-deletion recovery', async () => {
+    const { assessment, aq, grader, iqId, submissionId, options } =
+      await createGradingExportFixture();
+    const grade = (
+      manual_points: number,
+      is_ai_graded = false,
+      check_modified_at: Date | null = null,
+    ) =>
+      updateInstanceQuestionScore({
+        assessment,
+        instance_question_id: iqId,
+        submission_id: submissionId,
+        check_modified_at,
+        score: { manual_points, feedback: { manual: `Score ${manual_points}` } },
+        authn_user_id: grader.id,
+        is_ai_graded,
+      });
+    await grade(2, true);
+    const staleTimestamp = (await selectExportRow(assessment, aq, iqId)).instance_question
+      .modified_at;
+    const humanScore = await grade(3);
+    const conflict = await grade(8, false, staleTimestamp);
+    assert.isTrue(conflict.modified_at_conflict);
+    const conflictJob = await sqldb.queryRow(
+      conflictSql.select_grading_job_data,
+      {
+        instance_question_id: iqId,
+        grading_job_id: conflict.grading_job_id,
+      },
+      GradingJobSchema,
+    );
+    assert.equal(conflictJob.manual_points, 8);
+    assert.isNotNull(conflictJob.deleted_at);
+    assert.equal(conflictJob.deleted_by, grader.id);
+    const json = getManualGradingJsonData(await selectExportRow(assessment, aq, iqId), options);
+    assert.equal(json.manual_points, 3);
+    assert.equal(json.human_grading?.manual_points, 3);
+    assert.equal(json.human_grading?.grading_job_id, humanScore.grading_job_id);
+    assert.equal(json.ai_grading_comparison.points_ai_minus_human, -1);
+
+    await deleteAiGradingJobs({ assessment_question_ids: [aq.id], authn_user_id: grader.id });
+    const restored = getManualGradingJsonData(await selectExportRow(assessment, aq, iqId), options);
+    assert.equal(restored.manual_points, 3);
+    assert.deepEqual(restored.human_grading?.feedback, { manual: 'Score 3' });
+    assert.isNull(restored.ai_grading);
   });
 });

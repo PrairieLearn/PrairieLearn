@@ -10,7 +10,13 @@ import {
   RubricItemSchema,
 } from '../../../lib/db-types.js';
 
-export const GradingJobInfoSchema = z.object({
+const GradingJobUpdateSourceSchema = z.object({
+  grading_job_id: IdSchema,
+  graded_at: DateFromISOString.nullable(),
+  grader: StaffUserSchema,
+});
+
+export const RawGradingJobInfoSchema = z.object({
   grading_job_id: IdSchema,
   graded_at: DateFromISOString.nullable(),
   grading_method: z.enum(['Manual', 'AI']),
@@ -23,6 +29,11 @@ export const GradingJobInfoSchema = z.object({
   rubric_items: z.array(RubricItemSchema),
   rubric_grading: RubricGradingSchema.nullable(),
   rubric_grading_items: z.array(RubricGradingItemSchema),
+});
+const GradingJobInfoSchema = RawGradingJobInfoSchema.extend({
+  latest_update: GradingJobUpdateSourceSchema,
+  auto_points_source: GradingJobUpdateSourceSchema.nullable(),
+  feedback_sources: z.record(z.string(), GradingJobUpdateSourceSchema),
 });
 export type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 

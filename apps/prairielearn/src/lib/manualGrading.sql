@@ -495,7 +495,9 @@ INSERT INTO
     manual_points,
     feedback,
     partial_scores,
-    manual_rubric_grading_id
+    manual_rubric_grading_id,
+    deleted_at,
+    deleted_by
   )
 VALUES
   (
@@ -510,7 +512,15 @@ VALUES
     $manual_points,
     $feedback,
     $partial_scores,
-    $manual_rubric_grading_id
+    $manual_rubric_grading_id,
+    CASE
+      WHEN $modified_at_conflict THEN now()
+      ELSE NULL
+    END,
+    CASE
+      WHEN $modified_at_conflict THEN $authn_user_id::bigint
+      ELSE NULL
+    END
   )
 RETURNING
   id;

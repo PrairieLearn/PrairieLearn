@@ -44,20 +44,14 @@ WITH
       gj.feedback,
       gj.manual_rubric_grading_id,
       gj.graded_by,
-      gj.submission_id,
-      ROW_NUMBER() OVER (
-        PARTITION BY
-          gj.grading_method,
-          gj.submission_id
-        ORDER BY
-          gj.graded_at DESC
-      ) AS rn
+      gj.submission_id
     FROM
       latest_submissions AS ls
       JOIN grading_jobs AS gj ON ls.submission_id = gj.submission_id
     WHERE
       gj.grading_method IN ('Manual', 'AI')
       AND gj.deleted_at IS NULL
+      AND gj.graded_at IS NOT NULL
   ),
   rubric_grading_to_items AS (
     SELECT
@@ -112,8 +106,6 @@ FROM
   LEFT JOIN rubric_grading_to_items AS rgti ON (
     ggj.manual_rubric_grading_id = rgti.rubric_grading_id
   )
-WHERE
-  rn = 1
 GROUP BY
   grading_job_id,
   grading_method,
@@ -124,4 +116,7 @@ GROUP BY
   manual_rubric_grading_id,
   instance_question_id,
   u.id,
-  rg.id;
+  rg.id
+ORDER BY
+  graded_at DESC,
+  grading_job_id DESC;
