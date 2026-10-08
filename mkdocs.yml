@@ -270,6 +270,7 @@ nav:
           - '<span class="muted">pl-</span>template': 'elements/pl-template.md'
           - '<span class="muted">pl-</span>units-input': 'elements/pl-units-input.md'
           - '<span class="muted">pl-</span>variable-output': 'elements/pl-variable-output.md'
+          - '<span class="muted">pl-</span>workspace': 'elements/pl-workspace.md'
           - '<span class="muted">pl-</span>xss-safe': 'elements/pl-xss-safe.md'
 
       - 'clientFiles and serverFiles': 'clientServerFiles.md'
