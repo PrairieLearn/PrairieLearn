@@ -1,3 +1,4 @@
+import re
 import string
 
 import prairielearn.sympy_utils as psu
@@ -269,7 +270,6 @@ def test_symbolic_input_normalization_combines_stages_in_order() -> None:
 
     result = symbolic_input._try_parse_normalized_source_as_sympy(
         source,
-        raw,
         ["x", "j"],
         allow_hidden=True,
     )
@@ -309,3 +309,31 @@ def test_parse_symbolic_submission_serializes_result() -> None:
     assert result.expr == sympy.Abs(sympy.Symbol("x"))
     assert result.json != ""
     assert psu.json_to_sympy(result.json) == result.expr
+
+
+@pytest.mark.parametrize(
+    ("caret_spec", "variables", "expected_message"),
+    [
+        ("2 + !sin", [], 'mentions the function "sin"'),
+        ("x ++!* 2", ["x"], "syntax error"),
+        (
+            "x + !α",  # ruff:ignore[ambiguous-unicode-character-string]
+            ["x"],
+            'invalid symbol "α"',  # ruff:ignore[ambiguous-unicode-character-string]
+        ),
+        ("|!sin|", [], 'mentions the function "sin"'),
+    ],
+)
+def test_parse_errors_point_to_raw_submission(
+    caret_spec: str,
+    variables: list[str],
+    expected_message: str,
+) -> None:
+    raw_index = caret_spec.index("!")
+    submission = caret_spec.replace("!", "")
+    result = symbolic_input.try_parse_symbolic_submission(submission, variables)
+    assert isinstance(result, psu.SympyParseFailure)
+    assert expected_message in result.error
+    match = re.search(r"<pre>(.*?)</pre>", result.error, re.DOTALL)
+    assert match is not None
+    assert match.group(1) == psu.point_to_error(submission, raw_index)

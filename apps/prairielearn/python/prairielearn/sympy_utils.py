@@ -24,6 +24,7 @@ from typing import (
     Any,
     Final,
     Literal,
+    Never,
     NotRequired,
     TypedDict,
     TypeGuard,
@@ -45,6 +46,10 @@ SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
 SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
     "Your answer has a syntax error. "
     "This issue might be caused by mismatched parentheses or some other misplaced symbol."
+)
+SYMPY_EVALUATION_ERROR_WITHOUT_LOCATION = (
+    "Your answer contains an invalid expression that could not be evaluated. "
+    "Check that each function and operator is used with valid arguments."
 )
 
 SympyMapT = dict[str, sympy.Basic | complex]
@@ -393,13 +398,6 @@ class HasArgumentTypeError(BaseSympyError):
             return f"a {self.allowable_types[0]}"
         return f"either {_format_comma_separated(list(dict.fromkeys(self.allowable_types)))}"
 
-    def as_type_error(self) -> TypeError:
-        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
-        return TypeError(
-            f"unsupported operand type(s) for {self.fn}: "
-            f"argument #{self.arg_idx + 1} requires {self.format_allowable_types()}, not {self.got}"
-        )
-
 
 @dataclass
 class HasFunctionArityError(BaseSympyError):
@@ -408,12 +406,33 @@ class HasFunctionArityError(BaseSympyError):
     expected: str
     offset: int = -1
 
-    def as_type_error(self) -> TypeError:
-        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
-        return TypeError(
-            f"wrong number of arguments for {self.fn}: "
-            f"got {self.provided} but expected {self.expected}"
-        )
+
+@dataclass(frozen=True, slots=True)
+class _SourceSpan:
+    start: int
+    end: int
+
+
+@dataclass(frozen=True, slots=True)
+class _IndexEvidence:
+    index: int
+
+
+@dataclass(frozen=True, slots=True)
+class _TokenEvidence:
+    token: str
+
+
+type _ErrorEvidence = _IndexEvidence | _TokenEvidence | None
+
+
+@dataclass(frozen=True, slots=True)
+class _LocalizedSympyError(Exception):
+    error: BaseSympyError
+    source: "SourceText"
+    evidence: _ErrorEvidence = None
+    evaluation_failure: bool = False
+    cause: BaseException | None = None
 
 
 class CheckAST(ast.NodeVisitor):
@@ -898,6 +917,73 @@ def _normalize_source(
     )
 
 
+def _token_at_offset(text: str, offset: int) -> str | None:
+    if offset < 0 or offset >= len(text):
+        return None
+    if text[offset].isspace():
+        return None
+    if text[offset].isalnum() or text[offset] == "_":
+        start = offset
+        while start > 0 and (text[start - 1].isalnum() or text[start - 1] == "_"):
+            start -= 1
+        end = offset + 1
+        while end < len(text) and (text[end].isalnum() or text[end] == "_"):
+            end += 1
+        return text[start:end]
+    return text[offset]
+
+
+def _default_error_evidence(error: BaseSympyError) -> _ErrorEvidence:
+    if isinstance(error, (HasInvalidFunctionError, FunctionNameWithoutArgumentsError)):
+        return _TokenEvidence(error.text)
+    if isinstance(error, (HasArgumentTypeError, HasFunctionArityError)):
+        return _TokenEvidence(error.fn)
+    if isinstance(error, HasInvalidSymbolError):
+        if error.offset is not None and error.offset >= 0:
+            return _IndexEvidence(error.offset)
+        return _TokenEvidence(error.symbol)
+    if (
+        isinstance(
+            error,
+            (
+                HasInvalidExpressionError,
+                HasParseError,
+                HasEscapeError,
+                HasCommentError,
+                HasInvalidVariableError,
+            ),
+        )
+        and error.offset >= 0
+    ):
+        return _IndexEvidence(error.offset)
+    return None
+
+
+def _ast_error_evidence(error: BaseSympyError, generated_code: str) -> _ErrorEvidence:
+    if isinstance(error, (HasInvalidFunctionError, FunctionNameWithoutArgumentsError)):
+        return _TokenEvidence(error.text)
+    if isinstance(error, (HasArgumentTypeError, HasFunctionArityError)):
+        return _TokenEvidence(error.fn)
+    if isinstance(error, HasParseError) and isinstance(error.__cause__, SyntaxError):
+        syntax_error = error.__cause__
+        if syntax_error.text is not None and syntax_error.offset is not None:
+            token = _token_at_offset(syntax_error.text, syntax_error.offset - 1)
+            if token is not None:
+                return _TokenEvidence(token)
+        return None
+    if isinstance(error, HasInvalidExpressionError):
+        token = _token_at_offset(generated_code, error.offset)
+        if token is not None:
+            return _TokenEvidence(token)
+    return None
+
+
+def _raise_unwrapped(error: _LocalizedSympyError) -> Never:
+    if error.cause is not None:
+        raise error.error from error.cause
+    raise error.error from None
+
+
 def evaluate_with_source(
     expr: str,
     locals_for_eval: LocalsForEval,
@@ -918,14 +1004,17 @@ def evaluate_with_source(
         allow_complex=allow_complex,
         allow_sets=allow_sets,
     )
-    return _evaluate_normalized_source(
-        source,
-        locals_for_eval,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-        simplify_expression=simplify_expression,
-        allow_extra_symbols=allow_extra_symbols,
-    )
+    try:
+        return _evaluate_normalized_source(
+            source,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+    except _LocalizedSympyError as exc:
+        _raise_unwrapped(exc)
 
 
 def _evaluate_normalized_source(
@@ -1002,40 +1091,60 @@ def _evaluate_normalized_source(
 
     try:
         ast_check_str(code, parsed_locals_to_eval, allow_sets=allow_sets)
-    except (HasArgumentTypeError, HasFunctionArityError) as exc:
-        index = _find_type_error_offset(source, exc.as_type_error())
-        if index != -1:
-            exc.offset = index
-
-        raise
+    except BaseSympyError as exc:
+        raise _LocalizedSympyError(
+            exc,
+            source,
+            _ast_error_evidence(exc, code),
+            cause=exc.__cause__,
+        ) from None
 
     if not simplify_expression:
-        code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+        try:
+            code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+        except SyntaxError as exc:
+            parse_error = HasParseError(exc.offset if exc.offset is not None else -1)
+            evidence = None
+            if exc.text is not None and exc.offset is not None:
+                token = _token_at_offset(exc.text, exc.offset - 1)
+                if token is not None:
+                    evidence = _TokenEvidence(token)
+            raise _LocalizedSympyError(
+                parse_error,
+                source,
+                evidence,
+                cause=exc,
+            ) from None
 
     # Now that it's safe, get sympy expression
     try:
         res = sympy_parser.eval_expr(code, local_dict, global_dict)
-    except TypeError as exc:
-        # SymPy raises TypeError for semantically invalid set operations that are
-        # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
-        # Because the AST check above already ran, TypeErrors here are expected to
-        # come from SymPy's own type system, not from Python infrastructure bugs.
-        index = _find_type_error_offset(source, exc)
-        if index != -1:
-            raise HasParseError(index) from exc
-        # if we can't localize the type error, report to staff.
-        raise BaseSympyError from exc
+    except (TypeError, AttributeError) as exc:
+        raise _LocalizedSympyError(
+            BaseSympyError(),
+            source,
+            evaluation_failure=True,
+            cause=exc,
+        ) from None
     except Exception as exc:
         raise BaseSympyError from exc
 
     # Finally, check for invalid symbols
-    sympy_check(
-        res,
-        locals_for_eval,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-        allow_extra_symbols=allow_extra_symbols,
-    )
+    try:
+        sympy_check(
+            res,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+    except BaseSympyError as exc:
+        raise _LocalizedSympyError(
+            exc,
+            source,
+            _default_error_evidence(exc),
+            cause=exc.__cause__,
+        ) from None
 
     return res, code
 
@@ -1136,6 +1245,7 @@ def _convert_source_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
+    normalize_input: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1219,6 +1329,12 @@ def _convert_source_to_sympy_with_source(
             simplify_expression=simplify_expression,
             allow_extra_symbols=allow_extra_symbols,
         )
+    if normalize_input:
+        source = _normalize_source(
+            expr,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+        )
     return _evaluate_normalized_source(
         source,
         locals_for_eval,
@@ -1257,34 +1373,147 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
     return expr.rfind(symbol)
 
 
-_TYPE_ERROR_OPERATOR_PATTERN = re.compile(
-    r"(unsupported operand type\(s\)|wrong number of arguments) for (?P<operator>[^:]+):"
-)
-
-
-def _find_type_error_offset(source: "SourceText", exc: TypeError) -> int:
-    """Return an approximate raw offset for a SymPy TypeError."""
-    match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
-    if match is None:
-        return -1
-
-    # for some TypeErrors, both the op and magic-method are provided, e.g `...for ** or pow():...`
-    # see https://chromium.googlesource.com/external/github.com/python/cpython/+/refs/tags/v3.7.17/Objects/abstract.c
-    # line 925 for an example.
-    candidate_operators = match.group("operator").replace("()", "").split(" or ")
-    # account for de-sugaring
-    candidate_operators.extend(
+def _token_candidates(token: str) -> list[str]:
+    candidates = [token]
+    candidates.extend(
         alias
         for alias, transformed_operator in _Constants.set_operator_desugars.items()
-        if transformed_operator in candidate_operators
+        if transformed_operator == token
     )
+    return candidates
 
-    for candidate in candidate_operators:
-        ind = find_symbol_offset(source.text, candidate)
-        if ind != -1:
-            return source.tokens[ind].raw_offset
 
-    return -1
+def _source_span(source: "SourceText", start: int, end: int) -> _SourceSpan | None:
+    tokens = source.tokens[start:end]
+    if not tokens:
+        return None
+    return _SourceSpan(tokens[0].raw_offset, tokens[-1].raw_offset + 1)
+
+
+def _find_token_span(source: "SourceText", token: str) -> _SourceSpan | None:
+    best_match: re.Match[str] | None = None
+    candidates = _token_candidates(token)
+    for candidate in candidates:
+        if not candidate:
+            continue
+        if candidate[0].isalnum() or candidate[0] == "_":
+            pattern = re.compile(rf"(?<!\w){re.escape(candidate)}(?!\w)")
+        else:
+            pattern = re.compile(re.escape(candidate))
+        for match in pattern.finditer(source.text):
+            if best_match is None or match.start() >= best_match.start():
+                best_match = match
+    if best_match is None:
+        for candidate in candidates:
+            for match in re.finditer(re.escape(candidate), source.text):
+                if best_match is None or match.start() >= best_match.start():
+                    best_match = match
+    if best_match is None:
+        return None
+    return _source_span(source, best_match.start(), best_match.end())
+
+
+def _locate_error(error: _LocalizedSympyError) -> _SourceSpan | None:
+    if isinstance(error.evidence, _IndexEvidence):
+        return _source_span(
+            error.source,
+            error.evidence.index,
+            error.evidence.index + 1,
+        )
+    if isinstance(error.evidence, _TokenEvidence):
+        return _find_token_span(error.source, error.evidence.token)
+    return None
+
+
+def _format_parse_failure(
+    localized_error: _LocalizedSympyError,
+    *,
+    allow_complex: bool,
+) -> SympyParseFailure:
+    error = localized_error.error
+    source = localized_error.source
+    span = _locate_error(localized_error)
+
+    def with_location(message: str) -> SympyParseFailure:
+        if span is None:
+            return SympyParseFailure(message)
+        return SympyParseFailure(
+            f"{message} <br><br><pre>{point_to_error(source.raw_text, span.start)}</pre>"
+            "Note that the location of the syntax error is approximate."
+        )
+
+    if localized_error.evaluation_failure:
+        return SympyParseFailure(SYMPY_EVALUATION_ERROR_WITHOUT_LOCATION)
+    if isinstance(error, HasFloatError):
+        return SympyParseFailure(
+            f"Your answer contains the floating-point number {error.n}. "
+            "All numbers must be expressed as integers (or ratios of integers)."
+        )
+    if isinstance(error, HasComplexError):
+        message = (
+            "Your answer contains a complex number. "
+            "All numbers must be expressed as integers (or ratios of integers). "
+        )
+        if allow_complex:
+            message += (
+                "To include a complex number in your expression, write it as the product "
+                "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
+            )
+        return SympyParseFailure(message)
+    if isinstance(error, HasSetNotationError):
+        return SympyParseFailure(
+            "Your answer contains set notation, but set notation is not allowed for this question."
+        )
+    if isinstance(error, HasInvalidExpressionError):
+        return with_location("Your answer has an invalid expression.")
+    if isinstance(error, HasInvalidFunctionError):
+        return with_location(f'Your answer calls an invalid function "{error.text}".')
+    if isinstance(error, FunctionNameWithoutArgumentsError):
+        return with_location(
+            f'Your answer mentions the function "{error.text}" without applying it to anything.'
+        )
+    if isinstance(error, HasInvalidSymbolError):
+        symbol = error.symbol
+        if span is not None and isinstance(localized_error.evidence, _TokenEvidence):
+            symbol = source.raw_text[span.start : span.end]
+        return with_location(f'Your answer refers to an invalid symbol "{symbol}".')
+    if isinstance(error, HasArgumentTypeError):
+        return with_location(
+            f"Your answer provides the wrong types to {error.fn}. "
+            f"It was expecting {error.format_allowable_types()}, but got a {error.got} "
+            f"for argument #{error.arg_idx + 1} instead."
+        )
+    if isinstance(error, HasFunctionArityError):
+        return with_location(
+            f"Your answer provides the wrong number of arguments to '{error.fn}', expected {error.expected}."
+        )
+    if isinstance(error, HasParseError):
+        if span is None:
+            return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
+        return with_location("Your answer has a syntax error.")
+    if isinstance(error, HasEscapeError):
+        return with_location('Your answer must not contain the character "\\".')
+    if isinstance(error, HasCommentError):
+        return with_location('Your answer must not contain the character "#".')
+    if isinstance(error, HasConflictingVariableError):
+        return SympyParseFailure(
+            f"Question configuration error: {error}. "
+            "The variable list contains a name that conflicts with a built-in constant. "
+            "Please contact the course staff."
+        )
+    if isinstance(error, HasConflictingFunctionError):
+        return SympyParseFailure(
+            f"Question configuration error: {error}. "
+            "The custom function list contains a name that conflicts with a built-in function. "
+            "Please contact the course staff."
+        )
+    if isinstance(error, HasInvalidAssumptionError):
+        return SympyParseFailure(
+            f"Question configuration error: {error}. Please contact the course staff."
+        )
+    return SympyParseFailure(
+        f"Unexpected error: {error}. Please contact the course staff."
+    )
 
 
 def sympy_to_json(
@@ -1409,9 +1638,14 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
+    from prairielearn.internal.symbolic_input import SourceText
+
+    source = SourceText.from_text(expr)
+
     return _try_parse_as_sympy(
-        expr,
-        lambda: convert_string_to_sympy(
+        source,
+        lambda: _convert_source_to_sympy_with_source(
+            source,
             expr,
             variables,
             allow_hidden=allow_hidden,
@@ -1421,14 +1655,15 @@ def try_parse_string_as_sympy(
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
-        ),
+            normalize_input=True,
+        )[0],
         allow_complex=allow_complex,
         imaginary_unit=imaginary_unit,
     )
 
 
 def _try_parse_as_sympy(
-    expr: str,
+    source: "SourceText",
     parse: Callable[[], sympy.Expr],
     *,
     allow_complex: bool,
@@ -1436,115 +1671,20 @@ def _try_parse_as_sympy(
 ) -> SympyParseResult:
     try:
         expr_parsed = parse()
-    except HasFloatError as exc:
-        return SympyParseFailure(
-            f"Your answer contains the floating-point number {exc.n}. "
-            f"All numbers must be expressed as integers (or ratios of integers)."
+    except _LocalizedSympyError as exc:
+        return _format_parse_failure(
+            exc,
+            allow_complex=allow_complex,
         )
-    except HasComplexError:
-        err_string = [
-            "Your answer contains a complex number. ",
-            "All numbers must be expressed as integers (or ratios of integers). ",
-        ]
-
-        if allow_complex:
-            err_string.append(
-                "To include a complex number in your expression, write it as the product "
-                "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
-            )
-
-        return SympyParseFailure("".join(err_string))
-    except HasSetNotationError:
-        return SympyParseFailure(
-            "Your answer contains set notation, but set notation is not allowed for this question."
-        )
-    except HasInvalidExpressionError as exc:
-        return SympyParseFailure(
-            f"Your answer has an invalid expression. "
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasInvalidFunctionError as exc:
-        return SympyParseFailure(
-            f'Your answer calls an invalid function "{exc.text}". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except FunctionNameWithoutArgumentsError as exc:
-        return SympyParseFailure(
-            f'Your answer mentions the function "{exc.text}" without '
-            "applying it to anything. "
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasInvalidSymbolError as exc:
-        offset = (
-            exc.offset
-            if exc.offset is not None
-            else find_symbol_offset(expr, exc.symbol)
-        )
-        return SympyParseFailure(
-            f'Your answer refers to an invalid symbol "{exc.symbol}". '
-            f"<br><br><pre>{point_to_error(expr, offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasArgumentTypeError as exc:
-        error_text = (
-            f"Your answer provides the wrong types to {exc.fn}. "
-            f"It was expecting {exc.format_allowable_types()}, but got a {exc.got} "
-            f"for argument #{exc.arg_idx + 1} instead."
-        )
-        if exc.offset != -1:
-            return SympyParseFailure(
-                f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-                "Note that the location of the syntax error is approximate."
-            )
-        return SympyParseFailure(error_text)
-    except HasFunctionArityError as exc:
-        error_text = f"Your answer provides the wrong number of arguments to '{exc.fn}', expected {exc.expected}."
-        if exc.offset != -1:
-            return SympyParseFailure(
-                f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-                "Note that the location of the syntax error is approximate."
-            )
-        return SympyParseFailure(error_text)
-    except HasParseError as exc:
-        # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
-        # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
-        if exc.offset == -1:
-            return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
-        return SympyParseFailure(
-            f"Your answer has a syntax error. "
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasEscapeError as exc:
-        return SympyParseFailure(
-            f'Your answer must not contain the character "\\". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasCommentError as exc:
-        return SympyParseFailure(
-            f'Your answer must not contain the character "#". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasConflictingVariableError as exc:
-        return SympyParseFailure(
-            f"Question configuration error: {exc}. "
-            "The variable list contains a name that conflicts with a built-in constant. "
-            "Please contact the course staff."
-        )
-    except HasConflictingFunctionError as exc:
-        return SympyParseFailure(
-            f"Question configuration error: {exc}. "
-            "The custom function list contains a name that conflicts with a built-in function. "
-            "Please contact the course staff."
-        )
-    except HasInvalidAssumptionError as exc:
-        return SympyParseFailure(
-            f"Question configuration error: {exc}. Please contact the course staff."
+    except BaseSympyError as exc:
+        return _format_parse_failure(
+            _LocalizedSympyError(
+                exc,
+                source,
+                _default_error_evidence(exc),
+                cause=exc.__cause__,
+            ),
+            allow_complex=allow_complex,
         )
     except Exception as exc:
         return SympyParseFailure(
