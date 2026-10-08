@@ -1750,6 +1750,25 @@ def sympy_to_json(
     if isinstance(a, sympy.Set) and not allow_sets:
         raise HasSetNotationError
 
+    return _sympy_to_json_impl(
+        a,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    )
+
+
+def _sympy_to_json_impl(
+    a: sympy.Expr | sympy.Set,
+    *,
+    allow_complex: bool,
+    allow_trig_functions: bool,
+    allow_sets: bool,
+    validate: Callable[[SympyValue], None] | None = None,
+) -> SympyJson:
+    if isinstance(a, sympy.Set) and not allow_sets:
+        raise HasSetNotationError
+
     const = _Constants
 
     # Get list of variables in the sympy expression
@@ -1772,6 +1791,8 @@ def sympy_to_json(
             (val, sympy.symbols(key))
             for key, val in const.hidden_complex_variables.items()
         ])
+    if validate is not None:
+        validate(a_sub)
 
     assumptions_dict = {
         str(variable): variable.assumptions0 for variable in a.free_symbols
