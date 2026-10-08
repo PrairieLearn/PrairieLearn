@@ -1,15 +1,19 @@
 /* eslint-disable @typescript-eslint/unbound-method -- The browser harness methods are Vitest spies passed to expect. */
-import type { Browser, BrowserContext, Page, Response, Route, WebSocketRoute } from 'playwright';
+import {
+  type Browser,
+  type BrowserContext,
+  type Page,
+  type Response,
+  type Route,
+  type WebSocketRoute,
+  chromium,
+} from 'playwright';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const playwrightMocks = vi.hoisted(() => ({
+const playwrightMocks = {
   connectOverCDP: vi.fn(),
   launch: vi.fn(),
-}));
-
-vi.mock('playwright', () => ({
-  chromium: { connectOverCDP: playwrightMocks.connectOverCDP, launch: playwrightMocks.launch },
-}));
+};
 
 import {
   PrintRenderer,
@@ -120,6 +124,8 @@ describe('PrintRenderer', () => {
   beforeEach(() => {
     playwrightMocks.connectOverCDP.mockReset();
     playwrightMocks.launch.mockReset();
+    vi.spyOn(chromium, 'connectOverCDP').mockImplementation(playwrightMocks.connectOverCDP);
+    vi.spyOn(chromium, 'launch').mockImplementation(playwrightMocks.launch);
   });
 
   afterEach(() => {
