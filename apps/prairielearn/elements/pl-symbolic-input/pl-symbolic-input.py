@@ -631,7 +631,9 @@ def format_submission_for_sympy(
     pattern = re.compile(
         r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
     )
+    bar_pattern = re.compile(r"\|")
     search_from = 0
+    preceding_bars: list[int] = []
     while True:
         # Find matches of |...| where:
         # when ignoring spaces, it either:
@@ -641,6 +643,13 @@ def format_submission_for_sympy(
         if not match:
             break
 
+        # Retain passed bars so nested matches can resume from the nearest one
+        # without repeatedly scanning the processed prefix.
+        preceding_bars.extend(
+            bar_match.start()
+            for bar_match in bar_pattern.finditer(sub, search_from, match.start())
+        )
+
         content = match.group(0)[1:-1]  # Strip the bars
         # When set notation is allowed, a comma inside the match means the
         # pipes are a union operator pair around an interval or finite set
@@ -648,15 +657,12 @@ def format_submission_for_sympy(
         # absolute value.
         # TODO: This can skip min/max operators or other functions that contain commas.
         if allow_sets and "," in content:
+            preceding_bars.append(match.start())
             search_from = match.start() + 1
             continue
 
         sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
-        # Matches never contain "|", so nothing before the nearest bar to the
-        # left of the replacement can start a new match. Resuming there instead
-        # of at 0 keeps this loop linear in the number of bars.
-        prev_bar = sub.rfind("|", 0, match.start())
-        search_from = prev_bar if prev_bar != -1 else match.start()
+        search_from = preceding_bars.pop() if preceding_bars else match.start()
 
     if not allow_sets and "|" in sub:
         return (
