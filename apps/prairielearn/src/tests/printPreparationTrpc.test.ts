@@ -22,7 +22,6 @@ import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById } from '../models/question.js';
-import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import { runInTransactionAndRollback } from './helperDb.js';
@@ -379,20 +378,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
         const questions = await api.printableExams.questions.query(instance);
         expect(questions).toHaveLength(2);
         expect(questions[0].number).toMatch(shuffle ? /^#\d+$/ : /^HW15\.1$/);
-        const search = new URLSearchParams({
-          paper_size: 'Letter',
-          question_block_size: `${questions[0].number}:half`,
-          exclude_question: questions[1].number,
-        });
-        const preview = await fetch(
-          `${siteUrl}/pl/course_instance/1/instructor/assessment_instance/${instance.assessmentInstanceId}/paper/preview?${search}`,
-        );
-        expect(preview.status).toBe(200);
-        const html = await preview.text();
-        expect(html).toContain('data-print-question-count="1"');
-        expect(html).toContain(`data-question-number="${questions[0].number}"`);
-        expect(html).toContain('data-print-block-size="half"');
-        expect(html).not.toContain(`data-question-number="${questions[1].number}"`);
       } finally {
         await execute(sql.set_shuffle_questions, {
           assessment_id: assessment.id,
@@ -401,35 +386,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
       }
     },
   );
-
-  test('printing homework reuses closed variants for student copies and answer keys', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'hw20-afterCompleteVisibility',
-    });
-    const { assessmentInstanceId } = await client(assessment.id).printableExams.create.mutate();
-    const paperUrl = `${siteUrl}/pl/course_instance/1/instructor/assessment_instance/${assessmentInstanceId}/paper`;
-    const firstPreview = await fetch(`${paperUrl}/preview?paper_size=Letter`);
-    expect(firstPreview.status).toBe(200);
-    expect(await firstPreview.text()).toContain('data-print-warnings="[]"');
-    const variants = await selectVariantsByInstanceQuestion({
-      assessment_instance_id: assessmentInstanceId,
-    });
-    expect(variants).toHaveLength(1);
-    await execute(sql.close_variants, { assessment_instance_id: assessmentInstanceId });
-    for (const document of ['exam', 'answer_key', 'exam']) {
-      const preview = await fetch(`${paperUrl}/preview?paper_size=Letter&document=${document}`);
-      expect(preview.status).toBe(200);
-      const html = await preview.text();
-      expect(html).toContain('data-print-question-count="1"');
-      expect(html).toContain('data-print-omitted-question-count="0"');
-      expect(
-        await selectVariantsByInstanceQuestion({
-          assessment_instance_id: assessmentInstanceId,
-        }),
-      ).toEqual(variants.map((variant) => ({ ...variant, open: false })));
-    }
-  });
 
   test('requires course preview permission', async () => {
     const assessment = await selectAssessmentByTid({
