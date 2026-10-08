@@ -1,23 +1,24 @@
 # Printing
 
-Utilities for rendering printable HTML as PDFs and namespacing question HTML so separately rendered fragments can share a page.
+Utilities for rendering printable HTML as PDFs and editable Word documents, and namespacing question HTML so separately rendered fragments can share a page.
 
-## Rendering PDFs
+## Rendering PDFs and Word documents
 
-`PrintRenderer` turns a paginated printable page into a PDF (`renderPdf`). Create one renderer per process and keep it for the life of the process. For example, from a caller in `src/lib`:
+The rendering browser lays out and paginates question HTML. PDF exports use its completed page snapshot. Word exports use the editable source captured before pagination and screenshots of figures. Create one renderer per application process:
 
 ```ts
 import { getPrintingCloudflareConfig } from './config.js';
 import { PrintRenderer } from './printing/printRenderer.js';
+import { createDocxOutput } from './printing/docxOutput.js';
 
 const renderer = new PrintRenderer({
   cloudflare: getPrintingCloudflareConfig(),
 });
-const pdf = await renderer.renderPdf({
-  url: previewUrl,
-  html: paginatedHtml,
-  cookieHeader: req.get('cookie'),
-});
+const pdf = await renderer.renderPdf({ url: previewUrl, html: paginatedHtml });
+const docx = await renderer.render(
+  { url: previewUrl, html: paginatedHtml, runScripts: true },
+  createDocxOutput({ source, cover, footerLabel }),
+);
 await renderer.close(); // during shutdown
 ```
 
@@ -32,6 +33,16 @@ The browser permits only same-origin `GET` requests during rendering; redirects,
 The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. Set `data-print-paper-size="A4"` on the root element to produce A4 PDF sheets; otherwise, the renderer uses Letter sheets. The page's CSS uses the same attribute to size printable content.
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
+
+### Word output
+
+The Word document contains native paragraphs, lists, tables, answer spaces, hyperlinks, and Office Math equations. Only actual figures (images, SVG diagrams, and canvases) are captured as images. Question content is captured before pagination, so Word can reflow edited text and its page count can differ from the PDF. The sheet size and margins follow the printable page's CSS. Printable details boxes retain their heading and content. Response guidance appears below its answer line, with surrounding labels and units kept in separate table cells.
+
+The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docxContent.ts` maps the source to native Word objects, and `printDocxClient.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
+
+`cover` may be a function; it receives the page's root `data-*` attributes so that values which are only known after rendering, such as the number of questions that rendered successfully, can be placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
+
+Omit the `cover` option to start with questions on the first page.
 
 ## Combining question fragments
 
@@ -49,7 +60,7 @@ Generic input placeholders such as "symbolic expression", "integer", and "matrix
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Number, integer, string, units, big-O, symbolic | Empty response lines; preserve labels, suffixes, and useful precision guidance. Replace formula editors rather than copying shadow-root controls.                                                                                                                                                                                                             |
 | Matrix entries                                  | One line per entry in the original row/column structure.                                                                                                                                                                                                                                                                                                      |
-| Radio and checkbox choices                      | Unchecked, high-contrast markers with aligned labels, generous vertical spacing, and light option separators.                                                                                                                                                                                                                                                 |
+| Radio and checkbox choices                      | Unchecked, high-contrast markers with aligned labels, generous vertical spacing, and light option separators. Word keeps each option in a separate editable row.                                                                                                                                                                                              |
 | Dropdown and matching                           | Visible option lists and response lines; retain a matching option bank even when the dropdown originally contained the only copy.                                                                                                                                                                                                                             |
 | Ordering                                        | Blank order-number boxes beside every option and provided block, with boxed "Choose only one block from this group" sets. Tell students to leave unused blocks blank. When indentation is graded, add an Indent box (0 = no indentation) beside the Order box instead of asking students to copy the solution. Label multiple block sets within one question. |
 | File, rich text, workspace                      | Written response space; preserve file names, starter code, and rich-text word-count requirements.                                                                                                                                                                                                                                                             |
@@ -64,7 +75,7 @@ Attributions embedded in a question are arbitrary authored HTML, not reliably di
 
 ### Pagination and answer keys
 
-Long questions start on a fresh page. Subparts that fit on one page receive explicit page boundaries when necessary: Paged.js does not reliably honor nested `break-inside: avoid` rules for all cards and SVGs. Keep the same content width for measurement, HTML and PDF.
+Long questions start on a fresh page. Subparts that fit on one page receive explicit page boundaries when necessary: Paged.js does not reliably honor nested `break-inside: avoid` rules for all cards and SVGs. Keep the same content width for measurement, HTML, PDF, and DOCX capture.
 
 An explicit third-, half-, or full-page block reserves that fraction when the question fits. When its content needs more room, reserve its measured height instead; move it to the next page or let it flow across pages when necessary.
 
