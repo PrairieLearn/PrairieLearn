@@ -56,6 +56,7 @@ import { safeMustacheRender } from '../../../lib/mustache.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
+import { type QuestionImageContext, loadQuestionImage } from './ai-grading-images.js';
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
 import {
   type CounterClockwiseRotationDegrees,
@@ -102,6 +103,7 @@ function textSection(title: string, content: string): TextPart {
 
 export async function prepareQuestionPrompt(
   prompt: string,
+  imageContext: QuestionImageContext,
   section: 'question' | 'answer' = 'question',
 ): Promise<UserContentParts> {
   if (section === 'answer') {
@@ -118,18 +120,7 @@ export async function prepareQuestionPrompt(
   const imageFiles = new Map(
     await Promise.all(
       [...imageSources].map(async (src) => {
-        const url = new URL(
-          src,
-          config.serverCanonicalHost ??
-            `${config.serverType}://${config.hostname}:${config.serverPort}`,
-        );
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Failed to load ${section} image ${url}: ${response.status}`);
-        }
-        const image = Buffer.from(await response.arrayBuffer());
-        const mediaType = response.headers.get('content-type')?.split(';')[0] ?? 'image/png';
-        return [src, { data: image.toString('base64'), mediaType }] as const;
+        return [src, await loadQuestionImage(src, imageContext)] as const;
       }),
     ),
   );
