@@ -16,6 +16,57 @@ plain-input, formula-editor, simplified, unsimplified, accepted, and rejected
 paths at three complexity levels. The runner records behavior changes without
 treating them as timing failures.
 
+## Paired overnight comparison
+
+Use `compare` for the primary baseline/candidate measurement. It runs commits
+serially in mirrored `ABBA`, then `BAAB`, blocks so each commit occupies every
+position in the block across an overnight run. This avoids direct competition
+for CPU, cache, memory bandwidth, and thermal headroom while controlling for
+time-dependent drift.
+
+```sh
+caffeinate -i uv run python benchmarks/symbolic-input/benchmark.py compare \
+  --baseline 6125da3a9 \
+  --candidate fbdb0757c \
+  --round-duration 5m \
+  --duration 8h \
+  --order abba \
+  --suite comparison \
+  --output-dir .cache/symbolic-input-benchmark/overnight
+```
+
+The total duration must be a positive multiple of four round durations. The
+eight-hour example creates 24 four-round blocks and gives each commit four
+hours of active measurement time. The `comparison` suite uses one warm worker
+with normal GC; use the broader matrices as separate experiments.
+
+The output directory contains an atomic `comparison.json` coordinator, one
+resumable SQLite database per round, and continuously refreshed
+`comparison.md` and `comparison.csv` reports. Reports calculate the geometric
+mean candidate/baseline ratio and deterministic 95% bootstrap interval over
+complete four-round blocks. They also include acceptance mismatches and
+exceptions. Start/end load averages are retained in the coordinator for
+diagnostics.
+
+Interrupt normally and resume with:
+
+```sh
+uv run python benchmarks/symbolic-input/benchmark.py compare \
+  --output-dir .cache/symbolic-input-benchmark/overnight
+```
+
+Extend a completed or interrupted comparison by whole blocks:
+
+```sh
+uv run python benchmarks/symbolic-input/benchmark.py compare \
+  --output-dir .cache/symbolic-input-benchmark/overnight \
+  --extend 2h
+```
+
+Avoid unrelated workloads during the comparison. If performance under load is
+important, make each fixed load level a separate controlled experiment instead
+of relying on arbitrary background activity.
+
 ## Run
 
 Run commands from the repository root:

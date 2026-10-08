@@ -27,7 +27,10 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, TextIO
+from typing import TYPE_CHECKING, Any, Literal, TextIO
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 BENCHMARK_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BENCHMARK_DIR.parents[1]
@@ -911,7 +914,7 @@ def show_status(path: Path) -> None:
         connection.close()
 
 
-def quantile(values: list[int], fraction: float) -> float:
+def quantile(values: Sequence[int | float], fraction: float) -> float:
     if not values:
         return math.nan
     ordered = sorted(values)
@@ -1140,6 +1143,434 @@ def render_report(paths: list[Path], output_format: str, output: TextIO) -> None
     output.write(_markdown_table(breakdown_rows, breakdown_columns) + "\n")
 
 
+def comparison_schedule(block_count: int) -> list[str]:
+    """Return mirrored ABBA blocks so both commits occupy every block position."""
+    schedule: list[str] = []
+    for block_index in range(block_count):
+        schedule.extend(
+            ("baseline", "candidate", "candidate", "baseline")
+            if block_index % 2 == 0
+            else ("candidate", "baseline", "baseline", "candidate")
+        )
+    return schedule
+
+
+def _comparison_state_path(output_dir: Path) -> Path:
+    return output_dir / "comparison.json"
+
+
+def _write_comparison_state(output_dir: Path, state: dict[str, Any]) -> None:
+    state_path = _comparison_state_path(output_dir)
+    temporary_path = state_path.with_suffix(".json.tmp")
+    temporary_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+    os.replace(temporary_path, state_path)
+
+
+def _load_comparison_state(output_dir: Path) -> dict[str, Any]:
+    state_path = _comparison_state_path(output_dir)
+    try:
+        state = json.loads(state_path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        raise BenchmarkError(f"Invalid comparison state: {state_path}") from exc
+    if state.get("schema_version") != 1:
+        raise BenchmarkError(
+            f"Unsupported comparison schema: {state.get('schema_version')}"
+        )
+    return state
+
+
+def _validate_comparison_duration(total_ns: int, round_ns: int) -> int:
+    if round_ns <= 0:
+        raise BenchmarkError("Round duration must be positive")
+    block_ns = round_ns * 4
+    block_count, remainder = divmod(total_ns, block_ns)
+    if remainder or block_count == 0:
+        raise BenchmarkError(
+            "Comparison duration must be a positive multiple of four round durations"
+        )
+    return block_count
+
+
+def _comparison_rounds(
+    *,
+    start_index: int,
+    block_count: int,
+    baseline_commit: str,
+    candidate_commit: str,
+) -> list[dict[str, Any]]:
+    if start_index % 4:
+        raise BenchmarkError("Comparison extensions must start on a block boundary")
+    rounds: list[dict[str, Any]] = []
+    start_block = start_index // 4
+    schedule = comparison_schedule(start_block + block_count)[start_index:]
+    for offset, role in enumerate(schedule):
+        round_index = start_index + offset
+        commit = baseline_commit if role == "baseline" else candidate_commit
+        rounds.append({
+            "index": round_index,
+            "block": round_index // 4,
+            "position": round_index % 4,
+            "role": role,
+            "commit": commit,
+            "database": f"round-{round_index:04d}-{role}-{commit[:12]}.sqlite3",
+            "status": "pending",
+        })
+    return rounds
+
+
+def _new_comparison_state(args: argparse.Namespace, output_dir: Path) -> dict[str, Any]:
+    missing = [
+        option
+        for option in ("baseline", "candidate", "duration")
+        if getattr(args, option) is None
+    ]
+    if missing:
+        raise BenchmarkError(
+            "A new comparison requires: "
+            + ", ".join(f"--{option.replace('_', '-')}" for option in missing)
+        )
+    if output_dir.exists() and any(output_dir.iterdir()):
+        raise BenchmarkError(f"Comparison output directory is not empty: {output_dir}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    baseline_commit = resolve_commit(args.baseline)
+    candidate_commit = resolve_commit(args.candidate)
+    if baseline_commit == candidate_commit:
+        raise BenchmarkError("Baseline and candidate resolve to the same commit")
+    round_duration_ns = args.round_duration or parse_duration("5m")
+    block_count = _validate_comparison_duration(args.duration, round_duration_ns)
+    corpus = (args.corpus or DEFAULT_CORPUS).resolve()
+    suite_name = args.suite or "comparison"
+    if suite_name not in load_suites():
+        raise BenchmarkError(f"Unknown suite: {suite_name}")
+    state = {
+        "schema_version": 1,
+        "status": "ready",
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+        "harness_commit": git_output("rev-parse", "HEAD"),
+        "baseline_ref": args.baseline,
+        "baseline_commit": baseline_commit,
+        "candidate_ref": args.candidate,
+        "candidate_commit": candidate_commit,
+        "suite": suite_name,
+        "order": args.order or "abba",
+        "round_duration_ns": round_duration_ns,
+        "total_duration_ns": args.duration,
+        "corpus_path": os.fspath(corpus),
+        "corpus_sha256": sha256_file(corpus),
+        "labels": args.label,
+        "rounds": _comparison_rounds(
+            start_index=0,
+            block_count=block_count,
+            baseline_commit=baseline_commit,
+            candidate_commit=candidate_commit,
+        ),
+    }
+    _write_comparison_state(output_dir, state)
+    return state
+
+
+def _validate_comparison_arguments(
+    args: argparse.Namespace, state: dict[str, Any]
+) -> None:
+    for option, state_key in (
+        ("baseline", "baseline_commit"),
+        ("candidate", "candidate_commit"),
+    ):
+        value = getattr(args, option)
+        if value is not None and resolve_commit(value) != state[state_key]:
+            raise BenchmarkError(f"--{option} does not match the existing comparison")
+    if args.duration is not None and args.duration != state["total_duration_ns"]:
+        raise BenchmarkError(
+            "--duration does not match the existing comparison; use --extend"
+        )
+    if (
+        args.round_duration is not None
+        and args.round_duration != state["round_duration_ns"]
+    ):
+        raise BenchmarkError("--round-duration does not match the existing comparison")
+    if args.suite is not None and args.suite != state["suite"]:
+        raise BenchmarkError("--suite does not match the existing comparison")
+    if args.order is not None and args.order != state["order"]:
+        raise BenchmarkError("--order does not match the existing comparison")
+    if args.corpus is not None:
+        corpus = args.corpus.resolve()
+        if sha256_file(corpus) != state["corpus_sha256"]:
+            raise BenchmarkError("--corpus does not match the existing comparison")
+
+
+def _extend_comparison(
+    output_dir: Path,
+    state: dict[str, Any],
+    extension_ns: int,
+) -> None:
+    block_count = _validate_comparison_duration(
+        extension_ns, state["round_duration_ns"]
+    )
+    state["rounds"].extend(
+        _comparison_rounds(
+            start_index=len(state["rounds"]),
+            block_count=block_count,
+            baseline_commit=state["baseline_commit"],
+            candidate_commit=state["candidate_commit"],
+        )
+    )
+    state["total_duration_ns"] += extension_ns
+    state["status"] = "ready"
+    state["updated_at"] = now_iso()
+    _write_comparison_state(output_dir, state)
+
+
+def _safe_load_average() -> list[float] | None:
+    try:
+        return list(os.getloadavg())
+    except OSError:
+        return None
+
+
+def _database_status(path: Path) -> str:
+    connection = connect_database(path)
+    try:
+        metadata = get_metadata(connection)
+        validate_database(metadata)
+        return metadata["status"]
+    finally:
+        connection.close()
+
+
+def _comparison_group_totals(
+    path: Path,
+) -> dict[tuple[Any, ...], tuple[int, int, int, int]]:
+    _metadata, measurements, _wall = load_measurements(path)
+    groups: dict[tuple[Any, ...], list[int]] = defaultdict(lambda: [0, 0, 0, 0])
+    for measurement in measurements:
+        condition = measurement["condition"]
+        keys = (
+            ("overall", *condition, "all", "all", "all"),
+            (
+                "breakdown",
+                *condition,
+                measurement["family"],
+                measurement["complexity"],
+                measurement["expected"],
+            ),
+        )
+        for key in keys:
+            totals = groups[key]
+            totals[0] += measurement["timing_ns"]
+            totals[1] += 1
+            totals[2] += measurement["outcome"] != measurement["expected"]
+            totals[3] += measurement["outcome"] == "exception"
+    return {
+        key: (value[0], value[1], value[2], value[3]) for key, value in groups.items()
+    }
+
+
+def _geometric_mean(values: list[float]) -> float:
+    return math.exp(statistics.fmean(math.log(value) for value in values))
+
+
+def _bootstrap_ratio_interval(
+    ratios: list[float],
+    *,
+    seed_key: tuple[Any, ...],
+    samples: int = 2000,
+) -> tuple[float, float]:
+    if len(ratios) < 2:
+        return ratios[0], ratios[0]
+    seed_bytes = hashlib.sha256(repr(seed_key).encode()).digest()[:8]
+    rng = random.Random(int.from_bytes(seed_bytes))
+    estimates = [
+        _geometric_mean([rng.choice(ratios) for _ in ratios]) for _ in range(samples)
+    ]
+    return quantile(estimates, 0.025), quantile(estimates, 0.975)
+
+
+def comparison_report_rows(
+    output_dir: Path, state: dict[str, Any]
+) -> list[dict[str, Any]]:
+    complete_rounds = {
+        round_data["index"]: round_data
+        for round_data in state["rounds"]
+        if round_data["status"] == "complete"
+    }
+    complete_blocks = [
+        block_index
+        for block_index in range(len(state["rounds"]) // 4)
+        if all(block_index * 4 + position in complete_rounds for position in range(4))
+    ]
+    block_groups: dict[tuple[Any, ...], list[tuple[float, float, float, int, int]]] = (
+        defaultdict(list)
+    )
+    for block_index in complete_blocks:
+        rounds = [complete_rounds[block_index * 4 + position] for position in range(4)]
+        totals_by_role: dict[str, dict[tuple[Any, ...], list[int]]] = {
+            "baseline": defaultdict(lambda: [0, 0, 0, 0]),
+            "candidate": defaultdict(lambda: [0, 0, 0, 0]),
+        }
+        for round_data in rounds:
+            round_groups = _comparison_group_totals(output_dir / round_data["database"])
+            for key, totals in round_groups.items():
+                combined = totals_by_role[round_data["role"]][key]
+                for position, value in enumerate(totals):
+                    combined[position] += value
+        common_keys = (
+            totals_by_role["baseline"].keys() & totals_by_role["candidate"].keys()
+        )
+        for key in common_keys:
+            baseline = totals_by_role["baseline"][key]
+            candidate = totals_by_role["candidate"][key]
+            baseline_mean = baseline[0] / baseline[1]
+            candidate_mean = candidate[0] / candidate[1]
+            block_groups[key].append((
+                baseline_mean,
+                candidate_mean,
+                candidate_mean / baseline_mean,
+                baseline[2] + candidate[2],
+                baseline[3] + candidate[3],
+            ))
+
+    rows: list[dict[str, Any]] = []
+    for key, blocks in sorted(block_groups.items()):
+        ratios = [block[2] for block in blocks]
+        ratio = _geometric_mean(ratios)
+        ci_low, ci_high = _bootstrap_ratio_interval(ratios, seed_key=key)
+        rows.append({
+            "scope": key[0],
+            "lifecycle": key[1],
+            "gc": key[2],
+            "workers": key[3],
+            "family": key[4],
+            "complexity": key[5],
+            "expected": key[6],
+            "blocks": len(blocks),
+            "baseline_mean_us": statistics.fmean(block[0] for block in blocks) / 1000,
+            "candidate_mean_us": statistics.fmean(block[1] for block in blocks) / 1000,
+            "ratio": ratio,
+            "delta_percent": (ratio - 1) * 100,
+            "ci_2_5": ci_low,
+            "ci_97_5": ci_high,
+            "mismatches": sum(block[3] for block in blocks),
+            "exceptions": sum(block[4] for block in blocks),
+        })
+    return rows
+
+
+def write_comparison_reports(output_dir: Path, state: dict[str, Any]) -> None:
+    rows = comparison_report_rows(output_dir, state)
+    if not rows:
+        return
+    columns = list(rows[0])
+    markdown_path = output_dir / "comparison.md"
+    markdown_path.write_text(
+        "# Paired symbolic-input comparison\n\n"
+        f"- Baseline: `{state['baseline_commit']}`\n"
+        f"- Candidate: `{state['candidate_commit']}`\n"
+        f"- Round duration: {format_duration(state['round_duration_ns'])}\n"
+        f"- Completed blocks: {max(row['blocks'] for row in rows)}\n\n"
+        + _markdown_table(rows, columns)
+        + "\n"
+    )
+    with (output_dir / "comparison.csv").open(
+        "w", encoding="utf-8", newline=""
+    ) as output:
+        writer = csv.DictWriter(output, fieldnames=columns)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _comparison_progress(state: dict[str, Any]) -> str:
+    complete = sum(round_data["status"] == "complete" for round_data in state["rounds"])
+    return f"{complete}/{len(state['rounds'])} rounds complete"
+
+
+def run_comparison(args: argparse.Namespace) -> None:
+    output_dir = args.output_dir.resolve()
+    state_path = _comparison_state_path(output_dir)
+    if state_path.exists():
+        state = _load_comparison_state(output_dir)
+        _validate_comparison_arguments(args, state)
+    else:
+        state = _new_comparison_state(args, output_dir)
+    if args.extend:
+        _extend_comparison(output_dir, state, args.extend)
+
+    corpus = Path(state["corpus_path"])
+    if not corpus.is_file() or sha256_file(corpus) != state["corpus_sha256"]:
+        raise BenchmarkError("Comparison corpus is unavailable or has changed")
+    print(
+        f"paired comparison: {state['baseline_commit'][:12]} vs "
+        f"{state['candidate_commit'][:12]} ({_comparison_progress(state)})",
+        flush=True,
+    )
+    state["status"] = "running"
+    state["updated_at"] = now_iso()
+    _write_comparison_state(output_dir, state)
+
+    for round_data in state["rounds"]:
+        if STOP_REQUESTED.is_set():
+            break
+        if round_data["status"] == "complete":
+            continue
+        database = output_dir / round_data["database"]
+        round_data["status"] = "running"
+        round_data["started_at"] = now_iso()
+        round_data["load_average_start"] = _safe_load_average()
+        state["updated_at"] = now_iso()
+        _write_comparison_state(output_dir, state)
+        print(
+            f"round {round_data['index'] + 1}/{len(state['rounds'])}: "
+            f"{round_data['role']} {round_data['commit'][:12]}",
+            flush=True,
+        )
+        try:
+            if database.exists():
+                execute_database(database)
+            else:
+                initialize_run(
+                    argparse.Namespace(
+                        suite=state["suite"],
+                        corpus=corpus,
+                        commit=round_data["commit"],
+                        duration=state["round_duration_ns"],
+                        output=database,
+                        label=[
+                            *state["labels"],
+                            f"comparison-round={round_data['index']}",
+                            f"comparison-role={round_data['role']}",
+                        ],
+                    )
+                )
+            round_data["status"] = _database_status(database)
+        except BaseException:
+            round_data["status"] = "failed"
+            round_data["finished_at"] = now_iso()
+            round_data["load_average_end"] = _safe_load_average()
+            state["status"] = "failed"
+            state["updated_at"] = now_iso()
+            _write_comparison_state(output_dir, state)
+            raise
+        round_data["finished_at"] = now_iso()
+        round_data["load_average_end"] = _safe_load_average()
+        state["updated_at"] = now_iso()
+        _write_comparison_state(output_dir, state)
+        if round_data["status"] != "complete":
+            break
+        if (round_data["index"] + 1) % 4 == 0:
+            write_comparison_reports(output_dir, state)
+
+    state["status"] = (
+        "complete"
+        if all(round_data["status"] == "complete" for round_data in state["rounds"])
+        else "interrupted"
+    )
+    state["updated_at"] = now_iso()
+    _write_comparison_state(output_dir, state)
+    write_comparison_reports(output_dir, state)
+    print(f"comparison {state['status']}: {_comparison_progress(state)}", flush=True)
+
+
 def signal_handler(_signum: int, _frame: Any) -> None:
     if not STOP_REQUESTED.is_set():
         print("Stopping after the active batch...", file=sys.stderr, flush=True)
@@ -1171,6 +1602,44 @@ def build_parser() -> argparse.ArgumentParser:
         "--format", choices=("text", "markdown", "csv"), default="text"
     )
     report_parser.add_argument("--output", type=Path)
+
+    compare_parser = subparsers.add_parser(
+        "compare", help="Run or resume a paired commit comparison"
+    )
+    compare_parser.add_argument("--baseline", help="Baseline Git ref for a new run")
+    compare_parser.add_argument("--candidate", help="Candidate Git ref for a new run")
+    compare_parser.add_argument(
+        "--suite", choices=tuple(load_suites()), help="Defaults to comparison"
+    )
+    compare_parser.add_argument(
+        "--duration",
+        type=parse_duration,
+        help="Total active time across both commits",
+    )
+    compare_parser.add_argument(
+        "--round-duration",
+        type=parse_duration,
+        help="Active time per round; defaults to 5m",
+    )
+    compare_parser.add_argument(
+        "--order", choices=("abba",), help="Mirrored ABBA/BAAB block order"
+    )
+    compare_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="State, round DB, and report directory",
+    )
+    compare_parser.add_argument(
+        "--corpus", type=Path, help="Defaults to the bundled corpus"
+    )
+    compare_parser.add_argument("--label", action="append", default=[])
+    compare_parser.add_argument(
+        "--extend",
+        type=parse_duration,
+        default=0,
+        help="Append complete four-round blocks to an existing run",
+    )
     return parser
 
 
@@ -1193,6 +1662,8 @@ def main() -> int:
             else:
                 with args.output.open("w", encoding="utf-8", newline="") as output:
                     render_report(args.databases, args.format, output)
+        elif args.command == "compare":
+            run_comparison(args)
         else:
             raise AssertionError(args.command)
     except BenchmarkError as exc:

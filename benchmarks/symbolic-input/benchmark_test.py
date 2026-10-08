@@ -8,6 +8,7 @@ import io
 import json
 import sqlite3
 import sys
+from argparse import Namespace
 from collections import Counter
 from pathlib import Path
 
@@ -210,3 +211,155 @@ def test_signal_requests_graceful_stop() -> None:
     benchmark.signal_handler(0, None)
     assert benchmark.STOP_REQUESTED.is_set()
     benchmark.STOP_REQUESTED.clear()
+
+
+def test_comparison_schedule_mirrors_block_positions() -> None:
+    assert benchmark.comparison_schedule(2) == [
+        "baseline",
+        "candidate",
+        "candidate",
+        "baseline",
+        "candidate",
+        "baseline",
+        "baseline",
+        "candidate",
+    ]
+
+
+def test_comparison_state_resume_extension_and_paired_report(tmp_path: Path) -> None:
+    output_dir = tmp_path / "comparison"
+    corpus = _tiny_corpus(tmp_path)
+    round_duration = benchmark.parse_duration("1s")
+    state = benchmark._new_comparison_state(
+        Namespace(
+            baseline="HEAD^",
+            candidate="HEAD",
+            duration=round_duration * 4,
+            round_duration=round_duration,
+            corpus=corpus,
+            suite="comparison",
+            order="abba",
+            label=["unit-test"],
+        ),
+        output_dir,
+    )
+    assert [round_data["role"] for round_data in state["rounds"]] == [
+        "baseline",
+        "candidate",
+        "candidate",
+        "baseline",
+    ]
+    assert benchmark._load_comparison_state(output_dir) == state
+
+    benchmark._extend_comparison(output_dir, state, round_duration * 4)
+    assert [round_data["role"] for round_data in state["rounds"][4:]] == [
+        "candidate",
+        "baseline",
+        "baseline",
+        "candidate",
+    ]
+
+    for round_data in state["rounds"][:4]:
+        database = output_dir / round_data["database"]
+        benchmark.create_database(
+            database,
+            target_ref=round_data["commit"],
+            target_commit=round_data["commit"],
+            suite=_tiny_suite(),
+            target_duration_ns=0,
+            corpus=corpus,
+            corpus_size=1,
+            worker_metadata={"python": "test", "sympy": "test"},
+            labels=["paired-test"],
+        )
+        connection = benchmark.connect_database(database)
+        try:
+            condition = benchmark.load_conditions(connection)[0]
+            timing_ns = 200_000 if round_data["role"] == "baseline" else 100_000
+            benchmark.record_batch(
+                connection,
+                condition,
+                [0],
+                [timing_ns],
+                [0],
+                ["value-hash"],
+                timing_ns,
+            )
+        finally:
+            connection.close()
+        round_data["status"] = "complete"
+
+    rows = benchmark.comparison_report_rows(output_dir, state)
+    overall = next(row for row in rows if row["scope"] == "overall")
+    assert overall["blocks"] == 1
+    assert overall["baseline_mean_us"] == 200
+    assert overall["candidate_mean_us"] == 100
+    assert overall["ratio"] == pytest.approx(0.5)
+    assert overall["ci_2_5"] == pytest.approx(0.5)
+    assert overall["ci_97_5"] == pytest.approx(0.5)
+
+    benchmark.write_comparison_reports(output_dir, state)
+    assert (
+        "Paired symbolic-input comparison" in (output_dir / "comparison.md").read_text()
+    )
+    assert (output_dir / "comparison.csv").is_file()
+
+
+def test_comparison_orchestrates_and_resumes_rounds_without_duplicates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output_dir = tmp_path / "comparison"
+    round_duration = benchmark.parse_duration("1s")
+    state = benchmark._new_comparison_state(
+        Namespace(
+            baseline="HEAD^",
+            candidate="HEAD",
+            duration=round_duration * 4,
+            round_duration=round_duration,
+            corpus=_tiny_corpus(tmp_path),
+            suite="comparison",
+            order="abba",
+            label=[],
+        ),
+        output_dir,
+    )
+    initialized: list[Namespace] = []
+    monkeypatch.setattr(benchmark, "initialize_run", initialized.append)
+    monkeypatch.setattr(benchmark, "_database_status", lambda _path: "complete")
+    monkeypatch.setattr(
+        benchmark, "write_comparison_reports", lambda _output_dir, _state: None
+    )
+    resume_args = Namespace(
+        output_dir=output_dir,
+        baseline=None,
+        candidate=None,
+        duration=None,
+        round_duration=None,
+        corpus=None,
+        suite=None,
+        order=None,
+        label=[],
+        extend=0,
+    )
+
+    benchmark.STOP_REQUESTED.clear()
+    benchmark.run_comparison(resume_args)
+    assert [run.commit for run in initialized] == [
+        round_data["commit"] for round_data in state["rounds"]
+    ]
+    assert benchmark._load_comparison_state(output_dir)["status"] == "complete"
+
+    initialized.clear()
+    benchmark.run_comparison(resume_args)
+    assert initialized == []
+
+
+@pytest.mark.parametrize(
+    ("total", "round_duration"),
+    [(0, 1), (3, 1), (5, 2)],
+)
+def test_comparison_requires_complete_positive_blocks(
+    total: int, round_duration: int
+) -> None:
+    with pytest.raises(benchmark.BenchmarkError, match="multiple"):
+        benchmark._validate_comparison_duration(total, round_duration)
