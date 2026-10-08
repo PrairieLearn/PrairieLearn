@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
@@ -114,6 +115,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param params.locals The current locals for the page response.
  * @param params.user The effective user to attribute errors to.
  * @param params.authn_user The authenticated user to attribute errors to.
+ * @param params.throwOnFatalError Prevent incomplete content from being used in printed documents.
  */
 async function render({
   variant_course,
@@ -126,6 +128,7 @@ async function render({
   locals,
   user,
   authn_user,
+  throwOnFatalError = false,
 }: {
   variant_course: Course;
   renderSelection: questionServers.RenderSelection;
@@ -139,6 +142,7 @@ async function render({
   user: User;
   /** The authenticated user to attribute errors to. */
   authn_user: User;
+  throwOnFatalError?: boolean;
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -167,6 +171,12 @@ async function render({
     studentMessage,
     courseData,
   );
+  const fatalIssue = courseIssues.find((issue) => issue.fatal);
+  if (throwOnFatalError && fatalIssue) {
+    throw new Error(`Question ${question.qid ?? question.id} could not be rendered for printing.`, {
+      cause: fatalIssue,
+    });
+  }
   return data;
 }
 
@@ -443,6 +453,8 @@ type GetAndRenderVariantInputLocals = {
 } & Partial<ResLocalsInstanceQuestionRenderAdded> &
   Partial<ResLocalsQuestionRenderAdded>;
 
+type VariantRenderMode = 'default' | 'blank' | 'answer-key';
+
 /**
  * Render all information needed for a question.
  *
@@ -462,6 +474,7 @@ export async function getAndRenderVariant(
     publicQuestionPreview = false,
     issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
     questionRenderContext,
+    renderMode = 'default',
   }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
@@ -481,6 +494,11 @@ export async function getAndRenderVariant(
      * Leave undefined for normal student/instructor rendering.
      */
     questionRenderContext?: QuestionRenderContext;
+    /**
+     * Controls whether submissions and correct answers are available while rendering. `blank`
+     * omits both, while `answer-key` omits submissions and forces correct-answer rendering.
+     */
+    renderMode?: VariantRenderMode;
   } = {},
 ): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
@@ -515,7 +533,9 @@ export async function getAndRenderVariant(
         variant_course: locals.course,
         question_course,
         options: { variant_seed },
-        require_open: !!locals.assessment && locals.assessment.type !== 'Exam',
+        // Printed copies and answer keys must reuse saved variants, including closed homework variants.
+        require_open:
+          renderMode === 'default' && !!locals.assessment && locals.assessment.type !== 'Exam',
         client_fingerprint_id: locals.client_fingerprint_id ?? null,
       });
     }
@@ -580,11 +600,14 @@ export async function getAndRenderVariant(
   // information for all submissions to this variant, and then we'll
   // load the full submission for only the submissions that we'll
   // actually render.
-  const basicSubmissions = await sqldb.queryRows(
-    sql.select_basic_submissions,
-    { variant_id: variant.id },
-    SubmissionBasicSchema,
-  );
+  const basicSubmissions =
+    renderMode === 'default'
+      ? await sqldb.queryRows(
+          sql.select_basic_submissions,
+          { variant_id: variant.id },
+          SubmissionBasicSchema,
+        )
+      : [];
   const submissionCount = basicSubmissions.length;
 
   const submissions = await run(async () => {
@@ -619,13 +642,22 @@ export async function getAndRenderVariant(
   const submission = submissions.at(0) ?? null;
 
   const showCorrectAnswer = run(() => {
-    if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
-      // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
-      return true;
+    switch (renderMode) {
+      case 'blank':
+        return false;
+      case 'answer-key':
+        return true;
+      case 'default':
+        if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
+          // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
+          return true;
+        }
+        // We don't want to unconditionally hide things in the "else" case here,
+        // there's other code elsewhere that could have set showCorrectAnswer to true, and we should respect that.
+        return newLocals.showCorrectAnswer;
+      default:
+        return assertNever(renderMode);
     }
-    // We don't want to unconditionally hide things in the "else" case here,
-    // there's other code elsewhere that could have set showCorrectAnswer to true, and we should respect that.
-    return newLocals.showCorrectAnswer;
   });
 
   Object.assign(locals, {
@@ -656,6 +688,7 @@ export async function getAndRenderVariant(
     },
     user: locals.user,
     authn_user: locals.authn_user,
+    throwOnFatalError: renderMode !== 'default',
   });
 
   // Load issues last in case rendering produced any new ones.
