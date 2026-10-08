@@ -21,7 +21,10 @@ import {
   type SubmissionForRender,
   SubmissionPanel,
 } from '../components/SubmissionPanel.js';
-import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
+import {
+  computeNextAllowedGradingTimeMs,
+  selectPendingInstanceQuestions,
+} from '../models/instance-question.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -896,7 +899,11 @@ export async function renderPanelsForSubmission({
         return;
       }
 
+      const pendingQuestions = await selectPendingInstanceQuestions({
+        instance_question_ids: [instance_question.id],
+      });
       panels.questionScorePanel = QuestionScorePanelContent({
+        autoGradingPending: pendingQuestions.some((q) => q.auto_grading_pending),
         instance_question,
         assessment_question,
         assessment_instance,

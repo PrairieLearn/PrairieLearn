@@ -28,6 +28,7 @@ interface QuestionScorePanelContentProps {
     previous_variants?: SimpleVariantWithScore[] | null;
   };
   allowGradeLeftMs: number;
+  autoGradingPending: boolean;
 }
 
 export function QuestionScorePanel(
@@ -75,6 +76,7 @@ export function QuestionScorePanelContent({
   instance_question_info,
   variant,
   allowGradeLeftMs,
+  autoGradingPending,
 }: QuestionScorePanelContentProps) {
   const hasAutoAndManualPoints =
     assessment_question.max_auto_points &&
@@ -175,6 +177,7 @@ export function QuestionScorePanelContent({
                     ${InstanceQuestionPoints({
                       instance_question,
                       assessment_question,
+                      autoGradingPending,
                       component: 'auto',
                     })}
                   </td>
@@ -185,6 +188,7 @@ export function QuestionScorePanelContent({
                     ${InstanceQuestionPoints({
                       instance_question,
                       assessment_question,
+                      autoGradingPending,
                       component: 'manual',
                     })}
                   </td>
@@ -198,6 +202,7 @@ export function QuestionScorePanelContent({
             ${InstanceQuestionPoints({
               instance_question,
               assessment_question,
+              autoGradingPending,
               component: 'total',
             })}
           </td>
@@ -267,6 +272,7 @@ export function InstanceQuestionPoints({
   instance_question,
   assessment_question,
   component,
+  autoGradingPending,
 }: {
   instance_question: Pick<
     InstanceQuestion,
@@ -283,6 +289,7 @@ export function InstanceQuestionPoints({
     'max_auto_points' | 'max_manual_points' | 'max_points'
   >;
   component: 'manual' | 'auto' | 'total';
+  autoGradingPending: boolean;
 }) {
   const points =
     component === 'auto'
@@ -297,19 +304,9 @@ export function InstanceQuestionPoints({
         ? assessment_question.max_manual_points
         : assessment_question.max_points;
   const pointsPending =
-    (['saved', 'grading'].includes(instance_question.status ?? '') && component !== 'manual') ||
-    (instance_question.requires_manual_grading && component !== 'auto');
-
-  // Special case: if this is a manually-graded question in the saved state, don't show
-  // a "pending" badge for auto points, since there aren't any pending auto points.
-  if (
-    instance_question.status === 'saved' &&
-    component === 'auto' &&
-    !assessment_question.max_auto_points &&
-    assessment_question.max_manual_points
-  ) {
-    return html`&mdash;`;
-  }
+    instance_question.status !== 'unanswered' &&
+    ((autoGradingPending && component !== 'manual') ||
+      (instance_question.requires_manual_grading && component !== 'auto'));
 
   return html`
     <span class="text-nowrap ${instance_question.used_for_grade === false ? 'text-muted' : ''}">
@@ -322,7 +319,10 @@ export function InstanceQuestionPoints({
         instance_question.points === 0
           ? html`&mdash;`
           : pointsPending
-            ? html`<span class="badge text-bg-info">pending</span>`
+            ? html`${points ? html`<span data-testid="awarded-points">${formatPoints(points)}</span> ` : ''}<span
+                  class="badge text-bg-info"
+                  >pending</span
+                >`
             : !points && !maxPoints
               ? html`&mdash;`
               : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`
