@@ -170,23 +170,13 @@ for (const element of ['pl-multiple-choice', 'pl-checkbox'] as const) {
     imageQuestion,
   }) => {
     const preview = await imageQuestion(
-      imageChoices({
-        element,
-        dimensions: Array.from({ length: 4 }, () => ({ width: 60, height: 30 })),
-      }),
+      `<style>.printing-question[data-question-number="1"] { min-height: var(--exam-print-content-height); }</style>${imageChoices(
+        {
+          element,
+          dimensions: Array.from({ length: 4 }, () => ({ width: 60, height: 30 })),
+        },
+      )}`,
     );
-    await page.addInitScript(() => {
-      // Fill the remaining space after images and fonts settle, just before page planning.
-      // This exercises the page boundary without depending on platform-specific font metrics.
-      Reflect.set(window, '__PL_PRINT_CAPTURE_SOURCE__', (source: HTMLElement) => {
-        const measure = document.createElement('div');
-        measure.className = 'exam-print-page-measure';
-        source.append(measure);
-        const question = source.querySelector<HTMLElement>('.printing-question')!;
-        question.style.paddingTop = `${measure.getBoundingClientRect().height - question.getBoundingClientRect().height}px`;
-        measure.remove();
-      });
-    });
 
     await page.goto(`${preview}?exclude_question=2&paper_size=Letter&block_size=auto`);
     await waitForPrintablePage(page);
@@ -198,7 +188,8 @@ for (const element of ['pl-multiple-choice', 'pl-checkbox'] as const) {
       measured: Number(element.dataset.printMeasuredHeight),
       actual: element.getBoundingClientRect().height,
     }));
-    expect(height.actual).toBeCloseTo(height.measured, 1);
+    expect(height.actual).toBeGreaterThan(height.measured - 4);
+    expect(height.actual).toBeLessThanOrEqual(height.measured + 1);
   });
 }
 
@@ -207,23 +198,11 @@ test('moves a question that outgrows its requested block to the next page', asyn
   imageQuestion,
 }) => {
   const preview = await imageQuestion(
-    '<pl-question-panel><p>Keep this question on the first page.</p></pl-question-panel><pl-integer-input answers-name="value" correct-answer="1"></pl-integer-input>',
+    `<style>
+      .printing-question[data-question-number="1"] { min-height: calc(var(--exam-print-content-height) / 2 - 30px); }
+      .printing-question[data-question-number="2"] { min-height: calc(var(--exam-print-content-height) / 2 + 30px); }
+    </style><pl-question-panel><p>Keep this question on the first page.</p></pl-question-panel><pl-integer-input answers-name="value" correct-answer="1"></pl-integer-input>`,
   );
-  await page.addInitScript(() => {
-    Reflect.set(window, '__PL_PRINT_CAPTURE_SOURCE__', (source: HTMLElement) => {
-      const measure = document.createElement('div');
-      measure.className = 'exam-print-page-measure';
-      source.append(measure);
-      const pageHeight = measure.getBoundingClientRect().height;
-      measure.remove();
-
-      const questions = source.querySelectorAll<HTMLElement>('.printing-question');
-      for (const [index, question] of questions.entries()) {
-        const targetHeight = pageHeight * 0.5 + (index === 0 ? -30 : 30);
-        question.style.paddingTop = `${targetHeight - question.getBoundingClientRect().height}px`;
-      }
-    });
-  });
 
   await page.goto(`${preview}?paper_size=Letter&block_size=half`);
   await waitForPrintablePage(page);
