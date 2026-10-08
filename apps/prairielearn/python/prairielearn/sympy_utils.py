@@ -57,10 +57,16 @@ Examples:
 
 ASTWhiteListT = tuple[type[ast.AST], ...]
 
-# Based on code here:
-# https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
-_SYMPY_GLOBALS: Final[DICT] = {}
-exec("from sympy import *", _SYMPY_GLOBALS)
+
+def _load_sympy_globals() -> FrozenDict[str, Any]:
+    # Based on code here:
+    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
+    sympy_globals: DICT = {}
+    exec("from sympy import *", sympy_globals)
+    return FrozenDict(sympy_globals)
+
+
+_SYMPY_GLOBALS: Final[FrozenDict[str, Any]] = _load_sympy_globals()
 
 
 class SympyJson(TypedDict):
@@ -937,7 +943,7 @@ def evaluate_with_source(
     }
 
     # Keep mutations made during one parse from affecting later parses.
-    global_dict = _SYMPY_GLOBALS.copy()
+    global_dict = dict(_SYMPY_GLOBALS)
 
     transformations = (
         *sympy_parser.standard_transformations,
