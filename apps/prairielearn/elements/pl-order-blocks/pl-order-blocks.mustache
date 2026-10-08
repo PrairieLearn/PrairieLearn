@@ -12,7 +12,9 @@ $(function() {
 </script>
 
 
-    <div class="d-flex flex-wrap pl-order-blocks-question-{{uuid}}">
+    <div class="d-flex flex-wrap pl-order-blocks-question-{{uuid}}"
+        data-ordering-required="{{ordering_required}}"
+        data-indentation-required="{{check_indentation}}">
         <div class="pl-order-blocks-container {{block_layout}} {{block_scroll}} {{dropzone_layout}} " >
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{source-header}}</span>
