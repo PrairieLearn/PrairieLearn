@@ -1,3 +1,19 @@
+-- BLOCK lock_assessment_instance_number
+SELECT
+  pg_advisory_xact_lock(
+    hashtextextended (
+      jsonb_build_array(
+        'assessment-instance-number',
+        $assessment_id::bigint,
+        $group_id::bigint,
+        CASE
+          WHEN $group_id::bigint IS NULL THEN $user_id::bigint
+        END
+      )::text,
+      0
+    )
+  );
+
 -- BLOCK insert_assessment_instance
 WITH
   latest_assessment_instance AS (
@@ -41,18 +57,22 @@ WITH
       $group_id,
       $mode,
       a.auto_close
+      AND NOT $for_printing::boolean
       AND a.type = 'Exam',
       CASE
         WHEN $time_limit_min::integer IS NOT NULL THEN $date::timestamptz + make_interval(mins => $time_limit_min)
       END,
       COALESCE(lai.number, 0) + 1,
-      NOT users_is_instructor_in_course_instance ($user_id, a.course_instance_id),
+      NOT $for_printing::boolean
+      AND NOT users_is_instructor_in_course_instance ($user_id, a.course_instance_id),
       $client_fingerprint_id
     FROM
       assessments AS a
       -- Only retrieve the latest assessment instance if the assessment allows
-      -- multiple instances, otherwise trigger a conflict on number.
+      -- multiple instances or this is an independent instructor print instance.
+      -- Otherwise, trigger a conflict on number.
       LEFT JOIN latest_assessment_instance AS lai ON a.multiple_instance
+      OR $for_printing::boolean
     WHERE
       a.id = $assessment_id
     ON CONFLICT DO NOTHING

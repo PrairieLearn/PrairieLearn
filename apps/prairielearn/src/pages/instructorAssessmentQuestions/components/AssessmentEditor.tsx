@@ -14,6 +14,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Button } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
@@ -26,7 +27,7 @@ import type {
   StaffCourse,
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
-import { getQuestionCreateUrl } from '../../../lib/client/url.js';
+import { getAssessmentUrl, getQuestionCreateUrl } from '../../../lib/client/url.js';
 import {
   type CalculatorType,
   type EnumAssessmentTool,
@@ -1119,21 +1120,32 @@ function AssessmentEditorInner({
                   actions={treeActions}
                   isAllExpanded={isAllExpanded}
                   editControls={
-                    <EditModeToolbar
-                      csrfToken={csrfToken}
-                      origHash={origHash}
-                      zones={zonesForSave}
-                      editMode={editMode}
-                      canEdit={canEdit && !!origHash}
-                      setEditMode={setEditMode}
-                      saveButtonDisabled={saveButtonDisabled}
-                      saveButtonDisabledReason={saveButtonDisabledReason}
-                      onSubmit={disableBeforeUnload}
-                      onCancel={() => {
-                        dispatch({ type: 'RESET' });
-                        setEditMode(false);
-                      }}
-                    />
+                    <div className="d-flex align-items-center gap-2">
+                      <EditModeToolbar
+                        csrfToken={csrfToken}
+                        origHash={origHash}
+                        zones={zonesForSave}
+                        editMode={editMode}
+                        canEdit={canEdit && !!origHash}
+                        setEditMode={setEditMode}
+                        saveButtonDisabled={saveButtonDisabled}
+                        saveButtonDisabledReason={saveButtonDisabledReason}
+                        onSubmit={disableBeforeUnload}
+                        onCancel={() => {
+                          dispatch({ type: 'RESET' });
+                          setEditMode(false);
+                        }}
+                      />
+                      {!editMode && (
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print_preparation`}
+                        >
+                          <i className="bi bi-printer me-1" aria-hidden="true" /> Print
+                        </Button>
+                      )}
+                    </div>
                   }
                   canEdit={canEdit}
                   canAddQuestions={canEdit && !!origHash}
