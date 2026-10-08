@@ -3,6 +3,10 @@ import {
   waitForPrintImages,
 } from '../../src/lib/client/print-image-layout.js';
 import {
+  decodePrintPageIdentity,
+  encodePrintPageIdentity,
+} from '../../src/lib/client/print-page-code.js';
+import {
   parsePrintBlockSize,
   planPrintQuestionPages,
 } from '../../src/lib/client/print-question-layout.js';
@@ -12,6 +16,7 @@ import {
   removeResponseControlsForAnswerKey,
 } from '../../src/lib/client/print-response-controls.js';
 import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docxBrowser.js';
+import { addPreviewPageCodes } from '../../src/lib/printing/pageCode.js';
 
 interface PagedFlow {
   total: number;
@@ -563,6 +568,13 @@ async function paginateExam(): Promise<{ totalPages: number }> {
     Reflect.set(window, 'ResizeObserver', resizeObserver);
   }
   validatePagedLayout(output, layout);
+  const pageIdentity = document.documentElement.dataset.printPageIdentity;
+  if (pageIdentity) {
+    const identity = decodePrintPageIdentity(pageIdentity);
+    await addPreviewPageCodes({
+      encodePage: (pageNumber) => encodePrintPageIdentity({ ...identity, pageNumber }),
+    });
+  }
   source.remove();
   document.documentElement.dataset.printStatus = 'ready';
   document.documentElement.dataset.printPageCount = String(flow.total);
