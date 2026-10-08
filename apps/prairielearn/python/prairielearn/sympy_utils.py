@@ -648,11 +648,7 @@ class CheckAST(ast.NodeVisitor):
             return self._set_type(node, None)
 
         if node.id in self.variables:
-            var_type = (
-                ASTSympyType.SET
-                if isinstance(self.variables[node.id], sympy.Set)
-                else ASTSympyType.SCALAR
-            )
+            var_type = None if self.allow_sets else ASTSympyType.SCALAR
             return self._set_type(node, var_type)
 
         return self._set_type(node, None)
