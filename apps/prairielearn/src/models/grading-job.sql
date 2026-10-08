@@ -96,6 +96,7 @@ SELECT
   v.id AS variant_id,
   iq.id AS instance_question_id,
   ai.id AS assessment_instance_id,
+  q.partial_credit,
   EXISTS (
     SELECT
       1
@@ -110,6 +111,7 @@ SELECT
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN questions AS q ON (q.id = v.question_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
