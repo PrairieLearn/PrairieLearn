@@ -181,16 +181,54 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     ) == sympy.FiniteSet(1, 2)
 
 
-def test_set_notation_is_rejected_by_default() -> None:
+@pytest.mark.parametrize(
+    ("submission", "used_type"),
+    [
+        ("{1, 2}", "finite-set"),
+        ("[1, 2]", "interval"),
+        ("Reals", "set"),
+    ],
+)
+def test_set_notation_is_rejected_by_default(submission: str, used_type: str) -> None:
     element_html = build_element_html()
-    data = make_question_data(submitted_answers={"test": "{1, 2}"})
+    data = make_question_data(submitted_answers={"test": submission})
 
     symbolic_input.parse(element_html, data)
 
     assert data["submitted_answers"]["test"] is None
     assert data["format_errors"]["test"] == (
-        "Your answer contains set notation, but set notation is not allowed for this question."
+        f"Your answer uses {used_type}, which this input does not accept. "
+        "Allowed types: expression."
     )
+
+
+@pytest.mark.parametrize("operator", ["U", "|", "&"])
+def test_set_operators_reject_declared_scalar_variables(operator: str) -> None:
+    element_html = build_element_html(
+        'variables="x, y"',
+        'allowed-types="all"',
+    )
+    submission = f"x {operator} y"
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert "expecting a set, but got a number" in data["format_errors"]["test"]
+    assert (
+        psu.point_to_error(submission, submission.index(operator))
+        in data["format_errors"]["test"]
+    )
+
+
+def test_malformed_set_syntax_reports_a_syntax_error() -> None:
+    element_html = build_element_html()
+    data = make_question_data(submitted_answers={"test": "{1, 2"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert "syntax error" in data["format_errors"]["test"]
 
 
 @pytest.mark.parametrize(
