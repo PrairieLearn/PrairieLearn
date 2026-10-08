@@ -620,19 +620,38 @@ FOR NO KEY UPDATE OF
   ai;
 
 -- BLOCK update_instance_questions_manual_grading
-UPDATE instance_questions AS iq
-SET
-  requires_manual_grading = CASE
-    WHEN $update_requires_manual_grading THEN $requires_manual_grading
-    ELSE requires_manual_grading
-  END,
-  assigned_grader = CASE
-    WHEN $update_assigned_grader THEN $assigned_grader
-    ELSE assigned_grader
-  END
-WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND (
-    $instance_question_ids::bigint[] IS NULL
-    OR iq.id = ANY ($instance_question_ids::bigint[])
-  );
+WITH
+  updated_instance_questions AS (
+    UPDATE instance_questions AS iq
+    SET
+      requires_manual_grading = CASE
+        WHEN $update_requires_manual_grading THEN $requires_manual_grading
+        ELSE requires_manual_grading
+      END,
+      assigned_grader = CASE
+        WHEN $update_assigned_grader THEN $assigned_grader
+        ELSE assigned_grader
+      END
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+      AND (
+        $instance_question_ids::bigint[] IS NULL
+        OR iq.id = ANY ($instance_question_ids::bigint[])
+      )
+      AND (
+        (
+          $update_requires_manual_grading
+          AND iq.requires_manual_grading IS DISTINCT FROM $requires_manual_grading
+        )
+        OR (
+          $update_assigned_grader
+          AND iq.assigned_grader IS DISTINCT FROM $assigned_grader
+        )
+      )
+    RETURNING
+      iq.assessment_instance_id
+  )
+SELECT DISTINCT
+  assessment_instance_id
+FROM
+  updated_instance_questions;
