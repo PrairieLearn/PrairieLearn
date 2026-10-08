@@ -1,8 +1,10 @@
 import { Packer } from 'docx';
 
-import { createDocxDocument } from '../../src/lib/printing/docxDocument.js';
 import type { DocxSource } from '../../src/lib/printing/docxBrowser.js';
-import type { PrintedPageGeometry } from '../../src/lib/printing/docxDocument.js';
+import {
+  type PrintedPageGeometry,
+  createDocxDocument,
+} from '../../src/lib/printing/docxDocument.js';
 import type { PrintableCover } from '../../src/lib/printing/printableCover.js';
 
 window.__PL_BUILD_PRINT_DOCX__ = async ({ geometry, cover, footerLabel, source, figures }) => {
