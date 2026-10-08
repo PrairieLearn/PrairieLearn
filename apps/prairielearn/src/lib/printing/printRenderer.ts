@@ -1,3 +1,5 @@
+import * as https from 'node:https';
+
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
 import { createPdfOutput } from './pdfOutput.js';
@@ -16,6 +18,7 @@ const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
 const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 64;
 const DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS = 4;
+const CLOUDFLARE_KEEP_ALIVE_MS = 180_000;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
 const SOCKET_IO_PATH = '/socket.io/';
 
@@ -91,6 +94,48 @@ class Semaphore {
       this.activeCount -= 1;
     }
   }
+}
+
+async function fetchCloudflareAsset(url: URL, cookieHeader?: string) {
+  if (url.protocol === 'https:' && url.hostname === 'localhost') {
+    // The local development server can use a certificate that Node does not trust. This
+    // exception applies only to requests back to the same machine, never to public hosts.
+    return await new Promise<{ status: number; contentType: string; body: Buffer }>(
+      (resolve, reject) => {
+        https
+          .get(
+            url,
+            {
+              headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+              rejectUnauthorized: false,
+            },
+            async (response) => {
+              try {
+                const chunks: Buffer[] = [];
+                for await (const chunk of response) chunks.push(Buffer.from(chunk));
+                resolve({
+                  status: response.statusCode ?? 502,
+                  contentType: response.headers['content-type'] ?? 'application/octet-stream',
+                  body: Buffer.concat(chunks),
+                });
+              } catch (error) {
+                reject(error);
+              }
+            },
+          )
+          .on('error', reject);
+      },
+    );
+  }
+  const response = await fetch(url, {
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+    redirect: 'manual',
+  });
+  return {
+    status: response.status,
+    contentType: response.headers.get('content-type') ?? 'application/octet-stream',
+    body: Buffer.from(await response.arrayBuffer()),
+  };
 }
 
 export interface PrintRendererOptions {
@@ -201,7 +246,7 @@ export class PrintRenderer {
   private openBrowser(timeoutMs: number): Promise<Browser> {
     if (this.cloudflare) {
       return chromium.connectOverCDP(
-        `wss://api.cloudflare.com/client/v4/accounts/${this.cloudflare.accountId}/browser-run/devtools/browser?keep_alive=60000`,
+        `wss://api.cloudflare.com/client/v4/accounts/${this.cloudflare.accountId}/browser-run/devtools/browser?keep_alive=${CLOUDFLARE_KEEP_ALIVE_MS}`,
         { headers: { Authorization: `Bearer ${this.cloudflare.apiToken}` }, timeout: timeoutMs },
       );
     }
@@ -301,18 +346,15 @@ export class PrintRenderer {
           // otherwise leave the allowed origin without passing through these checks again.
           if (this.cloudflare) {
             const assetUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, localUrl.origin);
-            const response = await fetch(assetUrl, {
-              headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-              redirect: 'manual',
-            });
+            const response = await fetchCloudflareAsset(assetUrl, cookieHeader);
             if (response.status >= 300 && response.status < 400) {
               await route.abort('blockedbyclient');
               return;
             }
             await route.fulfill({
               status: response.status,
-              contentType: response.headers.get('content-type') ?? 'application/octet-stream',
-              body: Buffer.from(await response.arrayBuffer()),
+              contentType: response.contentType,
+              body: response.body,
             });
           } else {
             const response = await route.fetch({ maxRedirects: 0 });
