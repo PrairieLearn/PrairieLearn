@@ -227,7 +227,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     a_true,
                     variables,
                     allow_complex=config.allow_complex,
-                    allow_sets=True,
+                    allow_sets=config.supports_set_syntax,
                     allow_trig_functions=config.allow_trig,
                     custom_functions=config.custom_functions,
                     simplify_expression=config.simplify_expression,
@@ -236,7 +236,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 parsed_answer = psu.json_to_sympy(
                     a_true,
                     allow_complex=config.allow_complex,
-                    allow_sets=True,
+                    allow_sets=config.supports_set_syntax,
                     allow_trig_functions=config.allow_trig,
                     simplify_expression=config.simplify_expression,
                 )

@@ -384,7 +384,7 @@ def normalize_symbolic_input(
     return psu._validate_and_rewrite_source(
         source,
         allow_complex=allow_complex,
-        allow_sets=True,
+        allow_sets=allow_sets,
     )
 
 
@@ -436,6 +436,7 @@ def _try_parse_normalized_source_as_sympy(
     *,
     allow_complex: bool = False,
     allow_hidden: bool = False,
+    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
@@ -452,7 +453,7 @@ def _try_parse_normalized_source_as_sympy(
             variables,
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
-            allow_sets=True,
+            allow_sets=allow_sets,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
@@ -483,7 +484,7 @@ def try_parse_symbolic_submission(
     """Normalize, parse, and serialize a symbolic-input submission."""
     if allowed_types is None:
         allowed_types = {"expression"}
-    supports_set_syntax = allowed_sympy_types_include_sets(allowed_types)
+    allow_sets = allowed_sympy_types_include_sets(allowed_types)
 
     if submission is None:
         return psu.SympyParseFailure("No submitted answer.")
@@ -498,7 +499,7 @@ def try_parse_symbolic_submission(
         latex=latex,
         allow_trig_functions=allow_trig_functions,
         allow_complex=allow_complex,
-        allow_sets=supports_set_syntax,
+        allow_sets=allow_sets,
     )
     if isinstance(normalized, psu.SympyParseFailure):
         return normalized
@@ -513,7 +514,7 @@ def try_parse_symbolic_submission(
             variable_list,
             allow_hidden=True,
             allow_complex=allow_complex,
-            allow_sets=True,
+            allow_sets=allow_sets,
             allow_trig_functions=allow_trig_functions,
             imaginary_unit=imaginary_unit,
             custom_functions=custom_function_list,
@@ -527,6 +528,7 @@ def try_parse_symbolic_submission(
             variable_list,
             allow_hidden=True,
             allow_complex=allow_complex,
+            allow_sets=allow_sets,
             allow_trig_functions=allow_trig_functions,
             imaginary_unit=imaginary_unit,
             custom_functions=custom_function_list,
@@ -541,12 +543,12 @@ def try_parse_symbolic_submission(
         submission_json = psu.sympy_to_json(
             result.expr,
             allow_complex=allow_complex,
-            allow_sets=supports_set_syntax,
+            allow_sets=allow_sets,
         )
         psu.json_to_sympy(
             submission_json,
             allow_complex=allow_complex,
-            allow_sets=supports_set_syntax,
+            allow_sets=allow_sets,
             simplify_expression=simplify_expression,
         )
     except Exception:
