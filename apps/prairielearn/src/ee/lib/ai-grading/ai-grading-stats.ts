@@ -1,7 +1,5 @@
 import assert from 'node:assert';
 
-import { z } from 'zod';
-
 import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -10,25 +8,19 @@ import {
   type Assessment,
   type AssessmentQuestion,
   type RubricItem,
-  RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.js';
-import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
+import {
+  type AiGradingGeneralStats,
+  type GradingJobInfo,
+  GradingJobInfoSchema,
+  type WithAIGradingStats,
+} from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-const GradingJobInfoSchema = z.object({
-  grading_job_id: IdSchema,
-  graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Manual', 'AI']),
-  manual_points: z.number().nullable(),
-  manual_rubric_grading_id: IdSchema.nullable(),
-  grader_name: z.string(),
-  rubric_items: z.array(RubricItemSchema),
-});
-type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 type FillInstanceQuestionColumnEntriesResultType<
   T extends {
@@ -83,6 +75,8 @@ export async function fillInstanceQuestionColumnEntries<
 
     const instance_question: WithAIGradingStats<T['instance_question']> = {
       ...base_instance_question,
+      human_grading: null,
+      ai_grading: null,
       last_human_grader: null,
       ai_grading_status: 'None',
       point_difference: null,
@@ -99,6 +93,9 @@ export async function fillInstanceQuestionColumnEntries<
 
     const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
     const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+
+    instance_question.human_grading = manualGradingJob ?? null;
+    instance_question.ai_grading = aiGradingJob ?? null;
 
     if (manualGradingJob) {
       instance_question.last_human_grader = manualGradingJob.grader_name;

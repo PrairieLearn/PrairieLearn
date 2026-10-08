@@ -1,8 +1,34 @@
 import { z } from 'zod';
 
-import { RubricItemSchema } from '../../../lib/db-types.js';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+
+import { StaffUserSchema } from '../../../lib/client/safe-db-types.js';
+import {
+  GradingJobSchema,
+  RubricGradingItemSchema,
+  RubricGradingSchema,
+  RubricItemSchema,
+} from '../../../lib/db-types.js';
+
+export const GradingJobInfoSchema = z.object({
+  grading_job_id: IdSchema,
+  graded_at: DateFromISOString.nullable(),
+  grading_method: z.enum(['Manual', 'AI']),
+  auto_points: GradingJobSchema.shape.auto_points,
+  manual_points: GradingJobSchema.shape.manual_points,
+  feedback: GradingJobSchema.shape.feedback,
+  manual_rubric_grading_id: IdSchema.nullable(),
+  grader_name: z.string(),
+  grader: StaffUserSchema,
+  rubric_items: z.array(RubricItemSchema),
+  rubric_grading: RubricGradingSchema.nullable(),
+  rubric_grading_items: z.array(RubricGradingItemSchema),
+});
+export type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 export const AIGradingStatsSchema = z.object({
+  human_grading: GradingJobInfoSchema.nullable(),
+  ai_grading: GradingJobInfoSchema.nullable(),
   last_human_grader: z.string().nullable(),
   ai_grading_status: z.enum(['Graded', 'LatestRubric', 'OutdatedRubric', 'None']),
   point_difference: z.number().nullable(),

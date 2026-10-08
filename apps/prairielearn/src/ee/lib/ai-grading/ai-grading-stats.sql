@@ -39,7 +39,9 @@ WITH
       gj.id AS grading_job_id,
       gj.grading_method,
       gj.graded_at,
+      gj.auto_points,
       gj.manual_points,
+      gj.feedback,
       gj.manual_rubric_grading_id,
       gj.graded_by,
       gj.submission_id,
@@ -73,10 +75,29 @@ SELECT
   grading_job_id,
   grading_method,
   graded_at,
+  auto_points,
   manual_points,
+  feedback,
   manual_rubric_grading_id,
   instance_question_id,
   COALESCE(u.name, u.uid) AS grader_name,
+  to_jsonb(u.*) AS grader,
+  to_jsonb(rg.*) AS rubric_grading,
+  (
+    SELECT
+      COALESCE(
+        jsonb_agg(
+          to_jsonb(rgi.*)
+          ORDER BY
+            rgi.id
+        ),
+        '[]'::jsonb
+      )
+    FROM
+      rubric_grading_items AS rgi
+    WHERE
+      rgi.rubric_grading_id = ggj.manual_rubric_grading_id
+  ) AS rubric_grading_items,
   COALESCE(
     jsonb_agg(to_jsonb(rgti)) FILTER (
       WHERE
@@ -87,6 +108,7 @@ SELECT
 FROM
   users AS u
   JOIN grouped_grading_jobs AS ggj ON (u.id = ggj.graded_by)
+  LEFT JOIN rubric_gradings AS rg ON rg.id = ggj.manual_rubric_grading_id
   LEFT JOIN rubric_grading_to_items AS rgti ON (
     ggj.manual_rubric_grading_id = rgti.rubric_grading_id
   )
@@ -96,8 +118,10 @@ GROUP BY
   grading_job_id,
   grading_method,
   graded_at,
+  auto_points,
   manual_points,
+  feedback,
   manual_rubric_grading_id,
   instance_question_id,
-  u.name,
-  u.uid;
+  u.id,
+  rg.id;
