@@ -29,8 +29,8 @@ function rubricItemToExportFields(item: RubricItem) {
 function gradingSourceToExportFields(source: GradingJobInfo['auto_points_source']) {
   return source
     ? {
-        grading_job_id: source.grading_job_id,
-        graded_at: source.graded_at?.toISOString() ?? null,
+        grading_job_id: source.grading_job.id,
+        graded_at: source.grading_job.graded_at?.toISOString() ?? null,
         grader: userToExportFields(source.grader),
       }
     : null;
@@ -39,11 +39,11 @@ function gradingSourceToExportFields(source: GradingJobInfo['auto_points_source'
 function gradingJobToExportFields(job: GradingJobInfo | null) {
   if (!job) return null;
   return {
-    grading_job_id: job.grading_job_id,
-    graded_at: job.graded_at?.toISOString() ?? null,
+    grading_job_id: job.grading_job.id,
+    graded_at: job.grading_job.graded_at?.toISOString() ?? null,
     grader: userToExportFields(job.grader),
     auto_points: job.auto_points,
-    manual_points: job.manual_points,
+    manual_points: job.grading_job.manual_points,
     feedback: job.feedback,
     latest_update: gradingSourceToExportFields(job.latest_update),
     auto_points_source: gradingSourceToExportFields(job.auto_points_source),

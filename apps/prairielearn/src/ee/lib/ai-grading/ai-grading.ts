@@ -414,7 +414,7 @@ export async function aiGrade({
       case 'human_graded':
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         return instanceQuestionGradingJobs[instance_question.id]?.some(
-          (job) => job.grading_method === 'Manual',
+          (job) => job.grading_job.grading_method === 'Manual',
         );
       case 'all':
         return true;
@@ -568,7 +568,7 @@ export async function aiGrade({
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
-        (job) => job.grading_method === 'Manual',
+        (job) => job.grading_job.grading_method === 'Manual',
       );
 
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);

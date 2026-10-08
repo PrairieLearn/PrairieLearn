@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
-
 import { StaffUserSchema } from '../../../lib/client/safe-db-types.js';
 import {
   GradingJobSchema,
@@ -10,27 +8,19 @@ import {
   RubricItemSchema,
 } from '../../../lib/db-types.js';
 
-const GradingJobUpdateSourceSchema = z.object({
-  grading_job_id: IdSchema,
-  graded_at: DateFromISOString.nullable(),
-  grader: StaffUserSchema,
-});
-
-export const RawGradingJobInfoSchema = z.object({
-  grading_job_id: IdSchema,
-  graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Manual', 'AI']),
-  auto_points: GradingJobSchema.shape.auto_points,
-  manual_points: GradingJobSchema.shape.manual_points,
-  feedback: GradingJobSchema.shape.feedback,
-  manual_rubric_grading_id: IdSchema.nullable(),
-  grader_name: z.string(),
+export const GradingJobDetailsSchema = z.object({
+  grading_job: GradingJobSchema,
   grader: StaffUserSchema,
   rubric_items: z.array(RubricItemSchema),
   rubric_grading: RubricGradingSchema.nullable(),
   rubric_grading_items: z.array(RubricGradingItemSchema),
 });
-const GradingJobInfoSchema = RawGradingJobInfoSchema.extend({
+const GradingJobUpdateSourceSchema = GradingJobDetailsSchema.pick({ grader: true }).extend({
+  grading_job: GradingJobSchema.pick({ id: true, graded_at: true }),
+});
+const GradingJobInfoSchema = GradingJobDetailsSchema.extend({
+  auto_points: GradingJobSchema.shape.auto_points,
+  feedback: GradingJobSchema.shape.feedback,
   latest_update: GradingJobUpdateSourceSchema,
   auto_points_source: GradingJobUpdateSourceSchema.nullable(),
   feedback_sources: z.record(z.string(), GradingJobUpdateSourceSchema),

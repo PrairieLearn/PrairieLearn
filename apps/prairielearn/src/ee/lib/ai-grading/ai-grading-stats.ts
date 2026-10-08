@@ -15,8 +15,8 @@ import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/a
 import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.js';
 import {
   type AiGradingGeneralStats,
+  GradingJobDetailsSchema,
   type GradingJobInfo,
-  RawGradingJobInfoSchema,
   type WithAIGradingStats,
 } from './types.js';
 
@@ -91,8 +91,10 @@ export async function fillInstanceQuestionColumnEntries<
 
     const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
 
-    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+    const manualGradingJob = grading_jobs.find(
+      (job) => job.grading_job.grading_method === 'Manual',
+    );
+    const aiGradingJob = grading_jobs.find((job) => job.grading_job.grading_method === 'AI');
 
     instance_question.human_grading = manualGradingJob ?? null;
     instance_question.ai_grading = aiGradingJob ?? null;
@@ -103,20 +105,25 @@ export async function fillInstanceQuestionColumnEntries<
     }
 
     if (aiGradingJob) {
-      assert(aiGradingJob.graded_at);
+      assert(aiGradingJob.grading_job.graded_at);
       instance_question.ai_grading_status = 'Graded';
       if (rubric_modify_time) {
         instance_question.ai_grading_status =
-          aiGradingJob.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
+          aiGradingJob.grading_job.graded_at > rubric_modify_time
+            ? 'LatestRubric'
+            : 'OutdatedRubric';
       }
     }
 
-    if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+    if (
+      manualGradingJob?.grading_job.manual_points != null &&
+      aiGradingJob?.grading_job.manual_points != null
+    ) {
       instance_question.point_difference =
-        aiGradingJob.manual_points - manualGradingJob.manual_points;
+        aiGradingJob.grading_job.manual_points - manualGradingJob.grading_job.manual_points;
     }
 
-    if (manualGradingJob?.manual_rubric_grading_id && aiGradingJob?.manual_rubric_grading_id) {
+    if (manualGradingJob?.rubric_grading && aiGradingJob?.rubric_grading) {
       const manualItems = manualGradingJob.rubric_items;
       const aiItems = aiGradingJob.rubric_items;
 
@@ -177,13 +184,18 @@ export async function calculateAiGradingStats(
   for (const instance_question of instance_questions) {
     const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
 
-    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+    const manualGradingJob = grading_jobs.find(
+      (job) => job.grading_job.grading_method === 'Manual',
+    );
+    const aiGradingJob = grading_jobs.find((job) => job.grading_job.grading_method === 'AI');
 
-    if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+    if (
+      manualGradingJob?.grading_job.manual_points != null &&
+      aiGradingJob?.grading_job.manual_points != null
+    ) {
       testPointResults.push({
-        reference_points: manualGradingJob.manual_points,
-        ai_points: aiGradingJob.manual_points,
+        reference_points: manualGradingJob.grading_job.manual_points,
+        ai_points: aiGradingJob.grading_job.manual_points,
       });
     }
     if (manualGradingJob?.rubric_items != null && aiGradingJob?.rubric_items != null) {
@@ -226,7 +238,7 @@ export async function selectGradingJobsInfo<T extends { id: string }>(
   const grading_jobs = await queryRows(
     sql.select_ai_and_human_grading_jobs_and_rubric,
     { instance_question_ids: instance_questions.map((iq) => iq.id) },
-    RawGradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
+    GradingJobDetailsSchema.extend({ instance_question_id: IdSchema }),
   );
   const historyByInstanceQuestion = grading_jobs.reduce(
     (acc, item) => {
@@ -238,8 +250,7 @@ export async function selectGradingJobsInfo<T extends { id: string }>(
   );
 
   const source = (job: (typeof grading_jobs)[number]) => ({
-    grading_job_id: job.grading_job_id,
-    graded_at: job.graded_at,
+    grading_job: { id: job.grading_job.id, graded_at: job.grading_job.graded_at },
     grader: job.grader,
   });
 
@@ -247,29 +258,28 @@ export async function selectGradingJobsInfo<T extends { id: string }>(
     Object.entries(historyByInstanceQuestion).map(([id, history]) => [
       id,
       ['Manual', 'AI'].flatMap((method): GradingJobInfo[] => {
-        const jobs = history.filter((job) => job.grading_method === method);
+        const jobs = history.filter((job) => job.grading_job.grading_method === method);
         const latest = jobs.at(0);
         if (!latest) return [];
-        const scoreJob = jobs.find((job) => job.manual_points != null);
-        const autoPointsJob = jobs.find((job) => job.auto_points != null);
+        const scoreJob = jobs.find((job) => job.grading_job.manual_points != null);
+        const autoPointsJob = jobs.find((job) => job.grading_job.auto_points != null);
         let feedback: GradingJobInfo['feedback'] = null;
         const feedbackSources = new Map<string, GradingJobInfo['latest_update']>();
         for (const job of jobs.slice().reverse()) {
-          if (job.feedback == null) continue;
+          if (job.grading_job.feedback == null) continue;
           feedback ??= {};
-          Object.assign(feedback, job.feedback);
-          for (const key of Object.keys(job.feedback)) {
+          Object.assign(feedback, job.grading_job.feedback);
+          for (const key of Object.keys(job.grading_job.feedback)) {
             feedbackSources.set(key, source(job));
           }
         }
         return [
           {
             ...(scoreJob ?? latest),
-            auto_points: autoPointsJob?.auto_points ?? null,
+            auto_points: autoPointsJob?.grading_job.auto_points ?? null,
             feedback,
             // A feedback-only update can retain the other method's rubric. Only
             // the job that assigned manual points establishes rubric provenance.
-            manual_rubric_grading_id: scoreJob?.manual_rubric_grading_id ?? null,
             rubric_items: scoreJob?.rubric_items ?? [],
             rubric_grading: scoreJob?.rubric_grading ?? null,
             rubric_grading_items: scoreJob?.rubric_grading_items ?? [],
