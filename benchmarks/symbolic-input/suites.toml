@@ -1,0 +1,29 @@
+[quick]
+default_duration = "0s"
+corpus_cycles = 1
+epoch_seconds = 60
+batch_size_per_worker = 64
+warmup_cases = 32
+lifecycles = ["warm"]
+gc_modes = ["normal"]
+workers = [1]
+
+[standard]
+default_duration = "15m"
+corpus_cycles = 0
+epoch_seconds = 30
+batch_size_per_worker = 64
+warmup_cases = 128
+lifecycles = ["warm", "fresh"]
+gc_modes = ["normal", "disabled"]
+workers = [1, 2, 4]
+
+[soak]
+default_duration = "8h"
+corpus_cycles = 0
+epoch_seconds = 300
+batch_size_per_worker = 256
+warmup_cases = 512
+lifecycles = ["warm", "fresh"]
+gc_modes = ["normal", "disabled"]
+workers = [1, 2, 4]
