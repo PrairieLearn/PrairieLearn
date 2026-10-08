@@ -8,7 +8,6 @@ from prairielearn import ...
 import itertools as it
 import os
 import random
-import re
 import string
 import unicodedata
 import uuid
@@ -53,12 +52,7 @@ def get_unit_registry() -> UnitRegistry:
     """
     pid = os.getpid()
     cache_dir = f"/tmp/pint_{pid}"
-    # Normalize the engineering shorthand so exact-unit comparisons also match N*m.
-    # Allow an adjacent magnitude (7.2Nm), but don't change other unit names.
-    return UnitRegistry(
-        cache_folder=cache_dir,
-        preprocessors=[lambda value: re.sub(r"(?<![^\W\d])Nm\b", "(N*m)", value)],
-    )
+    return UnitRegistry(cache_folder=cache_dir)
 
 
 def full_unidecode(input_str: str) -> str:

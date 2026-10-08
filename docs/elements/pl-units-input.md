@@ -39,8 +39,6 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 
 This element uses [Pint](https://pint.readthedocs.io/en/stable/index.html) to parse and represent units. Any units allowed by Pint are supported by this element. To obtain a `Pint` unit registry, question code can use `pl.get_unit_registry()` to construct a default unit registry. This is recommended over constructing a registry using the constructor provided by `Pint` (as this does not use caching and is slower).
 
-The element and `pl.get_unit_registry()` accept `Nm` as shorthand for `N*m` in answers and tolerances in all grading modes. For example, `7.2Nm` and `7.2 N*m` are equivalent. Use `number_meter` for the textile unit.
-
 ## Example implementations
 
 - [element/unitsInput]

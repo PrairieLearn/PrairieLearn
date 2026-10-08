@@ -1,4 +1,3 @@
-import re
 from enum import Enum
 from random import choice
 from typing import Any, assert_never
@@ -430,19 +429,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # Store cache on system. Needed to prevent slow grading / parsing times
     # due to object creation
     ureg = pl.get_unit_registry()
-
-    # Older Pint versions expanded Nm to the textile unit in saved submissions.
-    # Reinterpret only submissions whose original spelling used Nm.
-    if a_sub is not None and "number_meter" in a_sub:
-        raw_answer = data["raw_submitted_answers"].get(name)
-        if raw_answer is not None and re.search(r"(?<![^\W\d])Nm\b", raw_answer):
-            parsed_answer = ureg.Quantity(raw_answer)
-            a_sub = str(
-                parsed_answer.units
-                if grading_mode is GradingMode.ONLY_UNITS
-                else parsed_answer
-            )
-            data["submitted_answers"][name] = a_sub
 
     if a_sub == "" or a_tru == "":
         grading_fn = uu.get_blank_grading_function(correct_ans=a_tru)
