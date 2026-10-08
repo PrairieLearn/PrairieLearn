@@ -400,16 +400,21 @@ export async function updateAssessmentQuestionRubric({
       await recomputeInstanceQuestions(assessment, assessment_question_id, authn_user_id);
     }
 
-    if (tag_for_manual_grading) {
-      await updateInstanceQuestionsManualGrading({
-        assessment_question_id,
-        instance_question_ids: null,
-        requires_manual_grading: true,
-        authn_user_id,
-      });
-    } else {
-      await updateAssessmentInstancesScorePending(assessmentInstanceIds, authn_user_id);
-    }
+    const taggedAssessmentInstanceIds = new Set(
+      tag_for_manual_grading
+        ? await updateInstanceQuestionsManualGrading({
+            assessment_question_id,
+            instance_question_ids: null,
+            requires_manual_grading: true,
+            authn_user_id,
+          })
+        : [],
+    );
+    // Rubric changes also affect questions that were already tagged for grading.
+    await updateAssessmentInstancesScorePending(
+      assessmentInstanceIds.filter((id) => !taggedAssessmentInstanceIds.has(id)),
+      authn_user_id,
+    );
   });
 }
 
@@ -805,26 +810,30 @@ export async function updateInstanceQuestionsManualGrading({
   assigned_grader?: string | null;
   authn_user_id: string;
 }) {
-  await sqldb.runInTransactionAsync(async () => {
+  return await sqldb.runInTransactionAsync(async () => {
     // Submission and grading paths lock the assessment instance before its questions.
-    const assessmentInstanceIds =
-      requires_manual_grading !== undefined
-        ? await sqldb.queryScalars(
-            sql.lock_assessment_instances_for_manual_grading,
-            { assessment_question_id, instance_question_ids },
-            IdSchema,
-          )
-        : [];
-    await sqldb.execute(sql.update_instance_questions_manual_grading, {
-      assessment_question_id,
-      instance_question_ids,
-      update_requires_manual_grading: requires_manual_grading !== undefined,
-      requires_manual_grading: requires_manual_grading ?? null,
-      update_assigned_grader: assigned_grader !== undefined,
-      assigned_grader: assigned_grader ?? null,
-    });
+    if (requires_manual_grading !== undefined) {
+      await sqldb.queryScalars(
+        sql.lock_assessment_instances_for_manual_grading,
+        { assessment_question_id, instance_question_ids },
+        IdSchema,
+      );
+    }
+    const assessmentInstanceIds = await sqldb.queryScalars(
+      sql.update_instance_questions_manual_grading,
+      {
+        assessment_question_id,
+        instance_question_ids,
+        update_requires_manual_grading: requires_manual_grading !== undefined,
+        requires_manual_grading: requires_manual_grading ?? null,
+        update_assigned_grader: assigned_grader !== undefined,
+        assigned_grader: assigned_grader ?? null,
+      },
+      IdSchema,
+    );
     if (requires_manual_grading !== undefined) {
       await updateAssessmentInstancesScorePending(assessmentInstanceIds, authn_user_id);
     }
+    return assessmentInstanceIds;
   });
 }

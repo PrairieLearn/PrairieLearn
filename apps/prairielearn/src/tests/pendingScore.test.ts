@@ -17,7 +17,7 @@ import {
 } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
-import { selectUserByUid } from '../models/user.js';
+import { generateUser, selectUserByUid } from '../models/user.js';
 
 import { syncCourse } from './helperCourse.js';
 import { runInTransactionAndRollback } from './helperDb.js';
@@ -25,9 +25,9 @@ import * as helperServer from './helperServer.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-async function createInstance(tid = 'hw4-perzonegrading') {
+async function createInstance(tid = 'hw4-perzonegrading', uid = config.authUid!) {
   const assessment = await selectAssessmentByTid({ course_instance_id: '1', tid });
-  const user = await selectUserByUid(config.authUid!);
+  const user = await selectUserByUid(uid);
   const id = await makeAssessmentInstance({
     assessment,
     user_id: user.id,
@@ -127,7 +127,7 @@ describe('Pending assessment scores', { timeout: 60_000 }, () => {
         rubric_items: [
           { points: 8, description: 'Full credit', order: 0, always_show_to_students: true },
         ],
-        tag_for_manual_grading: false,
+        tag_for_manual_grading: true,
         grader_guidelines: null,
         authn_user_id: user.id,
       });
@@ -153,6 +153,51 @@ describe('Pending assessment scores', { timeout: 60_000 }, () => {
         authn_user_id: user.id,
       });
       expect((await selectAssessmentInstanceById(id)).grading_pending).toBe(false);
+    });
+  });
+
+  test('manual grading updates report only assessments with changed tags or grader assignments', async () => {
+    await runInTransactionAndRollback(async () => {
+      const first = await createInstance('hw9-internalExternalManual');
+      const second = await createInstance('hw9-internalExternalManual', (await generateUser()).uid);
+      const questions = await queryRows(
+        sql.select_question_ids,
+        { assessment_instance_id: first.id },
+        z.object({ id: z.string(), assessment_question_id: z.string(), qid: z.string() }),
+      );
+      const question = questions.find((q) => q.qid === 'manualGrade/codeUpload')!;
+      const update = {
+        assessment_question_id: question.assessment_question_id,
+        requires_manual_grading: true,
+        assigned_grader: first.user.id,
+        authn_user_id: first.user.id,
+      };
+      expect(
+        await updateInstanceQuestionsManualGrading({
+          ...update,
+          instance_question_ids: [question.id],
+        }),
+      ).toEqual([first.id]);
+      expect(
+        await updateInstanceQuestionsManualGrading({ ...update, instance_question_ids: null }),
+      ).toEqual([second.id]);
+      expect(
+        await updateInstanceQuestionsManualGrading({ ...update, instance_question_ids: null }),
+      ).toEqual([]);
+      expect(
+        await updateInstanceQuestionsManualGrading({
+          ...update,
+          instance_question_ids: [question.id],
+          assigned_grader: null,
+        }),
+      ).toEqual([first.id]);
+      expect(
+        await updateInstanceQuestionsManualGrading({
+          ...update,
+          instance_question_ids: [question.id],
+          assigned_grader: null,
+        }),
+      ).toEqual([]);
     });
   });
 
