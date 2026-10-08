@@ -9,16 +9,11 @@ The rendering browser lays out and paginates question HTML. PDF exports use its 
 ```ts
 import { getPrintingCloudflareConfig } from './config.js';
 import { PrintRenderer } from './printing/printRenderer.js';
-import { createDocxOutput } from './printing/docxOutput.js';
 
 const renderer = new PrintRenderer({
   cloudflare: getPrintingCloudflareConfig(),
 });
 const pdf = await renderer.renderPdf({ url: previewUrl, html: paginatedHtml });
-const docx = await renderer.render(
-  { url: previewUrl, html: paginatedHtml, runScripts: true },
-  createDocxOutput({ source, cover, footerLabel }),
-);
 await renderer.close(); // during shutdown
 ```
 
@@ -40,7 +35,7 @@ The Word document contains native paragraphs, lists, tables, answer spaces, hype
 
 The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docxContent.ts` maps the source to native Word objects, and `printDocxClient.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
 
-`cover` may be a function; it receives the page's root `data-*` attributes so that values which are only known after rendering, such as the number of questions that rendered successfully, can be placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
+`htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
 
 Omit the `cover` option to start with questions on the first page.
 

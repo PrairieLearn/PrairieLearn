@@ -20,7 +20,7 @@ interface PrintableCoverSummaryItem {
   value: string;
 }
 
-export interface PrintableCoverSection {
+interface PrintableCoverSection {
   heading: string;
   blocks: PrintableTextBlock[];
   /** When set, the section ends with a labeled signature line. */
