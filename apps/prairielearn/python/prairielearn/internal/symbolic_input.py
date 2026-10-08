@@ -415,7 +415,7 @@ def try_normalize_symbolic_input(
             raise error
 
         result = psu._try_parse_as_sympy(
-            text,
+            SourceText.from_text(text),
             raise_normalization_error,
             allow_complex=allow_complex,
             imaginary_unit=None,
@@ -426,7 +426,6 @@ def try_normalize_symbolic_input(
 
 def _try_parse_normalized_source_as_sympy(
     source: SourceText,
-    raw_text: str,
     variables: Iterable[str] | None,
     *,
     allow_complex: bool = False,
@@ -440,10 +439,10 @@ def _try_parse_normalized_source_as_sympy(
 ) -> psu.SympyParseResult:
     """Parse text that has already passed through symbolic-input normalization."""
     return psu._try_parse_as_sympy(
-        raw_text,
+        source,
         lambda: psu._convert_source_to_sympy_with_source(
             source,
-            raw_text,
+            source.raw_text,
             variables,
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
@@ -513,7 +512,6 @@ def try_parse_symbolic_submission(
     else:
         result = _try_parse_normalized_source_as_sympy(
             normalized,
-            submission,
             variable_list,
             allow_hidden=True,
             allow_complex=allow_complex,
