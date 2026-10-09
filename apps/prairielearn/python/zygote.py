@@ -19,9 +19,7 @@
 # Errors are signaled by exiting with non-zero exit code
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
-import base64
 import copy
-import io
 import json
 import os
 import signal
@@ -36,6 +34,7 @@ from inspect import signature
 from typing import Any
 
 import prairielearn.internal.zygote_utils as zu
+from prairielearn.internal.file_utils import filelike_to_string
 
 saved_path = copy.copy(sys.path)
 
@@ -360,7 +359,9 @@ def worker_loop() -> None:
                 context = args[0]
                 data = args[1]
 
-                result, processed_elements = question_phases.process(fcn, data, context)
+                result, processed_elements = question_phases.process(
+                    fcn, data, context, inp.get("max_file_bytes")
+                )
                 val = {
                     "html": result if fcn == "render" else None,
                     "file": result if fcn == "file" else None,
@@ -407,19 +408,7 @@ def worker_loop() -> None:
                 val = method(*args)
 
                 if fcn == "file":
-                    # if val is None, replace it with empty string
-                    if val is None:
-                        val = ""
-                    # if val is a file-like object, read whatever is inside
-                    if isinstance(val, io.IOBase):
-                        val.seek(0)
-                        val = val.read()
-                    # if val is a string, treat it as utf-8
-                    if isinstance(val, str):
-                        val = bytes(val, "utf-8")
-                    # if this next call does not work, it will throw an error, because
-                    # the thing returned by file() does not have the correct format
-                    val = base64.b64encode(val).decode()
+                    val = filelike_to_string(val, inp.get("max_file_bytes"))
 
                 # Any function that is not 'file' or 'render' will modify 'data' and
                 # should not be returning anything (because 'data' is mutable).

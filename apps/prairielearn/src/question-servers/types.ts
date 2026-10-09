@@ -136,14 +136,15 @@ export interface QuestionServer {
     course: Course,
     caller: QuestionCaller,
   ) => QuestionServerReturnValue<Partial<GradeResultData>>;
-  file?: (
-    filename: string,
-    variant: Variant,
-    submission: Submission | null,
-    question: Question,
-    course: Course,
-    caller: QuestionCaller,
-  ) => QuestionServerReturnValue<Buffer>;
+  file?: (params: {
+    filename: string;
+    variant: Variant;
+    submission: Submission | null;
+    question: Question;
+    course: Course;
+    caller: QuestionCaller;
+    maxFileBytes?: number;
+  }) => QuestionServerReturnValue<Buffer>;
   test?: (
     variant: Variant,
     question: Question,

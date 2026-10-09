@@ -250,6 +250,7 @@ export class CodeCallerContainer implements CodeCaller {
     file: string | null,
     fcn: string | null,
     args: any[],
+    maxFileBytes?: number,
   ): Promise<CodeCallerResult> {
     this.debug(`enter call(${type}, ${directory}, ${file}, ${fcn})`);
     this.callCount += 1;
@@ -265,7 +266,15 @@ export class CodeCallerContainer implements CodeCaller {
       throw new Error('not ready for call');
     }
 
-    const callData = { type, directory, file, fcn, args, forbidden_modules: this.forbiddenModules };
+    const callData = {
+      type,
+      directory,
+      file,
+      fcn,
+      args,
+      forbidden_modules: this.forbiddenModules,
+      max_file_bytes: maxFileBytes,
+    };
     const callDataString = JSON.stringify(callData);
 
     // Reset output accumulators.

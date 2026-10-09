@@ -185,6 +185,7 @@ export class CodeCallerNative implements CodeCaller {
     file: string | null,
     fcn: string | null,
     args: any[],
+    maxFileBytes?: number,
   ): Promise<CodeCallerResult> {
     this.debug('enter call()');
 
@@ -227,7 +228,15 @@ export class CodeCallerNative implements CodeCaller {
         assertNever(type);
     }
 
-    const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
+    const callData = {
+      file,
+      fcn,
+      args,
+      cwd,
+      paths,
+      forbidden_modules: this.forbiddenModules,
+      max_file_bytes: maxFileBytes,
+    };
     const callDataString = JSON.stringify(callData);
 
     const promise = withResolvers<CodeCallerResult>();
