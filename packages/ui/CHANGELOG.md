@@ -1,5 +1,12 @@
 # @prairielearn/ui
 
+## 4.1.1
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- 83590cf: Upgrade @tanstack/match-sorter-utils to version 9, preserving fuzzy matching and ranking behavior in table filters.
+
 ## 4.1.0
 
 ### Minor Changes

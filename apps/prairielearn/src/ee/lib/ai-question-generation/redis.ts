@@ -11,8 +11,8 @@ const getAiQuestionGenerationRedisClient = memoize(async () => {
   if (!config.redisUrl) throw new Error('Redis URL is not configured');
 
   // See note in `socket-server.ts` about the configuration here.
-  const pub = new Redis(config.redisUrl, { lazyConnect: true });
-  const sub = new Redis(config.redisUrl, { lazyConnect: true });
+  const pub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
+  const sub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
 
   await Promise.all([pub.connect(), sub.connect()]);
 

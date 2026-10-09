@@ -49,11 +49,17 @@ import {
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
+import { TRPCProvider } from '../../trpc/courseInstance/context.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
-import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
+import {
+  STATUS_VALUES,
+  type StudentRow,
+  StudentRowSchema,
+  type SyncCsv,
+} from './instructorStudents.shared.js';
 
 function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<StudentRow> }) {
   const allSelected = table.getIsAllPageRowsSelected();
@@ -290,6 +296,7 @@ function StudentsCard({
     toInvite: string[],
     toCancelInvitation: string[],
     toRemove: string[],
+    csv?: SyncCsv,
   ): Promise<void> => {
     const body = {
       __action: 'sync_students',
@@ -297,6 +304,7 @@ function StudentsCard({
       toInvite,
       toCancelInvitation,
       toRemove,
+      csv,
     };
     const res = await fetch(window.location.href, {
       method: 'POST',
@@ -845,14 +853,16 @@ function StudentsCard({
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
       />
-      <SyncStudentsModal
-        show={showSync}
-        courseInstance={courseInstance}
-        selfEnrollLink={selfEnrollLink}
-        students={students}
-        onHide={() => setShowSync(false)}
-        onSubmit={syncStudents}
-      />
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <SyncStudentsModal
+          show={showSync}
+          courseInstance={courseInstance}
+          selfEnrollLink={selfEnrollLink}
+          students={students}
+          onHide={() => setShowSync(false)}
+          onSubmit={syncStudents}
+        />
+      </TRPCProvider>
     </>
   );
 }

@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 8.0.3
+
+### Patch Changes
+
+- 5160bea: Use Zod's core schema type in query helpers to reduce typechecking costs while preserving inferred result types.
+
+## 8.0.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 8.0.1
 
 ### Patch Changes

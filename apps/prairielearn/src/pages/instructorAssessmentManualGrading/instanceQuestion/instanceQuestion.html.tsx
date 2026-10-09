@@ -14,7 +14,12 @@ import type {
   AiGradingGeneralStats,
   InstanceQuestionAIGradingInfo,
 } from '../../../ee/lib/ai-grading/types.js';
-import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
+import {
+  assetPath,
+  compiledScriptTag,
+  compiledStylesheetTag,
+  nodeModulesAssetPath,
+} from '../../../lib/assets.js';
 import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { getAssessmentManualGradingUrl } from '../../../lib/client/url.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
@@ -244,9 +249,12 @@ export function InstanceQuestion({
     },
     options: {
       fullWidth: true,
+      fullHeight: true,
+      contentPadding: false,
       pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
     },
     headContent: html`
+      ${compiledStylesheetTag('instructorAssessmentManualGradingInstanceQuestion.css')}
       <meta
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
@@ -288,236 +296,253 @@ export function InstanceQuestion({
     `,
     content: html`
       <h1 class="visually-hidden">Instance Question Manual Grading</h1>
-      ${
-        resLocals.assessment_instance.open
-          ? html`
-              <div class="alert alert-danger" role="alert">
-                This assessment instance is still open. Student may still be able to submit new
-                answers.
-              </div>
-            `
-          : ''
-      }
-      ${
-        submissionCredits.some((credit) => credit !== 100)
-          ? html`
-              <div class="alert alert-warning" role="alert">
-                There are submissions in this assessment instance with credit different than 100%.
-                Submitting a manual grade will override any credit limits set for this assessment
-                instance.
-              </div>
-            `
-          : ''
-      }
-      <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
-        <nav aria-label="breadcrumb">
-          <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item">
-              <a href="${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading">
-                Manual grading
-              </a>
-            </li>
-            <li class="breadcrumb-item">
-              <a
-                href="${resLocals.urlPrefix}/assessment/${
-                  resLocals.assessment.id
-                }/manual_grading/assessment_question/${resLocals.assessment_question.id}"
-              >
-                Question ${resLocals.instance_question_info.instructor_question_number}.
-                ${resLocals.question.title}
-              </a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">Student submission</li>
-          </ol>
-        </nav>
+      <div class="instance-question-manual-grading d-flex flex-column flex-grow-1">
+        <div class="d-flex flex-shrink-0 align-items-center justify-content-between gap-2 p-3">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item">
+                <a
+                  href="${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading"
+                >
+                  Manual grading
+                </a>
+              </li>
+              <li class="breadcrumb-item">
+                <a
+                  href="${resLocals.urlPrefix}/assessment/${
+                    resLocals.assessment.id
+                  }/manual_grading/assessment_question/${resLocals.assessment_question.id}"
+                >
+                  Question ${resLocals.instance_question_info.instructor_question_number}.
+                  ${resLocals.question.title}
+                </a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">Student submission</li>
+            </ol>
+          </nav>
 
-        ${
-          aiGradingEnabled
-            ? html`
-                <form method="POST" class="card px-3 py-2 mb-0">
-                  <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <div class="form-check form-switch mb-0">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      role="switch"
-                      id="switchCheckDefault"
-                      ${aiGradingMode ? 'checked' : ''}
-                      onchange="setTimeout(() => this.form.submit(), 150)"
-                    />
-                    <label class="form-check-label" for="switchCheckDefault">
-                      <i class="bi bi-stars"></i>
-                      AI grading mode
-                    </label>
-                  </div>
-                </form>
-              `
-            : ''
-        }
-      </div>
-
-      <div class="mb-3">
-        ${hydrateHtml(
-          <RubricSettings
-            hasCourseInstancePermissionEdit={
-              resLocals.authz_data.has_course_instance_permission_edit
-            }
-            assessmentQuestion={StaffAssessmentQuestionSchema.parse(resLocals.assessment_question)}
-            rubricData={rubric_data}
-            csrfToken={__csrf_token}
-            aiGradingStats={aiGradingStats}
-            context={{
-              course_short_name: resLocals.course.short_name,
-              course_instance_short_name: resLocals.course_instance.short_name,
-              assessment_tid: resLocals.assessment.tid,
-              question_qid: resLocals.question.qid,
-              variant_params: resLocals.variant.params,
-              variant_true_answer: resLocals.variant.true_answer,
-              submission_submitted_answer: resLocals.submission?.submitted_answer,
-            }}
-          />,
-        )}
-      </div>
-
-      ${
-        instanceQuestionAiGradeProps
-          ? hydrateHtml(
-              <InstanceQuestionAiGrade
-                courseInstanceId={instanceQuestionAiGradeProps.courseInstanceId}
-                assessmentId={instanceQuestionAiGradeProps.assessmentId}
-                assessmentQuestionId={instanceQuestionAiGradeProps.assessmentQuestionId}
-                instanceQuestionId={instanceQuestionAiGradeProps.instanceQuestionId}
-                trpcCsrfToken={instanceQuestionAiGradeProps.trpcCsrfToken}
-                hasRubric={instanceQuestionAiGradeProps.hasRubric}
-                useCustomApiKeys={instanceQuestionAiGradeProps.useCustomApiKeys}
-                aiGradingSettingsUrl={instanceQuestionAiGradeProps.aiGradingSettingsUrl}
-                availableAiGradingProviders={
-                  instanceQuestionAiGradeProps.availableAiGradingProviders
-                }
-                aiGradingRelativeCosts={instanceQuestionAiGradeProps.aiGradingRelativeCosts}
-                aiGradingLastSelectedModel={instanceQuestionAiGradeProps.aiGradingLastSelectedModel}
-                initialOngoingJobSequenceTokens={
-                  instanceQuestionAiGradeProps.initialOngoingJobSequenceTokens
-                }
-                hasCourseInstancePermissionEdit={
-                  instanceQuestionAiGradeProps.hasCourseInstancePermissionEdit
-                }
-              />,
-            )
-          : ''
-      }
-      ${
-        conflict_grading_job
-          ? hydrateHtml(
-              <InstanceQuestionGradingConflictModal
-                conflictingGrade={{
-                  gradedAt: conflict_grading_job.date
-                    ? formatDateYMDHM(
-                        conflict_grading_job.date,
-                        resLocals.course_instance.display_timezone,
-                      )
-                    : null,
-                  graderName: conflict_grading_job.grader_name ?? 'an unknown grader',
-                  gradingPanelData: buildInstanceQuestionGradingPanelProps({
-                    resLocals,
-                    customAutoPoints: conflict_grading_job.auto_points ?? 0,
-                    customManualPoints: conflict_grading_job.manual_points ?? 0,
-                    gradingJob: conflict_grading_job,
-                    context: 'conflicting',
-                    graders,
-                    skipGradedSubmissions,
-                    showSubmissionsAssignedToMeOnly,
-                    enableSingleKeyShortcuts: enable_single_key_shortcuts,
-                  }),
-                }}
-                existingGrade={{
-                  gradedAt: formatDateYMDHM(
-                    resLocals.instance_question.modified_at,
-                    resLocals.course_instance.display_timezone,
-                  ),
-                  graderName: lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader',
-                  gradingPanelData: buildInstanceQuestionGradingPanelProps({
-                    resLocals,
-                    disable: true,
-                    skipText: 'Accept existing score',
-                    context: 'existing',
-                    skipGradedSubmissions,
-                    showSubmissionsAssignedToMeOnly,
-                    enableSingleKeyShortcuts: enable_single_key_shortcuts,
-                  }),
-                }}
-              />,
-            )
-          : ''
-      }
-      <div class="row">
-        <div class="col-lg-8 col-12">
-          ${QuestionContainer({
-            resLocals,
-            questionContext: 'manual_grading',
-            showFooter: false,
-            aiGradingInfo,
-          })}
+          ${
+            aiGradingEnabled
+              ? html`
+                  <form method="POST" class="card px-3 py-2 mb-0">
+                    <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <div class="form-check form-switch mb-0">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        role="switch"
+                        id="switchCheckDefault"
+                        ${aiGradingMode ? 'checked' : ''}
+                        onchange="setTimeout(() => this.form.submit(), 150)"
+                      />
+                      <label class="form-check-label" for="switchCheckDefault">
+                        <i class="bi bi-stars"></i>
+                        AI grading mode
+                      </label>
+                    </div>
+                  </form>
+                `
+              : ''
+          }
         </div>
 
-        <div class="col-lg-4 col-12">
-          <div class="card mb-4">
-            <div class="card-header">Grading</div>
-            <div class="js-main-grading-panel">
+        <div class="instance-question-manual-grading-panes">
+          <div
+            class="instance-question-manual-grading-question p-3"
+            role="region"
+            aria-label="Question and grading settings"
+            tabindex="0"
+          >
+            ${
+              resLocals.assessment_instance.open
+                ? html`
+                    <div class="alert alert-danger" role="alert">
+                      This assessment instance is still open. Student may still be able to submit
+                      new answers.
+                    </div>
+                  `
+                : ''
+            }
+            ${
+              submissionCredits.some((credit) => credit !== 100)
+                ? html`
+                    <div class="alert alert-warning" role="alert">
+                      There are submissions in this assessment instance with credit different than
+                      100%. Submitting a manual grade will override any credit limits set for this
+                      assessment instance.
+                    </div>
+                  `
+                : ''
+            }
+            <div class="mb-3">
               ${hydrateHtml(
-                <InstanceQuestionGradingPanel
-                  data={buildInstanceQuestionGradingPanelProps({
-                    resLocals,
-                    context: 'main',
-                    graders,
-                    aiGradingInfo,
-                    aiGradingMode,
-                    selectedInstanceQuestionGroup,
-                    showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
-                    instanceQuestionGroups,
-                    skipGradedSubmissions,
-                    showSubmissionsAssignedToMeOnly,
-                    gradedByHumanName: lastHumanGraderName,
-                    enableSingleKeyShortcuts: enable_single_key_shortcuts,
-                  })}
+                <RubricSettings
+                  hasCourseInstancePermissionEdit={
+                    resLocals.authz_data.has_course_instance_permission_edit
+                  }
+                  assessmentQuestion={StaffAssessmentQuestionSchema.parse(
+                    resLocals.assessment_question,
+                  )}
+                  rubricData={rubric_data}
+                  csrfToken={__csrf_token}
+                  aiGradingStats={aiGradingStats}
+                  context={{
+                    course_short_name: resLocals.course.short_name,
+                    course_instance_short_name: resLocals.course_instance.short_name,
+                    assessment_tid: resLocals.assessment.tid,
+                    question_qid: resLocals.question.qid,
+                    variant_params: resLocals.variant.params,
+                    variant_true_answer: resLocals.variant.true_answer,
+                    submission_submitted_answer: resLocals.submission?.submitted_answer,
+                  }}
                 />,
               )}
             </div>
-          </div>
 
-          ${
-            resLocals.file_list.length > 0
-              ? PersonalNotesPanel({
-                  fileList: resLocals.file_list,
-                  context: 'question',
-                  courseInstanceId: resLocals.course_instance.id,
-                  assessment_instance: resLocals.assessment_instance,
-                  authz_result: resLocals.authz_result,
-                  variantId: resLocals.variant.id,
-                  csrfToken: resLocals.__csrf_token,
-                  allowNewUploads: false,
-                })
-              : ''
-          }
-          ${InstructorInfoPanel({
-            course: resLocals.course,
-            course_instance: resLocals.course_instance,
-            assessment: resLocals.assessment,
-            assessment_instance: resLocals.assessment_instance,
-            instance_question: resLocals.instance_question,
-            assignedGrader,
-            lastGrader,
-            question: resLocals.question,
-            variant: resLocals.variant,
-            instance_group: resLocals.instance_group,
-            instance_group_uid_list: resLocals.instance_group_uid_list,
-            instance_user: resLocals.instance_user,
-            authz_data: resLocals.authz_data,
-            question_is_shared: resLocals.question_is_shared,
-            questionContext: 'manual_grading',
-            csrfToken: resLocals.__csrf_token,
-          })}
+            ${
+              instanceQuestionAiGradeProps
+                ? hydrateHtml(
+                    <InstanceQuestionAiGrade
+                      courseInstanceId={instanceQuestionAiGradeProps.courseInstanceId}
+                      assessmentId={instanceQuestionAiGradeProps.assessmentId}
+                      assessmentQuestionId={instanceQuestionAiGradeProps.assessmentQuestionId}
+                      instanceQuestionId={instanceQuestionAiGradeProps.instanceQuestionId}
+                      trpcCsrfToken={instanceQuestionAiGradeProps.trpcCsrfToken}
+                      hasRubric={instanceQuestionAiGradeProps.hasRubric}
+                      useCustomApiKeys={instanceQuestionAiGradeProps.useCustomApiKeys}
+                      aiGradingSettingsUrl={instanceQuestionAiGradeProps.aiGradingSettingsUrl}
+                      availableAiGradingProviders={
+                        instanceQuestionAiGradeProps.availableAiGradingProviders
+                      }
+                      aiGradingRelativeCosts={instanceQuestionAiGradeProps.aiGradingRelativeCosts}
+                      aiGradingLastSelectedModel={
+                        instanceQuestionAiGradeProps.aiGradingLastSelectedModel
+                      }
+                      initialOngoingJobSequenceTokens={
+                        instanceQuestionAiGradeProps.initialOngoingJobSequenceTokens
+                      }
+                      hasCourseInstancePermissionEdit={
+                        instanceQuestionAiGradeProps.hasCourseInstancePermissionEdit
+                      }
+                    />,
+                  )
+                : ''
+            }
+            ${
+              conflict_grading_job
+                ? hydrateHtml(
+                    <InstanceQuestionGradingConflictModal
+                      conflictingGrade={{
+                        gradedAt: conflict_grading_job.date
+                          ? formatDateYMDHM(
+                              conflict_grading_job.date,
+                              resLocals.course_instance.display_timezone,
+                            )
+                          : null,
+                        graderName: conflict_grading_job.grader_name ?? 'an unknown grader',
+                        gradingPanelData: buildInstanceQuestionGradingPanelProps({
+                          resLocals,
+                          customAutoPoints: conflict_grading_job.auto_points ?? 0,
+                          customManualPoints: conflict_grading_job.manual_points ?? 0,
+                          gradingJob: conflict_grading_job,
+                          context: 'conflicting',
+                          graders,
+                          skipGradedSubmissions,
+                          showSubmissionsAssignedToMeOnly,
+                          enableSingleKeyShortcuts: enable_single_key_shortcuts,
+                        }),
+                      }}
+                      existingGrade={{
+                        gradedAt: formatDateYMDHM(
+                          resLocals.instance_question.modified_at,
+                          resLocals.course_instance.display_timezone,
+                        ),
+                        graderName: lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader',
+                        gradingPanelData: buildInstanceQuestionGradingPanelProps({
+                          resLocals,
+                          disable: true,
+                          skipText: 'Accept existing score',
+                          context: 'existing',
+                          skipGradedSubmissions,
+                          showSubmissionsAssignedToMeOnly,
+                          enableSingleKeyShortcuts: enable_single_key_shortcuts,
+                        }),
+                      }}
+                    />,
+                  )
+                : ''
+            }
+            ${QuestionContainer({
+              resLocals,
+              questionContext: 'manual_grading',
+              showFooter: false,
+              aiGradingInfo,
+            })}
+          </div>
+          <div
+            class="instance-question-manual-grading-sidebar p-3"
+            role="region"
+            aria-label="Grading controls and instructor information"
+            tabindex="0"
+          >
+            <div class="card mb-4">
+              <div class="card-header">Grading</div>
+              <div class="js-main-grading-panel">
+                ${hydrateHtml(
+                  <InstanceQuestionGradingPanel
+                    data={buildInstanceQuestionGradingPanelProps({
+                      resLocals,
+                      context: 'main',
+                      graders,
+                      aiGradingInfo,
+                      aiGradingMode,
+                      selectedInstanceQuestionGroup,
+                      showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
+                      instanceQuestionGroups,
+                      skipGradedSubmissions,
+                      showSubmissionsAssignedToMeOnly,
+                      gradedByHumanName: lastHumanGraderName,
+                      enableSingleKeyShortcuts: enable_single_key_shortcuts,
+                    })}
+                  />,
+                )}
+              </div>
+            </div>
+
+            ${
+              resLocals.file_list.length > 0
+                ? PersonalNotesPanel({
+                    fileList: resLocals.file_list,
+                    context: 'question',
+                    courseInstanceId: resLocals.course_instance.id,
+                    assessment_instance: resLocals.assessment_instance,
+                    authz_result: resLocals.authz_result,
+                    variantId: resLocals.variant.id,
+                    csrfToken: resLocals.__csrf_token,
+                    allowNewUploads: false,
+                  })
+                : ''
+            }
+            ${InstructorInfoPanel({
+              course: resLocals.course,
+              course_instance: resLocals.course_instance,
+              assessment: resLocals.assessment,
+              assessment_instance: resLocals.assessment_instance,
+              instance_question: resLocals.instance_question,
+              assignedGrader,
+              lastGrader,
+              question: resLocals.question,
+              variant: resLocals.variant,
+              instance_group: resLocals.instance_group,
+              instance_group_uid_list: resLocals.instance_group_uid_list,
+              instance_user: resLocals.instance_user,
+              authz_data: resLocals.authz_data,
+              question_is_shared: resLocals.question_is_shared,
+              questionContext: 'manual_grading',
+              csrfToken: resLocals.__csrf_token,
+            })}
+          </div>
         </div>
       </div>
     `,

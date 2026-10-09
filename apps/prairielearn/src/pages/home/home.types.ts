@@ -12,6 +12,7 @@ export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
   short_name: RawStudentCourseSchema.shape.short_name,
   title: RawStudentCourseSchema.shape.title,
+  example_course: RawStudentCourseSchema.shape.example_course,
   can_open_course: z.boolean(),
   course_instances: z.array(
     z.object({

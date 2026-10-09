@@ -61,6 +61,8 @@ def make_question_data(
         ("|x+|-x+1+2+3+4||", "abs(x+abs(-x+1+2+3+4))"),
         ("|x+|x+1+2+3+4 ||", "abs(x+abs(x+1+2+3+4 ))"),
         ("", ""),
+        # The formula editor writes \lvert and \rvert as U+2223
+        ("2\u2223x\u2223", "2abs(x)"),
     ],
 )
 def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
@@ -164,6 +166,18 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
         # Formatting operators
         ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
+        # Bare function arguments ended by "*" (the editor drops the grouping in `{\ln 4}\cdot`)
+        ("l n 4 * c o t (9x)", True, ["x"], [], "ln (4) * cot (9x)"),
+        ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
+        ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
+        # Operators the editor writes in AsciiMath form (\div and \ast)
+        ("2 -: x", False, ["x"], [], "2 / x"),
+        ("2 ** x", False, ["x"], [], "2 * x"),
+        ("2 ** ** x", False, ["x"], [], "2 * ** x"),
+        # \star is " *** ", which must not end a function argument
+        ("l n 4 *** x", False, ["x"], [], "ln 4 *** x"),
+        # Without LaTeX, typed "+-" is unchanged
+        ("2+-a -: x", False, ["a"], [], "2+-a / x"),
     ],
 )
 def test_format_formula_editor_submission_for_sympy(
@@ -177,6 +191,102 @@ def test_format_formula_editor_submission_for_sympy(
         sub, allow_trig, variables, custom_functions
     )
     assert out == expected
+
+
+@pytest.mark.parametrize(
+    "a_sub",
+    [
+        # Reported as containing set notation: 4^{csc(9x)}·(-9·ln 4)·cot(9x)csc(9x)
+        pytest.param(
+            "4^(c s c (9x)) * (-9∙l n 4) * c o t (9x)c s c (9x)",
+            id="report-set-notation",
+        ),
+        # Reported as graded incorrect: the editor submits `{\ln 4}\cdot` as "ln 4 *",
+        # which would otherwise be parsed as ln(4*cot(9x)*csc(9x))
+        pytest.param(
+            "-9 * 4^(c s c (9x)) * l n 4 * c o t (9x) * c s c (9x)",
+            id="report-graded-incorrect",
+        ),
+        # Pasting "4^(csc(9x))(-9*ln4)*cot(9x)csc(9x)" into the editor
+        pytest.param(
+            "4^(c s c(9x))(-9∗l n4)∗c o t(9x)c s c(9x)",  # ruff:ignore[ambiguous-unicode-character-string]
+            id="pasted-asterisk-operator",
+        ),
+    ],
+)
+def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
+    """Regression test for correct answers rejected as set notation or graded incorrect.
+
+    The submissions are the plain text the formula editor sends for the reported answers.
+    """
+    x = sympy.Symbol("x")
+    expected = (
+        -9 * 4 ** sympy.csc(9 * x) * sympy.log(4) * sympy.cot(9 * x) * sympy.csc(9 * x)
+    )
+    element_html = build_element_html('variables="x"', 'formula-editor="true"')
+    data = make_question_data(
+        submitted_answers={"test": a_sub},
+        correct_answers={"test": psu.sympy_to_json(expected)},
+    )
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == expected
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize(
+    ("submission", "latex", "expected"),
+    [
+        # Plain text and LaTeX captured from the formula editor
+        ("2+-a+-b", r"2\pm a+-b", "2±a+-b"),
+        ("(a+-b)+-sqrt(a+-b)", r"\left(a+-b\right)\pm\sqrt{a+-b}", "(a+-b)±sqrt(a+-b)"),
+        ("a+-b+-c", r"a+{-b}\pm c", "a+-b±c"),
+        ("2+-a", "2+-a", "2+-a"),
+        # The plain text and LaTeX don't match up
+        ("2+-a", r"2\pm a\pm b", None),
+        ("2+-a+-b", "2+-a", None),
+    ],
+)
+def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
+    assert symbolic_input._restore_plus_minus(submission, latex) == expected
+
+
+def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> None:
+    element_html = build_element_html('variables="a"', 'formula-editor="true"')
+    data = make_question_data(
+        submitted_answers={"test": "2+-a"},
+        raw_submitted_answers={"test": "2+-a", "test-latex": r"2\pm a"},
+    )
+    symbolic_input.parse(element_html, data)
+    assert 'invalid symbol "±"' in data["format_errors"]["test"]
+
+    data = make_question_data(
+        submitted_answers={"test": "2+-a"},
+        raw_submitted_answers={"test": "2+-a", "test-latex": "2+-a"},
+    )
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 2 - sympy.Symbol("a")
+
+
+def test_formula_editor_deeply_nested_bare_arguments() -> None:
+    depth = 1200
+    submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"
+    expected = "sin (2(" * depth + "x" + " * y))" * depth + " * z"
+    assert (
+        symbolic_input.format_formula_editor_submission_for_sympy(
+            submission, True, ["x", "y", "z"], []
+        )
+        == expected
+    )
+
+    element_html = build_element_html('variables="x,y,z"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": submission})
+    symbolic_input.parse(element_html, data)
+    assert "syntax error" in data["format_errors"]["test"]
 
 
 def test_parse_without_variables_attribute_with_assumptions() -> None:

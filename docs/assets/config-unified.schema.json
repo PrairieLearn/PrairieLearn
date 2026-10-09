@@ -225,6 +225,11 @@
       "default": 60,
       "type": "number"
     },
+    "workspaceHostMinAvailableDiskMB": {
+      "default": 10000,
+      "type": "number",
+      "minimum": 0
+    },
     "workspaceHostMinPortRange": {
       "default": 1024,
       "type": "number"
@@ -623,6 +628,32 @@
     "slackCourseRequestWebhookUrl": {
       "default": null,
       "type": ["string", "null"]
+    },
+    "supportSlackUrl": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https:\\/\\/.*"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "supportOfficeHoursUrl": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https:\\/\\/.*"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "githubClientToken": {
       "default": null,
