@@ -54,6 +54,16 @@ const sql = loadSqlEquiv(import.meta.url);
 type CourseInstanceContext =
   CourseInstance | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
 
+export async function countJoinedStudentsInCourseInstance(
+  courseInstance: CourseInstanceContext,
+): Promise<number> {
+  return await queryScalar(
+    sql.count_joined_students_in_course_instance,
+    { course_instance_id: courseInstance.id },
+    z.number(),
+  );
+}
+
 function assertEnrollmentStatus(
   enrollment: Enrollment,
   requiredStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[],

@@ -46,6 +46,7 @@ interface PrintPreparationProps {
   groupWork: boolean;
   requireHonorCode: boolean;
   instances: StaffAssessmentInstance[];
+  defaultCopies: number;
   renderingAvailable: boolean;
   trpcCsrfToken: string;
   docxCsrfToken: string;
@@ -80,6 +81,7 @@ function PrintPreparation({
   groupWork,
   requireHonorCode,
   instances: initialInstances,
+  defaultCopies,
   renderingAvailable,
   docxCsrfToken,
 }: PrintPreparationProps) {
@@ -108,7 +110,7 @@ function PrintPreparation({
     {},
   );
   const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
-  const [copies, setCopies] = useState(1);
+  const [copies, setCopies] = useState(defaultCopies);
   const [showBookletModal, setShowBookletModal] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const validInstance = instances.data.some((instance) => instance.id === instanceId);
