@@ -237,7 +237,7 @@ function buildGradingTable(
   widthDxa: number,
 ): Table {
   const labels = [...gradingTable.questionNumbers, 'Total'];
-  const rows = Math.min(gradingTable.rowsPerColumn, labels.length);
+  const rows = Math.max(1, Math.min(Math.floor(gradingTable.rowsPerColumn), labels.length));
   const columns = Math.ceil(labels.length / rows);
   const columnWidth = Math.floor(widthDxa / columns);
   return new Table({
