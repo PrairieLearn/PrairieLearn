@@ -500,6 +500,84 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "expected_score"),
+    [
+        ("{x + 1, x - 1}", "{x + 1, x - 1}", 1),
+        # Equivalent elements aren't merged without simplification
+        ("{x}", "{x + 0, x - 0}", 1),
+        ("{x, 1}", "{x + 0, x - 0}", 0),
+    ],
+)
+def test_unsimplified_set_submission_grades_after_json_round_trip(
+    correct_answer: str, submission: str, expected_score: int
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'display-simplified-expression="false"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == expected_score
+
+
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "expected_score"),
+    [
+        ("[0, (x + 1)^2] U {y}", "[0, x^2 + 2*x + 1] U {y}", 1),
+        ("[0, x] U {y}", "(0, x + 0] U {y}", 0),
+    ],
+)
+def test_unsimplified_composite_set_submission_grades_after_json_round_trip(
+    correct_answer: str, submission: str, expected_score: int
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x, y"',
+        'display-simplified-expression="false"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == expected_score
+
+
+def test_unsimplified_symbolic_set_difference_round_trips() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x, y"',
+        'display-simplified-expression="false"',
+        'correct-answer="{x} - {y}"',
+    )
+    data = make_question_data(submitted_answers={"test": "{x} - {y}"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    x, y = sympy.symbols("x y")
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(
+        data["submitted_answers"]["test"],
+        allow_sets=True,
+        simplify_expression=False,
+    ) == sympy.Complement(sympy.FiniteSet(x), sympy.FiniteSet(y))
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',

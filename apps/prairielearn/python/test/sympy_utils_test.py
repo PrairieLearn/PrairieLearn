@@ -211,6 +211,11 @@ class TestSympy:
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
         ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
         ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
+        ("{m} - {n}", sympy.Complement(sympy.FiniteSet(M), sympy.FiniteSet(N))),
+        (
+            "[0, 1] - {m}",
+            sympy.Complement(sympy.Interval(0, 1), sympy.FiniteSet(M)),
+        ),
         (
             "({m, 3} U (m + 1, 4])",
             sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
@@ -308,6 +313,24 @@ class TestSympy:
             self.SYMBOL_NAMES,
             allow_sets=True,
             custom_functions=self.FUNCTION_NAMES,
+        )
+
+    @pytest.mark.parametrize(
+        ("a_sub", "sympy_ref"),
+        [
+            ("{1} U {2}", sympy.FiniteSet(1, 2)),
+            ("{1} cap {1, 2}", sympy.FiniteSet(1)),
+            ("{1, 2} - {1}", sympy.FiniteSet(2)),
+            ("{1} + {5}", sympy.FiniteSet(1, 5)),
+        ],
+    )
+    def test_set_operations_without_simplification(
+        self, a_sub: str, sympy_ref: sympy.Set
+    ) -> None:
+        assert sympy_ref == psu.convert_string_to_sympy(
+            a_sub,
+            simplify_expression=False,
+            allow_sets=True,
         )
 
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
@@ -487,6 +510,7 @@ class TestSympy:
             ("Interval", (0, 1)),
             ("Union", (sympy.EmptySet, sympy.EmptySet)),
             ("Intersection", (sympy.EmptySet, sympy.EmptySet)),
+            ("Complement", (sympy.EmptySet, sympy.EmptySet)),
         ],
     )
     def test_sets_reserveds_respected_by_json_conversion(
@@ -518,6 +542,7 @@ class TestSympy:
             sympy.symbols("Interval"),
             sympy.symbols("Union"),
             sympy.symbols("Intersection"),
+            sympy.symbols("Complement"),
         ],
     )
     def test_sets_disabled_reserveds_pass_json_conversion(
@@ -1015,6 +1040,8 @@ class TestExceptions:
         "!Intersection(1, 2)",
         "!Intersection({}, 2)",
         "!Intersection( )",
+        "!Complement(1, 2)",
+        "!Complement({1})",
         "1 !U 2",
         "1 !| 2",
         "1 !cup 2",
@@ -1075,6 +1102,32 @@ class TestExceptions:
             match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
             assert match is not None, f"error message has no caret: {error_msg}"
             assert expected_caret == match.group(1)
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "x + 1 U {3}",
+            "x + Reals",
+        ],
+    )
+    def test_invalid_set_expression_error_unchanged_without_simplification(
+        self, text: str
+    ) -> None:
+        simplified_error = psu.validate_string_as_sympy(
+            text,
+            ["x"],
+            allow_sets=True,
+        )
+        unsimplified_error = psu.validate_string_as_sympy(
+            text,
+            ["x"],
+            allow_sets=True,
+            simplify_expression=False,
+        )
+
+        assert unsimplified_error == simplified_error
+        assert simplified_error is not None
+        assert "syntax error" in simplified_error
 
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.
