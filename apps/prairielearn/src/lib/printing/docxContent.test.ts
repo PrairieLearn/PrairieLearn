@@ -40,6 +40,28 @@ it('preserves response areas and matrix tables nested inside input groups', asyn
   expect(word('w\\:t').text()).toContain('At most 250 words');
 });
 
+it('keeps writing space inside a numbered list item', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <ol><li>Explain your answer:
+      <div><div class="printing-response-area"><div class="printing-response-label">Response</div><div class="printing-response-lines" data-docx-height="128"></div></div></div>
+      Additional explanation.</li></ol>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(
+      new Document({
+        numbering: { config: content.numbering },
+        sections: [{ children: content.children }],
+      }),
+    ),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  expect(word('w\\:numPr')).toHaveLength(1);
+  expect(word('w\\:tbl').first().find('w\\:tr')).toHaveLength(4);
+  expect(word('w\\:t').text()).toContain('Explain your answer:');
+  expect(word('w\\:t').text()).toContain('Additional explanation.');
+});
+
 it('places Word response guidance below the answer line at the same left edge', async () => {
   const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
     <span class="input-group"><span data-docx-width="50">Area =</span><span class="printing-response-field" data-docx-width="250"><span data-print-response-line data-docx-width="250"></span><small class="printing-response-placeholder">3 significant figures</small></span><span data-docx-width="25">m²</span></span>
