@@ -244,18 +244,6 @@ wheels = [
 ]
 
 [[package]]
-name = "cpsat-logutils"
-version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/42/2c2c14746ce87ff2932c8e086efbcc264e05664f29e36934f176c4c8ca19/cpsat_logutils-1.0.0.tar.gz", hash = "sha256:db8e0b5bf16fae203e08692088e9f8a248846e03934242367f7da5dab10322ee", size = 200951, upload-time = "2026-09-06T16:09:15.3Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/15/6e/2c65834041468bcabb956c5e4465ad240af7f312b2d8b54d7c9a51b26885/cpsat_logutils-1.0.0-py3-none-any.whl", hash = "sha256:02112cc460d30aeab3a591592bfa09cc5705fa3745d5d418a7339e8843c14e5d", size = 37338, upload-time = "2026-09-06T16:09:13.47Z" },
-]
-
-[[package]]
 name = "cssselect"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -920,18 +908,6 @@ wheels = [
 ]
 
 [[package]]
-name = "orloge"
-version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cpsat-logutils" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e6/6a/5496be734109def41e692abd2ad2fd975d9d2633dbab6fecc889307f4908/orloge-1.0.0.tar.gz", hash = "sha256:6c0bf7d2867fe22e60ef6425d7e99599938c0b1611d513a0baf972fa91b71c88", size = 20976, upload-time = "2026-09-17T07:58:22.891Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ac/b5/3861058b70d624330ac2c42f8555580cd8e5244a89a3033713cfd1ce6ce8/orloge-1.0.0-py3-none-any.whl", hash = "sha256:e58cc1e15c7939fb8dc0b6ea6839c3c35805d31bbd7d3721dfc88ddc77f4b8e3", size = 16695, upload-time = "2026-09-17T07:58:22.013Z" },
-]
-
-[[package]]
 name = "packaging"
 version = "26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1157,7 +1133,7 @@ requires-dist = [
     { name = "pillow", specifier = "==12.3.0" },
     { name = "pint", specifier = "==0.26.1" },
     { name = "psutil", specifier = "==7.2.2" },
-    { name = "pulp", specifier = "==4.0.0" },
+    { name = "pulp", specifier = "==3.3.2" },
     { name = "pyarrow", specifier = "==25.0.1" },
     { name = "pycryptodome", specifier = "==3.23.0" },
     { name = "pygments", specifier = "==2.21.0" },
@@ -1257,28 +1233,11 @@ wheels = [
 
 [[package]]
 name = "pulp"
-version = "4.0.0"
+version = "3.3.2"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "orloge" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/24/ea/7cc2de7e3d6ca3f943c8e4b4c831831bbf61e08123dc6958c19c9ea5a1ff/pulp-4.0.0.tar.gz", hash = "sha256:0f7fa97ae524ba724baa32d23390345df50ae80d42d6dbdc4d4b0f57dae8187c", size = 162406, upload-time = "2026-09-25T08:03:53.681Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/70/69be07a67621ad804d6cf347965eb4e0d7786a97330d99c31d735aaa6c5a/pulp-3.3.2.tar.gz", hash = "sha256:d0904700c207ac11e25e3b1213b70eae1d6fb25faa719d75f3f15054901258c0", size = 16305346, upload-time = "2026-05-25T09:41:26.207Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/91/3ef5d6ba7a8622861d485c07c1ea38d19ad5193dd8743c9e43093f8511e4/pulp-4.0.0-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:3935d8fec4daa645defa406c5f6ea5591ddde2083ddfc3a3edfb59dd48f9100c", size = 652743, upload-time = "2026-09-25T08:02:53.99Z" },
-    { url = "https://files.pythonhosted.org/packages/dd/5f/b555a789c986c929f32209e0a71dd673d093fee3c22fe6da1b6444d57aaa/pulp-4.0.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:6bcf66da6fb7d9d76ff8e84cb1bd8a1b3f1e3fb91287a018eb59d9f4000444ca", size = 641554, upload-time = "2026-09-25T08:02:55.537Z" },
-    { url = "https://files.pythonhosted.org/packages/28/da/393e92928027e5203c18b9b78fb6042655699bd8f1465bdbb102182b8118/pulp-4.0.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6bd139d4640ec78ead2ed769a1ca3df2b8fcdd9547eadcc49972654112292497", size = 690794, upload-time = "2026-09-25T08:02:56.862Z" },
-    { url = "https://files.pythonhosted.org/packages/37/5b/155c5950456ce67d5c66f9e946110eeaa69595cf4c4c8c5237249a2b666a/pulp-4.0.0-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:f79d9222f9180a47d66b86f8a1853f2903104117120ab9f0fbac6191ccf24276", size = 702255, upload-time = "2026-09-25T08:02:58.14Z" },
-    { url = "https://files.pythonhosted.org/packages/19/2e/f41e3d5c920c649401e046f6fd6a10125210438aab44e5cbd4de1d9c7d95/pulp-4.0.0-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:20251a0c69d5c0d507419888876ac32fb6346d172c87164e3b62a4abd3ee6a55", size = 817474, upload-time = "2026-09-25T08:02:59.703Z" },
-    { url = "https://files.pythonhosted.org/packages/de/5c/c0ec8db4f4e541b20674aae28c573ef321d2fc1e9ec0535c09bc7199e6bc/pulp-4.0.0-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:588b2d40b5d414cbbdc33d03488b4eb3b4ab959b92de8e6c6ee92d892cff07d4", size = 724510, upload-time = "2026-09-25T08:03:00.874Z" },
-    { url = "https://files.pythonhosted.org/packages/63/cf/ec91eeccbd9952dee5bc07b4a8475e295e6b8a99ab47662ae6e59dca9e55/pulp-4.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e75b1ddaae4f3e91bfed734dc99382a8c66fb22c4eb599c0213bad09a067f6ed", size = 692330, upload-time = "2026-09-25T08:03:02.268Z" },
-    { url = "https://files.pythonhosted.org/packages/95/a5/c66e998e601e240485075088de3601693f7d591acb9af3f6b4fcc02c93d6/pulp-4.0.0-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:7f4a48e0b771b6012cf34738dbf0937bbca6267986e421376eae458e6e475270", size = 733362, upload-time = "2026-09-25T08:03:03.633Z" },
-    { url = "https://files.pythonhosted.org/packages/96/8f/84359102093a77f19bd80bac4596c5bd49d792eaf49dda2aeb3bfa16d7ca/pulp-4.0.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:24b1d3dfdfad58a1a68c368201a0466e80728c25fa49363e6b1078f1141acd36", size = 869019, upload-time = "2026-09-25T08:03:04.808Z" },
-    { url = "https://files.pythonhosted.org/packages/46/a8/0a61d6a66b24b92b3c122f7e5012aa485f5d54a88f29f781c612ba376c03/pulp-4.0.0-cp313-cp313-musllinux_1_2_armv7l.whl", hash = "sha256:60f2109a1b18e9e1d00e9711fd1bc42463ae2a0ddd5b1cb60d3cb78f808a1448", size = 978573, upload-time = "2026-09-25T08:03:06.562Z" },
-    { url = "https://files.pythonhosted.org/packages/6d/13/460000ec4418da3327ae98cb79869615d7d55701a5eb8593190001c254dc/pulp-4.0.0-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:1413ff0cddf4d2c0fd359929af4d911b92983831cb9456802e5a7bd3ffd6ee2a", size = 939129, upload-time = "2026-09-25T08:03:08.047Z" },
-    { url = "https://files.pythonhosted.org/packages/66/99/678b05aacdde2a365ed8f25d468b7eafee8b29fa0805e4eb6b57b84bacb1/pulp-4.0.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:2cb8d26bf71d52acf962ed0d17f27f1fa8ed015a3d47b9a1c2a5b6bbbcdb0a63", size = 903858, upload-time = "2026-09-25T08:03:09.52Z" },
-    { url = "https://files.pythonhosted.org/packages/14/12/75f57eb056ec4321f439d147ec277cb47d72e145f1524a67dc5a13264eaa/pulp-4.0.0-cp313-cp313-win32.whl", hash = "sha256:454b43e2a337ce3af39280cae2663e11dc06440f05d3383b0f6b9a70487550a2", size = 525258, upload-time = "2026-09-25T08:03:10.942Z" },
-    { url = "https://files.pythonhosted.org/packages/24/3c/810bf99e9238acb579b6d297623d76477b03b11861e25b0170eafb44c67a/pulp-4.0.0-cp313-cp313-win_amd64.whl", hash = "sha256:c09472196a7304c442a6387e06e1f208e21e18be74a524c0d385f38569c5b9b5", size = 541759, upload-time = "2026-09-25T08:03:12.418Z" },
-    { url = "https://files.pythonhosted.org/packages/49/29/938ea74a3d49cbc2ef4badd25c9c5060382b2074db6c8196869680fcc80a/pulp-4.0.0-cp313-cp313-win_arm64.whl", hash = "sha256:6e16bf606dc556ff37f6868fadb4505dda2f08bfd8f8b5b7ae863011502b3db7", size = 525889, upload-time = "2026-09-25T08:03:13.697Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/6e/d674f1dde91c71e2ac19e5e5cf1ee6d5845e3aefecd9c39ed9c4b0c9a696/pulp-3.3.2-py3-none-any.whl", hash = "sha256:631b166f72086971a9597f7a0233ababa99bb8d50a01cd543f7758be5a9f86c0", size = 16391742, upload-time = "2026-05-25T09:41:22.2Z" },
 ]
 
 [[package]]
