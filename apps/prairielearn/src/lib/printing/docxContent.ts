@@ -627,6 +627,15 @@ export function buildDocxContent(
         blocks.push(...walk(node.children, format, maxWidth));
         continue;
       }
+      if (
+        node.name !== 'ul' &&
+        node.name !== 'ol' &&
+        $(node).find('.printing-response-area').length > 0
+      ) {
+        flush();
+        blocks.push(...walk(node.children, formatFor(node, format), maxWidth));
+        continue;
+      }
       if (node.name === 'p') {
         flush();
         const next = $(node).next();
@@ -695,21 +704,35 @@ export function buildDocxContent(
           ],
         });
         for (const item of $(node).children('li')) {
-          blocks.push(
-            paragraph(
-              inline(
-                item.children.filter(
-                  (child) => !('attribs' in child) || !['ul', 'ol'].includes(child.name),
+          let numbered = false;
+          let inlineNodes: HtmlNode[] = [];
+          const flushItem = () => {
+            if (inlineNodes.length > 0 || !numbered) {
+              blocks.push(
+                paragraph(
+                  inline(inlineNodes, format, maxWidth - 28),
+                  numbered ? {} : { numbering: { reference, level: 0 } },
                 ),
-                format,
-                maxWidth - 28,
-              ),
-              { numbering: { reference, level: 0 } },
-            ),
-          );
-          for (const nested of $(item).children('ul, ol')) {
-            blocks.push(...walk([nested], format, maxWidth - 28));
+              );
+              numbered = true;
+              inlineNodes = [];
+            }
+          };
+          for (const child of item.children) {
+            if (
+              'attribs' in child &&
+              (child.name === 'ul' ||
+                child.name === 'ol' ||
+                has(child, '.printing-response-area') ||
+                $(child).find('.printing-response-area').length > 0)
+            ) {
+              flushItem();
+              blocks.push(...walk([child], format, maxWidth - 28));
+            } else {
+              inlineNodes.push(child);
+            }
           }
+          if (inlineNodes.length > 0 || !numbered) flushItem();
         }
         continue;
       }
