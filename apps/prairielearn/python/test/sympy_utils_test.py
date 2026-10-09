@@ -1091,6 +1091,36 @@ class TestExceptions:
         assert error_msg is not None
         assert 'invalid symbol "m"' in error_msg
 
+    @pytest.mark.parametrize(
+        ("caret_spec", "expected"),
+        [
+            ("!sin(n, n)", "to 'sin', expected 1."),
+            ("2 + 3*!cos(n, 1)", "to 'cos', expected 1."),
+            ("!exp()", "to 'exp', expected 1."),
+            # sympy.sqrt's second parameter is `evaluate`, so this was accepted as sqrt(n)
+            ("!sqrt(n, n)", "to 'sqrt', expected 1."),
+            ("!log(n, 2, 3)", "to 'log', expected 1 or 2."),
+            ("!atan2(n)", "to 'atan2', expected 2."),
+        ],
+    )
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_builtin_function_arity_error(
+        self, caret_spec: str, expected: str, *, simplify_expression: bool
+    ) -> None:
+        expr, expected_caret = _caret_template(caret_spec)
+        error_msg = psu.validate_string_as_sympy(
+            expr, self.VARIABLES, simplify_expression=simplify_expression
+        )
+        assert error_msg is not None
+        assert f"wrong number of arguments {expected}" in error_msg
+        match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+        assert match is not None
+        assert match.group(1) == expected_caret
+
+    @pytest.mark.parametrize("expr", ["log(n, 2)", "atan2(n, 1)", "max(n, 1, 2)"])
+    def test_builtin_function_valid_arity(self, expr: str) -> None:
+        assert psu.validate_string_as_sympy(expr, self.VARIABLES) is None
+
 
 @pytest.mark.parametrize(
     ("input_str", "expected_output"),

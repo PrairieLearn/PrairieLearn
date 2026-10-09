@@ -410,6 +410,26 @@ class HasFunctionArityError(BaseSympyError):
         )
 
 
+# `sqrt` is a plain function whose second parameter is `evaluate`, so it has no
+# `nargs` and would silently accept a second argument.
+_BUILTIN_FUNCTION_ARITY_OVERRIDES: Final[FrozenDict[str, tuple[int, ...]]] = (
+    FrozenDict({
+        "sqrt": (1,),
+    })
+)
+
+
+def _builtin_function_arities(name: str) -> tuple[int, ...] | None:
+    """Return the argument counts a built-in function accepts, or None if any count is allowed."""
+    if name in _BUILTIN_FUNCTION_ARITY_OVERRIDES:
+        return _BUILTIN_FUNCTION_ARITY_OVERRIDES[name]
+    function = _Constants.functions.get(name) or _Constants.trig_functions.get(name)
+    nargs = getattr(function, "nargs", None)
+    if isinstance(nargs, sympy.FiniteSet):
+        return tuple(sorted(int(cast(sympy.Integer, arity)) for arity in nargs))
+    return None
+
+
 class CheckAST(ast.NodeVisitor):
     whitelist: ASTWhiteListT
     variables: SympyMapT
@@ -551,7 +571,10 @@ class CheckAST(ast.NodeVisitor):
             case fn if self.allow_sets and fn in _Constants.set_functions:
                 return self._set_type(node, self._infer_set_function_type(name, args))
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
-                self._enforce_signature(fn, args, len(args) * [ASTSympyType.SCALAR])
+                arities = _builtin_function_arities(fn) or (len(args),)
+                self._enforce_signature(
+                    fn, args, *(arity * [ASTSympyType.SCALAR] for arity in arities)
+                )
                 return self._set_type(node, ASTSympyType.SCALAR)
             case _:
                 return self._set_type(node, None)
