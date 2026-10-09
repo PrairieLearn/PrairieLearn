@@ -7,7 +7,15 @@ type HtmlElement = Extract<HtmlNode, { type: 'tag' | 'script' | 'style' }>;
 export type PrintableTextBlock =
   | { type: 'heading'; text: string }
   | { type: 'paragraph'; text: string }
-  | { type: 'list'; ordered: boolean; items: string[] };
+  | { type: 'list'; ordered: boolean; items: string[] }
+  | {
+      type: 'figure';
+      src: string;
+      alt: string;
+      png?: number[];
+      width?: number;
+      height?: number;
+    };
 
 export interface PrintableCoverField {
   label: string;
@@ -48,8 +56,8 @@ function normalizeText(text: string): string {
 }
 
 /**
- * Reduces an HTML fragment to headings, paragraphs, and flat lists so that author-provided cover
- * text such as assessment instructions can be reproduced in formats without an HTML renderer.
+ * Reduces an HTML fragment to headings, paragraphs, flat lists, and figures so that
+ * author-provided cover content can be reproduced in formats without an HTML renderer.
  * Inline formatting is dropped and nested lists are flattened into their parent item's text.
  */
 export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
@@ -59,10 +67,27 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
   const ignoredTags = new Set(['script', 'style', 'noscript', 'template']);
   const isBlock = (node: HtmlNode): node is HtmlElement =>
     node.type === 'tag' && (blockTags.has(node.tagName) || /^h[1-6]$/.test(node.tagName));
+  const isFigure = (node: HtmlNode): boolean =>
+    node.type === 'tag' && (node.tagName === 'img' || node.tagName === 'svg');
+
+  function figure(node: HtmlElement): PrintableTextBlock {
+    const alt = $(node).attr('alt') ?? $(node).attr('aria-label') ?? $(node).find('title').text();
+    if (node.tagName === 'img') {
+      return { type: 'figure', src: $(node).attr('src') ?? '', alt };
+    }
+    const svg = $(node).clone();
+    if (!svg.attr('xmlns')) svg.attr('xmlns', 'http://www.w3.org/2000/svg');
+    return {
+      type: 'figure',
+      src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent($.html(svg))}`,
+      alt,
+    };
+  }
 
   function contentText(node: HtmlNode): string {
     if (node.type === 'text') return node.data;
     if (node.type !== 'tag' || ignoredTags.has(node.tagName)) return '';
+    if (isFigure(node)) return '';
     if (node.tagName === 'br') return ' ';
     return node.children
       .map((child) => `${contentText(child)}${isBlock(child) ? ' ' : ''}`)
@@ -79,6 +104,11 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
 
     for (const node of nodes) {
       if (node.type === 'tag' && ignoredTags.has(node.tagName)) continue;
+      if (node.type === 'tag' && isFigure(node)) {
+        flush();
+        blocks.push(figure(node));
+        continue;
+      }
       if (!isBlock(node)) {
         inlineText += contentText(node);
         continue;
@@ -96,6 +126,7 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
         if (items.length > 0) {
           blocks.push({ type: 'list', ordered: node.tagName === 'ol', items });
         }
+        for (const image of $(node).find('img, svg')) blocks.push(figure(image));
       } else {
         append(node.children);
       }
