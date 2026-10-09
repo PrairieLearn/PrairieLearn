@@ -33,6 +33,7 @@ import {
 } from '../../lib/printing.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 
 import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
@@ -342,6 +343,13 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
 );
 
 const router = Router({ mergeParams: true });
+
+router.use(
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'block',
+  }),
+);
 
 router.get(
   '/preview',

@@ -244,6 +244,22 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
     assert.isTrue(response.ok);
   });
 
+  test('instructor (student data viewer) cannot print an E1 answer key', async () => {
+    const paperUrl = context.examAssessmentInstanceUrl
+      .replace('/assessment_instance/', '/instructor/assessment_instance/')
+      .replace(/\/$/, '');
+    const url = `${paperUrl}/paper/preview?paper_size=Letter&document=answer_key`;
+    const headers = { cookie: 'pl_test_user=test_instructor' };
+    const previewResponse = await helperClient.fetchCheerio(url, { headers });
+    assert.equal(previewResponse.status, 403);
+
+    const docxResponse = await helperClient.fetchCheerio(url.replace('/preview?', '/docx?'), {
+      method: 'POST',
+      headers,
+    });
+    assert.equal(docxResponse.status, 403);
+  });
+
   test('instructor (student data viewer) can view E1/Q* instance of student', async () => {
     const headers = { cookie: 'pl_test_user=test_instructor' };
     const response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {
