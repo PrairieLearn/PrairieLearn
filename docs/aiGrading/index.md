@@ -127,6 +127,16 @@ After both AI and human grades are present, PrairieLearn can also show compariso
 
           ![AI agreement column on the submission list, showing a green checkmark for full agreement.](ai-agreement-column-per-submission-checkmark.png)
 
+## Downloading grading data
+
+Use **Download** on the manual grading table to export all, filtered, or selected submissions as CSV or JSON. Both formats include the current scores, labels, submission groups, assessment open status, and open issue counts, along with the latest human and AI grading results for each submission.
+
+JSON includes separate `human_grading` and `ai_grading` objects with scores, grader details, grading timestamps, feedback, and rubric grades. Rubric grades include the saved item descriptions, point values, selection scores, and point adjustments. `ai_grading_comparison` includes `points_ai_minus_human` and rubric items on which the graders disagree or agree, with `selected_by_ai` and `selected_by_human` flags for each item. AI grading status also indicates whether the rubric has changed since AI grading.
+
+Scores and feedback are reconstructed from each grading method's updates, so changing only feedback or auto points retains the earlier manual grade. The grading job ID, grader, and timestamp identify the manual-score update when one exists; `latest_update`, `auto_points_source`, and `feedback_sources` identify subsequent changes. Newly detected grading conflicts are preserved as inactive attempts and excluded from grading results. Historical conflict attempts lack a reliable rejection marker and can still appear in results.
+
+CSV includes separate human and AI manual point columns and a **Point Difference (AI - Human)** column. Complex values, including the human and AI grading results and rubric comparisons, are stored as JSON strings in their cells. Missing grading results or comparisons are `null` in JSON and blank in CSV; a point difference of `0` or an empty rubric difference array (`[]`) indicates agreement.
+
 ## The grading process
 
 AI grading assembles a prompt from the following inputs and sends it to the selected model.

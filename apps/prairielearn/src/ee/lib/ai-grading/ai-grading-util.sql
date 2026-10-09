@@ -136,6 +136,7 @@ WITH
       JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
       gj.grading_method = 'Manual'
+      AND gj.deleted_at IS NULL
     ORDER BY
       s.id ASC,
       gj.date DESC,
@@ -152,6 +153,7 @@ WITH
       JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
       gj.grading_method != 'AI'
+      AND gj.deleted_at IS NULL
     ORDER BY
       s.id ASC,
       gj.date DESC,
@@ -189,6 +191,7 @@ WITH
       JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
       gj.grading_method = 'Manual'
+      AND gj.deleted_at IS NULL
     ORDER BY
       iq.id ASC,
       gj.date DESC,

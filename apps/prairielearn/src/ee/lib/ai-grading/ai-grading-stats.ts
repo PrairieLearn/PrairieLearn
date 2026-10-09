@@ -1,7 +1,5 @@
 import assert from 'node:assert';
 
-import { z } from 'zod';
-
 import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -10,25 +8,19 @@ import {
   type Assessment,
   type AssessmentQuestion,
   type RubricItem,
-  RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.js';
-import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
+import {
+  type AiGradingGeneralStats,
+  GradingJobDetailsSchema,
+  type GradingJobInfo,
+  type WithAIGradingStats,
+} from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-const GradingJobInfoSchema = z.object({
-  grading_job_id: IdSchema,
-  graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Manual', 'AI']),
-  manual_points: z.number().nullable(),
-  manual_rubric_grading_id: IdSchema.nullable(),
-  grader_name: z.string(),
-  rubric_items: z.array(RubricItemSchema),
-});
-type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 type FillInstanceQuestionColumnEntriesResultType<
   T extends {
@@ -83,6 +75,8 @@ export async function fillInstanceQuestionColumnEntries<
 
     const instance_question: WithAIGradingStats<T['instance_question']> = {
       ...base_instance_question,
+      human_grading: null,
+      ai_grading: null,
       last_human_grader: null,
       ai_grading_status: 'None',
       point_difference: null,
@@ -97,28 +91,39 @@ export async function fillInstanceQuestionColumnEntries<
 
     const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
 
-    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+    const manualGradingJob = grading_jobs.find(
+      (job) => job.grading_job.grading_method === 'Manual',
+    );
+    const aiGradingJob = grading_jobs.find((job) => job.grading_job.grading_method === 'AI');
+
+    instance_question.human_grading = manualGradingJob ?? null;
+    instance_question.ai_grading = aiGradingJob ?? null;
 
     if (manualGradingJob) {
-      instance_question.last_human_grader = manualGradingJob.grader_name;
+      instance_question.last_human_grader =
+        manualGradingJob.latest_update.grader.name ?? manualGradingJob.latest_update.grader.uid;
     }
 
     if (aiGradingJob) {
-      assert(aiGradingJob.graded_at);
+      assert(aiGradingJob.grading_job.graded_at);
       instance_question.ai_grading_status = 'Graded';
       if (rubric_modify_time) {
         instance_question.ai_grading_status =
-          aiGradingJob.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
+          aiGradingJob.grading_job.graded_at > rubric_modify_time
+            ? 'LatestRubric'
+            : 'OutdatedRubric';
       }
     }
 
-    if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+    if (
+      manualGradingJob?.grading_job.manual_points != null &&
+      aiGradingJob?.grading_job.manual_points != null
+    ) {
       instance_question.point_difference =
-        aiGradingJob.manual_points - manualGradingJob.manual_points;
+        aiGradingJob.grading_job.manual_points - manualGradingJob.grading_job.manual_points;
     }
 
-    if (manualGradingJob?.manual_rubric_grading_id && aiGradingJob?.manual_rubric_grading_id) {
+    if (manualGradingJob?.rubric_grading && aiGradingJob?.rubric_grading) {
       const manualItems = manualGradingJob.rubric_items;
       const aiItems = aiGradingJob.rubric_items;
 
@@ -179,13 +184,18 @@ export async function calculateAiGradingStats(
   for (const instance_question of instance_questions) {
     const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
 
-    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+    const manualGradingJob = grading_jobs.find(
+      (job) => job.grading_job.grading_method === 'Manual',
+    );
+    const aiGradingJob = grading_jobs.find((job) => job.grading_job.grading_method === 'AI');
 
-    if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+    if (
+      manualGradingJob?.grading_job.manual_points != null &&
+      aiGradingJob?.grading_job.manual_points != null
+    ) {
       testPointResults.push({
-        reference_points: manualGradingJob.manual_points,
-        ai_points: aiGradingJob.manual_points,
+        reference_points: manualGradingJob.grading_job.manual_points,
+        ai_points: aiGradingJob.grading_job.manual_points,
       });
     }
     if (manualGradingJob?.rubric_items != null && aiGradingJob?.rubric_items != null) {
@@ -216,8 +226,9 @@ export async function calculateAiGradingStats(
 }
 
 /**
- * Select the latest human grading job and AI grading job
- * information, including rubric grading information for each input instance question.
+ * Reconstruct human and AI grading results for the latest submission. Grading
+ * jobs contain updates, so unchanged scores and feedback come from earlier jobs
+ * of the same method, with their provenance preserved.
  * @param instance_questions the array of instance questions (including their ids)
  * @returns a record mapping each id to its grading jobs
  */
@@ -227,16 +238,58 @@ export async function selectGradingJobsInfo<T extends { id: string }>(
   const grading_jobs = await queryRows(
     sql.select_ai_and_human_grading_jobs_and_rubric,
     { instance_question_ids: instance_questions.map((iq) => iq.id) },
-    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
+    GradingJobDetailsSchema.extend({ instance_question_id: IdSchema }),
   );
-  // Construct mapping from instance question id to grading job info
-  return grading_jobs.reduce(
+  const historyByInstanceQuestion = grading_jobs.reduce(
     (acc, item) => {
       acc[item.instance_question_id] ??= [];
       acc[item.instance_question_id].push(item);
       return acc;
     },
-    {} as Record<string, GradingJobInfo[]>,
+    {} as Record<string, typeof grading_jobs>,
+  );
+
+  const source = (job: (typeof grading_jobs)[number]) => ({
+    grading_job: { id: job.grading_job.id, graded_at: job.grading_job.graded_at },
+    grader: job.grader,
+  });
+
+  return Object.fromEntries(
+    Object.entries(historyByInstanceQuestion).map(([id, history]) => [
+      id,
+      ['Manual', 'AI'].flatMap((method): GradingJobInfo[] => {
+        const jobs = history.filter((job) => job.grading_job.grading_method === method);
+        const latest = jobs.at(0);
+        if (!latest) return [];
+        const scoreJob = jobs.find((job) => job.grading_job.manual_points != null);
+        const autoPointsJob = jobs.find((job) => job.grading_job.auto_points != null);
+        let feedback: GradingJobInfo['feedback'] = null;
+        const feedbackSources = new Map<string, GradingJobInfo['latest_update']>();
+        for (const job of jobs.slice().reverse()) {
+          if (job.grading_job.feedback == null) continue;
+          feedback ??= {};
+          Object.assign(feedback, job.grading_job.feedback);
+          for (const key of Object.keys(job.grading_job.feedback)) {
+            feedbackSources.set(key, source(job));
+          }
+        }
+        return [
+          {
+            ...(scoreJob ?? latest),
+            auto_points: autoPointsJob?.grading_job.auto_points ?? null,
+            feedback,
+            // A feedback-only update can retain the other method's rubric. Only
+            // the job that assigned manual points establishes rubric provenance.
+            rubric_items: scoreJob?.rubric_items ?? [],
+            rubric_grading: scoreJob?.rubric_grading ?? null,
+            rubric_grading_items: scoreJob?.rubric_grading_items ?? [],
+            latest_update: source(latest),
+            auto_points_source: autoPointsJob ? source(autoPointsJob) : null,
+            feedback_sources: Object.fromEntries(feedbackSources),
+          },
+        ];
+      }),
+    ]),
   );
 }
 

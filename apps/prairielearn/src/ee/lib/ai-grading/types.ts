@@ -1,8 +1,35 @@
 import { z } from 'zod';
 
-import { RubricItemSchema } from '../../../lib/db-types.js';
+import { StaffUserSchema } from '../../../lib/client/safe-db-types.js';
+import {
+  GradingJobSchema,
+  RubricGradingItemSchema,
+  RubricGradingSchema,
+  RubricItemSchema,
+} from '../../../lib/db-types.js';
+
+export const GradingJobDetailsSchema = z.object({
+  grading_job: GradingJobSchema,
+  grader: StaffUserSchema,
+  rubric_items: z.array(RubricItemSchema),
+  rubric_grading: RubricGradingSchema.nullable(),
+  rubric_grading_items: z.array(RubricGradingItemSchema),
+});
+const GradingJobUpdateSourceSchema = GradingJobDetailsSchema.pick({ grader: true }).extend({
+  grading_job: GradingJobSchema.pick({ id: true, graded_at: true }),
+});
+const GradingJobInfoSchema = GradingJobDetailsSchema.extend({
+  auto_points: GradingJobSchema.shape.auto_points,
+  feedback: GradingJobSchema.shape.feedback,
+  latest_update: GradingJobUpdateSourceSchema,
+  auto_points_source: GradingJobUpdateSourceSchema.nullable(),
+  feedback_sources: z.record(z.string(), GradingJobUpdateSourceSchema),
+});
+export type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 export const AIGradingStatsSchema = z.object({
+  human_grading: GradingJobInfoSchema.nullable(),
+  ai_grading: GradingJobInfoSchema.nullable(),
   last_human_grader: z.string().nullable(),
   ai_grading_status: z.enum(['Graded', 'LatestRubric', 'OutdatedRubric', 'None']),
   point_difference: z.number().nullable(),

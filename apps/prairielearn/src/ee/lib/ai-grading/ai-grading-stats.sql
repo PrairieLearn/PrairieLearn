@@ -33,30 +33,6 @@ WITH
     WHERE
       rn = 1
   ),
-  grouped_grading_jobs AS (
-    SELECT
-      ls.instance_question_id,
-      gj.id AS grading_job_id,
-      gj.grading_method,
-      gj.graded_at,
-      gj.manual_points,
-      gj.manual_rubric_grading_id,
-      gj.graded_by,
-      gj.submission_id,
-      ROW_NUMBER() OVER (
-        PARTITION BY
-          gj.grading_method,
-          gj.submission_id
-        ORDER BY
-          gj.graded_at DESC
-      ) AS rn
-    FROM
-      latest_submissions AS ls
-      JOIN grading_jobs AS gj ON ls.submission_id = gj.submission_id
-    WHERE
-      gj.grading_method IN ('Manual', 'AI')
-      AND gj.deleted_at IS NULL
-  ),
   rubric_grading_to_items AS (
     SELECT
       rgi.rubric_grading_id,
@@ -70,13 +46,25 @@ WITH
       ri.deleted_at IS NULL
   )
 SELECT
-  grading_job_id,
-  grading_method,
-  graded_at,
-  manual_points,
-  manual_rubric_grading_id,
-  instance_question_id,
-  COALESCE(u.name, u.uid) AS grader_name,
+  to_jsonb(gj.*) AS grading_job,
+  ls.instance_question_id,
+  to_jsonb(u.*) AS grader,
+  to_jsonb(rg.*) AS rubric_grading,
+  (
+    SELECT
+      COALESCE(
+        jsonb_agg(
+          to_jsonb(rgi.*)
+          ORDER BY
+            rgi.id
+        ),
+        '[]'::jsonb
+      )
+    FROM
+      rubric_grading_items AS rgi
+    WHERE
+      rgi.rubric_grading_id = gj.manual_rubric_grading_id
+  ) AS rubric_grading_items,
   COALESCE(
     jsonb_agg(to_jsonb(rgti)) FILTER (
       WHERE
@@ -85,19 +73,20 @@ SELECT
     '[]'::jsonb
   ) AS rubric_items
 FROM
-  users AS u
-  JOIN grouped_grading_jobs AS ggj ON (u.id = ggj.graded_by)
-  LEFT JOIN rubric_grading_to_items AS rgti ON (
-    ggj.manual_rubric_grading_id = rgti.rubric_grading_id
-  )
+  latest_submissions AS ls
+  JOIN grading_jobs AS gj ON gj.submission_id = ls.submission_id
+  JOIN users AS u ON u.id = gj.graded_by
+  LEFT JOIN rubric_gradings AS rg ON rg.id = gj.manual_rubric_grading_id
+  LEFT JOIN rubric_grading_to_items AS rgti ON gj.manual_rubric_grading_id = rgti.rubric_grading_id
 WHERE
-  rn = 1
+  gj.grading_method IN ('Manual', 'AI')
+  AND gj.deleted_at IS NULL
+  AND gj.graded_at IS NOT NULL
 GROUP BY
-  grading_job_id,
-  grading_method,
-  graded_at,
-  manual_points,
-  manual_rubric_grading_id,
-  instance_question_id,
-  u.name,
-  u.uid;
+  gj.id,
+  ls.instance_question_id,
+  u.id,
+  rg.id
+ORDER BY
+  gj.graded_at DESC,
+  gj.id DESC;
