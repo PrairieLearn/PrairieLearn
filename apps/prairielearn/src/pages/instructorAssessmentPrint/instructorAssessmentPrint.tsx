@@ -6,6 +6,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { MAX_PRINT_COPIES } from '../../lib/client/print-packet.js';
 import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
@@ -15,6 +16,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
+import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js';
 
 import { InstructorAssessmentPrint } from './instructorAssessmentPrint.html.js';
 
@@ -37,6 +39,7 @@ router.get(
         user_id: authz_data.user.id,
       }),
     );
+    const studentCount = await countJoinedStudentsInCourseInstance(course_instance);
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: getAssessmentTrpcUrl({
@@ -71,6 +74,7 @@ router.get(
               groupWork={assessment.team_work}
               requireHonorCode={!!assessment.require_honor_code}
               instances={instances}
+              defaultCopies={Math.min(MAX_PRINT_COPIES, Math.max(1, studentCount))}
               renderingAvailable={isBrowserRenderingAvailable()}
               trpcCsrfToken={trpcCsrfToken}
               docxCsrfToken={docxCsrfToken}

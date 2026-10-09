@@ -7,9 +7,15 @@ import * as unzipper from 'unzipper';
 
 import { withResolvers } from '@prairielearn/utils';
 
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import {
+  countJoinedStudentsInCourseInstance,
+  ensureUncheckedEnrollment,
+} from '../../models/enrollment.js';
 import { syncCourse } from '../helperCourse.js';
+import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -24,6 +30,48 @@ async function chooseDownload(page: Page, item: string) {
   await downloadMenu(page).click();
   await page.getByRole('button', { name: item, exact: true }).click();
 }
+
+test('defaults booklet copies to the number of enrolled students', async ({
+  page,
+  courseInstance,
+}) => {
+  const initialStudentCount = await countJoinedStudentsInCourseInstance(courseInstance);
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam20-assessmentTools',
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
+  );
+  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await chooseDownload(page, 'Download booklet PDF…');
+  const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
+  await expect(modal.getByLabel('Number of students')).toHaveValue(
+    String(Math.max(1, initialStudentCount)),
+  );
+  await modal.getByRole('button', { name: 'Cancel', exact: true }).click();
+
+  for (let index = 1; index <= 3; index++) {
+    const student = await getOrCreateUser({
+      uid: `print-student-${index}@example.com`,
+      name: `Print Student ${index}`,
+      uin: `print-${index}`,
+    });
+    await ensureUncheckedEnrollment({
+      userId: student.id,
+      courseInstance,
+      authzData: dangerousFullSystemAuthz(),
+      requiredRole: ['System'],
+      actionDetail: 'implicit_joined',
+    });
+  }
+
+  await page.reload();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await chooseDownload(page, 'Download booklet PDF…');
+  await expect(modal.getByLabel('Number of students')).toHaveValue(String(initialStudentCount + 3));
+});
 
 test('prepares an exam and key with consistent variants and downloads', async ({
   page,
