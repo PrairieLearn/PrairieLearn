@@ -1,5 +1,11 @@
 # @prairielearn/eslint-config
 
+## 3.2.1
+
+### Patch Changes
+
+- 9f4d854: Update @eslint-react/eslint-plugin to 5.21.0.
+
 ## 3.2.0
 
 ### Minor Changes

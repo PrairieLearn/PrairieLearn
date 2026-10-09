@@ -2,6 +2,7 @@ import pathlib
 import random
 import re
 from enum import Enum
+from functools import lru_cache
 from sys import get_int_max_str_digits
 from typing import assert_never
 
@@ -481,12 +482,18 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
 
     if formula_editor:
-        submitted_answer = format_formula_editor_submission_for_sympy(
+        formatted_answer = format_formula_editor_submission_for_sympy(
             submitted_answer,
             allow_trig,
             variables,
             custom_functions,
+            latex=data["raw_submitted_answers"].get(name + "-latex"),
         )
+        if submitted_answer is not None and formatted_answer is None:
+            data["format_errors"][name] = psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION
+            data["submitted_answers"][name] = None
+            return
+        submitted_answer = formatted_answer
 
     # Pre-processing to make submission parseable by SymPy
     a_sub, error_msg = format_submission_for_sympy(
@@ -564,6 +571,36 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
+_PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
+
+
+def _restore_plus_minus(submission: str, latex: str) -> str | None:
+    r"""
+    Turn the "+-" that the formula editor writes for `\pm` back into "±".
+
+    The editor's plain text uses "+-" for both `\pm` and a typed "+" followed by
+    "-". Both appear in the same order in the submitted LaTeX, so the k-th "+-" in
+    the plain text comes from the k-th `\pm` or "+-" in the LaTeX.
+
+    Returns:
+        The submission with "±" restored, or None if the two can't be matched up
+    """
+    from_plus_minus = [
+        match.group(0).startswith("\\")
+        for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
+    ]
+    parts = submission.split("+-")
+    if len(parts) - 1 != len(from_plus_minus):
+        return None
+    if not any(from_plus_minus):
+        return submission
+
+    result = [parts[0]]
+    for is_plus_minus, part in zip(from_plus_minus, parts[1:], strict=True):
+        result.extend(("±" if is_plus_minus else "+-", part))
+    return "".join(result)
+
+
 def format_submission_for_sympy(
     sub: str | None, *, allow_sets: bool = False
 ) -> tuple[str | None, str | None]:
@@ -587,6 +624,9 @@ def format_submission_for_sympy(
     original_sub = sub
     if sub is None:
         return None, None
+
+    # The formula editor writes \lvert, \rvert and \mid as U+2223 (DIVIDES).
+    sub = sub.replace("∣", "|")  # ruff:ignore[ambiguous-unicode-character-string]
 
     pattern = re.compile(
         r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
@@ -628,29 +668,43 @@ def format_formula_editor_submission_for_sympy(
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
+    *,
+    latex: str | None = None,
 ) -> str | None:
-    """
+    r"""
     Format raw formula editor input to be compatible with SymPy.
 
     The formula editor outputs text with several quirks that need correction:
-    1. Invisible "{:" and ":}" operators from LaTeX copy-paste
-    2. Multi-character names are space-separated: "s i n" instead of "sin"
-    3. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
+    1. The formula editor serializes ``\pm`` as "+-", which is restored when raw
+       LaTeX is provided
+    2. Invisible "{:" and ":}" operators from LaTeX copy-paste
+    3. Multi-character names are space-separated: "s i n" instead of "sin"
+    4. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
 
     Args:
         sub: Raw text from the formula editor
         allow_trig: Whether trig functions (sin, cos, etc.) are available
         variables: List of allowed variable names
         custom_functions: List of custom function names
+        latex: Raw LaTeX from the formula editor
 
     Returns:
-        Formatted text ready for SymPy parsing, or None if input is None
+        Formatted text ready for SymPy parsing, or None if input is None or the
+        text and LaTeX representations can't be matched
     """
     if sub is None:
         return None
 
+    text = sub if latex is None else _restore_plus_minus(sub, latex)
+    if text is None:
+        return None
+
     # Remove invisible LaTeX formatting operators
-    text = sub.replace("{:", "").replace(":}", "")
+    text = text.replace("{:", "").replace(":}", "")
+
+    # The editor writes \div as "-:" and \ast as " ** ". Powers are always written
+    # with "^", so " ** " can only be a multiplication.
+    text = text.replace("-:", "/").replace(" ** ", " * ")
 
     # Build list of all multi-character tokens that should be recognized as units
     known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
@@ -664,6 +718,12 @@ def format_formula_editor_submission_for_sympy(
     # Add spaces between letters and numbers for implicit multiplication,
     # but preserve tokens like "f2" that are custom function names
     text = _add_multiplication_spaces(text, known_tokens)
+
+    function_names = frozenset(
+        psu.get_builtin_functions(allow_trig_functions=allow_trig)
+        | set(custom_functions)
+    )
+    text = _wrap_bare_function_arguments(text, function_names)
 
     return text
 
@@ -698,8 +758,9 @@ def _build_known_tokens(
         if psu.greek_unicode_transform(token) != token
     ]
 
-    # Filter out single-letter tokens
-    tokens = [token for token in tokens if len(token) > 1]
+    # Filter out single-letter tokens. The editor writes powers with "^", so merging
+    # "* *" into "**" would only turn adjacent multiplication signs into a Python power.
+    tokens = [token for token in tokens if len(token) > 1 and token != "**"]
 
     return tokens
 
@@ -798,6 +859,79 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
         ):
             result.append(" ")
 
+    return "".join(result)
+
+
+@lru_cache(maxsize=128)
+def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+    """
+    Match bare function starts and tokens that affect their argument boundaries.
+
+    Returns:
+        The compiled pattern, cached per set of function names
+    """
+    names = sorted(function_names, key=len, reverse=True)
+    return re.compile(
+        r"(?P<function>(?<![A-Za-z_])(?:"
+        + "|".join(map(re.escape, names))
+        + r")\s+(?=[^\s(]))|(?P<token>\*+|[()\[\]{}+\-/,])"
+    )
+
+
+def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
+    r"""
+    Parenthesize unparenthesized function arguments that are followed by "*".
+
+    The formula editor displays `{\ln 4}\cdot x` as ln(4)·x but submits it as
+    "ln 4 * x". SymPy's implicit function application ends the argument at "+",
+    "-", or "/", but not at "*", so it would parse this as ln(4x).
+
+    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)"
+
+    Returns:
+        The text with those arguments wrapped in parentheses
+    """
+    if not function_names:
+        return text
+    pattern = _bare_function_token_pattern(function_names)
+
+    # Each "(" sorts before a ")" at the same index, which only happens for an
+    # empty argument.
+    insertions: list[tuple[int, str]] = []
+    # Only the first bare function at a given nesting depth can claim the next
+    # multiplication operator; any later one is inside its implicit argument.
+    pending_arguments: dict[int, int] = {}
+    depth = 0
+    for match in pattern.finditer(text):
+        if match.lastgroup == "function":
+            pending_arguments.setdefault(depth, match.end())
+            continue
+
+        token = match.group(0)
+        match token:
+            case "(" | "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
+            case "*":
+                start = pending_arguments.pop(depth, None)
+                if start is not None:
+                    argument_end = match.start()
+                    while argument_end > start and text[argument_end - 1].isspace():
+                        argument_end -= 1
+                    insertions.extend(((start, "("), (argument_end, ")")))
+            case "+" | "-" | "/" | ",":
+                pending_arguments.pop(depth, None)
+            case _:
+                pass
+
+    result = []
+    pos = 0
+    for index, paren in sorted(insertions):
+        result.extend((text[pos:index], paren))
+        pos = index
+    result.append(text[pos:])
     return "".join(result)
 
 

@@ -268,8 +268,12 @@ async
           await pruneStoppedContainers();
           await pruneRunawayContainers();
           await updateLoadCount();
+          // Development may share Docker with unrelated workloads.
+          if (config.runningInEc2) {
+            await docker.pruneVolumes();
+          }
         } catch (err) {
-          logger.error('Error pruning containers', err);
+          logger.error('Error pruning containers and volumes', err);
           Sentry.captureException(err);
         }
 
@@ -454,7 +458,7 @@ async function killAndRemoveWorkspace(workspace_id: string | number, container: 
     }
 
     try {
-      await container.remove();
+      await container.remove({ v: true });
     } catch (err) {
       Sentry.captureException(err);
       logger.error('Error removing stopped container', err);
@@ -495,6 +499,23 @@ async function markSelfUnhealthy(reason: Error | string) {
     // This could error if we don't even have a DB connection. In that case, we
     // should let the main server mark us as unhealthy.
     logger.error('Could not mark self as unhealthy', err);
+  }
+}
+
+async function checkDiskSpace() {
+  // Docker Desktop's data directory may not be accessible from this process.
+  if (!config.runningInEc2) return;
+
+  try {
+    const { DockerRootDir } = await docker.info();
+    const { bavail, bsize } = await fs.statfs(DockerRootDir);
+    const availableBytes = bavail * bsize;
+    if (availableBytes < config.workspaceHostMinAvailableDiskMB * 1_000_000) {
+      await markSelfUnhealthy(`Low Docker disk space: ${availableBytes} bytes available`);
+    }
+  } catch (err) {
+    logger.error('Error checking Docker disk space', err);
+    Sentry.captureException(err);
   }
 }
 
@@ -1001,6 +1022,9 @@ function safeUpdateWorkspaceState(
 async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
+
+  // Check before pulling or creating a container so failed launches also trigger a check.
+  await checkDiskSpace();
 
   const uuid = crypto.randomUUID();
   const params = {

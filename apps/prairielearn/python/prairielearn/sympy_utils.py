@@ -6,11 +6,11 @@ from prairielearn.sympy_utils import ...
 """
 
 import ast
-import copy
 import html
 import operator
 import re
 import string
+import unicodedata
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -38,6 +38,10 @@ from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
+    "Your answer has a syntax error. "
+    "This issue might be caused by mismatched parentheses or some other misplaced symbol."
+)
 
 SympyMapT = dict[str, sympy.Basic | complex]
 _FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
@@ -52,6 +56,17 @@ Examples:
 """
 
 ASTWhiteListT = tuple[type[ast.AST], ...]
+
+
+def _load_sympy_globals() -> FrozenDict[str, Any]:
+    # Based on code here:
+    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
+    sympy_globals: DICT = {}
+    exec("from sympy import *", sympy_globals)
+    return FrozenDict(sympy_globals)
+
+
+_SYMPY_GLOBALS: Final[FrozenDict[str, Any]] = _load_sympy_globals()
 
 
 class SympyJson(TypedDict):
@@ -180,6 +195,27 @@ class _Constants:
         "cap": operator.and_,
         "∩": operator.and_,
     })
+
+    # Unicode operators that the formula editor or common pastes produce. They must
+    # be mapped before unidecode, which would otherwise turn them into "[?]"
+    # (misreported as set notation), drop them, or change their meaning (e.g. the
+    # multiplication sign becomes the letter "x").
+    unicode_operators: Final[FrozenDict[str, str]] = FrozenDict({
+        "·": "*",  # middle dot
+        "×": "*",  # ruff:ignore[ambiguous-unicode-character-string]
+        "•": "*",  # bullet
+        "∗": "*",  # ruff:ignore[ambiguous-unicode-character-string]
+        "∙": "*",  # bullet operator
+        "⋅": "*",  # dot operator
+        "\u2062": "*",  # invisible times
+        "—": "-",  # em dash
+        "―": "-",  # horizontal bar
+        "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
+        "\u2061": "",  # function application
+    })
+
+    # Operators that give two values; unidecode would turn "±" into "+-".
+    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
 
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
@@ -728,17 +764,59 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
 
 
 def _normalize_expr(expr: str) -> tuple[str, list[int]]:
-    """Normalize expr and build a mapping from normalized indices to original indices."""
+    """Normalize expr and build a mapping from normalized indices to original indices.
+
+    Returns:
+        A tuple of the normalized expression and, for each of its characters, the
+        index of the character in expr that it came from.
+
+    Raises:
+        HasInvalidSymbolError: If expr contains a character that cannot be transliterated.
+    """
+    const = _Constants
     parts: list[str] = []
     offsets: list[int] = []
     for ind, char in enumerate(expr):
         normalized_char = char
+        if char in const.unicode_operators:
+            normalized_char = const.unicode_operators[char]
+        elif char in const.plus_minus_operators or (
+            not char.isascii()
+            and unicodedata.decomposition(char).startswith(("<super>", "<sub>"))
+        ):
+            # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
+            # formula editor writes exponents and subscripts with "^" and "_".
+            raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
-        if char not in _Constants.set_operators:
+        elif char not in const.set_operators:
             normalized_char = full_unidecode(greek_unicode_transform(char))
+            # unidecode uses "[?]" for characters it doesn't know, which would
+            # otherwise be misreported as set notation.
+            if normalized_char == "[?]" and char != normalized_char:
+                raise HasInvalidSymbolError(char)
+
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
+
+
+# The lookahead allows overlapping pairs, so a Unicode sign after "**" is checked.
+_MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
+
+
+def _validate_multiplication(
+    original_expr: str, normalized_expr: str, char_offsets: list[int]
+) -> None:
+    """Reject multiplication signs that normalization would turn into exponentiation."""
+    for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, normalized_expr):
+        left_offset = char_offsets[match.start("left")]
+        right_offset = char_offsets[match.start("right")]
+        if original_expr[right_offset] != "*":
+            raise HasInvalidExpressionError(right_offset)
+        if original_expr[left_offset] != "*":
+            raise HasInvalidExpressionError(left_offset)
+        if match.start("right") > match.end("left"):
+            raise HasInvalidExpressionError(left_offset)
 
 
 def _regex_sub_expr_and_map_offsets(
@@ -793,6 +871,9 @@ def evaluate_with_source(
     Raises:
         HasEscapeError: If the expression contains an escape character.
         HasCommentError: If the expression contains a comment character.
+        HasInvalidExpressionError: If the expression contains "***", whitespace
+            between two multiplication signs, or a unicode multiplication sign next
+            to another multiplication sign.
         HasSetNotationError: If the expression contains interval or set characters.
         HasArgumentTypeError: If an expression is given the wrong types.
         HasFunctionArityError: If a function is given the wrong number of args.
@@ -800,6 +881,7 @@ def evaluate_with_source(
         BaseSympyError: If the expression cannot be evaluated.
     """
     normalized_expr, char_offsets = _normalize_expr(expr)
+    _validate_multiplication(expr, normalized_expr, char_offsets)
 
     # Check for escape and comment characters after normalization, since some
     # unicode characters normalize to "#" or "\\". The offset map translates
@@ -810,6 +892,11 @@ def evaluate_with_source(
     ind = normalized_expr.find("#")
     if ind != -1:
         raise HasCommentError(char_offsets[ind])
+
+    # Python would read "***" (e.g. the formula editor's \star) as "**" followed by
+    # "*", and report the syntax error at an offset into SymPy's transformed code.
+    if stars := re.search(r"\*{3,}", normalized_expr):
+        raise HasInvalidExpressionError(char_offsets[stars.start()])
 
     # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_sets and any(
@@ -855,14 +942,8 @@ def evaluate_with_source(
         for k, v in cast(SympyMapT, inner_dict).items()
     }
 
-    # Based on code here:
-    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
-
-    # Global dict is set up to be very permissive for parsing purposes
-    # (makes it cleaner to call this function with a custom locals dict).
-    # This line shouldn't be dangerous, as it's just loading the global dict.
-    global_dict = {}
-    exec("from sympy import *", global_dict)
+    # Keep mutations made during one parse from affecting later parses.
+    global_dict = dict(_SYMPY_GLOBALS)
 
     transformations = (
         *sympy_parser.standard_transformations,
@@ -894,7 +975,11 @@ def evaluate_with_source(
         raise HasParseError(-1) from exc
 
     # First do AST check, mainly for security
-    parsed_locals_to_eval = copy.deepcopy(locals_for_eval)
+    parsed_locals_to_eval: LocalsForEval = {
+        "functions": locals_for_eval["functions"].copy(),
+        "variables": locals_for_eval["variables"].copy(),
+        "helpers": locals_for_eval["helpers"].copy(),
+    }
 
     # Add locals that appear after sympy stringification
     # This check is only for safety, so won't change what gets parsed
@@ -1367,10 +1452,7 @@ def try_parse_string_as_sympy(
         # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
         # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
         if exc.offset == -1:
-            return SympyParseFailure(
-                "Your answer has a syntax error. "
-                "This issue might be caused by mismatched parentheses or some other misplaced symbol."
-            )
+            return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
         return SympyParseFailure(
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
