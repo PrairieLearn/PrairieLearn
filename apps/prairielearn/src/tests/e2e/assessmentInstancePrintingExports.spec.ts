@@ -188,6 +188,40 @@ test('prints details content in visible boxes and preserves it in Word', async (
   expect(documentXml.match(/<w:shd w:fill="F7F7F7"\/>/g)).toHaveLength(2);
 });
 
+test('previews and exports an exam with more than 64 figures', async ({
+  page,
+  courseInstance,
+  testCoursePath,
+}) => {
+  const questionPath = path.join(testCoursePath, 'questions/printingDetails/question.html');
+  const original = await fs.readFile(questionPath, 'utf8');
+  const figures = Array.from(
+    { length: 65 },
+    (_, index) =>
+      `<svg width="12" height="12" viewBox="0 0 12 12" aria-label="Figure ${index + 1}"><circle cx="6" cy="6" r="5" /></svg>`,
+  ).join('');
+  try {
+    await fs.writeFile(
+      questionPath,
+      original.replace('</pl-question-panel>', `${figures}</pl-question-panel>`),
+    );
+    await syncCourse(testCoursePath);
+    const { paperUrl } = await createPrintableExam(courseInstance, 'exam26-printingDetails');
+    await page.goto(`${paperUrl}/preview?paper_size=Letter`);
+    await waitForPrintablePage(page);
+    const source = await page
+      .locator('#pl-print-docx-source')
+      .evaluate((element) => JSON.parse(element.textContent ?? '{}'));
+    expect(source.figures.length).toBeGreaterThan(64);
+
+    const response = await downloadPrintableWord(page, paperUrl, 'paper_size=Letter');
+    expect(response.status()).toBe(200);
+  } finally {
+    await fs.writeFile(questionPath, original);
+    await syncCourse(testCoursePath);
+  }
+});
+
 test('rejects invalid print query parameters', async ({ page, courseInstance }) => {
   const { paperUrl } = await createPrintableExam(courseInstance, 'exam1-automaticTestSuite');
 
