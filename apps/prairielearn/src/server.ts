@@ -148,7 +148,7 @@ export async function initExpress(): Promise<Express> {
 
   // This should come before the session middleware so that we don't
   // create a session every time we get a health check request.
-  app.get('/pl/webhooks/ping', function (req, res) {
+  app.get('/pl/webhooks/ping', function(req, res) {
     res.send('.');
   });
 
@@ -416,19 +416,19 @@ export async function initExpress(): Promise<Express> {
 
   // Middleware for all requests
   // response_id is logged on request, response, and error to link them together
-  app.use(function (req, res, next) {
+  app.use(function(req, res, next) {
     res.locals.response_id = crypto.randomUUID();
     res.set('X-Response-ID', res.locals.response_id);
     next();
   });
 
   // load accounting for requests
-  app.use(function (req, res, next) {
+  app.use(function(req, res, next) {
     load.startJob('request', res.locals.response_id);
     next();
   });
-  app.use(function (req, res, next) {
-    onFinished(res, function (err, res) {
+  app.use(function(req, res, next) {
+    onFinished(res, function(err, res) {
       if (err) {
         logger.verbose('request on-response-finished error', {
           err,
@@ -488,7 +488,7 @@ export async function initExpress(): Promise<Express> {
     app.use('/pl/dev_login', (await import('./pages/authLoginDev/authLoginDev.js')).default);
   }
   app.use('/pl/logout', [
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'logout';
       next();
     },
@@ -527,12 +527,12 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/logRequest.js')).default);
 
   // load accounting for authenticated accesses
-  app.use(function (req, res, next) {
+  app.use(function(req, res, next) {
     load.startJob('authed_request', res.locals.response_id);
     next();
   });
-  app.use(function (req, res, next) {
-    onFinished(res, function (err, res) {
+  app.use(function(req, res, next) {
+    onFinished(res, function(err, res) {
       if (err) {
         logger.verbose('authed_request on-response-finished error', {
           err,
@@ -640,11 +640,11 @@ export async function initExpress(): Promise<Express> {
   );
 
   // is the course instance being accessed through the student or instructor page route
-  app.use('/pl/course_instance/:course_instance_id(\\d+)', function (req, res, next) {
+  app.use('/pl/course_instance/:course_instance_id(\\d+)', function(req, res, next) {
     res.locals.viewType = 'student';
     next();
   });
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', function (req, res, next) {
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', function(req, res, next) {
     res.locals.viewType = 'instructor';
     next();
   });
@@ -689,7 +689,7 @@ export async function initExpress(): Promise<Express> {
     await enterpriseOnly(
       async () => (await import('./ee/middlewares/requireLinkedLtiUser.js')).default,
     ),
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'student';
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
@@ -708,7 +708,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor';
       next();
@@ -739,7 +739,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
     (await import('./middlewares/selectOpenIssueCount.js')).default,
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       res.locals.urlPrefix = '/pl/course/' + req.params.course_id;
       next();
@@ -898,7 +898,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
-    function (req, res, next) {
+    function(req, res, next) {
       res.locals.navPage = 'assessment';
       next();
     },
@@ -906,7 +906,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'settings';
         next();
       },
@@ -917,7 +917,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'questions';
         next();
       },
@@ -928,7 +928,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'groups';
         next();
       },
@@ -938,7 +938,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/access',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'access';
         next();
       },
@@ -948,7 +948,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/statistics',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'statistics';
         next();
       },
@@ -959,7 +959,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'downloads';
         next();
       },
@@ -970,7 +970,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/logs',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'settings';
         next();
       },
@@ -980,7 +980,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/instances',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'instances';
         next();
       },
@@ -1004,7 +1004,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
@@ -1017,7 +1017,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
@@ -1074,7 +1074,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
@@ -1113,7 +1113,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'question';
       next();
     },
@@ -1129,7 +1129,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/statistics',
     [
-      function (req: Request, res: Response, next: NextFunction) {
+      function(req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'statistics';
         next();
       },
@@ -1173,7 +1173,7 @@ export async function initExpress(): Promise<Express> {
   });
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin',
-    function (req, res, next) {
+    function(req, res, next) {
       res.locals.navPage = 'course_admin';
       next();
     },
@@ -1265,7 +1265,7 @@ export async function initExpress(): Promise<Express> {
   });
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin',
-    function (req, res, next) {
+    function(req, res, next) {
       res.locals.navPage = 'instance_admin';
       next();
     },
@@ -1580,7 +1580,7 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   // Course pages //////////////////////////////////////////////////////
 
-  app.use(/^\/pl\/course\/[0-9]+\/?$/, function (req, res, _next) {
+  app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {
     res.redirect(res.locals.urlPrefix + '/course_admin');
   }); // redirect plain course URL to overview page
 
@@ -1613,7 +1613,7 @@ export async function initExpress(): Promise<Express> {
       }),
     );
   });
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', function (req, res, next) {
+  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', function(req, res, next) {
     res.locals.navPage = 'question';
     next();
   });
@@ -1661,7 +1661,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/course_admin',
     (await import('./pages/instructorCourseAdmin/instructorCourseAdmin.js')).default,
   );
-  app.use('/pl/course/:course_id(\\d+)/course_admin', function (req, res, next) {
+  app.use('/pl/course/:course_id(\\d+)/course_admin', function(req, res, next) {
     res.locals.navPage = 'course_admin';
     next();
   });
@@ -1832,7 +1832,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/public', (await import('./middlewares/forbidAccessInExamMode.js')).default);
 
   app.use('/pl/public/course/:course_id(\\d+)', [
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'public';
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
@@ -1840,7 +1840,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourse,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'public_question';
       next();
     },
@@ -1914,7 +1914,7 @@ export async function initExpress(): Promise<Express> {
 
   // Publicly shared course instances and assessments
   app.use('/pl/public/course_instance/:course_instance_id(\\d+)', [
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'public';
       res.locals.urlPrefix = '/pl/public/course_instance/' + req.params.course_instance_id;
       next();
@@ -1929,7 +1929,7 @@ export async function initExpress(): Promise<Express> {
     res.redirect(`${req.params[0]}/questions`);
   });
   app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
-    function (req: Request, res: Response, next: NextFunction) {
+    function(req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'public_assessment';
       next();
     },
