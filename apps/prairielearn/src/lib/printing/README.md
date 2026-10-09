@@ -29,7 +29,7 @@ Set `runScripts: true` when preparing a fresh preview from server-generated ques
 
 The browser permits only same-origin `GET` requests during rendering; redirects, mutating requests, cross-origin requests, service worker, and WebSocket traffic are blocked, and socket.io polling requests are refused as well. Refusing them matters: with WebSockets closed, socket.io would otherwise fall back to HTTP long-polling, and a few open polls can occupy every HTTP/1.1 connection to the server and starve the page's own script and image loads. This prevents external requests from receiving the forwarded cookie, but it is not a security boundary for course-authored code: same-origin `GET` requests still use the rendering session. Cross-origin question assets must be served through PrairieLearn to appear in the output.
 
-The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative for the physical paper size.
+The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. Set `data-print-paper-size="A4"` on the root element to produce A4 PDF sheets; otherwise, the renderer uses Letter sheets. The page's CSS uses the same attribute to size printable content.
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
