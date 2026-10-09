@@ -1,0 +1,38 @@
+{
+  "uuid": "2f8c82ad-a47e-467d-bffb-411231745847",
+  "type": "Exam",
+  "title": "Printable exam with legacy questions",
+  "set": "Exam",
+  "number": "24",
+  "shuffleQuestions": false,
+  "requireHonorCode": false,
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": {
+          "date": "2000-01-01T00:00:00"
+        }
+      }
+    }
+  ],
+  "zones": [
+    {
+      "title": "Legacy questions",
+      "questions": [
+        {
+          "id": "addVectors",
+          "autoPoints": [5]
+        },
+        {
+          "id": "fossilFuelsRadio",
+          "autoPoints": [5]
+        },
+        {
+          "id": "v2checkbox",
+          "autoPoints": [5]
+        }
+      ],
+      "comment": "Calculation, MultipleChoice, and Checkbox render paths. partialCredit4_v2 and partialCredit5_v2_partial are excluded: their templates begin with a mustache lint directive, which rivets treats as a data binding, so they cannot render in a browser."
+    }
+  ]
+}

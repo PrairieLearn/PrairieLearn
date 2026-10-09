@@ -1,0 +1,420 @@
+import { randomUUID } from 'node:crypto';
+
+import { html, unsafeHtml } from '@prairielearn/html';
+
+import { HeadContents } from '../../components/HeadContents.js';
+import {
+  assetPath,
+  compiledScriptTag,
+  compiledStylesheetTag,
+  nodeModulesAssetPath,
+} from '../../lib/assets.js';
+import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
+import type { PaperSize } from '../../lib/printing/pdfOutput.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
+
+import {
+  DEFAULT_EXAM_INSTRUCTIONS,
+  answerKeyDescription,
+  getDefaultHonorCodePledge,
+  getPrintCoverFields,
+  getPrintFooterLabel,
+} from './printCover.js';
+
+export function InstructorAssessmentInstancePrint({
+  resLocals,
+  document,
+  formLabel,
+  paperSize,
+  includeCoverPage,
+  includeGradingTable,
+  identityFields,
+  questionHtmls,
+  omittedQuestionCount = 0,
+  warnings = [],
+  extraHeadersHtml,
+  hasLegacyQuestions,
+  maxPoints,
+  assessmentTextHtml,
+  honorCodeHtml,
+  includeHonorCode,
+}: {
+  resLocals: ResLocalsForPage<'assessment-instance'>;
+  document: 'exam' | 'answer_key';
+  formLabel?: string;
+  paperSize: PaperSize;
+  includeCoverPage: boolean;
+  includeGradingTable: boolean;
+  identityFields: readonly string[];
+  questionHtmls: string[];
+  omittedQuestionCount?: number;
+  warnings?: { code: string; question_number: string; message: string }[];
+  extraHeadersHtml: string;
+  hasLegacyQuestions: boolean;
+  maxPoints: number;
+  assessmentTextHtml: string | null;
+  honorCodeHtml: string | null;
+  includeHonorCode: boolean;
+}) {
+  const isAnswerKey = document === 'answer_key';
+  const documentLabel = isAnswerKey ? 'Answer key' : resLocals.assessment.type;
+  const pageIdentity = encodePrintPageIdentity({
+    courseId: resLocals.course.id,
+    assessmentId: resLocals.assessment.id,
+    assessmentInstanceId: resLocals.assessment_instance.id,
+    pageNumber: 1,
+    generatedBy: {
+      userId: resLocals.authn_user.id,
+      uid: resLocals.authn_user.uid,
+      name: resLocals.authn_user.name,
+    },
+    generatedAt: new Date().toISOString(),
+    document,
+    format: 'pdf',
+    exportId: randomUUID(),
+  });
+  const footerLabel = getPrintFooterLabel({
+    document,
+    formId: resLocals.assessment_instance.id,
+    formLabel,
+  });
+
+  return html`<!doctype html>
+    <html
+      lang="en"
+      data-print-document="${document}"
+      data-print-form-label="${formLabel ?? ''}"
+      data-print-paper-size="${paperSize}"
+      data-print-include-cover="${includeCoverPage}"
+      data-print-page-identity="${pageIdentity}"
+      data-print-status="loading"
+      data-print-question-count="${questionHtmls.length}"
+      data-print-omitted-question-count="${omittedQuestionCount}"
+      data-print-warnings="${JSON.stringify(warnings)}"
+      data-print-max-points="${maxPoints}"
+    >
+      <head>
+        ${HeadContents({
+          resLocals,
+          pageTitle: isAnswerKey
+            ? `${resLocals.assessment_label} answer key`
+            : `${resLocals.assessment_label} printable assessment`,
+          includeApplicationScripts: false,
+        })}
+        <script>
+          document.urlPrefix = '${resLocals.urlPrefix}';
+          window.PagedConfig = { auto: false };
+          window.__PL_PRINT_READINESS_PROMISES__ = [];
+          window.PrairieLearnExamPrinting = {
+            waitUntil(promise) {
+              void promise.catch(() => undefined);
+              window.__PL_PRINT_READINESS_PROMISES__.push(promise);
+            },
+          };
+        </script>
+        ${compiledScriptTag('examPrintingClient.ts')}
+        <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>
+        <style>
+          @page {
+            size: ${paperSize};
+          }
+        </style>
+        <style data-pagedjs-ignore>
+          #exam-print-status {
+            background: #fff;
+            border: 1px solid #bbb;
+            border-radius: 0.25rem;
+            box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 12%);
+            left: 50%;
+            padding: 0.65rem 1rem;
+            position: fixed;
+            top: 1rem;
+            transform: translateX(-50%);
+            z-index: 1000;
+          }
+
+          html[data-print-status='ready'] #exam-print-status {
+            display: none;
+          }
+
+          html[data-print-status='error'] #exam-print-status {
+            background: #f8d7da;
+            border-color: #842029;
+            color: #842029;
+          }
+
+          .exam-grading-table {
+            flex-shrink: 0;
+            margin-bottom: 12px;
+          }
+          .exam-grading-grid {
+            display: grid;
+            column-gap: 20px;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(0, 1fr);
+          }
+          .exam-grading-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding-bottom: 6px;
+            font-size: 10pt;
+          }
+          .exam-grading-score {
+            flex: 0 1 150px;
+            border-bottom: 1px solid #111;
+            margin-bottom: 3px;
+          }
+
+          @media screen {
+            html,
+            body {
+              background: #e7eaee;
+              margin: 0;
+            }
+
+            #exam-print-pages {
+              overflow-x: auto;
+            }
+
+            #exam-print-pages .pagedjs_pages {
+              align-items: center;
+              box-sizing: border-box;
+              display: flex;
+              flex-direction: column;
+              gap: 1.25rem;
+              min-width: 100%;
+              padding: 1.75rem 0;
+              width: max-content;
+            }
+
+            #exam-print-pages .pagedjs_page {
+              background: #fff;
+              box-shadow: 0 0.25rem 1.25rem rgb(0 0 0 / 18%);
+              margin: 0;
+            }
+          }
+
+          @media print {
+            @page {
+              size: ${paperSize};
+              margin: 0;
+            }
+
+            html,
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+
+            #exam-print-status {
+              display: none !important;
+            }
+
+            #exam-print-pages .pagedjs_pages {
+              display: block !important;
+            }
+
+            #exam-print-pages .pagedjs_page {
+              break-after: page;
+              box-shadow: none !important;
+              margin: 0 !important;
+            }
+
+            #exam-print-pages .exam-cover {
+              break-after: auto !important;
+              page: auto !important;
+            }
+
+            #exam-print-pages .pagedjs_page:last-child {
+              break-after: auto;
+            }
+          }
+        </style>
+        ${unsafeHtml(extraHeadersHtml)}
+        <!--
+          RequireJS must load after every question's own headers. Unlike the per-question pages,
+          this document combines legacy and Freeform questions, so element dependencies such as
+          sylvester, socket.io, and cropper share the page with the legacy AMD loader. Those
+          libraries are UMD: once "define" exists they register as anonymous modules instead of
+          assigning their globals, which both breaks the elements that expect the global and
+          leaves RequireJS unable to resolve the legacy client modules.
+        -->
+        ${
+          hasLegacyQuestions
+            ? html`
+                <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
+                <script src="${assetPath('javascripts/require.js')}"></script>
+                <script src="${assetPath('localscripts/question.js')}"></script>
+                <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
+              `
+            : ''
+        }
+        ${compiledStylesheetTag('examPrinting.css')}
+        <style>
+          @page {
+            @bottom-right {
+              color: #555;
+              content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
+              font-family: system-ui, sans-serif;
+              font-size: 8pt;
+            }
+          }
+
+          @page exam-cover {
+            @bottom-right {
+              color: #555;
+              content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
+              font-family: system-ui, sans-serif;
+              font-size: 8pt;
+            }
+          }
+        </style>
+        <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
+        <meta
+          name="mathjax-fonts-path"
+          content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+        />
+        ${compiledScriptTag('question.ts')}
+      </head>
+      <body>
+        <div id="exam-print-status" role="status">
+          Preparing ${paperSize} ${documentLabel.toLowerCase()} pages…
+        </div>
+        <div id="exam-print-source" class="exam-print-document">
+          ${
+            includeCoverPage
+              ? html`
+                  <article class="exam-cover" aria-label="${documentLabel} cover page">
+                    <header class="exam-cover-header">
+                      <div class="exam-cover-course">${resLocals.course.short_name}</div>
+                      <div class="exam-cover-course-title">
+                        ${resLocals.course.title ?? resLocals.course_instance.long_name ?? ''}
+                      </div>
+                      <h1>${resLocals.assessment_label}</h1>
+                      ${
+                        resLocals.assessment.title
+                          ? html`<div class="exam-cover-title">${resLocals.assessment.title}</div>`
+                          : ''
+                      }
+                      ${isAnswerKey ? html`<div class="exam-cover-document-label">Answer key</div>` : ''}
+                    </header>
+
+                    ${
+                      isAnswerKey
+                        ? ''
+                        : html`
+                            <div class="exam-cover-fields">
+                              ${getPrintCoverFields({
+                                identityFields,
+                                teamWork: resLocals.assessment.team_work,
+                              }).map(
+                                (field) => html`
+                                  <div
+                                    class="exam-cover-field${field.wide ? ' exam-cover-field-wide' : ''}"
+                                  >
+                                    <span>${field.label}</span>
+                                  </div>
+                                `,
+                              )}
+                            </div>
+                          `
+                    }
+
+                    <dl class="exam-cover-summary">
+                      <div>
+                        <dt>Questions</dt>
+                        <dd>${questionHtmls.length}</dd>
+                      </div>
+                      <div>
+                        <dt>Points</dt>
+                        <dd>${maxPoints}</dd>
+                      </div>
+                      <div>
+                        <dt>${formLabel ? 'Form' : 'Form ID'}</dt>
+                        <dd>${formLabel ?? resLocals.assessment_instance.id}</dd>
+                      </div>
+                    </dl>
+
+                    <section
+                      class="exam-cover-instructions"
+                      aria-labelledby="exam-instructions-heading"
+                    >
+                      <h2 id="exam-instructions-heading">
+                        ${isAnswerKey ? 'About this answer key' : 'Instructions'}
+                      </h2>
+                      ${
+                        isAnswerKey
+                          ? html`<p>
+                              ${answerKeyDescription(resLocals.assessment_instance.id, formLabel)}
+                            </p>`
+                          : html`<ol>
+                              ${DEFAULT_EXAM_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
+                            </ol>`
+                      }
+                      ${
+                        assessmentTextHtml
+                          ? html`<div class="exam-cover-custom-instructions">
+                              ${unsafeHtml(assessmentTextHtml)}
+                            </div>`
+                          : ''
+                      }
+                    </section>
+
+                    ${
+                      !isAnswerKey && includeHonorCode
+                        ? html`
+                            <section
+                              class="exam-cover-honor-code"
+                              aria-labelledby="honor-code-heading"
+                            >
+                              <h2 id="honor-code-heading">Academic integrity pledge</h2>
+                              ${
+                                honorCodeHtml
+                                  ? unsafeHtml(honorCodeHtml)
+                                  : html`<ul>
+                                      ${getDefaultHonorCodePledge(
+                                        resLocals.assessment.team_work,
+                                      ).map((item) => html`<li>${item}</li>`)}
+                                    </ul>`
+                              }
+                              <div class="exam-cover-signature"><span>Signature</span></div>
+                            </section>
+                          `
+                        : ''
+                    }
+                    ${
+                      !isAnswerKey && includeGradingTable
+                        ? html`
+                            <section class="exam-grading-table" aria-label="Grading table" hidden>
+                              <h2>Grading</h2>
+                              <div class="exam-grading-grid"></div>
+                            </section>
+                          `
+                        : ''
+                    }
+
+                    <footer>
+                      ${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}
+                      <span
+                        >${getPrintFooterLabel({
+                          document: 'exam',
+                          formId: resLocals.assessment_instance.id,
+                          formLabel,
+                        })}</span
+                      >
+                    </footer>
+                  </article>
+                `
+              : ''
+          }
+
+          <div class="exam-questions">
+            ${questionHtmls.map((questionHtml) => unsafeHtml(questionHtml))}
+          </div>
+        </div>
+        <main id="exam-print-pages"></main>
+        <noscript>This printable assessment requires JavaScript to paginate its pages.</noscript>
+      </body>
+    </html>`;
+}

@@ -354,7 +354,6 @@ export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
   return compiledAssets.compiledStylesheetTag(sourceFile);
 }
 
-/** @knipignore */
 export function compiledScriptPath(sourceFile: string): string {
   return compiledAssets.compiledScriptPath(sourceFile);
 }

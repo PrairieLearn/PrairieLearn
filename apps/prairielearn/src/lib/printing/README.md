@@ -7,14 +7,16 @@ Utilities for rendering printable HTML as PDFs and editable Word documents, and 
 The rendering browser lays out and paginates question HTML. PDF exports use its completed page snapshot. Word exports use the editable source captured before pagination and screenshots of figures. Create one renderer per application process:
 
 ```ts
-import { getPrintingCloudflareConfig } from './config.js';
-import { PrintRenderer } from './printing/printRenderer.js';
+import { closePrintRenderer, getPrintRenderer } from '../printing.js';
+import { createDocxOutput } from './docxOutput.js';
 
-const renderer = new PrintRenderer({
-  cloudflare: getPrintingCloudflareConfig(),
-});
+const renderer = getPrintRenderer();
 const pdf = await renderer.renderPdf({ url: previewUrl, html: paginatedHtml });
-await renderer.close(); // during shutdown
+const docx = await renderer.render(
+  { url: previewUrl, html: paginatedHtml, runScripts: true },
+  createDocxOutput({ source, cover, footerLabel }),
+);
+await closePrintRenderer(); // during shutdown
 ```
 
 The renderer connects to one Cloudflare browser on first use and runs up to four independent contexts concurrently. Another 64 requests may wait, bounded by the 120-second end-to-end deadline. Local development uses one Chromium render at a time and a queue of 16. Set `maxConcurrentRenders` or `maxQueuedRenders` to override those limits. Each render has its own short-lived context. A browser that disconnects is reconnected on the next render, and `close()` rejects queued renders and closes the browser.
@@ -25,7 +27,7 @@ Set `runScripts: true` when preparing a fresh preview from server-generated ques
 
 The browser permits only same-origin `GET` requests during rendering; redirects, mutating requests, cross-origin requests, service worker, and WebSocket traffic are blocked, and socket.io polling requests are refused as well. Refusing them matters: with WebSockets closed, socket.io would otherwise fall back to HTTP long-polling, and a few open polls can occupy every HTTP/1.1 connection to the server and starve the page's own script and image loads. This prevents external requests from receiving the forwarded cookie, but it is not a security boundary for course-authored code: same-origin `GET` requests still use the rendering session. Cross-origin question assets must be served through PrairieLearn to appear in the output.
 
-The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. Set `data-print-paper-size="A4"` on the root element to produce A4 PDF sheets; otherwise, the renderer uses Letter sheets. The page's CSS uses the same attribute to size printable content.
+The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. Set `data-print-paper-size="A4"` on the root element to produce A4 PDF sheets; otherwise, the renderer uses Letter sheets. The page's CSS uses the same attribute to size printable content. `PAPER_SIZES` contains the `Letter` and `A4` values accepted by the PrairieLearn endpoint.
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput(pageCode).produce(page)` to reuse the standard PDF output and identification codes.
 
@@ -35,7 +37,7 @@ The Word document contains native paragraphs, lists, tables, answer spaces, hype
 
 The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docxContent.ts` maps the source to native Word objects, and `printDocxClient.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
 
-`htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
+`cover` may be a function; it receives the page's root `data-*` attributes so that values which are only known after rendering, such as the number of questions that rendered successfully, can be placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
 
 Omit the `cover` option to start with questions on the first page.
 
@@ -46,6 +48,32 @@ Omit the `cover` option to start with questions on the first page.
 PrairieLearn's `pl:print:1:` payload identifies the course, assessment, assessment instance, one-based physical page, authenticated generating user (ID, UID, and nullable name), UTC generation timestamp, document kind, output format, and a UUID for that export. IDs remain strings to preserve PostgreSQL bigint precision. All pages in one export share its timestamp and UUID. `decodePrintPageIdentity` validates the version and fields for future scanning workflows; decoded metadata is untrusted and does not authenticate the document or authorize database access.
 
 Editable DOCX output currently has no page identification codes. Static codes cannot follow Word repagination, and Word's `DISPLAYBARCODE` field is not supported in Word for Mac. A finalization workflow or an explicitly fixed-page document format is needed before promising physical-page identification in Word.
+
+### PrairieLearn endpoint parameters
+
+The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
+
+`form_label=A` through `form_label=Z` gives an assessment instance a short label on its cover and footers. Omitting it preserves the assessment instance's existing numeric Form ID label.
+
+`include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
+
+`include_honor_code=true` or `false` controls the student cover pledge independently of the online assessment requirement. Omitting it uses the assessment’s `requireHonorCode` setting. The printed pledge uses the configured `honorCode` when present, with a blank name line for `{{user_name}}`; otherwise it uses the standard pledge.
+
+`grading_table=true` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
+
+Automatic blocks are measured at the final printable width after asynchronous question content, MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an exact fraction of the printable content height, including the question's internal spacing, when the content fits. Taller content uses its measured height and moves to the next page or flows across pages when needed.
+
+For example, this gives every question automatic sizing except Questions 2 and 5:
+
+```text
+?paper_size=Letter&question_block_size=2:half&question_block_size=5:full
+```
+
+This sets a half-page default and allows Question 3 to size itself automatically:
+
+```text
+?paper_size=A4&block_size=half&question_block_size=3:auto
+```
 
 ## Combining question fragments
 
@@ -89,3 +117,7 @@ Do not use comma-containing functional selectors such as `:is(h2, h3)` on `break
 Answer keys use the question's authored answer panel. Simple questions retain their prompt; compound answer panels render their authored sections once. Answers stay at a readable font size and may use different page counts from the student document. Never hide overflow or shrink a whole answer panel to fit a short response line.
 
 A successful export does not imply that the author supplied solutions. Manual questions and developer fixtures may have no answer panel, or intentionally contain instructions/debug content in every panel. Printed keys preserve that authored behavior; they do not invent solutions.
+
+### Regression coverage
+
+The browser tests exercise the E23 coverage assessment, legacy questions, rendering failures, and all three exports. They verify static symbolic inputs, visible matrix entries, complete sketch coordinate systems, intact subparts, and unscaled answer panels. DOM tests cover the additional dropdown, matching, file, and rich-text transforms.
