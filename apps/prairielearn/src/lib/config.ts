@@ -1,3 +1,4 @@
+import { getDomain } from 'tldts';
 import { z } from 'zod';
 
 import {
@@ -411,6 +412,20 @@ export const ConfigSchema = z.object({
    */
   workspaceLogsExpirationDays: z.number().nullable().default(120),
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
+  /**
+   * Whether workspace containers are served from PrairieLearn's origin or an isolated origin.
+   */
+  workspaceIsolationMode: z
+    .enum(['same-origin', 'cross-origin'])
+    .default(DEV_MODE ? 'same-origin' : 'cross-origin'),
+  /** Base domain used for workspace hostnames in cross-origin mode. */
+  workspaceSandboxBaseDomain: z
+    .string()
+    .regex(
+      /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/,
+    )
+    .nullable()
+    .default(null),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
   workspaceHeartbeatIntervalSec: z.number().default(60),
@@ -761,6 +776,41 @@ export async function loadConfig(paths: string[]) {
 
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
     throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
+  }
+
+  if (config.workspaceIsolationMode === 'cross-origin') {
+    if (!config.workspaceSandboxBaseDomain) {
+      throw new Error(
+        'workspaceSandboxBaseDomain must be set when workspaceIsolationMode is "cross-origin"',
+      );
+    }
+    if (!config.serverCanonicalHost) {
+      throw new Error(
+        'serverCanonicalHost must be set when workspaceIsolationMode is "cross-origin"',
+      );
+    }
+
+    const cookieDomain = config.cookieDomain?.replace(/^\./, '').toLowerCase();
+    const sandboxDomain = config.workspaceSandboxBaseDomain.toLowerCase();
+    if (
+      cookieDomain &&
+      (sandboxDomain === cookieDomain || sandboxDomain.endsWith(`.${cookieDomain}`))
+    ) {
+      throw new Error('workspaceSandboxBaseDomain must not be covered by cookieDomain');
+    }
+
+    const applicationDomain = getDomain(new URL(config.serverCanonicalHost).hostname, {
+      allowPrivateDomains: true,
+    });
+    const sandboxRegistrableDomain = getDomain(sandboxDomain, { allowPrivateDomains: true });
+    if (applicationDomain == null || sandboxRegistrableDomain == null) {
+      throw new Error('Workspace sandbox and application hosts must use valid domain names');
+    }
+    if (applicationDomain === sandboxRegistrableDomain) {
+      throw new Error(
+        'workspaceSandboxBaseDomain must not share a registrable domain with serverCanonicalHost',
+      );
+    }
   }
 }
 

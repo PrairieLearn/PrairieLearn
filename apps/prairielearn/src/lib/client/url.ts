@@ -438,6 +438,17 @@ export function getAssessmentQuestionTrpcUrl({
   return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/trpc`;
 }
 
+export function getWorkspaceTrpcUrl({
+  workspaceId,
+  publicQuestionEndpoint,
+}: {
+  workspaceId: string;
+  publicQuestionEndpoint: boolean;
+}): string {
+  const publicPath = publicQuestionEndpoint ? '/public' : '';
+  return `/pl${publicPath}/workspace/${workspaceId}/trpc`;
+}
+
 export function getAssessmentManualGradingUrl({
   courseInstanceId,
   assessmentId,
