@@ -1,14 +1,26 @@
+import { createHash } from 'node:crypto';
+
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
+import { generateSignedToken, getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
+import {
+  COURSE_STAFF_CSV_MAX_BYTES,
+  parseCourseStaffCsv,
+  stringifyCourseStaffCsv,
+} from '../../lib/course-staff-csv.js';
+import { computeCourseStaffSyncPreview } from '../../lib/course-staff-sync.js';
 import {
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
+  type EnumCourseRole,
   EnumCourseRoleSchema,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -17,6 +29,7 @@ import {
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 import {
+  applyCourseStaffPermissions,
   deleteCourseInstancePermissions,
   deleteCoursePermissions,
   insertCourseInstancePermissions,
@@ -26,6 +39,7 @@ import {
   updateCoursePermissionsRole,
   upsertCourseInstancePermissionsRole,
 } from '../../models/course-permissions.js';
+import { selectEnrollmentsForUsersInCourse } from '../../models/enrollment.js';
 
 import {
   type createContext,
@@ -42,8 +56,12 @@ export interface CourseStaffError {
   InsertByUserUids: never;
   BulkDelete: never;
   BulkEditAccess: never;
+  Preview: never;
+  Export: never;
+  Sync: never;
 }
 
+const sql = loadSqlEquiv(import.meta.url);
 const MAX_UIDS = 100;
 
 type StaffAuthzData = Awaited<ReturnType<typeof createContext>>['authz_data'];
@@ -73,10 +91,18 @@ function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: 
   }
 }
 
-async function assertCanDeleteUser(authzData: StaffAuthzData, userId: string, courseId: string) {
+async function assertCanDeleteUser(
+  authzData: StaffAuthzData,
+  userId: string,
+  courseId: string,
+  courseRole?: EnumCourseRole | null,
+) {
   assertCanModifyUser(authzData, userId, 'remove themselves from the course staff');
   if (!authzData.is_administrator && !authzData.is_institution_administrator) {
-    const role = await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
+    const role =
+      courseRole !== undefined
+        ? courseRole
+        : await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
     if (role === 'Owner') {
       throw new TRPCError({
         code: 'FORBIDDEN',
@@ -351,6 +377,205 @@ const bulkEditAccess = t.procedure
     });
   });
 
+async function buildStaffSyncPreview(ctx: Awaited<ReturnType<typeof createContext>>, text: string) {
+  try {
+    const csv = await parseCourseStaffCsv(text);
+    const [courseInstances, staff] = await Promise.all([
+      getAccessibleInstances(ctx),
+      selectCourseUsers({ course_id: ctx.course.id }),
+    ]);
+    const result = computeCourseStaffSyncPreview({ csv, courseInstances, staff });
+    for (const row of result.rows) {
+      if (row.action === 'remove' && row.expected) {
+        await assertCanDeleteUser(
+          ctx.authz_data,
+          row.expected.userId,
+          ctx.course.id,
+          row.expected.courseRole,
+        );
+      } else if (
+        row.action === 'update' &&
+        row.expected &&
+        row.previousCourseRole !== row.courseRole
+      ) {
+        assertCanModifyUser(
+          ctx.authz_data,
+          row.expected.userId,
+          'change their own course content access',
+        );
+      }
+    }
+    const removedUserIds = result.rows.flatMap((row) =>
+      row.action === 'remove' && row.expected ? [row.expected.userId] : [],
+    );
+    const enrollments =
+      removedUserIds.length > 0
+        ? await selectEnrollmentsForUsersInCourse({
+            courseId: ctx.course.id,
+            userIds: removedUserIds,
+          })
+        : [];
+    return {
+      ...result,
+      removalEnrollments: enrollments.map(({ enrollment, course_instance: courseInstance }) => ({
+        enrollmentId: enrollment.id,
+        userId: enrollment.user_id,
+        courseInstanceId: courseInstance.id,
+        shortName: courseInstance.short_name,
+        instanceDeleted: courseInstance.deleted_at !== null,
+        status: enrollment.status,
+      })),
+    };
+  } catch (error) {
+    if (error instanceof HttpStatusError) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+    }
+    throw error;
+  }
+}
+
+function hashStaffSyncData(value: unknown) {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+const preview = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(z.object({ text: z.string().min(1).max(COURSE_STAFF_CSV_MAX_BYTES) }))
+  .mutation(async ({ input, ctx }) => {
+    const result = await buildStaffSyncPreview(ctx, input.text);
+    return {
+      ...result,
+      confirmationToken: generateSignedToken(
+        {
+          purpose: 'course-staff-sync',
+          courseId: ctx.course.id,
+          userId: ctx.authz_data.user.id,
+          authnUserId: ctx.authz_data.authn_user.id,
+          textHash: hashStaffSyncData(input.text),
+          stateHash: hashStaffSyncData(result),
+        },
+        config.secretKey,
+      ),
+    };
+  });
+
+const sync = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(
+    z.object({
+      text: z.string().min(1).max(COURSE_STAFF_CSV_MAX_BYTES),
+      confirmationToken: z.string().min(1),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const token = z
+      .object({
+        purpose: z.literal('course-staff-sync'),
+        courseId: IdSchema,
+        userId: IdSchema,
+        authnUserId: IdSchema,
+        textHash: z.string(),
+        stateHash: z.string(),
+      })
+      .safeParse(getCheckedSignedTokenData(input.confirmationToken, config.secretKey));
+    if (
+      !token.success ||
+      token.data.courseId !== ctx.course.id ||
+      token.data.userId !== ctx.authz_data.user.id ||
+      token.data.authnUserId !== ctx.authz_data.authn_user.id ||
+      token.data.textHash !== hashStaffSyncData(input.text)
+    ) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Generate a new preview before confirming this CSV.',
+      });
+    }
+    try {
+      return await runInTransactionAsync(async () => {
+        // A concurrent writer must not change reviewed permissions between comparison and commit.
+        await execute(sql.set_serializable_transaction);
+        // Recheck access in the write transaction, since middleware ran before it began.
+        if (!ctx.authz_data.is_administrator && !ctx.authz_data.is_institution_administrator) {
+          const role = await selectCoursePermissionForUser({
+            course_id: ctx.course.id,
+            user_id: ctx.authz_data.user.id,
+          });
+          if (role !== 'Owner') {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Access denied (must be a course owner)',
+            });
+          }
+        }
+        const result = await buildStaffSyncPreview(ctx, input.text);
+        if (hashStaffSyncData(result) !== token.data.stateHash) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+              'Staff permissions or enrollments changed after the preview. Generate a new preview before applying changes.',
+          });
+        }
+        const updates = result.rows.flatMap((row) =>
+          row.action === 'add' || row.action === 'update'
+            ? [
+                {
+                  uid: row.uid,
+                  courseRole: row.courseRole,
+                  courseInstanceChanges: row.courseInstanceChanges,
+                },
+              ]
+            : [],
+        );
+        const removedUserIds = result.rows.flatMap((row) =>
+          row.action === 'remove' && row.expected ? [row.expected.userId] : [],
+        );
+        if (removedUserIds.length > 0) {
+          // Acquire deletion's enrollment barriers before other permission writes.
+          await deleteCoursePermissions({
+            course_id: ctx.course.id,
+            user_id: removedUserIds,
+            authn_user_id: ctx.authz_data.authn_user.id,
+          });
+        }
+        if (updates.length > 0) {
+          await applyCourseStaffPermissions({
+            courseId: ctx.course.id,
+            authnUserId: ctx.authz_data.authn_user.id,
+            updates,
+          });
+        }
+        return result.summary;
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === '40001' || error.code === '40P01')
+      ) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'Staff data changed while applying the CSV. Generate a new preview and try again.',
+          cause: error,
+        });
+      }
+      throw error;
+    }
+  });
+
+const exportCsv = t.procedure
+  .use(requireCoursePermissionPreviewOrCourseInstancePermissionView)
+  .query(async ({ ctx }) => {
+    const [courseInstances, staff] = await Promise.all([
+      getAccessibleInstances(ctx),
+      selectCourseUsers({ course_id: ctx.course.id }),
+    ]);
+    return {
+      filename: 'course-staff.csv',
+      text: await stringifyCourseStaffCsv({ courseInstances, staff }),
+    };
+  });
+
 export const courseStaffRouter = t.router({
   list,
   updateCourseRole,
@@ -359,4 +584,7 @@ export const courseStaffRouter = t.router({
   insertByUserUids,
   bulkDelete,
   bulkEditAccess,
+  preview,
+  sync,
+  export: exportCsv,
 });
