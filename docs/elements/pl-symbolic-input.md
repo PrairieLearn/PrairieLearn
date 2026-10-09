@@ -76,6 +76,8 @@ If `allow-sets="true"`, the following additional layer of syntax is enabled:
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
   intersection (`cap` or `&`), and difference (`-`)
 
+Note that names listed in the `variables` attribute are scalar symbols, not named sets, even when `allow-sets="true"`; all sets must be constructed with set notation. This reflects [SymPy](https://www.sympy.org)'s limitation that all variables are numbers or matrices.
+
 ## Example implementations
 
 - [element/symbolicInput]
