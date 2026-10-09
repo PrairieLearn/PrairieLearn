@@ -10,6 +10,7 @@ FROM
   LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
   ai.assessment_id = $assessment_id
+  AND NOT ai.for_printing
   AND ai.number = 1
   AND (
     (gu.user_id = $user_id)

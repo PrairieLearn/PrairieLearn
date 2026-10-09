@@ -72,6 +72,7 @@ WITH
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
     WHERE
       ai.user_id = $user_id
+      AND NOT ai.for_printing
   ),
   single_instance_assessments AS (
     SELECT
@@ -126,6 +127,7 @@ WITH
         WHERE
           ai1.assessment_id = a.id
           AND ai1.user_id = $user_id
+          AND NOT ai1.for_printing
         UNION
         SELECT
           *
@@ -134,6 +136,7 @@ WITH
         WHERE
           ai2.assessment_id = a.id
           AND ai2.team_id = gu.team_id
+          AND NOT ai2.for_printing
       ) AS ai ON (TRUE)
       LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)

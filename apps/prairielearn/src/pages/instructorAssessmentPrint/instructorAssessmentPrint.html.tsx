@@ -1180,7 +1180,11 @@ function PrintPreparation({
                           )}
                           <Dropdown.Item
                             disabled={!renderingAvailable}
-                            onClick={() => setShowBookletModal(true)}
+                            onClick={() => {
+                              booklet.reset();
+                              setPdfPreparationError(null);
+                              setShowBookletModal(true);
+                            }}
                           >
                             Download booklet PDF…
                           </Dropdown.Item>
@@ -1216,7 +1220,11 @@ function PrintPreparation({
         error={
           pdfPreparationError?.target === 'booklet' ? pdfPreparationError.error : booklet.error
         }
-        onHide={() => setShowBookletModal(false)}
+        onHide={() => {
+          setShowBookletModal(false);
+          booklet.reset();
+          setPdfPreparationError(null);
+        }}
         onDownload={(students) => void downloadBooklet(students).catch(() => {})}
       />
     </div>

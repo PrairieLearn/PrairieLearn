@@ -232,6 +232,7 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   date: null,
   date_limit: null,
   duration: null,
+  for_printing: false,
   grading_needed: false,
   id: '3',
   include_in_statistics: false,

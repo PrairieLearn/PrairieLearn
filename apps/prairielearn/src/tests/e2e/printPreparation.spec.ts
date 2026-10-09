@@ -48,6 +48,12 @@ test('recovers when creating the first preview fails', async ({ page, courseInst
 
   await createPreview.click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  const instanceId = new URL(page.url()).searchParams.get('instance')!;
+  expect((await selectAssessmentInstanceById(instanceId)).for_printing).toBe(true);
+  await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
+  await expect(page.locator(`a[href*="/assessment_instance/${instanceId}/"]`)).toHaveCount(0);
+  await page.goto(`/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}`);
+  await expect(page.getByRole('button', { name: 'Start assessment' })).toBeVisible();
 });
 
 test('shows errors while preparing PDF pages', async ({ page, courseInstance }) => {
@@ -759,6 +765,7 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeDisabled();
   await page.unroute('**/printableExamExport.pdf');
   await chooseDownload(page, 'Download booklet PDF…');
+  await expect(modal.getByRole('alert')).toHaveCount(0);
   const downloaded = page.waitForEvent('download');
   await submit.click();
   expect(await (await downloaded).failure()).toBeNull();
