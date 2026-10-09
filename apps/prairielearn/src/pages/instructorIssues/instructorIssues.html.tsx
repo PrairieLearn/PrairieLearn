@@ -334,7 +334,7 @@ function IssueRow({
               {formatDistance(issue.date, now, { addSuffix: true })}
             </span>
           )}{' '}
-          {issue.showUser && (
+          {issue.showUser && issue.user_id != null && (
             <>
               {issue.manually_reported ? 'by' : 'for'} {issue.user_name || '-'} (
               <a href={mailtoLink}>{issue.user_uid || '-'}</a>)
@@ -505,6 +505,20 @@ function FilterHelpModal() {
                   <tr>
                     <td>
                       <code>
+                        ci:<em>short_name</em>
+                      </code>
+                    </td>
+                    <td>
+                      Shows all issues associated with a course instance short name like{' '}
+                      <code>short_name</code>; supports <code>*</code> as a wildcard. For example,{' '}
+                      <code>ci:2025F</code> shows all issues associated with the course instance{' '}
+                      <code>2025F</code>, while <code>ci:2025*</code> shows all issues associated
+                      with any course instance that starts with <code>2025</code>.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>
                         qid:<em>QID</em>
                       </code>
                     </td>
@@ -526,7 +540,9 @@ function FilterHelpModal() {
                     <td>
                       Shows all issues that were reported by a user with a UID like <code>UID</code>
                       . For example, <code>user:student@example.com</code> shows all issues that
-                      were reported by <code>student@example.com</code>.
+                      were reported by <code>student@example.com</code>. Searching by UID will only
+                      include issues in course instances where you have permission to see student
+                      data.
                     </td>
                   </tr>
                 </tbody>

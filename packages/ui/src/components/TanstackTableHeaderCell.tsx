@@ -1,7 +1,8 @@
-import { flexRender } from '@tanstack/react-table';
-import type { Header, SortDirection, Table } from '@tanstack/table-core';
+import { type RowData, type SortDirection, flexRender } from '@tanstack/react-table';
 import clsx from 'clsx';
 import type { CSSProperties, ReactNode } from 'react';
+
+import type { TanstackTableHeader, TanstackTableInstance } from '../tanstack-table.js';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
@@ -13,13 +14,13 @@ function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   }
 }
 
-function ResizeHandle<RowDataModel>({
+function ResizeHandle<RowDataModel extends RowData>({
   header,
-  setColumnSizing,
+  table,
   onResizeEnd,
 }: {
-  header: Header<RowDataModel, unknown>;
-  setColumnSizing: Table<RowDataModel>['setColumnSizing'];
+  header: TanstackTableHeader<RowDataModel>;
+  table: TanstackTableInstance<RowDataModel>;
   onResizeEnd?: () => void;
 }) {
   const minSize = header.column.columnDef.minSize ?? 0;
@@ -34,7 +35,7 @@ function ResizeHandle<RowDataModel>({
           ? Math.max(minSize, currentSize - increment)
           : Math.min(maxSize, currentSize + increment);
 
-      setColumnSizing((prevSizing) => ({
+      table.setColumnSizing((prevSizing) => ({
         ...prevSizing,
         [header.column.id]: newSize,
       }));
@@ -50,7 +51,10 @@ function ResizeHandle<RowDataModel>({
       : header.column.id;
 
   return (
-    <div className="py-1 h-100" style={{ position: 'absolute', right: 0, top: 0, width: '4px' }}>
+    <div
+      className="py-1 h-100"
+      style={{ position: 'absolute', insetInlineEnd: 0, top: 0, width: '4px' }}
+    >
       {/* separator role is focusable, so these jsx-a11y-x rules are false positives.
         https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/separator_role#focusable_separator
       */}
@@ -95,7 +99,7 @@ function getAriaSort(sortDirection: false | SortDirection) {
   }
 }
 
-export function TanstackTableHeaderCell<RowDataModel>({
+export function TanstackTableHeaderCell<RowDataModel extends RowData>({
   header,
   filters,
   table,
@@ -103,11 +107,11 @@ export function TanstackTableHeaderCell<RowDataModel>({
   isPinned,
   measurementMode = false,
 }: {
-  header: Header<RowDataModel, unknown>;
-  filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => ReactNode>;
-  table: Table<RowDataModel>;
+  header: TanstackTableHeader<RowDataModel>;
+  filters: Record<string, (props: { header: TanstackTableHeader<RowDataModel> }) => ReactNode>;
+  table: TanstackTableInstance<RowDataModel>;
   handleResizeEnd?: () => void;
-  isPinned: 'left' | false;
+  isPinned: 'start' | false;
   measurementMode?: boolean;
 }) {
   const sortDirection = header.column.getIsSorted();
@@ -127,10 +131,10 @@ export function TanstackTableHeaderCell<RowDataModel>({
     minWidth: 0,
     maxWidth: headerSize,
     flexShrink: 0,
-    position: isPinned === 'left' ? 'sticky' : 'relative',
+    position: isPinned === 'start' ? 'sticky' : 'relative',
     top: 0,
-    zIndex: isPinned === 'left' ? 2 : 1,
-    left: isPinned === 'left' ? header.getStart() : undefined,
+    zIndex: isPinned === 'start' ? 2 : 1,
+    insetInlineStart: isPinned === 'start' ? header.getStart() : undefined,
   };
 
   const isNormalColumn = canSort || canFilter;
@@ -139,7 +143,7 @@ export function TanstackTableHeaderCell<RowDataModel>({
     <th
       key={header.id}
       data-column-id={header.column.id}
-      className={clsx(isPinned === 'left' && 'bg-light')}
+      className={clsx(isPinned === 'start' && 'bg-light')}
       style={style}
       aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
       role="columnheader"
@@ -194,11 +198,7 @@ export function TanstackTableHeaderCell<RowDataModel>({
         )}
       </div>
       {header.column.getCanResize() && (
-        <ResizeHandle
-          header={header}
-          setColumnSizing={table.setColumnSizing}
-          onResizeEnd={handleResizeEnd}
-        />
+        <ResizeHandle header={header} table={table} onResizeEnd={handleResizeEnd} />
       )}
     </th>
   );

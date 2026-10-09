@@ -17,7 +17,7 @@ import {
   LtiLinkSchema,
   SprocUsersIsInstructorInCourseInstanceSchema,
 } from '../../lib/db-types.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureEnrollmentWithoutReconciliation } from '../../models/enrollment.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -131,8 +131,7 @@ router.post(
 
     // Persist the user's authentication data in the session. We do this before
     // checking authorization so that user information is available for any
-    // subsequent requests or redirects (e.g. if `ensureCheckedEnrollment`
-    // redirects to a payment page).
+    // subsequent requests or enrollment-related payment redirects.
     const { user } = await authnLib.loadUser(req, res, {
       user_id: userId,
       provider: 'LTI',
@@ -153,7 +152,7 @@ router.post(
 
     if (!authzData.has_student_access_with_enrollment) {
       assert(courseInstance);
-      await ensureEnrollment({
+      await ensureEnrollmentWithoutReconciliation({
         institution,
         course,
         courseInstance,

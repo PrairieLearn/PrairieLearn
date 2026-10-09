@@ -242,7 +242,6 @@ export async function generateApiToken(baseUrl: string, tokenName = 'test'): Pro
       __csrf_token: csrfToken,
       token_name: tokenName,
     }),
-    redirect: 'follow',
   });
   if (!res.ok) {
     throw new Error(`Failed to generate token: ${res.status}`);

@@ -197,7 +197,7 @@ export function buildQuestionUrls(
       questionUrl,
       newVariantUrl: questionUrl + 'preview/',
       tryAgainUrl: questionUrl + 'preview/',
-      reloadUrl: questionUrl + 'preview/' + '?variant_id=' + variant.id,
+      reloadUrl: questionUrl + 'preview/?variant_id=' + variant.id,
       clientFilesQuestionUrl: questionUrl + 'clientFilesQuestion',
 
       // necessary for backward compatibility

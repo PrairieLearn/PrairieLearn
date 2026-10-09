@@ -36,6 +36,14 @@ ruleTester.run('require-trpc-permission-middleware', rule, {
       code: 'const list = t.procedure.use(requireCoursePermissionOwn).query(async () => {});',
     },
     {
+      code: 'const list = t.procedure.use(requireCenterPermissionManage).query(async () => {});',
+      options: [
+        {
+          additionalPermissionMiddlewareNames: ['requireCenterPermissionManage'],
+        },
+      ],
+    },
+    {
       code: `const list = t.procedure
         .use(requireCoursePermissionEditOrCourseInstancePermissionView)
         .query(async () => {});`,
@@ -82,6 +90,15 @@ ruleTester.run('require-trpc-permission-middleware', rule, {
     // Feature gate alone is not a permission gate
     {
       code: 'const m = t.procedure.use(requireAiGradingFeature).mutation(async () => {});',
+      errors: [{ messageId: 'missingPermissionMiddleware' }],
+    },
+    {
+      code: 'const m = t.procedure.use(requireCenterFeature).mutation(async () => {});',
+      options: [
+        {
+          additionalPermissionMiddlewareNames: ['requireCenterPermissionManage'],
+        },
+      ],
       errors: [{ messageId: 'missingPermissionMiddleware' }],
     },
     {

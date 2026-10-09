@@ -4,8 +4,8 @@ import express from 'express';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { getAppError } from '@prairielearn/trpc/client';
 
-import { getAppError } from '../../lib/client/errors.js';
 import { WorkspaceSchema } from '../../lib/db-types.js';
 import { verifyWorkspaceSandboxBootstrapJwt } from '../../lib/workspace-sandbox.js';
 import * as helperDb from '../../tests/helperDb.js';

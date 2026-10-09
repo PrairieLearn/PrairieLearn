@@ -15,7 +15,6 @@ import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
-import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -25,14 +24,13 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
-  addEnrollmentToPublishingExtension,
   createPublishingExtensionWithEnrollments,
   deletePublishingExtension,
-  removeStudentFromPublishingExtension,
   selectEnrollmentsForPublishingExtension,
   selectPublishingExtensionById,
   selectPublishingExtensionByName,
   updatePublishingExtension,
+  updatePublishingExtensionEnrollments,
 } from '../../models/course-instance-publishing-extensions.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
@@ -206,7 +204,6 @@ router.get(
               csrfToken={csrfToken}
               origHash={origHash}
               extensions={publishingExtensions}
-              isDevMode={config.devMode}
             />
           </Hydrate>
         ) : (
@@ -510,19 +507,11 @@ router.post(
           (e) => !desiredEnrollmentsIds.has(e.id),
         );
 
-        for (const enrollment of enrollmentsToRemove) {
-          await removeStudentFromPublishingExtension({
-            courseInstancePublishingExtension: extension,
-            enrollment,
-          });
-        }
-
-        for (const enrollment of enrollmentsToAdd) {
-          await addEnrollmentToPublishingExtension({
-            courseInstancePublishingExtension: extension,
-            enrollment,
-          });
-        }
+        await updatePublishingExtensionEnrollments({
+          courseInstancePublishingExtension: extension,
+          enrollmentsToAdd,
+          enrollmentsToRemove,
+        });
       });
 
       res.sendStatus(204);

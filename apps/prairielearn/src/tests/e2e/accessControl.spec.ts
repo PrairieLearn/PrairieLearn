@@ -183,6 +183,29 @@ test.describe('Access control UI', () => {
     await expect(panel.getByText('Exam UUID is required')).toBeVisible();
   });
 
+  test('clears a release date error when the release mode resolves it', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    await panel.getByLabel('Scheduled for release').check();
+    await panel.getByLabel('Release date').fill('2000-01-01T00:00');
+
+    const errorMessage = 'Release date must be in the future when scheduled for release.';
+    await expect(panel.getByText(errorMessage)).toBeVisible();
+
+    await panel.getByLabel('Released').check();
+    await expect(panel.getByText(errorMessage)).toBeHidden();
+  });
+
   test('can switch after-due-date submissions from partial credit to practice', async ({
     page,
     courseInstance,
@@ -213,6 +236,41 @@ test.describe('Access control UI', () => {
     await expect(afterDueDateSelect).toContainText('Allow practice submissions');
     await expect(creditInput).toBeHidden();
     await expect(panel.getByText('Credit is required')).toBeHidden();
+  });
+
+  test('clears a practice credit error when due-date credit increases', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    const afterDueDateSelect = panel.getByRole('button', { name: 'After due date' });
+    await afterDueDateSelect.click();
+    await page.getByRole('option', { name: 'No submissions allowed' }).click();
+
+    await panel.getByRole('button', { name: 'Change', exact: true }).click();
+    const dueCreditInput = panel.getByRole('spinbutton', { name: 'Due date credit percentage' });
+    await dueCreditInput.fill('0');
+
+    await afterDueDateSelect.click();
+    await page.getByRole('option', { name: /Allow practice submissions/ }).click();
+
+    const errorMessage = 'Deadline credits must strictly decrease over time.';
+    await expect(panel.getByText(errorMessage)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    await dueCreditInput.fill('100');
+
+    await expect(page.getByText(errorMessage)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Access control updated successfully.')).toBeVisible();
   });
 
   test('can delete an override', async ({ page, courseInstance, testCoursePath }) => {

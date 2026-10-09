@@ -2,6 +2,15 @@ import type { Marked } from 'marked';
 
 const startMath = /(\$|\\\(|\\\[)/;
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 /**
  * Adds an extension to marked to handle math in a manner compatible with our
  * use of Mathjax in PrairieLearn.
@@ -11,8 +20,16 @@ const startMath = /(\$|\\\(|\\\[)/;
  * client-side code, this is `window.MathJax` (ensure `MathJax.startup.promise`
  * has been resolved). In server-side code, this is the result of
  * `require('mathjax').init()`.
+ * @param options - Optional rendering settings.
+ * @param options.mathClass - Wrap each math token in a span with this class,
+ * allowing callers to track rendered equations.
  */
-export function addMathjaxExtension(marked: Marked, MathJax: any) {
+export function addMathjaxExtension(
+  marked: Marked,
+  MathJax: any,
+  { mathClass }: { mathClass?: string } = {},
+) {
+  const escapedMathClass = mathClass === undefined ? undefined : escapeHtml(mathClass);
   const mathjaxInput = MathJax.startup.getInputJax() ?? [];
   marked.use({
     hooks: {
@@ -75,19 +92,17 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
               return {
                 type: 'math',
                 raw,
-                text: raw
-                  .replaceAll('&', '&amp;')
-                  .replaceAll('<', '&lt;')
-                  .replaceAll('>', '&gt;')
-                  .replaceAll('"', '&quot;')
-                  .replaceAll("'", '&#39;'),
+                text: escapeHtml(raw),
               };
             }
           }
           // Did not find any math.
           return undefined;
         },
-        renderer: ({ text }) => text,
+        renderer: ({ text }) =>
+          escapedMathClass === undefined
+            ? text
+            : `<span class="${escapedMathClass}">${text}</span>`,
       },
     ],
   });

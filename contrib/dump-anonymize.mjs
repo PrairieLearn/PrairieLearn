@@ -39,10 +39,7 @@ function anonymizeJSON(contents) {
     }
 
     if (instance['uids']) {
-      const newUids = [];
-      for (const uid of instance.uids) {
-        newUids.push(getUUID(newUserUids, uid));
-      }
+      const newUids = Array.from(instance.uids, (uid) => getUUID(newUserUids, uid));
       instance.uids = newUids;
     }
   }

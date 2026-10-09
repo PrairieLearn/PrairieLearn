@@ -1,5 +1,24 @@
 # @prairielearn/sentry
 
+## 6.0.0
+
+### Major Changes
+
+- 08f657e: Upgrade to Sentry v11, remove the obsolete SentryContextManager export, and link errors to independently managed OpenTelemetry traces. Preserve manual Express error capture and restrictive HTTP data collection defaults, and adopt v11's message stack traces and source context defaults.
+
+## 5.0.11
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- ca2bd16: Upgrade execa to v10 for Git release detection.
+
+## 5.0.10
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 5.0.9
 
 ### Patch Changes

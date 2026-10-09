@@ -30,6 +30,9 @@ export function unicornConfig(): TSESLint.FlatConfig.ConfigArray {
         'unicorn/dom-node-dataset': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2261095992
         'unicorn/prefer-export-from': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252265000
         'unicorn/prefer-string-raw': 'off', // We don't use `String.raw` in our codebase
+        'unicorn/prefer-combined-guards': 'off', // Nested guards can make distinct conditions clearer
+        'unicorn/prefer-smaller-scope': 'off', // Declaration placement is contextual
+        'unicorn/prefer-group-by': 'off', // Map.groupBy is unavailable in our target lib
         'unicorn/prefer-ternary': 'off', // if/else can be more readable than a ternary
         'unicorn/prefer-top-level-await': 'off', // we use this on a lot of pages
         'unicorn/prefer-type-error': 'off',
@@ -96,32 +99,15 @@ export function unicornConfig(): TSESLint.FlatConfig.ConfigArray {
 
         // These rules can be considered in focused autofix or cleanup PRs.
         'unicorn/logical-assignment-operators': 'off', // 40 violations
-        'unicorn/no-array-from-fill': 'off', // 1 violation
         'unicorn/no-negated-array-predicate': 'off', // 26 violations
-        'unicorn/no-subtraction-comparison': 'off', // 1 violation
         'unicorn/no-unnecessary-boolean-comparison': 'off', // 13 violations
-        'unicorn/no-unnecessary-fetch-options': 'off', // 1 violation
-        'unicorn/no-unnecessary-nested-ternary': 'off', // 3 violations
-        'unicorn/no-unnecessary-splice': 'off', // 5 violations
         'unicorn/no-useless-coercion': 'off', // 43 violations
-        'unicorn/no-useless-concat': 'off', // 3 violations
-        'unicorn/no-useless-continue': 'off', // 2 violations
         'unicorn/no-useless-template-literals': 'off', // 32 violations
         'unicorn/operator-assignment': 'off', // 10 violations
-        'unicorn/prefer-add-event-listener-options': 'off', // 2 violations
-        'unicorn/prefer-array-from-map': 'off', // 23 violations
-        'unicorn/prefer-array-iterable-methods': 'off', // 1 violation
         'unicorn/prefer-direct-iteration': 'off', // 15 violations
-        'unicorn/prefer-hoisting-branch-code': 'off', // 7 violations
         'unicorn/prefer-includes-over-repeated-comparisons': 'off', // 10 violations
-        'unicorn/prefer-math-abs': 'off', // 1 violation
         'unicorn/prefer-object-iterable-methods': 'off', // 19 violations
-        'unicorn/prefer-simple-sort-comparator': 'off', // 1 violation
-        'unicorn/prefer-simplified-conditions': 'off', // 3 violations
         'unicorn/prefer-string-repeat': 'off', // 16 violations
-        'unicorn/prefer-type-literal-last': 'off', // 1 violation
-        'unicorn/prefer-unary-minus': 'off', // 2 violations
-        'unicorn/prefer-url-href': 'off', // 5 violations
 
         // These rules require confirming browser and runtime support before enabling them.
         'unicorn/prefer-array-from-async': 'off', // 5 violations

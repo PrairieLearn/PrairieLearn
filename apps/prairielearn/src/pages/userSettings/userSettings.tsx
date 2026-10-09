@@ -6,14 +6,19 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
 import { UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
+import { getUserTrpcUrl } from '../../lib/client/url.js';
+import { getClientIpAddress } from '../../lib/client-ip.js';
+import { config } from '../../lib/config.js';
 import { AccessTokenSchema, InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
 import { isEnterprise } from '../../lib/license.js';
+import { selectUserSettings } from '../../models/user-settings.js';
 
 import { UserSettingsPage } from './components/UserSettingsPage.js';
 
@@ -31,6 +36,7 @@ router.get(
       { user_id: authn_user.id },
       AccessTokenSchema,
     );
+    const userSettings = await selectUserSettings({ user_id: authn_user.id });
 
     // If the raw tokens are present for any of these hashes, include them
     // in this response and then delete them from memory
@@ -54,6 +60,10 @@ router.get(
     });
 
     const isExamMode = mode !== 'Public';
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: getUserTrpcUrl(), authn_user_id: authn_user.id },
+      config.secretKey,
+    );
 
     res.send(
       PageLayout({
@@ -78,10 +88,13 @@ router.get(
                   short_name: authn_institution.short_name,
                 }}
                 authnProviderName={res.locals.authn_provider_name}
+                ipAddress={getClientIpAddress(req)}
                 accessTokens={isExamMode ? [] : UserAccessTokenSchema.array().parse(accessTokens)}
                 newAccessTokens={isExamMode ? [] : newAccessTokens}
                 isExamMode={isExamMode}
                 csrfToken={res.locals.__csrf_token}
+                trpcCsrfToken={trpcCsrfToken}
+                initialEnableSingleKeyShortcuts={userSettings.enable_single_key_shortcuts}
               />
             </Hydrate>
             {

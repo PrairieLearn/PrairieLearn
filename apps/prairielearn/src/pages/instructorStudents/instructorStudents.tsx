@@ -5,11 +5,12 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callScalar } from '@prairielearn/postgres';
+import { callScalar, runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import * as Sentry from '@prairielearn/sentry';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
-import { UniqueUidsFromStringSchema, parseRequestBody } from '@prairielearn/zod';
+import { IdSchema, UniqueUidsFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -19,10 +20,11 @@ import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import type { CourseInstance } from '../../lib/db-types.js';
+import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
+import { applyStudentSyncLabels, parseStudentSyncCsv } from '../../lib/student-sync.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
@@ -33,11 +35,19 @@ import {
   selectOptionalEnrollmentByUid,
   selectUsersAndEnrollmentsForCourseInstance,
 } from '../../models/enrollment.js';
-import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
+import {
+  addLabelToEnrollment,
+  selectStudentLabelsInCourseInstance,
+} from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
+import { MAX_STUDENT_LABELS_PER_COURSE_INSTANCE } from '../../schemas/infoCourseInstance.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
-import { StudentRowSchema } from './instructorStudents.shared.js';
+import {
+  StudentRowSchema,
+  SyncCsvSchema,
+  type SyncLabelUpdate,
+} from './instructorStudents.shared.js';
 
 const router = Router();
 
@@ -91,10 +101,16 @@ router.get(
 const InviteUidsBodySchema = z.object({
   __action: z.literal('invite_uids'),
   uids: UniqueUidsFromStringSchema(1000),
+  labelIds: z
+    .array(IdSchema)
+    .max(MAX_STUDENT_LABELS_PER_COURSE_INSTANCE)
+    .default([])
+    .transform((ids) => [...new Set(ids)]),
 });
 
 const SyncStudentsBodySchema = z.object({
   __action: z.literal('sync_students'),
+  csv: SyncCsvSchema.optional(),
   toInvite: z.array(z.email()).max(5000),
   toCancelInvitation: z.array(z.email()).max(5000),
   toRemove: z.array(z.email()).max(5000),
@@ -103,6 +119,7 @@ const SyncStudentsBodySchema = z.object({
 const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
 
 interface InviteCounts {
+  labeledExisting: number;
   invited: number;
   unblocked: number;
   reenrolled: number;
@@ -123,6 +140,8 @@ async function processInvitations({
   skipBlocked,
   allowReenroll,
   actionDetail = 'invited',
+  labels = [],
+  syncLabels,
 }: {
   uids: string[];
   courseInstance: CourseInstance;
@@ -140,6 +159,8 @@ async function processInvitations({
    */
   allowReenroll: boolean;
   actionDetail?: 'invited' | 'invited_by_manual_sync';
+  labels?: StudentLabel[];
+  syncLabels?: { updates: Map<string, SyncLabelUpdate>; labelsById: Map<string, StudentLabel> };
 }): Promise<void> {
   for (const uid of uids) {
     try {
@@ -157,12 +178,53 @@ async function processInvitations({
         }
       }
 
+      const update = syncLabels?.updates.get(uid);
+      if (update && syncLabels) {
+        const status = await applyStudentSyncLabels({
+          update,
+          courseInstance,
+          authzData,
+          labelsById: syncLabels.labelsById,
+        });
+        if (status === 'blocked') {
+          job.info(`${uid}: Unblocked`);
+          counts.unblocked++;
+        } else if (status === 'removed') {
+          job.info(`${uid}: Reenrolled`);
+          counts.reenrolled++;
+        } else if (status === 'joined' || status === 'invited') {
+          job.info(`${uid}: Labels updated`);
+          counts.labeledExisting++;
+        } else {
+          job.info(`${uid}: Invited`);
+          counts.invited++;
+        }
+        continue;
+      }
+
       const existingEnrollment = await selectOptionalEnrollmentByUid({
         courseInstance,
         uid,
         requiredRole: ['Student Data Viewer'],
         authzData,
       });
+
+      if (
+        existingEnrollment &&
+        ['joined', 'invited'].includes(existingEnrollment.status) &&
+        labels.length > 0
+      ) {
+        await runInTransactionAsync(async () => {
+          for (const label of labels) {
+            await addLabelToEnrollment({ enrollment: existingEnrollment, label, authzData });
+          }
+        });
+        job.info(
+          `${uid}: Applied selected labels (already ${existingEnrollment.status === 'joined' ? 'enrolled' : 'invited'})`,
+        );
+        counts.labeledExisting++;
+        continue;
+      }
 
       if (existingEnrollment?.status === 'joined') {
         job.info(`${uid}: Skipped (already enrolled)`);
@@ -207,16 +269,25 @@ async function processInvitations({
         continue;
       }
 
-      await inviteStudentByUid({
-        courseInstance,
-        uid,
-        requiredRole: ['Student Data Editor'],
-        authzData,
-        actionDetail,
+      // Keep each invitation and its labels atomic while allowing other students in the batch to succeed.
+      await runInTransactionAsync(async () => {
+        const enrollment = await inviteStudentByUid({
+          courseInstance,
+          uid,
+          requiredRole: ['Student Data Editor'],
+          authzData,
+          actionDetail,
+        });
+        for (const label of labels) {
+          await addLabelToEnrollment({ enrollment, label, authzData });
+        }
       });
       job.info(`${uid}: Invited`);
       counts.invited++;
     } catch (error) {
+      if (actionDetail === 'invited_by_manual_sync' && !(error instanceof HttpStatusError)) {
+        Sentry.captureException(error);
+      }
       const message = error instanceof Error ? error.message : 'Unknown error';
       job.error(`${uid}: Error - ${message}`);
       counts.errors++;
@@ -253,6 +324,18 @@ router.post(
 
     switch (body.__action) {
       case 'invite_uids': {
+        const availableLabels = await selectStudentLabelsInCourseInstance(courseInstance);
+        const labelsById = new Map(availableLabels.map((label) => [label.id, label]));
+        const labels = body.labelIds.map((id) => {
+          const label = labelsById.get(id);
+          if (!label) {
+            throw new HttpStatusError(
+              400,
+              'A selected label is no longer available. Refresh the page and select labels again.',
+            );
+          }
+          return label;
+        });
         const serverJob = await createServerJob({
           type: 'invite_students',
           description: 'Invite students to course instance',
@@ -264,6 +347,7 @@ router.post(
 
         serverJob.executeInBackground(async (job) => {
           const counts: InviteCounts = {
+            labeledExisting: 0,
             invited: 0,
             unblocked: 0,
             reenrolled: 0,
@@ -283,11 +367,13 @@ router.post(
             counts,
             skipBlocked: true,
             allowReenroll: false,
+            labels,
           });
 
           job.info('\nSummary:');
           job.info(`  Successfully invited: ${counts.invited}`);
           const summaryLines: [number, string][] = [
+            [counts.labeledExisting, 'Applied selected labels to existing students'],
             [counts.skippedAlreadyJoined, 'Skipped (already enrolled)'],
             [counts.skippedAlreadyInvited, 'Skipped (already invited)'],
             [counts.skippedAlreadyBlocked, 'Skipped (blocked)'],
@@ -306,7 +392,45 @@ router.post(
         break;
       }
       case 'sync_students': {
-        const { toInvite, toCancelInvitation, toRemove } = body;
+        const { toInvite, toCancelInvitation, toRemove, csv } = body;
+        const labels = csv ? await selectStudentLabelsInCourseInstance(courseInstance) : [];
+        const labelsById = new Map(labels.map((label) => [label.id, label]));
+        const updates = new Map(csv?.labelUpdates.map((update) => [update.uid, update]));
+        if (csv) {
+          const rows = await parseStudentSyncCsv(csv.text, labels);
+          const actions = [...toInvite, ...toCancelInvitation, ...toRemove];
+          if (
+            new Set(actions).size !== actions.length ||
+            updates.size !== csv.labelUpdates.length ||
+            toInvite.some((uid) => !rows.has(uid)) ||
+            [...toCancelInvitation, ...toRemove].some((uid) => rows.has(uid))
+          ) {
+            throw new HttpStatusError(
+              400,
+              'The selected changes do not match the CSV. Compare the student list again.',
+            );
+          }
+          for (const update of updates.values()) {
+            const desired = rows.get(update.uid);
+            if (
+              !desired?.every((id) => update.labelIds.includes(id)) ||
+              new Set(update.labelIds).size !== desired.length ||
+              (!toInvite.includes(update.uid) &&
+                !['joined', 'invited'].includes(update.expected?.status ?? ''))
+            ) {
+              throw new HttpStatusError(
+                400,
+                'The selected label changes do not match the CSV. Compare the student list again.',
+              );
+            }
+          }
+          if (toInvite.some((uid) => rows.get(uid) !== undefined && !updates.has(uid))) {
+            throw new HttpStatusError(
+              400,
+              'Include label changes for each selected invitation. Compare the student list again.',
+            );
+          }
+        }
 
         const serverJob = await createServerJob({
           type: 'sync_students',
@@ -319,6 +443,7 @@ router.post(
 
         serverJob.executeInBackground(async (job) => {
           const syncCounts: InviteCounts = {
+            labeledExisting: 0,
             invited: 0,
             unblocked: 0,
             reenrolled: 0,
@@ -334,10 +459,11 @@ router.post(
           let removed = 0;
           let removeErrors = 0;
 
-          if (toInvite.length > 0) {
+          const syncUids = [...new Set([...toInvite, ...updates.keys()])];
+          if (syncUids.length > 0) {
             job.info('Processing invitations...');
             await processInvitations({
-              uids: toInvite,
+              uids: syncUids,
               courseInstance,
               authzData,
               job,
@@ -345,6 +471,7 @@ router.post(
               skipBlocked: false,
               allowReenroll: true,
               actionDetail: 'invited_by_manual_sync',
+              syncLabels: { updates, labelsById },
             });
           }
 
@@ -377,6 +504,7 @@ router.post(
                 job.info(`${uid}: Invitation cancelled`);
                 cancelled++;
               } catch (error) {
+                if (!(error instanceof HttpStatusError)) Sentry.captureException(error);
                 const message = error instanceof Error ? error.message : 'Unknown error';
                 job.error(`${uid}: Error - ${message}`);
                 cancelErrors++;
@@ -412,6 +540,7 @@ router.post(
                 job.info(`${uid}: Removed`);
                 removed++;
               } catch (error) {
+                if (!(error instanceof HttpStatusError)) Sentry.captureException(error);
                 const message = error instanceof Error ? error.message : 'Unknown error';
                 job.error(`${uid}: Error - ${message}`);
                 removeErrors++;
@@ -425,6 +554,7 @@ router.post(
           job.info(`  Removed: ${removed}`);
           const totalErrors = syncCounts.errors + cancelErrors + removeErrors;
           const syncSummaryLines: [number, string][] = [
+            [syncCounts.labeledExisting, 'Labels updated'],
             [syncCounts.unblocked, 'Unblocked'],
             [syncCounts.reenrolled, 'Reenrolled'],
             [syncCounts.skippedAlreadyJoined, 'Skipped (already joined)'],
@@ -436,6 +566,11 @@ router.post(
             if (count > 0) {
               job.info(`  ${label}: ${count}`);
             }
+          }
+          if (totalErrors > 0) {
+            job.fail(
+              'Some students could not be synchronized. Review the errors above and compare the student list again.',
+            );
           }
         });
 
@@ -532,7 +667,6 @@ router.get(
         content: (
           <Hydrate fullHeight>
             <InstructorStudents
-              isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
               studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}

@@ -220,7 +220,7 @@ If you want to disable self-enrollment after a certain date, you can set the `be
 
 #### Completely disabling self-enrollment
 
-If you want to disable self-enrollment completely, you can set the `enabled` property to `false` in the `selfEnrollment` section of `infoCourseInstance.json`. This will mean that only invited students can enroll in the course instance, not via a direct link or enrollment code.
+If you want to disable self-enrollment completely, you can set the `enabled` property to `false` in the `selfEnrollment` section of `infoCourseInstance.json`. This will mean that only invited students can enroll in the course instance, and a direct link or enrollment code is not sufficient to enroll.
 
 ```json title="infoCourseInstance.json"
 {
@@ -239,6 +239,8 @@ If you want to disable self-enrollment completely, you can set the `enabled` pro
 #### Inviting students
 
 Students can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage. If a student rejects an invitation, they can still join via a link to the course. However, the invitation will not show up on their homepage until they are re-invited. If an invited student accesses any link to the course (regardless of the current self-enrollment settings), they will automatically join the course.
+
+Note that invited students are not notified of their invitations. Instructors need to notify students using their own communication channels (e.g., email, LMS announcements, etc.), instructing students to visit PrairieLearn or the course instance self-enrollment link and accept the invitation.
 
 #### Blocking students
 
@@ -270,7 +272,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 ## Student labels
 
-Student labels let you organize students with colored badges. Use them for sections, TA assignments, accommodations, or any other grouping. Each course instance can have up to 100 student labels.
+Student labels let you organize students with colored badges. Use them for sections, TA assignments, accommodations, or any other grouping. Each course instance can have up to 100 student labels. Label names cannot contain semicolons (`;`).
 
 To review configured labels and their assigned students, go to **Students → Labels**. Users with student data viewer access can view that page. Users who have both course editor and student data editor access can create, rename, delete, and assign labels there by entering UIDs. Student data editors can also apply existing labels from the main Students page using batch actions, or from an individual student's page.
 

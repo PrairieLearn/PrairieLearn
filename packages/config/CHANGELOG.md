@@ -1,5 +1,17 @@
 # @prairielearn/config
 
+## 5.1.3
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 5.1.2
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 5.1.1
 
 ### Patch Changes

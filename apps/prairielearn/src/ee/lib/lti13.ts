@@ -7,7 +7,7 @@ import * as jose from 'jose';
 import * as client from 'openid-client';
 import { z } from 'zod';
 
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError, formatErrorStack } from '@prairielearn/error';
 import {
   execute,
   loadSqlEquiv,
@@ -27,12 +27,14 @@ import {
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import { ltiFetch } from '../../lib/lti-fetch.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectOptionalUserByUin } from '../../models/user.js';
 import { selectOptionalUserByLti13Sub } from '../models/lti13-user.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
+import { getLti13CourseDisplayName } from './lti13-course-instance.js';
 import {
   Lti13MembershipIndex,
   RosterMemberSchema,
@@ -227,6 +229,8 @@ export async function getOpenidClientConfig(
     ),
   );
 
+  openidClientConfig[client.customFetch] = ltiFetch as client.CustomFetch;
+
   // Only for testing
   if (config.devMode) {
     // eslint-disable-next-line @typescript-eslint/no-deprecated
@@ -277,6 +281,11 @@ export class Lti13Claim {
   get target_link_uri() {
     this.assertValid();
     return this.claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'];
+  }
+
+  get sub() {
+    this.assertValid();
+    return this.claims.sub;
   }
 
   get lineitems() {
@@ -477,7 +486,7 @@ async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: str
 
 export async function syncLineitems(instance: Lti13CombinedInstance, job: ServerJob) {
   job.info(
-    `Polling for external assignments from ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
+    `Polling for external assignments from ${instance.lti13_instance.name} ${getLti13CourseDisplayName(instance.lti13_course_instance)}`,
   );
   const lineitems = await getLineitems(instance);
   job.info(`Found ${lineitems.length} assignments.`);
@@ -534,7 +543,7 @@ export async function createAndLinkLineitem(
   };
 
   job.info(
-    `Creating assignment for ${assessment.label} in ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
+    `Creating assignment for ${assessment.label} in ${instance.lti13_instance.name} ${getLti13CourseDisplayName(instance.lti13_course_instance)}`,
   );
 
   const token = await getAccessToken(instance.lti13_instance.id);
@@ -630,20 +639,20 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  * @returns Node fetch response object
  */
 export async function fetchRetry(
-  input: RequestInfo | URL,
+  input: string | URL,
   opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
   },
-): Promise<Response> {
+): ReturnType<typeof ltiFetch> {
   const fetchRetryOpts = {
     retryLeft: 5,
     sleepMs: 1000,
     ...incomingfetchRetryOpts,
   };
   try {
-    const response = await fetch(input, opts);
+    const response = await ltiFetch(input, opts);
 
     if (response.ok) {
       return response;
@@ -735,7 +744,7 @@ export async function fetchRetry(
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetryPaginated(
-  input: RequestInfo | URL,
+  input: string | URL,
   opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
@@ -743,9 +752,7 @@ export async function fetchRetryPaginated(
   },
 ): Promise<unknown[]> {
   const output: unknown[] = [];
-  const origin = new URL(
-    typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
-  ).origin;
+  const origin = new URL(input).origin;
 
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
@@ -823,7 +830,7 @@ async function loadLti13MembershipIndex(
   const url = getLti13RosterUrl(instance, lti13_course_instance.resource_link_id);
   const rawRosterPages = await fetchLti13RosterPages(instance, url);
 
-  const memberships = parseContextMemberships(rawRosterPages, lti13_course_instance.context_id);
+  const memberships = parseContextMemberships(rawRosterPages);
 
   return new Lti13MembershipIndex(memberships, {
     institution_id: lti13_instance.institution_id,
@@ -845,6 +852,8 @@ export async function updateLti13Scores({
   instance: Lti13CombinedInstance;
   job: ServerJob;
 }) {
+  const lti13CourseName = getLti13CourseDisplayName(instance.lti13_course_instance);
+
   // Get the assessment metadata
   const assessment = await queryRow(
     sql.select_assessment_for_lti13_scores,
@@ -861,7 +870,7 @@ export async function updateLti13Scores({
 
   job.info(
     `Working on assessment ${assessment.title} (${assessment.tid}) in ` +
-      `${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      `${instance.lti13_instance.name} course ${lti13CourseName}`,
   );
 
   const assessment_instances = await queryRows(
@@ -902,7 +911,7 @@ export async function updateLti13Scores({
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
           ` Course staff ${user.uid} is excluded from grade passback` +
-          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+          ` in ${instance.lti13_instance.name} course ${lti13CourseName}`,
       );
       counts.not_sent++;
       continue;
@@ -915,7 +924,7 @@ export async function updateLti13Scores({
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
           ` Could not find student ${user.uid}` +
-          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+          ` in ${instance.lti13_instance.name} course ${lti13CourseName}`,
       );
       counts.not_sent++;
       continue;
@@ -955,7 +964,7 @@ export async function updateLti13Scores({
       counts.success++;
     } catch (error: any) {
       counts.error++;
-      job.warn(`\t${error.message}`);
+      job.warn(formatErrorStack(error));
       if (error instanceof AugmentedError && error.data.body) {
         job.verbose(error.data.body);
       }
@@ -966,9 +975,7 @@ export async function updateLti13Scores({
   job.info(`${counts.error} score${counts.error === 1 ? '' : 's'} not sent due to errors.`);
   if (counts.error > 0 && counts.success === 0) {
     job.warn('\tNo scores successfully sent and errors are present.');
-    job.warn(
-      `\tIs the ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label} course published?`,
-    );
+    job.warn(`\tIs the ${instance.lti13_instance.name} ${lti13CourseName} course published?`);
   }
   job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
 }
@@ -992,7 +999,7 @@ export async function inspectRoster({
   const url = getLti13RosterUrl(instance, rlid);
 
   job.info(
-    `Fetching roster for ${lti13_instance.name}: ${lti13_course_instance.context_label ?? '(no context label)'}`,
+    `Fetching roster for ${lti13_instance.name}: ${getLti13CourseDisplayName(lti13_course_instance)}`,
   );
   job.info(`NRPS URL: ${url}`);
   if (rlid) {

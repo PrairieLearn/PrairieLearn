@@ -139,6 +139,33 @@ test.describe('Question settings', () => {
   });
 });
 
+test('validates public registries in both image fields', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'addNumbers',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/question/${question.id}/settings`);
+  await page.getByLabel('Grading method').selectOption('Internal');
+  await page.getByRole('checkbox', { name: 'Workspace', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'External grading', exact: true }).check();
+
+  const images = page.getByRole('textbox', { name: 'Image', exact: true });
+  await images.nth(0).fill('internal-host:5000/team/image:tag');
+  await images.nth(1).fill('ghcr.io.evil.example/org/image:tag');
+  await expect(images.nth(0)).toHaveAccessibleDescription(/Docker Hub.*ghcr.io.*public.ecr.aws/);
+  await expect(images.nth(1)).toHaveAccessibleDescription(
+    /docker\.io\/org\/image:tag.*ghcr\.io\/org\/image:tag.*Custom registry domains/,
+  );
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(images.nth(0)).toHaveAttribute('aria-invalid', 'true');
+  await expect(images.nth(1)).toHaveAttribute('aria-invalid', 'true');
+
+  await images.nth(0).fill('org/workspace:tag');
+  await images.nth(1).fill('ghcr.io/org/grader:tag');
+  await expect(images.nth(0)).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(images.nth(1)).not.toHaveAttribute('aria-invalid', 'true');
+});
+
 test.describe('Question deletion', () => {
   test('deletes a question whose removal would leave an assessment with no zones', async ({
     page,

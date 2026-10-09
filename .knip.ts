@@ -86,7 +86,7 @@ const CLI_ONLY_DEPS = [
   'pyright',
   's3rver',
   '@postgres-language-server/cli',
-  '@typescript/native-preview',
+  '@typescript/native',
   '@prairielearn/pin-github-actions',
 ];
 
@@ -112,12 +112,14 @@ const infoJsonDependencies = infoJsonContents.flatMap((infoJson) => [
 // TS / TSX source. Example match: `nodeModulesAssetPath('highlight.js/styles/default.css')`.
 const assetPathRegex = /nodeModulesAssetPath\(\s*'([^']*)'\s*\)/g;
 
-const sourceFiles = await globby('apps/prairielearn/**/*.{ts,tsx}');
+// Restrict the scan to first-party source; traversing dependency symlinks can
+// exhaust file descriptors when the matched files are read concurrently.
+const sourceFiles = await globby('apps/prairielearn/{src,assets}/**/*.{ts,tsx}');
 const sourceFileDependencies = (
   await Promise.all(
     sourceFiles.map(async (path) => {
       const content = await readFile(path, 'utf-8');
-      return [...content.matchAll(assetPathRegex)].map((match) => match[1]);
+      return Array.from(content.matchAll(assetPathRegex), (match) => match[1]);
     }),
   )
 ).flat();

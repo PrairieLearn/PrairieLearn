@@ -903,7 +903,7 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
 
       describe('Changing rubric grader guidelines', () => {
         const grader_guidelines =
-          'Accept answers with an absolute error of at most 0.01. Be lenient when grading arithmetic mistakes.';
+          'Accept answers with an absolute error of at most `0.01`.\n\nBe lenient when grading arithmetic mistakes.';
         test('update rubric grader guidelines should succeed', async () => {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
@@ -930,6 +930,15 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
         });
 
         checkSettingsResults(0, -0.5, 0.5, grader_guidelines);
+
+        test('grader guidelines should render Markdown formatting', async () => {
+          const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+          const graderGuidelines = $manualGradingIQPage('[data-testid="grader-guidelines"]');
+
+          assert.equal(graderGuidelines.children('p').length, 2);
+          assert.equal(graderGuidelines.find('code').text(), '0.01');
+        });
       });
 
       describe('Grading without rubric items', () => {

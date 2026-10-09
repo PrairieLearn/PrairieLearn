@@ -2,8 +2,9 @@ import { useMutation } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 
+import { getAppError } from '@prairielearn/trpc/client';
+
 import type { SafeQuestionsPageData } from '../../../components/QuestionsTable.shared.js';
-import { getAppError } from '../../../lib/client/errors.js';
 import type { PublicTopic } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { QuestionsError } from '../../../trpc/course/questions.js';

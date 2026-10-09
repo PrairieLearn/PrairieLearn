@@ -1,5 +1,24 @@
 # @prairielearn/named-locks
 
+## 4.0.11
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 4.0.10
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.9
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
 ## 4.0.8
 
 ### Patch Changes

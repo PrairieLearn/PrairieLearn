@@ -1,9 +1,11 @@
 import { compareItems, rankItem } from '@tanstack/match-sorter-utils';
-import type { Column } from '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { type ReactNode, useId, useState } from 'react';
 import { Button, DialogTrigger, Popover } from 'react-aria-components';
 import Form from 'react-bootstrap/Form';
+
+import type { TanstackTableColumn } from '../tanstack-table.js';
 
 export type MultiSelectFilterMode = 'include' | 'exclude';
 
@@ -38,7 +40,7 @@ function defaultRenderValueLabel({ value }: { value: string }) {
  * @param params.showModeToggle - Whether to show the "Include" / "Exclude" toggle.
  * Disable for columns where the two modes are redundant (e.g. boolean columns).
  */
-export function MultiSelectColumnFilter<TData, TValue extends string = string>({
+export function MultiSelectColumnFilter<TData extends RowData, TValue extends string = string>({
   column,
   allColumnValues,
   getSearchText = (value) => value,
@@ -47,7 +49,7 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
   showSearch = false,
   showModeToggle = true,
 }: {
-  column: Column<TData, unknown>;
+  column: TanstackTableColumn<TData>;
   allColumnValues: TValue[] | readonly TValue[];
   getSearchText?: (value: TValue) => string;
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => ReactNode;

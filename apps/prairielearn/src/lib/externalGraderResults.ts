@@ -184,18 +184,17 @@ async function processMessage(data: {
       // We have the data!
       await processResults(jobId, data.data);
       return;
-    } else {
-      // We should fetch it from S3, and then process it
-      const s3Client = new S3(makeS3ClientConfig());
-      const data = await s3Client.getObject({
-        Bucket: s3Bucket,
-        Key: `${s3RootKey}/results.json`,
-        ResponseContentType: 'application/json',
-      });
-      if (!data.Body) throw new Error('No body in S3 response');
-      await processResults(jobId, await data.Body.transformToString());
-      return;
     }
+
+    // We should fetch it from S3, and then process it
+    const s3Client = new S3(makeS3ClientConfig());
+    const s3Object = await s3Client.getObject({
+      Bucket: s3Bucket,
+      Key: `${s3RootKey}/results.json`,
+      ResponseContentType: 'application/json',
+    });
+    if (!s3Object.Body) throw new Error('No body in S3 response');
+    await processResults(jobId, await s3Object.Body.transformToString());
   } else {
     throw new error.AugmentedError(`Unknown grading event: ${data.event}`, { data });
   }

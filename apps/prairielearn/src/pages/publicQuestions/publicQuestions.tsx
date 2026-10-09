@@ -4,7 +4,6 @@ import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
-import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { selectPublicQuestionsForCourse } from '../../models/questions.js';
@@ -47,7 +46,6 @@ router.get(
               urlPrefix={res.locals.urlPrefix}
               qidPrefix={qidPrefix}
               search={search}
-              isDevMode={config.devMode}
             />
           </Hydrate>
         ),

@@ -15,19 +15,19 @@ type Prompt = (string | string[])[];
 export type AiImageGradingResponses =
   | {
       rotationCorrectionApplied: false;
-      finalGradingResponse: GenerateTextResult<any, any>;
+      finalGradingResponse: GenerateTextResult<any, any, any>;
     }
   | {
       rotationCorrectionApplied: true;
-      finalGradingResponse: GenerateTextResult<any, any>;
+      finalGradingResponse: GenerateTextResult<any, any, any>;
       rotationCorrections: Record<
         string,
         {
           degreesRotated: CounterClockwiseRotationDegrees;
-          response: GenerateTextResult<any, any>;
+          response: GenerateTextResult<any, any, any>;
         }
       >;
-      gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
+      gradingResponseWithRotationIssue: GenerateTextResult<any, any, any>;
     };
 
 /**
@@ -45,7 +45,7 @@ export function logResponseUsage({
   response,
   logger,
 }: {
-  response: GenerateTextResult<any, any>;
+  response: GenerateTextResult<any, any, any>;
   logger: { info: (msg: string) => void };
 }) {
   const usage = response.usage;
@@ -63,7 +63,7 @@ export function logResponsesUsage({
   responses,
   logger,
 }: {
-  responses: GenerateTextResult<any, any>[];
+  responses: GenerateTextResult<any, any, any>[];
   logger: { info: (msg: string) => void };
 }) {
   const { inputTokens, cachedInputTokens, outputTokens, reasoningTokens, totalTokens } =

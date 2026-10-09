@@ -11,6 +11,7 @@ import {
 const SECRET_KEY = 'test-secret-key';
 const OLD_SECRET_KEY = 'old-test-secret-key';
 const TEST_DATA = { url: '/test', authn_user_id: '123' };
+const TEST_DATA_WITH_ALTERNATE_CLAIM = { url: '/test', user_id: '123' };
 
 describe('generateSignedToken', () => {
   it('generates a token that can be validated', () => {
@@ -78,16 +79,49 @@ describe('getCheckedSignedTokenData', () => {
 
 describe('generatePrefixCsrfToken', () => {
   it('generates a token with type prefix', () => {
-    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA_WITH_ALTERNATE_CLAIM, SECRET_KEY);
 
     const tokenData = getCheckedSignedTokenData(token, SECRET_KEY);
     assert.equal(tokenData.type, 'prefix');
-    assert.equal(tokenData.url, TEST_DATA.url);
-    assert.equal(tokenData.authn_user_id, TEST_DATA.authn_user_id);
+    assert.equal(tokenData.url, TEST_DATA_WITH_ALTERNATE_CLAIM.url);
+    assert.equal(tokenData.user_id, TEST_DATA_WITH_ALTERNATE_CLAIM.user_id);
+  });
+
+  it('rejects data without a defined claim', () => {
+    assert.throws(
+      // @ts-expect-error Testing runtime validation for JavaScript callers.
+      () => generatePrefixCsrfToken({ url: '/test' }, SECRET_KEY),
+      'Prefix CSRF token data must contain at least one defined claim',
+    );
+    assert.throws(
+      () => generatePrefixCsrfToken({ url: '/test', user_id: undefined }, SECRET_KEY),
+      'Prefix CSRF token data must contain at least one defined claim',
+    );
+  });
+
+  it('rejects the reserved type claim', () => {
+    assert.throws(
+      () =>
+        generatePrefixCsrfToken(
+          {
+            ...TEST_DATA_WITH_ALTERNATE_CLAIM,
+            // @ts-expect-error Testing runtime validation for JavaScript callers.
+            type: 'custom',
+          },
+          SECRET_KEY,
+        ),
+      'Prefix CSRF token data cannot contain the reserved "type" claim',
+    );
   });
 });
 
 describe('checkSignedTokenPrefix', () => {
+  it('validates an alternate claim', () => {
+    const token = generatePrefixCsrfToken(TEST_DATA_WITH_ALTERNATE_CLAIM, SECRET_KEY);
+
+    assert.isTrue(checkSignedTokenPrefix(token, TEST_DATA_WITH_ALTERNATE_CLAIM, SECRET_KEY));
+  });
+
   it('validates token when request URL matches prefix exactly', () => {
     const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
@@ -97,8 +131,6 @@ describe('checkSignedTokenPrefix', () => {
   it('validates token when request URL starts with prefix', () => {
     const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
-    // We allow the route itself, both with and without a trailing slash.
-    assert.isTrue(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test' }, SECRET_KEY));
     assert.isTrue(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test/' }, SECRET_KEY));
 
     // We allow deeply nested routes as well.
@@ -118,11 +150,44 @@ describe('checkSignedTokenPrefix', () => {
     assert.isFalse(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/testy' }, SECRET_KEY));
   });
 
-  it('rejects token when user ID does not match', () => {
-    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
+  it('rejects token when claims do not match exactly', () => {
+    const token = generatePrefixCsrfToken(TEST_DATA_WITH_ALTERNATE_CLAIM, SECRET_KEY);
 
     assert.isFalse(
-      checkSignedTokenPrefix(token, { ...TEST_DATA, authn_user_id: '456' }, SECRET_KEY),
+      checkSignedTokenPrefix(
+        token,
+        { ...TEST_DATA_WITH_ALTERNATE_CLAIM, user_id: '456' },
+        SECRET_KEY,
+      ),
+    );
+    assert.isFalse(
+      checkSignedTokenPrefix(
+        token,
+        { ...TEST_DATA_WITH_ALTERNATE_CLAIM, role: 'student' },
+        SECRET_KEY,
+      ),
+    );
+  });
+
+  it('rejects a prefix token without a defined claim', () => {
+    const token = generateSignedToken({ url: '/test', type: 'prefix' }, SECRET_KEY);
+
+    assert.isFalse(checkSignedTokenPrefix(token, { url: '/test', user_id: undefined }, SECRET_KEY));
+  });
+
+  it('rejects the reserved type claim in request data', () => {
+    const token = generatePrefixCsrfToken(TEST_DATA_WITH_ALTERNATE_CLAIM, SECRET_KEY);
+
+    assert.isFalse(
+      checkSignedTokenPrefix(
+        token,
+        {
+          ...TEST_DATA_WITH_ALTERNATE_CLAIM,
+          // @ts-expect-error Testing runtime validation for JavaScript callers.
+          type: 'prefix',
+        },
+        SECRET_KEY,
+      ),
     );
   });
 

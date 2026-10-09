@@ -172,6 +172,16 @@ Most of these prerequisites can be installed using the package manager of your O
 
   You may need to restart the PostgreSQL server after changing the file above.
 
+- Configure PostgreSQL to use the UTC timezone:
+
+  ```sh
+  sudo -u postgres psql postgres -c "ALTER SYSTEM SET timezone = 'UTC';"
+  sudo -u postgres psql postgres -c "SELECT pg_reload_conf();"
+  sudo -u postgres psql postgres -c "SHOW timezone;"
+  ```
+
+  The last command should return `UTC`.
+
 ## Configuration
 
 If you have your own [PrairieLearn course repository](../requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. If you need support for the in-browser file editor or file uploads, you should set `filesRoot`. If you need support for workspaces, you should provide a path to a directory into which temporary files will be saved. Here is a sample configuration:

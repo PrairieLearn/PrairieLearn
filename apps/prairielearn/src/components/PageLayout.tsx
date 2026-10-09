@@ -154,9 +154,13 @@ function UnpublishedBannerComponent({
   navContext: NavContext;
   resLocals: UntypedResLocals;
 }) {
-  if (navContext.type !== 'instructor') return null;
-  if (!navContext.page) return null;
-  if (!['instance_admin', 'assessment', 'students'].includes(navContext.page)) return null;
+  if (
+    navContext.type !== 'instructor' ||
+    !navContext.page ||
+    !['instance_admin', 'assessment', 'students'].includes(navContext.page)
+  ) {
+    return null;
+  }
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
   const { course_instance: courseInstance, urlPrefix } = resLocals;
@@ -220,7 +224,11 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Sets the html and body tag heights to 100% */
+    /**
+     * Fills the available height below navigation. Content can provide its own scroll regions;
+     * with side navigation, the main container remains the scroll parent for overflowing content
+     * (for example, when panes switch to a stacked layout).
+     */
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
@@ -236,6 +244,8 @@ export function PageLayout({
     enableNavbar?: boolean;
     /** Whether the navbar should hide all controls associated with the current session. */
     hideNavbarSessionControls?: boolean;
+    /** Enables instructor support on pages without a course authorization context. */
+    showInstructorSupport?: boolean;
     /**
      * Forces the side nav to be in a specific state when the page loads,
      * regardless of the user's previous preference.
@@ -361,33 +371,39 @@ export function PageLayout({
             resolvedOptions.showFooter && 'flex-grow-1',
           )}"
         >
-          ${resolvedOptions.enableNavbar
-            ? html`<div class="app-top-nav">
-                ${Navbar({
-                  resLocals,
-                  navPage: navContext.page,
-                  navSubPage: navContext.subPage,
-                  navbarType: navContext.type,
-                  sideNavEnabled,
-                  hideSessionControls: resolvedOptions.hideNavbarSessionControls,
-                })}
-              </div>`
-            : ''}
-          ${sideNavEnabled
-            ? html`
-                <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
-                  <div class="app-side-nav-scroll">
-                    ${SideNav({
-                      resLocals,
-                      page: navContext.page,
-                      subPage: navContext.subPage,
-                      sideNavExpanded,
-                      persistToggleState: resolvedOptions.forcedInitialNavToggleState === undefined,
-                    })}
-                  </div>
-                </nav>
-              `
-            : ''}
+          ${
+            resolvedOptions.enableNavbar
+              ? html`<div class="app-top-nav">
+                  ${Navbar({
+                    resLocals,
+                    navPage: navContext.page,
+                    navSubPage: navContext.subPage,
+                    navbarType: navContext.type,
+                    sideNavEnabled,
+                    hideSessionControls: resolvedOptions.hideNavbarSessionControls,
+                    showInstructorSupport: resolvedOptions.showInstructorSupport,
+                  })}
+                </div>`
+              : ''
+          }
+          ${
+            sideNavEnabled
+              ? html`
+                  <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
+                    <div class="app-side-nav-scroll">
+                      ${SideNav({
+                        resLocals,
+                        page: navContext.page,
+                        subPage: navContext.subPage,
+                        sideNavExpanded,
+                        persistToggleState:
+                          resolvedOptions.forcedInitialNavToggleState === undefined,
+                      })}
+                    </div>
+                  </nav>
+                `
+              : ''
+          }
           <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
             <div
               class="${clsx(
@@ -466,6 +482,7 @@ export function PageLayout({
                   resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   resolvedOptions.contentPadding && 'pb-3',
                   resolvedOptions.fullHeight && 'h-100',
+                  resolvedOptions.fullHeight && 'app-content-full-height flex-grow-1',
                 )}"
               >
                 ${renderHtml(

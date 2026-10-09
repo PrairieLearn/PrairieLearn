@@ -102,11 +102,6 @@ updates:
       - dependency-name: 'quill'
         versions: ['>2.0.2']
 
-      # prettier 3.9 is not idempotent in some cases that apply to our codebase:
-      # https://github.com/prettier/prettier/issues/19518
-      - dependency-name: 'prettier'
-        versions: ['>=3.9']
-
     cooldown:
       # Dependabot does not understand the minimumReleaseAge setting in
       # pnpm-workspace.yaml, so we set a cooldown here to obtain the same
@@ -156,6 +151,7 @@ updates:
     patterns: ['*']
     directories:
       - '/'
+      - '/apps/prairielearn/python'
       - '/docs'
       - '/graders/c'
       - '/graders/python'

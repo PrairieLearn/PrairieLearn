@@ -1,5 +1,23 @@
 # @prairielearn/opentelemetry
 
+## 4.0.16
+
+### Patch Changes
+
+- 08f657e: Update initialization documentation to reflect that Sentry no longer relies on OpenTelemetry for scope isolation.
+
+## 4.0.15
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 4.0.14
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 4.0.13
 
 ### Patch Changes

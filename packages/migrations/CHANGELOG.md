@@ -1,5 +1,33 @@
 # @prairielearn/migrations
 
+## 5.2.5
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 5.2.4
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 5.2.3
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
+## 5.2.2
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+- Updated dependencies [00945c2]
+- Updated dependencies [9757f58]
+  - @prairielearn/logger@4.0.0
+
 ## 5.2.1
 
 ### Patch Changes

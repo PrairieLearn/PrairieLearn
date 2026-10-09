@@ -33,7 +33,8 @@ WITH
       LEFT JOIN teams AS g ON (g.id = ai.team_id)
       LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
     WHERE
-      a.course_instance_id = $course_instance_id
+      a.deleted_at IS NULL
+      AND a.course_instance_id = $course_instance_id
       AND (
         g.deleted_at IS NULL
         OR g.id IS NULL
@@ -73,6 +74,7 @@ WITH
         enrollments
       WHERE
         course_instance_id = $course_instance_id
+        AND status = 'joined'
     )
   ),
   course_users AS (

@@ -1,5 +1,41 @@
 # @prairielearn/eslint-config
 
+## 3.2.1
+
+### Patch Changes
+
+- 9f4d854: Update @eslint-react/eslint-plugin to 5.21.0.
+
+## 3.2.0
+
+### Minor Changes
+
+- 83590cf: Upgrade the JSDoc, Unicorn, and React effect lint plugins and align TypeScript ESLint dependencies on version 8.70.1 while preserving existing lint style choices. Node.js 24.15.0 or newer is now required.
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 3.1.6
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.1.5
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+- Updated dependencies [452f675]
+  - @prairielearn/eslint-plugin@4.4.0
+
+## 3.1.4
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
 ## 3.1.3
 
 ### Patch Changes

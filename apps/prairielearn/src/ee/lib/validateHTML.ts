@@ -230,7 +230,7 @@ export async function validateHTML(
   const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [
     ...usedTemplateNames,
-    ...Array.from(mandatoryPythonCorrectAnswers).map((x) => `correct_answers.${x}`),
+    ...Array.from(mandatoryPythonCorrectAnswers, (x) => `correct_answers.${x}`),
   ];
 
   if (!hasServerPy && templates.length > 0 && !hasTemplatedCorrectAnswer) {

@@ -598,7 +598,7 @@ describe('DB validation of enrollment', () => {
       },
       // pending_uin is unique within a course instance
       {
-        constraint: 'enrollments_course_instance_id_pending_uin_key',
+        constraint: 'enrollments_pending_uin_course_instance_id_key',
         user_id: null,
         status: 'invited',
         created_at: '2025-01-01',

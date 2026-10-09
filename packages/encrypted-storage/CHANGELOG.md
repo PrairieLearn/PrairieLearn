@@ -1,5 +1,30 @@
 # @prairielearn/encrypted-storage
 
+## 1.1.4
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 1.1.3
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
+## 1.1.1
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+
 ## 1.1.0
 
 ### Minor Changes

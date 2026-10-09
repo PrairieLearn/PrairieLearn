@@ -8,10 +8,10 @@ import { type NextFunction, type Request, type Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
+import { isTrpcRequest } from '@prairielearn/trpc/express';
 
 import { PageLayout } from '../components/PageLayout.js';
 import { extractPageContext } from '../lib/client/page-context.js';
-import { isTrpcRequest } from '../lib/trpc.js';
 
 import {
   AuthzAccessMismatch,

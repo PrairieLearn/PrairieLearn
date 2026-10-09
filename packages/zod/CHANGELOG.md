@@ -1,5 +1,23 @@
 # @prairielearn/zod
 
+## 3.1.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 3.1.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.1.0
+
+### Minor Changes
+
+- 4edf496: Add helpers for parsing and validating Express path parameters or multiple request data sources with Zod, and report unrecognized `__action` discriminators with an action-specific error
+
 ## 3.0.3
 
 ### Patch Changes

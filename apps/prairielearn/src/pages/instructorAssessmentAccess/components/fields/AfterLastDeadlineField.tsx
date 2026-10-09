@@ -142,7 +142,7 @@ function AfterLastDeadlineInput({
   const precedingCredit =
     lateDeadlines.at(-1)?.credit ?? (dueDate != null ? effectiveDueCredit : undefined);
   useEffect(() => {
-    if (mode === 'partial_credit') {
+    if (mode !== 'no_submissions') {
       void trigger(creditFieldPath);
     }
   }, [trigger, creditFieldPath, mode, precedingCredit]);

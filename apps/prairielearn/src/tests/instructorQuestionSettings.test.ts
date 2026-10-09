@@ -5,8 +5,9 @@ import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { selectQuestionById } from '../models/question.js';
+import { selectQuestionById, updateQuestion } from '../models/question.js';
 
 import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
@@ -302,6 +303,29 @@ describe('Editing question settings', { concurrent: false }, () => {
     assert.equal(response.status, 400);
   });
 
+  test.each(['workspace_image', 'external_grading_image'])(
+    'rejects an unsupported registry in %s',
+    async (field) => {
+      const settingsUrl = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
+      const { $ } = await fetchCheerio(settingsUrl);
+      const originalInfo = await fs.readFile(questionLiveInfoPath, 'utf8');
+      const response = await fetch(settingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'update_question',
+          __csrf_token: $('input[name=__csrf_token]').val() as string,
+          orig_hash: $('input[name=orig_hash]').val() as string,
+          title: 'Test title',
+          qid: 'question2',
+          [field]: 'internal-host:5000/team/image:tag',
+        }),
+      });
+
+      assert.equal(response.status, 400);
+      assert.equal(await fs.readFile(questionLiveInfoPath, 'utf8'), originalInfo);
+    },
+  );
+
   test('verify workspace settings changes with minimal configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
@@ -318,7 +342,7 @@ describe('Editing question settings', { concurrent: false }, () => {
         qid: 'question2',
         topic: 'Test',
         grading_method: 'Internal',
-        workspace_image: 'test_image',
+        workspace_image: 'ghcr.io/org/workspace:tag',
         workspace_port: '',
         workspace_home: '',
         workspace_graded_files: 'test_file.txt',
@@ -331,7 +355,7 @@ describe('Editing question settings', { concurrent: false }, () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
 
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
-    assert.equal(questionInfo.workspaceOptions.image, 'test_image');
+    assert.equal(questionInfo.workspaceOptions.image, 'ghcr.io/org/workspace:tag');
     assert.notExists(questionInfo.workspaceOptions.port);
     assert.notExists(questionInfo.workspaceOptions.home);
     assert.equal(questionInfo.workspaceOptions.gradedFiles, 'test_file.txt');
@@ -546,5 +570,30 @@ describe('Editing question settings', { concurrent: false }, () => {
     });
 
     await assertEditError(response, 'would be a parent directory of the existing question');
+  });
+
+  describe('public link for shared questions', () => {
+    const settingsUrl = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
+
+    beforeAll(async () => {
+      await features.enable('question-sharing');
+    });
+
+    test('hides the public link when the question is not shared publicly', async () => {
+      const response = await fetchCheerio(settingsUrl);
+      assert.equal(response.status, 200);
+      assert.lengthOf(response.$('#publicLink'), 0);
+    });
+
+    test('shows the public link once the question is shared publicly', async () => {
+      await updateQuestion({ question_id: '1', patch: { share_publicly: true } });
+
+      const response = await fetchCheerio(settingsUrl);
+      assert.equal(response.status, 200);
+      assert.equal(
+        response.$('#publicLink').val(),
+        `${siteUrl}/pl/public/course/1/question/1/preview`,
+      );
+    });
   });
 });

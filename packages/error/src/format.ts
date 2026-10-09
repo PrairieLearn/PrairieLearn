@@ -42,6 +42,8 @@ export function formatErrorStack(err: any, depth = 0, prefix = ''): string {
  * of an unexpected error object. We'll use the original function if it works,
  * but if it fails for any reason, we'll just return the plain stack, whatever
  * it might be.
+ *
+ * @deprecated Pass errors directly to `@prairielearn/logger` instead.
  */
 export function formatErrorStackSafe(err: any): string {
   try {

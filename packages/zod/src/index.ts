@@ -1,7 +1,12 @@
 import parsePostgresInterval from 'postgres-interval';
 import { type ZodType, z } from 'zod';
 
-export { parseRequestBody, parseRequestQuery } from './request-validation.js';
+export {
+  parseRequest,
+  parseRequestBody,
+  parseRequestParams,
+  parseRequestQuery,
+} from './request-validation.js';
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;

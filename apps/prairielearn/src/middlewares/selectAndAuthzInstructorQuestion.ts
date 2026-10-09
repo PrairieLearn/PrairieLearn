@@ -18,29 +18,19 @@ const SelectAndAuthSchema = z.object({
 export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema>;
 
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {
-  if (res.locals.course_instance) {
-    const row = await sqldb.queryOptionalRow(
-      sql.select_and_auth_with_course_instance,
-      {
-        question_id: req.params.question_id,
-        course_instance_id: res.locals.course_instance.id,
-      },
-      SelectAndAuthSchema,
-    );
-    if (row === null) throw new error.HttpStatusError(403, 'Access denied');
-    Object.assign(res.locals, row);
-  } else {
-    const row = await sqldb.queryOptionalRow(
-      sql.select_and_auth,
-      {
-        question_id: req.params.question_id,
-        course_id: res.locals.course.id,
-      },
-      SelectAndAuthSchema,
-    );
-    if (row === null) throw new error.HttpStatusError(403, 'Access denied');
-    Object.assign(res.locals, row);
-  }
+  const row = res.locals.course_instance
+    ? await sqldb.queryOptionalRow(
+        sql.select_and_auth_with_course_instance,
+        { question_id: req.params.question_id, course_instance_id: res.locals.course_instance.id },
+        SelectAndAuthSchema,
+      )
+    : await sqldb.queryOptionalRow(
+        sql.select_and_auth,
+        { question_id: req.params.question_id, course_id: res.locals.course.id },
+        SelectAndAuthSchema,
+      );
+  if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+  Object.assign(res.locals, row);
 }
 
 export default asyncHandler(async (req, res, next) => {

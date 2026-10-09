@@ -133,7 +133,7 @@ export function makeWorkspaceProxyMiddleware(
         const newPath = '/' + pathSuffix;
         return newPath;
       } catch (err: any) {
-        logger.error(`Error in pathRewrite for path=${path}: ${err}`);
+        logger.error('Error in workspace path rewrite', { err, path });
         return path;
       }
     },
@@ -171,7 +171,7 @@ export function makeWorkspaceProxyMiddleware(
         }
       },
       error: (err, req, res) => {
-        logger.error(`Error proxying workspace request: ${err}`, {
+        logger.error('Error proxying workspace request', {
           err,
           url: req.url,
           originalUrl: req.originalUrl,

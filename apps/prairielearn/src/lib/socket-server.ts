@@ -74,8 +74,9 @@ export async function init(server: http.Server) {
     //   are fully ready before the adapter puts subClient into subscriber mode
     //
     // See: https://github.com/redis/ioredis/issues/2037
-    pub = new Redis(config.redisUrl, { lazyConnect: true });
-    sub = new Redis(config.redisUrl, { lazyConnect: true });
+    // Pin the default reply mapping to avoid expensive comparisons of Redis's command types.
+    pub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
+    sub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
 
     attachEventListeners(pub, 'pub');
     attachEventListeners(sub, 'sub');
@@ -106,7 +107,7 @@ export async function close() {
 
   // Collect all namespace adapters. We do this before replacing the adapter
   // because we can't get references to the original adapters after that.
-  const adapters = [...io._nsps.values()].map((nsp) => nsp.adapter);
+  const adapters = Array.from(io._nsps.values(), (nsp) => nsp.adapter);
 
   // Replace the adapter with an in-memory adapter to prevent further broadcasts
   // in case anything is still producing events.

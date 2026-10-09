@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/named-locks",
-  "version": "4.0.8",
+  "version": "4.0.11",
   "type": "module",
   "repository": {
     "type": "git",
@@ -12,17 +12,17 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
-    "pg": "^8.22.0"
+    "pg": "^8.23.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
-    "@types/pg": "^8.20.3",
-    "@typescript/native-preview": "beta"
+    "@types/node": "^24.19.0",
+    "@types/pg": "^8.23.1",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

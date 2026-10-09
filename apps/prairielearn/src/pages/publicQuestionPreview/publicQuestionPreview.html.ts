@@ -36,14 +36,16 @@ export function PublicQuestionPreview({
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
-      ${resLocals.question.type !== 'Freeform'
-        ? html`
-            <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-            <script src="${assetPath('javascripts/require.js')}"></script>
-            <script src="${assetPath('localscripts/question.js')}"></script>
-            <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
-          `
-        : ''}
+      ${
+        resLocals.question.type !== 'Freeform'
+          ? html`
+              <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
+              <script src="${assetPath('javascripts/require.js')}"></script>
+              <script src="${assetPath('localscripts/question.js')}"></script>
+              <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
+            `
+          : ''
+      }
       ${unsafeHtml(resLocals.extraHeadersHtml)}
     `,
     content: html`

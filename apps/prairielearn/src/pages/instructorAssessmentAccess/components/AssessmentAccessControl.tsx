@@ -2,11 +2,11 @@ import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import type { StickySaveBarAlert } from '@prairielearn/ui';
 
-import { getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import type {
   AccessControlJsonWithId,

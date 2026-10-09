@@ -307,6 +307,9 @@
     },
   ];
 
+  // Bullet (U+2022), bullet operator (U+2219), and asterisk operator (U+2217)
+  const unicodeMultiplicationKeys = new Set(['•', '∙', '∗']);
+
   const isSelected = (mf) => {
     const firstSelection = mf.selection?.ranges?.[0];
     return firstSelection && firstSelection[1] !== firstSelection[0];
@@ -386,7 +389,8 @@
         id: 'power',
         label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
         onMenuSelect: () =>
-          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('{#@}^{#?}'),
+          // Keep power bases ungrouped so implicit fraction insertion does not detach their superscripts.
+          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('#@^{#?}'),
       },
       {
         id: 'sqrt',
@@ -415,12 +419,12 @@
       rows: [
         [
           ...onlyIfSets('[separator]'),
-          makeShortcutProxy({ class: 'small', latex: '{#@}^{#?}' }, mf),
+          makeShortcutProxy({ class: 'small', latex: '#@^{#?}' }, mf),
           makeShortcutProxy(
             {
               class: 'small',
-              latex: '{#@}^{2}',
-              variants: [{ class: 'small', latex: '{#@}^{3}' }],
+              latex: '#@^{2}',
+              variants: [{ class: 'small', latex: '#@^{3}' }],
             },
             mf,
           ),
@@ -626,6 +630,7 @@
 
     updateSubmissionData();
     mf.addEventListener('input', updateSubmissionData);
+    mf.closest('form')?.addEventListener('submit', updateSubmissionData);
 
     // Disable access to manual "\" macro mode
     mf.addEventListener(
@@ -634,6 +639,11 @@
         if (ev.key === '\\') {
           ev.preventDefault();
           mf.executeCommand(['insert', '\\backslash']);
+        } else if (unicodeMultiplicationKeys.has(ev.key)) {
+          // MathLive would insert these as \bullet, \textbullet, or \ast, which are
+          // not submitted as multiplication. Treat them like the "×" keyboard key.
+          ev.preventDefault();
+          mf.executeCommand(['insert', '{#@}\\cdot']);
         } else if (ev.key === 'Escape') {
           ev.preventDefault();
         }
@@ -714,10 +724,10 @@
     // Additional shortcuts for instant replacement inside the pl-symbolic-input box
     const inlineShortcuts = {
       '**': {
-        value: '{#@}^{#?}',
+        value: '#@^{#?}',
       },
       '^': {
-        value: '{#@}^{#?}',
+        value: '#@^{#?}',
       },
       '*': {
         value: '{#@}\\cdot',

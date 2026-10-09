@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/aws",
-  "version": "3.2.0",
+  "version": "3.2.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -12,17 +12,17 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.1101.0",
-    "@smithy/property-provider": "^4.4.16",
-    "@smithy/types": "^4.16.1"
+    "@aws-sdk/client-auto-scaling": "^3.1141.0",
+    "@smithy/property-provider": "^4.5.2",
+    "@smithy/types": "^4.19.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
-    "@typescript/native-preview": "beta"
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

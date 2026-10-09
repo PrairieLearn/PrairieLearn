@@ -5,9 +5,7 @@ import extractZip from 'extract-zip';
 import * as yauzl from 'yauzl';
 
 export type ZipArchiveValidationErrorCode =
-  | 'max_entries_exceeded'
-  | 'max_extracted_bytes_exceeded'
-  | 'symlink_entry';
+  'max_entries_exceeded' | 'max_extracted_bytes_exceeded' | 'symlink_entry';
 
 export class ZipArchiveValidationError extends Error {
   code: ZipArchiveValidationErrorCode;
@@ -26,7 +24,9 @@ export interface ExtractZipArchiveOptions {
   maxExtractedBytes: number | null;
 }
 
-function isSymlinkEntry({ externalFileAttributes }: yauzl.Entry): boolean {
+function isSymlinkEntry({
+  externalFileAttributes,
+}: Pick<yauzl.Entry, 'externalFileAttributes'>): boolean {
   const mode = (externalFileAttributes >> 16) & 0xffff;
   return (mode & fs.constants.S_IFMT) === fs.constants.S_IFLNK;
 }

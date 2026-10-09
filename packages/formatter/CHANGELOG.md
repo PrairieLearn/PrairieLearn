@@ -1,5 +1,23 @@
 # @prairielearn/formatter
 
+## 2.4.8
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 2.4.7
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 2.4.6
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
 ## 2.4.5
 
 ### Patch Changes

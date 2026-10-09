@@ -5,25 +5,23 @@ import { Alert, Button, Form, InputGroup, Modal, Spinner } from 'react-bootstrap
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { getAppError, renderAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
 
+import { CalculatorPreviewButton } from '../../components/CalculatorPreviewButton.js';
+import { CalculatorTypeInput } from '../../components/CalculatorTypeInput.js';
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { StudentLinkSharing } from '../../components/LinkSharing.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import {
-  AppErrorAlert,
-  getAppError,
-  renderAppError,
-  syncJobFailedRenderer,
-} from '../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffAssessmentModule,
   StaffAssessmentSet,
   StaffCourseInstance,
 } from '../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { syncJobFailedRenderer } from '../../lib/client/syncJobFailedRenderer.js';
 import {
   getAssessmentLogsUrl,
   getAssessmentStudentsUrl,
@@ -32,6 +30,7 @@ import {
 } from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
+import { type CalculatorType } from '../../schemas/infoAssessment.js';
 import type {
   AssessmentSettingsError,
   TypeChangeLocation,
@@ -139,6 +138,7 @@ interface SettingsFormValues {
   allow_real_time_grading: boolean;
   grade_rate_minutes: string;
   tools?: Record<string, boolean>;
+  calculatorType: CalculatorType;
   share_source_publicly?: boolean;
 }
 
@@ -157,7 +157,6 @@ interface InstructorAssessmentSettingsProps {
   assessmentSets: StaffAssessmentSet[];
   assessmentModules: StaffAssessmentModule[];
   courseInstance: StaffCourseInstance;
-  isDevMode: boolean;
   assessmentTools: AssessmentToolsConfig;
   zonePointsRange: { min: number; max: number };
   nonPublicQuestionsInAssessment: { id: string; qid: string }[];
@@ -180,7 +179,6 @@ export function InstructorAssessmentSettings({
   assessmentSets,
   assessmentModules,
   courseInstance,
-  isDevMode,
   assessmentTools,
   zonePointsRange: initialZonePointsRange,
   nonPublicQuestionsInAssessment,
@@ -201,7 +199,7 @@ export function InstructorAssessmentSettings({
   const [typeChangeMessage, setTypeChangeMessage] = useState<string | null>(null);
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorAssessmentSettingsInner
           key={assessment.type}
@@ -680,7 +678,7 @@ function InstructorAssessmentSettingsInner({
   hasInstances,
   typeChangeMessage,
   setTypeChangeMessage,
-}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'isDevMode' | 'courseInstance'> & {
+}: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'courseInstance'> & {
   setCurrentOrigHash: (hash: string) => void;
   setAssessment: (assessment: StaffAssessment) => void;
   setZonePointsRange: (range: { min: number; max: number }) => void;
@@ -728,6 +726,7 @@ function InstructorAssessmentSettingsInner({
     grade_rate_minutes:
       assessment.json_grade_rate_minutes != null ? String(assessment.json_grade_rate_minutes) : '',
     tools: Object.fromEntries(assessmentTools.map(({ name, enabled }) => [name, enabled])),
+    calculatorType: assessmentTools.find((tool) => tool.name === 'calculator')?.type ?? 'advanced',
     share_source_publicly: assessment.share_source_publicly,
   };
 
@@ -921,6 +920,23 @@ function InstructorAssessmentSettingsInner({
           <div className="card">
             <div className="card-body">
               <h2 className="h5 card-title mb-3">General</h2>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="title">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="title"
+                  aria-describedby="title-help"
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.title}
+                  {...register('title')}
+                />
+                <small id="title-help" className="form-text text-muted">
+                  The full name of the assessment, visible to users.
+                </small>
+              </div>
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label" htmlFor="aid">
@@ -1004,23 +1020,6 @@ function InstructorAssessmentSettingsInner({
                       : 'Changing the type may modify or remove existing configuration.'}
                   </small>
                 </div>
-              </div>
-              <div className="mb-3">
-                <label className="form-label" htmlFor="title">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="title"
-                  aria-describedby="title-help"
-                  disabled={!canEdit}
-                  defaultValue={defaultValues.title}
-                  {...register('title')}
-                />
-                <small id="title-help" className="form-text text-muted">
-                  The full name of the assessment, visible to users.
-                </small>
               </div>
               <div className="row">
                 <div className="col-md-6 mb-3">
@@ -1523,21 +1522,37 @@ function InstructorAssessmentSettingsInner({
               {assessmentTools.map(({ name, label, enabled }, i) => (
                 <div
                   key={name}
-                  className={clsx('form-check', i < assessmentTools.length - 1 && 'mb-3')}
+                  className={clsx(
+                    'd-flex flex-wrap align-items-center justify-content-between gap-3',
+                    i < assessmentTools.length - 1 && 'mb-3',
+                  )}
                 >
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id={`tool_${name}`}
-                    disabled={!canEdit}
-                    defaultChecked={enabled}
-                    {...register(`tools.${name}`)}
-                  />
-                  <label className="form-check-label" htmlFor={`tool_${name}`}>
-                    {label}
-                  </label>
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`tool_${name}`}
+                      disabled={!canEdit}
+                      defaultChecked={enabled}
+                      {...register(`tools.${name}`)}
+                    />
+                    <label className="form-check-label" htmlFor={`tool_${name}`}>
+                      {label}
+                    </label>
+                  </div>
+                  {name === 'calculator' && watch('tools.calculator') && (
+                    <CalculatorPreviewButton type={watch('calculatorType')} />
+                  )}
                 </div>
               ))}
+              {watch('tools.calculator') && (
+                <CalculatorTypeInput
+                  id="calculator-type"
+                  value={watch('calculatorType')}
+                  disabled={!canEdit}
+                  onChange={(value) => setValue('calculatorType', value, { shouldDirty: true })}
+                />
+              )}
             </div>
           </div>
 

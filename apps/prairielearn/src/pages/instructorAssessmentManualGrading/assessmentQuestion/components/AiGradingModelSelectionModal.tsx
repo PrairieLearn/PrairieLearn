@@ -4,6 +4,8 @@ import { useCallback, useState } from 'react';
 import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { type AppError, getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
@@ -14,7 +16,6 @@ import {
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION } from '../../../../ee/lib/ai-grading-free-credit-constants.js';
 import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
-import { type AppError, AppErrorAlert, getAppError } from '../../../../lib/client/errors.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 import type { ManualGradingError } from '../../../../trpc/assessmentQuestion/manual-grading.js';

@@ -23,13 +23,15 @@ export function AuthPassword({
         <div class="card-body">
           <p class="text-center">A password is required to access this assessment.</p>
 
-          ${passwordInvalid
-            ? html`
-                <p class="text-center text-danger">
-                  Previous password invalid or expired. Please try again.
-                </p>
-              `
-            : ''}
+          ${
+            passwordInvalid
+              ? html`
+                  <p class="text-center text-danger">
+                    Previous password invalid or expired. Please try again.
+                  </p>
+                `
+              : ''
+          }
 
           <form method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />

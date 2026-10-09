@@ -4,7 +4,10 @@ SELECT
   COUNT(e.user_id)::integer AS enrollment_count
 FROM
   course_instances AS ci
-  JOIN enrollments AS e ON (e.course_instance_id = ci.id)
+  JOIN enrollments AS e ON (
+    e.course_instance_id = ci.id
+    AND e.status = 'joined'
+  )
 WHERE
   ci.course_id = $course_id
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)

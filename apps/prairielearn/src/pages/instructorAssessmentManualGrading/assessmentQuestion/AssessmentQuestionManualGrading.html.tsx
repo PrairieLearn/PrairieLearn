@@ -1,18 +1,19 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
+  StaffStudentLabel,
   StaffUser,
 } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';
@@ -47,11 +48,11 @@ interface AssessmentQuestionManualGradingProps {
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
+  studentLabels: StaffStudentLabel[];
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
   search: string;
-  isDevMode: boolean;
   questionTitle: string;
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
@@ -61,7 +62,7 @@ interface AssessmentQuestionManualGradingProps {
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
   AssessmentQuestionManualGradingProps,
-  'search' | 'isDevMode' | 'trpcCsrfToken'
+  'search' | 'trpcCsrfToken'
 >;
 
 function AssessmentQuestionManualGradingInner({
@@ -80,6 +81,7 @@ function AssessmentQuestionManualGradingInner({
   rubricData: initialRubricData,
   instanceQuestionGroups,
   courseStaff,
+  studentLabels,
   aiGradingStats: initialAiGradingStats,
   initialOngoingJobSequenceTokens,
   numOpenInstances,
@@ -182,6 +184,7 @@ function AssessmentQuestionManualGradingInner({
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
+        studentLabels={studentLabels}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
@@ -227,7 +230,6 @@ function AssessmentQuestionManualGradingInner({
 
 export function AssessmentQuestionManualGrading({
   search,
-  isDevMode,
   trpcCsrfToken,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
@@ -242,7 +244,7 @@ export function AssessmentQuestionManualGrading({
   );
   return (
     <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <QueryClientProviderDebug client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
           <AssessmentQuestionManualGradingInner {...innerProps} />
         </TRPCProvider>

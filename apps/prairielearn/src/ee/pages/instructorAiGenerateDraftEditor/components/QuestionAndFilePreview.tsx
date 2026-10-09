@@ -257,12 +257,12 @@ function useQuestionHtml({
     if (!wrapperRef.current) return;
 
     const wrapper = wrapperRef.current;
-    wrapper.addEventListener('submit', handleSubmit, true);
-    wrapper.addEventListener('click', handleNewVariantButtonClick, true);
+    wrapper.addEventListener('submit', handleSubmit, { capture: true });
+    wrapper.addEventListener('click', handleNewVariantButtonClick, { capture: true });
 
     return () => {
-      wrapper.removeEventListener('submit', handleSubmit, true);
-      wrapper.removeEventListener('click', handleNewVariantButtonClick, true);
+      wrapper.removeEventListener('submit', handleSubmit, { capture: true });
+      wrapper.removeEventListener('click', handleNewVariantButtonClick, { capture: true });
     };
   }, [wrapperRef, handleSubmit, handleNewVariantButtonClick]);
 

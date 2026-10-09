@@ -23,7 +23,7 @@ INSERT INTO
 SELECT
   'terminating',
   NOW(),
-  UNNEST($instances)
+  UNNEST($instances::text[])
 ON CONFLICT (instance_id) DO UPDATE
 SET
   state = EXCLUDED.state,

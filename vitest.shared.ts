@@ -107,7 +107,7 @@ class CustomSequencer extends BaseSequencer {
           hash: crypto.hash('sha1', specPath, 'hex'),
         };
       })
-      .sort((a, b) => (a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0))
+      .sort((a, b) => a.hash.localeCompare(b.hash))
       .slice(shardStart, shardEnd)
       .map(({ spec }) => spec);
 

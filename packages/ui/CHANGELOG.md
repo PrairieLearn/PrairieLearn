@@ -1,5 +1,46 @@
 # @prairielearn/ui
 
+## 4.1.1
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- 83590cf: Upgrade @tanstack/match-sorter-utils to version 9, preserving fuzzy matching and ranking behavior in table filters.
+
+## 4.1.0
+
+### Minor Changes
+
+- 7b247e1: Add an opt-in non-virtualized rendering mode to TanstackTable that grows with its content without requiring a bounded height.
+
+## 4.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.0
+
+### Major Changes
+
+- d5c1739: Upgrade TanStack Table to v9. Consumers must create tables and column definitions with the exported `useTanstackTable` and `createTanstackTableColumnHelper`, use v9 pinning state (`{ start, end }` instead of `{ left, right }`), and rely on the built-in row selection handler for Shift-range selection instead of `useShiftClickCheckbox`.
+
+## 3.9.0
+
+### Minor Changes
+
+- 5d5bec7: Add a hook for pruning row selections when table data changes
+
+### Patch Changes
+
+- c36d9f5: Avoid closing the column manager before an adjacent dropdown is activated.
+
+## 3.8.2
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+
 ## 3.8.1
 
 ### Patch Changes

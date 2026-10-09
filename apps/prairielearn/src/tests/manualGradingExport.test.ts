@@ -3,9 +3,15 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { AssessmentQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { generateAndEnrollUsers, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import {
+  addLabelToEnrollment,
+  selectStudentLabelsInCourseInstance,
+} from '../models/student-label.js';
 import { selectInstanceQuestionsForManualGrading } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/queries.js';
 
 import * as helperServer from './helperServer.js';
@@ -74,6 +80,24 @@ describe('Manual grading export query', { timeout: 60_000 }, () => {
       last_grader: grader.id,
     });
 
+    const courseInstance = await selectCourseInstanceById(hw9.course_instance_id);
+    const enrollment = await selectOptionalEnrollmentByUserId({
+      userId: student.id,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    assert.ok(enrollment);
+    const labels = await selectStudentLabelsInCourseInstance(courseInstance);
+    assert.lengthOf(labels, 2);
+    for (const label of labels) {
+      await addLabelToEnrollment({
+        enrollment,
+        label,
+        authzData: dangerousFullSystemAuthz(),
+      });
+    }
+
     const rows = await selectInstanceQuestionsForManualGrading({
       assessment: hw9,
       assessment_question: aq,
@@ -88,6 +112,10 @@ describe('Manual grading export query', { timeout: 60_000 }, () => {
     assert.equal(row.assigned_grader?.uid, grader.uid);
     assert.equal(row.assigned_grader?.email, grader.email);
     assert.equal(row.last_grader?.uid, grader.uid);
+    assert.deepEqual(
+      row.student_label_ids,
+      labels.map((label) => label.id).sort((a, b) => Number(a) - Number(b)),
+    );
   });
 
   test('individual: returns null graders when none are set', async () => {
@@ -117,6 +145,7 @@ describe('Manual grading export query', { timeout: 60_000 }, () => {
     assert.equal(row.user?.uid, student.uid);
     assert.equal(row.assigned_grader, null);
     assert.equal(row.last_grader, null);
+    assert.deepEqual(row.student_label_ids, []);
   });
 
   test('team: returns null user and a sorted group_members array', async () => {

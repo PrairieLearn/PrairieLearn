@@ -5,20 +5,24 @@ import { useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { StickySaveBar } from '@prairielearn/ui';
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { ShareSourcePubliclyCard } from '../../components/ShareSourcePubliclyCard.js';
 import { CourseInstanceShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../lib/client/page-context.js';
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getAssessmentSettingsUrl } from '../../lib/client/url.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { TRPCProvider } from '../../trpc/courseInstance/context.js';
 
 import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js';
+import {
+  EnrollmentAndBillingCard,
+  type EnrollmentAndBillingCardProps,
+} from './components/EnrollmentAndBillingCard.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
 
@@ -29,23 +33,22 @@ interface InstructorInstanceAdminSettingsProps {
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   institution: PageContext<'courseInstance', 'instructor'>['institution'];
-  names: { short_name: string }[];
+  names: { short_name: string; long_name: string | null }[];
   availableTimezones: Timezone[];
   origHash: string;
   instanceGHLink: string | undefined | null;
   studentLink: string;
   publicLink: string;
   selfEnrollLink: string;
-  isDevMode: boolean;
   isAdministrator: boolean;
   nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
   questionSharingEnabled: boolean;
   accessControlMigrationNeeded: boolean;
+  enrollmentAndBilling: EnrollmentAndBillingCardProps | null;
 }
 
 export function InstructorInstanceAdminSettings({
   trpcCsrfToken,
-  isDevMode,
   courseInstance,
   ...rest
 }: InstructorInstanceAdminSettingsProps) {
@@ -58,7 +61,7 @@ export function InstructorInstanceAdminSettings({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorInstanceAdminSettingsInner courseInstance={courseInstance} {...rest} />
       </TRPCProvider>
@@ -85,7 +88,8 @@ function InstructorInstanceAdminSettingsInner({
   nonPublicAssessmentsInCourseInstance,
   questionSharingEnabled,
   accessControlMigrationNeeded,
-}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
+  enrollmentAndBilling,
+}: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
   const shortNames = new Set(names.map((name) => name.short_name.toLowerCase()));
@@ -128,6 +132,7 @@ function InstructorInstanceAdminSettingsInner({
         show={showCopyModal}
         csrfToken={csrfToken}
         courseShortName={course.short_name}
+        institutionLongName={institution.long_name}
         courseInstance={courseInstance}
         isAdministrator={isAdministrator}
         accessControlMigrationNeeded={accessControlMigrationNeeded}
@@ -153,6 +158,31 @@ function InstructorInstanceAdminSettingsInner({
           <div className="card">
             <div className="card-body">
               <h2 className="h5 card-title mb-3">General</h2>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="long_name">
+                  Long name
+                </label>
+                <input
+                  type="text"
+                  className={clsx('form-control', errors.long_name && 'is-invalid')}
+                  id="long_name"
+                  disabled={!canEdit}
+                  aria-describedby="long_name-help"
+                  aria-invalid={errors.long_name ? 'true' : 'false'}
+                  {...(errors.long_name ? { 'aria-errormessage': 'long_name-error' } : {})}
+                  defaultValue={defaultValues.long_name}
+                  {...register('long_name', { required: 'Long name is required' })}
+                  name="long_name"
+                />
+                {errors.long_name && (
+                  <div id="long_name-error" className="invalid-feedback">
+                    {errors.long_name.message}
+                  </div>
+                )}
+                <small id="long_name-help" className="form-text text-muted">
+                  The long name of this course instance (e.g., 'Spring 2015').
+                </small>
+              </div>
               <div className="mb-3">
                 <label className="form-label" htmlFor="ciid">
                   Short name
@@ -192,31 +222,6 @@ function InstructorInstanceAdminSettingsInner({
                 )}
                 <small className="form-text text-muted">
                   <CourseInstanceShortNameDescription />
-                </small>
-              </div>
-              <div className="mb-3">
-                <label className="form-label" htmlFor="long_name">
-                  Long name
-                </label>
-                <input
-                  type="text"
-                  className={clsx('form-control', errors.long_name && 'is-invalid')}
-                  id="long_name"
-                  disabled={!canEdit}
-                  aria-describedby="long_name-help"
-                  aria-invalid={errors.long_name ? 'true' : 'false'}
-                  {...(errors.long_name ? { 'aria-errormessage': 'long_name-error' } : {})}
-                  defaultValue={defaultValues.long_name}
-                  {...register('long_name', { required: 'Long name is required' })}
-                  name="long_name"
-                />
-                {errors.long_name && (
-                  <div id="long_name-error" className="invalid-feedback">
-                    {errors.long_name.message}
-                  </div>
-                )}
-                <small id="long_name-help" className="form-text text-muted">
-                  The long name of this course instance (e.g., 'Spring 2015').
                 </small>
               </div>
               <div className="mb-3">
@@ -270,6 +275,8 @@ function InstructorInstanceAdminSettingsInner({
               </div>
             </div>
           </div>
+
+          {enrollmentAndBilling && <EnrollmentAndBillingCard {...enrollmentAndBilling} />}
 
           <div className="card">
             <div className="card-body">

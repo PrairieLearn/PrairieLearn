@@ -2,9 +2,9 @@ import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
-import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { MAX_STUDENT_LABELS_PER_COURSE_INSTANCE } from '../../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/courseInstance/context.js';
@@ -20,7 +20,6 @@ interface StudentLabelsPageProps {
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
   isExampleCourse: boolean;
-  isDevMode: boolean;
   origHash: string | null;
 }
 
@@ -192,7 +191,6 @@ function StudentLabelsCard({
 }
 
 export function InstructorStudentsLabels({
-  isDevMode,
   trpcCsrfToken,
   courseInstanceId,
   ...innerProps
@@ -203,7 +201,7 @@ export function InstructorStudentsLabels({
   );
 
   return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+    <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <StudentLabelsCard courseInstanceId={courseInstanceId} {...innerProps} />
       </TRPCProvider>

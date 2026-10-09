@@ -20,7 +20,7 @@ const defaultRateLimiter = new RedisRateLimiter({
     if (!config.nonVolatileRedisUrl) {
       throw new Error('nonVolatileRedisUrl must be set in config');
     }
-    const redis = new Redis(config.nonVolatileRedisUrl);
+    const redis = new Redis<'legacy'>(config.nonVolatileRedisUrl);
     redis.on('error', (err) => logger.error('Cheating report Redis error', { err }));
     return redis;
   },
@@ -77,7 +77,7 @@ export function createReportCheatingRouter({
 
       const outcome = await run(async (): Promise<'ok' | 'declined' | 'failed'> => {
         try {
-          const ptResponse = await fetch(new URL('/pt/cheating-report', config.ptHost).toString(), {
+          const ptResponse = await fetch(new URL('/pt/cheating-report', config.ptHost).href, {
             method: 'POST',
             body: new URLSearchParams({ jwt }),
             redirect: 'error',
