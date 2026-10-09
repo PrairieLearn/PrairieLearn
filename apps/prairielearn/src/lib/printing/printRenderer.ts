@@ -5,15 +5,6 @@ import { type Browser, type BrowserContext, chromium } from 'playwright';
 import { createPdfOutput } from './pdfOutput.js';
 import type { PrintablePageOutput } from './printablePageOutput.js';
 
-const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
-
-export class QuestionBlockSizeOverflowError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'QuestionBlockSizeOverflowError';
-  }
-}
-
 const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
 const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 64;
@@ -393,13 +384,9 @@ export class PrintRenderer {
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
-        errorCode: document.documentElement.dataset.printErrorCode ?? null,
       }));
       if (printState.status === 'error') {
         const message = `The printable page failed: ${printState.error ?? 'No pagination error was provided'}`;
-        if (printState.errorCode === QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE) {
-          throw new QuestionBlockSizeOverflowError(message);
-        }
         throw new Error(message);
       }
       if (printState.status !== 'ready') {
