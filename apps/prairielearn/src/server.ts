@@ -2760,6 +2760,11 @@ if (shouldStartServer) {
       }
     });
 
+    if (isEnterprise()) {
+      const { closeEvents } = await import('./ee/lib/course-agent/events.js');
+      await closeEvents();
+    }
+
     // Then close the database connections now that nothing is using them.
     const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
     dbResults.forEach((r) => {
@@ -2817,6 +2822,10 @@ if (shouldStartServer) {
  * cleaned up here.
  */
 export async function close() {
+  if (isEnterprise()) {
+    const { closeEvents } = await import('./ee/lib/course-agent/events.js');
+    await closeEvents();
+  }
   // These are run in the opposite order in which they're initialized/started.
   await cron.stop();
   await serverJobs.stop();

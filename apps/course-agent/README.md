@@ -14,7 +14,8 @@ flowchart LR
 
 ## Scope
 
-- A fresh conversation on each page visit; no saved-conversation navigation.
+- Saved conversations, selection, and unsent drafts across navigation and reloads.
+- Repository/branch changes require a new conversation. Accounting and limits are deferred.
 - Sandbox file edits only: no approval, GitHub publication, or Course Sync.
 - No skill installation or management.
 
@@ -70,7 +71,8 @@ sandbox development.
 1. Open the stars button and send “Read infoCourse.json and summarize this course.”
 2. Send a correction while the response streams, then try **Stop**.
 3. With the real sandbox, ask it to edit a scratch file and read it back.
-4. Reload: this layer opens a fresh conversation.
+4. Reload or navigate to another course page: the conversation should remain.
+   Create a second conversation, leave a draft, and switch back to check both are retained.
 5. Leave a completed turn idle for over 10 minutes, then follow up without
    reloading. The sandbox should restore its files from a checkpoint.
 
@@ -87,8 +89,8 @@ hover or focus it for an explanation. Failed tools stay collapsed until opened.
 
 Closing the panel detaches PL's live connection. A running Codex turn continues
 in Cloudflare, but host-executed tools require an open panel. No PL observer or
-polling task stays behind. Completed work becomes visible on reconnect; in this
-layer a reload starts a new conversation.
+polling task stays behind. Completed work becomes visible on reconnect; a reload
+reopens the saved conversation.
 
 The fixture covers chat and recovery behavior. Real model inference, Docker
 networking, and GitHub access need the real-sandbox path. To run focused checks:
@@ -100,3 +102,13 @@ pnpm --filter @prairielearn/course-agent test:lifecycle
 
 Lifecycle tests need the fixture running. The optional `demo` command sends one
 scripted prompt; the browser is the interactive test path.
+
+## Saved conversations
+
+Conversation selection and panel state survive navigation. Unsent drafts and read
+markers are kept in the browser. The catalog shows the last observed running and
+completed state; reconnecting refreshes it from Cloudflare. No background polling
+runs after leaving the panel.
+
+Disabling `course-agent` blocks new messages and conversations while preserving
+history, Stop, and cleanup.
