@@ -99,7 +99,6 @@ WITH
       am.heading AS assessment_module_heading,
       am.number AS assessment_module_number
     FROM
-      -- JOIN team_users first to find all group assessments
       team_configs AS gc
       JOIN teams AS g ON (
         g.team_config_id = gc.id
@@ -112,12 +111,6 @@ WITH
       FULL JOIN assessments AS a ON (gc.assessment_id = a.id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-      -- We use a subquery to find assessment instances by either user_id or
-      -- team_id. We use to do this with AND (ai.user_id = $user_id OR
-      -- ai.team_id = gu.team_id) but this was triggering a bad query plan for
-      -- some course instances. Having separate SELECTs for user_id and team_id
-      -- allows the query planner to utilize the two separate indexes we have
-      -- for user_id and team_id.
       LEFT JOIN LATERAL (
         SELECT
           *
@@ -193,7 +186,4 @@ ORDER BY
   assessment_set_number,
   assessment_order_by,
   assessment_id,
-  assessment_instance_number
-  -- As with the `PARTITION` above, we deliberately set `NULLS FIRST` to
-  -- ensure the correct ordering of rows from `multiple_instance_assessments`.
-  NULLS FIRST;
+  assessment_instance_number NULLS FIRST;

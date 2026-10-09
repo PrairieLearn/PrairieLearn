@@ -50,3 +50,16 @@ export type StudentHomePageCourse = Pick<StudentHomePageCourseData, 'course' | '
     | { access_type: 'uid_invitation'; invitation_enrollment_id: string }
     | { access_type: 'institution_access'; invitation_enrollment_id: string }
   );
+
+export interface UpcomingAssessmentDeadline {
+  assessmentSetColor: string;
+  assessmentTitle: string;
+  courseInstanceId: string;
+  courseInstanceLongName: string;
+  courseShortName: string;
+  creditDateString: string;
+  deadline: Date;
+  label: string;
+  link: string;
+  status: 'In progress' | 'Not started';
+}

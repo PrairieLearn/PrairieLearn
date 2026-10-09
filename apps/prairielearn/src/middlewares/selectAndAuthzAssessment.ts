@@ -63,6 +63,7 @@ export default asyncHandler(async (req, res, next) => {
     : formatLegacyAssessmentAccess(
         rawRow.authz_result,
         res.locals.course_instance.display_timezone,
+        res.locals.req_date,
       );
   const row: ResLocalsAssessment = { ...rawRow, authz_result: authzResult };
   if (!row.authz_result.authorized) {
