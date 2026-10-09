@@ -49,11 +49,11 @@ export async function parseStudentSyncCsv(
         if (
           !headers.includes('uid') ||
           new Set(headers).size !== headers.length ||
-          headers.some((header) => header !== 'uid' && !/^label[1-9]\d*$/.test(header))
+          headers.some((header) => header !== 'uid' && header !== 'labels')
         ) {
           throw new HttpStatusError(
             400,
-            'Use a uid header and optional label1, label2, … headers, with no duplicate or extra columns.',
+            'Use a uid header and an optional labels header, with no duplicate or extra columns. Separate label names with semicolons in the labels cell.',
           );
         }
         continue;
@@ -71,20 +71,26 @@ export async function parseStudentSyncCsv(
           `Row ending on line ${info.lines}: ${uid} appears more than once. Keep one row per student.`,
         );
       }
-      const uidIndex = headers.indexOf('uid');
-      const labelIds = row.flatMap((value, index) => {
-        const name = value.trim();
-        if (index === uidIndex || name === '') return [];
-        const id = labelsByName.get(name);
-        if (!id) {
-          throw new HttpStatusError(
-            400,
-            `Row ending on line ${info.lines}: unknown label "${name}". Use an existing label name exactly as shown in this course instance.`,
-          );
-        }
-        return [id];
-      });
-      rows.set(uid, headers.length === 1 ? undefined : [...new Set(labelIds)]);
+      const labelsIndex = headers.indexOf('labels');
+      if (labelsIndex === -1) {
+        rows.set(uid, undefined);
+      } else {
+        const names = row[labelsIndex]
+          .split(';')
+          .map((name) => name.trim())
+          .filter(Boolean);
+        const labelIds = names.map((name) => {
+          const id = labelsByName.get(name);
+          if (!id) {
+            throw new HttpStatusError(
+              400,
+              `Row ending on line ${info.lines}: ${uid}: unknown label "${name}". Use an existing label name exactly as shown in this course instance.`,
+            );
+          }
+          return id;
+        });
+        rows.set(uid, [...new Set(labelIds)]);
+      }
       if (rows.size > 5000) {
         throw new HttpStatusError(400, 'Cannot synchronize more than 5,000 students at a time.');
       }
