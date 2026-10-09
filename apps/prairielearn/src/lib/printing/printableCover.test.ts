@@ -39,4 +39,21 @@ describe('htmlToTextBlocks', () => {
   it('ignores empty and whitespace-only content', () => {
     expect(htmlToTextBlocks('  \n<p> </p><div></div><ol></ol>')).toEqual([]);
   });
+
+  it('preserves authored images and SVGs among cover instructions', () => {
+    const blocks = htmlToTextBlocks(
+      '<p>Use the diagram <img src="/clientFilesAssessment/diagram.png" alt="Circuit diagram"> below.</p><svg viewBox="0 0 20 10" aria-label="Graph"><path d="M0 0L20 10"/></svg>',
+    );
+    expect(blocks.slice(0, 3)).toEqual([
+      { type: 'paragraph', text: 'Use the diagram' },
+      {
+        type: 'figure',
+        src: '/clientFilesAssessment/diagram.png',
+        alt: 'Circuit diagram',
+      },
+      { type: 'paragraph', text: 'below.' },
+    ]);
+    expect(blocks[3]).toMatchObject({ type: 'figure', alt: 'Graph' });
+    expect(decodeURIComponent((blocks[3] as { src: string }).src)).toContain('viewBox="0 0 20 10"');
+  });
 });

@@ -1,6 +1,52 @@
+import type { PrintableCover } from './printableCover.js';
+
 export interface DocxSource {
   html: string;
   figures: { id: string; width: number; height: number; alt: string }[];
+}
+
+/** Rasterize authored cover figures while keeping the surrounding instructions editable. */
+export async function captureDocxCoverFigures(
+  cover: PrintableCover | undefined,
+): Promise<PrintableCover | undefined> {
+  if (!cover) return undefined;
+  return {
+    ...cover,
+    sections: await Promise.all(
+      cover.sections.map(async (section) => ({
+        ...section,
+        blocks: await Promise.all(
+          section.blocks.map(async (block) => {
+            if (block.type !== 'figure') return block;
+            const image = new Image();
+            image.src = new URL(block.src, document.baseURI).href;
+            await image.decode();
+            if (!image.naturalWidth || !image.naturalHeight) {
+              throw new Error('A cover figure could not be rendered for Word');
+            }
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(1, 2048 / image.naturalWidth, 2048 / image.naturalHeight);
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            const context = canvas.getContext('2d');
+            if (!context) throw new Error('A cover figure could not be captured');
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            const png = await new Promise<Blob>((resolve, reject) =>
+              canvas.toBlob((blob) =>
+                blob ? resolve(blob) : reject(new Error('A cover figure could not be captured')),
+              ),
+            );
+            return {
+              ...block,
+              png: Array.from(new Uint8Array(await png.arrayBuffer())),
+              width: image.naturalWidth,
+              height: image.naturalHeight,
+            };
+          }),
+        ),
+      })),
+    ),
+  };
 }
 
 /** Preserve MathML before print transforms clone or replace already-typeset elements. */

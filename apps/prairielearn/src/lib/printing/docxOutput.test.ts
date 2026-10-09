@@ -105,6 +105,35 @@ describe('createDocxDocument', () => {
     vi.clearAllMocks();
   });
 
+  it('includes authored cover figures alongside editable instructions', async () => {
+    const docx = await renderDocx({
+      cover: {
+        ...cover,
+        sections: [
+          {
+            heading: 'Instructions',
+            blocks: [
+              { type: 'paragraph', text: 'Use this diagram.' },
+              {
+                type: 'figure',
+                src: '/diagram.png',
+                alt: 'Circuit diagram',
+                png: Array.from(PNG_SIGNATURE),
+                width: 100,
+                height: 60,
+              },
+            ],
+          },
+        ],
+      },
+      footerLabel: 'Form A',
+    });
+    const { documentXml, files } = await readDocx(docx);
+    expect(documentXml).toContain('Use this diagram.');
+    expect(documentXml).toContain('Circuit diagram');
+    expect(files.filter((file) => file.startsWith('word/media/'))).toHaveLength(2);
+  });
+
   it('keeps cover grading scores blank and fills columns before rows', async () => {
     const docx = await renderDocx({
       cover: {
