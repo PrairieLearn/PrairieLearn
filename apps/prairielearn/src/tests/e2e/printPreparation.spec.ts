@@ -50,6 +50,41 @@ test('recovers when creating the first preview fails', async ({ page, courseInst
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 });
 
+test('shows errors while preparing PDF pages', async ({ page, courseInstance }) => {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam20-assessmentTools',
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
+  );
+  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+
+  await page.route('**/paper/preview?*', (route) => {
+    if (new URL(route.request().url()).searchParams.get('document') !== 'answer_key') {
+      return route.continue();
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><html data-print-status="error" data-print-error="Answer key preparation failed"></html>',
+    });
+  });
+
+  await chooseDownload(page, 'Download Form A answer key (PDF)');
+  await expect(page.getByRole('alert').getByText('Answer key preparation failed')).toBeVisible();
+  await expect(downloadMenu(page)).toBeEnabled();
+
+  await chooseDownload(page, 'Download booklet PDF…');
+  const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
+  await modal.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
+  await expect(modal.getByRole('alert').getByText('Answer key preparation failed')).toBeVisible();
+  await expect(
+    modal.getByRole('button', { name: 'Download booklet PDF', exact: true }),
+  ).toBeEnabled();
+});
+
 test('defaults booklet copies to the number of enrolled students', async ({
   page,
   courseInstance,

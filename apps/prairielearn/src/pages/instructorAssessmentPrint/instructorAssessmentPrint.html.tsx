@@ -121,6 +121,11 @@ function PrintPreparation({
   const [reviewOnly, setReviewOnly] = useState(false);
   const [preview, setPreview] = useState<{ url: string; state: PreviewState } | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
+  const [preparingPdf, setPreparingPdf] = useState<'packet' | 'booklet' | null>(null);
+  const [pdfPreparationError, setPdfPreparationError] = useState<{
+    target: 'packet' | 'booklet';
+    error: Error;
+  } | null>(null);
   const snapshotsRef = useRef(new Map<string, PrintSnapshot>());
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
   const [retry, setRetry] = useState(0);
@@ -168,6 +173,7 @@ function PrintPreparation({
     regenerate.isPending ||
     packet.isPending ||
     booklet.isPending ||
+    preparingPdf !== null ||
     previewPending;
 
   function saveDownload(blob: Blob, filename: string) {
@@ -250,6 +256,26 @@ function PrintPreparation({
     return input;
   }
 
+  async function preparePdfInput(
+    metadata: ReturnType<typeof packetMetadata>,
+    target: 'packet' | 'booklet',
+  ) {
+    setPdfPreparationError(null);
+    setPreparingPdf(target);
+    try {
+      return await packetInput(metadata);
+    } catch (error) {
+      setPdfPreparationError({
+        target,
+        error:
+          error instanceof Error ? error : new Error('The printable pages could not be prepared.'),
+      });
+      throw error;
+    } finally {
+      setPreparingPdf(null);
+    }
+  }
+
   function savePdf(result: { base64: string; filename: string }) {
     const bytes = Uint8Array.from(atob(result.base64), (character) => character.charCodeAt(0));
     saveDownload(new Blob([bytes], { type: 'application/pdf' }), result.filename);
@@ -260,8 +286,9 @@ function PrintPreparation({
     copyCount: number,
     outputDocument: PrintDocument | 'booklet',
   ) {
+    packet.reset();
     const result = await packet.mutateAsync(
-      await packetInput(packetMetadata(ids, copyCount, outputDocument)),
+      await preparePdfInput(packetMetadata(ids, copyCount, outputDocument), 'packet'),
     );
     savePdf(result);
   }
@@ -377,9 +404,10 @@ function PrintPreparation({
 
   async function downloadBooklet(studentCount: number) {
     setCopies(studentCount);
+    booklet.reset();
     savePdf(
       await booklet.mutateAsync(
-        await packetInput(packetMetadata(instanceIds, studentCount, 'booklet')),
+        await preparePdfInput(packetMetadata(instanceIds, studentCount, 'booklet'), 'booklet'),
       ),
     );
     setShowBookletModal(false);
@@ -438,9 +466,14 @@ function PrintPreparation({
         onDismiss={() => regenerate.reset()}
       />
       <AppErrorAlert
-        error={getAppError<PrintableExamExportError['pdf']>(packet.error)}
+        error={getAppError<PrintableExamExportError['pdf']>(
+          pdfPreparationError?.target === 'packet' ? pdfPreparationError.error : packet.error,
+        )}
         render={{ UNKNOWN: ({ message }) => message }}
-        onDismiss={() => packet.reset()}
+        onDismiss={() => {
+          packet.reset();
+          setPdfPreparationError(null);
+        }}
       />
       {groupWork && (
         <Alert variant="info">
@@ -1154,7 +1187,7 @@ function PrintPreparation({
                         </Dropdown.Menu>
                       </Dropdown>
                     </div>
-                    {(download.isPending || packet.isPending) && (
+                    {(download.isPending || packet.isPending || preparingPdf === 'packet') && (
                       <div
                         className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center small"
                         role="status"
@@ -1179,8 +1212,10 @@ function PrintPreparation({
         show={showBookletModal}
         students={copies}
         formLabels={instanceIds.map((_, index) => String.fromCharCode(65 + index))}
-        pending={booklet.isPending}
-        error={booklet.error}
+        pending={booklet.isPending || preparingPdf === 'booklet'}
+        error={
+          pdfPreparationError?.target === 'booklet' ? pdfPreparationError.error : booklet.error
+        }
         onHide={() => setShowBookletModal(false)}
         onDownload={(students) => void downloadBooklet(students).catch(() => {})}
       />
