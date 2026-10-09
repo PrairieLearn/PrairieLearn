@@ -732,7 +732,7 @@ export function buildDocxContent(
               inlineNodes.push(child);
             }
           }
-          if (inlineNodes.length > 0 || !numbered) flushItem();
+          flushItem();
         }
         continue;
       }
