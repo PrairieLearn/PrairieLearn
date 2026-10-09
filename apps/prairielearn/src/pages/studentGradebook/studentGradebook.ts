@@ -40,6 +40,8 @@ function mapRow(
     assessment_set_color: raw.assessment_set.color,
     label: computeLabel(raw),
     assessment_instance_score_perc: raw.assessment_instance.score_perc,
+    assessment_instance_score_perc_pending: raw.assessment_instance.score_perc_pending,
+    assessment_instance_grading_pending: raw.assessment_instance.grading_pending,
     show_closed_assessment_score: raw.show_closed_assessment_score,
     start_new_set,
   };
@@ -86,11 +88,15 @@ router.get(
       computeTitle(row),
       row.assessment_set.heading,
       row.show_closed_assessment_score ? row.assessment_instance.score_perc?.toFixed(6) : null,
+      row.show_closed_assessment_score
+        ? row.assessment_instance.score_perc_pending.toFixed(6)
+        : null,
+      row.show_closed_assessment_score ? row.assessment_instance.grading_pending : null,
     ]);
 
     const stringifier = stringifyNonblocking(csvData, {
       header: true,
-      columns: ['Assessment', 'Set', 'Score'],
+      columns: ['Assessment', 'Set', 'Score', 'Pending score', 'Grading pending'],
     });
 
     res.setHeader('Content-Type', 'text/csv');
