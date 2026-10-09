@@ -1,7 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import {
   DefaultChatTransport,
-  type ReasoningUIPart,
   type TextUIPart,
   type ToolUIPart,
   type UIMessage,
@@ -16,45 +15,20 @@ import { run } from '@prairielearn/run';
 import { useResizeHandle } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
+import { ActivityStatus } from '../../../components/ai/ActivityStatus.js';
+import { ChatMessage } from '../../../components/ai/ChatMessage.js';
+import { MemoizedMarkdown } from '../../../components/ai/MemoizedMarkdown.js';
+import { ReasoningSummary } from '../../../components/ai/ReasoningSummary.js';
+import { ToolCall as ToolActivity } from '../../../components/ai/ToolCall.js';
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
 } from '../../../lib/ai-question-generation/agent.js';
 
-import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
 
 function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
   return part.type.startsWith('tool-');
-}
-
-function ProgressStatus({
-  state,
-  statusText,
-  showSpinner,
-}: {
-  state: 'streaming' | 'success' | 'error';
-  statusText: ReactNode;
-  showSpinner?: boolean;
-}) {
-  return (
-    // Screen-reader announcements are handled centrally by the persistent live
-    // region in AiQuestionGenerationChat. These per-instance elements
-    // mount/unmount per tool call, so a fresh live region here would not
-    // announce reliably.
-    <div className="d-flex flex-row align-items-center gap-1 small text-muted">
-      {run(() => {
-        if (state === 'streaming' || showSpinner) {
-          return <div className="spinner-border spinner-border-text" aria-hidden="true" />;
-        } else if (state === 'success') {
-          return <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
-        } else {
-          return <i className="bi bi-fw bi-x text-danger" aria-hidden="true" />;
-        }
-      })}
-      <span>{statusText}</span>
-    </div>
-  );
 }
 
 function ToolCallStatus({
@@ -73,7 +47,8 @@ function ToolCallStatus({
 }) {
   return (
     <div>
-      <ProgressStatus
+      <ToolActivity
+        collapsible={false}
         state={run(() => {
           switch (state) {
             case 'input-streaming':
@@ -87,7 +62,7 @@ function ToolCallStatus({
               assertNever(state);
           }
         })}
-        statusText={statusText}
+        title={statusText}
         showSpinner={showSpinner}
       />
       <div>{children}</div>
@@ -204,50 +179,6 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   return <ToolCallStatus state={part.state} statusText={statusText} />;
 }
 
-function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
-  // Track whether the user has explicitly interacted with the expand/collapse
-  const [userControlled, setUserControlled] = useState(false);
-  const [userExpanded, setUserExpanded] = useState(false);
-
-  const isStreaming = part.state === 'streaming';
-
-  // If user has taken control, use their preference. Otherwise, expand while streaming, collapse when done.
-  const isExpanded = userControlled ? userExpanded : isStreaming;
-
-  if (!part.text) return null;
-
-  const toggleExpanded = () => {
-    setUserControlled(true);
-    setUserExpanded(!isExpanded);
-  };
-
-  return (
-    <div className="d-flex flex-column gap-1 border rounded p-1 small">
-      <button
-        type="button"
-        className="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
-        aria-expanded={isExpanded}
-        onClick={toggleExpanded}
-      >
-        <i
-          className={clsx('bi small text-muted', {
-            'bi-chevron-right': !isExpanded,
-            'bi-chevron-down': isExpanded,
-          })}
-          aria-hidden="true"
-        />
-        <span className="small text-muted">{isStreaming ? 'Thinking...' : 'Thinking'}</span>
-      </button>
-
-      {isExpanded && (
-        <div className="markdown-body reasoning-body p-1 pt-0">
-          <MemoizedMarkdown content={part.text} />
-        </div>
-      )}
-    </div>
-  );
-}
-
 function TextPart({ part }: { part: TextUIPart }) {
   return (
     <div className="markdown-body">
@@ -264,7 +195,7 @@ function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }
     } else if (part.type === 'text') {
       return <TextPart key={key} part={part} />;
     } else if (part.type === 'reasoning') {
-      return <ReasoningBlock key={key} part={part} />;
+      return <ReasoningSummary key={key} text={part.text} state={part.state} />;
     } else if (['step-start'].includes(part.type)) {
       return '';
     } else {
@@ -371,10 +302,10 @@ function Message({
     return (
       // role="article" + label lets screen-reader users navigate message to
       // message (e.g. with the "article" quick-nav key).
-      <div
+      <ChatMessage
+        messageRole="user"
         className="d-flex flex-column align-items-end mb-3"
-        role="article"
-        aria-label={`Message from ${userName ?? 'you'}`}
+        label={`Message from ${userName ?? 'you'}`}
       >
         <div
           className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
@@ -386,7 +317,7 @@ function Message({
           <span className="fw-medium">{userName ?? 'Unknown user'}</span>
           {createdAt && <MessageTimestamp createdAt={createdAt} />}
         </div>
-      </div>
+      </ChatMessage>
     );
   }
 
@@ -400,10 +331,10 @@ function Message({
   });
 
   return (
-    <div
+    <ChatMessage
+      messageRole="assistant"
       className="d-flex flex-column gap-2 mb-3"
-      role="article"
-      aria-label="Message from PrairieLearn"
+      label="Message from PrairieLearn"
     >
       <MessageParts parts={message.parts} />
       {message.metadata?.status === 'canceled' && (
@@ -412,13 +343,13 @@ function Message({
           Generation was stopped
         </div>
       )}
-      {isLastMessage && showSpinner && <ProgressStatus state="streaming" statusText="Working..." />}
+      {isLastMessage && showSpinner && <ActivityStatus state="streaming" statusText="Working..." />}
       {jobLogsUrl && (
         <a className="small" href={jobLogsUrl} target="_blank">
           View job logs (link only visible to administrators)
         </a>
       )}
-    </div>
+    </ChatMessage>
   );
 }
 
