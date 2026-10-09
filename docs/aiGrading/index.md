@@ -96,7 +96,9 @@ Instructors should review AI output before relying on it for grades. For each su
 
 - **Explanation** — The reasoning behind the model's grading decisions.
 
-  When the submission contains a file or image attachment, the model's transcription of relevant content is included.
+  The model is instructed to explain its grading decisions concisely. For each submitted standalone image file, it must also provide a complete transcription of relevant text, numbers, and final answers, whether handwritten or typed. This includes images submitted through `pl-image-capture` and `pl-file-upload`.
+
+  Text/code answers and document attachments such as PDFs do not trigger a full transcription requirement. The model quotes or describes the specific evidence needed to justify the grade, including relevant readings of handwritten answers and interpretations of diagrams or plots. Unclear or ambiguous readings are flagged.
 
   ??? example "Explanation example"
 
@@ -104,9 +106,9 @@ Instructors should review AI output before relying on it for grades. For each su
 
       ![AI grading explanation describing the model's reasoning.](ai-grading-explanation.png)
 
-      **Transcription (file and image submissions):**
+      **Transcription of submitted images:**
 
-      ![AI transcription of a student's image submission, shown beneath the explanation.](ai-grading-transcription.png)
+      ![AI transcription of a student's handwritten image submission, shown beneath the explanation.](ai-grading-transcription.png)
 
 After both AI and human grades are present, PrairieLearn can also show comparison information:
 
@@ -142,8 +144,7 @@ AI grading assembles a prompt from the following inputs and sends it to the sele
 **Outputs returned:**
 
 - Graded rubric (item-by-item scoring)
-- Explanation
-- Transcription _(file and image submissions)_
+- Explanation, including transcripts of submitted image files and relevant interpretations of other content
 
 For transparency and debugging, the exact prompt sent to the model is available on each graded submission.
 
