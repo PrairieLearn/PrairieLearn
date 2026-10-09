@@ -234,19 +234,6 @@ function getAiGradingFileName($: cheerio.CheerioAPI, el: AnyNode): string | unde
   return options?.submitted_file_name;
 }
 
-export function containsSubmissionAttachment({
-  submission_text,
-  submitted_answer,
-}: {
-  submission_text: string;
-  submitted_answer: Record<string, any> | null;
-}): boolean {
-  return (
-    (submitted_answer?._files?.length ?? 0) > 0 ||
-    cheerio.load(submission_text)(AI_GRADING_FILE_SELECTOR).length > 0
-  );
-}
-
 function containsSubmissionImage(submission_text: string): boolean {
   const $ = cheerio.load(submission_text);
   for (const el of $(AI_GRADING_FILE_SELECTOR)) {
