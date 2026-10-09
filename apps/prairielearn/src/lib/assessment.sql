@@ -34,6 +34,28 @@ WITH
     LIMIT
       1
   ),
+  existing_single_assessment_instance AS (
+    SELECT
+      ai.id
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON a.id = ai.assessment_id
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND NOT a.multiple_instance
+      AND NOT $for_printing::boolean
+      AND NOT ai.for_printing
+      AND (
+        CASE
+          WHEN $group_id::bigint IS NOT NULL THEN ai.team_id = $group_id
+          ELSE ai.user_id = $user_id
+        END
+      )
+    ORDER BY
+      ai.number DESC
+    LIMIT
+      1
+  ),
   inserted_assessment_instance AS (
     INSERT INTO
       assessment_instances (
@@ -42,6 +64,7 @@ WITH
         user_id,
         team_id,
         mode,
+        for_printing,
         auto_close,
         date_limit,
         number,
@@ -56,6 +79,7 @@ WITH
       END,
       $group_id,
       $mode,
+      $for_printing::boolean,
       a.auto_close
       AND NOT $for_printing::boolean
       AND a.type = 'Exam',
@@ -68,13 +92,15 @@ WITH
       $client_fingerprint_id
     FROM
       assessments AS a
-      -- Only retrieve the latest assessment instance if the assessment allows
-      -- multiple instances or this is an independent instructor print instance.
-      -- Otherwise, trigger a conflict on number.
-      LEFT JOIN latest_assessment_instance AS lai ON a.multiple_instance
-      OR $for_printing::boolean
+      LEFT JOIN latest_assessment_instance AS lai ON TRUE
     WHERE
       a.id = $assessment_id
+      AND NOT EXISTS (
+        SELECT
+          1
+        FROM
+          existing_single_assessment_instance
+      )
     ON CONFLICT DO NOTHING
     RETURNING
       *
@@ -130,14 +156,34 @@ SELECT
 FROM
   inserted_assessment_instance
 UNION ALL
--- If the assessment instance was not inserted because of a conflict on number, return the existing assessment instance.
+-- Reuse an ordinary single-instance attempt, even if later printable instances exist.
 SELECT
   id AS assessment_instance_id,
   FALSE AS created
 FROM
-  latest_assessment_instance
+  existing_single_assessment_instance
 WHERE
   NOT EXISTS (
+    SELECT
+      1
+    FROM
+      inserted_assessment_instance
+  )
+UNION ALL
+-- Preserve the existing conflict behavior for multiple-instance assessments
+-- and printable instances.
+SELECT
+  lai.id AS assessment_instance_id,
+  FALSE AS created
+FROM
+  latest_assessment_instance AS lai
+  JOIN assessments AS a ON a.id = lai.assessment_id
+WHERE
+  (
+    a.multiple_instance
+    OR $for_printing::boolean
+  )
+  AND NOT EXISTS (
     SELECT
       1
     FROM
