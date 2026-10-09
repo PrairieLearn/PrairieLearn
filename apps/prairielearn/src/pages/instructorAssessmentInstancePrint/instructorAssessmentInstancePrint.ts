@@ -92,16 +92,14 @@ const PrintSnapshotSchema = z.strictObject({
   html: z.string().min(1).max(MAX_PRINT_SNAPSHOT_BYTES),
   source: z.strictObject({
     html: z.string().max(MAX_PRINT_SNAPSHOT_BYTES),
-    figures: z
-      .array(
-        z.strictObject({
-          id: z.string().regex(/^[1-9]\d*$/),
-          width: z.number().positive().max(4096),
-          height: z.number().positive().max(4096),
-          alt: z.string(),
-        }),
-      )
-      .max(64),
+    figures: z.array(
+      z.strictObject({
+        id: z.string().regex(/^[1-9]\d*$/),
+        width: z.number().positive().max(4096),
+        height: z.number().positive().max(4096),
+        alt: z.string(),
+      }),
+    ),
   }) satisfies z.ZodType<DocxSource>,
 });
 /** The layout choices shared by every printable output of one assessment instance. */
