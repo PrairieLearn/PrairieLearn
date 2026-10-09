@@ -1,0 +1,17 @@
+columns
+    data: jsonb not null default '{}'::jsonb
+    id: bigint not null default nextval('user_shared_state_values_id_seq'::regclass)
+    revision_id: bigint not null
+    shared_state_object_id: bigint not null
+    updated_at: timestamp with time zone not null default now()
+    user_id: bigint not null
+    write_seq: integer not null default 0
+
+indexes
+    user_shared_state_values_pkey: PRIMARY KEY (id) USING btree (id)
+    user_shared_state_values_user_id_object_id_key: UNIQUE USING btree (user_id, shared_state_object_id)
+
+foreign-key constraints
+    user_shared_state_values_revision_id_fkey: FOREIGN KEY (revision_id) REFERENCES shared_state_object_revisions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    user_shared_state_values_shared_state_object_id_fkey: FOREIGN KEY (shared_state_object_id) REFERENCES shared_state_objects(id) ON UPDATE CASCADE ON DELETE CASCADE
+    user_shared_state_values_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
