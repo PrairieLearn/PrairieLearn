@@ -756,6 +756,19 @@ export async function initExpress(): Promise<Express> {
   ]);
 
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course/:course_id(\\d+)/course-agent',
+      (await import('./ee/lib/course-agent/routes.js')).default,
+    );
+  }
+
+  if (isEnterprise()) {
+    app.use(
+      ['/pl/course/:course_id(\\d+)', '/pl/course_instance/:course_instance_id(\\d+)/instructor'],
+      (await import('./ee/middlewares/courseAgentPanel.js')).default,
+    );
+  }
 
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows

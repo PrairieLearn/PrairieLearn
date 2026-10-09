@@ -703,6 +703,28 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+export const CourseAgentConversationSchema = z.object({
+  branch: z.string(),
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  external_id: z.string(),
+  id: IdSchema,
+  operation_number: z.number(),
+  repository: z.string(),
+  title: z.string(),
+  user_id: IdSchema,
+});
+export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
+export const CourseAgentOperationSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  operation_id: z.string(),
+  operation_number: z.number(),
+  payload: z.object({ kind: z.literal('message'), text: z.string() }),
+});
+export type CourseAgentOperation = z.infer<typeof CourseAgentOperationSchema>;
+
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -1801,6 +1823,8 @@ export const TableNames = [
   'batched_migrations',
   'chunks',
   'client_fingerprints',
+  'course_agent_conversations',
+  'course_agent_operations',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',
