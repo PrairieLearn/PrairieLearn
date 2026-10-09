@@ -505,7 +505,7 @@ function ChooseSharingNameModal({
               Sharing name
             </label>
             <input
-              className="form-control"
+              className={clsx('form-control', errors.courseSharingName && 'is-invalid')}
               type="text"
               id="course_sharing_name"
               defaultValue={currentSharingName ?? ''}
@@ -523,8 +523,7 @@ function ChooseSharingNameModal({
               Use 1–64 characters: letters, numbers, hyphens, or underscores.
             </div>
             {errors.courseSharingName && (
-              <div id="course_sharing_name_error" className="text-danger small">
-                <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
+              <div id="course_sharing_name_error" className="invalid-feedback">
                 {errors.courseSharingName.message}
               </div>
             )}
