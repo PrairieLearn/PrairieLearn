@@ -215,6 +215,7 @@ class _Constants:
         "—": "-",  # em dash
         "―": "-",  # horizontal bar
         "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
+        "∣": "|",  # ruff:ignore[ambiguous-unicode-character-string]
         "\u2061": "",  # function application
     })
 
@@ -356,6 +357,7 @@ class HasCommentError(BaseSympyError):
 @dataclass
 class HasInvalidSymbolError(BaseSympyError):
     symbol: str
+    offset: int | None = None
 
 
 # Deprecated / unused, kept for backwards compatibility.
@@ -767,7 +769,9 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
     return f" {last_conjunction} ".join(comma_sep.rsplit(", ", maxsplit=1))
 
 
-def _normalize_unicode_source(source: "SourceText") -> "SourceText":
+def _normalize_unicode_source(
+    source: "SourceText", *, formula_editor: bool = False
+) -> "SourceText":
     """Normalize Unicode while retaining the raw offset of every output character."""
     const = _Constants
     normalized_tokens: list[SourceToken] = []
@@ -782,15 +786,18 @@ def _normalize_unicode_source(source: "SourceText") -> "SourceText":
         ):
             # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
             # formula editor writes exponents and subscripts with "^" and "_".
-            raise HasInvalidSymbolError(char)
+            raise HasInvalidSymbolError(char, token.raw_offset)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded
         # character-by-character (a no-op for ASCII).
         elif char not in const.set_operators:
-            normalized_char = full_unidecode(greek_unicode_transform(char))
+            greek_normalized = greek_unicode_transform(char)
+            normalized_char = full_unidecode(greek_normalized)
             # unidecode uses "[?]" for characters it doesn't know, which would
             # otherwise be misreported as set notation.
             if normalized_char == "[?]" and char != normalized_char:
-                raise HasInvalidSymbolError(char)
+                raise HasInvalidSymbolError(char, token.raw_offset)
+            if formula_editor and greek_normalized != char:
+                normalized_char = f" {' '.join(normalized_char)} "
 
         normalized_tokens.extend(token.rewrite(normalized_char))
     return source.replace(normalized_tokens)
@@ -837,6 +844,11 @@ def _validate_and_rewrite_source(
     allow_sets: bool,
 ) -> "SourceText":
     _validate_multiplication(source)
+
+    for symbol in _Constants.plus_minus_operators:
+        ind = source.text.find(symbol)
+        if ind != -1:
+            raise HasInvalidSymbolError(symbol, source.tokens[ind].raw_offset)
 
     ind = source.text.find("\\")
     if ind != -1:
@@ -1095,6 +1107,36 @@ def convert_string_to_sympy_with_source(
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]:
+    """Convert a string to a SymPy expression and return its generated source."""
+    return _convert_source_to_sympy_with_source(
+        None,
+        expr,
+        variables,
+        allow_hidden=allow_hidden,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
+        custom_functions=custom_functions,
+        assumptions=assumptions,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+
+
+def _convert_source_to_sympy_with_source(
+    source: "SourceText | None",
+    expr: str,
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
+) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
@@ -1168,8 +1210,17 @@ def convert_string_to_sympy_with_source(
             locals_for_eval["functions"][name] = sympy.Function(name)
 
     # Do the conversion
-    return evaluate_with_source(
-        expr,
+    if source is None:
+        return evaluate_with_source(
+            expr,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+    return _evaluate_normalized_source(
+        source,
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
@@ -1358,8 +1409,9 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
-    try:
-        expr_parsed = convert_string_to_sympy(
+    return _try_parse_as_sympy(
+        expr,
+        lambda: convert_string_to_sympy(
             expr,
             variables,
             allow_hidden=allow_hidden,
@@ -1369,7 +1421,21 @@ def try_parse_string_as_sympy(
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
-        )
+        ),
+        allow_complex=allow_complex,
+        imaginary_unit=imaginary_unit,
+    )
+
+
+def _try_parse_as_sympy(
+    expr: str,
+    parse: Callable[[], sympy.Expr],
+    *,
+    allow_complex: bool,
+    imaginary_unit: str | None,
+) -> SympyParseResult:
+    try:
+        expr_parsed = parse()
     except HasFloatError as exc:
         return SympyParseFailure(
             f"Your answer contains the floating-point number {exc.n}. "
@@ -1412,9 +1478,14 @@ def try_parse_string_as_sympy(
             "Note that the location of the syntax error is approximate."
         )
     except HasInvalidSymbolError as exc:
+        offset = (
+            exc.offset
+            if exc.offset is not None
+            else find_symbol_offset(expr, exc.symbol)
+        )
         return SympyParseFailure(
             f'Your answer refers to an invalid symbol "{exc.symbol}". '
-            f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
+            f"<br><br><pre>{point_to_error(expr, offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasArgumentTypeError as exc:
