@@ -9,6 +9,7 @@ import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/reac
 import { useModalState } from '@prairielearn/ui';
 
 import { CopyButton } from '../../components/CopyButton.js';
+import { CourseSharingNameSchema } from '../../lib/client/course-sharing.js';
 import { getCourseEditErrorUrl, getQuestionSettingsUrl } from '../../lib/client/url.js';
 import type { SharingSetRow } from '../../models/sharing-set.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
@@ -444,10 +445,8 @@ function ChooseSharingNameModal({
   });
 
   const onSubmit = (data: { courseSharingName: string }) => {
-    mutation.mutate(
-      { courseSharingName: data.courseSharingName },
-      { onSuccess: () => onSuccess(data.courseSharingName) },
-    );
+    const courseSharingName = data.courseSharingName.trim();
+    mutation.mutate({ courseSharingName }, { onSuccess: () => onSuccess(courseSharingName) });
   };
 
   const handleHide = () => {
@@ -510,15 +509,19 @@ function ChooseSharingNameModal({
               type="text"
               id="course_sharing_name"
               defaultValue={currentSharingName ?? ''}
+              aria-describedby="course_sharing_name_help"
               aria-invalid={errors.courseSharingName ? 'true' : undefined}
               aria-errormessage={errors.courseSharingName ? 'course_sharing_name_error' : undefined}
               {...register('courseSharingName', {
-                required: 'Course sharing name is required.',
-                validate: (v) =>
-                  (!v.includes('/') && !v.includes('@')) ||
-                  'Course sharing name cannot contain "/" or "@".',
+                validate: (value) => {
+                  const result = CourseSharingNameSchema.safeParse(value);
+                  return result.success || result.error.issues[0].message;
+                },
               })}
             />
+            <div id="course_sharing_name_help" className="form-text">
+              Use 1–64 characters: letters, numbers, hyphens, or underscores.
+            </div>
             {errors.courseSharingName && (
               <div id="course_sharing_name_error" className="text-danger small">
                 <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
