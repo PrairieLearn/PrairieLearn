@@ -67,6 +67,25 @@ Avoid unrelated workloads during the comparison. If performance under load is
 important, make each fixed load level a separate controlled experiment instead
 of relying on arbitrary background activity.
 
+## Analyze
+
+`analyze.py` reads a `compare` output directory with numpy and writes
+matplotlib figures plus `analysis.json`. It reports per-block ratios, a 95%
+bootstrap interval, per-cell changes, and round-to-round stability. With
+`--runtime-db`, it also measures how much wall-clock time each runtime
+condition spends per second of active measurement. With `--plan-duration` and
+`--plan-round-duration`, it projects the wall-clock time of a planned
+`compare` run:
+
+```sh
+uv run python benchmarks/symbolic-input/analyze.py \
+  --comparison-dir .cache/symbolic-input-benchmark/one-hour \
+  --runtime-db .cache/symbolic-input-benchmark/standard-one-hour/round-0000-baseline-6125da3a9ac5.sqlite3 \
+  --plan-duration 48m \
+  --plan-round-duration 3m \
+  --output-dir .cache/symbolic-input-benchmark/analysis
+```
+
 ## Run
 
 Run commands from the repository root:
