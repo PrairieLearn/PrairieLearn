@@ -117,7 +117,11 @@ function expandMultipleChoiceDropdowns(source: HTMLElement): void {
       marker.ariaHidden = 'true';
 
       const content = document.createElement('span');
-      content.innerHTML = option.dataset.content ?? option.textContent;
+      if (option.dataset.content === undefined) {
+        content.textContent = option.textContent;
+      } else {
+        content.innerHTML = option.dataset.content;
+      }
       choice.append(marker, content);
       choices.append(choice);
     }

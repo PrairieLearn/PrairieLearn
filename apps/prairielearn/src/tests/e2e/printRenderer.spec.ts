@@ -14,7 +14,7 @@ test('renders allowed resources and blocks redirects before requesting their des
     requests.push(request.url!);
     if (request.url === '/redirect') {
       response.writeHead(302, {
-        Location: `http://localhost:${(server.address() as AddressInfo).port}/destination`,
+        Location: `http://127.0.0.1:${(server.address() as AddressInfo).port}/destination`,
       });
       response.end();
     } else if (request.url === '/figure.svg') {

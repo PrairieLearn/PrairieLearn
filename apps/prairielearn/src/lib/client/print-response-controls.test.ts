@@ -21,6 +21,19 @@ function printQuestion(html: string): HTMLElement {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('printable response controls', () => {
+  it('keeps plain dropdown labels as text while preserving authored choice markup', () => {
+    const question = printQuestion(`
+      <div class="pl-multiple-choice-dropdown"><select>
+        <option value="1">&lt;em&gt;Literal label&lt;/em&gt;</option>
+        <option value="2" data-content="&lt;strong&gt;Styled label&lt;/strong&gt;">Styled label</option>
+      </select></div>
+    `);
+    const choices = question.querySelectorAll('.printing-choice > span:last-child');
+    expect(choices[0].textContent).toBe('<em>Literal label</em>');
+    expect(choices[0].querySelector('em')).toBeNull();
+    expect(choices[1].querySelector('strong')?.textContent).toBe('Styled label');
+  });
+
   it('prints media without a source as plain text', () => {
     const question = printQuestion(`
       <iframe title="Reference"></iframe>
