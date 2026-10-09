@@ -84,11 +84,13 @@ import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
 import { getSearchParams } from './lib/url.js';
+import { classifyWorkspaceSandboxRequestHost } from './lib/workspace-sandbox.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import { makeWorkspaceSandboxMiddleware } from './middlewares/workspaceSandbox.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -98,6 +100,7 @@ import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js'
 import { courseTrpcRouter } from './trpc/course/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 import { userTrpcRouter } from './trpc/user/trpc.js';
+import { workspaceTrpcRouter } from './trpc/workspace/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -149,7 +152,8 @@ export async function initExpress(): Promise<Express> {
 
   // This should come before the session middleware so that we don't
   // create a session every time we get a health check request.
-  app.get('/pl/webhooks/ping', function (req, res) {
+  app.get('/pl/webhooks/ping', function (req, res, next) {
+    if (classifyWorkspaceSandboxRequestHost(req).type !== 'not-sandbox') return next();
     res.send('.');
   });
 
@@ -198,22 +202,24 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
-  app.use(
-    excludeRoutes(
-      [
-        // API routes don't utilize sessions; don't run the session/flash middleware for them.
-        '/pl/api/',
-        // Static assets don't need to read from or write to sessions.
-        //
-        // Note that the assets route is configured to turn any missing files into 404
-        // errors, not to fall through and allow other routes to try to serve them. If they
-        // did fall through, we'd likely end up running code that does expect sessions to
-        // be present, e.g. `middlewares/authn`.
-        config.assetsPrefix,
-      ],
-      sessionRouter,
-    ),
+  const sessionRouterWithExclusions = excludeRoutes(
+    [
+      // API routes don't utilize sessions; don't run the session/flash middleware for them.
+      '/pl/api/',
+      // Static assets don't need to read from or write to sessions.
+      //
+      // Note that the assets route is configured to turn any missing files into 404
+      // errors, not to fall through and allow other routes to try to serve them. If they
+      // did fall through, we'd likely end up running code that does expect sessions to
+      // be present, e.g. `middlewares/authn`.
+      config.assetsPrefix,
+    ],
+    sessionRouter,
   );
+  app.use((req, res, next) => {
+    if (classifyWorkspaceSandboxRequestHost(req).type !== 'not-sandbox') return next();
+    sessionRouterWithExclusions(req, res, next);
+  });
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
@@ -364,16 +370,28 @@ export async function initExpress(): Promise<Express> {
       makeWorkspaceProxyMiddleware(containerPathRegex),
     ]);
   }
-  await makeWorkspaceContainerRoutes({
-    url: '/pl/workspace/:workspace_id(\\d+)/container',
-    containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
-    publicQuestionEndpoint: false,
-  });
-  await makeWorkspaceContainerRoutes({
-    url: '/pl/public/workspace/:workspace_id(\\d+)/container',
-    containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
-    publicQuestionEndpoint: true,
-  });
+  if (config.workspaceIsolationMode === 'cross-origin') {
+    app.use(
+      makeWorkspaceSandboxMiddleware({
+        onProxyRequest: (req) => workspaceProxySocketActivityMetrics.addSocket(req.socket),
+      }),
+    );
+  } else {
+    app.use((req, res, next) => {
+      if (classifyWorkspaceSandboxRequestHost(req).type === 'not-sandbox') return next();
+      res.status(404).send('Not Found');
+    });
+    await makeWorkspaceContainerRoutes({
+      url: '/pl/workspace/:workspace_id(\\d+)/container',
+      containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
+      publicQuestionEndpoint: false,
+    });
+    await makeWorkspaceContainerRoutes({
+      url: '/pl/public/workspace/:workspace_id(\\d+)/container',
+      containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
+      publicQuestionEndpoint: true,
+    });
+  }
 
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
@@ -616,6 +634,7 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: false }),
   ]);
+  app.use('/pl/workspace/:workspace_id(\\d+)/trpc', workspaceTrpcRouter);
   app.use(
     '/pl/workspace/:workspace_id(\\d+)',
     (await import('./pages/workspace/workspace.js')).default({ publicQuestionEndpoint: false }),
@@ -1892,6 +1911,7 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: true }),
   ]);
+  app.use('/pl/public/workspace/:workspace_id(\\d+)/trpc', workspaceTrpcRouter);
   app.use(
     '/pl/public/workspace/:workspace_id(\\d+)',
     (await import('./pages/workspace/workspace.js')).default({ publicQuestionEndpoint: true }),

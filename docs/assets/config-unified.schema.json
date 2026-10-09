@@ -1014,6 +1014,23 @@
       "default": 60000,
       "type": "number"
     },
+    "workspaceIsolationMode": {
+      "default": "same-origin",
+      "type": "string",
+      "enum": ["same-origin", "cross-origin"]
+    },
+    "workspaceSandboxBaseDomain": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "workspaceHeartbeatIntervalSec": {
       "default": 60,
       "type": "number"

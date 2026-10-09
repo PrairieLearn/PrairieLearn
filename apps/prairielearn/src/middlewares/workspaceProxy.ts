@@ -13,6 +13,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../lib/config.js';
 import { WorkspaceSchema } from '../lib/db-types.js';
 import { LocalCache } from '../lib/local-cache.js';
+import { WORKSPACE_SANDBOX_COOKIE_NAME } from '../lib/workspace-sandbox.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -35,6 +36,7 @@ function stripSensitiveCookies(proxyReq: http.ClientRequest) {
       name !== 'connect.sid' &&
       name !== 'prairielearn_session' &&
       name !== 'pl2_session' &&
+      name !== WORKSPACE_SANDBOX_COOKIE_NAME &&
       // The workspace authz cookies use a prefix plus the workspace ID, so
       // we need to check for that prefix instead of an exact name match.
       !name.startsWith('pl_authz_workspace_') &&
@@ -83,11 +85,21 @@ function getRequestPath(req: Request): string {
   return req.originalUrl ?? req.url;
 }
 
-export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
+export function makeWorkspaceProxyMiddleware(
+  containerPathRegex: RegExp,
+  options: {
+    responseHeaders?: Record<string, string>;
+    removeResponseHeaders?: string[];
+    cookieDomainRewrite?: string;
+  } = {},
+) {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   return createProxyMiddleware<Request, Response>({
     target: 'invalid',
     ws: true,
+    ...(options.cookieDomainRewrite == null
+      ? {}
+      : { cookieDomainRewrite: options.cookieDomainRewrite }),
     pathFilter: (_path, req) => {
       // The path provided to this function doesn't include the full path with
       // the `/pl/workspace/<workspace_id>/container/` prefix, so we need to
@@ -149,6 +161,14 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       },
       proxyReqWs: (proxyReq) => {
         stripSensitiveCookies(proxyReq);
+      },
+      proxyRes: (proxyRes) => {
+        for (const header of options.removeResponseHeaders ?? []) {
+          delete proxyRes.headers[header.toLowerCase()];
+        }
+        for (const [header, value] of Object.entries(options.responseHeaders ?? {})) {
+          proxyRes.headers[header.toLowerCase()] = value;
+        }
       },
       error: (err, req, res) => {
         logger.error('Error proxying workspace request', {
