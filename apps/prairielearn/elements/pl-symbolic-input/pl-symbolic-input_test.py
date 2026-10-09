@@ -3,6 +3,7 @@ import string
 from pathlib import Path
 from typing import Any
 
+import prairielearn.internal.symbolic_input as psi
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -66,7 +67,7 @@ def make_question_data(
     ],
 )
 def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
-    out, error_msg = symbolic_input.format_submission_for_sympy(sub)
+    out, error_msg = psi.format_submission_for_sympy(sub)
     assert (out, error_msg) == (expected, None)
 
 
@@ -85,7 +86,7 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
 def test_format_submission_for_sympy_preserves_set_union(
     sub: str, expected: str
 ) -> None:
-    out, error_msg = symbolic_input.format_submission_for_sympy(sub, allow_sets=True)
+    out, error_msg = psi.format_submission_for_sympy(sub, allow_sets=True)
     assert (out, error_msg) == (expected, None)
 
 
@@ -187,7 +188,7 @@ def test_format_formula_editor_submission_for_sympy(
     custom_functions: list[str],
     expected: str,
 ) -> None:
-    out = symbolic_input.format_formula_editor_submission_for_sympy(
+    out = psi.format_formula_editor_submission_for_sympy(
         sub, allow_trig, variables, custom_functions
     )
     assert out == expected
@@ -251,7 +252,7 @@ def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
     ],
 )
 def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
-    assert symbolic_input._restore_plus_minus(submission, latex) == expected
+    assert psi._restore_plus_minus(submission, latex) == expected
 
 
 def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> None:
@@ -277,7 +278,7 @@ def test_formula_editor_deeply_nested_bare_arguments() -> None:
     submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"
     expected = "sin (2(" * depth + "x" + " * y))" * depth + " * z"
     assert (
-        symbolic_input.format_formula_editor_submission_for_sympy(
+        psi.format_formula_editor_submission_for_sympy(
             submission, True, ["x", "y", "z"], []
         )
         == expected
