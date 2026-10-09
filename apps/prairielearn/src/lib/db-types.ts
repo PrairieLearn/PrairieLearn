@@ -712,6 +712,17 @@ export const CourseAgentConversationSchema = z.object({
   operation_number: z.number(),
   repository: z.string(),
   title: z.string(),
+  usage_cache_read_price: z.number().nonnegative().nullable(),
+  usage_cache_write_price: z.number().nonnegative().nullable(),
+  usage_cost: z.number().nonnegative().nullable(),
+  usage_input_price: z.number().nonnegative().nullable(),
+  usage_input_tokens: z.coerce.number().int().nonnegative(),
+  usage_input_tokens_cache_read: z.coerce.number().int().nonnegative(),
+  usage_input_tokens_cache_write: z.coerce.number().int().nonnegative(),
+  usage_model: z.string().nullable(),
+  usage_output_price: z.number().nonnegative().nullable(),
+  usage_output_tokens: z.coerce.number().int().nonnegative(),
+  usage_version: z.coerce.number().int().nonnegative(),
   user_id: IdSchema,
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;

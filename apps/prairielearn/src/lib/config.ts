@@ -70,6 +70,9 @@ export const ConfigSchema = z.object({
     .object({
       workerUrl: z.url(),
       serviceToken: z.string().min(32).nullable().default(null),
+      maxConcurrentPerUser: z.number().int().positive().default(2),
+      // A soft admission guard, matching AI grading's fixed-hour Redis accounting.
+      hourlyCostLimit: z.number().positive().default(10),
     })
     .nullable()
     .default(null),
@@ -794,6 +797,10 @@ export async function loadConfig(paths: string[]) {
 
   if (config.courseAgent && !config.redisUrl) {
     throw new Error('redisUrl must be set when courseAgent is configured');
+  }
+
+  if (config.courseAgent && !config.nonVolatileRedisUrl) {
+    throw new Error('nonVolatileRedisUrl must be set when courseAgent is configured');
   }
 
   if (

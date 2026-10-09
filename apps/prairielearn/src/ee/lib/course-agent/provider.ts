@@ -9,6 +9,7 @@ import {
   type ChatConnection,
   ChatError,
   type ChatProvider,
+  conversationUsageSchema,
   hostToolCallSchema,
   sandboxDiagnosticsSchema,
 } from '@prairielearn/course-agent-contract';
@@ -38,6 +39,7 @@ const snapshotSchema = z.object({
   messages: z.array(z.unknown()),
   operationNumber: z.number().int().nonnegative(),
   blocked: z.boolean(),
+  conversationUsage: conversationUsageSchema,
   pendingTool: z
     .object({
       id: z.uuid(),
@@ -275,6 +277,7 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
       return {
         messages,
         executions: value.executions,
+        conversationUsage: value.conversationUsage,
         blocked: value.blocked,
         operationNumber: value.operationNumber,
         pendingTool: value.pendingTool,

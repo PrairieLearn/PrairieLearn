@@ -55,11 +55,24 @@ const conversation = {
   repository: 'org/course',
   branch: 'main',
   operation_number: 0,
+  usage_cache_read_price: null,
+  usage_cache_write_price: null,
+  usage_cost: 0,
+  usage_input_price: null,
+  usage_input_tokens: 0,
+  usage_input_tokens_cache_read: 0,
+  usage_input_tokens_cache_write: 0,
+  usage_model: null,
+  usage_output_price: null,
+  usage_output_tokens: 0,
+  usage_version: 0,
   created_at: new Date(),
 };
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
+  maxConcurrentPerUser: 2,
+  hourlyCostLimit: 10,
 };
 
 test('reports an unsent message without leaking a configure transport error', async () => {
@@ -90,7 +103,7 @@ test.each(['{}', 'not JSON'])(
 );
 
 test('validates the configured model response', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ model: 'fixture-model' })));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ model: 'gpt-6-astra' })));
   await withConfig({ isEnterprise: true, courseAgent: settings }, async () => {
     await expect(provider(scope, conversation, true)).resolves.toBeDefined();
   });
