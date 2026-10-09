@@ -56,4 +56,17 @@ describe('htmlToTextBlocks', () => {
     expect(blocks[3]).toMatchObject({ type: 'figure', alt: 'Graph' });
     expect(decodeURIComponent((blocks[3] as { src: string }).src)).toContain('viewBox="0 0 20 10"');
   });
+
+  it('preserves figures inside inline wrappers and headings', () => {
+    const blocks = htmlToTextBlocks(
+      '<p>See <a href="#"><img src="/diagram.png" alt="Diagram"></a> here.</p><h2>Chart <span><svg viewBox="0 0 2 2" aria-label="Chart"><circle cx="1" cy="1" r="1"/></svg></span></h2>',
+    );
+    expect(blocks).toMatchObject([
+      { type: 'paragraph', text: 'See' },
+      { type: 'figure', src: '/diagram.png', alt: 'Diagram' },
+      { type: 'paragraph', text: 'here.' },
+      { type: 'heading', text: 'Chart' },
+      { type: 'figure', alt: 'Chart' },
+    ]);
+  });
 });

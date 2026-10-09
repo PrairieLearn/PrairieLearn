@@ -28,7 +28,7 @@ interface PrintableCoverSummaryItem {
   value: string;
 }
 
-interface PrintableCoverSection {
+export interface PrintableCoverSection {
   heading: string;
   blocks: PrintableTextBlock[];
   /** When set, the section ends with a labeled signature line. */
@@ -102,21 +102,32 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
       inlineText = '';
     };
 
+    function appendInline(node: HtmlNode): void {
+      if (node.type === 'text') {
+        inlineText += node.data;
+      } else if (node.type === 'tag' && !ignoredTags.has(node.tagName)) {
+        if (isFigure(node)) {
+          flush();
+          blocks.push(figure(node));
+        } else if (node.tagName === 'br') {
+          inlineText += ' ';
+        } else {
+          for (const child of node.children) appendInline(child);
+        }
+      }
+    }
+
     for (const node of nodes) {
       if (node.type === 'tag' && ignoredTags.has(node.tagName)) continue;
-      if (node.type === 'tag' && isFigure(node)) {
-        flush();
-        blocks.push(figure(node));
-        continue;
-      }
       if (!isBlock(node)) {
-        inlineText += contentText(node);
+        appendInline(node);
         continue;
       }
       flush();
       if (/^h[1-6]$/.test(node.tagName)) {
         const text = normalizeText(contentText(node));
         if (text) blocks.push({ type: 'heading', text });
+        for (const image of $(node).find('img, svg')) blocks.push(figure(image));
       } else if (node.tagName === 'ul' || node.tagName === 'ol') {
         const items = $(node)
           .children('li')
