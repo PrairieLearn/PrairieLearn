@@ -4,6 +4,7 @@ import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Literal
 
 import sympy
 
@@ -65,7 +66,16 @@ class SymbolicInputNormalizationError(Exception):
     message: str
 
 
+@dataclass(frozen=True, slots=True)
+class SymbolicSubmissionParseSuccess:
+    expr: sympy.Expr | Literal[""]
+    json: psu.SympyJson | Literal[""]
+
+
 type SymbolicInputNormalizationResult = SourceText | psu.SympyParseFailure
+type SymbolicSubmissionParseResult = (
+    SymbolicSubmissionParseSuccess | psu.SympyParseFailure
+)
 
 
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
@@ -414,7 +424,7 @@ def try_normalize_symbolic_input(
         return result
 
 
-def try_parse_normalized_source_as_sympy(
+def _try_parse_normalized_source_as_sympy(
     source: SourceText,
     raw_text: str,
     variables: Iterable[str] | None,
@@ -446,3 +456,92 @@ def try_parse_normalized_source_as_sympy(
         allow_complex=allow_complex,
         imaginary_unit=imaginary_unit,
     )
+
+
+def try_parse_symbolic_submission(
+    submission: str | None,
+    variables: Iterable[str] | None,
+    *,
+    formula_editor: bool = False,
+    latex: str | None = None,
+    allow_blank: bool = False,
+    blank_value: str = "0",
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+    imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
+    assumptions: psu.AssumptionsDictT | None = None,
+) -> SymbolicSubmissionParseResult:
+    """Normalize, parse, and serialize a symbolic-input submission."""
+    if submission is None:
+        return psu.SympyParseFailure("No submitted answer.")
+
+    variable_list = list(variables or ())
+    custom_function_list = list(custom_functions)
+    normalized = try_normalize_symbolic_input(
+        submission,
+        variable_list,
+        custom_function_list,
+        formula_editor=formula_editor,
+        latex=latex,
+        allow_trig_functions=allow_trig_functions,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+    if isinstance(normalized, psu.SympyParseFailure):
+        return normalized
+
+    if not normalized.text.strip():
+        if not allow_blank:
+            return psu.SympyParseFailure("No submitted answer.")
+        if not blank_value.strip():
+            return SymbolicSubmissionParseSuccess("", "")
+        result = psu.try_parse_string_as_sympy(
+            blank_value,
+            variable_list,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig_functions,
+            imaginary_unit=imaginary_unit,
+            custom_functions=custom_function_list,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions,
+        )
+    else:
+        result = _try_parse_normalized_source_as_sympy(
+            normalized,
+            submission,
+            variable_list,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig_functions,
+            imaginary_unit=imaginary_unit,
+            custom_functions=custom_function_list,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions,
+        )
+    if isinstance(result, psu.SympyParseFailure):
+        return result
+
+    try:
+        submission_json = psu.sympy_to_json(
+            result.expr,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+        )
+        psu.json_to_sympy(
+            submission_json,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+        )
+    except Exception:
+        return psu.SympyParseFailure(
+            "Your answer was simplified to this, which contains an invalid expression: "
+            f"$${sympy.latex(result.expr)}$$"
+        )
+    return SymbolicSubmissionParseSuccess(result.expr, submission_json)

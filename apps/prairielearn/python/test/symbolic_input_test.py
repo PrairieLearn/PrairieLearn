@@ -267,7 +267,7 @@ def test_symbolic_input_normalization_combines_stages_in_order() -> None:
     source = _normalize_symbolic_input(raw, formula_editor=True)
     assert source.text == "abs(ln (2) * x)**2 + 2*e+3 + 3*j"
 
-    result = symbolic_input.try_parse_normalized_source_as_sympy(
+    result = symbolic_input._try_parse_normalized_source_as_sympy(
         source,
         raw,
         ["x", "j"],
@@ -298,3 +298,14 @@ def test_symbolic_input_normalization_preserves_set_unions() -> None:
     text = "[0,1] | (2,3) | [4,5]"
     source = _normalize_symbolic_input(text, allow_sets=True)
     assert source == symbolic_input.SourceText.from_text(text)
+
+
+def test_parse_symbolic_submission_serializes_result() -> None:
+    result = symbolic_input.try_parse_symbolic_submission(
+        "|x|",
+        ["x"],
+    )
+    assert isinstance(result, symbolic_input.SymbolicSubmissionParseSuccess)
+    assert result.expr == sympy.Abs(sympy.Symbol("x"))
+    assert result.json != ""
+    assert psu.json_to_sympy(result.json) == result.expr

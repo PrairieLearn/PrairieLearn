@@ -477,100 +477,33 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
-    # Get submitted answer or return parse_error if it does not exist
-    submitted_answer = data["submitted_answers"].get(name, None)
-
-    if submitted_answer is None:
-        data["format_errors"][name] = "No submitted answer."
-        data["submitted_answers"][name] = None
-        return
-
-    normalized = psi.try_normalize_symbolic_input(
-        submitted_answer,
-        variables,
-        custom_functions,
-        formula_editor=formula_editor,
-        latex=data["raw_submitted_answers"].get(name + "-latex"),
-        allow_trig_functions=allow_trig,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-    )
-    if isinstance(normalized, psu.SympyParseFailure):
-        data["format_errors"][name] = normalized.error
-        data["submitted_answers"][name] = None
-        return
-
     # Retrieve variable assumptions encoded in correct answer
     assumptions_dict = None
     a_tru = data["correct_answers"].get(name, {})
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    if normalized.text.strip() == "":
-        if not allow_blank:
-            data["format_errors"][name] = "No submitted answer."
-            data["submitted_answers"][name] = None
-            return
-        if blank_value.strip() == "":
-            data["submitted_answers"][name] = ""
-            return
-        result = psu.try_parse_string_as_sympy(
-            blank_value,
-            variables,
-            allow_hidden=True,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-            allow_trig_functions=allow_trig,
-            imaginary_unit=imaginary_unit,
-            custom_functions=custom_functions,
-            simplify_expression=simplify_expression,
-            assumptions=assumptions_dict,
-        )
-    else:
-        result = psi.try_parse_normalized_source_as_sympy(
-            normalized,
-            submitted_answer,
-            variables,
-            allow_hidden=True,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-            allow_trig_functions=allow_trig,
-            imaginary_unit=imaginary_unit,
-            custom_functions=custom_functions,
-            simplify_expression=simplify_expression,
-            assumptions=assumptions_dict,
-        )
+    result = psi.try_parse_symbolic_submission(
+        data["submitted_answers"].get(name),
+        variables,
+        formula_editor=formula_editor,
+        latex=data["raw_submitted_answers"].get(name + "-latex"),
+        allow_blank=allow_blank,
+        blank_value=blank_value,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig,
+        imaginary_unit=imaginary_unit,
+        custom_functions=custom_functions,
+        simplify_expression=simplify_expression,
+        assumptions=assumptions_dict,
+    )
 
     if isinstance(result, psu.SympyParseFailure):
         data["format_errors"][name] = result.error
         data["submitted_answers"][name] = None
         return
-
-    a_sub_parsed = result.expr
-
-    # Make sure we can parse the json again
-    try:
-        a_sub_json = psu.sympy_to_json(
-            a_sub_parsed,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-        )
-
-        # Convert safely to sympy
-        psu.json_to_sympy(
-            a_sub_json,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
-        )
-
-        # Finally, store the result
-        data["submitted_answers"][name] = a_sub_json
-    except Exception:
-        data["format_errors"][name] = (
-            f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
-        )
-        data["submitted_answers"][name] = None
+    data["submitted_answers"][name] = result.json
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
