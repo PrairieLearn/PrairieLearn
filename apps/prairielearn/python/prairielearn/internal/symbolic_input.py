@@ -67,6 +67,11 @@ class SymbolicInputNormalizationError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
+class _UnsupportedSympyJsonNodeError(Exception):
+    node_type: type[sympy.Basic]
+
+
+@dataclass(frozen=True, slots=True)
 class SymbolicSubmissionParseSuccess:
     expr: psu.SympyValue | Literal[""]
     json: psu.SympyJson | Literal[""]
@@ -82,6 +87,69 @@ def allowed_sympy_types_include_sets(
     allowed_types: set[psu.AllowedSympyType],
 ) -> bool:
     return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
+
+
+def _validate_symbolic_submission_json_value(expr: psu.SympyValue) -> None:
+    """Validate that the SymPy JSON printer only emits supported structures."""
+    pending: list[sympy.Basic] = [expr]
+    while pending:
+        node = pending.pop()
+
+        if isinstance(node, sympy.Float):
+            raise _UnsupportedSympyJsonNodeError(type(node))
+        if (
+            isinstance(node, (sympy.Symbol, sympy.Number, sympy.NumberSymbol))
+            or node is sympy.I
+            or node is sympy.zoo
+            or any(node is domain for domain in psu._SET_DOMAINS)
+            or node is sympy.EmptySet
+        ):
+            continue
+
+        if isinstance(node, sympy.Interval):
+            pending.extend((node.start, node.end))
+            continue
+        if isinstance(
+            node,
+            (
+                sympy.Add,
+                sympy.Mul,
+                sympy.Pow,
+                sympy.Function,
+                sympy.Max,
+                sympy.Min,
+                sympy.FiniteSet,
+                sympy.Union,
+                sympy.Intersection,
+                sympy.Complement,
+            ),
+        ):
+            pending.extend(node.args)
+            continue
+        if (
+            type(node) is sympy.Set
+            and len(node.args) == 1
+            and isinstance(node.args[0], sympy.Symbol)
+            and node.args[0].name in psu._SET_DOMAIN_NAMES
+        ):
+            continue
+
+        raise _UnsupportedSympyJsonNodeError(type(node))
+
+
+def _serialize_symbolic_submission(
+    expr: psu.SympyValue,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+) -> psu.SympyJson:
+    return psu._sympy_to_json_impl(
+        expr,
+        allow_complex=allow_complex,
+        allow_trig_functions=True,
+        allow_sets=allow_sets,
+        validate=_validate_symbolic_submission_json_value,
+    )
 
 
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
@@ -538,16 +606,20 @@ def try_parse_symbolic_submission(
         return result
 
     try:
-        submission_json = psu.sympy_to_json(
+        submission_json = _serialize_symbolic_submission(
             result.expr,
             allow_complex=allow_complex,
             allow_sets=supports_set_syntax,
         )
-        psu.json_to_sympy(
-            submission_json,
-            allow_complex=allow_complex,
-            allow_sets=supports_set_syntax,
-            simplify_expression=simplify_expression,
+    except _UnsupportedSympyJsonNodeError as exc:
+        if issubclass(exc.node_type, sympy.AccumBounds):
+            return psu.SympyParseFailure(
+                "Your answer simplifies to a range of possible values, which is not "
+                f"supported: $${sympy.latex(result.expr)}$$"
+            )
+        return psu.SympyParseFailure(
+            "Your answer was simplified to this, which contains an unsupported "
+            f"expression: $${sympy.latex(result.expr)}$$"
         )
     except Exception:
         return psu.SympyParseFailure(

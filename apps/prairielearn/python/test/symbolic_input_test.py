@@ -55,6 +55,27 @@ def _format_formula_editor_submission(
     ).text
 
 
+def _serialize_symbolic_submission_with_round_trip(
+    expr: psu.SympyValue,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+) -> psu.SympyJson:
+    result = psu.sympy_to_json(
+        expr,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+    psu.json_to_sympy(
+        result,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+    )
+    return result
+
+
 @pytest.mark.parametrize(
     ("submission", "expected"),
     [
@@ -307,8 +328,157 @@ def test_parse_symbolic_submission_serializes_result() -> None:
     )
     assert isinstance(result, symbolic_input.SymbolicSubmissionParseSuccess)
     assert result.expr == sympy.Abs(sympy.Symbol("x"))
+    assert result.expr != ""
     assert result.json != ""
+    assert result.json == psu.sympy_to_json(result.expr)
     assert psu.json_to_sympy(result.json) == result.expr
+
+
+def test_parse_symbolic_submission_does_not_reparse_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_json_parse(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("submission JSON should not be reparsed")
+
+    monkeypatch.setattr(psu, "json_to_sympy", fail_json_parse)
+
+    result = symbolic_input.try_parse_symbolic_submission("x + 1", ["x"])
+
+    assert isinstance(result, symbolic_input.SymbolicSubmissionParseSuccess)
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
+@pytest.mark.parametrize(
+    ("expr", "allow_complex", "allow_sets", "legacy_error"),
+    [
+        (sympy.Symbol("x") + sympy.Rational(1, 2), False, False, None),
+        (sympy.I, True, False, None),
+        (sympy.zoo, False, False, None),
+        (sympy.nan, False, False, None),
+        (sympy.Max(sympy.Symbol("x"), 1), False, False, None),
+        (sympy.Min(sympy.Symbol("x"), 1), False, False, None),
+        (sympy.Function("f")(sympy.Symbol("x")), False, False, None),
+        (sympy.EmptySet, False, True, None),
+        (sympy.FiniteSet(sympy.Interval(0, 1)), False, True, None),
+        (
+            sympy.Union(sympy.Interval(0, 1), sympy.Interval(2, 3)),
+            False,
+            True,
+            None,
+        ),
+        (
+            sympy.Intersection(
+                sympy.Interval(0, 2), sympy.Interval(1, 3), evaluate=False
+            ),
+            False,
+            True,
+            None,
+        ),
+        (
+            sympy.Complement(sympy.Interval(0, 2), sympy.FiniteSet(sympy.Symbol("x"))),
+            False,
+            True,
+            None,
+        ),
+        (sympy.S.Reals, False, True, None),
+        (sympy.Set(sympy.Symbol("Reals")), False, True, None),
+        (sympy.Float("1.25"), False, False, psu.HasFloatError),
+        (
+            sympy.AccumBounds(-1, 1),
+            False,
+            False,
+            psu.HasInvalidFunctionError,
+        ),
+        (
+            sympy.cot(sympy.oo, evaluate=False),
+            False,
+            False,
+            psu.HasInvalidFunctionError,
+        ),
+        (
+            sympy.Derivative(sympy.Function("f")(sympy.Symbol("x")), sympy.Symbol("x")),
+            False,
+            False,
+            psu.HasInvalidFunctionError,
+        ),
+    ],
+)
+def test_symbolic_submission_validation_matches_json_round_trip(
+    expr: psu.SympyValue,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    legacy_error: type[Exception] | None,
+    simplify_expression: bool,
+) -> None:
+    if legacy_error is None:
+        expected = _serialize_symbolic_submission_with_round_trip(
+            expr,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+        )
+        assert (
+            symbolic_input._serialize_symbolic_submission(
+                expr,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+            )
+            == expected
+        )
+    else:
+        with pytest.raises(legacy_error):
+            _serialize_symbolic_submission_with_round_trip(
+                expr,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                simplify_expression=simplify_expression,
+            )
+        with pytest.raises(symbolic_input._UnsupportedSympyJsonNodeError):
+            symbolic_input._serialize_symbolic_submission(
+                expr,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+            )
+
+
+@pytest.mark.parametrize(
+    ("submission", "simplify_expression"),
+    [("sin(infty)", True), ("cot(infty)", False)],
+)
+def test_parse_symbolic_submission_rejects_accumulation_bounds(
+    submission: str, *, simplify_expression: bool
+) -> None:
+    result = symbolic_input.try_parse_symbolic_submission(
+        submission,
+        [],
+        simplify_expression=simplify_expression,
+    )
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert "simplifies to a range of possible values, which is not supported" in (
+        result.error
+    )
+
+
+def test_parse_symbolic_submission_rejects_other_unsupported_nodes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    x = sympy.Symbol("x")
+
+    def return_derivative(*_args: object, **_kwargs: object) -> psu.SympyParseResult:
+        return psu.SympyParseSuccess(sympy.Derivative(sympy.Function("f")(x), x))
+
+    monkeypatch.setattr(
+        symbolic_input,
+        "_try_parse_normalized_source_as_sympy",
+        return_derivative,
+    )
+
+    result = symbolic_input.try_parse_symbolic_submission("x", ["x"])
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert "contains an unsupported expression" in result.error
 
 
 @pytest.mark.parametrize(
