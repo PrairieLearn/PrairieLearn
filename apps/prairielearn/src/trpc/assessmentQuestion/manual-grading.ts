@@ -31,14 +31,12 @@ import {
 import { features } from '../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../lib/id.js';
+import { updateInstanceQuestionsManualGrading } from '../../lib/manualGrading.js';
 import { stopJobSequence } from '../../lib/server-jobs.js';
 import { selectCreditPool } from '../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../models/course-instances.js';
 import { InstanceQuestionRowWithAIGradingStatsSchema } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
-import {
-  selectInstanceQuestionsForManualGrading,
-  updateInstanceQuestions,
-} from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/queries.js';
+import { selectInstanceQuestionsForManualGrading } from '../../pages/instructorAssessmentManualGrading/assessmentQuestion/queries.js';
 
 import {
   requireCourseInstancePermissionEdit,
@@ -227,12 +225,10 @@ const setAssignedGraderMutation = t.procedure
       }
     }
 
-    await updateInstanceQuestions({
-      assessment_question: opts.ctx.assessment_question,
+    await updateInstanceQuestionsManualGrading({
+      assessment_question_id: opts.ctx.assessment_question.id,
+      authn_user_id: opts.ctx.authn_user.id,
       instance_question_ids: opts.input.instance_question_ids,
-      update_requires_manual_grading: false,
-      requires_manual_grading: null,
-      update_assigned_grader: true,
       assigned_grader,
     });
   });
@@ -246,13 +242,11 @@ const setRequiresManualGradingMutation = t.procedure
     }),
   )
   .mutation(async (opts) => {
-    await updateInstanceQuestions({
-      assessment_question: opts.ctx.assessment_question,
+    await updateInstanceQuestionsManualGrading({
+      assessment_question_id: opts.ctx.assessment_question.id,
+      authn_user_id: opts.ctx.authn_user.id,
       instance_question_ids: opts.input.instance_question_ids,
-      update_requires_manual_grading: true,
       requires_manual_grading: opts.input.requires_manual_grading,
-      update_assigned_grader: false,
-      assigned_grader: null,
     });
   });
 
