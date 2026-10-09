@@ -825,6 +825,9 @@ importers:
       cropperjs:
         specifier: ^2.2.0
         version: 2.2.0
+      css-tree:
+        specifier: ^3.2.1
+        version: 3.2.1
       csv-parse:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1038,6 +1041,9 @@ importers:
       pg:
         specifier: ^8.23.0
         version: 8.23.0
+      playwright:
+        specifier: ^1.62.1
+        version: 1.63.0
       prettier:
         specifier: ^3.9.9
         version: 3.9.9
@@ -1231,6 +1237,9 @@ importers:
       '@types/cookie-parser':
         specifier: ^1.4.10 <2
         version: 1.4.10(@types/express@4.17.25)
+      '@types/css-tree':
+        specifier: ^3.2.0
+        version: 3.2.0
       '@types/d3':
         specifier: ^7.4.3
         version: 7.4.3
@@ -5502,6 +5511,9 @@ packages:
 
   '@types/css-tree@2.3.11':
     resolution: {integrity: sha512-aEokibJOI77uIlqoBOkVbaQGC9zII0A+JH1kcTNKW2CwyYWD8KM6qdo+4c77wD3wZOQfJuNWAr9M4hdk+YhDIg==}
+
+  '@types/css-tree@3.2.0':
+    resolution: {integrity: sha512-J5KXmk6BFIepOT7280FdFyNs4c5fh0Uee0otjKEvzchrRs38Ii9qminqc4ds0L19X8Zd/rT+brR9jkBthygjWw==}
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -13607,6 +13619,8 @@ snapshots:
       '@types/node': 24.19.0
 
   '@types/css-tree@2.3.11': {}
+
+  '@types/css-tree@3.2.0': {}
 
   '@types/d3-array@3.2.2': {}
 
