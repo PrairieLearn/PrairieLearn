@@ -153,6 +153,20 @@ describe('createDocxDocument', () => {
     ]);
   });
 
+  it.each([0, -2, 1.9])(
+    'uses one row for an invalid grading row count of %s',
+    async (rowsPerColumn) => {
+      const docx = await renderDocx({
+        cover: { ...cover, gradingTable: { questionNumbers: ['1', '2'], rowsPerColumn } },
+        footerLabel: 'Form A',
+      });
+      const { documentXml } = await readDocx(docx);
+      expect(documentXml).toContain('1   __________');
+      expect(documentXml).toContain('2   __________');
+      expect(documentXml).toContain('Total   __________');
+    },
+  );
+
   it('keeps a wide cover field in sequence after a partially filled row', async () => {
     const docx = await renderDocx({
       cover: {

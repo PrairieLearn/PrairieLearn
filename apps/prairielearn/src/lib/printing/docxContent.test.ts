@@ -40,6 +40,22 @@ it('preserves response areas and matrix tables nested inside input groups', asyn
   expect(word('w\\:t').text()).toContain('At most 250 words');
 });
 
+it('skips empty table rows and preserves text when a matrix has no usable cells', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <table><tr></tr><tr><td>Usable cell</td></tr></table>
+    <div class="pl-matrix-component-input-container"><table><tr><td rowspan="2">Matrix label</td></tr></table></div>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  expect(word('w\\:tbl')).toHaveLength(1);
+  expect(word('w\\:tbl w\\:tr')).toHaveLength(1);
+  expect(word('w\\:t').text()).toContain('Usable cell');
+  expect(word('w\\:t').text()).toContain('Matrix label');
+});
+
 it('keeps writing space inside a numbered list item', async () => {
   const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
     <ol><li>Explain your answer:

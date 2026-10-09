@@ -419,8 +419,12 @@ export function buildDocxContent(
       .children('thead, tbody, tfoot')
       .children('tr')
       .add($(node).children('tr'))
-      .toArray();
-    if (rows.length === 0) return [];
+      .toArray()
+      .filter((row) => cells(row).length > 0);
+    if (rows.length === 0) {
+      const fallback = $(node).text().trim();
+      return fallback ? [paragraph([text(fallback)])] : [];
+    }
     const columnCount = Math.max(
       ...rows.map((row) => cells(row).reduce((sum, cell) => sum + number(cell, 'colspan', 1), 0)),
     );
