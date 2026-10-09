@@ -20,9 +20,9 @@ import { type AgentScope, selectConversation } from '../../../models/course-agen
 
 import { connectionFailure } from './errors.js';
 import { subscribe } from './events.js';
-import { executeHostTool } from './host-tools.js';
+import { dispatchHostTool } from './host-tools.js';
 import { reconcileOperations } from './lifecycle.js';
-import { provider, snapshot } from './service.js';
+import { prepare, provider, snapshot } from './service.js';
 
 const router = Router({ mergeParams: true });
 const ParamsSchema = z.object({ conversation_id: IdSchema });
@@ -105,7 +105,20 @@ router.get(
       unlisten = await subscribe(conversation_id, () => void refresh());
       // HTTP exposes a safe status before a failed WebSocket upgrade hides its cause.
       await chat.getSnapshot(signal);
-      unwatch = await chat.watch(signal, () => void refresh(), fail, executeHostTool);
+      unwatch = await chat.watch(
+        signal,
+        () => void refresh(),
+        fail,
+        (call) =>
+          dispatchHostTool(call, (incoming) =>
+            prepare(scope, conversation, {
+              id: incoming.id,
+              sequence: incoming.sequence,
+              name: incoming.name,
+              args: incoming.input,
+            }),
+          ),
+      );
       if (signal.aborted) {
         clean();
         return;

@@ -3,6 +3,7 @@ import type { ChatProvider, ChatSnapshot } from '@prairielearn/course-agent-cont
 import type { CourseAgentConversation } from '../../../lib/db-types.js';
 import {
   rejectOperation,
+  reserveContinuation,
   saveOperationStatuses,
   selectActiveOperations,
 } from '../../../models/course-agent-conversation.js';
@@ -56,4 +57,16 @@ export async function reconcileOperations(
     });
   }
   if (updates.length > 0) await saveOperationStatuses(conversation.id, updates);
+}
+
+/** Warm tool results continue the original turn; a restored sandbox needs a new dispatch. */
+export async function admitResult(
+  conversation: CourseAgentConversation,
+  id: string,
+  snapshot: ChatSnapshot,
+) {
+  if (Object.values(snapshot.executions ?? {}).some((receipt) => receipt.status === 'running')) {
+    return undefined;
+  }
+  return reserveContinuation(conversation, id);
 }

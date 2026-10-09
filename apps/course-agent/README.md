@@ -1,7 +1,7 @@
 # Course agent
 
 A feature-gated instructor chat that runs Codex in a course checkout. Course owners
-can ask questions, edit files in the sandbox, steer a running turn, and stop it.
+can ask questions, edit files, steer or stop a turn, and review changes before publishing.
 
 ```mermaid
 flowchart LR
@@ -16,7 +16,8 @@ flowchart LR
 
 - Saved conversations, selection, and unsent drafts across navigation and reloads.
 - Repository/branch changes require a new conversation. Accounting and limits are deferred.
-- Sandbox file edits only: no approval, GitHub publication, or Course Sync.
+- Review and approve committed text changes, publish to GitHub, then run Course Sync.
+- Course Sync validates content; failures retain the commit for an approved correction. No automatic rollback.
 - No skill installation or management.
 
 ## Local setup
@@ -77,7 +78,8 @@ sandbox development.
    reloading. The sandbox should restore its files from a checkpoint.
 
 The stars button stays visible but disabled when its connection token is missing;
-hover or focus it for an explanation. Failed tools stay collapsed until opened.
+hover or focus it for an explanation. GitHub publishing also requires a PL-side token.
+Failed tools stay collapsed until opened.
 
 ## Troubleshooting
 
@@ -90,7 +92,10 @@ hover or focus it for an explanation. Failed tools stay collapsed until opened.
 Closing the panel detaches PL's live connection. A running Codex turn continues
 in Cloudflare, but host-executed tools require an open panel. No PL observer or
 polling task stays behind. Completed work becomes visible on reconnect; a reload
-reopens the saved conversation.
+reopens the saved conversation. A `push_sync` request captures its files and
+approval gate in Cloudflare even if PL is disconnected. Reopening prepares that
+retained request for review. After approval, publication and Course Sync finish
+without requiring the browser to remain open.
 
 The fixture covers chat and recovery behavior. Real model inference, Docker
 networking, and GitHub access need the real-sandbox path. To run focused checks:
@@ -112,3 +117,40 @@ runs after leaving the panel.
 
 Disabling `course-agent` blocks new messages and conversations while preserving
 history, Stop, and cleanup.
+
+## Review and publish
+
+```mermaid
+flowchart LR
+  Change[Committed sandbox changes] --> Diff[Instructor reviews diff]
+  Diff --> Decision{Decision}
+  Decision -->|Deny| Chat[Agent continues]
+  Decision -->|Approve| GitHub[Publish to GitHub]
+  GitHub --> Sync[Course Sync]
+  Sync -->|Success or diagnostics| Chat
+```
+
+For the fixture, add `"githubClientToken": "fixture-no-github-network"` to PL's
+config. It shows scripted approval states without writing to GitHub.
+
+For real publication, configure PL's **`githubClientToken`** with write access to
+a disposable course repository. This is separate from the Worker's read token.
+Without it, the stars button is disabled and its tooltip explains why.
+
+1. Ask the agent to make a small change, commit it, and call `push_sync`.
+2. Open **View changes**, inspect the diff, and **Deny** once: nothing should publish.
+3. Request another change and **Approve**. Expect **Publishing…**, then **Syncing course…**,
+   a GitHub commit, and the updated course in PL.
+4. Repeat after over 10 idle minutes: approval should recover the sandbox without
+   flashing **Retry completion** during normal progress.
+5. Approve invalid course content. Expect the GitHub commit to remain and Course
+   Sync diagnostics to reach the agent; request and approve a correction.
+
+A PL restart during Course Sync requires **Retry completion**. Retrying uses saved
+publication receipts; automatic restart continuation is outside this MVP.
+
+For fixture review coverage, with the fixture running:
+
+```sh
+COURSE_AGENT_FIXTURE_URL=http://localhost:8791 pnpm --filter @prairielearn/prairielearn test:e2e src/tests/e2e/courseAgent.spec.ts
+```

@@ -1,7 +1,9 @@
 /* eslint-disable @eslint-react/no-array-index-key -- Text segments and immutable diff lines keep their order within a message. */
 
 import { type UIMessage } from 'ai';
+import { type ReactNode } from 'react';
 
+import { type ApprovalDisplay } from '@prairielearn/course-agent-contract';
 import { run } from '@prairielearn/run';
 
 import { formatCourseAgentDate } from '../../../lib/course-agent-date.js';
@@ -14,15 +16,19 @@ import { buildTranscript } from './message-parts.js';
 
 export function Transcript({
   messages,
+  approvals,
+  renderCodeChange,
   userName,
   timezone,
 }: {
   messages: UIMessage[];
+  approvals: ApprovalDisplay[];
+  renderCodeChange: (approval: ApprovalDisplay) => ReactNode;
   userName: string;
   timezone: string;
 }) {
   const metadataById = new Map(messages.map((message) => [message.id, message.metadata]));
-  return buildTranscript(messages).map((entry) =>
+  return buildTranscript(messages, approvals).map((entry) =>
     entry.role === 'user' ? (
       <ChatMessage
         key={entry.id}
@@ -51,6 +57,9 @@ export function Transcript({
     ) : (
       <ChatMessage key={entry.id} messageRole={entry.role}>
         {entry.parts.map((part, index) => {
+          if (part.kind === 'code-change') {
+            return <div key={part.approval.id}>{renderCodeChange(part.approval)}</div>;
+          }
           if (part.kind === 'tools') {
             return (
               <div key={index} className="d-flex flex-column gap-2 my-2">

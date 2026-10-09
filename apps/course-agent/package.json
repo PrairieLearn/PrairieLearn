@@ -25,7 +25,9 @@
     "@cloudflare/workers-types": "5.20260917.1",
     "@openai/codex": "0.155.0",
     "@types/node": "^24.13.5",
+    "@types/ws": "^8.18.1",
     "typescript": "^7.0.2",
-    "wrangler": "^4.134.0"
+    "wrangler": "^4.134.0",
+    "ws": "^8.18.3"
   }
 }

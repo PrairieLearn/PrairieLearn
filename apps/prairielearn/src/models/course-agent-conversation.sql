@@ -88,6 +88,18 @@ INSERT INTO
 VALUES
   ($id, $operation_id, $payload, $operation_number);
 
+-- BLOCK select_pending_proposal_exists
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_agent_proposals
+    WHERE
+      conversation_id = $id
+      AND NOT delivered
+  ) AS pending;
+
 -- BLOCK select_conversation_activity
 SELECT
   to_jsonb(c.*) AS conversation,
@@ -180,3 +192,14 @@ WHERE
   AND o.dispatch_id = v.dispatch_id
   AND o.status IN ('admitted', 'running')
   AND o.status <> v.status;
+
+-- BLOCK complete_decision_operation
+UPDATE course_agent_operations
+SET
+  status = 'completed',
+  finished_at = now()
+WHERE
+  conversation_id = $id
+  AND operation_id = $operation_id
+  AND payload ->> 'kind' = 'decision'
+  AND status = 'admitted';

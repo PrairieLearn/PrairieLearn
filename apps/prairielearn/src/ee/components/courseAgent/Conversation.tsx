@@ -5,18 +5,27 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
-import { type ChatSnapshot, sendRequestSchema } from '@prairielearn/course-agent-contract';
+import {
+  type ApprovalDisplay,
+  type ChatSnapshot,
+  sendRequestSchema,
+} from '@prairielearn/course-agent-contract';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ActivityStatus } from '../ai/ActivityStatus.js';
 
+import { CodeChange } from './CodeChange.js';
 import { SandboxStatistics } from './SandboxStatistics.js';
 import { Transcript } from './Transcript.js';
 import { mergeSnapshotMessages } from './message-parts.js';
 import { readPanelState, savePanelState } from './panelState.js';
+
+const pendingApprovalMessage =
+  'A code change is pending approval. After approving or denying it, you can send a message.';
 
 export function Conversation({
   courseId,
@@ -70,11 +79,14 @@ export function Conversation({
   const send = useMutation(trpc.courseAgent.send.mutationOptions());
   const cancel = useMutation(trpc.courseAgent.stop.mutationOptions());
   const cleanup = useMutation(trpc.courseAgent.cleanup.mutationOptions());
-  const canSend = canStartNewWork && !snapshot.newWorkUnavailable;
+  const decision = useMutation(trpc.courseAgent.decide.mutationOptions());
+  const prepare = useMutation(trpc.courseAgent.prepare.mutationOptions());
+  // Preparing a durable tool blocks new messages while native work can still
+  // run. Keep Stop available until the run actually enters waiting_for_user.
   const working =
     send.isPending ||
     create.isPending ||
-    busy ||
+    (!snapshot.blocked && busy) ||
     ['starting', 'waiting_for_agent'].includes(snapshot.diagnostics?.state ?? '');
   const startingAgent =
     snapshot.diagnostics?.state === 'starting' ||
@@ -138,7 +150,10 @@ export function Conversation({
       setFailure('');
       if (!busyRef.current) {
         setMessages(next.messages);
-        if (['starting', 'waiting_for_agent'].includes(next.diagnostics?.state ?? '')) {
+        if (
+          !next.blocked &&
+          ['starting', 'waiting_for_agent'].includes(next.diagnostics?.state ?? '')
+        ) {
           busyRef.current = true;
           void resumeStream().finally(() => {
             busyRef.current = false;
@@ -178,10 +193,18 @@ export function Conversation({
   useEffect(() => {
     const transcript = transcriptRef.current;
     if (transcript) transcript.scrollTop = transcript.scrollHeight;
-  }, [messages, optimistic, loaded, snapshot.messages]);
+  }, [messages, optimistic, loaded, snapshot.approvals]);
 
   async function submit() {
-    if (!canSend || !draft.trim() || connection !== 'connected') return;
+    if (
+      !canStartNewWork ||
+      snapshot.newWorkUnavailable ||
+      !draft.trim() ||
+      snapshot.blocked ||
+      connection !== 'connected'
+    ) {
+      return;
+    }
     const message =
       pendingRef.current?.text === draft
         ? pendingRef.current
@@ -244,8 +267,20 @@ export function Conversation({
     }
   }
 
+  function decide(approval: ApprovalDisplay, choice: 'approve' | 'deny') {
+    decision.mutate({
+      conversationId: id,
+      decision: {
+        id: approval.id,
+        digest: approval.digest,
+        expectedOperationNumber: snapshot.operationNumber,
+        decision: choice,
+      },
+    });
+  }
   const transcriptMessages = mergeSnapshotMessages(snapshot.messages, messages);
-  const mutationError = create.error ?? send.error ?? cancel.error ?? cleanup.error;
+  const mutationError =
+    create.error ?? send.error ?? cancel.error ?? decision.error ?? prepare.error ?? cleanup.error;
   return (
     <>
       {renderPicker(startingAgent)}
@@ -268,9 +303,28 @@ export function Conversation({
         </Alert>
       )}
       <AppErrorAlert
-        error={getAppError<CourseAgentError['Create' | 'Send' | 'Stop' | 'Cleanup']>(mutationError)}
+        error={getAppError<
+          CourseAgentError['Create' | 'Send' | 'Stop' | 'Decide' | 'Prepare' | 'Cleanup']
+        >(mutationError)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
+      {snapshot.preparation?.error && (
+        <Alert
+          variant="warning"
+          className="d-flex align-items-center justify-content-between gap-3"
+        >
+          <span>{snapshot.preparation.error}</span>
+          <Button
+            size="sm"
+            disabled={prepare.isPending}
+            onClick={() =>
+              prepare.mutate({ conversationId: id, operationId: snapshot.preparation!.id })
+            }
+          >
+            Retry preparation
+          </Button>
+        </Alert>
+      )}
       {snapshot.diagnostics?.cleanup?.error && (
         <Alert
           variant="warning"
@@ -316,6 +370,18 @@ export function Conversation({
                 ? [...transcriptMessages, optimistic]
                 : transcriptMessages
             }
+            approvals={snapshot.approvals ?? []}
+            renderCodeChange={(approval) => (
+              <CodeChange
+                approval={approval}
+                snapshot={snapshot}
+                decisionPending={decision.isPending}
+                decisionChoice={decision.variables?.decision.decision}
+                deciding={decision.isPending && decision.variables.decision.id === approval.id}
+                decisionError={!!decision.error}
+                onDecide={decide}
+              />
+            )}
           />
         )}
         <div role="status" aria-live="polite" className="px-3 pb-3">
@@ -348,7 +414,7 @@ export function Conversation({
         </Modal.Body>
       </Modal>
       <Form className="course-agent-composer pt-3 mt-2" onSubmit={handleSubmit(submit)}>
-        {(!canSend || connection !== 'connected') && (
+        {(!canStartNewWork || snapshot.newWorkUnavailable || connection !== 'connected') && (
           <p id={`course-agent-send-reason-${id}`} className="small text-muted" role="status">
             {snapshot.newWorkUnavailable ??
               (!canStartNewWork
@@ -410,20 +476,56 @@ export function Conversation({
               <i className="bi bi-stop-fill" aria-hidden="true" />
             </Button>
           ) : (
-            <Button
-              type="submit"
-              aria-label="Send"
-              className="course-agent-action ms-auto"
-              disabled={
-                connection !== 'connected' ||
-                !canSend ||
-                !draft.trim() ||
-                send.isPending ||
-                create.isPending
-              }
+            <OverlayTrigger
+              placement="top"
+              trigger={snapshot.blocked ? ['hover', 'focus'] : []}
+              show={snapshot.blocked ? undefined : false}
+              tooltip={{
+                props: { id: `course-agent-send-tooltip-${id}` },
+                body: pendingApprovalMessage,
+              }}
             >
-              <i className="bi bi-send-fill" aria-hidden="true" />
-            </Button>
+              <span
+                className="ms-auto"
+                // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex -- Disabled controls need a focusable tooltip host.
+                tabIndex={snapshot.blocked ? 0 : undefined}
+                aria-describedby={
+                  snapshot.blocked ? `course-agent-pending-approval-${id}` : undefined
+                }
+              >
+                {snapshot.blocked && (
+                  <span id={`course-agent-pending-approval-${id}`} className="visually-hidden">
+                    {pendingApprovalMessage}
+                  </span>
+                )}
+                <Button
+                  type="submit"
+                  aria-label="Send"
+                  aria-describedby={
+                    snapshot.blocked
+                      ? `course-agent-pending-approval-${id}`
+                      : !canStartNewWork ||
+                          !!snapshot.newWorkUnavailable ||
+                          connection !== 'connected'
+                        ? `course-agent-send-reason-${id}`
+                        : undefined
+                  }
+                  style={snapshot.blocked ? { pointerEvents: 'none' } : undefined}
+                  className="course-agent-action"
+                  disabled={
+                    connection !== 'connected' ||
+                    !canStartNewWork ||
+                    !!snapshot.newWorkUnavailable ||
+                    snapshot.blocked ||
+                    !draft.trim() ||
+                    send.isPending ||
+                    create.isPending
+                  }
+                >
+                  <i className="bi bi-send-fill" aria-hidden="true" />
+                </Button>
+              </span>
+            </OverlayTrigger>
           )}
         </div>
       </Form>

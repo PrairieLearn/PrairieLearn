@@ -724,7 +724,15 @@ export const CourseAgentOperationSchema = z.object({
   id: IdSchema,
   operation_id: z.string(),
   operation_number: z.number(),
-  payload: z.object({ kind: z.literal('message'), text: z.string() }),
+  payload: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('message'), text: z.string() }),
+    z.object({
+      decision: z.enum(['approve', 'deny']),
+      digest: z.string(),
+      kind: z.literal('decision'),
+    }),
+    z.object({ kind: z.literal('result') }),
+  ]),
   status: z.enum([
     'admitted',
     'running',
@@ -736,6 +744,27 @@ export const CourseAgentOperationSchema = z.object({
   ]),
 });
 export type CourseAgentOperation = z.infer<typeof CourseAgentOperationSchema>;
+export const CourseAgentProposalSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  decision: z.boolean().nullable(),
+  delivered: z.boolean(),
+  digest: z.string(),
+  error: z.string().nullable(),
+  id: IdSchema,
+  operation_id: z.string(),
+  outcome: z.string().nullable(),
+  outcome_success: z.boolean().nullable(),
+  payload: z.json(),
+  prepared: z.boolean(),
+  published_sha: z.string().nullable(),
+  sequence: z.number(),
+  sync_diagnostics: z.string().nullable(),
+  sync_job_sequence_id: IdSchema.nullable(),
+  sync_validation_failed: z.boolean(),
+  synced_sha: z.string().nullable(),
+});
+export type CourseAgentProposal = z.infer<typeof CourseAgentProposalSchema>;
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -1836,6 +1865,7 @@ export const TableNames = [
   'client_fingerprints',
   'course_agent_conversations',
   'course_agent_operations',
+  'course_agent_proposals',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',

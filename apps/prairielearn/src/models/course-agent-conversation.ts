@@ -74,6 +74,7 @@ export async function reserveOperation(
   operation_id: string,
   payload: CourseAgentOperation['payload'],
   expected: number,
+  gate = true,
 ) {
   return runInTransactionAsync(async () => {
     const row = await queryRow(
@@ -109,6 +110,21 @@ export async function reserveOperation(
       throw new TRPCError({
         code: 'CONFLICT',
         message: 'Conversation changed. Refresh before retrying; your draft is preserved.',
+      });
+    }
+    if (
+      gate &&
+      (
+        await queryRow(
+          sql.select_pending_proposal_exists,
+          { id: row.id },
+          z.object({ pending: z.boolean() }),
+        )
+      ).pending
+    ) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message: 'Resolve the pending proposal before sending another message.',
       });
     }
     const { operation_number } = await queryRow(
@@ -151,3 +167,33 @@ export const saveOperationStatuses = (
   id: string,
   updates: { operation_id: string; dispatch_id: string; status: CourseAgentOperation['status'] }[],
 ) => execute(sql.update_operation_statuses, { id, updates: JSON.stringify(updates) });
+
+/** Reserve a cold tool-result continuation independently of usage accounting. */
+export async function reserveContinuation(
+  conversation: CourseAgentConversation,
+  operation_id: string,
+) {
+  return runInTransactionAsync(async () => {
+    const row = await queryRow(
+      sql.select_conversation_for_update,
+      { id: conversation.id },
+      CourseAgentConversationSchema,
+    );
+    const existing = await selectOptionalOperation(row.id, operation_id);
+    if (!existing) {
+      await execute(sql.insert_operation, {
+        id: row.id,
+        operation_id,
+        payload: JSON.stringify({ kind: 'result' }),
+        operation_number: row.operation_number,
+      });
+    } else if (['rejected', 'failed', 'cancelled', 'interrupted'].includes(existing.status)) {
+      await execute(sql.retry_operation, { id: row.id, operation_id });
+    }
+    return (await selectOptionalOperation(row.id, operation_id))!.dispatch_id;
+  });
+}
+
+/** A result returned to a live native turn finishes the decision without admitting another execution. */
+export const completeDecisionOperation = (id: string, operation_id: string) =>
+  execute(sql.complete_decision_operation, { id, operation_id });
