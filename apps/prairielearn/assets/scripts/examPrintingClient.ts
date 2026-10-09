@@ -11,6 +11,7 @@ import {
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
 } from '../../src/lib/client/print-response-controls.js';
+import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docxBrowser.js';
 
 interface PagedFlow {
   total: number;
@@ -31,6 +32,7 @@ declare global {
     };
     __PL_PRINT_READINESS_PROMISES__?: Promise<unknown>[];
     __PL_PRINT_READY__: Promise<{ totalPages: number }>;
+    __PL_PRINT_DOCX_SOURCE__?: ReturnType<typeof captureDocxSource>;
   }
 }
 
@@ -523,8 +525,10 @@ async function paginateExam(): Promise<{ totalPages: number }> {
       }
     | undefined;
   await mathJax?.startup?.promise;
+  annotateDocxMath(source);
   normalizeResponseControls(source);
   await mathJax?.typesetPromise?.([source]);
+  annotateDocxMath(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
   await waitForPrintImages(source);
@@ -535,6 +539,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
     fitPrintChoiceImages(source.querySelectorAll<HTMLElement>('.printing-question'), pageHeight);
   }
   keepPrintableGroupsTogether(source, pageHeight);
+  window.__PL_PRINT_DOCX_SOURCE__ = captureDocxSource(source);
   const layout = layoutQuestions(source);
   placeQuestionGroupBreaks(source, layout.pageHeight);
   await waitForAnimationFrame();
