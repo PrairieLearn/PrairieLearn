@@ -31,6 +31,25 @@ async function chooseDownload(page: Page, item: string) {
   await page.getByRole('button', { name: item, exact: true }).click();
 }
 
+test('recovers when creating the first preview fails', async ({ page, courseInstance }) => {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam20-assessmentTools',
+  });
+  await page.route('**/printableExams.create', (route) => route.abort('failed'), { times: 1 });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
+  );
+
+  const createPreview = page.getByRole('button', { name: 'Create preview', exact: true });
+  await createPreview.click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(createPreview).toBeEnabled();
+
+  await createPreview.click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+});
+
 test('defaults booklet copies to the number of enrolled students', async ({
   page,
   courseInstance,

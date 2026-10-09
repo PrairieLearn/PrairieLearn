@@ -395,18 +395,23 @@ function PrintPreparation({
     setPreviewPending(true);
     setPreview(null);
     snapshotsRef.current.clear();
-    if (!instanceId) {
-      const result = await create.mutateAsync();
-      void setSelectedInstances([result.assessmentInstanceId]);
-      void setSelectedInstance(result.assessmentInstanceId);
-      setInstanceSettings((previous) => ({ ...previous, [result.assessmentInstanceId]: values }));
-    } else if (printLayoutSearch(values) === printLayoutSearch(settings)) {
-      await questions.refetch();
+    try {
+      if (!instanceId) {
+        const result = await create.mutateAsync();
+        void setSelectedInstances([result.assessmentInstanceId]);
+        void setSelectedInstance(result.assessmentInstanceId);
+        setInstanceSettings((previous) => ({ ...previous, [result.assessmentInstanceId]: values }));
+      } else if (printLayoutSearch(values) === printLayoutSearch(settings)) {
+        await questions.refetch();
+      }
+      if (instanceId) setInstanceSettings((previous) => ({ ...previous, [instanceId]: values }));
+      setSettings(values);
+      reset(values);
+      setRetry((value) => value + 1);
+    } catch (error) {
+      setPreviewPending(false);
+      throw error;
     }
-    if (instanceId) setInstanceSettings((previous) => ({ ...previous, [instanceId]: values }));
-    setSettings(values);
-    reset(values);
-    setRetry((value) => value + 1);
   }
 
   return (
