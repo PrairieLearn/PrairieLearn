@@ -249,7 +249,10 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
       .replace('/assessment_instance/', '/instructor/assessment_instance/')
       .replace(/\/$/, '');
     const url = `${paperUrl}/paper/preview?paper_size=Letter&document=answer_key`;
-    const headers = { cookie: 'pl_test_user=test_instructor' };
+    const headers = {
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
+    };
     const previewResponse = await helperClient.fetchCheerio(url, { headers });
     assert.equal(previewResponse.status, 403);
 

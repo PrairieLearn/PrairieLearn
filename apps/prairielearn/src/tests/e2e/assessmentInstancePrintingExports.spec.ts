@@ -211,7 +211,7 @@ test('previews and exports an exam with more than 64 figures', async ({
     await waitForPrintablePage(page);
     const source = await page
       .locator('#pl-print-docx-source')
-      .evaluate((element) => JSON.parse(element.textContent ?? '{}'));
+      .evaluate((element) => JSON.parse(element.textContent));
     expect(source.figures.length).toBeGreaterThan(64);
 
     const response = await downloadPrintableWord(page, paperUrl, 'paper_size=Letter');

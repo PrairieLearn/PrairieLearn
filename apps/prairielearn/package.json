@@ -219,6 +219,7 @@
     "parse5": "^8.0.1",
     "passport": "^0.7.0",
     "passport-azure-ad": "^4.3.5",
+    "pdf-lib": "^1.17.1",
     "pem": "^1.14.8",
     "pg": "^8.23.0",
     "playwright": "^1.62.1",

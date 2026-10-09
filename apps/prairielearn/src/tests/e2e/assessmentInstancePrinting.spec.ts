@@ -1,13 +1,18 @@
 import type { Page } from '@playwright/test';
 import axe from 'axe-core';
 
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 import { waitForPrintablePage } from './utils/printing.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 // Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
 test.describe.configure({ timeout: 180_000 });
@@ -121,6 +126,86 @@ test('uses the same selected questions and totals in the exam and answer key', a
     expect(Object.keys(layout.questionPages)).toEqual(['2']);
     await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
     await expect(page.locator(':root')).toHaveAttribute('data-print-max-points', '10');
+  }
+});
+
+for (const shuffle of [false, true]) {
+  test(`prints homework labels and selected question sizes with shuffling=${shuffle}`, async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: 'hw15-lockpoints',
+    });
+    await execute(sql.set_shuffle_questions, {
+      assessment_id: assessment.id,
+      shuffle_questions: shuffle,
+    });
+    try {
+      const assessmentInstanceId = await makePrintableAssessmentInstance(
+        courseInstance,
+        'hw15-lockpoints',
+      );
+      const url = paperUrl(courseInstance, assessmentInstanceId);
+      await page.goto(url);
+      const questions = Object.keys((await readPaginatedQuestionLayout(page)).questionPages);
+      expect(questions).toHaveLength(2);
+      if (shuffle) {
+        expect(questions[0]).toMatch(/^#\d+$/);
+        expect(questions[1]).toMatch(/^#\d+$/);
+      } else {
+        expect(questions).toEqual(['HW15.1', 'HW15.2']);
+      }
+
+      const search = new URLSearchParams({
+        question_block_size: `${questions[0]}:half`,
+        exclude_question: questions[1],
+      });
+      await page.goto(`${url}&${search}`);
+      const selected = await readPaginatedQuestionLayout(page);
+      expect(Object.keys(selected.questionPages)).toEqual([questions[0]]);
+      await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
+      await expect(page.locator('.pagedjs_page .printing-question').first()).toHaveAttribute(
+        'data-print-block-size',
+        'half',
+      );
+    } finally {
+      await execute(sql.set_shuffle_questions, {
+        assessment_id: assessment.id,
+        shuffle_questions: assessment.shuffle_questions,
+      });
+    }
+  });
+}
+
+test('reuses closed homework variants for student copies and answer keys', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessmentInstanceId = await makePrintableAssessmentInstance(
+    courseInstance,
+    'hw20-afterCompleteVisibility',
+  );
+  const url = paperUrl(courseInstance, assessmentInstanceId);
+  await page.goto(url);
+  await readPaginatedQuestionLayout(page);
+  await expect(page.locator(':root')).toHaveAttribute('data-print-warnings', '[]');
+  const variants = await selectVariantsByInstanceQuestion({
+    assessment_instance_id: assessmentInstanceId,
+  });
+  expect(variants).toHaveLength(1);
+  await execute(sql.close_variants, { assessment_instance_id: assessmentInstanceId });
+
+  for (const document of ['exam', 'answer_key', 'exam']) {
+    await page.goto(`${url}&document=${document}`);
+    const layout = await readPaginatedQuestionLayout(page);
+    expect(Object.keys(layout.questionPages)).toHaveLength(1);
+    await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
+    await expect(page.locator(':root')).toHaveAttribute('data-print-omitted-question-count', '0');
+    expect(
+      await selectVariantsByInstanceQuestion({ assessment_instance_id: assessmentInstanceId }),
+    ).toEqual(variants.map((variant) => ({ ...variant, open: false })));
   }
 });
 
