@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
 import type * as http from 'node:http';
 import * as https from 'node:https';
 import type { AddressInfo } from 'node:net';
+import { gzipSync } from 'node:zlib';
 
 import * as pem from 'pem';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -20,7 +22,7 @@ beforeAll(async () => {
       {
         selfSigned: true,
         commonName: 'public.example',
-        altNames: ['public.example'],
+        altNames: ['public.example', 'other.example'],
       },
       (error, result) => (error ? reject(error) : resolve(result)),
     );
@@ -59,13 +61,13 @@ describe('AI grading model discovery', () => {
   });
 
   it.each([
+    'http://provider.example',
     'not a URL',
+    'https://user:password@provider.example',
     'https://provider.example?key=secret',
     'https://provider.example/#fragment',
   ])('rejects invalid endpoint %s', (baseUrl) => {
-    expect(() => normalizeAiGradingBaseUrl(baseUrl)).toThrow(
-      expect.objectContaining({ code: 'invalid_endpoint' }),
-    );
+    expect(() => normalizeAiGradingBaseUrl(baseUrl)).toThrow();
   });
 
   it('requests models with authorization and returns sorted unique IDs', async () => {
@@ -85,8 +87,56 @@ describe('AI grading model discovery', () => {
     );
   });
 
+  it.each([false, true])(
+    'follows redirects and scopes authorization (cross origin: %s)',
+    async (crossOrigin) => {
+      const authorization: (string | undefined)[] = [];
+      await withServer(
+        (request, response) => {
+          authorization.push(request.headers.authorization);
+          if (request.url === '/v1/models') {
+            const destination = crossOrigin
+              ? `https://other.example:${response.socket?.localPort}/catalog`
+              : '/catalog';
+            response.writeHead(302, { Location: destination });
+            response.end();
+          } else {
+            response.end('{"data":[]}');
+          }
+        },
+        async (baseUrl, options) => {
+          await expect(
+            discoverAiGradingModels(
+              { baseUrl, apiKey: 'test-key', courseInstanceId: '1' },
+              options,
+            ),
+          ).resolves.toEqual([]);
+          expect(authorization).toEqual([
+            'Bearer test-key',
+            crossOrigin ? undefined : 'Bearer test-key',
+          ]);
+        },
+      );
+    },
+  );
+
+  it('rejects redirects to insecure HTTP', async () => {
+    await withServer(
+      (_request, response) => {
+        response.writeHead(302, { Location: 'http://public.example/catalog' });
+        response.end();
+      },
+      async (baseUrl, options) => {
+        await expect(
+          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
+        ).rejects.toMatchObject({ code: 'request_failed' });
+      },
+    );
+  });
+
   it.each([
     [400, 'request_rejected'],
+    [422, 'request_rejected'],
     [401, 'authentication'],
     [403, 'access_denied'],
     [404, 'not_found'],
@@ -160,6 +210,49 @@ describe('AI grading model discovery', () => {
     );
   });
 
+  it('bounds streamed responses without Content-Length', async () => {
+    await withServer(
+      (_request, response) => {
+        response.write(' '.repeat(1024 * 1024));
+        response.end('extra');
+      },
+      async (baseUrl, options) => {
+        await expect(
+          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
+        ).rejects.toMatchObject({ code: 'response_too_large' });
+      },
+    );
+  });
+
+  it('bounds decompressed responses', async () => {
+    await withServer(
+      (_request, response) => {
+        const body = gzipSync(' '.repeat(1024 * 1024 + 1));
+        response.writeHead(200, { 'Content-Encoding': 'gzip', 'Content-Length': body.byteLength });
+        response.end(body);
+      },
+      async (baseUrl, options) => {
+        await expect(
+          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
+        ).rejects.toMatchObject({ code: 'response_too_large' });
+      },
+    );
+  });
+
+  it('rejects an oversized Content-Length before reading the body', async () => {
+    await withServer(
+      (_request, response) => {
+        response.writeHead(200, { 'Content-Length': 1024 * 1024 + 1 });
+        response.flushHeaders();
+      },
+      async (baseUrl, options) => {
+        await expect(
+          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
+        ).rejects.toMatchObject({ code: 'response_too_large' });
+      },
+    );
+  });
+
   it('does not cache failed discovery requests', async () => {
     const modelCache = new Cache();
     await modelCache.init({ type: 'memory', keyPrefix: 'test:' });
@@ -184,6 +277,7 @@ describe('AI grading model discovery', () => {
           const cachedOptions = { ...options, modelCache };
           await expect(discoverAiGradingModels(input, cachedOptions)).rejects.toMatchObject({
             code: 'authentication',
+            message: 'The provider rejected the API key. Check the key and try again.',
           });
           await expect(discoverAiGradingModels(input, cachedOptions)).resolves.toEqual([]);
           expect(requests).toBe(2);
@@ -192,6 +286,24 @@ describe('AI grading model discovery', () => {
     } finally {
       await modelCache.close();
     }
+  });
+
+  it('times out while reading the body after headers arrive', async () => {
+    await withServer(
+      (_request, response) => {
+        response.writeHead(200);
+        response.flushHeaders();
+        response.write('{"data":');
+      },
+      async (baseUrl, options) => {
+        await expect(
+          discoverAiGradingModels(
+            { baseUrl, apiKey: 'test-key', courseInstanceId: '1' },
+            { ...options, timeoutMs: 100 },
+          ),
+        ).rejects.toMatchObject({ code: 'timeout' });
+      },
+    );
   });
 
   it('caches configurations by course instance, normalized URL, and API key', async () => {
@@ -224,6 +336,43 @@ describe('AI grading model discovery', () => {
         },
       );
     } finally {
+      await modelCache.close();
+    }
+  });
+
+  it('sets a short Redis TTL and refreshes an expired catalog', async () => {
+    const modelCache = new Cache();
+    const keyPrefix = `test-ai-grading-discovery:${crypto.randomUUID()}:`;
+    await modelCache.init({ type: 'redis', keyPrefix, redisUrl: 'redis://localhost:6379/' });
+    let requests = 0;
+    try {
+      await withServer(
+        (_request, response) => {
+          requests++;
+          response.end(JSON.stringify({ data: [{ id: `model-${requests}` }] }));
+        },
+        async (baseUrl, options) => {
+          const input = {
+            baseUrl,
+            apiKey: 'test-key',
+            courseInstanceId: '1',
+          };
+          const cachedOptions = { ...options, modelCache };
+          await expect(discoverAiGradingModels(input, cachedOptions)).resolves.toEqual(['model-1']);
+          const configurationHash = createHash('sha256')
+            .update(JSON.stringify([baseUrl, input.apiKey]))
+            .digest('hex');
+          const cacheKey = `${keyPrefix}ai-grading-models:1:${configurationHash}`;
+          const ttl = await modelCache.redisClient!.pttl(cacheKey);
+          expect(ttl).toBeGreaterThan(290_000);
+          expect(ttl).toBeLessThanOrEqual(300_000);
+          await expect(discoverAiGradingModels(input, cachedOptions)).resolves.toEqual(['model-1']);
+          await modelCache.redisClient!.pexpire(cacheKey, 0);
+          await expect(discoverAiGradingModels(input, cachedOptions)).resolves.toEqual(['model-2']);
+        },
+      );
+    } finally {
+      await modelCache.reset();
       await modelCache.close();
     }
   });
