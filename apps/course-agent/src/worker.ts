@@ -81,8 +81,8 @@ export default {
     const raw = await response.text();
     let message = raw;
     try {
-      const parsed = JSON.parse(raw) as { error?: string; message?: string };
-      message = parsed.message ?? parsed.error ?? raw;
+      const parsed = JSON.parse(raw) as { message?: string };
+      message = parsed.message ?? raw;
     } catch {
       // Preserve the plain-text error when the response is not JSON.
     }

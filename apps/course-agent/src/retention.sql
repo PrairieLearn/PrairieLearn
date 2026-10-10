@@ -9,9 +9,6 @@ WHERE
 -- BLOCK cf_agents_stream_blocks
 DELETE FROM cf_agents_stream_blocks;
 
--- BLOCK cf_agents_stream_chunks
-DELETE FROM cf_agents_stream_chunks;
-
 -- BLOCK cf_agents_streams
 DELETE FROM cf_agents_streams;
 
@@ -26,9 +23,6 @@ DELETE FROM cf_ai_chat_agent_tool_runs;
 
 -- BLOCK cf_ai_chat_request_context
 DELETE FROM cf_ai_chat_request_context;
-
--- BLOCK cf_ai_chat_agent_messages
-DELETE FROM cf_ai_chat_agent_messages;
 
 -- BLOCK cf_agents_session_attachment_refs
 DELETE FROM cf_agents_session_attachment_refs;

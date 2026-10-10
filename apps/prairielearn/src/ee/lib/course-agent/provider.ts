@@ -44,10 +44,10 @@ export function createAgentClient(origin: URL, scope: ServiceScope, secret: stri
     });
     if (!response.ok) {
       const error = z
-        .object({ error: z.string().optional(), message: z.string().optional() })
+        .object({ message: z.string().min(1) })
         .safeParse(await response.json().catch(() => null));
-      if (error.success && (error.data.message || error.data.error)) {
-        throw new ChatError(response.status, error.data.message ?? error.data.error!);
+      if (error.success) {
+        throw new ChatError(response.status, error.data.message);
       }
       throw workerResponseError(response.status);
     }

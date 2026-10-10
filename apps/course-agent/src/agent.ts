@@ -1020,7 +1020,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     }
     if (request.method === 'POST' && path.endsWith('/configure')) {
       if (!this.env.CODEX_MODEL) {
-        return Response.json({ error: 'Course agent model is not configured.' }, { status: 503 });
+        return Response.json({ message: 'Course agent model is not configured.' }, { status: 503 });
       }
       const parsed = conversationBindingSchema.safeParse(await request.json());
       if (!parsed.success) {
@@ -1161,7 +1161,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         !['waiting_for_user', 'cleanup_failed'].includes(sandbox.phase)
       ) {
         if (retryCallbacks) return new Response(null, { status: 202 });
-        return Response.json({ error: 'No failed cleanup to retry.' }, { status: 409 });
+        return Response.json({ message: 'No failed cleanup to retry.' }, { status: 409 });
       }
       this.ctx.waitUntil(
         this.expireSandbox({
@@ -1198,7 +1198,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       const parsed = dispatchRequestSchema.safeParse(await request.json().catch(() => null));
       if (!parsed.success) {
         return Response.json(
-          { error: 'Expected a message ID and nonempty text.' },
+          { message: 'Expected a message ID and nonempty text.' },
           { status: 400 },
         );
       }
@@ -1284,7 +1284,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       return Response.json({ revision: this.state.revision ?? 0 });
     } catch (error) {
       return Response.json(
-        { error: messageOf(error) },
+        { message: messageOf(error) },
         { status: error instanceof ChatError ? error.status : 503 },
       );
     }

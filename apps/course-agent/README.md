@@ -2,65 +2,18 @@
 
 PrairieLearn owns the conversation catalog, authorization, shared spending policy, reviewed proposals, GitHub publication and Course Sync. The agent service owns all transcript and native execution state behind signed JSON/SSE APIs. Cloudflare is the current implementation of that API. There is no principal Durable Object or remote conversation catalog.
 
-This implementation replaces the integration through PR 15936, based on commit `6a25ed331cdf1ecd6f8711ed5ca845357004eb61`. The before diagrams describe the pinned PR stack; the after diagrams describe this branch. Physical-deletion cleanup confirms catalog absence, stops execution and settles costs before purging conversation-owned history and checkpoints.
+Physical-deletion cleanup confirms catalog absence, stops execution and settles costs before purging conversation-owned history and checkpoints.
 
-## PR 2: runtime ownership before and after
+## Runtime ownership
 
 Subgraphs identify owners; cylinders are persistent stores. Solid arrows carry requests/data; dashed arrows carry observation or recovery. Each conversation's SQLite database belongs to that Chat Durable Object. It is not an independent database shared with another DO. Application SQLite DDL is in `src/receipts.sql`; the other SQLite tables are created by the pinned Cloudflare SDK.
 
-### Before
-
 ```mermaid
 flowchart TB
-  B["Browser<br/>Panel, draft, selected conversation, read markers<br/>AI SDK transcript rendering"]
-  subgraph PL2["PL owns course authorization and a second conversation ledger"]
-    W["Webservers<br/>Scoped tRPC controls<br/>events SSE and stream SSE<br/>PG metadata overlay on CF messages"]
-    P["Cloudflare provider adapter<br/>agents/chat/transport and WebSockets<br/>configure, dispatch, inspect, cancel"]
-    E["Development host executor<br/>host_echo handler in PL<br/>Attached through an open panel's events connection"]
-    PG[("PostgreSQL<br/>course_agent_conversations<br/>title, course/user, repository/branch, external_id, operation_number<br/>course_agent_operations<br/>operation_id, payload, operation_number, created_at<br/>courses and users for authorization")]
-    Session[("PL session<br/>course_agent_panels<br/>open, selected, cached title")]
-  end
-  subgraph CF2["Cloudflare owns transcript and native execution"]
-    Entry["Worker /agents/chat/...<br/>Shared PL_SERVICE_TOKEN<br/>Cloudflare SDK routing"]
-    Chat["Chat Durable Object / AIChatAgent<br/>Send and steering, stream persistence<br/>Native recovery and host tool routing"]
-    Transcript[("Chat SQLite — SDK owned<br/>cf_agents_session_messages<br/>cf_agents_session_message_chunks<br/>Transcript and chunked message bodies")]
-    State[("Chat SQLite — SDK cf_agents_state<br/>cf_state_row_id contains CodexState JSON<br/>repository, threadId, run, steering, executions<br/>sandbox generation, phase, user/idle timestamps<br/>deadlineSchedule, cleanup attempts and errors<br/>checkpoint pointer, obsoleteCheckpoints, lastCheckpointError")]
-    Receipts[("Chat SQLite — application defined in receipts.sql<br/>execution_receipts: operation_id and receipt JSON<br/>rejected_dispatches: dispatch_id tombstones<br/>Archived retry and rejection evidence")]
-    SDK[("Chat SQLite — SDK infrastructure<br/>cf_agents_jobs: durable timers<br/>cf_agents_streams and cf_agents_stream_blocks: resumable streams<br/>cf_agents_chat_progress and session support storage")]
-    Box["Separate Sandbox Durable Object<br/>Linux container and Codex app-server<br/>/workspace/repo: files and local Git commits<br/>/workspace/codex: native thread/session files<br/>Process and connection state"]
-    Out["Restricted outbound handlers<br/>Model and repository credentials injected outside container"]
-    R2[("R2 workspace checkpoints<br/>Filesystem and native Codex history<br/>auth.json excluded; backup TTL 7 days")]
-  end
-  Git["GitHub<br/>Read configured course repository"]
-  Model["Configured model API"]
-  B <-->|"tRPC and two SSE streams"| W
-  W --> PG
-  W --> Session
-  W <-->|"Cloudflare SDK controls and snapshots"| P
-  P <-->|"HTTP and SDK WebSockets"| Entry
-  Entry --> Chat
-  Chat --> Transcript
-  Chat --> State
-  Chat --> Receipts
-  Chat --> SDK
-  Chat <-->|"Generation checked native RPC<br/>Sandbox management through SDK"| Box
-  Chat <-->|"Checkpoint pointer and restore"| R2
-  SDK -.->|"10 minute idle suspension<br/>6 hour interaction deadline"| Chat
-  Chat <-->|"Ephemeral host tool call/result<br/>30 second timeout; no uncertain replay"| E
-  E --> W
-  Box --> Out
-  Out --> Git
-  Out --> Model
-```
-
-### After
-
-```mermaid
-flowchart TB
-  B["Browser<br/>Same chat UI, drafts and read markers<br/>Existing AI SDK transcript rendering"]
+  B["Browser<br/>Chat UI, drafts and read markers<br/>AI SDK transcript rendering"]
   subgraph PL2["PL owns catalog, access and presentation"]
     W["Webservers<br/>Scoped tRPC controls and HTTP stream proxy<br/>Agent API client; no Cloudflare SDK sockets<br/>No PG message or operation overlay"]
-    PG[("PostgreSQL<br/>course_agent_conversations<br/>id, external_id, course_id, user_id, title<br/>created_at, repository, branch<br/>last_finished_at: completion display only<br/>courses and users for authorization<br/>course_agent_operations removed")]
+    PG[("PostgreSQL<br/>course_agent_conversations<br/>id, external_id, course_id, user_id, title<br/>created_at, repository, branch<br/>last_finished_at: completion display only<br/>courses and users for authorization")]
     Session[("PL session and browser hints<br/>open and selected PL conversation ID<br/>No cached authoritative title or transcript")]
   end
   subgraph CF2["Replaceable agent API — Cloudflare implementation"]
@@ -69,18 +22,18 @@ flowchart TB
     DB[("Chat SQLite<br/>cf_agents_session_messages and cf_agents_session_message_chunks<br/>cf_agents_state: runtime, sandbox generation, checkpoint pointers<br/>cf_agents_jobs: durable timers and daily context check<br/>execution_receipts, rejected_dispatches<br/>SDK stream/session storage<br/>After physical deletion: scope/tombstone and unsettled-correction evidence only")]
     Box["Separate Sandbox Durable Object<br/>Linux container and Codex app-server<br/>/workspace/repo: files and local Git commits<br/>/workspace/codex: native thread/session files"]
     Out["Trusted outbound handlers<br/>Restricted model and repository access<br/>Credentials injected outside container"]
-    R2[("R2 workspace checkpoints<br/>Filesystem and native history; auth.json excluded<br/>Same backup expiration and restore warnings")]
+    R2[("R2 workspace checkpoints<br/>Filesystem and native history; auth.json excluded<br/>7-day backup expiration; restore warnings")]
   end
   Git["GitHub — configured repository read only"]
   Model["Configured model API"]
-  B <-->|"Existing controls and stream formats"| W
+  B <-->|"tRPC controls and AI streams"| W
   W --> PG
   W --> Session
   W <-->|"Versioned JSON and SSE using external_id"| API
   API --> Chat
   Chat -.->|"Completion display update; daily context-status API<br/>Only physical absence permits guarded purge"| W
   Chat --> DB
-  Chat <-->|"Private native protocol; generation checks preserved"| Box
+  Chat <-->|"Private native protocol; generation checks"| Box
   Chat <-->|"Checkpoint/restore; delete recorded backups after termination"| R2
   Box --> Out
   Out --> Git
@@ -89,69 +42,17 @@ flowchart TB
 
 The PL conversation ID remains numeric; `external_id` is its stable API resource ID. PL writes its catalog row first and lazily configures that same remote resource. A failed configuration response does not create another conversation. The SDK sockets and native Codex protocol remain private to Cloudflare.
 
-## PR 5: publication and cost controls before and after
-
-### Before
+## Publication and cost controls
 
 ```mermaid
 flowchart TB
-  B["Browser<br/>tRPC controls, events SSE, AI stream SSE<br/>Proposal approval, Statistics, Stop, cleanup"]
-  subgraph PL5["PL owns product state and mirrors agent operation/accounting state"]
-    W["Webservers<br/>Authorize and configure repository<br/>Compose PG and CF snapshots"]
-    Provider["Cloudflare SDK provider<br/>Control, watch and stream sockets<br/>Host executor tied to connected events observer"]
-    Admission["PL admission and lifecycle reconciliation<br/>PG per user admission lock<br/>Query CF snapshots for accounting candidates<br/>Match dispatch receipts to PG operations"]
-    Ledger[("PostgreSQL<br/>course_agent_conversations<br/>catalog, destination, operation_number<br/>usage model/version/token totals/cost and pinned prices<br/>course_agent_operations<br/>message/decision payload, dispatch_id, status, timestamps")]
-    Product["PL publication workflow<br/>Validate exact reviewed bytes<br/>Audited instructor decision<br/>Publication lock, expected GitHub head, uncertain-write recovery<br/>Course Sync and in-process completion callback"]
-    Proposals[("PostgreSQL<br/>course_agent_proposals<br/>conversation_id FK, operation_id, sequence<br/>payload, digest, prepared, decision, delivered<br/>published_sha, sync_job_sequence_id, synced_sha<br/>outcome, diagnostics and errors<br/>Existing courses, job_sequences, jobs and audit records")]
-    Spend[("Non volatile Redis<br/>User fixed hour spending bucket<br/>Cost delta increment AFTER PG usage commit<br/>Failed increment is not replayed")]
-    Events[("Redis pub/sub<br/>course-agent:changed<br/>Conversation ID only; transient invalidation")]
-    Session[("PL session<br/>course_agent_panels presentation state")]
-  end
-  subgraph CF5["Cloudflare owns conversation runtime"]
-    Entry["Worker and Chat Durable Object<br/>Shared token and SDK routing<br/>Transcript, executions and pending native tools"]
-    Capture["push_sync native tool handler in Chat DO<br/>Execute immutable Git reader in sandbox<br/>Capture base/proposed SHA, bytes, modes, paths, diff, digest"]
-    DB[("Chat SQLite<br/>cf_agents_session_messages and cf_agents_session_message_chunks<br/>cf_agents_state: runtime plus pendingTool/tool receipts/sequence<br/>Lifetime usage totals and native usage baseline<br/>Sandbox generation, timers, checkpoint and cleanup state<br/>execution_receipts, rejected_dispatches<br/>cf_agents_jobs and SDK stream/session storage")]
-    Box["Separate Sandbox Durable Object<br/>Codex app-server and native usage notifications<br/>Course working tree and local commits<br/>Native thread files; restricted outbound credentials"]
-    R2[("R2 checkpoints<br/>Workspace and native history<br/>Checkpoint native usage baseline reference kept in Chat state")]
-  end
-  Git["GitHub course repository"]
-  Model["Configured model API"]
-  B <-->|"Controls and observation"| W
-  W --> Session
-  W <-->|"Snapshots and native control"| Provider
-  Provider <--> Entry
-  W --> Admission
-  Admission --> Ledger
-  Admission -.->|"Pull snapshots on connected refresh and admission<br/>No background accounting after panel closes"| Entry
-  Admission --> Spend
-  W --> Product
-  Product --> Proposals
-  Product -->|"Decision operation and continuation admission"| Admission
-  Product -->|"Publish approved bytes and sync course"| Git
-  Product -->|"Notify changes across PL webservers"| Events
-  Events -.->|"Refresh connected events snapshot"| W
-  Entry --> DB
-  Entry --> Capture
-  Capture <-->|"Read immutable local commits"| Box
-  Capture -->|"Durable pending payload dispatched to PL host connection"| Provider
-  Product -->|"Prepared acknowledgment and tool result<br/>Warm delivery or cold continuation"| Provider
-  Entry <-->|"Native execution and generation checked lifecycle"| Box
-  Entry <-->|"Backup and restore"| R2
-  Box -->|"Read repository"| Git
-  Box --> Model
-```
-
-### After
-
-```mermaid
-flowchart TB
-  B["Browser<br/>Same chat, drafts, Statistics, approve/deny and retry<br/>Stop, cleanup and budget-exhausted status"]
+  B["Browser<br/>Chat, drafts, Statistics, approve/deny and retry<br/>Stop, cleanup and budget-exhausted status"]
   subgraph PL5["PL owns catalog, access, shared policy and publication"]
     W["Webservers<br/>Scoped tRPC and bounded HTTP stream proxies<br/>Agent API client; no SDK sockets or PG message overlay"]
     API["Signed PL APIs<br/>Execution capacity authorize/release<br/>Per-model-request budget reserve/settle<br/>Completion/context callbacks<br/>Publication create, status and advance"]
     Limits[("Non-volatile Redis — PL owned<br/>Per-user capacity grants across courses<br/>Pinned prices and accounting epoch<br/>Per-user hourly spent and outstanding reserved cost<br/>Per-action spent/reserved cost and request counters<br/>Per-request reservation, settlement and replay evidence<br/>No transcript or run history")]
     Product["PL product workflow<br/>Validate immutable capture and digest<br/>Instructor decision audited in same transaction<br/>Expected-head GitHub write and uncertain-write recovery<br/>Course Sync resumes from product receipts"]
-    PG[("PostgreSQL<br/>course_agent_conversations: catalog and external_id mapping<br/>Title, scope, destination, created_at and last_finished_at display metadata<br/>course_agent_proposals: existing conversation_id FK<br/>Reviewed payload/digest, decision, published_sha<br/>sync_job_sequence_id, synced_sha, diagnostics, terminal outcome<br/>Existing courses, users, jobs, job_sequences and audit records<br/>course_agent_operations and PG usage columns removed")]
+    PG[("PostgreSQL<br/>course_agent_conversations: catalog and external_id mapping<br/>Title, scope, destination, created_at and last_finished_at display metadata<br/>course_agent_proposals: conversation_id FK<br/>Reviewed payload/digest, decision, published_sha<br/>sync_job_sequence_id, synced_sha, diagnostics, terminal outcome<br/>courses, users, jobs, job_sequences and audit records")]
   end
   subgraph CF5["Replaceable agent service — Cloudflare implementation"]
     Gateway["Versioned JSON and SSE API<br/>Configure by external_id; commands, history, runtime status<br/>No principal Durable Object or second catalog"]
@@ -159,11 +60,11 @@ flowchart TB
     ChatDB[("Chat SQLite<br/>cf_agents_session_messages and cf_agents_session_message_chunks<br/>cf_agents_state: run, lifetime usage, generation, timers, checkpoints<br/>Action identity; pending settlements and publication reference<br/>execution_receipts, rejected_dispatches, cf_agents_jobs<br/>SDK stream/session storage<br/>Daily context check; guarded content purge<br/>Retain scope/tombstone and bounded unknown-cost correction evidence")]
     Box["Separate Sandbox Durable Object<br/>Codex runtime and native thread files<br/>Working tree and immutable commit capture<br/>Untrusted generated files, commands and request bodies"]
     Out["Trusted outbound handler — outside sandbox<br/>Bind request to current action and generation<br/>Bound/count input; reserve before provider fetch<br/>Enforce model, tier and max_output_tokens<br/>Observe stream; persist actual usage; settle idempotently"]
-    R2[("R2<br/>Filesystem/native checkpoints<br/>Same credential exclusion and expiration behavior")]
+    R2[("R2<br/>Filesystem/native checkpoints<br/>auth.json excluded; 7-day expiration")]
   end
   Git["GitHub course repository"]
   Model["Configured model API<br/>Provider-enforced output cap for each request<br/>Tool arguments and reasoning spend this allowance"]
-  B <-->|"Existing controls and stream formats"| W
+  B <-->|"tRPC controls and AI streams"| W
   W --> PG
   W <-->|"Versioned JSON and two SSE observations"| Gateway
   W -->|"Explicit instructor decision or manual retry"| Product
@@ -187,21 +88,21 @@ flowchart TB
 
 ## Persistent state and coupling
 
-| Owner/store                 | Actual table or key                                                                                  | State                                                                                                                                                                                                                                                                                     |
-| --------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PL PostgreSQL               | `course_agent_conversations`                                                                         | `id`, `external_id`, `course_id`, `user_id`, `title`, `created_at`, immutable `repository`/`branch`, monotonic `last_finished_at` display projection. No transcript, operation counter or usage ledger.                                                                                   |
-| PL PostgreSQL               | `course_agent_proposals`                                                                             | `conversation_id` FK; globally unique native `operation_id`; reviewed bytes/modes/paths and digest; prepared state; audited decision; published SHA, Course Sync receipts, diagnostics and terminal outcome. One unfinished proposal per conversation. No sequence or delivery outbox.    |
-| PL PostgreSQL               | `courses`, `users`, existing permission/audit/job tables                                             | Canonical product permissions, audit trail and Course Sync. Those workflows continue to use their existing owners.                                                                                                                                                                        |
-| PL non-volatile Redis       | `{cacheKeyPrefix}course-agent:ledger`                                                                | Hash fields `epoch`, `server_run_id`, `user:{id}`. Per-user capacity grants, action cost, request escrow, pinned financial prices, immutable usage receipts and fixed-UTC-hour charges. No messages or native run history.                                                                |
-| CF Chat SQLite, SDK         | `cf_agents_session_messages`, `cf_agents_session_message_chunks`                                     | Transcript and chunked message bodies, including user/tool/assistant history.                                                                                                                                                                                                             |
-| CF Chat SQLite, SDK         | `cf_agents_state`                                                                                    | `cf_state_row_id` holds `CodexState`: scope/repository, revision, root action/grant, pending model settlement evidence, lifetime usage/display prices, publication reference, native thread/run, steering, sandbox generation/phase, timestamps, cleanup attempts and checkpoint pointer. |
-| CF Chat SQLite, SDK         | `cf_agents_jobs`                                                                                     | Durable lifecycle, settlement and publication schedules.                                                                                                                                                                                                                                  |
-| CF Chat SQLite, SDK         | `cf_agents_streams`, `cf_agents_stream_blocks`, `cf_agents_stream_chunks`, `cf_agents_chat_progress` | Resumable stream and SDK recovery infrastructure. SDK session support tables remain SDK-owned.                                                                                                                                                                                            |
-| CF Chat SQLite, application | `execution_receipts`                                                                                 | `operation_id` and receipt JSON: command acceptance/digest/revision, original authorization binding and native outcome. A receipt is retry evidence; it is not a bill or a second message.                                                                                                |
-| CF Chat SQLite, application | `rejected_dispatches`                                                                                | `dispatch_id` tombstones that prevent rejected/uncertain native dispatch identities from being silently replayed.                                                                                                                                                                         |
-| CF Sandbox DO/container     | Filesystem and native processes                                                                      | `/workspace/repo`: working tree and immutable local commits; `/workspace/codex`: native Codex thread files.                                                                                                                                                                               |
-| CF R2                       | Workspace backup objects                                                                             | Filesystem/native-history checkpoints; 7-day backup TTL; `auth.json` excluded. Chat SQLite owns the pointer, not R2 lifecycle decisions.                                                                                                                                                  |
-| Browser/PL session          | Existing panel state                                                                                 | Selected numeric PL conversation ID, open panel, drafts and read markers. No authoritative title or transcript cache.                                                                                                                                                                     |
+| Owner/store                 | Actual table or key                                                       | State                                                                                                                                                                                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PL PostgreSQL               | `course_agent_conversations`                                              | `id`, `external_id`, `course_id`, `user_id`, `title`, `created_at`, immutable `repository`/`branch`, monotonic `last_finished_at` display projection. No transcript, operation counter or usage ledger.                                                                                   |
+| PL PostgreSQL               | `course_agent_proposals`                                                  | `conversation_id` FK; globally unique native `operation_id`; reviewed bytes/modes/paths and digest; prepared state; audited decision; published SHA, Course Sync receipts, diagnostics and terminal outcome. One unfinished proposal per conversation. No sequence or delivery outbox.    |
+| PL PostgreSQL               | `courses`, `users`, existing permission/audit/job tables                  | Canonical product permissions, audit trail and Course Sync. Those workflows continue to use their existing owners.                                                                                                                                                                        |
+| PL non-volatile Redis       | `{cacheKeyPrefix}course-agent:ledger`                                     | Hash fields `epoch`, `server_run_id`, `user:{id}`. Per-user capacity grants, action cost, request escrow, pinned financial prices, immutable usage receipts and fixed-UTC-hour charges. No messages or native run history.                                                                |
+| CF Chat SQLite, SDK         | `cf_agents_session_messages`, `cf_agents_session_message_chunks`          | Transcript and chunked message bodies, including user/tool/assistant history.                                                                                                                                                                                                             |
+| CF Chat SQLite, SDK         | `cf_agents_state`                                                         | `cf_state_row_id` holds `CodexState`: scope/repository, revision, root action/grant, pending model settlement evidence, lifetime usage/display prices, publication reference, native thread/run, steering, sandbox generation/phase, timestamps, cleanup attempts and checkpoint pointer. |
+| CF Chat SQLite, SDK         | `cf_agents_jobs`                                                          | Durable lifecycle, settlement and publication schedules.                                                                                                                                                                                                                                  |
+| CF Chat SQLite, SDK         | `cf_agents_streams`, `cf_agents_stream_blocks`, `cf_agents_chat_progress` | Resumable stream and SDK recovery infrastructure. SDK session support tables remain SDK-owned.                                                                                                                                                                                            |
+| CF Chat SQLite, application | `execution_receipts`                                                      | `operation_id` and receipt JSON: command acceptance/digest/revision, original authorization binding and native outcome. A receipt is retry evidence; it is not a bill or a second message.                                                                                                |
+| CF Chat SQLite, application | `rejected_dispatches`                                                     | `dispatch_id` tombstones that prevent rejected/uncertain native dispatch identities from being silently replayed.                                                                                                                                                                         |
+| CF Sandbox DO/container     | Filesystem and native processes                                           | `/workspace/repo`: working tree and immutable local commits; `/workspace/codex`: native Codex thread files.                                                                                                                                                                               |
+| CF R2                       | Workspace backup objects                                                  | Filesystem/native-history checkpoints; 7-day backup TTL; `auth.json` excluded. Chat SQLite owns the pointer, not R2 lifecycle decisions.                                                                                                                                                  |
+| Browser/PL session          | Existing panel state                                                      | Selected numeric PL conversation ID, open panel, drafts and read markers. No authoritative title or transcript cache.                                                                                                                                                                     |
 
 The remaining coupling is deliberate: signed IDs/scopes and JSON schemas; the immutable repository binding; the native `push_sync` capture contract; and PL policy/publication APIs. Replacing Cloudflare requires an implementation of these public contracts, not its SDK. Native checkpoint import/live execution handoff requires separate work.
 
@@ -292,20 +193,19 @@ One durable CF driver creates, observes and advances the PL publication resource
 
 Publication observes every 30 seconds while pending; a 24-hour observation lease and three failed advances bound unattended retries. Saved product state remains after that lease; an authorized reconnect/manual retry can reopen observation. Permanent permission/configuration failures pause. A spent/expired root preserves the completed result and waits for an explicit later user message.
 
-## Preserved behavior and deliberate changes
+## Supported behavior and limits
 
-| Behavior                                                                                                                  | Result                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Numeric catalog IDs, titles, drafts, navigation, selection and unread completion                                          | Preserved. PG serves catalog/ordinary page rendering without CF calls. Only an open panel polls bounded selected/visible runtime statuses.                 |
-| Warm reuse, steering, Stop, stream replay, idle suspension, native recovery, R2 restore and cleanup retry                 | Preserved; generations and native uncertainty still fence retries.                                                                                         |
-| Review exact bytes, approve/deny, publish, validate Course Sync, retain failed published commits and request correction   | Preserved. Fresh privileged writes remain gated.                                                                                                           |
-| Publication/settlement with every panel closed or a PL observer lost                                                      | Improved; CF schedules drive saved product/accounting resources.                                                                                           |
-| Accepted work always finishes after admission                                                                             | Changed. Request/turn limits can stop a turn; partial output/history and completed product results remain. No paid final explanation is required.          |
-| Native compaction and remote images/files/provider-hosted tools                                                           | Paused/rejected until a real cost bound is proven. Compaction shows an explicit saved-history/export/new-conversation path, rather than silently spending. |
-| Development `host_echo` executor; CF SDK sockets in PL; PG operations/usage columns; `course-agent:changed` Redis pub/sub | Removed. Product review overlays remain product state, not a second transcript. Generic PL job notifications remain.                                       |
-| History during a CF outage                                                                                                | Unavailable; the PG catalog and saved proposals remain available. There is no second PG transcript.                                                        |
-| Direct browser streaming; checkpoint import/native handoff; additional skills/tools                                       | Deferred until a concrete backend/product requirement exists. Export/reference HTTP compatibility are included now.                                        |
-| Physical-deletion retention purge                                                                                         | Implemented with daily repair, termination/settlement prerequisites and a permanent replay tombstone. Soft deletion and outages preserve history.          |
+| Behavior                                                         | Contract                                                                                                                                                                      |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog, titles, drafts, navigation and read markers             | PostgreSQL serves catalog/page rendering. An open panel polls bounded selected/visible runtime statuses.                                                                      |
+| Execution and recovery                                           | Warm reuse, steering, Stop, stream replay, idle suspension, native recovery, R2 restore and cleanup retry use generation checks and saved native evidence.                    |
+| Publication                                                      | Instructors review exact bytes and approve/deny. GitHub publication and Course Sync use saved product receipts; failed published commits remain available for correction.     |
+| Browser disconnect                                               | Durable CF schedules drive publication and settlement independently of connected observers.                                                                                   |
+| Spending limits                                                  | Request, turn and shared user limits can stop execution. Partial output/history and completed product results remain available.                                               |
+| Native compaction, remote images/files and provider-hosted tools | Refused until a verified cost bound exists. Context exhaustion preserves saved history/export and requires a new conversation.                                                |
+| Agent service outage                                             | History is unavailable; the PostgreSQL catalog and saved proposals remain accessible.                                                                                         |
+| Backend replacement                                              | Signed JSON/SSE APIs, transcript export and an independent reference HTTP backend define the boundary. Live checkpoint import/native handoff require separate implementation. |
+| Physical deletion                                                | Daily repair verifies physical absence, confirms termination/settlement, purges owned content and retains a replay tombstone. Soft deletion and outages preserve history.     |
 
 ## Physical deletion and retention
 
@@ -380,7 +280,7 @@ Before release:
 - Confirm product budget defaults and production Redis acknowledged-write/recovery guarantees.
 - Run a real-sandbox/model smoke test for exact input counting (including native/hidden/encrypted context), output/reasoning/tool caps, timeout/unknown settlement, context pause, restore, credential exclusion and direct-egress isolation. Fixtures cannot prove these provider/platform properties.
 - Re-run retention fault tests when upgrading the pinned SDK: its content table list and recovery KV layout are private implementation details of the Cloudflare backend, isolated in `retention.sql` and `retention-store.ts`.
-- Use one active writer generation. This unreleased branch edits its unmerged migrations directly; recreate previously initialized development databases. If any version is deployed, stop and use expand/migrate/contract with old writers fenced and uncertain costs conservatively reconciled. Never reinterpret old execution or zero its financial history.
+- Release PL and the agent service as one API/schema generation. Recreate development databases initialized from an earlier version of this unreleased stack; do not add old routes, payload adapters, schema readers or dual writers. Preserve financial evidence and fence writers before changing an accounting generation.
 - Human-review each owning stack slice. Integrate revised parents into dependents with merge commits; do not rebase or force-push. This integration branch does not rewrite existing remote PRs.
 
-There is no live migration/import implementation or retained legacy execution path.
+The service supports its current versioned contract and pinned runtime. Backend replacement does not require supporting previous implementations.
