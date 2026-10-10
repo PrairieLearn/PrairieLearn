@@ -2,8 +2,13 @@
   display: block;
 }
 
-.pl-overlay-locations-container {
+.pl-overlay-coordinate-plane {
   position: relative;
+}
+
+.pl-overlay-locations-container {
+  position: absolute;
+  inset: 0;
 }
 
 .pl-overlay-clip {
