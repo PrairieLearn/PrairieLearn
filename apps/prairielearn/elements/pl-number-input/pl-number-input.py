@@ -621,13 +621,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         feedback = None
 
         def formatted_answer(answer: float) -> str:
-            return str(
-                pl.string_fraction_to_number(
-                    str(answer),
-                    allow_fractions=allow_fractions,
-                    allow_complex=allow_complex,
-                )
+            value, _ = pl.string_fraction_to_number(
+                str(answer),
+                allow_fractions=allow_fractions,
+                allow_complex=allow_complex,
             )
+            return str(value)
 
         # If the empty answer is correct, use 0 as an arbitrary starting point for incorrect answers
         if correct_answer_converted == "blank":

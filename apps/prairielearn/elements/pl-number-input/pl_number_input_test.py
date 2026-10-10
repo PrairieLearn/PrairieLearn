@@ -1,4 +1,7 @@
 import importlib
+import pathlib
+import random
+from typing import Any
 
 import pytest
 
@@ -117,3 +120,39 @@ def test_only_decimal_digits_fn(
 ) -> None:
     precision = number_input.get_string_decimal_digits(number_string)
     assert precision == expected_decimal_digits
+
+
+@pytest.mark.parametrize(("correct", "rtol"), [(100, 0.09), (64, 0.09), (0.0746, 0.17)])
+def test_incorrect_test_predicts_grading_feedback(
+    correct: float, rtol: float, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """test() must expect the precision warning that grade() gives its answer."""
+    monkeypatch.chdir(pathlib.Path(__file__).parent)
+    html = (
+        f'<pl-number-input answers-name="x" comparison="relabs" rtol="{rtol}" '
+        'atol="0"></pl-number-input>'
+    )
+    for seed in range(10):
+        random.seed(seed)
+        data: Any = {
+            "test_type": "incorrect",
+            "correct_answers": {"x": correct},
+            "raw_submitted_answers": {},
+            "partial_scores": {},
+            "format_errors": {},
+        }
+        number_input.test(html, data)
+        graded: Any = {
+            "correct_answers": {"x": correct},
+            "raw_submitted_answers": dict(data["raw_submitted_answers"]),
+            "submitted_answers": {},
+            "format_errors": {},
+            "partial_scores": {},
+            "params": {},
+            "feedback": {},
+            "answers_names": {},
+        }
+        number_input.parse(html, graded)
+        number_input.grade(html, graded)
+        expected = data["partial_scores"]["x"].get("feedback")
+        assert graded["partial_scores"]["x"].get("feedback") == expected
