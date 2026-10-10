@@ -1,1 +1,0 @@
-ALTER TABLE course_agent_conversations VALIDATE CONSTRAINT course_agent_conversations_usage_check;

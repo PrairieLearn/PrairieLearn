@@ -6,12 +6,14 @@
   "vars": {
     "LOCAL_DEV": "true",
     "UI_ORIGIN": "http://localhost:4315",
+    "PL_API_ORIGIN": "http://localhost:8791",
     "CODEX_API_KEY": "fake-key-no-inference",
     "PL_SERVICE_TOKEN": "local-fixture-service-token-not-a-secret",
     "CODEX_MODEL": "gpt-6-astra"
   },
   "durable_objects": {
     "bindings": [
+      { "name": "TestPLAPI", "class_name": "TestPLAPI" },
       {
         "name": "Chat",
         "class_name": "Chat"
@@ -32,7 +34,8 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["Chat", "TestSandbox"]
-    }
+    },
+    { "tag": "v2", "new_sqlite_classes": ["TestPLAPI"] }
   ],
   "rules": [
     {

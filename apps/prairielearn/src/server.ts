@@ -375,6 +375,10 @@ export async function initExpress(): Promise<Express> {
     publicQuestionEndpoint: true,
   });
 
+  if (isEnterprise()) {
+    app.use('/pl/api/course-automation/v1', (await import('./ee/lib/course-agent/api.js')).default);
+  }
+
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
@@ -2761,10 +2765,8 @@ if (shouldStartServer) {
     });
 
     if (isEnterprise()) {
-      const { closeEvents } = await import('./ee/lib/course-agent/events.js');
-      await closeEvents();
-      const { rateLimiter } = await import('./ee/lib/course-agent/usage.js');
-      await rateLimiter.close();
+      const { closeAgentAccounting } = await import('./ee/lib/course-agent/accounting.js');
+      await closeAgentAccounting();
     }
 
     // Then close the database connections now that nothing is using them.
@@ -2825,10 +2827,8 @@ if (shouldStartServer) {
  */
 export async function close() {
   if (isEnterprise()) {
-    const { closeEvents } = await import('./ee/lib/course-agent/events.js');
-    await closeEvents();
-    const { rateLimiter } = await import('./ee/lib/course-agent/usage.js');
-    await rateLimiter.close();
+    const { closeAgentAccounting } = await import('./ee/lib/course-agent/accounting.js');
+    await closeAgentAccounting();
   }
   // These are run in the opposite order in which they're initialized/started.
   await cron.stop();

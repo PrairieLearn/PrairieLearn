@@ -2,7 +2,6 @@ columns
     conversation_id: bigint not null
     created_at: timestamp with time zone not null default now()
     decision: boolean
-    delivered: boolean not null default false
     digest: text not null
     error: text
     id: bigint not null default nextval('course_agent_proposals_id_seq'::regclass)
@@ -12,7 +11,6 @@ columns
     payload: jsonb not null
     prepared: boolean not null default false
     published_sha: text
-    sequence: integer not null
     sync_diagnostics: text
     sync_job_sequence_id: bigint
     sync_validation_failed: boolean not null default false
@@ -20,15 +18,12 @@ columns
 
 indexes
     course_agent_proposals_pkey: PRIMARY KEY (id) USING btree (id)
-    course_agent_proposals_conversation_id_sequence_key: UNIQUE (conversation_id, sequence) USING btree (conversation_id, sequence)
     course_agent_proposals_operation_id_key: UNIQUE (operation_id) USING btree (operation_id)
-    course_agent_proposals_pending_idx: UNIQUE USING btree (conversation_id) WHERE NOT delivered
+    course_agent_proposals_pending_idx: UNIQUE USING btree (conversation_id) WHERE outcome IS NULL
 
 check constraints
-    course_agent_proposals_check: CHECK (NOT delivered OR outcome IS NOT NULL)
-    course_agent_proposals_check1: CHECK ((outcome IS NULL) = (outcome_success IS NULL))
-    course_agent_proposals_check2: CHECK (published_sha IS NULL OR decision IS TRUE)
-    course_agent_proposals_sequence_check: CHECK (sequence > 0)
+    course_agent_proposals_check: CHECK ((outcome IS NULL) = (outcome_success IS NULL))
+    course_agent_proposals_check1: CHECK (published_sha IS NULL OR decision IS TRUE)
 
 foreign-key constraints
     course_agent_proposals_conversation_id_fkey: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

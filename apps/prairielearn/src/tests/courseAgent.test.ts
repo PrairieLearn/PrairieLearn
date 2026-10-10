@@ -3,14 +3,10 @@ import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { type ToolOutcome, proposalContent } from '@prairielearn/course-agent-contract';
+import { proposalContent } from '@prairielearn/course-agent-contract';
 import * as namedLocks from '@prairielearn/named-locks';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import * as agentEvents from '../ee/lib/course-agent/events.js';
-import { reconcileOperations } from '../ee/lib/course-agent/lifecycle.js';
-import { createCloudflareProvider } from '../ee/lib/course-agent/provider.js';
-import * as agentProvider from '../ee/lib/course-agent/provider.js';
 import { PublishRejected, Publisher } from '../ee/lib/course-agent/publish.js';
 import {
   authorize,
@@ -24,11 +20,9 @@ import { features } from '../lib/features/index.js';
 import { createServerJob } from '../lib/server-jobs.js';
 import {
   createConversation,
-  rejectOperation,
-  reserveOperation,
+  recordConversationFinished,
   selectConversation,
-  selectConversationActivity,
-  selectOptionalOperation,
+  selectConversations,
 } from '../models/course-agent-conversation.js';
 import {
   decideProposal,
@@ -50,7 +44,7 @@ import { withConfig } from './utils/config.js';
 const sql = loadSqlEquiv(import.meta.url);
 beforeAll(helperServer.before());
 afterAll(helperServer.after);
-it('scopes conversations and serializes stale/duplicate admissions', async () => {
+it('scopes catalog rows and keeps completion timestamps monotonic without an operation ledger', async () => {
   const user = await selectOrInsertUserByUid('course-agent-test@example.com');
   const other = await selectOrInsertUserByUid('course-agent-other@example.com');
   const { id } = await queryRow(sql.course, z.object({ id: z.string() }));
@@ -63,24 +57,13 @@ it('scopes conversations and serializes stale/duplicate admissions', async () =>
   await expect(
     selectConversation({ ...scope, user_id: other.id }, conversation.id),
   ).rejects.toThrow('Conversation not found');
-  const operation = randomUUID();
+  const newer = new Date('2026-10-09T01:00:00Z');
+  await recordConversationFinished(conversation.id, newer);
+  await recordConversationFinished(conversation.id, new Date('2026-10-08T01:00:00Z'));
+  await recordConversationFinished(conversation.id, newer);
   expect(
-    await reserveOperation(conversation, operation, { kind: 'message', text: 'hello' }, 0),
-  ).toBe(1);
-  expect(
-    await reserveOperation(conversation, operation, { kind: 'message', text: 'hello' }, 0),
-  ).toBe(1);
-  await expect(
-    reserveOperation(conversation, operation, { kind: 'message', text: 'changed' }, 0),
-  ).rejects.toThrow('different input');
-  await expect(
-    reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'stale' }, 0),
-  ).rejects.toThrow('Conversation changed');
-  const rows = await Promise.allSettled([
-    reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'a' }, 1),
-    reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'b' }, 1),
-  ]);
-  expect(rows.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    (await selectConversations(scope)).find((c) => c.id === conversation.id)?.last_finished_at,
+  ).toEqual(newer);
 });
 
 const settings = {
@@ -88,6 +71,12 @@ const settings = {
   serviceToken: 'local-fixture-service-token-not-a-secret',
   maxConcurrentPerUser: 2,
   hourlyCostLimit: 10,
+  turnCostLimit: 2,
+  requestCostLimit: 0.5,
+  accountingEpoch: randomUUID(),
+  maxTurnRuntimeMs: 1800000,
+  maxToolCallsPerTurn: 100,
+  maxModelRequestsPerTurn: 200,
 };
 
 async function setupConversation() {
@@ -101,26 +90,38 @@ async function setupConversation() {
   });
   return { scope, conversation, user };
 }
-it('persists a single decision, gates new work, and allows an identical stale retry', async () => {
+it('converges decision retries and enforces one unresolved proposal with a paired terminal outcome', async () => {
   const { scope, conversation } = await setupConversation();
   const operation_id = randomUUID();
   const proposal = (await insertProposal({
     conversation_id: conversation.id,
     operation_id,
-    sequence: 1,
     payload: JSON.stringify({ id: operation_id }),
     digest: 'immutable',
   }))!;
   await expect(
-    reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'Hello' }, 0),
-  ).rejects.toThrow('pending proposal');
-  await decideProposal(scope, conversation, proposal, 'deny', 0);
-  const saved = (await selectOptionalProposal(conversation.id, operation_id))!;
-  expect(saved.decision).toBe(false);
-  await decideProposal(scope, conversation, saved, 'deny', 0);
-  await expect(decideProposal(scope, conversation, saved, 'approve', 1)).rejects.toThrow(
-    'different input',
+    insertProposal({
+      conversation_id: conversation.id,
+      operation_id: randomUUID(),
+      payload: '{}',
+      digest: 'another',
+    }),
+  ).rejects.toThrow();
+  await decideProposal(scope, conversation, proposal, 'deny');
+  await decideProposal(scope, conversation, proposal, 'deny');
+  await expect(decideProposal(scope, conversation, proposal, 'approve')).rejects.toThrow(
+    'Another decision',
   );
+  await expect(saveProposalProgress(proposal.id, { outcome: 'Denied' })).rejects.toThrow();
+  await saveProposalProgress(proposal.id, { outcome: 'Denied', outcome_success: true });
+  expect(
+    await insertProposal({
+      conversation_id: conversation.id,
+      operation_id: randomUUID(),
+      payload: '{}',
+      digest: 'fresh',
+    }),
+  ).not.toBeNull();
   expect((await selectOptionalProposal(conversation.id, operation_id))?.decision).toBe(false);
 });
 it('requires current owner access for both the effective and authenticated user', async () => {
@@ -162,29 +163,9 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
     course_role: 'Owner',
     authn_user_id: user.id,
   });
-  const originalProvider = agentProvider.createCloudflareProvider;
-  const providerMock = vi
-    .spyOn(agentProvider, 'createCloudflareProvider')
-    .mockImplementation((...args) => ({
-      ...originalProvider(...args),
-      getSnapshot: async () => ({
-        messages: [],
-        operationNumber: 0,
-        conversationUsage: {
-          version: 0,
-          model: 'gpt-6-astra',
-          input: 0,
-          cached: 0,
-          cacheWrite: 0,
-          output: 0,
-        },
-      }),
-      deliverToolResult: async () => {},
-    }));
   const fetcher = vi
     .spyOn(globalThis, 'fetch')
     .mockResolvedValue(new Response(null, { status: 404 }));
-  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
   const baseSha = 'a'.repeat(40),
     proposedSha = 'b'.repeat(40);
   const files = [
@@ -197,7 +178,6 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
       async () => {
         await prepare(scope, conversation, {
           id,
-          sequence: 1,
           name: 'push_sync',
           args: {
             id,
@@ -218,13 +198,11 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
     expect(String(url)).toContain('/repos/org/course/');
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer fake-shared-client-token');
   } finally {
-    providerMock.mockRestore();
     fetcher.mockRestore();
-    notify.mockRestore();
   }
 });
 
-it('returns unsupported file modes to the agent, retries delivery, and only exposes supported approvals', async () => {
+it('retains rejected captures as terminal product results and permits a fresh reviewed proposal', async () => {
   const { conversation, scope, user } = await setupConversation();
   await insertCoursePermissionsByUserUid({
     course_id: scope.course_id,
@@ -235,39 +213,15 @@ it('returns unsupported file modes to the agent, retries delivery, and only expo
   const fetcher = vi
     .spyOn(globalThis, 'fetch')
     .mockImplementation(async () => Response.json({ truncated: false, tree: [] }));
-  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
-  const delivery = vi
-    .fn<(input: ToolOutcome, signal: AbortSignal) => Promise<void>>()
-    .mockRejectedValueOnce(new Error('Delivery interrupted'))
-    .mockResolvedValue(undefined);
-  const originalProvider = agentProvider.createCloudflareProvider;
-  const providerMock = vi
-    .spyOn(agentProvider, 'createCloudflareProvider')
-    .mockImplementation((...args) => ({
-      ...originalProvider(...args),
-      getSnapshot: async () => ({
-        messages: [],
-        operationNumber: 0,
-        conversationUsage: {
-          version: 0,
-          model: 'gpt-6-astra',
-          input: 0,
-          cached: 0,
-          cacheWrite: 0,
-          output: 0,
-        },
-      }),
-      deliverToolResult: delivery,
-    }));
-  const id = randomUUID();
-  const baseSha = 'a'.repeat(40),
+  const id = randomUUID(),
+    baseSha = 'a'.repeat(40),
     proposedSha = 'b'.repeat(40);
   const files = [
     {
       path: 'courseInstances/Fall2026/infoCourseInstance.json',
       previousMode: '000000',
       mode: '100755',
-      content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', accessRules: [] }),
+      content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', allowAccess: [] }),
     },
   ];
   const tool = {
@@ -290,54 +244,18 @@ it('returns unsupported file modes to the agent, retries delivery, and only expo
     await withConfig(
       { isEnterprise: true, courseAgent: settings, githubClientToken: 'fake-shared-client-token' },
       async () => {
-        await expect(prepare(scope, conversation, tool)).rejects.toThrow('Delivery interrupted');
+        await prepare(scope, conversation, tool);
         const failed = (await selectOptionalProposal(conversation.id, id))!;
         expect(failed.prepared).toBe(false);
-        expect(failed.decision).toBeNull();
         expect(failed.error).toContain('ordinary text');
         expect(failed.outcome).toContain('Code change request failed');
-        expect(
-          (
-            await snapshot(conversation, {
-              messages: [],
-              operationNumber: 0,
-              conversationUsage: {
-                version: 0,
-                model: 'gpt-6-astra',
-                input: 0,
-                cached: 0,
-                cacheWrite: 0,
-                output: 0,
-              },
-            })
-          ).approvals,
-        ).toEqual([]);
-        await expect(
-          reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'Hello' }, 0),
-        ).rejects.toThrow('pending proposal');
         await prepare(scope, conversation, tool);
         expect(fetcher).toHaveBeenCalledOnce();
-        expect(delivery.mock.calls[1][0]).toMatchObject({
-          id,
-          success: false,
-          display: { name: 'push_sync', value: { error: failed.error } },
-        });
-        expect((await selectOptionalProposal(conversation.id, id))!.delivered).toBe(true);
-        expect(
-          await reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'Hello' }, 0),
-        ).toBe(1);
-        const validId = randomUUID();
-        const validFiles = [
-          {
-            ...files[0],
-            mode: '100644',
-            content: JSON.stringify({ uuid: randomUUID(), longName: 'Fall 2026', allowAccess: [] }),
-          },
-        ];
+        const validId = randomUUID(),
+          validFiles = [{ ...files[0], mode: '100644' }];
         await prepare(scope, conversation, {
           ...tool,
           id: validId,
-          sequence: 2,
           args: {
             ...tool.args,
             id: validId,
@@ -347,27 +265,13 @@ it('returns unsupported file modes to the agent, retries delivery, and only expo
               .digest('hex'),
           },
         });
-        const state = await snapshot(conversation, {
-          messages: [],
-          operationNumber: 0,
-          conversationUsage: {
-            version: 0,
-            model: 'gpt-6-astra',
-            input: 0,
-            cached: 0,
-            cacheWrite: 0,
-            output: 0,
-          },
-        });
-        expect(state.approvals).toHaveLength(1);
-        expect(state.approvals[0].id).toBe(validId);
-        expect(delivery).toHaveBeenCalledTimes(2);
+        expect(
+          (await snapshot(conversation, { messages: [], revision: 0 })).approvals.map((a) => a.id),
+        ).toEqual([validId]);
       },
     );
   } finally {
-    providerMock.mockRestore();
     fetcher.mockRestore();
-    notify.mockRestore();
   }
 });
 
@@ -410,7 +314,6 @@ it.each(['transient', 'unconfigured'] as const)(
       proposedSha = 'b'.repeat(40);
     const tool = {
       id,
-      sequence: 1,
       name: 'push_sync',
       args: {
         id,
@@ -428,7 +331,6 @@ it.each(['transient', 'unconfigured'] as const)(
     if (failure === 'transient') {
       preparation.mockRejectedValueOnce(new Error('Temporary GitHub outage'));
     }
-    const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
     try {
       await withConfig(
         {
@@ -454,7 +356,7 @@ it.each(['transient', 'unconfigured'] as const)(
             (
               await snapshot(conversation, {
                 messages: [],
-                operationNumber: 0,
+                revision: 0,
                 conversationUsage: {
                   version: 0,
                   model: 'gpt-6-astra',
@@ -472,7 +374,7 @@ it.each(['transient', 'unconfigured'] as const)(
             (
               await snapshot(conversation, {
                 messages: [],
-                operationNumber: 0,
+                revision: 0,
                 conversationUsage: {
                   version: 0,
                   model: 'gpt-6-astra',
@@ -488,7 +390,6 @@ it.each(['transient', 'unconfigured'] as const)(
       );
     } finally {
       preparation.mockRestore();
-      notify.mockRestore();
     }
   },
 );
@@ -548,40 +449,11 @@ it.each([
     const row = (await insertProposal({
       conversation_id: conversation.id,
       operation_id: id,
-      sequence: 1,
       payload: JSON.stringify(approval),
       digest: 'test',
     }))!;
     await prepareProposal(row.id, approval, true, null);
-    const delivery = vi.fn<(input: ToolOutcome) => Promise<void>>().mockResolvedValue();
-    const original = agentProvider.createCloudflareProvider;
-    const mocks = [
-      vi.spyOn(agentEvents, 'notify').mockResolvedValue(),
-      vi
-        .spyOn(globalThis, 'fetch')
-        .mockImplementation(async () => Response.json({ model: 'gpt-6-astra' })),
-      vi.spyOn(agentProvider, 'createCloudflareProvider').mockImplementation((...args) => ({
-        ...original(...args),
-        getSnapshot: async () => ({
-          messages: [],
-          operationNumber: 0,
-          conversationUsage: {
-            version: 0,
-            model: 'gpt-6-astra',
-            input: 0,
-            cached: 0,
-            cacheWrite: 0,
-            output: 0,
-          },
-          executions: {
-            [id]: {
-              status: 'running',
-            },
-          },
-        }),
-        deliverToolResult: delivery,
-      })),
-    ];
+    const jobs: Promise<unknown>[] = [];
     const push = vi.spyOn(Publisher.prototype, 'push').mockImplementation(async () => {
       if (failure === 'publication rejected') {
         throw new PublishRejected('Branch protection rejected the change.');
@@ -601,23 +473,22 @@ it.each([
         });
         await options.onJobCreated!(job.jobSequenceId);
         const attempt = ++attempts;
-        return {
-          jobSequenceId: job.jobSequenceId,
-          jobPromise: job.execute(async (task) => {
-            if (failure === 'ancestry') {
-              await options.onAncestryFailure!();
-              task.fail('Published commit is not an ancestor');
-            }
-            if (failure !== 'transient') {
-              await options.onValidationFailure!();
-              task.fail('Existing JSON errors');
-            }
-            if (attempt === 1) task.fail('Temporary fetch timeout');
-            await options.onSynced!('c'.repeat(40));
-          }),
-        };
+        const jobPromise = job.execute(async (task) => {
+          if (failure === 'ancestry') {
+            await options.onAncestryFailure!();
+            task.fail('Published commit is not an ancestor');
+          }
+          if (failure !== 'transient') {
+            await options.onValidationFailure!();
+            task.fail('Existing JSON errors');
+          }
+          if (attempt === 1) task.fail('Temporary fetch timeout');
+          await options.onSynced!('c'.repeat(40));
+        });
+        jobs.push(jobPromise);
+        return { jobSequenceId: job.jobSequenceId, jobPromise };
       });
-    const input = { id, digest: 'test', expectedOperationNumber: 0, decision: 'approve' as const };
+    const input = { id, digest: 'test', decision: 'approve' as const };
     try {
       await withConfig(
         {
@@ -628,25 +499,21 @@ it.each([
         },
         async () => {
           await complete(scope, conversation, input);
+          await Promise.allSettled(jobs);
           if (failure === 'transient') {
-            await vi.waitFor(async () => {
-              const saved = (await selectOptionalProposal(conversation.id, id))!;
-              if (!saved.error?.includes('retry completion') || saved.outcome !== null) {
-                throw new Error('Waiting for retryable sync failure');
-              }
-            });
             await complete(scope, conversation, input);
+            await Promise.allSettled(jobs);
           }
-          await expect
-            .poll(async () => (await selectOptionalProposal(conversation.id, id))?.delivered)
-            .toBe(true);
+          await complete(scope, conversation, input);
+          const saved = (await selectOptionalProposal(conversation.id, id))!;
+          expect(saved.outcome).not.toBeNull();
           expect(push).toHaveBeenCalledOnce();
           expect(sync).toHaveBeenCalledTimes(
             failure === 'publication rejected' ? 0 : failure === 'transient' ? 2 : 1,
           );
           const retainedOutcome =
             /GitHub commit c{40} was retained[\s\S]*instructor approval[\s\S]*Sync diagnostics:/;
-          expect(delivery.mock.calls[0][0].result).toMatch(
+          expect(saved.outcome).toMatch(
             {
               transient: /Course Sync completed/,
               'publication rejected': /Publication rejected: Branch protection/,
@@ -655,11 +522,11 @@ it.each([
               'preexisting question validation': retainedOutcome,
             }[failure],
           );
-          expect(delivery.mock.calls[0][0].success).toBe(failure === 'transient');
+          expect(saved.outcome_success).toBe(failure === 'transient');
         },
       );
     } finally {
-      for (const mock of [...mocks, push, sync]) mock.mockRestore();
+      for (const mock of [push, sync]) mock.mockRestore();
       await execute(sql.question_errors, { course_id: scope.course_id, sync_errors: null });
     }
   },
@@ -702,67 +569,6 @@ it('uses the authenticated owner feature grant while retaining recovery after di
   }
 });
 
-it('fences uncertain sends, retries rejected dispatches and retains terminal status', async () => {
-  const { scope, conversation } = await setupConversation();
-  const operationId = randomUUID();
-  await reserveOperation(conversation, operationId, { kind: 'message', text: 'hello' }, 0);
-  const first = (await selectOptionalOperation(conversation.id, operationId))!;
-  await execute(sql.age_operation, { id: first.id });
-  const chat = {
-    ...createCloudflareProvider(new URL('http://localhost:8791'), 'test'),
-    getSnapshot: vi.fn().mockResolvedValue({ messages: [], operationNumber: 0, executions: {} }),
-    reconcileAdmissions: vi.fn().mockResolvedValue({ rejected: [] }),
-  };
-  const empty = {
-    messages: [],
-    operationNumber: 0,
-    conversationUsage: {
-      version: 0,
-      model: 'gpt-6-astra',
-      input: 0,
-      cached: 0,
-      cacheWrite: 0,
-      output: 0,
-    },
-  };
-  await reconcileOperations(conversation, chat, empty);
-  expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('admitted');
-  chat.reconcileAdmissions.mockResolvedValue({ rejected: [first.dispatch_id] });
-  await reconcileOperations(conversation, chat, empty);
-  expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('rejected');
-  expect(
-    await reserveOperation(conversation, operationId, { kind: 'message', text: 'hello' }, 0),
-  ).toBe(1);
-  const retry = (await selectOptionalOperation(conversation.id, operationId))!;
-  expect(retry.dispatch_id).not.toBe(first.dispatch_id);
-  await rejectOperation(conversation.id, operationId, first.dispatch_id);
-  expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('admitted');
-  const receipt = {
-    dispatchId: retry.dispatch_id,
-    status: 'completed' as const,
-  };
-  for (const dispatchId of [first.dispatch_id, undefined]) {
-    await reconcileOperations(conversation, chat, {
-      ...empty,
-      executions: { [operationId]: { ...receipt, dispatchId } },
-    });
-    expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('admitted');
-  }
-  chat.getSnapshot.mockResolvedValue({ ...empty, executions: { [operationId]: receipt } });
-  await reconcileOperations(conversation, chat, empty);
-  expect(chat.getSnapshot).toHaveBeenLastCalledWith(expect.any(AbortSignal), [operationId]);
-  await reconcileOperations(conversation, chat, {
-    ...empty,
-    executions: { [operationId]: { ...receipt, status: 'running' } },
-  });
-  expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('completed');
-  const activity = (await selectConversationActivity(scope)).find(
-    (row) => row.conversation.id === conversation.id,
-  )!;
-  expect(activity.running).toBe(false);
-  expect(activity.finished_at).toBeInstanceOf(Date);
-});
-
 it('shows publication progress only while a webserver owns the publication lock', async () => {
   const { scope, conversation } = await setupConversation();
   const id = randomUUID();
@@ -778,13 +584,12 @@ it('shows publication progress only while a webserver owns the publication lock'
   const row = (await insertProposal({
     conversation_id: conversation.id,
     operation_id: id,
-    sequence: 1,
     payload: JSON.stringify(proposal),
     digest: 'test',
   }))!;
   await prepareProposal(row.id, proposal, true, null);
-  await decideProposal(scope, conversation, row, 'approve', 0);
-  const value = { messages: [], operationNumber: 0, blocked: true };
+  await decideProposal(scope, conversation, row, 'approve');
+  const value = { messages: [], revision: 0, blocked: true };
   expect((await snapshot(conversation, value)).publication?.status).toBe('retry');
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
@@ -810,164 +615,4 @@ it('shows publication progress only while a webserver owns the publication lock'
     await publishing;
   }
   expect((await snapshot(conversation, value)).publication?.status).toBe('retry');
-});
-
-it('does not offer retry while an approved, synced outcome is resuming a cold sandbox', async () => {
-  const { scope, conversation, user } = await setupConversation();
-  const id = randomUUID();
-  const approval = {
-    id,
-    baseSha: 'a'.repeat(40),
-    proposedSha: 'b'.repeat(40),
-    status: 'pending',
-    digest: 'cold-sync',
-    files: [],
-    diff: '',
-  };
-  const row = (await insertProposal({
-    conversation_id: conversation.id,
-    operation_id: id,
-    sequence: 1,
-    payload: JSON.stringify(approval),
-    digest: approval.digest,
-  }))!;
-  await prepareProposal(row.id, approval, true, null);
-  await decideProposal(scope, conversation, row, 'approve', 0);
-  const sync = await createServerJob({
-    type: 'sync',
-    description: 'Cold approval fixture',
-    courseId: scope.course_id,
-    userId: user.id,
-    authnUserId: user.id,
-  });
-  await sync.execute(async () => {});
-  await saveProposalProgress(row.id, {
-    sync_job_sequence_id: sync.jobSequenceId,
-    published_sha: 'c'.repeat(40),
-    synced_sha: 'c'.repeat(40),
-  });
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  let acquired!: () => void;
-  const ready = new Promise<void>((resolve) => {
-    acquired = resolve;
-  });
-  const completing = namedLocks.doWithLock(
-    `course-agent:proposal:${id}`,
-    { timeout: 5000 },
-    async () => {
-      acquired();
-      await gate;
-    },
-  );
-  await ready;
-  const value = { messages: [], operationNumber: 0, blocked: true };
-  try {
-    expect((await snapshot(conversation, value)).publication?.status).toBe('publishing');
-    await saveProposalProgress(row.id, {
-      outcome: 'Published and synced. Restoring the sandbox.',
-      outcome_success: true,
-    });
-    expect((await snapshot(conversation, value)).publication?.status).toBe('publishing');
-  } finally {
-    release();
-    await completing;
-  }
-  expect((await snapshot(conversation, value)).publication?.status).toBe('retry');
-  await saveProposalProgress(row.id, { delivered: true });
-  expect((await snapshot(conversation, value)).publication?.status).toBe('complete');
-});
-
-it('finishes a warm decision without leaving a phantom active conversation', async () => {
-  const { scope, conversation, user } = await setupConversation();
-  await insertCoursePermissionsByUserUid({
-    course_id: scope.course_id,
-    uid: user.uid,
-    course_role: 'Owner',
-    authn_user_id: user.id,
-  });
-  await updateCourseColumn({
-    courseId: scope.course_id,
-    columnName: 'repository',
-    value: 'https://github.com/org/course',
-    authnUserId: user.id,
-  });
-  await updateCourseColumn({
-    courseId: scope.course_id,
-    columnName: 'branch',
-    value: 'main',
-    authnUserId: user.id,
-  });
-  const id = randomUUID();
-  const approval = {
-    id,
-    baseSha: 'a'.repeat(40),
-    proposedSha: 'b'.repeat(40),
-    status: 'pending',
-    digest: 'warm-decision',
-    files: [],
-    diff: '',
-  };
-  const row = (await insertProposal({
-    conversation_id: conversation.id,
-    operation_id: id,
-    sequence: 1,
-    payload: JSON.stringify(approval),
-    digest: approval.digest,
-  }))!;
-  await prepareProposal(row.id, approval, true, null);
-  const fetcher = vi
-    .spyOn(globalThis, 'fetch')
-    .mockResolvedValue(Response.json({ model: 'gpt-6-astra' }));
-  const notify = vi.spyOn(agentEvents, 'notify').mockResolvedValue();
-  const original = agentProvider.createCloudflareProvider;
-  const provider = vi
-    .spyOn(agentProvider, 'createCloudflareProvider')
-    .mockImplementation((...args) => ({
-      ...original(...args),
-      getSnapshot: async () => ({
-        messages: [],
-        operationNumber: 0,
-        conversationUsage: {
-          version: 0,
-          model: 'gpt-6-astra',
-          input: 0,
-          cached: 0,
-          cacheWrite: 0,
-          output: 0,
-        },
-        executions: {
-          [randomUUID()]: {
-            status: 'running' as const,
-          },
-        },
-      }),
-      deliverToolResult: async () => {},
-    }));
-  try {
-    await withConfig(
-      { isEnterprise: true, courseAgent: settings, githubClientToken: 'fixture-token' },
-      async () => {
-        const input = {
-          id,
-          digest: approval.digest,
-          decision: 'deny' as const,
-          expectedOperationNumber: 0,
-        };
-        await complete(scope, conversation, input);
-        await complete(scope, conversation, input);
-        expect((await selectOptionalProposal(conversation.id, id))!.delivered).toBe(true);
-        const current = (await selectConversationActivity(scope)).find(
-          (entry) => entry.conversation.id === conversation.id,
-        )!;
-        expect(current.running).toBe(false);
-      },
-    );
-  } finally {
-    fetcher.mockRestore();
-    notify.mockRestore();
-    provider.mockRestore();
-  }
 });

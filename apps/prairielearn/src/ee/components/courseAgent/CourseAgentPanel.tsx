@@ -110,13 +110,28 @@ function Panel({
     ...trpc.courseAgent.list.queryOptions(),
     enabled: panel.open,
   });
+  const visibleIds = Array.from(
+    new Set([
+      panel.selected,
+      ...(conversations.data?.conversations.slice(0, 19).map((c) => c.id) ?? []),
+    ]),
+  ).filter(Boolean);
+  const runtime = useQuery({
+    ...trpc.courseAgent.runtime.queryOptions({ conversationIds: visibleIds }),
+    enabled: panel.open && visibleIds.length > 0,
+    refetchInterval: panel.open ? 15000 : false,
+  });
+  const activity = conversations.data?.conversations.map((c) => ({
+    ...c,
+    ...runtime.data?.[c.id],
+  }));
   const canStartNewWork = conversations.data?.canStartNewWork ?? initiallyEnabled;
   // Only the full-screen mobile panel is modal; the server initially renders desktop markup.
   const mobile = useSyncExternalStore(subscribeMobile, mobileSnapshot, () => false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const mobileModalRef = useRef<ComponentRef<typeof Offcanvas>>(null);
   const [sending, setSending] = useState('');
-  const current = conversations.data?.conversations.find((c) => c.id === panel.selected);
+  const current = activity?.find((c) => c.id === panel.selected);
   const readVersion = usePanelState(`${key}:read:${panel.selected}`);
   // A completion is read only while its conversation is visible.
   useEffect(() => {
@@ -155,9 +170,9 @@ function Panel({
       savePanelState(`${key}:panel`, JSON.stringify(next));
       savePanelState(`${key}:settings`, JSON.stringify(next));
       saveSettings(next);
-      if (change.open === false && !mobile) requestAnimationFrame(() => toggleRef.current?.focus());
+      if (change.open === false) requestAnimationFrame(() => toggleRef.current?.focus());
     },
-    [saveSettings, mobile, key],
+    [saveSettings, key],
   );
   // Navigation may render session settings before the preceding mutation has
   // persisted. Restore/retry that local selection before first-send recovery.
@@ -199,6 +214,7 @@ function Panel({
         bsPrefix="course-agent-overlay"
         show={panel.open && mobile}
         backdrop={false}
+        restoreFocus={false}
         role={mobile ? 'dialog' : 'complementary'}
         aria-modal={mobile && panel.open ? true : undefined}
         data-open={panel.open}
@@ -238,7 +254,10 @@ function Panel({
                   <Dropdown
                     className="flex-grow-1"
                     onToggle={(open) => {
-                      if (open) void conversations.refetch();
+                      if (open) {
+                        void conversations.refetch();
+                        void runtime.refetch();
+                      }
                     }}
                   >
                     <Dropdown.Toggle

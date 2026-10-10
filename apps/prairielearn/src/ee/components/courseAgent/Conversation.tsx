@@ -51,7 +51,7 @@ export function Conversation({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const base = `/pl/course/${courseId}/course-agent/${id}`;
-  const [snapshot, setSnapshot] = useState<ChatSnapshot>({ messages: [], operationNumber: 0 });
+  const [snapshot, setSnapshot] = useState<ChatSnapshot>({ messages: [], revision: 0 });
   const { register, watch, setValue, handleSubmit } = useForm({ defaultValues: { draft: '' } });
   const draft = watch('draft');
   const [statisticsOpen, setStatisticsOpen] = useState(false);
@@ -92,9 +92,7 @@ export function Conversation({
     snapshot.diagnostics?.state === 'starting' ||
     create.isPending ||
     (send.isPending && (!snapshot.diagnostics || snapshot.diagnostics.state === 'absent'));
-  const pendingRef = useRef<{ id: string; text: string; expectedOperationNumber: number } | null>(
-    null,
-  );
+  const pendingRef = useRef<{ id: string; text: string; expectedRevision: number } | null>(null);
   // Stream observation is re-established after navigation; closing it never stops native execution.
   useEffect(() => {
     setValue('draft', readPanelState(storageKey + ':draft'));
@@ -129,6 +127,7 @@ export function Conversation({
       if (next.diagnostics?.state !== lastPhase) {
         lastPhase = next.diagnostics?.state;
         void queryClient.invalidateQueries(trpc.courseAgent.list.queryFilter());
+        void queryClient.invalidateQueries(trpc.courseAgent.runtime.queryFilter());
       }
       const pending = pendingRef.current;
       if (pending && next.messages.some((message) => message.id === pending.id)) {
@@ -143,7 +142,7 @@ export function Conversation({
       }
       setSnapshot((current) => ({
         ...next,
-        operationNumber: Math.max(current.operationNumber, next.operationNumber),
+        revision: Math.max(current.revision, next.revision),
       }));
       setLoaded(true);
       setConnection('connected');
@@ -211,7 +210,7 @@ export function Conversation({
         : {
             id: crypto.randomUUID(),
             text: draft,
-            expectedOperationNumber: snapshot.operationNumber,
+            expectedRevision: snapshot.revision,
           };
     pendingRef.current = message;
     savePanelState(storageKey + ':pending', JSON.stringify(message));
@@ -236,7 +235,7 @@ export function Conversation({
       const result = await send.mutateAsync({ conversationId, message });
       setSnapshot((current) => ({
         ...current,
-        operationNumber: Math.max(current.operationNumber, result.operationNumber),
+        revision: Math.max(current.revision, result.revision),
       }));
       pendingRef.current = null;
       savePanelState(storageKey + ':pending', '');
@@ -273,7 +272,6 @@ export function Conversation({
       decision: {
         id: approval.id,
         digest: approval.digest,
-        expectedOperationNumber: snapshot.operationNumber,
         decision: choice,
       },
     });
@@ -322,6 +320,25 @@ export function Conversation({
             }
           >
             Retry preparation
+          </Button>
+        </Alert>
+      )}
+      {snapshot.budgetStop && (
+        <Alert variant="warning" role="status">
+          {snapshot.budgetStop.message}
+        </Alert>
+      )}
+      {snapshot.accountingWarning && (
+        <Alert variant="warning" role="status" className="d-flex align-items-center gap-2">
+          <span>{snapshot.accountingWarning}</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline-secondary"
+            disabled={cleanup.isPending}
+            onClick={() => cleanup.mutate({ conversationId: id })}
+          >
+            Retry usage reconciliation
           </Button>
         </Alert>
       )}
@@ -413,6 +430,12 @@ export function Conversation({
                   ? 'Unknown'
                   : `$${snapshot.usage.estimatedCost.toFixed(4)}`}
             </dd>
+            {!!snapshot.unconfirmedCost && (
+              <>
+                <dt>Unconfirmed requests (maximum cost)</dt>
+                <dd>{`$${snapshot.unconfirmedCost.toFixed(4)}`}</dd>
+              </>
+            )}
             <dt>Input tokens</dt>
             <dd>{!id ? 0 : (snapshot.usage?.input ?? 'Unknown')}</dd>
             <dt>Output tokens</dt>

@@ -19,11 +19,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { type AgentScope, selectConversation } from '../../../models/course-agent-conversation.js';
 
 import { connectionFailure } from './errors.js';
-import { subscribe } from './events.js';
-import { dispatchHostTool } from './host-tools.js';
-import { reconcileOperations } from './lifecycle.js';
-import { prepare, provider, snapshot } from './service.js';
-import { recordUsage } from './usage.js';
+import { provider, snapshot } from './service.js';
 
 const router = Router({ mergeParams: true });
 const ParamsSchema = z.object({ conversation_id: IdSchema });
@@ -68,15 +64,13 @@ router.get(
       if (!ready || running || signal.aborted) return;
       running = true;
       try {
-        // A socket callback may mark the snapshot dirty while the read is awaiting I/O.
+        // An event callback may mark the snapshot dirty while the read is awaiting I/O.
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         while (dirty && !signal.aborted) {
           dirty = false;
           const c = await selectConversation(scope, conversation_id);
           const next = await snapshot(c, await chat.getSnapshot(signal));
           next.diagnostics = await chat.getDiagnostics(signal);
-          await reconcileOperations(c, chat, next);
-          next.usage = await recordUsage(c, next);
           if (!res.write(`data: ${JSON.stringify(next)}\n\n`)) {
             await once(res, 'drain', {
               signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
@@ -89,11 +83,9 @@ router.get(
         running = false;
       }
     };
-    let unlisten: (() => void) | undefined;
     let unwatch: (() => void) | undefined;
     const clean = () => {
       clearTimeout(expiry);
-      unlisten?.();
       unwatch?.();
     };
     res.once('close', clean);
@@ -104,23 +96,7 @@ router.get(
     });
     res.flushHeaders();
     try {
-      unlisten = await subscribe(conversation_id, () => void refresh());
-      // HTTP exposes a safe status before a failed WebSocket upgrade hides its cause.
-      await chat.getSnapshot(signal);
-      unwatch = await chat.watch(
-        signal,
-        () => void refresh(),
-        fail,
-        (call) =>
-          dispatchHostTool(call, (incoming) =>
-            prepare(scope, conversation, {
-              id: incoming.id,
-              sequence: incoming.sequence,
-              name: incoming.name,
-              args: incoming.input,
-            }),
-          ),
-      );
+      unwatch = await chat.watch(signal, () => void refresh(), fail);
       if (signal.aborted) {
         clean();
         return;

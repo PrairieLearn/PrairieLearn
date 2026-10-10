@@ -16,10 +16,8 @@ import {
   type AgentScope,
   createConversation,
   nameConversation,
-  rejectOperation,
   selectConversation,
-  selectConversationActivity,
-  selectOptionalOperation,
+  selectConversations,
 } from '../../models/course-agent-conversation.js';
 import { selectOptionalProposal } from '../../models/course-agent-proposal.js';
 
@@ -85,18 +83,59 @@ export const courseAgentRouter = t.router({
       canStartNewWork:
         (await ctx.service.newWorkEnabled(ctx.scope, ctx.course)) &&
         !ctx.service.unavailableReason(),
-      conversations: (await selectConversationActivity(ctx.scope)).map(
-        ({ conversation, running, finished_at }) => ({
-          ...conversation,
-          title:
-            conversation.title === 'New conversation'
-              ? conversation.title
-              : formatCourseAgentDate(conversation.created_at, ctx.course.display_timezone),
-          running,
-          finishedAt: finished_at?.toISOString() ?? null,
-        }),
-      ),
+      conversations: (await selectConversations(ctx.scope)).map((conversation) => ({
+        ...conversation,
+        title:
+          conversation.title === 'New conversation'
+            ? conversation.title
+            : formatCourseAgentDate(conversation.created_at, ctx.course.display_timezone),
+        running: false,
+        finishedAt: conversation.last_finished_at?.toISOString() ?? null,
+      })),
     })),
+  runtime: procedure
+    .input(z.object({ conversationIds: z.array(IdSchema).max(20) }))
+    .query(async ({ ctx, input }) => {
+      const ids = new Set(input.conversationIds);
+      const catalog = (await selectConversations(ctx.scope)).filter((c) => ids.has(c.id));
+      const result: Record<
+        string,
+        { running: boolean; finishedAt: string | null; unavailable?: boolean }
+      > = {};
+      // Four concurrent reads at most; catalog reads remain independent of these calls.
+      for (let i = 0; i < catalog.length; i += 4) {
+        await Promise.all(
+          catalog.slice(i, i + 4).map(async (c) => {
+            try {
+              const client = await ctx.service.provider(ctx.scope, c);
+              const state = await client.getRuntime(AbortSignal.timeout(5000));
+              result[c.id] = {
+                running: state.running,
+                finishedAt: state.finishedAt
+                  ? new Date(state.finishedAt).toISOString()
+                  : (c.last_finished_at?.toISOString() ?? null),
+              };
+            } catch (error) {
+              if (!(error instanceof ChatError)) throw error;
+              result[c.id] = {
+                running: false,
+                finishedAt: c.last_finished_at?.toISOString() ?? null,
+                unavailable: true,
+              };
+            }
+          }),
+        );
+      }
+      return result;
+    }),
+  export: procedure.input(id).query(async ({ ctx, input }) => {
+    const conversation = await selectConversation(ctx.scope, input.conversationId);
+    const chat = await ctx.service.provider(ctx.scope, conversation);
+    return {
+      catalog: CatalogSchema.parse(conversation),
+      service: await chat.exportConversation(AbortSignal.timeout(30000)),
+    };
+  }),
   create: newWorkProcedure.output(CatalogSchema).mutation(({ ctx }) =>
     createConversation(ctx.scope, {
       title: 'New conversation',
@@ -108,25 +147,10 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const c = await selectConversation(ctx.scope, input.conversationId);
       const chat = await ctx.service.provider(ctx.scope, c, true);
-      const { admit } = await import('../../ee/lib/course-agent/usage.js');
-      const operationNumber = await admit(c, input.message, chat);
-      const operation = (await selectOptionalOperation(c.id, input.message.id))!;
       const title = formatCourseAgentDate(c.created_at, ctx.course.display_timezone);
-      let dispatched = false;
-      try {
-        await nameConversation(c.id, title);
-        dispatched = true;
-        await chat.send(
-          { ...input.message, dispatchId: operation.dispatch_id },
-          AbortSignal.timeout(120000),
-        );
-      } catch (error) {
-        if (!dispatched || (error instanceof ChatError && [400, 409].includes(error.status))) {
-          await rejectOperation(c.id, input.message.id, operation.dispatch_id);
-        }
-        throw error;
-      }
-      return { title, operationNumber };
+      await nameConversation(c.id, title);
+      const receipt = await chat.send(input.message, AbortSignal.timeout(120000));
+      return { title, ...receipt };
     }),
   stop: procedure.input(id).mutation(async ({ ctx, input }) => {
     const chat = await ctx.service.provider(
@@ -167,16 +191,11 @@ export const courseAgentRouter = t.router({
         row
           ? {
               id: row.operation_id,
-              sequence: row.sequence,
               name: 'push_sync',
               args: row.payload,
             }
           : retained!,
       );
-      if ((await selectOptionalProposal(c.id, input.operationId))?.prepared) {
-        const chat = await ctx.service.provider(ctx.scope, c);
-        await chat.markToolPrepared(input.operationId, AbortSignal.timeout(30000));
-      }
     }),
 });
 

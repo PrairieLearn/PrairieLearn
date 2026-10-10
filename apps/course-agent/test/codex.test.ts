@@ -84,6 +84,7 @@ test('startup sanitizes backup failures without exposing arbitrary SDK output', 
     restoreBackup: async () => {
       throw new Error('private-test-key');
     },
+    control,
   } as unknown as CodexSandbox;
   await assert.rejects(
     connectCodex(sandbox, {
@@ -114,16 +115,37 @@ test('startup bounds app-server readiness and reports its timeout', async () => 
   await assert.rejects(connectCodex(sandbox, {}), /Sandbox startup failed.*timed out/);
 });
 
+const control = {
+  async check() {},
+  async reserve() {
+    return {
+      reservationId: crypto.randomUUID(),
+      maxOutputTokens: 16,
+      reservedCostUnits: 100,
+      expiresAt: Date.now() + 120000,
+    };
+  },
+  async dispatch() {
+    return true;
+  },
+  async settle() {},
+};
 test('credential handler injects only into allowed OpenAI requests', async () => {
   let calls = 0;
   const send: typeof fetch = async (request) => {
     calls++;
     assert.ok(request instanceof Request);
     assert.equal(request.headers.get('Authorization'), 'Bearer private-test-key');
+    if (request.url.endsWith('/input_tokens')) return Response.json({ input_tokens: 1 });
     assert.equal(request.url, 'https://api.openai.com/v1/responses');
     assert.equal(request.headers.has('OpenAI-Project'), false);
     assert.equal(request.redirect, 'manual');
-    assert.equal(await request.text(), '{"model":"test"}');
+    assert.deepEqual(await request.json(), {
+      model: 'test',
+      max_output_tokens: 16,
+      store: false,
+      service_tier: 'default',
+    });
     return new Response('stream');
   };
   const env = { CODEX_API_KEY: 'private-test-key', CODEX_MODEL: 'test' };
@@ -135,7 +157,7 @@ test('credential handler injects only into allowed OpenAI requests', async () =>
       'OpenAI-Project': 'other',
     },
   });
-  assert.equal(await (await forwardOpenAI(request, env, send)).text(), 'stream');
+  assert.equal(await (await forwardOpenAI(request, env, send, control)).text(), 'stream');
   for (const url of [
     'https://openai.internal/v1/responses',
     'http://openai.internal.evil.test/v1/responses',
@@ -151,7 +173,7 @@ test('credential handler injects only into allowed OpenAI requests', async () =>
     (await forwardOpenAI(new Request('http://openai.internal/v1/responses'), env, send)).status,
     403,
   );
-  assert.equal(calls, 1);
+  assert.equal(calls, 2);
 });
 test('missing credentials and upstream exceptions reveal no secret', async () => {
   const request = new Request('http://openai.internal/v1/responses', {
@@ -165,6 +187,7 @@ test('missing credentials and upstream exceptions reveal no secret', async () =>
     async () => {
       throw new Error('private-test-key');
     },
+    control,
   );
   assert.equal(response.status, 502);
   assert.doesNotMatch(await response.text(), /private-test-key/);
@@ -210,11 +233,14 @@ test('model redirects are blocked without exposing the destination', async () =>
       body: '{"model":"test"}',
     }),
     { CODEX_API_KEY: 'private-test-key', CODEX_MODEL: 'test' },
-    async () =>
-      new Response(null, {
-        status: 307,
-        headers: { Location: 'https://elsewhere.test' },
-      }),
+    async (input) =>
+      (input as Request).url.endsWith('/input_tokens')
+        ? Response.json({ input_tokens: 1 })
+        : new Response(null, {
+            status: 307,
+            headers: { Location: 'https://elsewhere.test' },
+          }),
+    control,
   );
   assert.equal(response.status, 502);
   assert.equal(response.headers.has('Location'), false);

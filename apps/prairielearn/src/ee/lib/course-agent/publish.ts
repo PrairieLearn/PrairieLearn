@@ -69,7 +69,6 @@ export interface Destination {
 
 export interface Publication {
   id: string;
-  sequence: number;
   destination: Destination;
   approval: Approval;
   createdAt: string;

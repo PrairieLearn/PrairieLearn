@@ -20,10 +20,9 @@ export async function openCodexTurn(
     write,
     onTurnStarted,
     onUsage,
-    development = false,
     onToolCall,
+    onToolStarted,
   }: {
-    development?: boolean;
     threadId?: string;
     model?: string;
     runId: string;
@@ -37,6 +36,7 @@ export async function openCodexTurn(
       output: number;
     }) => void;
     onToolCall: (params: DynamicToolCallParams) => Promise<DynamicToolCallResponse>;
+    onToolStarted?: (id: string) => void;
   },
 ) {
   const options = {
@@ -48,7 +48,7 @@ export async function openCodexTurn(
     ? await client.request('thread/resume', { ...options, threadId })
     : await client.request('thread/start', {
         ...options,
-        dynamicTools: toolDefinitions(development),
+        dynamicTools: toolDefinitions(),
       });
   if (thread.turns.some((turn) => turn.status === 'inProgress')) {
     throw new Error('Native thread still has an active turn.');
@@ -141,6 +141,12 @@ export async function openCodexTurn(
         resolve(event.params.turn);
       }
     } else if (event.params.turnId === turnId) {
+      if (
+        event.method === 'item/started' &&
+        !['userMessage', 'agentMessage', 'reasoning', 'plan'].includes(event.params.item.type)
+      ) {
+        onToolStarted?.(event.params.item.id);
+      }
       events.accept(event);
     }
   });

@@ -69,10 +69,15 @@ export const ConfigSchema = z.object({
   courseAgent: z
     .object({
       workerUrl: z.url(),
-      serviceToken: z.string().min(32).nullable().default(null),
+      serviceToken: z.string().min(32),
       maxConcurrentPerUser: z.number().int().positive().default(2),
-      // A soft admission guard, matching AI grading's fixed-hour Redis accounting.
       hourlyCostLimit: z.number().positive().default(10),
+      turnCostLimit: z.number().positive().default(2),
+      requestCostLimit: z.number().positive().default(0.5),
+      accountingEpoch: z.uuid(),
+      maxTurnRuntimeMs: z.number().int().positive().max(1_800_000).default(1_800_000),
+      maxToolCallsPerTurn: z.number().int().positive().max(100).default(100),
+      maxModelRequestsPerTurn: z.number().int().positive().max(200).default(200),
     })
     .nullable()
     .default(null),
@@ -793,10 +798,6 @@ export async function loadConfig(paths: string[]) {
         'databaseEncryptionKey must be set to a secure value in production environments',
       );
     }
-  }
-
-  if (config.courseAgent && !config.redisUrl) {
-    throw new Error('redisUrl must be set when courseAgent is configured');
   }
 
   if (config.courseAgent && !config.nonVolatileRedisUrl) {

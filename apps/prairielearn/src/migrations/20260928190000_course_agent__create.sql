@@ -6,32 +6,8 @@ CREATE TABLE course_agent_conversations (
   title TEXT NOT NULL,
   repository TEXT NOT NULL,
   branch TEXT NOT NULL,
-  operation_number INTEGER NOT NULL DEFAULT 0 CHECK (operation_number >= 0),
+  last_finished_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX course_agent_conversations_course_id_user_id_idx ON course_agent_conversations (course_id, user_id);
-
-CREATE TABLE course_agent_operations (
-  id BIGSERIAL PRIMARY KEY,
-  conversation_id BIGINT NOT NULL REFERENCES course_agent_conversations (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  operation_id UUID NOT NULL,
-  payload JSONB NOT NULL,
-  dispatch_id UUID NOT NULL DEFAULT gen_random_uuid(),
-  status TEXT NOT NULL DEFAULT 'admitted' CHECK (
-    status IN (
-      'admitted',
-      'running',
-      'completed',
-      'cancelled',
-      'failed',
-      'interrupted',
-      'rejected'
-    )
-  ),
-  admitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  finished_at TIMESTAMPTZ,
-  operation_number INTEGER NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (conversation_id, operation_id)
-);

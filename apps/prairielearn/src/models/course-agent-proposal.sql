@@ -15,22 +15,26 @@ FROM
 WHERE
   conversation_id = $conversation_id
 ORDER BY
-  sequence;
+  created_at,
+  id;
+
+-- BLOCK select_proposal_for_update
+SELECT
+  *
+FROM
+  course_agent_proposals
+WHERE
+  conversation_id = $conversation_id
+  AND operation_id = $operation_id
+FOR UPDATE;
 
 -- BLOCK insert_proposal
 INSERT INTO
-  course_agent_proposals (
-    conversation_id,
-    operation_id,
-    sequence,
-    payload,
-    digest
-  )
+  course_agent_proposals (conversation_id, operation_id, payload, digest)
 VALUES
   (
     $conversation_id,
     $operation_id,
-    $sequence,
     $payload,
     $digest
   )
@@ -46,7 +50,8 @@ SET
   error = $error
 WHERE
   id = $id
-  AND decision IS NULL;
+  AND decision IS NULL
+  AND outcome IS NULL;
 
 -- BLOCK update_proposal_decision
 UPDATE course_agent_proposals
@@ -55,6 +60,7 @@ SET
 WHERE
   id = $id
   AND decision IS NULL
+  AND digest = $digest
 RETURNING
   *;
 
@@ -68,10 +74,20 @@ SET
   outcome_success = COALESCE($outcome_success, outcome_success),
   sync_validation_failed = COALESCE($sync_validation_failed, sync_validation_failed),
   sync_diagnostics = COALESCE($sync_diagnostics, sync_diagnostics),
-  delivered = COALESCE($delivered, delivered),
-  error = $error
+  error = CASE
+    WHEN $has_error THEN $error
+    ELSE error
+  END
 WHERE
-  id = $id;
+  id = $id
+  AND outcome IS NULL
+  AND (
+    $published_sha::text IS NULL
+    OR published_sha IS NULL
+    OR published_sha = $published_sha
+  )
+RETURNING
+  *;
 
 -- BLOCK update_proposal_preparation_failure
 UPDATE course_agent_proposals
@@ -82,7 +98,8 @@ SET
   outcome_success = FALSE
 WHERE
   id = $id
-  AND decision IS NULL;
+  AND decision IS NULL
+  AND outcome IS NULL;
 
 -- BLOCK reset_proposal_sync_receipt
 UPDATE course_agent_proposals
@@ -90,4 +107,5 @@ SET
   sync_job_sequence_id = NULL,
   synced_sha = NULL
 WHERE
-  id = $id;
+  id = $id
+  AND outcome IS NULL;

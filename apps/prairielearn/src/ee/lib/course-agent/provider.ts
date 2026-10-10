@@ -1,428 +1,179 @@
-import { once } from 'node:events';
-
-import { WebSocketChatTransport } from 'agents/chat/transport';
-import { validateUIMessages } from 'ai';
-import WebSocket from 'ws';
+import { parseJsonEventStream, uiMessageChunkSchema, validateUIMessages } from 'ai';
 import { z } from 'zod';
 
 import {
-  type ChatConnection,
   ChatError,
   type ChatProvider,
-  conversationUsageSchema,
-  hostToolCallSchema,
+  type ServiceScope,
+  agentSnapshotSchema,
+  conversationExportSchema,
+  historyPageSchema,
+  runtimeSchema,
   sandboxDiagnosticsSchema,
+  serviceHeaders,
 } from '@prairielearn/course-agent-contract';
-import * as Sentry from '@prairielearn/sentry';
-import { assertNever } from '@prairielearn/utils';
-
-import { config } from '../../../lib/config.js';
 
 import { workerResponseError } from './errors.js';
-import { executeHostTool } from './host-tools.js';
 
-// Reuse an existing backend watch socket when possible. A result can also arrive with every browser closed.
-const hostSockets = new Map<string, Set<WebSocket>>();
-
-const CONNECTION_TIMEOUT_MS = 10_000;
-const REQUEST_TIMEOUT_MS = 30_000;
-const resumeEventSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('cf_agent_stream_resuming'), id: z.string() }),
-  z.object({
-    type: z.literal('cf_agent_stream_resume_none'),
-    probeId: z.string().optional(),
-  }),
-  z.object({ type: z.literal('cf_agent_stream_pending') }),
-]);
-
-const snapshotSchema = z.object({
-  messages: z.array(z.unknown()),
-  operationNumber: z.number().int().nonnegative(),
-  blocked: z.boolean(),
-  conversationUsage: conversationUsageSchema,
-  pendingTool: z
-    .object({
-      id: z.uuid(),
-      sequence: z.number().int().positive(),
-      name: z.string(),
-      args: z.unknown(),
-      result: z.string().optional(),
-      resultSuccess: z.boolean().optional(),
-      prepared: z.boolean().optional(),
-      error: z.string().optional(),
-    })
-    .optional(),
-  executions: z.record(
-    z.string(),
-    z.object({
-      dispatchId: z.uuid().optional(),
-      status: z.enum(['running', 'completed', 'cancelled', 'failed', 'interrupted']),
-    }),
-  ),
-});
-const watchMessageSchema = z.union([
-  hostToolCallSchema,
-  z.object({ type: z.enum(['cf_agent_state', 'cf_agent_chat_messages']) }),
-]);
-
-const deliveryMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('host-tool-delivered'), id: z.uuid() }),
-  z.object({ type: z.literal('host-tool-delivery-error'), id: z.uuid() }),
-]);
-
-/** Isolate Cloudflare transport behind the provider contract; the browser only sees HTTP and AI SDK SSE. */
-export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvider {
-  const agentUrl = new URL(`/agents/chat/${encodeURIComponent(id)}`, workerUrl);
+/** Only versioned JSON and SSE cross the PL/agent boundary. */
+export function createAgentClient(origin: URL, scope: ServiceScope, secret: string): ChatProvider {
+  const resource = `/v1/conversations/${scope.conversationId}`;
 
   async function request(
     path: string,
     method: string,
     signal: AbortSignal,
     body?: unknown,
-    timeoutMs: number | null = REQUEST_TIMEOUT_MS,
+    streaming = false,
   ) {
-    const response = await fetch(`${agentUrl}/${path}`, {
+    const url = new URL(resource + path, origin);
+    const json = body === undefined ? '' : JSON.stringify(body);
+    const response = await fetch(url, {
       method,
-      headers: {
-        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
-        ...(config.courseAgent?.serviceToken
-          ? { Authorization: `Bearer ${config.courseAgent.serviceToken}` }
-          : {}),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal:
-        timeoutMs === null ? signal : AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]),
+      headers: await serviceHeaders(secret, 'agent-api', method, url.pathname + url.search, scope, {
+        body: json,
+      }),
+      body: json || undefined,
+      redirect: 'error',
+      signal: streaming ? signal : AbortSignal.any([signal, AbortSignal.timeout(120_000)]),
     }).catch(() => {
       throw new ChatError(
         502,
-        'Course agent connection failed. Its execution state remains unconfirmed.',
+        'Course agent connection failed. Execution remains unconfirmed. Check saved history before retrying.',
       );
     });
     if (!response.ok) {
+      const error = z
+        .object({ error: z.string().optional(), message: z.string().optional() })
+        .safeParse(await response.json().catch(() => null));
+      if (error.success && (error.data.message || error.data.error)) {
+        throw new ChatError(response.status, error.data.message ?? error.data.error!);
+      }
       throw workerResponseError(response.status);
     }
     return response;
   }
-
   return {
-    async watch(signal, changed, failed, execute = executeHostTool) {
-      const url = new URL(agentUrl);
-      url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-      const socket = new WebSocket(url, {
-        maxPayload: 8 * 1024 * 1024,
-        headers: {
-          'X-Host-Tools': '1',
-          ...(config.courseAgent?.serviceToken
-            ? { Authorization: `Bearer ${config.courseAgent.serviceToken}` }
-            : {}),
-        },
-      });
-      const peers = hostSockets.get(agentUrl.href) ?? new Set<WebSocket>();
-      hostSockets.set(agentUrl.href, peers);
-      const forget = () => {
-        peers.delete(socket);
-        if (peers.size === 0) hostSockets.delete(agentUrl.href);
-      };
-      socket.once('close', forget);
-      const close = () => {
-        forget();
-        socket.close();
-      };
-      signal.addEventListener('abort', close, { once: true });
-      socket.on('message', (data) => {
-        let value: unknown;
-        try {
-          value = JSON.parse(String(data));
-        } catch {
-          close();
-          failed();
-          return;
-        }
-        const parsed = watchMessageSchema.safeParse(value);
-        if (!parsed.success) return;
-        const message = parsed.data;
-        if (message.type === 'host-tool-call') {
-          void execute(message)
-            .then((result) => {
-              if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(result));
-            })
-            .catch((error: unknown) => {
-              Sentry.captureException(error);
-              if (message.sequence !== undefined && socket.readyState === WebSocket.OPEN) {
-                socket.send(
-                  JSON.stringify({ type: 'host-tool-preparation-error', id: message.id }),
-                );
-                changed();
-              } else {
-                close();
-                failed();
-              }
-            });
-          return;
-        }
-        // SDK broadcasts durable state and message updates; tokens continue over the separate AI SDK stream.
-        if (['cf_agent_state', 'cf_agent_chat_messages'].includes(message.type)) changed();
-      });
-      socket.on('close', failed);
-      socket.on('error', failed);
+    async getRuntime(signal) {
+      return runtimeSchema.parse(await (await request('/runtime', 'GET', signal)).json());
+    },
+    async exportConversation(signal) {
+      return conversationExportSchema.parse(await (await request('/export', 'GET', signal)).json());
+    },
+    async configure(binding, signal) {
       try {
-        await once(socket, 'open', {
-          signal: AbortSignal.any([signal, AbortSignal.timeout(CONNECTION_TIMEOUT_MS)]),
-        });
+        return z
+          .object({ model: z.string().min(1) })
+          .parse(await (await request('', 'PUT', signal, binding)).json());
       } catch (error) {
-        signal.removeEventListener('abort', close);
-        close();
-        throw error;
+        if (error instanceof ChatError) throw error;
+        throw new ChatError(
+          502,
+          'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
+        );
       }
-      hostSockets.set(agentUrl.href, peers);
-      peers.add(socket);
-      socket.send(JSON.stringify({ type: 'host-tools-ready' }));
-      return () => {
-        signal.removeEventListener('abort', close);
-        socket.removeListener('close', failed);
-        socket.removeListener('error', failed);
-        close();
-      };
     },
-    async markToolPrepared(id, signal) {
-      await request('tool-prepared', 'POST', signal, { id });
-    },
-    async deliverToolResult(outcome, signal) {
-      const existing = Array.from(hostSockets.get(agentUrl.href) ?? []).find(
-        (socket) => socket.readyState === WebSocket.OPEN,
+    async watch(signal, changed, failed) {
+      const lifetime = new AbortController();
+      const response = await request(
+        '/events',
+        'GET',
+        AbortSignal.any([signal, lifetime.signal]),
+        undefined,
+        true,
       );
-      const url = new URL(agentUrl);
-      url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-      const socket =
-        existing ??
-        new WebSocket(url, {
-          maxPayload: 8 * 1024 * 1024,
-          headers: {
-            'X-Host-Tools': '1',
-            ...(config.courseAgent?.serviceToken
-              ? { Authorization: `Bearer ${config.courseAgent.serviceToken}` }
-              : {}),
-          },
-        });
-      // A cold continuation includes sandbox restore and native acceptance;
-      // its caller supplies a budget for that work, not an ordinary control RPC.
-      const deadline = signal;
-      let cleanup = () => {};
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const fail = () =>
-            reject(new Error('Tool result delivery interrupted. Retry completion.'));
-          const send = () =>
-            socket.send(
-              JSON.stringify({
-                type: 'host-tool-result',
-                id: outcome.id,
-                outcome,
-              }),
-            );
-          const receive = (data: WebSocket.RawData) => {
-            let value: unknown;
-            try {
-              value = JSON.parse(String(data));
-            } catch {
-              return;
-            }
-            const parsed = deliveryMessageSchema.safeParse(value);
-            if (!parsed.success) return;
-            const frame = parsed.data;
-            if (frame.id !== outcome.id) return;
-            switch (frame.type) {
-              case 'host-tool-delivered':
-                resolve();
-                break;
-              case 'host-tool-delivery-error':
-                reject(new Error('Tool result delivery failed. Retry completion.'));
-                break;
-              default:
-                assertNever(frame);
-            }
-          };
-          cleanup = () => {
-            deadline.removeEventListener('abort', fail);
-            socket.off('close', fail);
-            socket.off('error', fail);
-            socket.off('open', send);
-            socket.off('message', receive);
-          };
-          deadline.addEventListener('abort', fail, { once: true });
-          socket.once('close', fail);
-          socket.once('error', fail);
-          socket.on('message', receive);
-          if (deadline.aborted) fail();
-          else if (existing) send();
-          else socket.once('open', send);
-        });
-      } finally {
-        cleanup();
-        if (!existing) {
-          // Closing during the handshake can emit an asynchronous error after request listeners are removed.
-          socket.once('error', () => {});
-          socket.close();
+      if (!response.body) throw new ChatError(502, 'Agent events are unavailable.');
+      const events = parseJsonEventStream({
+        stream: response.body,
+        schema: z.object({ type: z.literal('changed') }),
+      });
+      void (async () => {
+        for await (const event of events) {
+          if (!event.success) throw event.error;
+          changed();
         }
-      }
+        if (!signal.aborted && !lifetime.signal.aborted) failed();
+      })().catch(() => {
+        if (!signal.aborted && !lifetime.signal.aborted) failed();
+      });
+      return () => lifetime.abort();
     },
     async getSnapshot(signal, operationIds) {
-      const path = operationIds
-        ? `snapshot?ids=${encodeURIComponent(JSON.stringify(operationIds))}`
-        : 'snapshot';
-      const response = await request(path, 'GET', signal);
-      const value = snapshotSchema.parse(await response.json());
+      const suffix = operationIds ? `?ids=${encodeURIComponent(JSON.stringify(operationIds))}` : '';
+      const value = agentSnapshotSchema.parse(
+        await (await request('/snapshot' + suffix, 'GET', signal)).json(),
+      );
       const messages =
         value.messages.length > 0 ? await validateUIMessages({ messages: value.messages }) : [];
-      return {
-        messages,
-        executions: value.executions,
-        conversationUsage: value.conversationUsage,
-        blocked: value.blocked,
-        operationNumber: value.operationNumber,
-        pendingTool: value.pendingTool,
-      };
+      return { ...value, messages };
     },
     async getDiagnostics(signal) {
-      const response = await request('diagnostics', 'GET', signal);
-      return sandboxDiagnosticsSchema.parse(await response.json());
+      return sandboxDiagnosticsSchema.parse(
+        await (await request('/diagnostics', 'GET', signal)).json(),
+      );
     },
     async retryCleanup(signal) {
-      await request('cleanup', 'POST', signal);
+      await request('/cleanup', 'POST', signal);
+    },
+    async requestRetention(signal) {
+      await request('/retention', 'POST', signal);
     },
     async getHistory(signal) {
-      const response = await request('get-messages', 'GET', signal);
-      const messages: unknown = await response.json();
-      // An empty history is valid, although the SDK validates nonempty chat requests.
-      if (Array.isArray(messages) && messages.length === 0) return [];
-      return validateUIMessages({ messages });
+      const messages: unknown[] = [];
+      const cursors = new Set<string>();
+      let cursor: string | null = null;
+      do {
+        const suffix: string = cursor === null ? '' : '?cursor=' + encodeURIComponent(cursor);
+        const page = historyPageSchema.parse(
+          await (await request('/history' + suffix, 'GET', signal)).json(),
+        );
+        messages.push(...page.messages);
+        cursor = page.nextCursor;
+        if (cursor !== null && (cursors.has(cursor) || cursors.size >= 1000)) {
+          throw new ChatError(
+            502,
+            'Conversation history could not be loaded. Export or reload the conversation.',
+          );
+        }
+        if (cursor !== null) cursors.add(cursor);
+      } while (cursor !== null);
+      return messages.length === 0 ? [] : validateUIMessages({ messages });
     },
     async send(input, signal) {
-      // Prompt acceptance may restore a checkpoint before Codex acknowledges it.
-      // The caller supplies a deadline that covers that complete operation.
-      await request('message', 'POST', signal, input, null);
-    },
-    async reconcileAdmissions(admissions, signal) {
-      const response = await request('reconcile-admissions', 'POST', signal, { admissions });
-      return z.object({ rejected: z.array(z.uuid()) }).parse(await response.json());
+      return z
+        .object({ revision: z.number().int().nonnegative() })
+        .parse(await (await request('/messages', 'POST', signal, input)).json());
     },
     async cancel(signal) {
-      await request('cancel', 'POST', signal);
+      await request('/stop', 'POST', signal);
     },
-    connect(signal) {
-      return connectToAgent(agentUrl, signal, id);
-    },
-  };
-}
-
-async function connectToAgent(
-  agentUrl: URL,
-  clientSignal: AbortSignal,
-  chatId: string,
-): Promise<ChatConnection> {
-  clientSignal.throwIfAborted();
-  const socketUrl = new URL(agentUrl);
-  socketUrl.protocol = socketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-
-  const socket = new WebSocket(socketUrl, {
-    maxPayload: 8 * 1024 * 1024,
-    headers: config.courseAgent?.serviceToken
-      ? { Authorization: `Bearer ${config.courseAgent.serviceToken}` }
-      : {},
-  });
-  const lifetime = new AbortController();
-  const listeners = new AbortController();
-  const events = new EventTarget();
-  let receivedBytes = 0;
-  socket.on('message', (data) => {
-    receivedBytes += Buffer.byteLength(String(data));
-    if (receivedBytes > 8 * 1024 * 1024) {
-      lifetime.abort(new Error('Stream size limit reached. Reconnect to read saved history.'));
-      socket.close();
-      return;
-    }
-    events.dispatchEvent(new MessageEvent('message', { data: String(data) }));
-  });
-  const transport = new WebSocketChatTransport({
-    agent: {
-      send: (data) => socket.send(data),
-      addEventListener: (type, listener, options) =>
-        events.addEventListener(type, listener as EventListener, options),
-      removeEventListener: (type, listener) =>
-        events.removeEventListener(type, listener as EventListener),
-    },
-    cancelOnClientAbort: false,
-  });
-  let closed = false;
-
-  function close() {
-    if (closed) return;
-    closed = true;
-    transport.resetResumeState();
-    lifetime.abort();
-    listeners.abort();
-    socket.close();
-  }
-
-  function handleDisconnect() {
-    lifetime.abort(new Error('Cloudflare connection closed.'));
-    transport.cancelPendingResume();
-  }
-
-  function handleMessage(event: MessageEvent) {
-    // The SDK reads chat chunks directly. Only resume control events need forwarding.
-    try {
-      const parsed = resumeEventSchema.safeParse(JSON.parse(String(event.data)));
-      if (!parsed.success) return;
-      const message = parsed.data;
-      switch (message.type) {
-        case 'cf_agent_stream_resuming':
-          transport.handleStreamResuming(message);
-          break;
-        case 'cf_agent_stream_resume_none':
-          transport.handleStreamResumeNone(message);
-          break;
-        case 'cf_agent_stream_pending':
-          transport.handleStreamPending();
-          break;
-      }
-    } catch (error) {
-      lifetime.abort(new Error('Invalid Cloudflare protocol message.', { cause: error }));
-      transport.cancelPendingResume();
-    }
-  }
-
-  const listenerOptions = { signal: listeners.signal };
-  clientSignal.addEventListener('abort', close, listenerOptions);
-  socket.on('close', handleDisconnect);
-  socket.on('error', handleDisconnect);
-  events.addEventListener(
-    'message',
-    (event) => handleMessage(event as MessageEvent),
-    listenerOptions,
-  );
-
-  try {
-    await once(socket, 'open', {
-      signal: AbortSignal.any([lifetime.signal, AbortSignal.timeout(CONNECTION_TIMEOUT_MS)]),
-    });
-  } catch (error) {
-    close();
-    throw new Error('Could not connect to Cloudflare.', { cause: error });
-  }
-
-  return {
-    close,
-    async resume() {
-      const stream = await transport.reconnectToStream({
-        chatId,
-      });
-      lifetime.signal.throwIfAborted();
-      return (
-        stream?.pipeThrough(new TransformStream(), {
-          signal: lifetime.signal,
-        }) ?? null
-      );
+    async connect(signal) {
+      const lifetime = new AbortController();
+      return {
+        close: () => lifetime.abort(),
+        async resume() {
+          const response = await request(
+            '/stream',
+            'GET',
+            AbortSignal.any([signal, lifetime.signal]),
+            undefined,
+            true,
+          );
+          if (response.status === 204) return null;
+          if (!response.body) throw new ChatError(502, 'Agent stream is unavailable.');
+          return parseJsonEventStream({
+            stream: response.body,
+            schema: uiMessageChunkSchema,
+          }).pipeThrough(
+            new TransformStream({
+              transform(chunk, controller) {
+                if (!chunk.success) throw chunk.error;
+                controller.enqueue(chunk.value);
+              },
+            }),
+          );
+        },
+      };
     },
   };
 }

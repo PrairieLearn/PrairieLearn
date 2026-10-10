@@ -1,377 +1,549 @@
 import { randomUUID } from 'node:crypto';
-import { once } from 'node:events';
 
 import { describe, expect, it } from 'vitest';
-import WebSocket from 'ws';
+
+import { serviceHeaders } from '@prairielearn/course-agent-contract';
 
 const origin = process.env.COURSE_AGENT_FIXTURE_URL;
-const headers = {
-  Authorization: 'Bearer local-fixture-service-token-not-a-secret',
-  'Content-Type': 'application/json',
-};
+const secret = 'local-fixture-service-token-not-a-secret';
 
 function conversation() {
   const id = randomUUID();
-  const root = `${origin}/agents/chat/${id}`;
+  const scope = { conversationId: id, courseId: '1', userId: '1', authnUserId: '1' };
+  const root = '/v1/conversations/' + id;
+  let configured = false;
+
+  async function raw(path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') {
+    const url = new URL(root + (path ? '/' + path : ''), origin);
+    const json = body === undefined ? '' : JSON.stringify(body);
+    return fetch(url, {
+      method,
+      headers: await serviceHeaders(secret, 'agent-api', method, url.pathname + url.search, scope, {
+        body: json,
+      }),
+      body: json || undefined,
+    });
+  }
+
+  async function configure() {
+    if (!configured) {
+      expect((await raw('', { repository: 'example/course', branch: 'main' }, 'PUT')).ok).toBe(
+        true,
+      );
+      configured = true;
+    }
+  }
+
+  async function request(path: string, body?: unknown) {
+    await configure();
+    const response = await raw(path, body);
+    expect(response.ok).toBe(true);
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
+  }
   return {
-    async request(path: string, body?: unknown) {
-      const response = await fetch(`${root}/${path}`, {
-        method: body === undefined ? 'GET' : 'POST',
-        headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-      expect(response.ok).toBe(true);
-      const text = await response.text();
-      return text ? JSON.parse(text) : null;
-    },
-    rawMessage(input: unknown) {
-      return fetch(`${root}/message`, { method: 'POST', headers, body: JSON.stringify(input) });
+    id,
+    scope,
+    raw,
+    request,
+    async rawMessage(input: unknown) {
+      await configure();
+      return raw('messages', input);
     },
     async send(text = 'Hello') {
-      const id = randomUUID();
-      const response = await fetch(`${root}/message`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ id, text, expectedOperationNumber: 0 }),
-      });
-      expect(response.ok).toBe(true);
-      return id;
-    },
-    async host(prepared = true) {
-      const socket = new WebSocket(root.replace('http', 'ws'), {
-        headers: { ...headers, 'X-Host-Tools': '1' },
-      });
-      await once(socket, 'open');
-      socket.send(JSON.stringify({ type: 'host-tools-ready' }));
-      socket.on('message', (raw) => {
-        const frame = JSON.parse(String(raw));
-        if (frame.type === 'host-tool-call' && frame.sequence) {
-          socket.send(
-            JSON.stringify({
-              type: prepared ? 'host-tool-prepared' : 'host-tool-preparation-error',
-              id: frame.id,
-            }),
-          );
-        }
-      });
-      return socket;
+      const input = {
+        id: randomUUID(),
+        text,
+        expectedRevision: (await request('snapshot')).revision,
+      };
+      expect((await raw('messages', input)).ok).toBe(true);
+      return input.id;
     },
   };
 }
-describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000 }, () => {
-  it('fences an unanswered dispatch and accepts a newly admitted retry without repeating execution', async () => {
-    const c = conversation();
-    const id = randomUUID(),
-      dispatchId = randomUUID();
-    expect(await c.request('reconcile-admissions', { admissions: [{ id, dispatchId }] })).toEqual({
-      rejected: [dispatchId],
-    });
-    expect(
-      (await c.rawMessage({ id, dispatchId, text: 'Late request', expectedOperationNumber: 0 }))
-        .status,
-    ).toBe(409);
-    const retried = { id, dispatchId: randomUUID(), text: 'Retry', expectedOperationNumber: 0 };
-    expect((await c.rawMessage(retried)).ok).toBe(true);
-    expect((await c.request('snapshot')).executions[id].dispatchId).toBe(retried.dispatchId);
-    expect(
-      await c.request('reconcile-admissions', {
-        admissions: [{ id, dispatchId: retried.dispatchId }],
-      }),
-    ).toEqual({ rejected: [] });
-    expect((await c.rawMessage(retried)).ok).toBe(true);
-    expect((await c.request('test/status')).launches).toBe(1);
-    await c.request('cancel', {});
-  });
-  it('counts cache writes once and preserves the usage baseline through checkpoint recovery', async () => {
-    const c = conversation();
-    expect((await c.request('snapshot')).conversationUsage).toMatchObject({
-      input: 0,
-      cached: 0,
-      cacheWrite: 0,
-      output: 0,
-    });
-    const first = await c.send();
-    const usage = { input: 100, cached: 40, cacheWrite: 50, output: 20 };
-    await c.request('test/usage', usage);
-    await expect
-      .poll(async () => (await c.request('snapshot')).conversationUsage.cacheWrite)
-      .toBe(50);
-    await c.request('test/usage', usage);
-    expect((await c.request('snapshot')).conversationUsage).toMatchObject(usage);
-    await expect
-      .poll(async () => (await c.request('diagnostics')).state, { timeout: 15000 })
-      .toBe('waiting_for_user');
-    await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
-    await expect.poll(async () => (await c.request('diagnostics')).state).toBe('absent');
-    const second = await c.send();
-    expect((await c.request('snapshot')).conversationUsage).toMatchObject(usage);
-    await c.request('test/usage', { input: 200, cached: 80, cacheWrite: 100, output: 40 });
-    await expect
-      .poll(async () => (await c.request('snapshot')).conversationUsage.cacheWrite)
-      .toBe(100);
-    expect((await c.request('snapshot')).conversationUsage).toMatchObject({
-      input: 200,
-      cached: 80,
-      cacheWrite: 100,
-      output: 40,
-    });
-    expect((await c.request('snapshot')).executions[first].input).toBeUndefined();
-    expect((await c.request('snapshot')).executions[second].input).toBeUndefined();
-    await c.request('cancel', {});
-  });
-
-  it('compacts broadcast state without losing archived dispatch receipts or fences', async () => {
-    const c = conversation();
-    const ids = Array.from({ length: 150 }, () => randomUUID());
-    const dispatches = ids.map(() => randomUUID());
-    const receipts = Object.fromEntries(
-      ids.map((id, index) => [
-        id,
-        {
-          dispatchId: dispatches[index],
-          status: 'completed',
-        },
-      ]),
-    );
-    const rejected = Array.from({ length: 150 }, () => randomUUID());
-    const state = await c.request('test/receipt-volume', {
-      executions: receipts,
-      rejectedDispatches: Object.fromEntries(rejected.map((id) => [id, true])),
-    });
-    expect(Object.keys(state.executions)).toHaveLength(100);
-    expect(Object.keys(state.rejectedDispatches)).toHaveLength(100);
-    const saved = await c.request(`snapshot?ids=${encodeURIComponent(JSON.stringify([ids[0]]))}`);
-    expect(saved.executions[ids[0]]).toEqual(receipts[ids[0]]);
-    expect(
-      await c.request('reconcile-admissions', {
-        admissions: [{ id: ids[0], dispatchId: dispatches[0] }],
-      }),
-    ).toEqual({ rejected: [] });
-    expect(
-      (
-        await c.rawMessage({
-          id: randomUUID(),
-          dispatchId: rejected[0],
-          text: 'Late',
-          expectedOperationNumber: 0,
-        })
-      ).status,
-    ).toBe(409);
-  });
-  it('keeps a preparation failure connected and acknowledges a successful explicit retry', async () => {
-    const c = conversation();
-    const socket = await c.host(false);
-    try {
+describe.skipIf(!origin)(
+  'Signed conversation API and durable lifecycle in workerd',
+  { timeout: 45000 },
+  () => {
+    it('preserves history for present/soft-deleted contexts and indeterminate context errors', async () => {
+      const c = conversation();
       await c.send();
-      await c.request('test/approval', {});
+      for (const status of ['present', 'soft_deleted', 'unavailable', 'conflict']) {
+        await c.request('test/context', { status });
+        expect((await c.request('test/retention-check', {})).retention).toBeUndefined();
+        expect((await c.request('history')).messages.length).toBeGreaterThan(0);
+        expect((await c.request('test/status')).destroys).toBe(0);
+        expect(
+          (await c.request('test/schedules')).filter(
+            (s: { callback: string }) => s.callback === 'checkRetention',
+          ),
+        ).toHaveLength(1);
+      }
+      await c.request('stop', {});
+    });
+    it('purges only after physical absence, destruction and settlement; fences later native replay', async () => {
+      const c = conversation();
+      await c.send();
+      await c.request('test/retention-evidence', {});
+      await c.request('test/context', { status: 'absent' });
+      expect((await c.request('test/retention-check', {})).retention.status).toBe('complete');
+      const saved = await c.request('test/retention-inspect');
+      expect(saved.messages).toBe(0);
+      expect(saved.recovery).toBe(false);
+      expect(saved.counts.every((row: { count: number }) => row.count === 0)).toBe(true);
+      expect((await c.request('test/status')).destroys).toBe(1);
+      expect((await c.raw('snapshot')).status).toBe(410);
+      expect(
+        (await c.raw('', { repository: 'example/course', branch: 'main' }, 'PUT')).status,
+      ).toBe(410);
+      expect(
+        (await c.raw('messages', { id: randomUUID(), text: 'Restart', expectedRevision: 0 }))
+          .status,
+      ).toBe(410);
+      await c.request('test/recover', {});
+      expect((await c.request('test/state')).repository).toBeUndefined();
+      expect((await c.request('test/status')).launches).toBe(1);
+    });
+    it('keeps history and financial evidence when settlement fails, then reconciles explicitly', async () => {
+      const c = conversation();
+      await c.send();
+      const grant = await c.request('test/model-reserve', {
+        model: 'gpt-6-astra',
+        requestDigest: 'a'.repeat(64),
+        inputTokenUpperBound: 100,
+        requestedMaxOutputTokens: 32,
+      });
+      await c.request('test/model-dispatch', { reservationId: grant.reservationId });
+      await c.request('test/settlement-error', { enabled: true });
+      await c.request('test/context', { status: 'absent' });
+      const pending = await c.request('test/retention-check', {});
+      expect(pending.retention.status).toBe('pending');
+      expect(pending.modelRequests[grant.reservationId].settled).not.toBe(true);
+      expect((await c.request('test/retention-inspect')).messages).toBeGreaterThan(0);
+      expect(
+        (await c.request('test/model-dispatch', { reservationId: grant.reservationId })).sent,
+      ).toBe(false);
+      await c.request('test/settlement-error', { enabled: false });
+      await c.request('retention', {});
       await expect
-        .poll(async () => (await c.request('snapshot')).pendingTool?.error)
-        .toBe('Retry preparation.');
-      expect(socket.readyState).toBe(WebSocket.OPEN);
-      const tool = (await c.request('snapshot')).pendingTool;
-      expect(tool.prepared).not.toBe(true);
-      await c.request('tool-prepared', { id: tool.id });
-      expect((await c.request('snapshot')).pendingTool.prepared).toBe(true);
-      expect((await c.request('snapshot')).pendingTool.error).toBeUndefined();
-      await c.request('cancel', {});
-    } finally {
-      socket.close();
-    }
-  });
-  it('suspends after ten idle minutes, keeps one checkpoint, and restores on the next message', async () => {
-    const c = conversation();
-    await c.send();
-    await expect
-      .poll(async () => (await c.request('diagnostics')).state, { timeout: 15000 })
-      .toBe('waiting_for_user');
-    await c.request('test/advance', { milliseconds: 31_000 });
-    expect((await c.request('diagnostics')).state).toBe('waiting_for_user');
-    const before = await c.request('test/status');
-    expect(before.launches).toBe(1);
-    await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
-    expect((await c.request('diagnostics')).state).toBe('absent');
-    const checkpoint = (await c.request('test/state')).checkpoint;
-    expect(checkpoint).toBeDefined();
-    await c.send('Continue');
-    expect((await c.request('test/status')).restores).toBe(1);
-    await expect
-      .poll(async () => (await c.request('diagnostics')).state, { timeout: 15000 })
-      .toBe('waiting_for_user');
-    await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
-    const objects = await c.request('test/backup-objects');
-    expect(objects).not.toContain(`backups/${checkpoint.backup.id}/data.sqsh`);
-    const latest = (await c.request('test/state')).checkpoint;
-    expect(objects).toContain(`backups/${latest.backup.id}/data.sqsh`);
-  });
-  it('includes live tools and steering in snapshots before the turn finishes', async () => {
-    const c = conversation();
-    await c.send();
-    await expect
-      .poll(async () =>
-        (await c.request('snapshot')).messages.some((message: { parts: { type: string }[] }) =>
-          message.parts.some((part) => part.type === 'dynamic-tool'),
-        ),
-      )
-      .toBe(true);
-    const id = randomUUID();
-    expect(
-      (await c.rawMessage({ id, text: 'Continue checking.', expectedOperationNumber: 0 })).ok,
-    ).toBe(true);
-    await expect
-      .poll(async () =>
-        (await c.request('snapshot')).messages.some((message: { parts: { type: string }[] }) =>
-          message.parts.some((part) => part.type === 'data-steering'),
-        ),
-      )
-      .toBe(true);
-    await c.request('cancel', {});
-  });
-  it('reconciles a lost steering acknowledgment without submitting steering twice', async () => {
-    const c = conversation();
-    await c.send();
-    await c.request('test/steer-behavior', { behavior: 'lose-ack' });
-    const input = {
-      id: randomUUID(),
-      text: 'Also check the assessments.',
-      expectedOperationNumber: 0,
-    };
-    const response = await c.rawMessage(input);
-    expect(response.status).toBe(503);
-    const retry = await c.rawMessage(input);
-    expect(retry.ok).toBe(true);
-    expect((await c.request('test/status')).steers).toBe(1);
-    expect(
-      (await c.request('snapshot')).messages.filter(
-        (message: { id: string }) => message.id === input.id,
-      ),
-    ).toHaveLength(1);
-    await c.request('cancel', {});
-  });
-  it('automatically attempts cleanup three times, then requires an explicit retry', async () => {
-    const c = conversation();
-    await c.send();
-    await c.request('cancel', {});
-    await c.request('test/fail-destroy', { attempts: 3 });
-    await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
-    expect((await c.request('diagnostics')).state).toBe('cleanup_failed');
-    await c.request('test/advance', { milliseconds: 31000 });
-    await c.request('test/advance', { milliseconds: 31000 });
-    const diagnostics = await c.request('diagnostics');
-    expect(diagnostics.cleanup.attempts).toBe(3);
-    expect(diagnostics.cleanup.retryAt).toBeNull();
-    await c.request('cleanup', {});
-    expect((await c.request('diagnostics')).state).toBe('absent');
-  });
-  it('rejects an overlapping prepared call without overwriting the first approval gate', async () => {
-    const c = conversation();
-    const socket = await c.host();
-    try {
+        .poll(async () => (await c.request('test/state')).retention.status)
+        .toBe('complete');
+      expect((await c.request('test/retention-inspect')).settlements).toContainEqual({
+        kind: 'unknown',
+        reservationId: grant.reservationId,
+      });
+      await c.request('test/model-settle', {
+        kind: 'measured',
+        reservationId: grant.reservationId,
+        responseId: 'late-response',
+        usage: { input: 100, cached: 0, cacheWrite: 0, output: 20 },
+      });
+      const corrected = await c.request('test/state');
+      expect(corrected.retention.status).toBe('complete');
+      expect(corrected.modelRequests[grant.reservationId]).toBeUndefined();
+      expect(corrected.run).toBeUndefined();
+      expect((await c.request('test/retention-inspect')).messages).toBe(0);
+    });
+    it('reconciles an in-flight model grant without resurrecting its record after purge', async () => {
+      const c = conversation();
       await c.send();
-      await c.request('test/approval', { count: 2, captureDelay: 200 });
-      await expect.poll(async () => (await c.request('test/status')).toolResults?.length).toBe(1);
-      expect((await c.request('test/status')).toolResults[0]).toMatchObject({
-        callId: 'approval-call-1',
-        success: false,
+      await c.request('test/model-grant-delay', { milliseconds: 500 });
+      const reservation = c.raw('test/model-reserve', {
+        model: 'gpt-6-astra',
+        requestDigest: 'b'.repeat(64),
+        inputTokenUpperBound: 100,
+        requestedMaxOutputTokens: 32,
       });
-      await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
-      const pending = (await c.request('snapshot')).pendingTool;
-      expect((await c.request('test/state')).toolSequence).toBe(1);
-      socket.send(
-        JSON.stringify({
-          type: 'host-tool-result',
-          id: pending.id,
-          outcome: { id: pending.id, result: 'Denied. Nothing was published.' },
-        }),
+      await expect
+        .poll(async () => Object.keys((await c.request('test/state')).modelRequests ?? {}).length)
+        .toBe(1);
+      const id = Object.keys((await c.request('test/state')).modelRequests)[0];
+      await c.request('test/context', { status: 'absent' });
+      expect((await c.request('test/retention-check', {})).retention.status).toBe('complete');
+      expect((await reservation).ok).toBe(false);
+      const saved = await c.request('test/state');
+      expect(saved.modelRequests?.[id]).toBeUndefined();
+      expect(saved.run).toBeUndefined();
+      const evidence = await c.request('test/retention-inspect');
+      expect(evidence.settlements).toContainEqual({ kind: 'not_sent', reservationId: id });
+      expect(evidence.messages).toBe(0);
+    });
+    it('defers purge and capacity release while sandbox destruction is unconfirmed', async () => {
+      const c = conversation();
+      const id = await c.send();
+      await c.request('test/fail-destroy', { attempts: 3 });
+      await c.request('test/context', { status: 'absent' });
+      const pending = await c.request('test/retention-check', {});
+      expect(pending.retention.status).toBe('pending');
+      expect(pending.sandbox.phase).toBe('cleanup_failed');
+      const saved = await c.request('test/retention-inspect');
+      expect(saved.messages).toBeGreaterThan(0);
+      expect(saved.releases).not.toContain(id);
+      await c.request('test/fail-destroy', { attempts: 0 });
+      expect((await c.request('test/retention-check', {})).retention.status).toBe('complete');
+      expect((await c.request('test/retention-inspect')).releases).toContain(id);
+    });
+    it('releases archived lost-ack grants in bounded batches before removing receipts', async () => {
+      const c = conversation();
+      await c.send();
+      await c.request('stop', {});
+      const ids = Array.from({ length: 150 }, () => randomUUID());
+      await c.request('test/receipt-volume', {
+        executions: Object.fromEntries(
+          ids.map((id) => [
+            id,
+            {
+              status: 'interrupted',
+              digest: 'immutable',
+              revision: 1,
+              authorization: { scope: c.scope, actionId: id, createdAt: Date.now() },
+            },
+          ]),
+        ),
+        rejectedDispatches: Object.fromEntries(ids.map((id) => [id, true])),
+      });
+      await c.request('test/context', { status: 'absent' });
+      expect((await c.request('test/retention-check', {})).retention.status).toBe('pending');
+      expect(
+        (await c.request('test/retention-inspect')).counts.find(
+          (r: { name: string }) => r.name === 'executions',
+        ).count,
+      ).toBeGreaterThan(0);
+      expect((await c.request('test/retention-check', {})).retention.status).toBe('complete');
+      const saved = await c.request('test/retention-inspect');
+      expect(ids.every((id) => saved.releases.includes(id))).toBe(true);
+      expect(saved.counts.every((r: { count: number }) => r.count === 0)).toBe(true);
+    });
+    it('recovers a missed deletion request through the daily durable context check', async () => {
+      const c = conversation();
+      await c.send();
+      await c.request('stop', {});
+      await c.request('test/context', { status: 'absent' });
+      const saved = await c.request('test/advance', { milliseconds: 86401000 });
+      expect(saved.retention.status).toBe('complete');
+      expect((await c.request('test/retention-inspect')).messages).toBe(0);
+    });
+    it('retries partial checkpoint deletion without touching another conversation', async () => {
+      const c = conversation(),
+        other = conversation();
+      await c.send();
+      await c.request('stop', {});
+      await c.request('test/advance', { milliseconds: 601000 });
+      await other.send();
+      await other.request('stop', {});
+      await other.request('test/advance', { milliseconds: 601000 });
+      const ownId = (await c.request('test/state')).checkpoint.backup.id;
+      const otherId = (await other.request('test/state')).checkpoint.backup.id;
+      await c.request('test/retention-evidence', {});
+      const obsolete = (await c.request('test/state')).obsoleteCheckpoints[0];
+      await c.request('test/fail-checkpoint-delete', { attempts: 1, skip: 1 });
+      await c.request('test/context', { status: 'absent' });
+      const pending = await c.request('test/retention-check', {});
+      expect(pending.retention.status).toBe('pending');
+      expect(pending.obsoleteCheckpoints).not.toContain(obsolete);
+      const objects = await c.request('test/backup-objects');
+      expect(objects).toContain(`backups/${ownId}/data.sqsh`);
+      expect(objects).not.toContain(`backups/${obsolete}/data.sqsh`);
+      expect((await c.request('test/retention-inspect')).messages).toBeGreaterThan(0);
+      expect((await c.request('test/retention-check', {})).retention.status).toBe('complete');
+      const remaining = await other.request('test/backup-objects');
+      expect(remaining).toContain(`backups/${otherId}/data.sqsh`);
+      expect(remaining).not.toContain(`backups/${ownId}/data.sqsh`);
+      expect((await other.request('history')).messages.length).toBeGreaterThan(0);
+    });
+    it('joins an idle backup already in flight before purging its recorded objects', async () => {
+      const c = conversation();
+      await c.send();
+      await c.request('stop', {});
+      await c.request('test/delay-backup', { milliseconds: 1000 });
+      const idle = c.request('test/advance', { milliseconds: 601000 });
+      await expect.poll(async () => await c.request('test/backups')).toContain('backup-started');
+      await c.request('test/context', { status: 'absent' });
+      const cleanup = c.request('test/retention-check', {});
+      await idle;
+      expect((await cleanup).retention.status).toBe('complete');
+      expect(await c.request('test/backups')).toEqual(['backup-started', 'backup', 'destroy']);
+      expect((await c.request('test/retention-inspect')).messages).toBe(0);
+      const objects = await c.request('test/backup-objects');
+      expect((await c.request('test/state')).checkpoint).toBeUndefined();
+      const id = await c.request('test/last-backup-id');
+      expect(id).toBeTypeOf('string');
+      expect(objects).not.toContain(`backups/${id}/data.sqsh`);
+      expect(objects).not.toContain(`backups/${id}/meta.json`);
+    });
+    it('retries immutable command identity without repeating native work and rejects changed input', async () => {
+      const c = conversation();
+      const input = { id: randomUUID(), text: 'Hello', expectedRevision: 0 };
+      expect((await c.rawMessage(input)).ok).toBe(true);
+      expect((await c.rawMessage(input)).ok).toBe(true);
+      expect((await c.rawMessage({ ...input, text: 'Different' })).status).toBe(409);
+      expect((await c.request('test/status')).launches).toBe(1);
+      expect((await c.request('snapshot')).revision).toBe(1);
+      await c.request('stop', {});
+    });
+    it('keeps native usage in Cloudflare across checkpoint restore', async () => {
+      const c = conversation();
+      const prices = { input: 2, cachedInput: 0.5, cacheWrite: 3, output: 10 };
+      expect(
+        (
+          await c.raw(
+            '',
+            {
+              repository: 'example/course',
+              branch: 'main',
+              modelPrices: { 'gpt-6-astra': prices },
+            },
+            'PUT',
+          )
+        ).ok,
+      ).toBe(true);
+      await c.send();
+      const usage = { input: 100, cached: 40, cacheWrite: 50, output: 20 };
+      await c.request('test/usage', usage);
+      await expect
+        .poll(async () => (await c.request('snapshot')).conversationUsage.cacheWrite)
+        .toBe(50);
+      await expect
+        .poll(async () => (await c.request('diagnostics')).state, { timeout: 15000 })
+        .toBe('waiting_for_user');
+      await c.request('test/advance', { milliseconds: 601000 });
+      expect((await c.request('diagnostics')).state).toBe('absent');
+      expect((await c.request('snapshot')).conversationUsage.prices).toEqual(prices);
+      await c.raw(
+        '',
+        {
+          repository: 'example/course',
+          branch: 'main',
+          modelPrices: { 'gpt-6-astra': { ...prices, output: 99 } },
+        },
+        'PUT',
       );
-      await expect.poll(async () => (await c.request('test/status')).toolResults?.length).toBe(2);
-      expect((await c.request('test/status')).toolResults[1]).toMatchObject({
-        callId: 'approval-call',
-        success: true,
+      expect((await c.request('snapshot')).conversationUsage.prices).toEqual(prices);
+      await c.send('Continue');
+      expect((await c.request('snapshot')).conversationUsage).toMatchObject(usage);
+      expect((await c.request('test/status')).restores).toBe(1);
+      const exported = await c.request('export');
+      expect(exported).toMatchObject({ version: 1, conversationId: c.id, usage });
+      await c.request('stop', {});
+    });
+    it('archives receipt identity without exposing a second admission API', async () => {
+      const c = conversation();
+      const ids = Array.from({ length: 150 }, () => randomUUID());
+      const receipts = Object.fromEntries(
+        ids.map((id) => [
+          id,
+          { dispatchId: id, digest: 'immutable', revision: 1, status: 'completed' },
+        ]),
+      );
+      const state = await c.request('test/receipt-volume', {
+        executions: receipts,
+        rejectedDispatches: {},
       });
-      await expect.poll(async () => (await c.request('snapshot')).blocked).toBe(false);
-      await c.request('cancel', {});
-    } finally {
-      socket.close();
-    }
-  });
-  it('delivers a failed native tool result and releases the gate without an approval decision', async () => {
-    const c = conversation();
-    const socket = await c.host();
-    try {
+      expect(Object.keys(state.executions)).toHaveLength(100);
+      const saved = await c.request('snapshot?ids=' + encodeURIComponent(JSON.stringify([ids[0]])));
+      expect(saved.executions[ids[0]]).toEqual(receipts[ids[0]]);
+      expect((await c.raw('reconcile-admissions', {})).status).toBe(404);
+    });
+    it('pauses a permanent financial callback error and recovers through explicit maintenance', async () => {
+      const c = conversation();
+      await c.send();
+      const grant = await c.request('test/model-reserve', {
+        model: 'gpt-6-astra',
+        requestDigest: 'a'.repeat(64),
+        inputTokenUpperBound: 100,
+        requestedMaxOutputTokens: 32,
+      });
+      expect(
+        await c.request('test/model-dispatch', { reservationId: grant.reservationId }),
+      ).toEqual({ sent: true });
+      await c.request('test/settlement-error', { enabled: true });
+      await c.request('test/model-settle', { kind: 'unknown', reservationId: grant.reservationId });
+      expect((await c.request('snapshot')).accountingWarning).toContain(
+        'Contact your administrator',
+      );
+      expect((await c.request('snapshot')).unconfirmedCost).toBe(0.1);
+      await c.request('test/advance', { milliseconds: 121000 });
+      expect((await c.request('test/settlement-attempts')).attempts).toBe(1);
+      await c.request('stop', {});
+      await c.request('test/settlement-error', { enabled: false });
+      await c.request('cleanup', {});
+      await expect
+        .poll(async () => (await c.request('snapshot')).accountingWarning)
+        .toBeUndefined();
+      await expect.poll(async () => (await c.request('test/settlement-attempts')).attempts).toBe(2);
+      expect((await c.request('history')).messages.length).toBeGreaterThan(0);
+    });
+    it('retries measured usage arriving during an unknown settlement acknowledgment', async () => {
+      const c = conversation();
+      await c.send();
+      const grant = await c.request('test/model-reserve', {
+        model: 'gpt-6-astra',
+        requestDigest: 'a'.repeat(64),
+        inputTokenUpperBound: 100,
+        requestedMaxOutputTokens: 32,
+      });
+      await c.request('test/model-dispatch', { reservationId: grant.reservationId });
+      await c.request('test/settlement-delay', { milliseconds: 1000 });
+      const unknown = c.raw('test/model-settle', {
+        kind: 'unknown',
+        reservationId: grant.reservationId,
+      });
+      await expect.poll(async () => (await c.request('test/settlement-attempts')).attempts).toBe(1);
+      const measured = c.raw('test/model-settle', {
+        kind: 'measured',
+        reservationId: grant.reservationId,
+        responseId: 'response-1',
+        usage: { input: 100, cached: 0, cacheWrite: 0, output: 20 },
+      });
+      for (const response of await Promise.all([unknown, measured])) expect(response.ok).toBe(true);
+      expect((await c.request('test/state')).modelRequests[grant.reservationId].settled).toBe(
+        false,
+      );
+      await c.request('test/settlement-delay', { milliseconds: 0 });
+      await c.request('test/advance', { milliseconds: 31000 });
+      await expect.poll(async () => (await c.request('test/settlement-attempts')).attempts).toBe(2);
+      expect((await c.request('test/state')).modelRequests[grant.reservationId]).toBeUndefined();
+      await c.request('stop', {});
+    });
+    it('fences a reserved request after Stop and a new turn reuses the sandbox', async () => {
+      const c = conversation();
+      await c.send();
+      const before = await c.request('test/state');
+      const grant = await c.request('test/model-reserve', {
+        model: 'gpt-6-astra',
+        requestDigest: 'a'.repeat(64),
+        inputTokenUpperBound: 100,
+        requestedMaxOutputTokens: 32,
+      });
+      await c.request('stop', {});
+      await c.send('A new turn');
+      const after = await c.request('test/state');
+      expect(after.sandbox.id).toBe(before.sandbox.id);
+      expect(after.action.grant.actionId).not.toBe(before.action.grant.actionId);
+      expect(
+        await c.request('test/model-dispatch', { reservationId: grant.reservationId }),
+      ).toEqual({ sent: false });
+      await c.request('test/budget-stop', {});
+      await expect.poll(async () => (await c.request('runtime')).running).toBe(false);
+      expect((await c.request('snapshot')).budgetStop.message).toContain('spending limit');
+      const page = await c.request('history?limit=1');
+      expect(page.messages).toHaveLength(1);
+      expect(page.nextCursor).not.toBeNull();
+      const next = await c.request('history?limit=1&cursor=' + encodeURIComponent(page.nextCursor));
+      expect(next.messages[0].id).not.toBe(page.messages[0].id);
+      await c.send('Explicit continuation');
+      expect((await c.request('snapshot')).budgetStop).toBeUndefined();
+      await c.request('stop', {});
+    });
+    it('fences old lifecycle calls after restoring a new generation', async () => {
+      const c = conversation();
+      await c.send();
+      await expect
+        .poll(async () => (await c.request('diagnostics')).state, { timeout: 15000 })
+        .toBe('waiting_for_user');
+      const old = (await c.request('test/state')).sandbox.id;
+      await c.request('test/advance', { milliseconds: 601000 });
+      await c.send('Restore');
+      const current = (await c.request('test/state')).sandbox.id;
+      expect(current).not.toBe(old);
+      await c.request('test/expire-old', { id: old });
+      expect((await c.request('test/state')).sandbox.id).toBe(current);
+      await c.request('stop', {});
+    });
+    it('includes live tools and steering without giving a correction a new spending root', async () => {
+      const c = conversation();
+      await c.send();
+      const action = (await c.request('test/state')).action.grant.actionId;
+      await expect
+        .poll(async () =>
+          (await c.request('snapshot')).messages.some((m: { parts: { type: string }[] }) =>
+            m.parts.some((p) => p.type === 'dynamic-tool'),
+          ),
+        )
+        .toBe(true);
+      await c.send('Continue checking');
+      expect((await c.request('test/state')).action.grant.actionId).toBe(action);
+      expect((await c.request('test/status')).steers).toBe(1);
+      await c.request('stop', {});
+    });
+    it('reconciles a lost steering acknowledgment without repeating the correction', async () => {
+      const c = conversation();
+      await c.send();
+      await c.request('test/steer-behavior', { behavior: 'lose-ack' });
+      const input = {
+        id: randomUUID(),
+        text: 'Also check assessments',
+        expectedRevision: (await c.request('snapshot')).revision,
+      };
+      expect((await c.rawMessage(input)).status).toBe(503);
+      expect((await c.rawMessage(input)).ok).toBe(true);
+      expect((await c.rawMessage(input)).ok).toBe(true);
+      expect((await c.request('test/status')).steers).toBe(1);
+      expect(
+        (await c.request('snapshot')).messages.filter((m: { id: string }) => m.id === input.id),
+      ).toHaveLength(1);
+      await c.request('stop', {});
+    });
+    it('bounds cleanup retries and retains an explicit recovery path', async () => {
+      const c = conversation();
+      await c.send();
+      await c.request('stop', {});
+      await c.request('test/fail-destroy', { attempts: 3 });
+      await c.request('test/advance', { milliseconds: 601000 });
+      await c.request('test/advance', { milliseconds: 31000 });
+      await c.request('test/advance', { milliseconds: 31000 });
+      expect((await c.request('diagnostics')).cleanup).toMatchObject({
+        attempts: 3,
+        retryAt: null,
+      });
+      await c.request('cleanup', {});
+      await expect.poll(async () => (await c.request('diagnostics')).state).toBe('absent');
+    });
+    it('publishes a failed tool result without any browser executor or connected observer', async () => {
+      const c = conversation();
       await c.send();
       await c.request('test/approval', {});
       await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
       const pending = (await c.request('snapshot')).pendingTool;
-      const error = 'Unrecognized key: accessRules. Correct the file and submit a new proposal.';
       const result = {
-        type: 'host-tool-result',
         id: pending.id,
-        outcome: {
-          id: pending.id,
-          result: error,
-          success: false,
-          display: { name: 'push_sync', value: { error } },
-        },
+        result: 'Validation failed. Correct the file and request approval again.',
+        success: false,
       };
-      socket.send(JSON.stringify(result));
+      await c.request('test/publication', result);
       await expect
         .poll(async () => (await c.request('test/status')).toolResults?.[0]?.success)
         .toBe(false);
-      await expect.poll(async () => (await c.request('snapshot')).blocked).toBe(false);
-      expect((await c.request('test/status')).toolResults[0].contentItems[0].text).toBe(error);
-      socket.send(JSON.stringify(result));
-      await c.request('cancel', {});
+      await c.request('test/drive', {});
       expect((await c.request('test/status')).toolResults).toHaveLength(1);
-    } finally {
-      socket.close();
-    }
-  });
-  it('retains the pending tool across suspension and delivers a cold hidden continuation exactly once', async () => {
-    const c = conversation();
-    const socket = await c.host();
-    try {
+      expect((await c.request('snapshot')).pendingTool).toBeUndefined();
+      await c.request('stop', {});
+    });
+    it('retains approval across suspension and records a cold continuation once under the original root', async () => {
+      const c = conversation();
       await c.send();
       await c.request('test/approval', {});
       await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
       const pending = (await c.request('snapshot')).pendingTool;
-      await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
-      expect((await c.request('snapshot')).pendingTool.id).toBe(pending.id);
+      const action = (await c.request('test/state')).action.grant.actionId;
+      await c.request('test/advance', { milliseconds: 601000 });
       expect((await c.request('diagnostics')).state).toBe('absent');
-      const outcome = {
-        type: 'host-tool-result',
+      await c.request('test/publication', {
         id: pending.id,
-        outcome: { id: pending.id, result: 'Denied. Nothing was published.' },
-      };
-      const received: unknown[] = [];
-      const rejected: unknown[] = [];
-      socket.on('message', (raw) => {
-        const frame = JSON.parse(String(raw));
-        if (frame.type === 'host-tool-delivered') received.push(frame);
-        if (frame.type === 'host-tool-delivery-error') rejected.push(frame);
+        result: 'The user denied the proposal. Nothing was published.',
+        success: true,
       });
-      socket.send(JSON.stringify(outcome));
-      await expect.poll(() => rejected.length).toBe(1);
-      expect(received).toHaveLength(0);
-      expect((await c.request('test/status')).restores).toBe(0);
-      expect((await c.request('snapshot')).pendingTool.id).toBe(pending.id);
-      const dispatchId = randomUUID();
-      const admitted = { ...outcome, outcome: { ...outcome.outcome, dispatchId } };
-      socket.send(JSON.stringify(admitted));
-      await expect.poll(() => received.length, { timeout: 15000 }).toBe(1);
-      socket.send(JSON.stringify(outcome));
-      await expect.poll(() => received.length).toBe(2);
-      const snapshot = await c.request('snapshot');
-      expect(snapshot.pendingTool).toBeUndefined();
-      expect(snapshot.executions[pending.id].dispatchId).toBe(dispatchId);
+      await expect
+        .poll(async () => (await c.request('test/status')).restores, { timeout: 15000 })
+        .toBe(1);
+      await c.request('test/drive', {});
+      expect((await c.request('test/state')).action.grant.actionId).toBe(action);
       expect(
-        snapshot.messages.filter(
+        (await c.request('snapshot')).messages.filter(
           (m: { metadata?: { source: string } }) => m.metadata?.source === 'tool-result',
         ),
       ).toHaveLength(1);
-      expect((await c.request('test/status')).restores).toBe(1);
-      await c.request('cancel', {});
-    } finally {
-      socket.close();
-    }
-  });
-});
+      await c.request('stop', {});
+    });
+  },
+);

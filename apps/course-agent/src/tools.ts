@@ -1,5 +1,3 @@
-import { hostToolDefinitions } from '@prairielearn/course-agent-contract';
-
 import { captureApproval, pushSyncTool } from './approval.js';
 import type { CodexSandbox } from './codex.js';
 import type { DynamicToolCallResponse } from './generated/v2/DynamicToolCallResponse.js';
@@ -17,10 +15,7 @@ export function getTool(name: string): ToolAdapter {
   if (!Object.hasOwn(tools, name)) throw new Error('Unknown tool request.');
   return tools[name];
 }
-export const toolDefinitions = (development: boolean) => [
-  ...(development ? hostToolDefinitions : []),
-  ...Object.values(tools).map((tool) => tool.definition),
-];
+export const toolDefinitions = () => [...Object.values(tools).map((tool) => tool.definition)];
 export function toolResult(text: string, success = true): DynamicToolCallResponse {
   return { success, contentItems: [{ type: 'inputText', text }] };
 }

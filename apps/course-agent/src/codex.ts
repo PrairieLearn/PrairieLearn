@@ -3,7 +3,13 @@ import type { DirectoryBackup, getSandbox } from '@cloudflare/sandbox';
 import type {
   CleanupDiagnostics,
   ConversationUsage,
+  ExecutionGrant,
+  ModelGrant,
+  ModelPrice,
+  ModelReservation,
+  ModelSettlement,
   PendingTool,
+  ServiceScope,
 } from '@prairielearn/course-agent-contract';
 
 import { AppServer } from './app-server.js';
@@ -16,6 +22,11 @@ const SERVER_ID = 'codex-app-server';
 const SERVER_PORT = 4500;
 const readyFile = '/tmp/codex-app-server-ready';
 const tokenFile = '/tmp/codex-app-server-token';
+export interface ModelBinding {
+  sandboxId: string;
+  actionId: string;
+  capacityGrantId: string;
+}
 export interface Run {
   id: string;
   messageId: string;
@@ -32,6 +43,45 @@ export interface Run {
 }
 /** Chat DO metadata is durable separately from the Linux filesystem; R2 checkpoints preserve that filesystem and native Codex history. */
 export interface CodexState {
+  serviceScope?: ServiceScope;
+  retention?: {
+    status: 'pending' | 'complete';
+    requestedAt: number;
+    releaseCursor?: string;
+    authorizationsReleased?: boolean;
+  };
+  revision?: number;
+  budgetStop?: { actionId: string; message: string };
+  callbackError?: string;
+  action?: {
+    scope: ServiceScope;
+    grant: ExecutionGrant;
+    createdAt: number;
+    toolCalls: number;
+    modelCounts?: number;
+    toolItems?: Record<string, true>;
+  };
+  modelRequests?: Record<
+    string,
+    {
+      scope: ServiceScope;
+      input: ModelReservation;
+      grant?: ModelGrant;
+      sent?: boolean;
+      settlement?: ModelSettlement;
+      settled?: boolean;
+    }
+  >;
+  finishedAt?: number;
+  completionDeliveredAt?: number;
+  releaseAction?: { scope: ServiceScope; actionId: string; grantId: string };
+  publication?: {
+    id: string;
+    scope: ServiceScope;
+    created: boolean;
+    attempts: number;
+    expiresAt: number;
+  };
   rejectedDispatches?: Record<string, true>;
   repository?: { repository: string; branch: string };
   usageTotal?: {
@@ -43,8 +93,24 @@ export interface CodexState {
   };
   /** Lifetime totals stay in the DO and never rewind with an R2 filesystem checkpoint. */
   usage?: ConversationUsage;
+  /** Display estimate only; PL pins financial prices separately per reservation. */
+  usagePrices?: ModelPrice;
   /** Acceptance/outcome receipts fence retries independently of billing. */
-  executions?: Record<string, { dispatchId?: string; status: Run['status'] }>;
+  executions?: Record<
+    string,
+    {
+      dispatchId?: string;
+      status: Run['status'];
+      digest?: string;
+      revision?: number;
+      authorization?: {
+        scope: ServiceScope;
+        actionId: string;
+        createdAt: number;
+        authorized?: boolean;
+      };
+    }
+  >;
   /**
    * Corrections belong to an existing turn. Persist before sending turn/steer:
    * after a lost acknowledgment native history decides whether it was accepted.
@@ -52,7 +118,6 @@ export interface CodexState {
   steering?: Record<string, { sandboxId: string; threadId: string; accepted: boolean }>;
   /** Captured tool arguments outlive the socket/container while PL waits for approval. */
   pendingTool?: PendingTool;
-  toolSequence?: number;
   /** Completed results fence retries after a lost native result-delivery acknowledgment. */
   toolReceipts?: Record<string, { result: string; success: boolean }>;
   sandbox?: {
@@ -105,6 +170,14 @@ export async function connectCodex(
   } = {},
 ) {
   try {
+    if (state.serviceScope) {
+      await sandbox.setOutboundByHost('openai.internal', 'openai', {
+        conversationId: state.serviceScope.conversationId,
+        sandboxId: state.sandbox?.id,
+        actionId: state.action?.grant.actionId,
+        capacityGrantId: state.action?.grant.id,
+      });
+    }
     if (repository) await sandbox.setOutboundByHost('github.com', 'github', { repository });
     const warm = (await sandbox.exists(readyFile)).exists;
     if (!warm && recovery) throw new ContainerLost();

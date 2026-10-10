@@ -1,4 +1,5 @@
 # Local development only. Never commit .dev.vars.
+PL_API_ORIGIN=http://localhost:3000
 PL_SERVICE_TOKEN=replace-with-a-random-token-of-at-least-32-characters
 CODEX_MODEL=replace-with-your-model
 CODEX_API_KEY=replace-with-your-openai-api-key

@@ -2,18 +2,15 @@ import { createHash } from 'node:crypto';
 import { stripVTControlCharacters } from 'node:util';
 
 import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
 
 import {
   type ApprovalDecision,
-  ChatError,
   type ChatSnapshot,
   type PendingTool,
   approvalDisplaySchema,
   approvalSchema,
 } from '@prairielearn/course-agent-contract';
 import * as namedLocks from '@prairielearn/named-locks';
-import * as Sentry from '@prairielearn/sentry';
 
 import { config } from '../../../lib/config.js';
 import { pullAndUpdateCourse } from '../../../lib/course.js';
@@ -26,21 +23,14 @@ import { features } from '../../../lib/features/index.js';
 import { parseGithubRepository } from '../../../lib/github-utils.js';
 import { isEnterprise } from '../../../lib/license.js';
 import { selectJobSequenceStatus, selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
-import {
-  type AgentScope,
-  completeDecisionOperation,
-  selectConversationOperations,
-} from '../../../models/course-agent-conversation.js';
+import { type AgentScope } from '../../../models/course-agent-conversation.js';
 import * as proposals from '../../../models/course-agent-proposal.js';
 import { selectCourseById } from '../../../models/course.js';
 
 import { hasCourseAgentOwnerAccess } from './access.js';
-import { workerResponseError } from './errors.js';
-import { notify } from './events.js';
-import { reconcileOperations } from './lifecycle.js';
-import { createCloudflareProvider } from './provider.js';
+import { createAgentClient } from './provider.js';
 import { type Publication, PublishRejected, Publisher } from './publish.js';
-import { admitResult, modelPricing, recordUsage } from './usage.js';
+import { estimatedCost, modelPricing } from './usage.js';
 
 /** Report missing configuration without exposing credentials to the browser. */
 export function unavailableReason(): string | null {
@@ -119,54 +109,36 @@ export async function provider(
   execute = false,
 ) {
   const settings = integration();
+  const chat = createAgentClient(
+    new URL(settings.workerUrl),
+    {
+      conversationId: conversation.external_id,
+      courseId: scope.course_id,
+      userId: scope.user_id,
+      authnUserId: scope.authn_user_id,
+    },
+    settings.serviceToken,
+  );
   if (execute) {
-    const course = await authorizedDestination(scope, conversation);
-    const response = await fetch(
-      new URL(`/agents/chat/${conversation.external_id}/configure`, settings.workerUrl),
+    await authorizedDestination(scope, conversation);
+    const { model } = await chat.configure(
       {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${settings.serviceToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(destination(course)),
-        signal: AbortSignal.timeout(10000),
+        repository: conversation.repository,
+        branch: conversation.branch,
+        modelPrices: config.costPerMillionTokens,
       },
-    ).catch(() => {
-      throw new ChatError(
-        502,
-        'Course agent connection failed. Your message was not sent. Check the Worker is running, then retry the send.',
-      );
-    });
-    if (!response.ok) {
-      if (response.status === 409) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'This conversation is bound to another repository or branch. Start a new conversation.',
-        });
-      }
-      throw workerResponseError(response.status);
-    }
-    const parsed = z
-      .object({ model: z.string().min(1) })
-      .safeParse(await response.json().catch(() => null));
-    if (!parsed.success) {
-      throw new ChatError(
-        502,
-        'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
-      );
-    }
-    if (!modelPricing(parsed.data.model)) {
+      AbortSignal.timeout(10_000),
+    );
+    if (!modelPricing(model)) {
       throw new TRPCError({
         code: 'PRECONDITION_FAILED',
-        message: `Configure shared model pricing for ${parsed.data.model} before starting work.`,
+        message: `Configure shared model pricing for ${model} before starting work.`,
       });
     }
   } else {
     await authorize(scope);
   }
-  return createCloudflareProvider(new URL(settings.workerUrl), conversation.external_id);
+  return chat;
 }
 
 function publisher(conversation: CourseAgentConversation) {
@@ -188,7 +160,6 @@ function job(
 ): Publication {
   return {
     id: row.operation_id,
-    sequence: row.sequence,
     destination: { repository: conversation.repository, branch: conversation.branch },
     approval: approvalSchema.parse(row.payload),
     candidate: row.prepared ? row.digest : undefined,
@@ -215,12 +186,11 @@ export async function prepare(
         row = await proposals.insertProposal({
           conversation_id: conversation.id,
           operation_id: tool.id,
-          sequence: tool.sequence,
           payload: JSON.stringify(approval),
           digest: identity,
         });
       }
-      if (row?.sequence !== tool.sequence || row.digest !== identity) {
+      if (row?.digest !== identity) {
         throw new Error('Proposal identity changed.');
       }
       if (row.prepared || row.decision !== null) return;
@@ -244,33 +214,8 @@ export async function prepare(
           row = (await proposals.selectOptionalProposal(conversation.id, tool.id))!;
         }
       }
-      if (!row.delivered && row.outcome) {
-        const chat = await provider(scope, conversation);
-        const state = await chat.getSnapshot(AbortSignal.timeout(10000));
-        let dispatchId: string | undefined;
-        if (state.pendingTool?.id === tool.id) {
-          await reconcileOperations(conversation, chat, state);
-          await recordUsage(conversation, state);
-          if (!Object.values(state.executions ?? {}).some((value) => value.status === 'running')) {
-            await provider(scope, conversation, true);
-          }
-          dispatchId = await admitResult(conversation, tool.id, state);
-        }
-        await chat.deliverToolResult(
-          {
-            id: tool.id,
-            dispatchId,
-            result: row.outcome,
-            success: false,
-            display: { name: 'push_sync', value: { error: row.error } },
-          },
-          AbortSignal.timeout(120000),
-        );
-        await proposals.saveProposalProgress(row.id, { delivered: true, error: row.error });
-      }
     },
   );
-  await notify(conversation.id);
 }
 export async function snapshot(conversation: CourseAgentConversation, value: ChatSnapshot) {
   const course = await selectCourseById(conversation.course_id);
@@ -280,22 +225,16 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
     `${currentRepository.owner}/${currentRepository.repo}` !== conversation.repository ||
     course.branch !== conversation.branch;
   const rows = await proposals.selectProposals(conversation.id);
-  const operations = new Map(
-    (await selectConversationOperations(conversation.id)).map((operation) => [
-      operation.operation_id,
-      operation,
-    ]),
-  );
   const prepared = rows.filter((row) => row.prepared);
-  const current = prepared.find((r) => !r.delivered) ?? prepared.at(-1);
-  const preparation = rows.find((row) => !row.prepared && !row.delivered);
+  const current = prepared.find((r) => r.outcome === null) ?? prepared.at(-1);
+  const preparation = rows.find((row) => !row.prepared && row.outcome === null);
   const syncStatus =
-    current?.sync_job_sequence_id && !current.delivered
+    current?.sync_job_sequence_id && current.outcome === null
       ? (await selectJobSequenceStatus(current.sync_job_sequence_id)).status
       : undefined;
   let publicationStatus: NonNullable<ChatSnapshot['publication']>['status'] | undefined;
   if (current) {
-    if (current.delivered) {
+    if (current.outcome !== null) {
       publicationStatus = 'complete';
     } else if (current.decision === null) {
       publicationStatus = 'ready';
@@ -328,19 +267,14 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
     newWorkUnavailable: destinationChanged
       ? 'The course repository or branch changed. Start a new conversation.'
       : undefined,
-    messages: value.messages.map((message) => {
-      const operation = operations.get(message.id);
-      return operation
-        ? {
-            ...message,
-            metadata: {
-              ...(typeof message.metadata === 'object' ? message.metadata : {}),
-              created_at: operation.created_at.toISOString(),
-            },
-          }
-        : message;
-    }),
-    operationNumber: conversation.operation_number,
+    usage: {
+      input: value.conversationUsage?.input ?? null,
+      output: value.conversationUsage?.output ?? null,
+      estimatedCost: estimatedCost(
+        value.conversationUsage,
+        value.conversationUsage ? (modelPricing(value.conversationUsage.model) ?? null) : null,
+      ),
+    },
     approvals,
     preparation: preparation
       ? { id: preparation.operation_id, error: preparation.error ?? undefined }
@@ -356,27 +290,12 @@ export async function snapshot(conversation: CourseAgentConversation, value: Cha
           syncedSha: current.synced_sha ?? undefined,
           syncJobSequenceId: current.sync_job_sequence_id ?? undefined,
           status: publicationStatus!,
-          delivered: current.delivered,
+          complete: current.outcome !== null,
           error: current.error ?? undefined,
           decision: current.decision ?? undefined,
         }
       : undefined,
   };
-}
-
-function continueAfterSync(
-  sync: Awaited<ReturnType<typeof pullAndUpdateCourse>>,
-  scope: AgentScope,
-  conversation: CourseAgentConversation,
-  input: ApprovalDecision,
-) {
-  // Release the proposal lock before waiting for Course Sync's own course-path lock.
-  // The saved job receipt also lets a later request recover after a webserver restart.
-  void sync.jobPromise
-    .then(() => complete(scope, conversation, input, sync.jobSequenceId))
-    .catch((error: unknown) => {
-      Sentry.captureException(error);
-    });
 }
 
 async function failSync(
@@ -418,27 +337,26 @@ export async function complete(
   scope: AgentScope,
   conversation: CourseAgentConversation,
   input: ApprovalDecision,
-  finishedSync?: string,
 ) {
   await namedLocks.doWithLock(
     `course-agent:proposal:${input.id}`,
     { timeout: 5000, autoRenew: true },
     async () => {
-      await authorizedDestination(scope, conversation);
+      await authorize(scope);
       let row = await proposals.selectOptionalProposal(conversation.id, input.id);
       if (row?.digest !== input.digest) {
         throw new TRPCError({ code: 'CONFLICT', message: 'The reviewed proposal changed.' });
       }
+      if (row.decision !== null && row.decision !== (input.decision === 'approve')) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Another decision is already saved.' });
+      }
+      if (row.outcome !== null) return;
+      await authorizedDestination(scope, conversation);
+      if (input.decision === 'approve' && row.decision === null) await authorize(scope, true);
       if (!row.prepared) {
         throw new TRPCError({ code: 'CONFLICT', message: 'Retry preparation before approving.' });
       }
-      await proposals.decideProposal(
-        scope,
-        conversation,
-        row,
-        input.decision,
-        input.expectedOperationNumber,
-      );
+      await proposals.decideProposal(scope, conversation, row, input.decision);
       row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
       try {
         try {
@@ -450,6 +368,7 @@ export async function complete(
               });
             } else {
               if (!row.published_sha) {
+                await authorize(scope, true);
                 await authorizedDestination(scope, conversation);
                 const sha = await publisher(conversation).push(job(conversation, row));
                 await proposals.saveProposalProgress(row.id, { published_sha: sha });
@@ -466,17 +385,13 @@ export async function complete(
                   const { status } = await selectJobSequenceStatus(row.sync_job_sequence_id);
                   if (status === 'Running' || status === 'Stopping') return;
                   if (status !== 'Success') {
-                    if (finishedSync === row.sync_job_sequence_id) {
-                      throw new Error(
-                        'Course Sync could not finish. The publication is saved; retry completion.',
-                      );
-                    }
                     await proposals.resetSyncReceipt(row.id);
                     row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
                   }
                 }
                 if (!row.synced_sha) {
-                  const sync = await pullAndUpdateCourse({
+                  await authorize(scope, true);
+                  await pullAndUpdateCourse({
                     course: await authorizedDestination(scope, conversation),
                     userId: scope.user_id,
                     authnUserId: scope.authn_user_id,
@@ -502,7 +417,7 @@ export async function complete(
                       });
                     },
                   });
-                  continueAfterSync(sync, scope, conversation, input);
+                  // Cloudflare advances from the saved sync receipt after this lock is released.
                   return;
                 }
                 await proposals.saveProposalProgress(row.id, {
@@ -523,40 +438,11 @@ export async function complete(
           });
         }
         row = (await proposals.selectOptionalProposal(conversation.id, input.id))!;
-        if (!row.delivered && row.outcome) {
-          const chat = await provider(scope, conversation, true);
-          const state = await chat.getSnapshot(AbortSignal.timeout(10000));
-          await reconcileOperations(conversation, chat, state);
-          await recordUsage(conversation, state);
-          const dispatchId = await admitResult(conversation, input.id, state);
-          await chat.deliverToolResult(
-            {
-              id: input.id,
-              dispatchId,
-              result: row.outcome,
-              success: row.outcome_success!,
-              display: {
-                name: 'push_sync',
-                value: {
-                  ...approvalDisplaySchema.parse(row.payload),
-                  digest: row.digest,
-                  status: row.decision ? 'approved' : 'denied',
-                  result: row.outcome,
-                },
-              },
-            },
-            AbortSignal.timeout(120000),
-          );
-          if (!dispatchId) await completeDecisionOperation(conversation.id, input.id);
-          await proposals.saveProposalProgress(row.id, { delivered: true, error: row.error });
-        }
       } catch (error) {
         await proposals.saveProposalProgress(row.id, {
           error: error instanceof Error ? error.message : 'Completion failed.',
         });
         throw error;
-      } finally {
-        await notify(conversation.id);
       }
     },
   );

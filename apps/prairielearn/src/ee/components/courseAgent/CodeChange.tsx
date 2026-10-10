@@ -95,7 +95,7 @@ export function CodeChange({
               </>
             ) : (
               (snapshot.publication?.status === 'retry' ||
-                (decisionError && !snapshot.publication?.delivered)) &&
+                (decisionError && !snapshot.publication?.complete)) &&
               !decisionPending &&
               !completing && (
                 <Button

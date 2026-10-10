@@ -1,17 +1,22 @@
 import type { UIMessage, UIMessageChunk } from 'ai';
 import { z } from 'zod';
 
+import { type ConversationRuntime, type ModelPrice, modelPriceSchema } from './service-api.js';
+
+export * from './service-api.js';
+
 export const sendRequestSchema = z.object({
   id: z.uuid(),
-  expectedOperationNumber: z.number().int().nonnegative(),
-  text: z.string().trim().min(1).max(100_000),
+  expectedRevision: z.number().int().nonnegative(),
+  text: z
+    .string()
+    .min(1)
+    .max(100_000)
+    .refine((text) => text.trim().length > 0),
 });
 export type SendRequest = z.infer<typeof sendRequestSchema>;
 export const dispatchRequestSchema = sendRequestSchema.extend({ dispatchId: z.uuid().optional() });
 export type DispatchRequest = z.infer<typeof dispatchRequestSchema>;
-export const admissionReconciliationSchema = z.object({
-  admissions: z.array(z.object({ id: z.uuid(), dispatchId: z.uuid() })).max(100),
-});
 
 /** One cleanup attempt, persisted with sandbox state so retries survive DO eviction. */
 export const cleanupDiagnosticsSchema = z.object({
@@ -48,26 +53,21 @@ export interface ChatConnection {
 }
 
 /** Backend provider boundary: controls/snapshots are JSON; observation yields standard AI SDK chunks. */
-export const preparedToolSchema = z.object({ id: z.uuid() });
 
 export interface ChatProvider {
-  watch(
+  getRuntime(signal: AbortSignal): Promise<ConversationRuntime>;
+  exportConversation(signal: AbortSignal): Promise<ConversationExport>;
+  configure(
+    binding: { repository: string; branch: string; modelPrices?: Record<string, ModelPrice> },
     signal: AbortSignal,
-    changed: () => void,
-    failed: () => void,
-    execute?: (call: HostToolCall) => Promise<unknown>,
-  ): Promise<() => void>;
+  ): Promise<{ model: string }>;
+  watch(signal: AbortSignal, changed: () => void, failed: () => void): Promise<() => void>;
   getSnapshot(signal: AbortSignal, operationIds?: string[]): Promise<ChatSnapshot>;
-  markToolPrepared(id: string, signal: AbortSignal): Promise<void>;
-  deliverToolResult(input: ToolOutcome, signal: AbortSignal): Promise<void>;
   getDiagnostics(signal: AbortSignal): Promise<SandboxDiagnostics>;
   retryCleanup(signal: AbortSignal): Promise<void>;
+  requestRetention(signal: AbortSignal): Promise<void>;
   getHistory(signal: AbortSignal): Promise<UIMessage[]>;
-  send(input: DispatchRequest, signal: AbortSignal): Promise<void>;
-  reconcileAdmissions(
-    admissions: { id: string; dispatchId: string }[],
-    signal: AbortSignal,
-  ): Promise<{ rejected: string[] }>;
+  send(input: DispatchRequest, signal: AbortSignal): Promise<{ revision: number }>;
   cancel(signal: AbortSignal): Promise<void>;
   connect(signal: AbortSignal): Promise<ChatConnection>;
 }
@@ -97,11 +97,14 @@ export const approvalDisplaySchema = approvalSchema.omit({ files: true });
 export type ApprovalDisplay = z.infer<typeof approvalDisplaySchema>;
 /** Stable across JSONB object-key normalization; every published byte participates in approval identity. */
 export function proposalContent(base: string, proposed: string, files: Approval['files']) {
-  return `${base}\n${proposed}\n${JSON.stringify(files.map((f) => [f.path, f.content, f.mode, f.previousMode]))}`;
+  const sorted = files.toSorted((a, b) => {
+    if (a.path === b.path) return 0;
+    return a.path < b.path ? -1 : 1;
+  });
+  return `${base}\n${proposed}\n${JSON.stringify(sorted.map((f) => [f.path, f.content, f.mode, f.previousMode]))}`;
 }
 export const approvalDecisionSchema = z.object({
   id: z.uuid(),
-  expectedOperationNumber: z.number().int().nonnegative(),
   digest: z.string(),
   decision: z.enum(['approve', 'deny']),
 });
@@ -113,6 +116,7 @@ export const conversationUsageSchema = z.object({
   cached: z.number().int().nonnegative(),
   cacheWrite: z.number().int().nonnegative(),
   output: z.number().int().nonnegative(),
+  prices: modelPriceSchema.optional(),
 });
 export type ConversationUsage = z.infer<typeof conversationUsageSchema>;
 export interface ChatSnapshot {
@@ -127,9 +131,12 @@ export interface ChatSnapshot {
   conversationUsage?: ConversationUsage;
   usage?: { input: number | null; output: number | null; estimatedCost: number | null };
   messages: UIMessage[];
-  operationNumber: number;
+  revision: number;
   newWorkUnavailable?: string;
   blocked?: boolean;
+  budgetStop?: { message: string };
+  unconfirmedCost?: number;
+  accountingWarning?: string;
   pendingTool?: PendingTool;
   diagnostics?: SandboxDiagnostics;
   approval?: ApprovalDisplay;
@@ -142,7 +149,7 @@ export interface ChatSnapshot {
     repository: string;
     branch: string;
     status: 'ready' | 'publishing' | 'syncing' | 'retry' | 'complete' | 'invalid';
-    delivered?: boolean;
+    complete?: boolean;
     decision?: boolean;
     error?: string;
   };
@@ -150,9 +157,8 @@ export interface ChatSnapshot {
 /** Generic durable gate. Product-specific proposals and decisions belong to PL. */
 export interface PendingTool {
   id: string;
-  sequence: number;
   name: string;
-  args: unknown;
+  args?: unknown;
   result?: string;
   resultSuccess?: boolean;
   prepared?: boolean;
@@ -169,45 +175,52 @@ export type ToolOutcome = z.infer<typeof toolOutcomeSchema>;
 
 export class ChatError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  readonly code: string;
+  constructor(status: number, message: string, code = 'unavailable') {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
-export const approvalOutcomeSchema = approvalDecisionSchema.extend({
-  result: z.string().min(1).max(2000),
-  success: z.boolean().optional(),
+export const agentSnapshotSchema = z.object({
+  messages: z.array(z.unknown()),
+  revision: z.number().int().nonnegative(),
+  blocked: z.boolean(),
+  budgetStop: z.object({ message: z.string() }).optional(),
+  unconfirmedCost: z.number().nonnegative().optional(),
+  accountingWarning: z.string().optional(),
+  conversationUsage: conversationUsageSchema,
+  pendingTool: z
+    .object({
+      id: z.uuid(),
+      name: z.string(),
+      args: z.unknown().optional(),
+      result: z.string().optional(),
+      resultSuccess: z.boolean().optional(),
+      prepared: z.boolean().optional(),
+      error: z.string().optional(),
+    })
+    .optional(),
+  executions: z.record(
+    z.string(),
+    z.object({
+      dispatchId: z.uuid().optional(),
+      status: z.enum(['running', 'completed', 'cancelled', 'failed', 'interrupted']),
+    }),
+  ),
 });
-
-export const hostToolCallSchema = z.object({
-  type: z.literal('host-tool-call'),
-  id: z.string().uuid(),
-  name: z.string().max(100),
-  input: z.unknown(),
-  sequence: z.number().int().positive().optional(),
+export const conversationExportSchema = z.object({
+  version: z.literal(1),
+  conversationId: z.uuid(),
+  exportedAt: z.number().int().positive(),
+  revision: z.number().int().nonnegative(),
+  messages: z.array(z.unknown()),
+  usage: conversationUsageSchema,
+  diagnostics: sandboxDiagnosticsSchema,
 });
-export type HostToolCall = z.infer<typeof hostToolCallSchema>;
-
-export const hostToolResultSchema = z.object({
-  type: z.literal('host-tool-result'),
-  id: z.string().uuid(),
-  result: z.discriminatedUnion('ok', [
-    z.object({ ok: z.literal(true), output: z.unknown() }),
-    z.object({ ok: z.literal(false), error: z.string().max(1000) }),
-  ]),
+export type ConversationExport = z.infer<typeof conversationExportSchema>;
+export const historyPageSchema = z.object({
+  messages: z.array(z.unknown()).max(100),
+  nextCursor: z.string().max(200).nullable(),
 });
-export const hostToolDefinitions = [
-  {
-    type: 'function' as const,
-    name: 'host_echo',
-    description:
-      'Echo text through the trusted PL webserver. Use this to demonstrate host execution.',
-    inputSchema: {
-      type: 'object',
-      properties: { text: { type: 'string', maxLength: 4096 } },
-      required: ['text'],
-      additionalProperties: false,
-    },
-  },
-];

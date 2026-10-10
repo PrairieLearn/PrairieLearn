@@ -4,20 +4,9 @@ columns
     created_at: timestamp with time zone not null default now()
     external_id: uuid not null
     id: bigint not null default nextval('course_agent_conversations_id_seq'::regclass)
-    operation_number: integer not null default 0
+    last_finished_at: timestamp with time zone
     repository: text not null
     title: text not null
-    usage_cache_read_price: double precision
-    usage_cache_write_price: double precision
-    usage_cost: double precision default 0
-    usage_input_price: double precision
-    usage_input_tokens: bigint not null default 0
-    usage_input_tokens_cache_read: bigint not null default 0
-    usage_input_tokens_cache_write: bigint not null default 0
-    usage_model: text
-    usage_output_price: double precision
-    usage_output_tokens: bigint not null default 0
-    usage_version: bigint not null default 0
     user_id: bigint not null
 
 indexes
@@ -25,14 +14,9 @@ indexes
     course_agent_conversations_external_id_key: UNIQUE (external_id) USING btree (external_id)
     course_agent_conversations_course_id_user_id_idx: USING btree (course_id, user_id)
 
-check constraints
-    course_agent_conversations_operation_number_check: CHECK (operation_number >= 0)
-    course_agent_conversations_usage_check: CHECK (usage_version >= 0 AND usage_input_tokens >= 0 AND usage_input_tokens_cache_read >= 0 AND usage_input_tokens_cache_write >= 0 AND usage_output_tokens >= 0 AND (usage_cost IS NULL OR usage_cost >= 0::double precision) AND (usage_input_price IS NULL AND usage_cache_read_price IS NULL AND usage_cache_write_price IS NULL AND usage_output_price IS NULL OR usage_input_price IS NOT NULL AND usage_input_price >= 0::double precision AND usage_cache_read_price IS NOT NULL AND usage_cache_read_price >= 0::double precision AND usage_cache_write_price IS NOT NULL AND usage_cache_write_price >= 0::double precision AND usage_output_price IS NOT NULL AND usage_output_price >= 0::double precision))
-
 foreign-key constraints
     course_agent_conversations_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_agent_conversations_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
-    course_agent_operations: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_agent_proposals: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

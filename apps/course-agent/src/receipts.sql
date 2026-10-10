@@ -44,3 +44,21 @@ FROM
   rejected_dispatches
 WHERE
   dispatch_id = ?;
+
+-- BLOCK unstarted
+SELECT
+  operation_id,
+  receipt
+FROM
+  execution_receipts
+WHERE
+  operation_id > ?
+  AND json_extract (receipt, '$.authorization') IS NOT NULL
+  AND COALESCE(
+    json_extract (receipt, '$.authorization.authorized'),
+    0
+  ) = 0
+ORDER BY
+  operation_id
+LIMIT
+  100;

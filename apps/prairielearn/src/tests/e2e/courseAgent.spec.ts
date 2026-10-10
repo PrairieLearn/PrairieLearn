@@ -1,3 +1,5 @@
+import { serviceHeaders } from '@prairielearn/course-agent-contract';
+
 import { features } from '../../lib/features/index.js';
 import { selectConversations } from '../../models/course-agent-conversation.js';
 import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
@@ -15,6 +17,12 @@ const test = createTest({
     serviceToken: 'local-fixture-service-token-not-a-secret',
     maxConcurrentPerUser: 2,
     hourlyCostLimit: 10,
+    turnCostLimit: 2,
+    requestCostLimit: 0.5,
+    accountingEpoch: '00000000-0000-4000-8000-000000000001',
+    maxTurnRuntimeMs: 1_800_000,
+    maxToolCallsPerTurn: 100,
+    maxModelRequestsPerTurn: 200,
   },
 });
 test.skip(!process.env.COURSE_AGENT_FIXTURE_URL, 'Run the local course-agent fixture first.');
@@ -98,9 +106,8 @@ test('conversation and unsent draft persist across course pages', async ({
     .innerText();
   await page.getByRole('button', { name: 'New conversation', exact: true }).click();
   await page.getByRole('button', { name: 'Conversation', exact: true }).click();
-  await expect(page.getByLabel('Working', { exact: true })).toBeVisible();
-  // Hidden conversations retain their last observed status until reopened.
-  await expect(page.getByLabel('New response', { exact: true })).toHaveCount(0);
+  // The picker reads current service status; completed work can replace the spinner.
+  await expect(page.getByRole('button', { name: conversationTitle, exact: false })).toBeVisible();
   const selector = await page
     .getByRole('button', { name: 'Conversation', exact: true })
     .boundingBox();
@@ -283,22 +290,48 @@ test('failed preparation returns a native tool error and never displays an appro
     user_id: '1',
     authn_user_id: '1',
   });
-  const root = `http://localhost:8791/agents/chat/${conversation.external_id}`;
-  const headers = {
-    Authorization: 'Bearer local-fixture-service-token-not-a-secret',
-    'Content-Type': 'application/json',
+  const root = `http://localhost:8791/v1/conversations/${conversation.external_id}`;
+  const scope = {
+    conversationId: conversation.external_id,
+    courseId,
+    userId: '1',
+    authnUserId: '1',
   };
+  const originBody = JSON.stringify({ origin: new URL(page.url()).origin });
+  const originPath = new URL(root + '/test/pl-origin').pathname;
+  const configured = await fetch(root + '/test/pl-origin', {
+    method: 'POST',
+    headers: await serviceHeaders(
+      'local-fixture-service-token-not-a-secret',
+      'agent-api',
+      'POST',
+      originPath,
+      scope,
+      { body: originBody },
+    ),
+    body: originBody,
+  });
+  expect(configured.ok).toBe(true);
+  const capture = JSON.stringify({
+    name: 'push_sync',
+    input: { baseSha: '0'.repeat(40), proposedSha: 'b'.repeat(40) },
+  });
+  const headers = await serviceHeaders(
+    'local-fixture-service-token-not-a-secret',
+    'agent-api',
+    'POST',
+    new URL(root + '/test/host-tool').pathname,
+    scope,
+    { body: capture },
+  );
   const approval = await fetch(`${root}/test/host-tool`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({
-      name: 'push_sync',
-      input: { baseSha: '0'.repeat(40), proposedSha: 'b'.repeat(40) },
-    }),
+    body: capture,
   });
   expect(approval.ok).toBe(true);
   await expect(page.getByText('Code change request', { exact: true })).toBeVisible();
-  const failureDetails = page.getByRole('group').getByText(/^Initialize the course repository/);
+  const failureDetails = page.getByRole('group').getByText(/Initialize the course repository/);
   await expect(failureDetails).toBeHidden();
   await page
     .locator('details')
@@ -310,7 +343,16 @@ test('failed preparation returns a native tool error and never displays an appro
   await expect(page.getByText('Code change · Review requested', { exact: true })).toHaveCount(0);
   await expect
     .poll(async () => {
-      const response = await fetch(`${root}/test/status`, { headers });
+      const path = new URL(root + '/test/status').pathname;
+      const response = await fetch(root + '/test/status', {
+        headers: await serviceHeaders(
+          'local-fixture-service-token-not-a-secret',
+          'agent-api',
+          'GET',
+          path,
+          scope,
+        ),
+      });
       const state = await response.json();
       return state.toolResults?.[0]?.success;
     })
@@ -347,7 +389,7 @@ test('failed preparation returns a native tool error and never displays an appro
   await page.route('**/course-agent/*/events', (route) =>
     route.fulfill({
       contentType: 'text/event-stream',
-      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], operationNumber: 0, diagnostics: { cleanup: { error: 'Technical cleanup failure' }, checkpointError: 'Technical checkpoint failure' }, blocked: true, approval: proposal, approvals: [proposal, { ...proposal, id: 'approved', status: 'approved' }, { ...proposal, id: 'denied', status: 'denied' }], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
+      body: `data: ${JSON.stringify({ messages: [{ id: 'empty-tool', role: 'assistant', parts: [{ type: 'dynamic-tool', toolName: 'file_change', toolCallId: 'empty', state: 'output-available' }] }], revision: 0, diagnostics: { cleanup: { error: 'Technical cleanup failure' }, checkpointError: 'Technical checkpoint failure' }, blocked: true, approval: proposal, approvals: [proposal, { ...proposal, id: 'approved', status: 'approved' }, { ...proposal, id: 'denied', status: 'denied' }], publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
     }),
   );
   await page.reload();
@@ -462,7 +504,7 @@ test('failed preparation returns a native tool error and never displays an appro
   await page.route('**/course-agent/*/events', (route) =>
     route.fulfill({
       contentType: 'text/event-stream',
-      body: `data: ${JSON.stringify({ messages: [{ id: 'review-summary', role: 'assistant', parts: [{ type: 'text', text: 'The course changes are ready for your review.' }] }], operationNumber: 0, blocked: true, approval: proposal, approvals: [proposal], diagnostics: { state: 'waiting_for_user' }, publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
+      body: `data: ${JSON.stringify({ messages: [{ id: 'review-summary', role: 'assistant', parts: [{ type: 'text', text: 'The course changes are ready for your review.' }] }], revision: 0, blocked: true, approval: proposal, approvals: [proposal], diagnostics: { state: 'waiting_for_user' }, publication: { status: 'ready', repository: 'example/course', branch: 'main' } })}\n\n`,
     }),
   );
   await page.reload();
@@ -476,7 +518,7 @@ test('failed preparation returns a native tool error and never displays an appro
     await page.route('**/course-agent/*/events', (route) =>
       route.fulfill({
         contentType: 'text/event-stream',
-        body: `data: ${JSON.stringify({ messages: [], operationNumber: 0, blocked: false, approval, approvals: [approval], publication: { status: 'retry', error: 'Result delivery interrupted. Retry completion.', repository: 'example/course', branch: 'main' } })}\n\n`,
+        body: `data: ${JSON.stringify({ messages: [], revision: 0, blocked: false, approval, approvals: [approval], publication: { status: 'retry', error: 'Result delivery interrupted. Retry completion.', repository: 'example/course', branch: 'main' } })}\n\n`,
       }),
     );
     await page.reload();
@@ -491,7 +533,7 @@ test('failed preparation returns a native tool error and never displays an appro
     await page.route('**/course-agent/*/events', (route) =>
       route.fulfill({
         contentType: 'text/event-stream',
-        body: `data: ${JSON.stringify({ messages: [], operationNumber: 0, blocked: true, approval, approvals: [approval], publication: { status, repository: 'example/course', branch: 'main' } })}\n\n`,
+        body: `data: ${JSON.stringify({ messages: [], revision: 0, blocked: true, approval, approvals: [approval], publication: { status, repository: 'example/course', branch: 'main' } })}\n\n`,
       }),
     );
     await page.reload();
@@ -507,7 +549,7 @@ test('failed preparation returns a native tool error and never displays an appro
     await page.route('**/course-agent/*/events', (route) =>
       route.fulfill({
         contentType: 'text/event-stream',
-        body: `data: ${JSON.stringify({ messages: [], operationNumber: 0, blocked: state === 'waiting_for_agent', approvals: [], diagnostics: { state } })}\n\n`,
+        body: `data: ${JSON.stringify({ messages: [], revision: 0, blocked: state === 'waiting_for_agent', approvals: [], diagnostics: { state } })}\n\n`,
       }),
     );
     await page.reload();
@@ -677,12 +719,7 @@ test('navigation preserves a new-conversation selection before the settings requ
 const unavailableTest = createTest({
   isEnterprise: true,
   features: { 'course-agent': true },
-  courseAgent: {
-    workerUrl: 'http://localhost:8791',
-    serviceToken: null,
-    maxConcurrentPerUser: 2,
-    hourlyCostLimit: 10,
-  },
+  courseAgent: null,
 });
 
 unavailableTest(
@@ -717,6 +754,12 @@ const noPublishingTokenTest = createTest({
     serviceToken: 'local-fixture-service-token-not-a-secret',
     maxConcurrentPerUser: 2,
     hourlyCostLimit: 10,
+    turnCostLimit: 2,
+    requestCostLimit: 0.5,
+    accountingEpoch: '00000000-0000-4000-8000-000000000001',
+    maxTurnRuntimeMs: 1_800_000,
+    maxToolCallsPerTurn: 100,
+    maxModelRequestsPerTurn: 200,
   },
 });
 

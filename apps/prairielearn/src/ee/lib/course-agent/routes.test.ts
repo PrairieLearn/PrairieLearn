@@ -11,8 +11,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as pageContext from '../../../lib/client/page-context.js';
 import * as conversations from '../../../models/course-agent-conversation.js';
 
-import * as events from './events.js';
-import { createCloudflareProvider } from './provider.js';
+import { createAgentClient } from './provider.js';
 import router from './routes.js';
 import * as service from './service.js';
 
@@ -54,11 +53,19 @@ beforeEach(() => {
   } as ReturnType<typeof pageContext.extractPageContext>);
   vi.spyOn(conversations, 'selectConversation').mockImplementation(mocks.selectConversation);
   vi.spyOn(service, 'provider').mockResolvedValue({
-    ...createCloudflareProvider(new URL('http://localhost'), 'test'),
+    ...createAgentClient(
+      new URL('http://localhost'),
+      {
+        conversationId: '00000000-0000-4000-8000-000000000000',
+        courseId: '1',
+        userId: '1',
+        authnUserId: '1',
+      },
+      'test-secret',
+    ),
     getSnapshot: mocks.getSnapshot,
     watch: mocks.watch,
   });
-  vi.spyOn(events, 'subscribe').mockResolvedValue(mocks.unsubscribe);
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -69,20 +76,17 @@ test('sends authentication failure through SSE without invoking the HTML error h
   expect(await response.text()).toContain(
     'event: connection-error\ndata: {"message":"Authentication failed"}',
   );
-  expect(mocks.watch).not.toHaveBeenCalled();
-  expect(mocks.unsubscribe).toHaveBeenCalled();
   expect(mocks.errorHandler).not.toHaveBeenCalled();
 });
 
-test('ends a failed WebSocket connection cleanly and hides internal error details', async () => {
-  mocks.getSnapshot.mockResolvedValue({ messages: [], operationNumber: 0 });
+test('ends a failed event connection cleanly and hides internal error details', async () => {
+  mocks.getSnapshot.mockResolvedValue({ messages: [], revision: 0 });
   mocks.watch.mockRejectedValue(new Error('private transport details'));
   const response = await fetch(url);
   const body = await response.text();
   expect(body).toContain('event: connection-error');
   expect(body).toContain('Your draft is preserved');
   expect(body).not.toContain('private transport details');
-  expect(mocks.unsubscribe).toHaveBeenCalled();
   expect(mocks.errorHandler).not.toHaveBeenCalled();
 });
 

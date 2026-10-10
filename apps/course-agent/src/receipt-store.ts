@@ -36,4 +36,13 @@ export class ReceiptStore {
   rejected(id: string) {
     return this.sql.exec(queries.rejected, id).toArray().length > 0;
   }
+
+  unstarted(after: string): Record<string, Execution> {
+    return Object.fromEntries(
+      this.sql
+        .exec<{ operation_id: string; receipt: string }>(queries.unstarted, after)
+        .toArray()
+        .map((row) => [row.operation_id, JSON.parse(row.receipt)]),
+    );
+  }
 }

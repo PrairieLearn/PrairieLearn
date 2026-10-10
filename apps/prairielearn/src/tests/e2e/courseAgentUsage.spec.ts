@@ -17,10 +17,16 @@ const test = createTest({
     serviceToken: 'local-fixture-service-token-not-a-secret',
     maxConcurrentPerUser: 2,
     hourlyCostLimit: 0.001,
+    turnCostLimit: 2,
+    requestCostLimit: 0.5,
+    accountingEpoch: '00000000-0000-4000-8000-000000000001',
+    maxTurnRuntimeMs: 1_800_000,
+    maxToolCallsPerTurn: 100,
+    maxModelRequestsPerTurn: 200,
   },
 });
 test.skip(!process.env.COURSE_AGENT_FIXTURE_URL, 'Run the local course-agent fixture first.');
-test('shows cumulative usage and blocks new work without cancelling an in-flight turn', async ({
+test('shows retained native usage without treating a read as a financial charge', async ({
   page,
   courseInstance,
 }) => {
@@ -54,8 +60,8 @@ test('shows cumulative usage and blocks new work without cancelling an in-flight
   await expect(statistics).toBeHidden();
   await composer.fill('More work.');
   await page.getByRole('button', { name: 'Send', exact: true }).click();
-  await expect(page.getByText('Course agent usage limit reached. Try again later.')).toBeVisible();
-  await expect(composer).toHaveValue('More work.');
+  await expect(composer).toHaveValue('');
+  await expect(page.getByText('More work.', { exact: true })).toBeVisible();
   await expect(page.getByText('Working…', { exact: true })).toBeVisible();
   await composer.fill('');
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeEnabled();

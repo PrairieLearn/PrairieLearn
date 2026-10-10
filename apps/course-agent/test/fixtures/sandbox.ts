@@ -11,6 +11,7 @@ interface State {
   captureDelay?: number;
   toolResults?: unknown[];
   backup?: Record<string, string>;
+  lastBackupId?: string;
   backupEvents: string[];
   running: boolean;
   launches: number;
@@ -19,6 +20,7 @@ interface State {
   turns: Turn[];
   steers: number;
   failBackup?: boolean;
+  backupDelay?: number;
   destroyFailures?: number;
   ignoreCancellation?: boolean;
   dropStartAck?: boolean;
@@ -492,6 +494,12 @@ export class TestSandbox extends DurableObject {
     await this.save(state);
   }
 
+  async delayBackup(milliseconds: number) {
+    const state = await this.state();
+    state.backupDelay = milliseconds;
+    await this.save(state);
+  }
+
   async createBackup() {
     const state = await this.state();
     if (state.turns.at(-1)?.status === 'inProgress' && state.running) {
@@ -503,6 +511,11 @@ export class TestSandbox extends DurableObject {
       await this.save(state);
       throw new Error('Fixture R2 unavailable');
     }
+    if (state.backupDelay) {
+      state.backupEvents.push('backup-started');
+      await this.save(state);
+      await new Promise((resolve) => setTimeout(resolve, state.backupDelay));
+    }
     state.backupEvents.push('backup');
     state.backup = Object.fromEntries(
       Object.entries(state.files).filter(([path]) => path.startsWith('/workspace/')),
@@ -511,8 +524,13 @@ export class TestSandbox extends DurableObject {
     const bucket = (this.env as { BACKUP_BUCKET: R2Bucket }).BACKUP_BUCKET;
     await bucket.put(`backups/${id}/data.sqsh`, JSON.stringify(state.backup));
     await bucket.put(`backups/${id}/meta.json`, JSON.stringify({ id }));
+    state.lastBackupId = id;
     await this.save(state);
     return { id, dir: '/workspace' };
+  }
+
+  async lastBackupId() {
+    return (await this.state()).lastBackupId;
   }
 
   async restoreBackup(backup: { id: string }) {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
+import { ConfigSchema } from '../../../lib/config.js';
 import * as courses from '../../../models/course.js';
 import { withConfig } from '../../../tests/utils/config.js';
 
@@ -54,26 +55,16 @@ const conversation = {
   title: 'Test',
   repository: 'org/course',
   branch: 'main',
-  operation_number: 0,
-  usage_cache_read_price: null,
-  usage_cache_write_price: null,
-  usage_cost: 0,
-  usage_input_price: null,
-  usage_input_tokens: 0,
-  usage_input_tokens_cache_read: 0,
-  usage_input_tokens_cache_write: 0,
-  usage_model: null,
-  usage_output_price: null,
-  usage_output_tokens: 0,
-  usage_version: 0,
+  last_finished_at: null,
   created_at: new Date(),
 };
-const settings = {
+const settings = ConfigSchema.shape.courseAgent.parse({
+  accountingEpoch: '00000000-0000-4000-8000-000000000001',
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
   maxConcurrentPerUser: 2,
   hourlyCostLimit: 10,
-};
+})!;
 
 test('reports an unsent message without leaking a configure transport error', async () => {
   const fetcher = vi.fn().mockRejectedValue(new Error('sensitive upstream details'));
@@ -82,7 +73,7 @@ test('reports an unsent message without leaking a configure transport error', as
     await expect(provider(scope, conversation, true)).rejects.toMatchObject({
       status: 502,
       message:
-        'Course agent connection failed. Your message was not sent. Check the Worker is running, then retry the send.',
+        'Course agent connection failed. Execution remains unconfirmed. Check saved history before retrying.',
     });
     expect(fetcher).toHaveBeenCalledTimes(1);
   });

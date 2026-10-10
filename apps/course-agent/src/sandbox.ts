@@ -1,5 +1,8 @@
 import { Sandbox as CloudflareSandbox } from '@cloudflare/sandbox';
+import { getAgentByName } from 'agents';
+import { z } from 'zod';
 
+import type { Env } from './agent.js';
 import { forwardGitHub, forwardOpenAI } from './outbound.js';
 
 export class Sandbox extends CloudflareSandbox {
@@ -26,11 +29,31 @@ export class Sandbox extends CloudflareSandbox {
   }
 }
 
-Sandbox.outboundByHost = {
-  'openai.internal': (request: Request, env: { CODEX_API_KEY: string; CODEX_MODEL?: string }) =>
-    forwardOpenAI(request, env),
-};
 Sandbox.outboundHandlers = {
+  openai: async (
+    request: Request,
+    env: Env & { CODEX_API_KEY: string },
+    context: { params?: unknown },
+  ) => {
+    const parsed = z
+      .object({
+        conversationId: z.uuid(),
+        sandboxId: z.uuid(),
+        actionId: z.uuid(),
+        capacityGrantId: z.uuid(),
+      })
+      .safeParse(context.params);
+    if (!parsed.success) return new Response('Execution binding required', { status: 403 });
+    const { conversationId, ...binding } = parsed.data;
+    const chat = await getAgentByName(env.Chat, conversationId);
+    return forwardOpenAI(request, env, fetch, {
+      stop: (message) => chat.stopForBudget(binding, message),
+      check: () => chat.authorizeModelCount(binding),
+      reserve: (details) => chat.reserveModelRequest(binding, details),
+      dispatch: (id) => chat.dispatchModelRequest(binding, id),
+      settle: (input) => chat.settleModelRequest(input),
+    });
+  },
   github: (
     request: Request,
     env: { GITHUB_CLIENT_TOKEN?: string },

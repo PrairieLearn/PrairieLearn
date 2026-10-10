@@ -15,7 +15,7 @@ import {
 } from '../lib/db-types.js';
 
 import { insertAuditEvent } from './audit-event.js';
-import { type AgentScope, reserveOperation } from './course-agent-conversation.js';
+import { type AgentScope } from './course-agent-conversation.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const selectOptionalProposal = (conversation_id: string, operation_id: string) =>
@@ -29,7 +29,6 @@ export const selectProposals = (conversation_id: string) =>
 export const insertProposal = (input: {
   conversation_id: string;
   operation_id: string;
-  sequence: number;
   payload: string;
   digest: string;
 }) => queryOptionalRow(sql.insert_proposal, input, CourseAgentProposalSchema);
@@ -51,7 +50,7 @@ export const failProposalPreparation = (id: string, error: string) =>
     error,
     outcome: `Code change request failed: ${error}`,
   });
-export const saveProposalProgress = (
+export async function saveProposalProgress(
   id: string,
   input: Partial<
     Pick<
@@ -60,44 +59,57 @@ export const saveProposalProgress = (
       | 'sync_job_sequence_id'
       | 'synced_sha'
       | 'outcome'
-      | 'delivered'
       | 'error'
       | 'outcome_success'
       | 'sync_validation_failed'
       | 'sync_diagnostics'
     >
   >,
-) =>
-  execute(sql.update_proposal_progress, {
-    id,
-    published_sha: null,
-    sync_job_sequence_id: null,
-    synced_sha: null,
-    outcome: null,
-    delivered: null,
-    error: null,
-    outcome_success: null,
-    sync_validation_failed: null,
-    sync_diagnostics: null,
-    ...input,
-  });
+) {
+  const row = await queryOptionalRow(
+    sql.update_proposal_progress,
+    {
+      id,
+      published_sha: null,
+      sync_job_sequence_id: null,
+      synced_sha: null,
+      outcome: null,
+      has_error: Object.hasOwn(input, 'error'),
+      error: null,
+      outcome_success: null,
+      sync_validation_failed: null,
+      sync_diagnostics: null,
+      ...input,
+    },
+    CourseAgentProposalSchema,
+  );
+  if (!row) {
+    throw new TRPCError({
+      code: 'CONFLICT',
+      message:
+        'The publication is complete or its saved commit changed. Refresh its status before retrying.',
+    });
+  }
+  return row;
+}
 export const resetSyncReceipt = (id: string) => execute(sql.reset_proposal_sync_receipt, { id });
 export async function decideProposal(
   scope: AgentScope,
   conversation: CourseAgentConversation,
   row: CourseAgentProposal,
   decision: 'approve' | 'deny',
-  expectedOperationNumber: number,
 ) {
   const approved = decision === 'approve';
   return runInTransactionAsync(async () => {
-    await reserveOperation(
-      conversation,
-      row.operation_id,
-      { kind: 'decision', digest: row.digest, decision },
-      expectedOperationNumber,
-      false,
+    const current = await queryOptionalRow(
+      sql.select_proposal_for_update,
+      { conversation_id: conversation.id, operation_id: row.operation_id },
+      CourseAgentProposalSchema,
     );
+    if (current?.digest !== row.digest) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'The reviewed proposal changed.' });
+    }
+    row = current;
     if (row.decision !== null) {
       if (row.decision !== approved) {
         throw new TRPCError({ code: 'CONFLICT', message: 'Another decision is already saved.' });
@@ -106,7 +118,7 @@ export async function decideProposal(
     }
     const next = await queryOptionalRow(
       sql.update_proposal_decision,
-      { id: row.id, decision: approved },
+      { id: row.id, decision: approved, digest: row.digest },
       CourseAgentProposalSchema,
     );
     if (!next) {

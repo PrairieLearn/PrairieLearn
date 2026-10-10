@@ -20,7 +20,6 @@ function job(): Publication {
     proposedSha = 'b'.repeat(40);
   return {
     id: randomUUID(),
-    sequence: 1,
     destination: { repository: 'example/course', branch: 'main' },
     createdAt: new Date().toISOString(),
     approval: {
