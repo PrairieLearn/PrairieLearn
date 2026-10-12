@@ -6,7 +6,6 @@ from prairielearn.sympy_utils import ...
 """
 
 import ast
-import copy
 import html
 import operator
 import re
@@ -39,6 +38,10 @@ from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
+    "Your answer has a syntax error. "
+    "This issue might be caused by mismatched parentheses or some other misplaced symbol."
+)
 
 SympyMapT = dict[str, sympy.Basic | complex]
 _FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
@@ -53,6 +56,17 @@ Examples:
 """
 
 ASTWhiteListT = tuple[type[ast.AST], ...]
+
+
+def _load_sympy_globals() -> FrozenDict[str, Any]:
+    # Based on code here:
+    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
+    sympy_globals: DICT = {}
+    exec("from sympy import *", sympy_globals)
+    return FrozenDict(sympy_globals)
+
+
+_SYMPY_GLOBALS: Final[FrozenDict[str, Any]] = _load_sympy_globals()
 
 
 class SympyJson(TypedDict):
@@ -199,6 +213,9 @@ class _Constants:
         "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
         "\u2061": "",  # function application
     })
+
+    # Operators that give two values; unidecode would turn "±" into "+-".
+    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
 
     set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
         "U": "|",
@@ -393,6 +410,26 @@ class HasFunctionArityError(BaseSympyError):
         )
 
 
+# `sqrt` is a plain function whose second parameter is `evaluate`, so it has no
+# `nargs` and would silently accept a second argument.
+_BUILTIN_FUNCTION_ARITY_OVERRIDES: Final[FrozenDict[str, tuple[int, ...]]] = (
+    FrozenDict({
+        "sqrt": (1,),
+    })
+)
+
+
+def _builtin_function_arities(name: str) -> tuple[int, ...] | None:
+    """Return the argument counts a built-in function accepts, or None if any count is allowed."""
+    if name in _BUILTIN_FUNCTION_ARITY_OVERRIDES:
+        return _BUILTIN_FUNCTION_ARITY_OVERRIDES[name]
+    function = _Constants.functions.get(name) or _Constants.trig_functions.get(name)
+    nargs = getattr(function, "nargs", None)
+    if isinstance(nargs, sympy.FiniteSet):
+        return tuple(sorted(int(cast(sympy.Integer, arity)) for arity in nargs))
+    return None
+
+
 class CheckAST(ast.NodeVisitor):
     whitelist: ASTWhiteListT
     variables: SympyMapT
@@ -534,7 +571,10 @@ class CheckAST(ast.NodeVisitor):
             case fn if self.allow_sets and fn in _Constants.set_functions:
                 return self._set_type(node, self._infer_set_function_type(name, args))
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
-                self._enforce_signature(fn, args, len(args) * [ASTSympyType.SCALAR])
+                arities = _builtin_function_arities(fn) or (len(args),)
+                self._enforce_signature(
+                    fn, args, *(arity * [ASTSympyType.SCALAR] for arity in arities)
+                )
                 return self._set_type(node, ASTSympyType.SCALAR)
             case _:
                 return self._set_type(node, None)
@@ -763,12 +803,12 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
-        elif not char.isascii() and unicodedata.decomposition(char).startswith((
-            "<super>",
-            "<sub>",
-        )):
-            # unidecode would turn "x²" into "x2" (i.e. 2*x). The formula editor
-            # writes exponents and subscripts with "^" and "_".
+        elif char in const.plus_minus_operators or (
+            not char.isascii()
+            and unicodedata.decomposition(char).startswith(("<super>", "<sub>"))
+        ):
+            # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
+            # formula editor writes exponents and subscripts with "^" and "_".
             raise HasInvalidSymbolError(char)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
         elif char not in const.set_operators:
@@ -925,14 +965,8 @@ def evaluate_with_source(
         for k, v in cast(SympyMapT, inner_dict).items()
     }
 
-    # Based on code here:
-    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
-
-    # Global dict is set up to be very permissive for parsing purposes
-    # (makes it cleaner to call this function with a custom locals dict).
-    # This line shouldn't be dangerous, as it's just loading the global dict.
-    global_dict = {}
-    exec("from sympy import *", global_dict)
+    # Keep mutations made during one parse from affecting later parses.
+    global_dict = dict(_SYMPY_GLOBALS)
 
     transformations = (
         *sympy_parser.standard_transformations,
@@ -964,7 +998,11 @@ def evaluate_with_source(
         raise HasParseError(-1) from exc
 
     # First do AST check, mainly for security
-    parsed_locals_to_eval = copy.deepcopy(locals_for_eval)
+    parsed_locals_to_eval: LocalsForEval = {
+        "functions": locals_for_eval["functions"].copy(),
+        "variables": locals_for_eval["variables"].copy(),
+        "helpers": locals_for_eval["helpers"].copy(),
+    }
 
     # Add locals that appear after sympy stringification
     # This check is only for safety, so won't change what gets parsed
@@ -1437,10 +1475,7 @@ def try_parse_string_as_sympy(
         # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
         # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
         if exc.offset == -1:
-            return SympyParseFailure(
-                "Your answer has a syntax error. "
-                "This issue might be caused by mismatched parentheses or some other misplaced symbol."
-            )
+            return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
         return SympyParseFailure(
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"

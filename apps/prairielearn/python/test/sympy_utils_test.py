@@ -56,6 +56,23 @@ def test_evaluate() -> None:
         psu.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
 
 
+def test_evaluate_does_not_mutate_locals() -> None:
+    z = sympy.Symbol("z")
+    f = sympy.Function("f")
+    locals_for_eval: psu.LocalsForEval = {
+        "functions": {"f": f},
+        "variables": {"z": z},
+        "helpers": {},
+    }
+
+    assert psu.evaluate("f(z)", locals_for_eval=locals_for_eval) == f(z)
+    assert locals_for_eval == {
+        "functions": {"f": f},
+        "variables": {"z": z},
+        "helpers": {},
+    }
+
+
 class TestSympy:
     SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
@@ -730,8 +747,8 @@ class TestExceptions:
             text, self.VARIABLES
         ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
 
-    # Unknown to unidecode, superscript, and subscript characters
-    @pytest.mark.parametrize("text", ["2⋆n", "n²", "n₁"])
+    # Unknown to unidecode, plus-minus, superscript, and subscript characters
+    @pytest.mark.parametrize("text", ["2⋆n", "2±n", "n²", "n₁"])
     def test_unsupported_characters(self, text: str) -> None:
         with pytest.raises(psu.HasInvalidSymbolError) as exc_info:
             psu.convert_string_to_sympy(text, self.VARIABLES)
@@ -1073,6 +1090,36 @@ class TestExceptions:
         )
         assert error_msg is not None
         assert 'invalid symbol "m"' in error_msg
+
+    @pytest.mark.parametrize(
+        ("caret_spec", "expected"),
+        [
+            ("!sin(n, n)", "to 'sin', expected 1."),
+            ("2 + 3*!cos(n, 1)", "to 'cos', expected 1."),
+            ("!exp()", "to 'exp', expected 1."),
+            # sympy.sqrt's second parameter is `evaluate`, so this was accepted as sqrt(n)
+            ("!sqrt(n, n)", "to 'sqrt', expected 1."),
+            ("!log(n, 2, 3)", "to 'log', expected 1 or 2."),
+            ("!atan2(n)", "to 'atan2', expected 2."),
+        ],
+    )
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_builtin_function_arity_error(
+        self, caret_spec: str, expected: str, *, simplify_expression: bool
+    ) -> None:
+        expr, expected_caret = _caret_template(caret_spec)
+        error_msg = psu.validate_string_as_sympy(
+            expr, self.VARIABLES, simplify_expression=simplify_expression
+        )
+        assert error_msg is not None
+        assert f"wrong number of arguments {expected}" in error_msg
+        match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+        assert match is not None
+        assert match.group(1) == expected_caret
+
+    @pytest.mark.parametrize("expr", ["log(n, 2)", "atan2(n, 1)", "max(n, 1, 2)"])
+    def test_builtin_function_valid_arity(self, expr: str) -> None:
+        assert psu.validate_string_as_sympy(expr, self.VARIABLES) is None
 
 
 @pytest.mark.parametrize(
