@@ -131,9 +131,11 @@ describe('AI grading model discovery', () => {
   });
 
   it.each([
+    [400, 'request_rejected'],
     [401, 'authentication'],
     [403, 'authentication'],
     [404, 'not_found'],
+    [422, 'request_rejected'],
     [429, 'rate_limit'],
     [500, 'provider_error'],
   ])('classifies HTTP %s without exposing the response', async (status, code) => {
@@ -145,7 +147,13 @@ describe('AI grading model discovery', () => {
       async (baseUrl, options) => {
         await expect(
           discoverAiGradingModels({ baseUrl, apiKey: 'test-key' }, options),
-        ).rejects.toMatchObject({ code });
+        ).rejects.toMatchObject({
+          code,
+          ...(code === 'request_rejected' && {
+            message:
+              'The provider rejected the models request. Check the API base URL and provider configuration.',
+          }),
+        });
       },
     );
   });
