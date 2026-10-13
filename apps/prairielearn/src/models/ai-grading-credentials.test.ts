@@ -77,7 +77,7 @@ describe('custom AI grading credential constraints', () => {
       { assessment_question_id },
       z.object({
         ai_grading_last_selected_credential_id: IdSchema.nullable(),
-        ai_grading_last_selected_model: z.string(),
+        ai_grading_last_selected_model: z.string().nullable(),
       }),
     );
     assert.equal(remembered.ai_grading_last_selected_credential_id, null);
@@ -122,10 +122,11 @@ describe('custom AI grading credential constraints', () => {
       { assessment_question_id },
       z.object({
         ai_grading_last_selected_credential_id: IdSchema.nullable(),
-        ai_grading_last_selected_model: z.string(),
+        ai_grading_last_selected_model: z.string().nullable(),
       }),
     );
     assert.equal(remembered.ai_grading_last_selected_credential_id, credential.id);
+    assert.equal(remembered.ai_grading_last_selected_model, 'custom-test-model');
     assert.deepEqual(
       await selectAuditEvents({ ...auditParams, table_names: [...auditParams.table_names] }),
       before,
@@ -142,10 +143,11 @@ describe('custom AI grading credential constraints', () => {
       { assessment_question_id },
       z.object({
         ai_grading_last_selected_credential_id: IdSchema.nullable(),
-        ai_grading_last_selected_model: z.string(),
+        ai_grading_last_selected_model: z.string().nullable(),
       }),
     );
     assert.equal(cleared.ai_grading_last_selected_credential_id, null);
+    assert.equal(cleared.ai_grading_last_selected_model, null);
     await deleteCredential({
       credential_id: replacement.id,
       course_instance_id: '1',

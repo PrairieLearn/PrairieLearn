@@ -74,6 +74,9 @@ export async function deleteCredential({
     if (existing?.provider === 'openai-compatible') {
       await execute(sql.lock_course_instance, { course_instance_id });
     }
+    if (existing?.provider === 'openai-compatible') {
+      await execute(sql.clear_remembered_custom_model, { credential_id });
+    }
     const deleted = await queryOptionalRow(
       sql.delete_credential,
       { credential_id, course_instance_id },

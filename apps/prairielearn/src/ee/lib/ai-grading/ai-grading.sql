@@ -47,3 +47,12 @@ VALUES
   )
 RETURNING
   id;
+
+-- BLOCK lock_course_instance_for_custom_provider
+SELECT
+  id
+FROM
+  course_instances
+WHERE
+  id = $course_instance_id
+FOR KEY SHARE;
