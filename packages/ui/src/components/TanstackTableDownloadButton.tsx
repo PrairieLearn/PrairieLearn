@@ -55,7 +55,7 @@ export function TanstackTableDownloadButton<RowDataModel extends RowData>({
   const allRowsCsv = allRows.map(mapRowToData).filter((row) => row !== null);
   const filteredRows = table.getRowModel().rows.map((row) => row.original);
   const filteredRowsCsv = filteredRows.map(mapRowToData).filter((row) => row !== null);
-  const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
+  const selectedRows = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
   const selectedRowsCsv = selectedRows.map(mapRowToData).filter((row) => row !== null);
 
   function downloadCsvCellsAsCSV(csvRows: TanstackTableCsvCell[][], filename: string): void {
