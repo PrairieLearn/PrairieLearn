@@ -33,7 +33,7 @@ For outputs that also need metadata from the paginated page, use `renderer.rende
 
 The Word document contains native paragraphs, lists, tables, answer spaces, hyperlinks, and Office Math equations. Only actual figures (images, SVG diagrams, and canvases) are captured as images. Question content is captured before pagination, so Word can reflow edited text and its page count can differ from the PDF. The sheet size and margins follow the printable page's CSS. Printable details boxes retain their heading and content. Response guidance appears below its answer line, with surrounding labels and units kept in separate table cells.
 
-The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docxContent.ts` maps the source to native Word objects, and `printDocxClient.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
+The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docx-content.ts` maps the source to native Word objects, and `print-docx-client.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
 
 `htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
 

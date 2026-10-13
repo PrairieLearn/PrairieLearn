@@ -3,7 +3,7 @@ import { Document, Packer } from 'docx';
 import JSZip from 'jszip';
 import { expect, it } from 'vitest';
 
-import { buildDocxContent } from './docxContent.js';
+import { buildDocxContent } from './docx-content.js';
 
 it('preserves mathematical symbols and XML punctuation in native Office Math', async () => {
   const mathml =

@@ -1,4 +1,4 @@
-import type { PrintableCover } from './printableCover.js';
+import type { PrintableCover } from './printable-cover.js';
 
 export interface DocxSource {
   html: string;
