@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 4.1.2
+
+### Patch Changes
+
+- 4e683bf: Respect table filters when downloading selected rows as CSV or JSON, including the selected download count.
+
 ## 4.1.1
 
 ### Patch Changes
