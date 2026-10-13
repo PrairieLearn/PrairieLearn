@@ -721,6 +721,7 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   const students = modal.getByLabel('Number of students', { exact: true });
   const submit = modal.getByRole('button', { name: 'Download booklet PDF', exact: true });
   await expect(students).toBeFocused();
+  const defaultStudentCount = await students.inputValue();
   for (const value of ['', '0', '1.5', '501']) {
     await students.fill(value);
     await submit.click();
@@ -736,7 +737,7 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   await modal.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(modal).toHaveCount(0);
   await chooseDownload(page, 'Download booklet PDF…');
-  await expect(students).toHaveValue('1');
+  await expect(students).toHaveValue(defaultStudentCount);
   await students.fill('2');
 
   const requested = withResolvers<undefined>();
