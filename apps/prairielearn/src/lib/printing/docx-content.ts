@@ -21,7 +21,7 @@ import {
 } from 'docx';
 import { mml2omml } from 'mathml2omml';
 
-import type { DocxSource } from './docxBrowser.js';
+import type { DocxSource } from './docx-browser.js';
 
 type HtmlNode = ReturnType<ReturnType<typeof load>>['0'];
 type HtmlElement = Extract<HtmlNode, { type: 'tag' | 'script' | 'style' }>;

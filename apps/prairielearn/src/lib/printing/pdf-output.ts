@@ -1,5 +1,5 @@
-import { type PageCodeOptions, addPdfPageCodes } from './pageCode.js';
-import type { PrintablePageOutput } from './printablePageOutput.js';
+import { type PageCodeOptions, addPdfPageCodes } from './page-code.js';
+import type { PrintablePageOutput } from './printable-page-output.js';
 
 export const PAPER_SIZES = ['Letter', 'A4'] as const;
 export type PaperSize = (typeof PAPER_SIZES)[number];

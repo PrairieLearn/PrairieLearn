@@ -8,7 +8,7 @@ The rendering browser lays out and paginates question HTML. PDF exports use its 
 
 ```ts
 import { closePrintRenderer, getPrintRenderer } from '../printing.js';
-import { createDocxOutput } from './docxOutput.js';
+import { createDocxOutput } from './docx-output.js';
 
 const renderer = getPrintRenderer();
 const pdf = await renderer.renderPdf({ url: previewUrl, html: paginatedHtml });
@@ -35,7 +35,7 @@ For outputs that also need metadata from the paginated page, use `renderer.rende
 
 The Word document contains native paragraphs, lists, tables, answer spaces, hyperlinks, and Office Math equations. Only actual figures (images, SVG diagrams, and canvases) are captured as images. Question content is captured before pagination, so Word can reflow edited text and its page count can differ from the PDF. The sheet size and margins follow the printable page's CSS. Printable details boxes retain their heading and content. Response guidance appears below its answer line, with surrounding labels and units kept in separate table cells.
 
-The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docxContent.ts` maps the source to native Word objects, and `printDocxClient.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
+The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docx-content.ts` maps the source to native Word objects, and `print-docx-client.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
 
 `cover` may be a function; it receives the page's root `data-*` attributes so that values which are only known after rendering, such as the number of questions that rendered successfully, can be placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
 
@@ -43,7 +43,7 @@ Omit the `cover` option to start with questions on the first page.
 
 ### Page identification codes
 
-`renderPdf` accepts `pageCode: { encodePage(pageNumber) }`. After pagination, it generates a QR code for each physical page, including the cover, using the caller's versioned payload. The template must reserve a bottom-left margin box and enough space for the code and its quiet zone. Browser previews use `addPreviewPageCodes` from `pageCode.ts` to display the same codes before reporting that the document is ready. Each preview has its own timestamp and export UUID; PDF exports replace those codes with their final export identity. The PrairieLearn template reserves 0.7 inches below the content for a 0.35-inch vector code, including its four-module quiet zone. This is about 10% of the original 1.1-inch code's area. The coverage exam's codes decode from 300 and 600 DPI PDF rasterizations, but not at 150 DPI. Physical print-and-scan validation is still needed; longer metadata produces denser codes at the same printed size and should be checked with the intended printer and scanner.
+`renderPdf` accepts `pageCode: { encodePage(pageNumber) }`. After pagination, it generates a QR code for each physical page, including the cover, using the caller's versioned payload. The template must reserve a bottom-left margin box and enough space for the code and its quiet zone. Browser previews use `addPreviewPageCodes` from `page-code.ts` to display the same codes before reporting that the document is ready. Each preview has its own timestamp and export UUID; PDF exports replace those codes with their final export identity. The PrairieLearn template reserves 0.7 inches below the content for a 0.35-inch vector code, including its four-module quiet zone. This is about 10% of the original 1.1-inch code's area. The coverage exam's codes decode from 300 and 600 DPI PDF rasterizations, but not at 150 DPI. Physical print-and-scan validation is still needed; longer metadata produces denser codes at the same printed size and should be checked with the intended printer and scanner.
 
 PrairieLearn's `pl:print:1:` payload identifies the course, assessment, assessment instance, one-based physical page, authenticated generating user (ID, UID, and nullable name), UTC generation timestamp, document kind, output format, and a UUID for that export. IDs remain strings to preserve PostgreSQL bigint precision. All pages in one export share its timestamp and UUID. `decodePrintPageIdentity` validates the version and fields for future scanning workflows; decoded metadata is untrusted and does not authenticate the document or authorize database access.
 
@@ -79,13 +79,13 @@ This sets a half-page default and allows Question 3 to size itself automatically
 
 ## Combining question fragments
 
-Questions are normally rendered in separate documents, so author- and element-generated IDs can repeat between questions. Before combining fragments in a preview or print document, use `namespaceQuestionHtmls` with a stable, unique namespace for each question. It renames IDs repeated across fragments and supported references in the rendered HTML: ID-reference attributes, inline `style` attributes and `<style>` blocks, and literal `getElementById`, `querySelector`, `querySelectorAll`, `closest`, `matches`, and `$` calls in inline scripts. Formula-editor symbolic inputs and sketch inputs also have their base name and initializer namespaced because their client renderers derive element IDs from those names.
+Questions are normally rendered in separate documents, so author-generated IDs can repeat between questions. Built-in formula-editor symbolic inputs and sketch inputs generate unique DOM IDs when rendered while keeping their answer names stable. Before combining fragments in a preview or print document, use `namespaceQuestionHtmls` with a stable, unique namespace for each question. It renames IDs repeated across fragments and supported references in the rendered HTML: ID-reference attributes, inline `style` attributes and `<style>` blocks, and literal `getElementById`, `querySelector`, `querySelectorAll`, `closest`, `matches`, and `$` calls in inline scripts.
 
-The helper does not read external CSS or JavaScript files. IDs referenced from those files must be unique across the combined fragments. If an ID collides, the HTML ID is renamed but the external reference stays the same; the helper cannot detect or report the broken reference. It rejects duplicate IDs within one fragment and any duplicate IDs left after namespacing.
+The helper does not read external CSS or JavaScript files. IDs referenced from those files must be unique across the combined fragments. If an ID collides, the HTML ID is renamed but the external reference stays the same; the helper cannot detect or report the broken reference. Custom course elements remain best-effort for printable exams, so preview the output before printing. The helper rejects duplicate IDs within one fragment and any duplicate IDs left after namespacing.
 
 ## Browser transformations
 
-The application owns the browser transforms in `apps/prairielearn/src/lib/client/print-response-controls.ts`; `examPrintingClient.ts` coordinates readiness, answer presentation, and pagination. Transforms run only inside question bodies, after element initialization and before measuring pages.
+The application owns the browser transforms in `apps/prairielearn/src/lib/client/print-response-controls.ts`; `exam-printing-client.ts` coordinates readiness, answer presentation, and pagination. Transforms run only inside question bodies, after element initialization and before measuring pages.
 
 Generic input placeholders such as "symbolic expression", "integer", and "matrix" do not become printed labels. Preserve custom instructions, useful precision guidance, number bases, and whether a blank answer is allowed. Omit grading tolerances that do not help students fill in the paper response.
 

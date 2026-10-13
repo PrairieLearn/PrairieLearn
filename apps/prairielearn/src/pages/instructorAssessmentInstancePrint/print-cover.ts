@@ -3,7 +3,7 @@ import {
   type PrintableCoverField,
   type PrintableTextBlock,
   htmlToTextBlocks,
-} from '../../lib/printing/printableCover.js';
+} from '../../lib/printing/printable-cover.js';
 import type { PrintDocument } from '../../lib/printing.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
