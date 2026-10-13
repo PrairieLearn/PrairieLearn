@@ -1,5 +1,11 @@
 # @prairielearn/pin-github-actions
 
+## 1.0.3
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 1.0.2
 
 ### Patch Changes

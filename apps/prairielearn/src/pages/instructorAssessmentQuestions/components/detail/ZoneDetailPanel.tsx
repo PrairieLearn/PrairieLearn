@@ -2,7 +2,10 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { CalculatorPreviewButton } from '../../../../components/CalculatorPreviewButton.js';
+import { CalculatorTypeInput } from '../../../../components/CalculatorTypeInput.js';
 import {
+  type CalculatorType,
   type EnumAssessmentTool,
   EnumAssessmentToolSchema,
 } from '../../../../schemas/infoAssessment.js';
@@ -34,6 +37,7 @@ type ToolFormFields = Record<`tool_${EnumAssessmentTool}`, boolean | undefined>;
 
 interface ZoneFormData extends ToolFormFields {
   title: string;
+  calculatorType?: CalculatorType;
   maxPoints?: number;
   numberChoose?: number;
   bestQuestions?: number;
@@ -68,6 +72,7 @@ export function ZoneDetailPanel({
     assessmentType,
     assessmentDefaults,
     assessmentToolDefaults,
+    assessmentCalculatorType,
     groupsConfigured,
     groupRoles,
     assessmentCanView,
@@ -76,6 +81,7 @@ export function ZoneDetailPanel({
   } = state;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
+    calculatorType: zone.tools?.calculator?.type,
     maxPoints: zone.maxPoints ?? undefined,
     numberChoose: zone.numberChoose ?? undefined,
     bestQuestions: zone.bestQuestions ?? undefined,
@@ -126,12 +132,12 @@ export function ZoneDetailPanel({
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
-      const tools: Partial<Record<EnumAssessmentTool, { enabled: boolean }>> = {};
+      const tools: ZoneAssessmentForm['tools'] = {};
       let hasToolOverride = false;
       for (const tool of EnumAssessmentToolSchema.options) {
         const value = coerceToBoolean(data[`tool_${tool}`]);
         if (value != null) {
-          tools[tool] = { enabled: value };
+          tools[tool] = { enabled: value, type: data.calculatorType };
           hasToolOverride = true;
         }
       }
@@ -335,34 +341,63 @@ export function ZoneDetailPanel({
           const isInherited = !overriddenTools.has(tool);
           const watchedValue = watch(fieldName);
           return (
-            <InheritableCheckboxField
+            <div
               key={tool}
-              id={`${idPrefix}-tool-${tool}`}
-              label={toolLabel}
-              helpText={`Override the assessment-level ${toolLabel.toLowerCase()} setting for this zone.`}
-              editMode={editMode}
-              isInherited={isInherited}
-              inheritedValue={inheritedValue}
-              inheritedFromLabel="assessment"
-              viewValue={!isInherited ? !!watchedValue : undefined}
-              registerProps={register(fieldName, { setValueAs: coerceToBoolean })}
-              showResetButton={!isInherited}
-              onOverride={() => {
-                setOverriddenTools((prev) => new Set(prev).add(tool));
-                setValue(fieldName, inheritedValue, { shouldDirty: true });
-              }}
-              onReset={() => {
-                setOverriddenTools((prev) => {
-                  const next = new Set(prev);
-                  next.delete(tool);
-                  return next;
-                });
-                resetAndSave(fieldName);
-              }}
-            />
+              className="d-flex flex-wrap align-items-center justify-content-between gap-3"
+            >
+              <InheritableCheckboxField
+                id={`${idPrefix}-tool-${tool}`}
+                label={toolLabel}
+                helpText={`Override the assessment-level ${toolLabel.toLowerCase()} setting for this zone.`}
+                editMode={editMode}
+                isInherited={isInherited}
+                inheritedValue={inheritedValue}
+                inheritedFromLabel="assessment"
+                viewValue={!isInherited ? !!watchedValue : undefined}
+                registerProps={register(fieldName, { setValueAs: coerceToBoolean })}
+                showResetButton={!isInherited}
+                onOverride={() => {
+                  setOverriddenTools((prev) => new Set(prev).add(tool));
+                  setValue('calculatorType', assessmentCalculatorType, {
+                    shouldDirty: true,
+                  });
+                  setValue(fieldName, inheritedValue, { shouldDirty: true });
+                }}
+                onReset={() => {
+                  setOverriddenTools((prev) => {
+                    const next = new Set(prev);
+                    next.delete(tool);
+                    return next;
+                  });
+                  setValue('calculatorType', undefined);
+                  resetAndSave(fieldName);
+                }}
+              />
+              {(isInherited ? inheritedValue : watchedValue) && (
+                <CalculatorPreviewButton
+                  type={
+                    isInherited
+                      ? (assessmentCalculatorType ?? 'advanced')
+                      : (watch('calculatorType') ?? 'advanced')
+                  }
+                />
+              )}
+            </div>
           );
         })}
       </Wrapper>
+      {(watch('tool_calculator') ?? assessmentToolDefaults.calculator) && (
+        <CalculatorTypeInput
+          id={`${idPrefix}-calculator-type`}
+          value={
+            overriddenTools.has('calculator')
+              ? (watch('calculatorType') ?? 'advanced')
+              : (assessmentCalculatorType ?? 'advanced')
+          }
+          disabled={!editMode || !overriddenTools.has('calculator')}
+          onChange={(value) => setValue('calculatorType', value, { shouldDirty: true })}
+        />
+      )}
       {mixedToolsWarning && (
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />

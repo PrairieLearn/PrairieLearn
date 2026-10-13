@@ -23,16 +23,16 @@
     "@prairielearn/zod": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.3",
-    "filesize": "^11.0.22",
-    "socket.io": "^4.8.3",
-    "zod": "^4.4.3"
+    "filesize": "^11.0.24",
+    "socket.io": "^4.8.4",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.2",
     "typescript-cp": "^0.1.11",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.2"
   }
 }

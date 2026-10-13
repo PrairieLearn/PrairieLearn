@@ -85,7 +85,6 @@ export async function openWorkspaceGradedFiles(
 
     return {
       [Symbol.iterator]: () => files[Symbol.iterator](),
-      // eslint-disable-next-line unicorn/no-nonstandard-builtin-properties -- Supported in Node 24.
       [Symbol.asyncDispose]: () => closeWorkspaceGradedFiles(files),
     };
   } catch (error) {

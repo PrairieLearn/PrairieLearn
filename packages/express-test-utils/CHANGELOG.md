@@ -1,5 +1,11 @@
 # @prairielearn/express-test-utils
 
+## 2.0.15
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 2.0.14
 
 ### Patch Changes

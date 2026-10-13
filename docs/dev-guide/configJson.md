@@ -22,6 +22,12 @@ A full list of properties can be found in [`lib/config.ts`](https://github.com/P
 
 Secrets that support application-managed rotation can be configured as an ordered, nonempty array while retaining scalar compatibility. See [Rotating application-managed keys](keyRotation.md) for supported properties and the required deployment sequence.
 
+## Instructor support links
+
+The **Get help** dialog provides documentation and email support for course staff. Set `supportSlackUrl` to the Slack invitation URL and `supportOfficeHoursUrl` to the Zoom office-hours URL to include those options. Both require HTTPS and default to `null`, which hides the corresponding option. Keep invitation and meeting URLs in deployment configuration rather than public source files.
+
+Configure and deploy these links before removing the existing links from your public support site.
+
 ## Setting Course Directories
 
 The default course directories to be loaded by PrairieLearn can be overridden with the `"courseDirs"` setting. This setting takes a list of paths to load that are located _in the Docker container_.

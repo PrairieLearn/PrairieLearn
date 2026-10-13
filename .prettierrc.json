@@ -10,5 +10,8 @@
     "prettier-plugin-sh",
     "prettier-plugin-toml"
   ],
-  "overrides": [{ "files": "*.jsonc", "options": { "trailingComma": "none" } }]
+  "overrides": [
+    { "files": "*.jsonc", "options": { "trailingComma": "none" } },
+    { "files": "*.toml", "options": { "singleQuote": false } }
+  ]
 }

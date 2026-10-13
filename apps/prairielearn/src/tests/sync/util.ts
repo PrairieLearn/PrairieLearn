@@ -360,7 +360,7 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
  * @param schema - The schema of the table to query
  * @returns The rows of the given table
  */
-export async function dumpTableWithSchema<Schema extends z.ZodType>(
+export async function dumpTableWithSchema<Schema extends z.core.$ZodType>(
   tableName: string,
   schema: Schema,
 ): Promise<z.infer<Schema>[]> {

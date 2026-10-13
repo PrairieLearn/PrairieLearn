@@ -1,0 +1,37 @@
+#content:has(.instance-question-manual-grading) {
+  display: flex;
+  flex-direction: column;
+}
+
+.instance-question-manual-grading {
+  min-height: 0;
+  container-name: manual-grading;
+  container-type: inline-size;
+}
+
+.instance-question-manual-grading-panes {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.instance-question-manual-grading-question,
+.instance-question-manual-grading-sidebar {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@container manual-grading (max-width: 1099.98px) {
+  /* Stacked content scrolls in PageLayout's main container instead of each pane. */
+  .instance-question-manual-grading-panes {
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  .instance-question-manual-grading-question,
+  .instance-question-manual-grading-sidebar {
+    overflow-y: visible;
+  }
+}

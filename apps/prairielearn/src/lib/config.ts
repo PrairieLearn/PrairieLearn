@@ -50,6 +50,9 @@ function makeKeyRingSchema(keySchema: z.ZodString) {
 const KeyRingSchema = makeKeyRingSchema(z.string());
 const DatabaseEncryptionKeyRingSchema = makeKeyRingSchema(z.string().regex(/^[0-9a-f]{64}$/i));
 
+// startsWith replaces Zod's URL format, so restore it for generated JSON Schema.
+const HttpsUrlSchema = z.url().startsWith('https://').meta({ format: 'uri' });
+
 export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
@@ -248,6 +251,10 @@ export const ConfigSchema = z.object({
   // Slack webhook URLs contain credentials and must be handled as secrets.
   slackOpsWebhookUrl: z.string().nullable().default(null),
   slackCourseRequestWebhookUrl: z.string().nullable().default(null),
+  /** Slack invitation shown to course staff in the Get help dialog. */
+  supportSlackUrl: HttpsUrlSchema.nullable().default(null),
+  /** Zoom office-hours link shown to course staff in the Get help dialog. */
+  supportOfficeHoursUrl: HttpsUrlSchema.nullable().default(null),
   githubClientToken: z.string().nullable().default(null),
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
@@ -684,6 +691,8 @@ export const ConfigSchema = z.object({
       'gpt-5.4-mini-2026-03-17': TokenPricingSchema,
       'gpt-5.4-2026-03-05': TokenPricingSchema,
       'gpt-5.6-luna': TokenPricingSchema,
+      'gpt-6-luna': TokenPricingSchema,
+      'gpt-6-sol': TokenPricingSchema,
       'gpt-5.6-terra': TokenPricingSchema,
       'gpt-5.6-sol': TokenPricingSchema,
       'gpt-6-astra': TokenPricingSchema,
@@ -699,7 +708,7 @@ export const ConfigSchema = z.object({
       'claude-fable-5-1': TokenPricingSchema,
     })
     .default({
-      // Prices current as of 2026-09-05. Values obtained from
+      // Prices current as of 2026-09-26. Values obtained from
       // https://developers.openai.com/api/docs/pricing
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
@@ -710,6 +719,8 @@ export const ConfigSchema = z.object({
       'gpt-5.6-terra': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 12 },
       'gpt-5.6-sol': { input: 4, cachedInput: 0.4, cacheWrite: 5, output: 20 },
       'gpt-6-astra': { input: 10, cachedInput: 1, cacheWrite: 12.5, output: 50 },
+      'gpt-6-luna': { input: 0.1, cachedInput: 0.01, cacheWrite: 0.125, output: 0.5 },
+      'gpt-6-sol': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 10 },
 
       // Prices current as of 2026-09-05. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing

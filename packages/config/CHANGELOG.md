@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 5.1.3
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 5.1.2
 
 ### Patch Changes

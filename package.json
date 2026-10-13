@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "engines": {
-    "node": ">=24.0.0",
+    "node": ">=24.15.0",
     "pnpm": "^11.19.0"
   },
   "devEngines": {
@@ -17,7 +17,7 @@
     },
     "runtime": {
       "name": "node",
-      "version": ">=24.0.0"
+      "version": ">=24.15.0"
     }
   },
   "scripts": {
@@ -43,40 +43,40 @@
     "async": "^3.2.6"
   },
   "devDependencies": {
-    "@changesets/cli": "^3.0.0",
-    "@html-eslint/eslint-plugin": "^0.64.0",
-    "@html-eslint/parser": "^0.64.0",
-    "@playwright/test": "^1.62.1",
+    "@changesets/cli": "^3.0.3",
+    "@html-eslint/eslint-plugin": "^0.66.1",
+    "@html-eslint/parser": "^0.66.1",
+    "@playwright/test": "^1.63.0",
     "@postgres-language-server/cli": "^0.25.7",
     "@prairielearn/eslint-config": "workspace:^",
     "@prairielearn/pin-github-actions": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tree-sitter-htmlmustache": "^1.4.3",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.0",
-    "dependency-cruiser": "^17.4.3",
-    "eslint": "^10.8.1",
+    "@vitest/coverage-v8": "^5.0.2",
+    "dependency-cruiser": "^18.4.0",
+    "eslint": "^10.11.0",
     "fast-glob": "^3.3.3",
-    "fs-extra": "^11.4.0",
-    "globals": "^17.9.0",
-    "globby": "^16.2.3",
+    "fs-extra": "^11.4.1",
+    "globals": "^17.12.0",
+    "globby": "^16.2.4",
     "htmlhint": "^1.9.2",
-    "ignore": "^7.0.6",
-    "knip": "^6.32.0",
-    "linkinator": "^7.6.1",
-    "markdownlint-cli2": "^0.23.2",
-    "prettier": "^3.9.7",
+    "ignore": "^7.0.10",
+    "knip": "^6.38.0",
+    "linkinator": "^8.1.0",
+    "markdownlint-cli2": "^0.23.3",
+    "prettier": "^3.9.9",
     "prettier-plugin-pkg": "^0.22.1",
-    "prettier-plugin-sh": "^0.19.0",
+    "prettier-plugin-sh": "^0.20.2",
     "prettier-plugin-sql": "^0.20.0",
-    "prettier-plugin-toml": "^2.0.6",
-    "pyright": "^1.1.411",
+    "prettier-plugin-toml": "^3.0.2",
+    "pyright": "^1.1.414",
     "s3rver": "^3.7.1",
-    "turbo": "^2.10.9",
+    "turbo": "^2.11.5",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vitest": "^5.0.0",
-    "zod": "^4.4.3"
+    "vitest": "^5.0.2",
+    "zod": "^4.6.5"
   }
 }

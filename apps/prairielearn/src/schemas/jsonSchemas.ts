@@ -81,7 +81,7 @@ for (const [id, schema] of Object.entries(namedDefinitions)) {
   z.globalRegistry.add(schema, { ...z.globalRegistry.get(schema), id });
 }
 
-function prairielearnZodToJsonSchema(schema: z.ZodType): Record<string, any> {
+function prairielearnZodToJsonSchema(schema: z.core.$ZodType): Record<string, any> {
   return z.toJSONSchema(schema, {
     target: 'draft-07',
     io: 'input',

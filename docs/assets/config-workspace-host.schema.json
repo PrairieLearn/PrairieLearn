@@ -8,14 +8,7 @@
     },
     "postgresqlPassword": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "postgresqlDatabase": {
       "default": "postgres",
@@ -46,34 +39,13 @@
               "type": "boolean"
             },
             "ca": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": ["string", "null"]
             },
             "key": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": ["string", "null"]
             },
             "cert": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": ["string", "null"]
             }
           },
           "additionalProperties": false
@@ -99,14 +71,7 @@
     },
     "cacheImageRegistry": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "awsRegion": {
       "default": "us-east-2",
@@ -122,14 +87,7 @@
     },
     "sentryDsn": {
       "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "sentryEnvironment": {
       "default": "development",
@@ -154,6 +112,11 @@
     "workspaceHostPruneContainersSec": {
       "default": 60,
       "type": "number"
+    },
+    "workspaceHostMinAvailableDiskMB": {
+      "default": 10000,
+      "type": "number",
+      "minimum": 0
     },
     "workspaceHostMinPortRange": {
       "default": 1024,
@@ -229,14 +192,7 @@
     },
     "workspaceLogsS3Bucket": {
       "default": "workspace-logs",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"]
     },
     "workspaceStartTimeoutSec": {
       "default": 30,
