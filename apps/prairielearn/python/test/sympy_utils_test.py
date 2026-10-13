@@ -73,6 +73,27 @@ def test_evaluate_does_not_mutate_locals() -> None:
     }
 
 
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_evaluate_with_set_variables(*, simplify_expression: bool) -> None:
+    locals_for_eval: psu.LocalsForEval = {
+        "functions": {},
+        "variables": {
+            "A": sympy.FiniteSet(1, 2),
+            "B": sympy.FiniteSet(2, 3),
+        },
+        "helpers": {},
+    }
+
+    result, _ = psu.evaluate_with_source(
+        "A - B",
+        locals_for_eval,
+        allow_sets=True,
+        simplify_expression=simplify_expression,
+    )
+
+    assert result == sympy.FiniteSet(1)
+
+
 class TestSympy:
     SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
@@ -211,6 +232,11 @@ class TestSympy:
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
         ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
         ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
+        ("{m} - {n}", sympy.Complement(sympy.FiniteSet(M), sympy.FiniteSet(N))),
+        (
+            "[0, 1] - {m}",
+            sympy.Complement(sympy.Interval(0, 1), sympy.FiniteSet(M)),
+        ),
         (
             "({m, 3} U (m + 1, 4])",
             sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
@@ -310,6 +336,53 @@ class TestSympy:
             custom_functions=self.FUNCTION_NAMES,
         )
 
+    @pytest.mark.parametrize(
+        ("a_sub", "sympy_ref"),
+        [
+            ("{1} U {2}", sympy.FiniteSet(1, 2)),
+            ("{1} cup {2}", sympy.FiniteSet(1, 2)),
+            ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("{1} | {2}", sympy.FiniteSet(1, 2)),
+            ("{1, 2} cap {2}", sympy.FiniteSet(2)),
+            ("{1, 2} ∩ {2}", sympy.FiniteSet(2)),
+            ("{1, 2} & {2}", sympy.FiniteSet(2)),
+            ("{1} + {2}", sympy.FiniteSet(1, 2)),
+            ("{1, 2} - {2}", sympy.FiniteSet(1)),
+            (
+                "({1} U {2}) - ({2} & {2, 3})",
+                sympy.FiniteSet(1),
+            ),
+        ],
+    )
+    def test_set_operations_without_simplification(
+        self, a_sub: str, sympy_ref: sympy.Set
+    ) -> None:
+        assert sympy_ref == psu.convert_string_to_sympy(
+            a_sub,
+            simplify_expression=False,
+            allow_sets=True,
+        )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize(
+        ("a_sub", "sympy_ref"),
+        [
+            (
+                "Reals - {0}",
+                sympy.Complement(sympy.S.Reals, sympy.FiniteSet(0)),
+            ),
+            ("Integers & [0, 2]", sympy.Range(0, 3)),
+        ],
+    )
+    def test_named_set_domains(
+        self, a_sub: str, sympy_ref: sympy.Set, *, simplify_expression: bool
+    ) -> None:
+        assert sympy_ref == psu.convert_string_to_sympy(
+            a_sub,
+            simplify_expression=simplify_expression,
+            allow_sets=True,
+        )
+
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
@@ -360,6 +433,52 @@ class TestSympy:
             allow_sets=True,
             custom_functions=list(self.FUNCTION_NAMES),
         )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize(
+        "operator",
+        [
+            "U",
+            "cup",
+            "∪",  # ruff:ignore[ambiguous-unicode-character-string]
+            "|",
+            "cap",
+            "∩",
+            "&",
+        ],
+    )
+    def test_set_operators_reject_scalar_variables(
+        self, operator: str, *, simplify_expression: bool
+    ) -> None:
+        text = f"x {operator} y"
+        result = psu.try_parse_string_as_sympy(
+            text,
+            ["x", "y"],
+            allow_sets=True,
+            simplify_expression=simplify_expression,
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "expecting a set, but got a number" in result.error
+        assert (
+            f"<pre>{psu.point_to_error(text, text.index(operator))}</pre>"
+            in result.error
+        )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_set_operators_accept_sets_containing_scalar_variables(
+        self, *, simplify_expression: bool
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "{x} U {y}",
+            ["x", "y"],
+            allow_sets=True,
+            simplify_expression=simplify_expression,
+        )
+
+        x, y = sympy.symbols("x y")
+        assert isinstance(result, psu.SympyParseSuccess)
+        assert result.expr == sympy.FiniteSet(x, y)
 
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
         result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)
@@ -487,6 +606,7 @@ class TestSympy:
             ("Interval", (0, 1)),
             ("Union", (sympy.EmptySet, sympy.EmptySet)),
             ("Intersection", (sympy.EmptySet, sympy.EmptySet)),
+            ("Complement", (sympy.EmptySet, sympy.EmptySet)),
         ],
     )
     def test_sets_reserveds_respected_by_json_conversion(
@@ -518,6 +638,7 @@ class TestSympy:
             sympy.symbols("Interval"),
             sympy.symbols("Union"),
             sympy.symbols("Intersection"),
+            sympy.symbols("Complement"),
         ],
     )
     def test_sets_disabled_reserveds_pass_json_conversion(
@@ -1015,6 +1136,9 @@ class TestExceptions:
         "!Intersection(1, 2)",
         "!Intersection({}, 2)",
         "!Intersection( )",
+        "!Complement(1, 2)",
+        "!Complement({1})",
+        "!Complement({1}, {2}, {3})",
         "1 !U 2",
         "1 !| 2",
         "1 !cup 2",
@@ -1075,6 +1199,41 @@ class TestExceptions:
             match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
             assert match is not None, f"error message has no caret: {error_msg}"
             assert expected_caret == match.group(1)
+
+    @pytest.mark.parametrize(
+        "caret_spec",
+        [
+            "x !+ Reals",
+            "x !- Reals",
+            "x !* Reals",
+            "Reals !/ x",
+            "Reals !^ 2",
+            "!sin(Reals)",
+            "!abs(Reals)",
+            "!-Reals",
+        ],
+    )
+    def test_mixed_scalar_set_errors_are_independent_of_simplification(
+        self, caret_spec: str
+    ) -> None:
+        expr, expected_caret = _caret_template(caret_spec)
+        simplified_error = psu.validate_string_as_sympy(
+            expr,
+            ["x"],
+            allow_sets=True,
+        )
+        unsimplified_error = psu.validate_string_as_sympy(
+            expr,
+            ["x"],
+            allow_sets=True,
+            simplify_expression=False,
+        )
+
+        assert unsimplified_error == simplified_error
+        assert simplified_error is not None
+        match = re.search(r"<pre>(.*?)</pre>", simplified_error, re.DOTALL)
+        assert match is not None
+        assert match.group(1) == expected_caret
 
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.

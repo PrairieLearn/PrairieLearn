@@ -12,7 +12,7 @@ import re
 import string
 import unicodedata
 from collections import deque
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
@@ -186,6 +186,7 @@ class _Constants:
         "FiniteSet": sympy.FiniteSet,
         "Union": sympy.Union,
         "Intersection": sympy.Intersection,
+        "Complement": sympy.Complement,
     })
 
     set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
@@ -374,6 +375,14 @@ class ASTSympyType(Enum):
         return self.value
 
 
+_SET_OPERATION_FUNCTIONS: Final[FrozenDict[type[ast.operator], str]] = FrozenDict({
+    ast.Add: "Union",
+    ast.Sub: "Complement",
+    ast.BitAnd: "Intersection",
+    ast.BitOr: "Union",
+})
+
+
 @dataclass
 class HasArgumentTypeError(BaseSympyError):
     fn: str
@@ -434,7 +443,9 @@ class CheckAST(ast.NodeVisitor):
     whitelist: ASTWhiteListT
     variables: SympyMapT
     functions: SympyFunctionMapT
+    resolved_names: Mapping[str, Any]
     __parents: dict[int, ast.AST]
+    __set_operations: set[ast.BinOp]
     __type_cache: dict[int, ASTSympyType | None]
 
     __unparsed_opstr: FrozenDict[type[ast.AST], str] = FrozenDict({
@@ -455,11 +466,14 @@ class CheckAST(ast.NodeVisitor):
         functions: SympyFunctionMapT,
         *,
         allow_sets: bool = False,
+        resolved_names: Mapping[str, Any] | None = None,
     ) -> None:
         self.whitelist = whitelist
         self.variables = variables
         self.functions = functions
+        self.resolved_names = variables if resolved_names is None else resolved_names
         self.__parents = {}
+        self.__set_operations = set()
         self.__type_cache = {}
         self.allow_sets = allow_sets
 
@@ -491,6 +505,11 @@ class CheckAST(ast.NodeVisitor):
         return node
 
     def check_expression(self, expr: str) -> None:
+        self._check_expression(expr)
+
+    def _check_expression(
+        self, expr: str
+    ) -> tuple[ast.Expression, frozenset[ast.BinOp]]:
         # Parse (convert string to AST)
         try:
             root = ast.parse(expr, mode="eval")
@@ -506,8 +525,10 @@ class CheckAST(ast.NodeVisitor):
         }
         try:
             self.visit(root)
+            return root, frozenset(self.__set_operations)
         finally:
             self.__parents = {}
+            self.__set_operations = set()
             self.__type_cache = {}
 
     def _set_type(
@@ -532,21 +553,20 @@ class CheckAST(ast.NodeVisitor):
         return self._set_type(node, ASTSympyType.SCALAR)
 
     def visit_Name(self, node: ast.Name) -> ASTSympyType | None:
-        if (
-            isinstance(node.ctx, ast.Load)
-            and not self.is_name_of_function(node)
-            and node.id not in self.variables
-        ):
-            err_node = self.get_parent_with_location(node)
-            if node.id in self.functions:
-                raise FunctionNameWithoutArgumentsError(
-                    err_node.col_offset, err_node.id
-                )
+        if not isinstance(node.ctx, ast.Load) or self.is_name_of_function(node):
             return self._set_type(node, None)
 
-        if node.id in self.variables:
-            var_type = None if self.allow_sets else ASTSympyType.SCALAR
-            return self._set_type(node, var_type)
+        is_variable = node.id in self.variables
+        if not is_variable and node.id in self.functions:
+            err_node = self.get_parent_with_location(node)
+            raise FunctionNameWithoutArgumentsError(err_node.col_offset, err_node.id)
+
+        if is_variable or node.id in self.resolved_names:
+            value = self.resolved_names.get(node.id, self.variables.get(node.id))
+            if self.allow_sets and isinstance(value, sympy.Set):
+                return self._set_type(node, ASTSympyType.SET)
+            if is_variable or isinstance(value, (sympy.Expr, complex)):
+                return self._set_type(node, ASTSympyType.SCALAR)
 
         return self._set_type(node, None)
 
@@ -591,6 +611,11 @@ class CheckAST(ast.NodeVisitor):
         if op_str is None:
             return self._set_type(node, None)
         inferred_type = self._infer_bin_op_type(op_str, node.left, node.right)
+        if (
+            inferred_type == ASTSympyType.SET
+            and type(node.op) in _SET_OPERATION_FUNCTIONS
+        ):
+            self.__set_operations.add(node)
         return self._set_type(node, inferred_type)
 
     def _enforce_signature(
@@ -633,6 +658,9 @@ class CheckAST(ast.NodeVisitor):
                     (2 * [ASTSympyType.SCALAR] + 2 * [ASTSympyType.BOOL]),
                 )
                 return ASTSympyType.SET
+            case "Complement":
+                self._enforce_signature(name, args, 2 * [ASTSympyType.SET])
+                return ASTSympyType.SET
             case "Union" | "Intersection":
                 if not args:
                     raise HasFunctionArityError(name, len(args), "1+")
@@ -650,8 +678,10 @@ class CheckAST(ast.NodeVisitor):
                 return ASTSympyType.SET
             case "-" | "+":
                 overloads = (2 * [ASTSympyType.SET]), (2 * [ASTSympyType.SCALAR])
-                left_type, _ = self._enforce_signature(op, (left, right), *overloads)
-                return left_type
+                left_type, right_type = self._enforce_signature(
+                    op, (left, right), *overloads
+                )
+                return left_type or right_type
             case "**" | "*" | "/" | "%":
                 self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SCALAR])
                 return ASTSympyType.SCALAR
@@ -662,13 +692,14 @@ class CheckAST(ast.NodeVisitor):
                 return None
 
 
-def ast_check_str(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_sets: bool = False
-) -> None:
-    """Check the AST of the expression for security, whitelisting only certain nodes.
-
-    This prevents the user from executing arbitrary code through `eval_expr`.
-    """
+def _ast_check_str(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_sets: bool = False,
+    resolved_names: Mapping[str, Any] | None = None,
+) -> tuple[ast.Expression, frozenset[ast.BinOp]]:
+    """Check an expression and return its parsed AST and validated set operations."""
     # Disallow AST nodes that are not in whitelist
     #
     # Be very careful about adding to the list below. In particular,
@@ -700,12 +731,53 @@ def ast_check_str(
         ast.BitOr,
     )
 
-    CheckAST(
+    if resolved_names is None:
+        local_names = {
+            name: value
+            for values in locals_for_eval.values()
+            for name, value in cast(Mapping[str, Any], values).items()
+        }
+        resolved_names = _SYMPY_GLOBALS | local_names
+
+    return CheckAST(
         whitelist,
         locals_for_eval["variables"],
         locals_for_eval["helpers"] | locals_for_eval["functions"],
         allow_sets=allow_sets,
-    ).check_expression(expr)
+        resolved_names=resolved_names,
+    )._check_expression(expr)
+
+
+def ast_check_str(
+    expr: str, locals_for_eval: LocalsForEval, *, allow_sets: bool = False
+) -> None:
+    """Check the AST of the expression for security, whitelisting only certain nodes.
+
+    This prevents the user from executing arbitrary code through `eval_expr`.
+    """
+    _ast_check_str(expr, locals_for_eval, allow_sets=allow_sets)
+
+
+class _SetOperationTransformer(ast.NodeTransformer):
+    """Rewrite only binary operations validated as set operations."""
+
+    def __init__(self, set_operations: frozenset[ast.BinOp]) -> None:
+        self._set_operations = set_operations
+
+    def visit_BinOp(self, node: ast.BinOp) -> ast.AST:
+        node = cast(ast.BinOp, self.generic_visit(node))
+        if node not in self._set_operations:
+            return node
+
+        function_name = _SET_OPERATION_FUNCTIONS[type(node.op)]
+        return ast.copy_location(
+            ast.Call(
+                func=ast.Name(id=function_name, ctx=ast.Load()),
+                args=[node.left, node.right],
+                keywords=[],
+            ),
+            node,
+        )
 
 
 def sympy_check(
@@ -1014,6 +1086,7 @@ def evaluate_with_source(
         Interval=sympy.Interval,
         Union=sympy.Union,
         Intersection=sympy.Intersection,
+        Complement=sympy.Complement,
     )
 
     parsed_locals_to_eval["variables"].update(
@@ -1022,7 +1095,12 @@ def evaluate_with_source(
     )
 
     try:
-        ast_check_str(code, parsed_locals_to_eval, allow_sets=allow_sets)
+        expression_ast, set_operations = _ast_check_str(
+            code,
+            parsed_locals_to_eval,
+            allow_sets=allow_sets,
+            resolved_names=global_dict | local_dict,
+        )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
         index = _find_type_error_offset(
             normalized_expr, char_offsets, exc.as_type_error()
@@ -1032,12 +1110,24 @@ def evaluate_with_source(
 
         raise
 
+    evaluation_code: str | CodeType = code
     if not simplify_expression:
-        code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+        if allow_sets:
+            expression_ast = cast(
+                ast.Expression,
+                _SetOperationTransformer(set_operations).visit(expression_ast),
+            )
+        expression_ast = cast(
+            ast.Expression,
+            sympy_parser.EvaluateFalseTransformer().visit(expression_ast),
+        )
+        evaluation_code = compile(
+            ast.fix_missing_locations(expression_ast), "<string>", "eval"
+        )
 
     # Now that it's safe, get sympy expression
     try:
-        res = sympy_parser.eval_expr(code, local_dict, global_dict)
+        res = sympy_parser.eval_expr(evaluation_code, local_dict, global_dict)
     except TypeError as exc:
         # SymPy raises TypeError for semantically invalid set operations that are
         # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
@@ -1060,7 +1150,7 @@ def evaluate_with_source(
         allow_extra_symbols=allow_extra_symbols,
     )
 
-    return res, code
+    return res, evaluation_code
 
 
 def convert_string_to_sympy(
