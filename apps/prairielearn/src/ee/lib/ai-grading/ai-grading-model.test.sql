@@ -15,7 +15,7 @@ WITH
       course_id,
       $course_instance_id,
       $user_id,
-      $user_id,
+      $user_id AS authn_user_id,
       'test'
     FROM
       questions
