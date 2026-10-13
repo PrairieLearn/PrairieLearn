@@ -25,7 +25,7 @@ const modelListSchema = z.object({
     .max(MAX_MODEL_COUNT),
 });
 
-class AiGradingModelDiscoveryError extends Error {
+export class AiGradingModelDiscoveryError extends Error {
   constructor(
     public readonly code:
       | 'invalid_endpoint'
