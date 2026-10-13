@@ -184,12 +184,14 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
         ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
         # Bare function arguments ended by a "(" that multiplies them
-        ("l n 8(2x+1)", False, ["x"], [], "ln (8)(2x+1)"),
         ("l n x (x+1)", False, ["x"], [], "ln (x) (x+1)"),
+        ("l n 2x(x+1)", False, ["x"], [], "ln (2x)(x+1)"),
         ("l n 2(l n 3(x))", False, ["x"], [], "ln (2)(ln (3)(x))"),
         # A "(" that groups an exponent or calls a function stays in the argument
         ("l n x^(2)", False, ["x"], [], "ln x^(2)"),
         ("l n f(x)", False, ["x"], ["f"], "ln f(x)"),
+        ("l n a b s (x)(x+1)", False, ["x"], [], "ln (abs (x))(x+1)"),
+        ("l n Α(x)", False, ["x"], ["Α"], "ln  Alpha (x)"),  # ruff:ignore[ambiguous-unicode-character-string]
         # Operators the editor writes in AsciiMath form (\div and \ast)
         ("2 -: x", False, ["x"], [], "2 / x"),
         ("2 ** x", False, ["x"], [], "2 * x"),
@@ -274,24 +276,17 @@ def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -
     assert symbolic_input._restore_plus_minus(submission, latex) == expected
 
 
-def test_formula_editor_reported_bare_argument_before_paren() -> None:
-    r"""Regression test for a correct answer rejected as a syntax error.
-
-    The editor displays `\ln 8\left(...\right)` as ln(8)·(...) but submits "ln 8(...)".
-    """
+def test_formula_editor_bare_argument_before_implicit_multiplication() -> None:
+    r"""The editor displays `\ln 8\left(...\right)` as ln(8)·(...)."""
     x = sympy.Symbol("x")
-    expected = 8**x * (4 * x + 6) + 8**x * (2 * x**2 + 6 * x + 5) * sympy.log(8)
     element_html = build_element_html('variables="x"', 'formula-editor="true"')
-    data = make_question_data(
-        submitted_answers={"test": "8^x(l n 8(2x^2+6x+5)+(4x+6))"},
-        correct_answers={"test": psu.sympy_to_json(expected)},
-    )
+    data = make_question_data(submitted_answers={"test": "l n 8(x+1)"})
 
     symbolic_input.parse(element_html, data)
     assert "test" not in data["format_errors"]
-
-    symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 1
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.log(8) * (
+        x + 1
+    )
 
 
 def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> None:
@@ -314,16 +309,18 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
 
 def test_formula_editor_deeply_nested_bare_arguments() -> None:
     depth = 1200
-    submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"
-    expected = "sin (2)(" * depth + "x" + " * y)" * depth + " * z"
+    submission = "s i n f(" * depth + "x" + ")(y)" * depth
+    expected = "sin (f(" * depth + "x" + "))(y)" * depth
     assert (
         symbolic_input.format_formula_editor_submission_for_sympy(
-            submission, True, ["x", "y", "z"], []
+            submission, True, ["x", "y"], ["f"]
         )
         == expected
     )
 
-    element_html = build_element_html('variables="x,y,z"', 'formula-editor="true"')
+    element_html = build_element_html(
+        'variables="x,y"', 'custom-functions="f"', 'formula-editor="true"'
+    )
     data = make_question_data(submitted_answers={"test": submission})
     symbolic_input.parse(element_html, data)
     assert "syntax error" in data["format_errors"]["test"]

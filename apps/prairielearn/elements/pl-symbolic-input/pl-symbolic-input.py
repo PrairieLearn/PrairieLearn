@@ -726,8 +726,11 @@ def format_formula_editor_submission_for_sympy(
     text = _add_multiplication_spaces(text, known_tokens)
 
     function_names = frozenset(
-        psu.get_builtin_functions(allow_trig_functions=allow_trig)
-        | set(custom_functions)
+        psu.greek_unicode_transform(name)
+        for name in (
+            psu.get_builtin_functions(allow_trig_functions=allow_trig)
+            | set(custom_functions)
+        )
     )
     text = _wrap_bare_function_arguments(text, function_names)
 
@@ -872,20 +875,30 @@ _TRAILING_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_]\w*$")
 
 
 def _is_implicit_multiplication_paren(
-    argument: str, function_names: frozenset[str]
+    text: str,
+    argument_start: int,
+    argument_end: int,
+    function_names: frozenset[str],
 ) -> bool:
     """
-    Whether a "(" after `argument` multiplies it rather than calling a function or grouping an exponent.
+    Whether a "(" after an argument multiplies it rather than calling a function
+    or grouping an exponent.
 
     Returns:
-        True if `argument` ends with a number, a closing bracket, or a name that isn't a function.
+        True if the argument ends with a number, a closing bracket, or a name
+        that isn't a function.
     """
-    argument = argument.rstrip()
-    if not argument:
+    if argument_end == argument_start:
         return False
-    if argument[-1].isdigit() or argument[-1] in ")]}":
+    if text[argument_end - 1].isdigit() or text[argument_end - 1] in ")]}":
         return True
-    name = _TRAILING_IDENTIFIER_PATTERN.search(argument)
+
+    name_start = argument_end
+    while name_start > argument_start and (
+        text[name_start - 1].isalnum() or text[name_start - 1] == "_"
+    ):
+        name_start -= 1
+    name = _TRAILING_IDENTIFIER_PATTERN.search(text, name_start, argument_end)
     return name is not None and name.group(0) not in function_names
 
 
@@ -928,7 +941,7 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
     # empty argument.
     insertions: list[tuple[int, str]] = []
     # Only the first bare function at a given nesting depth can claim the next
-    # multiplication operator; any later one is inside its implicit argument.
+    # implicit multiplication boundary; any later one is inside its argument.
     pending_arguments: dict[int, int] = {}
     depth = 0
     for match in pattern.finditer(text):
@@ -938,27 +951,24 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
         token = match.group(0)
         match token:
-            case "(":
+            case "(" | "*":
                 start = pending_arguments.get(depth)
-                if start is not None and _is_implicit_multiplication_paren(
-                    text[start : match.start()], function_names
-                ):
-                    pending_arguments.pop(depth)
-                    argument_end = start + len(text[start : match.start()].rstrip())
-                    insertions.extend(((start, "("), (argument_end, ")")))
-                depth += 1
+                if start is not None:
+                    argument_end = match.start()
+                    while argument_end > start and text[argument_end - 1].isspace():
+                        argument_end -= 1
+                    if token == "*" or _is_implicit_multiplication_paren(
+                        text, start, argument_end, function_names
+                    ):
+                        pending_arguments.pop(depth)
+                        insertions.extend(((start, "("), (argument_end, ")")))
+                if token == "(":
+                    depth += 1
             case "[" | "{":
                 depth += 1
             case ")" | "]" | "}":
                 pending_arguments.pop(depth, None)
                 depth -= 1
-            case "*":
-                start = pending_arguments.pop(depth, None)
-                if start is not None:
-                    argument_end = match.start()
-                    while argument_end > start and text[argument_end - 1].isspace():
-                        argument_end -= 1
-                    insertions.extend(((start, "("), (argument_end, ")")))
             case "+" | "-" | "/" | ",":
                 pending_arguments.pop(depth, None)
             case _:
