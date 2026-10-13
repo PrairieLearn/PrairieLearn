@@ -595,6 +595,28 @@ class TestSympy:
             psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
         )
 
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize("operator", ["|", "&"])
+    def test_legacy_scalar_set_operator_json_conversion(
+        self, operator: str, *, simplify_expression: bool
+    ) -> None:
+        legacy_json: psu.SympyJson = {
+            "_type": "sympy",
+            "_value": f"x {operator} y",
+            "_variables": ["x", "y"],
+        }
+        x, y = sympy.symbols("x y")
+        expected = x | y if operator == "|" else x & y
+
+        assert (
+            psu.json_to_sympy(
+                legacy_json,
+                allow_sets=True,
+                simplify_expression=simplify_expression,
+            )
+            == expected
+        )
+
     def test_sets_json_conversion_requires_sets_enabled(self) -> None:
         with pytest.raises(psu.HasSetNotationError):
             psu.sympy_to_json(sympy.Interval(0, 1))

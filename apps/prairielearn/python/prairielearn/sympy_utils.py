@@ -565,7 +565,7 @@ class CheckAST(ast.NodeVisitor):
             value = self.resolved_names.get(node.id, self.variables.get(node.id))
             if self.allow_sets and isinstance(value, sympy.Set):
                 return self._set_type(node, ASTSympyType.SET)
-            if is_variable or isinstance(value, (sympy.Expr, complex)):
+            if isinstance(value, (sympy.Expr, complex)):
                 return self._set_type(node, ASTSympyType.SCALAR)
 
         return self._set_type(node, None)
@@ -674,8 +674,10 @@ class CheckAST(ast.NodeVisitor):
     ) -> ASTSympyType | None:
         match op:
             case "|" | "&":
-                self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SET])
-                return ASTSympyType.SET
+                left_type, right_type = self._enforce_signature(
+                    op, (left, right), 2 * [ASTSympyType.SET]
+                )
+                return left_type or right_type
             case "-" | "+":
                 overloads = (2 * [ASTSympyType.SET]), (2 * [ASTSympyType.SCALAR])
                 left_type, right_type = self._enforce_signature(
@@ -950,7 +952,7 @@ def _regex_sub_expr_and_map_offsets(
     return "".join(parts), new_offsets
 
 
-def evaluate_with_source(
+def _evaluate_with_source(
     expr: str,
     locals_for_eval: LocalsForEval,
     *,
@@ -958,6 +960,7 @@ def evaluate_with_source(
     allow_sets: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
+    resolved_name_overrides: Mapping[str, Any] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
 
@@ -1095,11 +1098,14 @@ def evaluate_with_source(
     )
 
     try:
+        resolved_names = global_dict | local_dict
+        if resolved_name_overrides is not None:
+            resolved_names.update(resolved_name_overrides)
         expression_ast, set_operations = _ast_check_str(
             code,
             parsed_locals_to_eval,
             allow_sets=allow_sets,
-            resolved_names=global_dict | local_dict,
+            resolved_names=resolved_names,
         )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
         index = _find_type_error_offset(
@@ -1151,6 +1157,26 @@ def evaluate_with_source(
     )
 
     return res, evaluation_code
+
+
+def evaluate_with_source(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    simplify_expression: bool = True,
+    allow_extra_symbols: bool = False,
+) -> tuple[sympy.Expr, str | CodeType]:
+    """Evaluate a SymPy expression string and return its value and source code."""
+    return _evaluate_with_source(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+    )
 
 
 def convert_string_to_sympy(
@@ -1207,7 +1233,7 @@ def convert_string_to_sympy(
     )[0]
 
 
-def convert_string_to_sympy_with_source(
+def _convert_string_to_sympy_with_source(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
@@ -1219,6 +1245,7 @@ def convert_string_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
+    resolved_name_overrides: Mapping[str, Any] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1293,12 +1320,41 @@ def convert_string_to_sympy_with_source(
             locals_for_eval["functions"][name] = sympy.Function(name)
 
     # Do the conversion
-    return evaluate_with_source(
+    return _evaluate_with_source(
         expr,
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+        resolved_name_overrides=resolved_name_overrides,
+    )
+
+
+def convert_string_to_sympy_with_source(
+    expr: str,
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
+) -> tuple[sympy.Expr, str | CodeType]:
+    """Convert a string to a SymPy expression and return its source code."""
+    return _convert_string_to_sympy_with_source(
+        expr,
+        variables,
+        allow_hidden=allow_hidden,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
+        custom_functions=custom_functions,
+        assumptions=assumptions,
         allow_extra_symbols=allow_extra_symbols,
     )
 
@@ -1444,9 +1500,13 @@ def json_to_sympy(
     if "_variables" not in sympy_expr_dict:
         sympy_expr_dict["_variables"] = None
 
-    return convert_string_to_sympy(
+    variables = sympy_expr_dict["_variables"]
+    # Older set-enabled submissions could contain scalar `x | y` or `x & y`.
+    # Keep their variables untyped during validation so stored answers remain
+    # renderable and gradable, while new text submissions use strict scalar types.
+    result, _ = _convert_string_to_sympy_with_source(
         sympy_expr_dict["_value"],
-        sympy_expr_dict["_variables"],
+        variables,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
@@ -1454,7 +1514,11 @@ def json_to_sympy(
         simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
         assumptions=sympy_expr_dict.get("_assumptions"),
+        resolved_name_overrides=(
+            dict.fromkeys(variables) if allow_sets and variables is not None else None
+        ),
     )
+    return result
 
 
 def try_parse_string_as_sympy(
