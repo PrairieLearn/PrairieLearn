@@ -45,14 +45,18 @@ function client(assessmentId: string) {
   });
 }
 
-function packetInput(assessmentInstanceId: string, copies = 1) {
+function packetInput(
+  assessmentInstanceId: string,
+  copies = 1,
+  document: 'exam' | 'answer_key' | 'booklet' = 'exam',
+) {
   const data = new FormData();
   data.set(
     'metadata',
     JSON.stringify({
       instances: [{ assessmentInstanceId, formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS }],
       copies,
-      document: 'exam',
+      document,
     }),
   );
   return data;
@@ -455,5 +459,36 @@ describe('print preparation', { timeout: 60_000 }, () => {
       body: packetInput('1'),
     });
     expect(exportResponse.status).toBe(403);
+  });
+
+  test('requires student data edit permission for PDFs containing answer keys', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const instance = await client(assessment.id).printableExams.create.mutate();
+    const trpcUrl = getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: assessment.id });
+    const headers = {
+      'X-TRPC': 'true',
+      'X-CSRF-Token': generatePrefixCsrfToken(
+        { url: trpcUrl, authn_user_id: '1' },
+        config.secretKey,
+      ),
+      cookie:
+        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=Student Data Viewer',
+    };
+
+    for (const [document, expectedStatus] of [
+      ['exam', 400],
+      ['answer_key', 403],
+      ['booklet', 403],
+    ] as const) {
+      const response = await fetch(`${siteUrl}${trpcUrl}/printableExamExport.pdf`, {
+        method: 'POST',
+        headers,
+        body: packetInput(instance.assessmentInstanceId, 1, document),
+      });
+      expect(response.status).toBe(expectedStatus);
+    }
   });
 });

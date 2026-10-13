@@ -61,6 +61,12 @@ export const printableExamExportRouter = t.router({
           cause: error,
         });
       }
+      if (metadata.document !== 'exam' && !ctx.authz_data.has_course_instance_permission_edit) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Access denied (must be a student data editor)',
+        });
+      }
       const instances = await selectAssessmentInstancesForUser({
         assessment_id: ctx.assessment.id,
         user_id: ctx.locals.user.id,
