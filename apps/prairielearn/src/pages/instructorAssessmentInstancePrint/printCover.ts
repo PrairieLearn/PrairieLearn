@@ -1,7 +1,6 @@
 import {
   type PrintableCover,
   type PrintableCoverField,
-  type PrintableCoverSection,
   type PrintableTextBlock,
   htmlToTextBlocks,
 } from '../../lib/printing/printableCover.js';
@@ -90,7 +89,7 @@ export function buildPrintableCover({
       : { type: 'list', ordered: true, items: [...DEFAULT_EXAM_INSTRUCTIONS] },
     ...(assessmentTextHtml ? htmlToTextBlocks(assessmentTextHtml) : []),
   ];
-  const sections: PrintableCoverSection[] = [
+  const sections: PrintableCover['sections'] = [
     { heading: isAnswerKey ? 'About this answer key' : 'Instructions', blocks: instructionBlocks },
   ];
   if (!isAnswerKey && includeHonorCode) {
