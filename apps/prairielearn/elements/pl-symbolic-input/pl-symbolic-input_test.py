@@ -536,6 +536,35 @@ def test_set_difference_submission_round_trips_without_simplification() -> None:
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+@pytest.mark.parametrize("operator", ["|", "&"])
+def test_legacy_scalar_set_operator_submission_remains_readable(
+    monkeypatch: pytest.MonkeyPatch, operator: str
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    legacy_json: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": f"x {operator} y",
+        "_variables": ["x", "y"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'variables="x,y"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": legacy_json},
+        raw_submitted_answers={"test": f"x {operator} y"},
+        correct_answers={"test": legacy_json},
+        panel="submission",
+        editable=False,
+    )
+
+    symbolic_input.render(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',
