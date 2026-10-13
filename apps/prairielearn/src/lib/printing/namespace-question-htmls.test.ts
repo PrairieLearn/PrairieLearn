@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import { namespaceQuestionHtmls } from './namespaceQuestionHtmls.js';
+import { namespaceQuestionHtmls } from './namespace-question-htmls.js';
 
 describe('namespaceQuestionHtmls', () => {
   it('namespaces duplicate IDs and their references while preserving unique IDs', () => {
@@ -179,83 +179,24 @@ describe('namespaceQuestionHtmls', () => {
     expect($combined('[id="question-2-answer"]')).toHaveLength(1);
   });
 
-  it('namespaces formula-editor symbolic inputs and their initializer', () => {
-    const [html] = namespaceQuestionHtmls([
-      {
-        namespace: 'question-7',
-        html: `
-          <script>$(function () { window.PLSymbolicInput("ans"); });</script>
-          <input name="ans" id="symbolic-input-sub-ans" />
-          <input name="ans-latex" id="symbolic-input-latex-ans" />
-          <math-field id="symbolic-input-ans"></math-field>
-        `,
-      },
-    ]);
-    const $ = load(html, undefined, false);
-
-    expect($('script').html()).toContain('window.PLSymbolicInput("question-7-ans")');
-    expect($('#symbolic-input-question-7-ans')).toHaveLength(1);
-    expect($('#symbolic-input-sub-question-7-ans').attr('name')).toBe('question-7-ans');
-    expect($('#symbolic-input-latex-question-7-ans').attr('name')).toBe('question-7-ans-latex');
-  });
-
-  it('uses a collision-free base name for formula-editor symbolic inputs', () => {
+  it('keeps answer names stable when IDs collide across questions', () => {
     const [first, second] = namespaceQuestionHtmls([
       {
         namespace: 'question-1',
-        html: `
-          <script>window.PLSymbolicInput("ans");</script>
-          <input name="ans" id="symbolic-input-sub-ans" />
-          <input name="ans-latex" id="symbolic-input-latex-ans" />
-          <math-field id="symbolic-input-ans"></math-field>
-        `,
+        html: '<input name="ans" id="answer" />',
       },
       {
         namespace: 'question-2',
-        html: '<div id="symbolic-input-question-1-ans"></div>',
-      },
-    ]);
-    const $first = load(first, undefined, false);
-    const $combined = load(first + second, undefined, false);
-
-    expect($first('script').html()).toContain('window.PLSymbolicInput("question-1-ans-2")');
-    expect($first('#symbolic-input-question-1-ans-2')).toHaveLength(1);
-    expect($combined('[id="symbolic-input-question-1-ans"]')).toHaveLength(1);
-    expect($combined('[id="symbolic-input-question-1-ans-2"]')).toHaveLength(1);
-  });
-
-  it('namespaces sketch input IDs and their base-name initializer', () => {
-    const [first, second] = namespaceQuestionHtmls([
-      {
-        namespace: 'question-1',
-        html: `
-          <div id="answer-sketchresponse-data"></div>
-          <input id="answer-sketchresponse-submission" name="answer-sketchresponse-submission" />
-          <div id="answer-si-container"></div>
-          <script>window.SketchInput('answer', false)</script>
-        `,
-      },
-      {
-        namespace: 'question-2',
-        html: `
-          <div id="answer-sketchresponse-data"></div>
-          <input id="answer-sketchresponse-submission" name="answer-sketchresponse-submission" />
-          <div id="answer-si-container"></div>
-          <script>window.SketchInput('answer', true)</script>
-        `,
+        html: '<input name="ans" id="answer" />',
       },
     ]);
     const $first = load(first, undefined, false);
     const $second = load(second, undefined, false);
 
-    expect($first('#question-1-answer-si-container')).toHaveLength(1);
-    expect($first('#question-1-answer-sketchresponse-data')).toHaveLength(1);
-    expect($first('#question-1-answer-sketchresponse-submission').attr('name')).toBe(
-      'question-1-answer-sketchresponse-submission',
-    );
-    expect($first('script').html()).toContain("window.SketchInput('question-1-answer', false)");
-    expect($second('#question-2-answer-si-container')).toHaveLength(1);
-    expect($second('script').html()).toContain("window.SketchInput('question-2-answer', true)");
+    expect($first('input').attr('id')).toBe('question-1-answer');
+    expect($second('input').attr('id')).toBe('question-2-answer');
+    expect($first('input').attr('name')).toBe('ans');
+    expect($second('input').attr('name')).toBe('ans');
   });
 
   it('rejects duplicate or invalid namespaces', () => {

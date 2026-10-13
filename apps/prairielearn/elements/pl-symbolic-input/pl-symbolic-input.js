@@ -354,10 +354,11 @@
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
-   * @param {string} name Name of the element to look up the tag
+   * @param {string} name Answer name, retained as the fallback ID for older rendered HTML
+   * @param {string} id Unique DOM ID suffix for this rendered element
    */
-  window.PLSymbolicInput = function (name) {
-    const mf = document.getElementById('symbolic-input-' + name);
+  window.PLSymbolicInput = function (name, id = name) {
+    const mf = document.getElementById('symbolic-input-' + id);
 
     // Always keep basic right-click items and append to other menu items
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
@@ -608,7 +609,7 @@
     mf.addEventListener('focus', updateKeyboardLayout);
     mf.addEventListener('selection-change', updateKeyboardLayout);
 
-    const initialLatex = $('#symbolic-input-latex-' + name).val();
+    const initialLatex = $('#symbolic-input-latex-' + id).val();
 
     setUpSymbolicInputMacros(mf);
 
@@ -624,8 +625,8 @@
 
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
-      $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
-      $('#symbolic-input-latex-' + name).val(mf.getValue('latex'));
+      $('#symbolic-input-sub-' + id).val(mf.getValue('plain-text'));
+      $('#symbolic-input-latex-' + id).val(mf.getValue('latex'));
     };
 
     updateSubmissionData();

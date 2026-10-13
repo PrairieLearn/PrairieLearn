@@ -948,8 +948,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             score_class = alert_class = "warning"
 
-    # Each SketchResponse instance needs a unique ID, but only the question panel ID
-    # matters because it gets parsed on submission.
+    # Each SketchResponse instance needs a unique DOM ID. The question panel still
+    # submits under the stable answer name so existing variants keep working.
     random_id = "".join(random.choice(string.ascii_lowercase) for _ in range(15))
 
     scoring_params = {
@@ -967,14 +967,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         if read_only or not data["editable"]:
             config["readonly"] = True
-        html_params = {"id": name, **scoring_params}
+        html_params = {"id": random_id, "submission_name": name, **scoring_params}
     elif data["panel"] == "submission":
         config["readonly"] = True
-        html_params = {"id": random_id, **scoring_params}
+        html_params = {"id": random_id, "submission_name": random_id, **scoring_params}
     elif len(solution) > 0:  # answer panel (has solution to display)
         config["initialstate"] = solution
         config["readonly"] = True
-        html_params = {"id": random_id, "read_only": True}
+        html_params = {"id": random_id, "submission_name": random_id, "read_only": True}
     else:  # answer panel (no solution to display)
         html_params = {"no_answer": True}
 

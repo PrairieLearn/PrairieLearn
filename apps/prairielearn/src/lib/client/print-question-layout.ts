@@ -1,4 +1,4 @@
-import type { QuestionBlockSize } from '../printing/questionBlockSize.js';
+import type { QuestionBlockSize } from '../printing/question-block-size.js';
 
 const QUESTION_BLOCK_SIZE_LOOKUP = {
   auto: true,
