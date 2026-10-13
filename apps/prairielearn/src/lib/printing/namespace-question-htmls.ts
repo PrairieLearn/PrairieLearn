@@ -184,67 +184,6 @@ function renameIdsAndReferences(
   });
 }
 
-function reserveUniqueBase(
-  preferredBase: string,
-  idsForBase: (base: string) => string[],
-  reservedIds: Set<string>,
-): string {
-  let candidate = preferredBase;
-  let suffix = 2;
-  while (idsForBase(candidate).some((id) => reservedIds.has(id))) {
-    candidate = `${preferredBase}-${suffix}`;
-    suffix += 1;
-  }
-  for (const id of idsForBase(candidate)) reservedIds.add(id);
-  return candidate;
-}
-
-function namespaceInputInitializers(
-  $: cheerio.CheerioAPI,
-  namespace: string,
-  reservedIds: Set<string>,
-  {
-    initializer,
-    idsForBase,
-    namesForBase,
-  }: {
-    initializer: RegExp;
-    idsForBase: (base: string) => string[];
-    namesForBase: (base: string) => string[];
-  },
-): void {
-  const baseRenames = new Map<string, string>();
-  $('script').each((_index, element) => {
-    const scriptHtml = $(element).html();
-    if (!scriptHtml) return;
-    $(element).html(
-      scriptHtml.replaceAll(initializer, (call, quote: string, base: string) => {
-        let namespacedBase = baseRenames.get(base);
-        if (namespacedBase === undefined) {
-          namespacedBase = reserveUniqueBase(`${namespace}-${base}`, idsForBase, reservedIds);
-          baseRenames.set(base, namespacedBase);
-        }
-        return call.replace(`${quote}${base}${quote}`, () => `${quote}${namespacedBase}${quote}`);
-      }),
-    );
-  });
-
-  const idRenames = new Map<string, string>();
-  const nameRenames = new Map<string, string>();
-  for (const [base, namespacedBase] of baseRenames) {
-    const namespacedIds = idsForBase(namespacedBase);
-    idsForBase(base).forEach((id, index) => idRenames.set(id, namespacedIds[index]));
-    const namespacedNames = namesForBase(namespacedBase);
-    namesForBase(base).forEach((name, index) => nameRenames.set(name, namespacedNames[index]));
-  }
-  renameIdsAndReferences($, idRenames);
-  $('[name]').each((_index, element) => {
-    const name = $(element).attr('name');
-    const namespacedName = name ? nameRenames.get(name) : undefined;
-    if (namespacedName) $(element).attr('name', namespacedName);
-  });
-}
-
 function getIds($: cheerio.CheerioAPI): string[] {
   const ids: string[] = [];
   $('[id]').each((_index, element) => {
@@ -269,14 +208,17 @@ function assertNoDuplicateIds($: cheerio.CheerioAPI, namespace: string): void {
 }
 
 function reserveUniqueId(preferredId: string, reservedIds: Set<string>): string {
-  return reserveUniqueBase(preferredId, (id) => [id], reservedIds);
+  let candidate = preferredId;
+  let suffix = 2;
+  while (reservedIds.has(candidate)) {
+    candidate = `${preferredId}-${suffix}`;
+    suffix += 1;
+  }
+  reservedIds.add(candidate);
+  return candidate;
 }
 
-/**
- * Namespaces IDs that occur in more than one question so that independently-rendered question
- * fragments can safely share a document. Formula-editor symbolic inputs and sketch inputs also
- * receive namespaced base names because their client initializers derive DOM IDs from those names.
- */
+/** Namespaces IDs that occur in more than one independently rendered question fragment. */
 export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespace[]): string[] {
   const namespaces = questions.map((question) => question.namespace);
   if (new Set(namespaces).size !== namespaces.length) {
@@ -295,28 +237,6 @@ export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespa
   });
 
   const reservedIds = new Set(fragments.flatMap(({ $ }) => getIds($)));
-  for (const { $, namespace } of fragments) {
-    namespaceInputInitializers($, namespace, reservedIds, {
-      initializer: /window\.PLSymbolicInput\(\s*(["'])([^"']+)\1\s*\)/g,
-      idsForBase: (name) => [
-        `symbolic-input-${name}`,
-        `symbolic-input-latex-${name}`,
-        `symbolic-input-sub-${name}`,
-      ],
-      namesForBase: (name) => [name, `${name}-latex`],
-    });
-    namespaceInputInitializers($, namespace, reservedIds, {
-      initializer: /window\.SketchInput\(\s*(["'])([^"']+)\1/g,
-      idsForBase: (name) => [
-        `${name}-si-container`,
-        `${name}-sketchresponse-data`,
-        `${name}-sketchresponse-submission`,
-      ],
-      namesForBase: (name) => [`${name}-sketchresponse-submission`],
-    });
-    assertNoDuplicateIds($, namespace);
-  }
-
   const idCounts = new Map<string, number>();
   for (const { $ } of fragments) {
     for (const id of getIds($)) idCounts.set(id, (idCounts.get(id) ?? 0) + 1);

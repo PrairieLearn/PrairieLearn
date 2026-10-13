@@ -1,9 +1,10 @@
 import * as https from 'node:https';
 
+import { Semaphore } from 'async-mutex';
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
-import { createPdfOutput } from './pdfOutput.js';
-import type { PrintablePageOutput } from './printablePageOutput.js';
+import { createPdfOutput } from './pdf-output.js';
+import type { PrintablePageOutput } from './printable-page-output.js';
 
 const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
 
@@ -22,32 +23,34 @@ const CLOUDFLARE_KEEP_ALIVE_MS = 180_000;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
 const SOCKET_IO_PATH = '/socket.io/';
 
-interface SemaphoreWaiter {
+interface RenderWaiter {
   queuedAt: number;
-  resolve: (queueWaitMs: number) => void;
+  resolve: (acquired: { queueWaitMs: number; release: () => void }) => void;
   reject: (error: Error) => void;
   timeout?: ReturnType<typeof setTimeout>;
 }
 
-class Semaphore {
-  private activeCount = 0;
-  private readonly waiters: SemaphoreWaiter[] = [];
+class RenderQueue {
+  private readonly permits: Semaphore;
+  private readonly waiters: RenderWaiter[] = [];
 
   constructor(
-    private readonly limit: number,
+    limit: number,
     private readonly maxWaiters: number,
-  ) {}
+  ) {
+    this.permits = new Semaphore(limit);
+  }
 
   async run<T>(
     callback: (queueWaitMs: number) => Promise<T>,
     timeoutMs: number,
     outputLabel: string,
   ): Promise<T> {
-    const queueWaitMs = await this.acquire(timeoutMs, outputLabel);
+    const { queueWaitMs, release } = await this.acquire(timeoutMs, outputLabel);
     try {
       return await callback(queueWaitMs);
     } finally {
-      this.release();
+      this.release(release);
     }
   }
 
@@ -60,18 +63,23 @@ class Semaphore {
     }
   }
 
-  private async acquire(timeoutMs: number, outputLabel: string): Promise<number> {
-    if (this.activeCount < this.limit) {
-      this.activeCount += 1;
-      return 0;
+  private async acquire(
+    timeoutMs: number,
+    outputLabel: string,
+  ): Promise<{ queueWaitMs: number; release: () => void }> {
+    if (!this.permits.isLocked()) {
+      const [, release] = await this.permits.acquire();
+      return { queueWaitMs: 0, release };
     }
 
     if (this.waiters.length >= this.maxWaiters) {
       throw new Error('Too many print renders are already waiting');
     }
 
-    return new Promise<number>((resolve, reject) => {
-      const waiter: SemaphoreWaiter = { queuedAt: Date.now(), resolve, reject };
+    // withTimeout() leaves expired acquisitions in async-mutex's queue until a permit is
+    // released. Keep waiters here so a timed-out render immediately frees its queue slot.
+    return new Promise<{ queueWaitMs: number; release: () => void }>((resolve, reject) => {
+      const waiter: RenderWaiter = { queuedAt: Date.now(), resolve, reject };
       if (timeoutMs > 0) {
         waiter.timeout = setTimeout(() => {
           const index = this.waiters.indexOf(waiter);
@@ -84,14 +92,14 @@ class Semaphore {
     });
   }
 
-  private release(): void {
+  private release(release: () => void): void {
     const next = this.waiters.shift();
     if (next) {
-      // The active permit is transferred directly to the oldest waiter.
+      // Transfer the permit directly so a new render cannot pass the oldest waiter.
       if (next.timeout) clearTimeout(next.timeout);
-      next.resolve(Date.now() - next.queuedAt);
+      next.resolve({ queueWaitMs: Date.now() - next.queuedAt, release });
     } else {
-      this.activeCount -= 1;
+      release();
     }
   }
 }
@@ -174,7 +182,7 @@ export class PrintRenderer {
   private readonly cloudflare: PrintRendererOptions['cloudflare'];
   private readonly defaultTimeoutMs: number;
   private readonly contextCloseGraceMs: number;
-  private readonly worker: Semaphore;
+  private readonly worker: RenderQueue;
   private browserPromise: Promise<Browser> | null = null;
   private browser: Browser | null = null;
   private closed = false;
@@ -189,7 +197,7 @@ export class PrintRenderer {
     this.cloudflare = cloudflare;
     this.defaultTimeoutMs = timeoutMs;
     this.contextCloseGraceMs = contextCloseGraceMs;
-    this.worker = new Semaphore(
+    this.worker = new RenderQueue(
       maxConcurrentRenders ?? (cloudflare ? DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS : 1),
       maxQueuedRenders ??
         (cloudflare ? DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS : DEFAULT_MAX_QUEUED_RENDERS),
