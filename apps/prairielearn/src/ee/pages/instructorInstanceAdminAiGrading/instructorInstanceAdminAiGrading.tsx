@@ -8,6 +8,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { extractPageContext } from '../../../lib/client/page-context.js';
+import { getCourseInstanceTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
@@ -66,6 +67,11 @@ router.get(
       config.secretKey,
     );
 
+    const courseInstanceTrpcCsrfToken = generatePrefixCsrfToken(
+      { url: getCourseInstanceTrpcUrl(courseInstance.id), authn_user_id: authn_user.id },
+      config.secretKey,
+    );
+
     const stripePurchasingEnabled =
       !!config.stripeSecretKey && !!config.stripeAiGradingCreditsProductId;
 
@@ -117,6 +123,8 @@ router.get(
           <Hydrate>
             <InstructorInstanceAdminAiGrading
               trpcCsrfToken={trpcCsrfToken}
+              courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
+              courseInstanceId={courseInstance.id}
               initialUseCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
               initialApiKeyCredentials={credentials}
               canEdit={!!canEdit}
