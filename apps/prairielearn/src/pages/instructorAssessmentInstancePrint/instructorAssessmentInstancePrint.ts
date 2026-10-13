@@ -166,6 +166,16 @@ const validateDocumentQuery: RequestHandler = (req, res, next) => {
   next();
 };
 
+const authorizePrintDocument: RequestHandler = (_req, res, next) => {
+  if (
+    res.locals.printDocument === 'answer_key' &&
+    !res.locals.authz_data.has_course_instance_permission_edit
+  ) {
+    throw new HttpStatusError(403, 'Access denied');
+  }
+  next();
+};
+
 function buildPrintSearchParams(layout: PrintLayout, document: PrintDocument): URLSearchParams {
   const params = new URLSearchParams({ paper_size: layout.paperSize });
   if (!layout.includeCoverPage) params.set('include_cover', 'false');
@@ -352,6 +362,7 @@ router.use(
 router.get(
   '/preview',
   validateDocumentQuery,
+  authorizePrintDocument,
   selectAndAuthzAssessmentInstance,
   typedAsyncHandler<'assessment-instance', PrintLocals>(async (req, res) => {
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
@@ -443,6 +454,7 @@ router.get(
 router.post(
   '/docx',
   validateDocumentQuery,
+  authorizePrintDocument,
   selectAndAuthzAssessmentInstance,
   parseDocxBody,
   createDocxHandler,
