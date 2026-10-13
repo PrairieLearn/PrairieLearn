@@ -20,7 +20,7 @@ test('reports missing print bootstrap through the page error state', async ({ pa
     </body></html>
   `);
   await page.addScriptTag({
-    path: path.join(buildDirectory, manifest['scripts/examPrintingClient.ts'].assetPath),
+    path: path.join(buildDirectory, manifest['scripts/exam-printing-client.ts'].assetPath),
   });
   await expect(page.locator('html')).toHaveAttribute('data-print-status', 'error');
   await expect(page.getByRole('status')).toHaveText(

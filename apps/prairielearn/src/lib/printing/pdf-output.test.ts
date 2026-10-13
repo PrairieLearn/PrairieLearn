@@ -1,7 +1,7 @@
 import type { Page } from 'playwright';
 import { expect, it, vi } from 'vitest';
 
-import { createPdfOutput } from './pdfOutput.js';
+import { createPdfOutput } from './pdf-output.js';
 
 it.each([
   ['A4', 'A4'],

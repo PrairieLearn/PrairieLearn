@@ -8,7 +8,7 @@ The rendering browser lays out and paginates question HTML. PDF exports use its 
 
 ```ts
 import { getPrintingCloudflareConfig } from './config.js';
-import { PrintRenderer } from './printing/printRenderer.js';
+import { PrintRenderer } from './printing/print-renderer.js';
 
 const renderer = new PrintRenderer({
   cloudflare: getPrintingCloudflareConfig(),
@@ -41,13 +41,13 @@ Omit the `cover` option to start with questions on the first page.
 
 ## Combining question fragments
 
-Questions are normally rendered in separate documents, so author- and element-generated IDs can repeat between questions. Before combining fragments in a preview or print document, use `namespaceQuestionHtmls` with a stable, unique namespace for each question. It renames IDs repeated across fragments and supported references in the rendered HTML: ID-reference attributes, inline `style` attributes and `<style>` blocks, and literal `getElementById`, `querySelector`, `querySelectorAll`, `closest`, `matches`, and `$` calls in inline scripts. Formula-editor symbolic inputs and sketch inputs also have their base name and initializer namespaced because their client renderers derive element IDs from those names.
+Questions are normally rendered in separate documents, so author-generated IDs can repeat between questions. Built-in formula-editor symbolic inputs and sketch inputs generate unique DOM IDs when rendered while keeping their answer names stable. Before combining fragments in a preview or print document, use `namespaceQuestionHtmls` with a stable, unique namespace for each question. It renames IDs repeated across fragments and supported references in the rendered HTML: ID-reference attributes, inline `style` attributes and `<style>` blocks, and literal `getElementById`, `querySelector`, `querySelectorAll`, `closest`, `matches`, and `$` calls in inline scripts.
 
-The helper does not read external CSS or JavaScript files. IDs referenced from those files must be unique across the combined fragments. If an ID collides, the HTML ID is renamed but the external reference stays the same; the helper cannot detect or report the broken reference. It rejects duplicate IDs within one fragment and any duplicate IDs left after namespacing.
+The helper does not read external CSS or JavaScript files. IDs referenced from those files must be unique across the combined fragments. If an ID collides, the HTML ID is renamed but the external reference stays the same; the helper cannot detect or report the broken reference. Custom course elements remain best-effort for printable exams, so preview the output before printing. The helper rejects duplicate IDs within one fragment and any duplicate IDs left after namespacing.
 
 ## Browser transformations
 
-The application owns the browser transforms in `apps/prairielearn/src/lib/client/print-response-controls.ts`; `examPrintingClient.ts` coordinates readiness, answer presentation, and pagination. Transforms run only inside question bodies, after element initialization and before measuring pages.
+The application owns the browser transforms in `apps/prairielearn/src/lib/client/print-response-controls.ts`; `exam-printing-client.ts` coordinates readiness, answer presentation, and pagination. Transforms run only inside question bodies, after element initialization and before measuring pages.
 
 Generic input placeholders such as "symbolic expression", "integer", and "matrix" do not become printed labels. Preserve custom instructions, useful precision guidance, number bases, and whether a blank answer is allowed. Omit grading tolerances that do not help students fill in the paper response.
 
