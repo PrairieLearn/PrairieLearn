@@ -30,6 +30,22 @@ const noHtml = markdownToHtml('Some text <em>with HTML</em>', { allowHtml: false
 - `allowHtml` (default: `true`): If true, allows HTML tags in the markdown. If false, HTML tags will be removed from the output.
 - `interpretMath` (default: `true`): If true, prepares and escapes LaTeX strings to be parsed by MathJax (assumes MathJax is available client-side).
 
+### Sanitizing HTML
+
+Use `sanitizeHtml` to sanitize HTML without interpreting it as Markdown:
+
+```ts
+import { sanitizeHtml } from '@prairielearn/markdown';
+
+const html = sanitizeHtml(originalHtml);
+```
+
+Data attributes are allowed by default. Pass `{ allowDataAttributes: false }` to remove them:
+
+```ts
+const html = sanitizeHtml(originalHtml, { allowDataAttributes: false });
+```
+
 ### Advanced usage with custom extensions
 
 For advanced use cases requiring custom Marked extensions, you can create your own instance:

@@ -42,7 +42,10 @@ function getOrCreateInstance(): SanitizeInstance {
   return instance;
 }
 
-export function sanitizeHtml(html: string): string {
+export function sanitizeHtml(
+  html: string,
+  { allowDataAttributes = true }: { allowDataAttributes?: boolean } = {},
+): string {
   const instance = getOrCreateInstance();
-  return instance.dompurify.sanitize(html);
+  return instance.dompurify.sanitize(html, { ALLOW_DATA_ATTR: allowDataAttributes });
 }

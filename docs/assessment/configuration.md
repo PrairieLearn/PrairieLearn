@@ -921,7 +921,11 @@ Access control options can also be used to control the open/close dates of asses
 
 ## Adding text and links to assessments
 
-You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. The following mustache template variables are available:
+You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. HTML is sanitized before display. JavaScript and embedded iframes are not supported. Use links to external content instead.
+
+Data attributes (`data-*`) are removed. Interactive Bootstrap components are not supported in assessment text. Bootstrap classes can still be used for styling.
+
+The following mustache template variables are available:
 
 | Variable                       | Description                                    |
 | ------------------------------ | ---------------------------------------------- |
