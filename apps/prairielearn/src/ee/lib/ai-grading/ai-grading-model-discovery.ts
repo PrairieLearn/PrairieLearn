@@ -32,6 +32,7 @@ class AiGradingModelDiscoveryError extends Error {
       | 'authentication'
       | 'not_found'
       | 'rate_limit'
+      | 'request_rejected'
       | 'provider_error'
       | 'timeout'
       | 'request_failed'
@@ -117,6 +118,12 @@ export async function discoverAiGradingModels(
             'The provider is rate limiting requests. Try again later.',
           );
         default:
+          if (response.status >= 400 && response.status < 500) {
+            throw new AiGradingModelDiscoveryError(
+              'request_rejected',
+              'The provider rejected the models request. Check the API base URL and provider configuration.',
+            );
+          }
           throw new AiGradingModelDiscoveryError(
             'provider_error',
             'The provider could not return its models. Check the endpoint or try again later.',
