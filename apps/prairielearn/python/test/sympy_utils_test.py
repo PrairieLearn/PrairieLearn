@@ -1038,9 +1038,17 @@ class TestExceptions:
             )
         ),
     )
-    def test_sets_operation_type_error_caret_output(self, caret_spec: str) -> None:
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_sets_operation_type_error_caret_output(
+        self, caret_spec: str, *, simplify_expression: bool
+    ) -> None:
         expr, expected_caret = _caret_template(caret_spec)
-        error_msg = psu.validate_string_as_sympy(expr, None, allow_sets=True)
+        error_msg = psu.validate_string_as_sympy(
+            expr,
+            None,
+            allow_sets=True,
+            simplify_expression=simplify_expression,
+        )
         assert error_msg is not None
         assert re.search(r"\b(set|arguments?|syntax)\b", error_msg) is not None, (
             f"error message is not descriptive: {error_msg}"
@@ -1048,6 +1056,21 @@ class TestExceptions:
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None, f"error message has no caret: {error_msg}"
         assert expected_caret == match.group(1)
+
+    @pytest.mark.parametrize(
+        ("expr", "error_type"),
+        [
+            ("sin({1})", psu.HasArgumentTypeError),
+            ("Interval(1)", psu.HasFunctionArityError),
+        ],
+    )
+    def test_direct_conversion_preserves_structured_errors(
+        self,
+        expr: str,
+        error_type: type[psu.BaseSympyError],
+    ) -> None:
+        with pytest.raises(error_type):
+            psu.convert_string_to_sympy(expr, None, allow_sets=True)
 
     @pytest.mark.parametrize(
         "caret_spec",
@@ -1120,6 +1143,36 @@ class TestExceptions:
     @pytest.mark.parametrize("expr", ["log(n, 2)", "atan2(n, 1)", "max(n, 1, 2)"])
     def test_builtin_function_valid_arity(self, expr: str) -> None:
         assert psu.validate_string_as_sympy(expr, self.VARIABLES) is None
+
+
+@pytest.mark.parametrize("error_type", [TypeError, AttributeError])
+def test_evaluation_errors_have_student_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    error_type: type[Exception],
+) -> None:
+    def fail_evaluation(*_args: Any, **_kwargs: Any) -> Any:
+        raise error_type("evaluation failed")
+
+    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_evaluation)
+    result = psu.try_parse_string_as_sympy("x", ["x"])
+    assert isinstance(result, psu.SympyParseFailure)
+    assert result.error == (
+        "Your answer contains an invalid expression that could not be evaluated. "
+        "Check that each function and operator is used with valid arguments."
+    )
+
+
+def test_unexpected_evaluation_errors_remain_staff_facing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_evaluation(*_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError("internal failure")
+
+    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_evaluation)
+    result = psu.try_parse_string_as_sympy("x", ["x"])
+    assert isinstance(result, psu.SympyParseFailure)
+    assert result.error.startswith("Unexpected error:")
+    assert result.error.endswith("Please contact the course staff.")
 
 
 @pytest.mark.parametrize(
