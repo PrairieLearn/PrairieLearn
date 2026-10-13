@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { PrintRenderer } from '../../lib/printing/printRenderer.js';
+import { PrintRenderer } from '../../lib/printing/print-renderer.js';
 
 import { expect, test } from './fixtures.js';
 

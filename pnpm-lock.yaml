@@ -780,6 +780,9 @@ importers:
       async:
         specifier: ^3.2.6
         version: 3.2.6
+      async-mutex:
+        specifier: ^0.5.0
+        version: 0.5.0
       backbone:
         specifier: ^1.6.1
         version: 1.6.1

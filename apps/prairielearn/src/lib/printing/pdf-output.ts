@@ -1,4 +1,4 @@
-import type { PrintablePageOutput } from './printablePageOutput.js';
+import type { PrintablePageOutput } from './printable-page-output.js';
 
 /** Prints the paginated page with Chromium's PDF engine; the page's `@page` CSS sets the sheet size. */
 export function createPdfOutput(): PrintablePageOutput<Buffer> {

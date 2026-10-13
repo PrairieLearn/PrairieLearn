@@ -37,7 +37,7 @@ async function expectPrefixInsertion(
   await insert();
   await page.keyboard.press('y');
 
-  await expect(page.locator(`#symbolic-input-latex-${answersName}`)).toHaveValue(/^3.*y.+$/);
+  await expect(page.locator(`input[name="${answersName}-latex"]`)).toHaveValue(/^3.*y.+$/);
 }
 
 test.describe('pl-symbolic-input formula editor', () => {
@@ -46,14 +46,18 @@ test.describe('pl-symbolic-input formula editor', () => {
   });
 
   test('uses configured accessible labels for formula editors', async ({ page }) => {
-    const explicitlyLabelledEditor = page.locator('#symbolic-input-x');
+    const explicitlyLabelledEditor = page.locator(
+      '.pl-symbolic-input:has(input[name="x-latex"]) math-field',
+    );
     await expect(explicitlyLabelledEditor).toHaveAttribute(
       'aria-label',
       'Symbolic expression for x',
     );
     expect(await explicitlyLabelledEditor.getAttribute('aria-labelledby')).toBeNull();
 
-    const visiblyLabelledEditor = page.locator('#symbolic-input-z');
+    const visiblyLabelledEditor = page.locator(
+      '.pl-symbolic-input:has(input[name="z-latex"]) math-field',
+    );
     await expect(visiblyLabelledEditor).toHaveAttribute(
       'aria-labelledby',
       /^pl-symbolic-input-.+-label$/,
@@ -63,14 +67,14 @@ test.describe('pl-symbolic-input formula editor', () => {
   });
 
   test('submits formula editor values changed without an input event', async ({ page }) => {
-    const formulaEditor = page.locator('#symbolic-input-x');
+    const formulaEditor = page.locator('.pl-symbolic-input:has(input[name="x-latex"]) math-field');
     await formulaEditor.evaluate((element) => {
       // Accessibility APIs can update MathLive without emitting an input event.
       (element as HTMLElement & { value: string }).value = 'y';
     });
 
-    await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('');
-    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('');
+    await expect(page.locator('input[name="x"]')).toHaveValue('');
+    await expect(page.locator('input[name="x-latex"]')).toHaveValue('');
 
     const requestPromise = page.waitForRequest(
       (request) =>
@@ -87,32 +91,32 @@ test.describe('pl-symbolic-input formula editor', () => {
   test('keeps preceding content outside typed square roots and absolute values', async ({
     page,
   }) => {
-    const formulaEditor = page.locator('#symbolic-input-x');
+    const formulaEditor = page.locator('.pl-symbolic-input:has(input[name="x-latex"]) math-field');
     await expect(formulaEditor).toBeVisible();
 
     await fillFormulaEditor(formulaEditor, '');
     for (const key of '3sqrty') await formulaEditor.press(key);
-    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^3\\sqrt/);
+    await expect(page.locator('input[name="x-latex"]')).toHaveValue(/^3\\sqrt/);
 
     await fillFormulaEditor(formulaEditor, '');
     for (const key of '3|y') await formulaEditor.press(key);
-    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^3.*y.+$/);
+    await expect(page.locator('input[name="x-latex"]')).toHaveValue(/^3.*y.+$/);
   });
 
   test('keeps preceding content outside square roots inserted from the context menu', async ({
     page,
   }) => {
-    const formulaEditor = page.locator('#symbolic-input-x');
+    const formulaEditor = page.locator('.pl-symbolic-input:has(input[name="x-latex"]) math-field');
     await expect(formulaEditor).toBeVisible();
     await formulaEditor.press('3');
     await formulaEditor.click({ button: 'right' });
     await page.getByRole('menuitem', { name: /√/ }).click();
 
-    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^3\\sqrt/);
+    await expect(page.locator('input[name="x-latex"]')).toHaveValue(/^3\\sqrt/);
   });
 
   test('keeps preceding content outside virtual keyboard prefix functions', async ({ page }) => {
-    const formulaEditor = page.locator('#symbolic-input-x');
+    const formulaEditor = page.locator('.pl-symbolic-input:has(input[name="x-latex"]) math-field');
     await expect(formulaEditor).toBeVisible();
     await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
 
@@ -144,7 +148,9 @@ test.describe('pl-symbolic-input formula editor', () => {
   });
 
   test('keeps preceding content outside natural log when configured', async ({ page }) => {
-    const formulaEditor = page.locator('#symbolic-input-lnx');
+    const formulaEditor = page.locator(
+      '.pl-symbolic-input:has(input[name="lnx-latex"]) math-field',
+    );
     await expect(formulaEditor).toBeVisible();
     await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
 
@@ -160,7 +166,7 @@ test.describe('pl-symbolic-input unicode multiplication keys', () => {
   });
 
   test('inserts unicode multiplication keys as \\cdot', async ({ page }) => {
-    const formulaEditor = page.locator('#symbolic-input-x');
+    const formulaEditor = page.locator('.pl-symbolic-input:has(input[name="x-latex"]) math-field');
     await expect(formulaEditor).toBeVisible();
 
     // Bullet (e.g. Option+8 on macOS), bullet operator, and asterisk operator.
@@ -177,8 +183,8 @@ test.describe('pl-symbolic-input unicode multiplication keys', () => {
       }, key);
       await page.keyboard.press('y');
 
-      await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^\{2\}\\cdot y$/);
-      await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('2 * y');
+      await expect(page.locator('input[name="x-latex"]')).toHaveValue(/^\{2\}\\cdot y$/);
+      await expect(page.locator('input[name="x"]')).toHaveValue('2 * y');
     }
   });
 });
@@ -189,13 +195,13 @@ test.describe('pl-symbolic-input plus-minus', () => {
   });
 
   test('rejects \\pm but accepts a typed "+-"', async ({ page }) => {
-    const formulaEditor = page.locator('#symbolic-input-x');
+    const formulaEditor = page.locator('.pl-symbolic-input:has(input[name="x-latex"]) math-field');
     await expect(formulaEditor).toBeVisible();
 
     await formulaEditor.press('2');
     await page.keyboard.insertText('\u00b1');
     await page.keyboard.press('y');
-    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('2\\pm y');
+    await expect(page.locator('input[name="x-latex"]')).toHaveValue('2\\pm y');
     await page.getByRole('button', { name: 'Save only' }).click();
     await expect(formulaEditor).toHaveClass(/is-invalid/);
     const plusMinusError = page.locator('[data-bs-content*="invalid symbol"]');
@@ -204,7 +210,7 @@ test.describe('pl-symbolic-input plus-minus', () => {
     await fillFormulaEditor(formulaEditor, '');
     for (const key of '2+-y') await formulaEditor.press(key);
     await page.getByRole('button', { name: 'Save only' }).click();
-    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('2+-y');
+    await expect(page.locator('input[name="x-latex"]')).toHaveValue('2+-y');
     await expect(formulaEditor).not.toHaveClass(/is-invalid/);
   });
 });
