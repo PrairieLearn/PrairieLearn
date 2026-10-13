@@ -1,4 +1,4 @@
-import type { DocxSource } from '../printing/docxBrowser.js';
+import type { DocxSource } from '../printing/docx-browser.js';
 
 export interface PrintSnapshot {
   html: string;

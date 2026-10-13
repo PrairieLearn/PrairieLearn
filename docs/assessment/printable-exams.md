@@ -19,6 +19,8 @@ The spacing you choose is a minimum. Longer questions can take more space and mo
 
 Review every question in the preview, including its instructions, figures, and answer choices. Questions that work well online may need changes for a paper exam. Expandable sections print in full, even when they are closed in the online question.
 
+Questions that use custom course elements are supported on a best-effort basis. Check their preview and downloaded files carefully, especially if their scripts or styles refer to HTML element IDs.
+
 The question list highlights two kinds of items to check:
 
 - **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the exam.

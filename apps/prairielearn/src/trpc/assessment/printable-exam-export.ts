@@ -21,7 +21,7 @@ import {
   assemblePrintPacket,
   readPrintCoverPages,
 } from '../../lib/print-packet.js';
-import { createPdfOutput } from '../../lib/printing/pdfOutput.js';
+import { createPdfOutput } from '../../lib/printing/pdf-output.js';
 import {
   type PrintDocument,
   getPrintRenderer,

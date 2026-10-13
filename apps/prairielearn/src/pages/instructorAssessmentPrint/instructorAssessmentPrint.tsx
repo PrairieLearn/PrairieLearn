@@ -63,7 +63,7 @@ router.get(
         resLocals: res.locals,
         pageTitle: 'Print',
         navContext: { type: 'instructor', page: 'assessment', subPage: 'questions' },
-        headContent: [compiledStylesheetTag('instructorAssessmentPrint.css')],
+        headContent: [compiledStylesheetTag('instructor-assessment-print.css')],
         options: { fullWidth: true, contentContainerClassName: 'print-preparation-container' },
         content: (
           <Hydrate className="print-preparation-root">
