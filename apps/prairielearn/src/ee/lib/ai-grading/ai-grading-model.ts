@@ -3,13 +3,14 @@ import { createGoogle } from '@ai-sdk/google';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { publicFetch } from '@prairielearn/public-fetch';
+import { assertNever } from '@prairielearn/utils';
 
 import type { CourseInstance } from '../../../lib/db-types.js';
 import { decryptFromStorage } from '../../../lib/encrypted-storage.js';
 import { selectOptionalCredential } from '../../../models/ai-grading-credentials.js';
 
 import { resolveAiGradingKeys } from './ai-grading-credentials.js';
+import { createAiGradingFetch } from './ai-grading-fetch.js';
 import {
   discoverAiGradingModels,
   normalizeAiGradingBaseUrl,
@@ -55,8 +56,7 @@ export async function resolveAiGradingModel(
       baseURL: baseUrl,
       apiKey,
       supportsStructuredOutputs: true,
-      // public-fetch uses Undici's Fetch types; the SDK uses the DOM Fetch types.
-      fetch: publicFetch as unknown as typeof fetch,
+      fetch: createAiGradingFetch(),
     });
     return {
       model: provider(selection.model_id),
@@ -67,38 +67,44 @@ export async function resolveAiGradingModel(
   }
   const provider = AI_GRADING_MODEL_PROVIDERS[selection.model_id];
   const keys = await resolveAiGradingKeys(courseInstance);
-  if (provider === 'openai') {
-    if (!keys.openai) {
-      throw new HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
+  switch (provider) {
+    case 'openai': {
+      if (!keys.openai) {
+        throw new HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
+      }
+      return {
+        model: createAiGradingOpenAI({
+          apiKey: keys.openai.apiKey,
+          organization: keys.openai.organization ?? undefined,
+        })(selection.model_id),
+        provider,
+        base_url: null,
+        credential_id: null,
+      };
     }
-    return {
-      model: createAiGradingOpenAI({
-        apiKey: keys.openai.apiKey,
-        organization: keys.openai.organization ?? undefined,
-      })(selection.model_id),
-      provider,
-      base_url: null,
-      credential_id: null,
-    };
-  }
-  if (provider === 'google') {
-    if (!keys.google) {
-      throw new HttpStatusError(403, 'Model not available (Google API key not provided)');
+    case 'google': {
+      if (!keys.google) {
+        throw new HttpStatusError(403, 'Model not available (Google API key not provided)');
+      }
+      return {
+        model: createGoogle({ apiKey: keys.google.apiKey })(selection.model_id),
+        provider,
+        base_url: null,
+        credential_id: null,
+      };
     }
-    return {
-      model: createGoogle({ apiKey: keys.google.apiKey })(selection.model_id),
-      provider,
-      base_url: null,
-      credential_id: null,
-    };
+    case 'anthropic': {
+      if (!keys.anthropic) {
+        throw new HttpStatusError(403, 'Model not available (Anthropic API key not provided)');
+      }
+      return {
+        model: createAnthropic({ apiKey: keys.anthropic.apiKey })(selection.model_id),
+        provider,
+        base_url: null,
+        credential_id: null,
+      };
+    }
+    default:
+      return assertNever(provider);
   }
-  if (!keys.anthropic) {
-    throw new HttpStatusError(403, 'Model not available (Anthropic API key not provided)');
-  }
-  return {
-    model: createAnthropic({ apiKey: keys.anthropic.apiKey })(selection.model_id),
-    provider,
-    base_url: null,
-    credential_id: null,
-  };
 }
