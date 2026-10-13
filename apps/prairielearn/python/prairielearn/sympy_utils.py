@@ -20,6 +20,7 @@ from tokenize import NAME, NUMBER, OP, TokenError
 from types import CodeType
 from types import MappingProxyType as FrozenDict
 from typing import (
+    TYPE_CHECKING,
     Any,
     Final,
     Literal,
@@ -35,6 +36,9 @@ from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
 from prairielearn.misc_utils import full_unidecode
+
+if TYPE_CHECKING:
+    from prairielearn.internal.symbolic_input import SourceText, SourceToken
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
@@ -211,6 +215,7 @@ class _Constants:
         "—": "-",  # em dash
         "―": "-",  # horizontal bar
         "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
+        "∣": "|",  # ruff:ignore[ambiguous-unicode-character-string]
         "\u2061": "",  # function application
     })
 
@@ -352,6 +357,7 @@ class HasCommentError(BaseSympyError):
 @dataclass
 class HasInvalidSymbolError(BaseSympyError):
     symbol: str
+    offset: int | None = None
 
 
 # Deprecated / unused, kept for backwards compatibility.
@@ -786,20 +792,14 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
     return f" {last_conjunction} ".join(comma_sep.rsplit(", ", maxsplit=1))
 
 
-def _normalize_expr(expr: str) -> tuple[str, list[int]]:
-    """Normalize expr and build a mapping from normalized indices to original indices.
-
-    Returns:
-        A tuple of the normalized expression and, for each of its characters, the
-        index of the character in expr that it came from.
-
-    Raises:
-        HasInvalidSymbolError: If expr contains a character that cannot be transliterated.
-    """
+def _normalize_unicode_source(
+    source: "SourceText", *, formula_editor: bool = False
+) -> "SourceText":
+    """Normalize Unicode while retaining the raw offset of every output character."""
     const = _Constants
-    parts: list[str] = []
-    offsets: list[int] = []
-    for ind, char in enumerate(expr):
+    normalized_tokens: list[SourceToken] = []
+    for token in source.tokens:
+        char = token.text
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
@@ -809,72 +809,116 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         ):
             # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
             # formula editor writes exponents and subscripts with "^" and "_".
-            raise HasInvalidSymbolError(char)
-        # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
+            raise HasInvalidSymbolError(char, token.raw_offset)
+        # Single-char codepoints only; multi-char keys like "cup" are unidecoded
+        # character-by-character (a no-op for ASCII).
         elif char not in const.set_operators:
-            normalized_char = full_unidecode(greek_unicode_transform(char))
+            greek_normalized = greek_unicode_transform(char)
+            normalized_char = full_unidecode(greek_normalized)
             # unidecode uses "[?]" for characters it doesn't know, which would
             # otherwise be misreported as set notation.
             if normalized_char == "[?]" and char != normalized_char:
-                raise HasInvalidSymbolError(char)
+                raise HasInvalidSymbolError(char, token.raw_offset)
+            if formula_editor and greek_normalized != char:
+                normalized_char = f" {' '.join(normalized_char)} "
 
-        parts.append(normalized_char)
-        offsets.extend([ind] * len(normalized_char))
-    return "".join(parts), offsets
+        normalized_tokens.extend(token.rewrite(normalized_char))
+    return source.replace(normalized_tokens)
 
 
 # The lookahead allows overlapping pairs, so a Unicode sign after "**" is checked.
 _MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
 
 
-def _validate_multiplication(
-    original_expr: str, normalized_expr: str, char_offsets: list[int]
-) -> None:
+def _validate_multiplication(source: "SourceText") -> None:
     """Reject multiplication signs that normalization would turn into exponentiation."""
-    for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, normalized_expr):
-        left_offset = char_offsets[match.start("left")]
-        right_offset = char_offsets[match.start("right")]
-        if original_expr[right_offset] != "*":
+    for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, source.text):
+        left_offset = source.tokens[match.start("left")].raw_offset
+        right_offset = source.tokens[match.start("right")].raw_offset
+        if source.raw_text[right_offset] != "*":
             raise HasInvalidExpressionError(right_offset)
-        if original_expr[left_offset] != "*":
+        if source.raw_text[left_offset] != "*":
             raise HasInvalidExpressionError(left_offset)
         if match.start("right") > match.end("left"):
             raise HasInvalidExpressionError(left_offset)
 
 
-def _regex_sub_expr_and_map_offsets(
-    expr: str, offsets: list[int], pattern: re.Pattern[str], replacement: str
-) -> tuple[str, list[int]]:
-    r"""Apply a regex substitution while keeping the offset map aligned.
-
-    Returns:
-        a tuple of the transformed expr and the new offset list
-
-    Example:
-        >>> import re
-        >>> _regex_sub_expr_and_map_offsets(
-        ...     "x^2",
-        ...     [0, 1, 2],
-        ...     re.compile(r"\\^"),
-        ...     r"**",
-        ... )
-        ('x**2', [0, 1, 1, 2])
-    """
-    parts: list[str] = []
-    new_offsets: list[int] = []
+def _rewrite_pattern_source(
+    source: "SourceText",
+    pattern: re.Pattern[str],
+    replacement: Callable[
+        [re.Match[str], tuple["SourceToken", ...]], Iterable["SourceToken"]
+    ],
+) -> "SourceText":
+    tokens: list[SourceToken] = []
     last_end = 0
-
-    for match in pattern.finditer(expr):
-        parts.append(expr[last_end : match.start()])
-        new_offsets.extend(offsets[last_end : match.start()])
-        replacement_text = match.expand(replacement)
-        parts.append(replacement_text)
-        new_offsets.extend([offsets[match.start()]] * len(replacement_text))
+    for match in pattern.finditer(source.text):
+        tokens.extend(source.tokens[last_end : match.start()])
+        tokens.extend(replacement(match, source.tokens[match.start() : match.end()]))
         last_end = match.end()
+    tokens.extend(source.tokens[last_end:])
+    return source.replace(tokens)
 
-    parts.append(expr[last_end:])
-    new_offsets.extend(offsets[last_end:])
-    return "".join(parts), new_offsets
+
+def _validate_and_rewrite_source(
+    source: "SourceText",
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+) -> "SourceText":
+    _validate_multiplication(source)
+
+    for symbol in _Constants.plus_minus_operators:
+        ind = source.text.find(symbol)
+        if ind != -1:
+            raise HasInvalidSymbolError(symbol, source.tokens[ind].raw_offset)
+
+    ind = source.text.find("\\")
+    if ind != -1:
+        raise HasEscapeError(source.tokens[ind].raw_offset)
+    ind = source.text.find("#")
+    if ind != -1:
+        raise HasCommentError(source.tokens[ind].raw_offset)
+    if stars := re.search(r"\*{3,}", source.text):
+        raise HasInvalidExpressionError(source.tokens[stars.start()].raw_offset)
+    if not allow_sets and any(
+        token in source.text
+        for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # ruff:ignore[ambiguous-unicode-character-string]
+    ):
+        raise HasSetNotationError
+
+    source = _rewrite_pattern_source(
+        source,
+        re.compile(r"\^"),
+        lambda _match, tokens: tokens[0].rewrite("**"),
+    )
+    source = _rewrite_pattern_source(
+        source,
+        re.compile(r"(\d)([eE])([+-])"),
+        lambda match, tokens: (
+            tokens[:1] + tokens[1].rewrite(f"*{match.group(2)}") + tokens[2:]
+        ),
+    )
+    if not allow_complex:
+        source = _rewrite_pattern_source(
+            source,
+            re.compile(r"(\d)([jJ])(?![a-zA-Z0-9])"),
+            lambda match, tokens: tokens[:1] + tokens[1].rewrite(f"*{match.group(2)}"),
+        )
+    return source
+
+
+def _normalize_source(
+    text: str, *, allow_complex: bool, allow_sets: bool
+) -> "SourceText":
+    from prairielearn.internal.symbolic_input import SourceText
+
+    source = _normalize_unicode_source(SourceText.from_text(text))
+    return _validate_and_rewrite_source(
+        source,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
 
 
 def evaluate_with_source(
@@ -891,73 +935,32 @@ def evaluate_with_source(
     Returns:
         A tuple of the SymPy expression and the code that was used to generate it.
 
-    Raises:
-        HasEscapeError: If the expression contains an escape character.
-        HasCommentError: If the expression contains a comment character.
-        HasInvalidExpressionError: If the expression contains "***", whitespace
-            between two multiplication signs, or a unicode multiplication sign next
-            to another multiplication sign.
-        HasSetNotationError: If the expression contains interval or set characters.
-        HasArgumentTypeError: If an expression is given the wrong types.
-        HasFunctionArityError: If a function is given the wrong number of args.
-        HasParseError: If the expression cannot be parsed.
-        BaseSympyError: If the expression cannot be evaluated.
     """
-    normalized_expr, char_offsets = _normalize_expr(expr)
-    _validate_multiplication(expr, normalized_expr, char_offsets)
-
-    # Check for escape and comment characters after normalization, since some
-    # unicode characters normalize to "#" or "\\". The offset map translates
-    # back to the original string position in all cases.
-    ind = normalized_expr.find("\\")
-    if ind != -1:
-        raise HasEscapeError(char_offsets[ind])
-    ind = normalized_expr.find("#")
-    if ind != -1:
-        raise HasCommentError(char_offsets[ind])
-
-    # Python would read "***" (e.g. the formula editor's \star) as "**" followed by
-    # "*", and report the syntax error at an offset into SymPy's transformed code.
-    if stars := re.search(r"\*{3,}", normalized_expr):
-        raise HasInvalidExpressionError(char_offsets[stars.start()])
-
-    # the only thing this can't catch is open intervals `(-, -)`, checked later
-    if not allow_sets and any(
-        token in normalized_expr
-        for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # ruff:ignore[ambiguous-unicode-character-string]
-    ):
-        raise HasSetNotationError
-
-    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-    # for exponentiation. In Python, only the latter can be used.
-    normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
-        normalized_expr, char_offsets, re.compile(r"\^"), r"**"
+    source = _normalize_source(
+        expr,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+    return _evaluate_normalized_source(
+        source,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
     )
 
-    # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
-    # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
-    # Euler's number plus 3), not 2000.0.
-    normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
-        normalized_expr,
-        char_offsets,
-        re.compile(r"(\d)([eE])([+-])"),
-        r"\1*\2\3",
-    )
 
-    # When complex numbers are not allowed, prevent Python from interpreting
-    # patterns like "3j" or "3J" as complex literals. Convert "<digits>j" to "<digits>*j"
-    # so that 'j' is treated as a variable instead. This fixes issue #13661.
-    #
-    # The negative lookahead (?![a-zA-Z0-9]) ensures we only match standalone "j"/"J".
-    # Patterns like "3jn" are NOT transformed because Python tokenizes "3jn" as "3j"
-    # (complex) + "n" regardless - they will still fail with HasComplexError.
-    if not allow_complex:
-        normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
-            normalized_expr,
-            char_offsets,
-            re.compile(r"(\d)([jJ])(?![a-zA-Z0-9])"),
-            r"\1*\2",
-        )
+def _evaluate_normalized_source(
+    source: "SourceText",
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+) -> tuple[sympy.Expr, str | CodeType]:
+    normalized_expr = source.text
 
     local_dict = {
         k: v
@@ -1023,9 +1026,7 @@ def evaluate_with_source(
     try:
         ast_check_str(code, parsed_locals_to_eval, allow_sets=allow_sets)
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
-        index = _find_type_error_offset(
-            normalized_expr, char_offsets, exc.as_type_error()
-        )
+        index = _find_type_error_offset(source, exc.as_type_error())
         if index != -1:
             exc.offset = index
 
@@ -1042,7 +1043,7 @@ def evaluate_with_source(
         # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
         # Because the AST check above already ran, TypeErrors here are expected to
         # come from SymPy's own type system, not from Python infrastructure bugs.
-        index = _find_type_error_offset(normalized_expr, char_offsets, exc)
+        index = _find_type_error_offset(source, exc)
         if index != -1:
             raise HasParseError(index) from exc
         # if we can't localize the type error, report to staff.
@@ -1129,6 +1130,36 @@ def convert_string_to_sympy_with_source(
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]:
+    """Convert a string to a SymPy expression and return its generated source."""
+    return _convert_source_to_sympy_with_source(
+        None,
+        expr,
+        variables,
+        allow_hidden=allow_hidden,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
+        custom_functions=custom_functions,
+        assumptions=assumptions,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+
+
+def _convert_source_to_sympy_with_source(
+    source: "SourceText | None",
+    expr: str,
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
+) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
@@ -1202,8 +1233,17 @@ def convert_string_to_sympy_with_source(
             locals_for_eval["functions"][name] = sympy.Function(name)
 
     # Do the conversion
-    return evaluate_with_source(
-        expr,
+    if source is None:
+        return evaluate_with_source(
+            expr,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+    return _evaluate_normalized_source(
+        source,
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
@@ -1245,8 +1285,8 @@ _TYPE_ERROR_OPERATOR_PATTERN = re.compile(
 )
 
 
-def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> int:
-    """Return an approximate offset for a SymPy TypeError in expr."""
+def _find_type_error_offset(source: "SourceText", exc: TypeError) -> int:
+    """Return an approximate raw offset for a SymPy TypeError."""
     match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
     if match is None:
         return -1
@@ -1263,9 +1303,9 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
     )
 
     for candidate in candidate_operators:
-        ind = find_symbol_offset(expr, candidate)
+        ind = find_symbol_offset(source.text, candidate)
         if ind != -1:
-            return offsets[ind]
+            return source.tokens[ind].raw_offset
 
     return -1
 
@@ -1392,8 +1432,9 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
-    try:
-        expr_parsed = convert_string_to_sympy(
+    return _try_parse_as_sympy(
+        expr,
+        lambda: convert_string_to_sympy(
             expr,
             variables,
             allow_hidden=allow_hidden,
@@ -1403,7 +1444,21 @@ def try_parse_string_as_sympy(
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
-        )
+        ),
+        allow_complex=allow_complex,
+        imaginary_unit=imaginary_unit,
+    )
+
+
+def _try_parse_as_sympy(
+    expr: str,
+    parse: Callable[[], sympy.Expr],
+    *,
+    allow_complex: bool,
+    imaginary_unit: str | None,
+) -> SympyParseResult:
+    try:
+        expr_parsed = parse()
     except HasFloatError as exc:
         return SympyParseFailure(
             f"Your answer contains the floating-point number {exc.n}. "
@@ -1446,9 +1501,14 @@ def try_parse_string_as_sympy(
             "Note that the location of the syntax error is approximate."
         )
     except HasInvalidSymbolError as exc:
+        offset = (
+            exc.offset
+            if exc.offset is not None
+            else find_symbol_offset(expr, exc.symbol)
+        )
         return SympyParseFailure(
             f'Your answer refers to an invalid symbol "{exc.symbol}". '
-            f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
+            f"<br><br><pre>{point_to_error(expr, offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasArgumentTypeError as exc:
