@@ -91,6 +91,7 @@ describe('AI grading model discovery', () => {
     [401, 'authentication'],
     [403, 'authentication'],
     [404, 'not_found'],
+    [422, 'request_rejected'],
     [429, 'rate_limit'],
     [500, 'provider_error'],
   ])('classifies HTTP %s without exposing the response', async (status, code) => {
