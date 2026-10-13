@@ -16,8 +16,8 @@ import {
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
 } from '../../src/lib/client/print-response-controls.js';
-import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docxBrowser.js';
-import { addPreviewPageCodes } from '../../src/lib/printing/pageCode.js';
+import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docx-browser.js';
+import { addPreviewPageCodes } from '../../src/lib/printing/page-code.js';
 
 interface PagedFlow {
   total: number;

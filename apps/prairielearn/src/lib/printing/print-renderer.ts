@@ -2,10 +2,10 @@ import * as https from 'node:https';
 
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
-import type { PageCodeOptions } from './pageCode.js';
-import { createPdfOutput } from './pdfOutput.js';
-import type { PrintablePageOutput } from './printablePageOutput.js';
-import { Semaphore } from './semaphore.js';
+import type { PageCodeOptions } from './page-code.js';
+import { createPdfOutput } from './pdf-output.js';
+import type { PrintablePageOutput } from './printable-page-output.js';
+import { RenderQueue } from './render-queue.js';
 
 const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
@@ -93,7 +93,7 @@ export class PrintRenderer {
   private readonly cloudflare: PrintRendererOptions['cloudflare'];
   private readonly defaultTimeoutMs: number;
   private readonly contextCloseGraceMs: number;
-  private readonly worker: Semaphore;
+  private readonly worker: RenderQueue;
   private browserPromise: Promise<Browser> | null = null;
   private browser: Browser | null = null;
   private closed = false;
@@ -108,7 +108,7 @@ export class PrintRenderer {
     this.cloudflare = cloudflare;
     this.defaultTimeoutMs = timeoutMs;
     this.contextCloseGraceMs = contextCloseGraceMs;
-    this.worker = new Semaphore(
+    this.worker = new RenderQueue(
       maxConcurrentRenders ?? (cloudflare ? DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS : 1),
       maxQueuedRenders ??
         (cloudflare ? DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS : DEFAULT_MAX_QUEUED_RENDERS),

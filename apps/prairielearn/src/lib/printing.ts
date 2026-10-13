@@ -18,10 +18,10 @@ import {
   QuestionSchema,
   SprocQuestionOrderSchema,
 } from './db-types.js';
-import { namespaceQuestionHtmls } from './printing/namespaceQuestionHtmls.js';
-import { PrintRenderer } from './printing/printRenderer.js';
-import type { PrintablePageOutput } from './printing/printablePageOutput.js';
-import type { QuestionBlockSize } from './printing/questionBlockSize.js';
+import { namespaceQuestionHtmls } from './printing/namespace-question-htmls.js';
+import { PrintRenderer } from './printing/print-renderer.js';
+import type { PrintablePageOutput } from './printing/printable-page-output.js';
+import type { QuestionBlockSize } from './printing/question-block-size.js';
 import { getAndRenderVariant } from './question-render.js';
 import type { ResLocalsForPage } from './res-locals.js';
 

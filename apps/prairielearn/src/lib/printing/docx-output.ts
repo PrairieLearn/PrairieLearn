@@ -2,11 +2,11 @@ import type { Page } from 'playwright';
 
 import { compiledScriptPath } from '../assets.js';
 
-import type { DocxSource } from './docxBrowser.js';
-import type { DocxFigure } from './docxContent.js';
-import type { PrintedPageGeometry } from './docxDocument.js';
-import type { PrintableCover } from './printableCover.js';
-import type { PrintablePageOutput } from './printablePageOutput.js';
+import type { DocxSource } from './docx-browser.js';
+import type { DocxFigure } from './docx-content.js';
+import type { PrintedPageGeometry } from './docx-document.js';
+import type { PrintableCover } from './printable-cover.js';
+import type { PrintablePageOutput } from './printable-page-output.js';
 
 const IMAGE_DEVICE_SCALE_FACTOR = 2;
 
@@ -44,7 +44,7 @@ export function createDocxOutput({
           png: await element.screenshot({ type: 'png', scale: 'device' }),
         });
       }
-      await page.addScriptTag({ url: compiledScriptPath('printDocxClient.ts') });
+      await page.addScriptTag({ url: compiledScriptPath('print-docx-client.ts') });
       const bytes = await page.evaluate(
         async (options) => {
           const build = Reflect.get(window, '__PL_BUILD_PRINT_DOCX__') as

@@ -14,13 +14,13 @@ import {
 } from '../../lib/client/print-cover.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
 import { config } from '../../lib/config.js';
-import type { DocxSource } from '../../lib/printing/docxBrowser.js';
-import { createDocxOutput } from '../../lib/printing/docxOutput.js';
-import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdfOutput.js';
+import type { DocxSource } from '../../lib/printing/docx-browser.js';
+import { createDocxOutput } from '../../lib/printing/docx-output.js';
+import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
 import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
-} from '../../lib/printing/questionBlockSize.js';
+} from '../../lib/printing/question-block-size.js';
 import {
   PRINT_DOCUMENTS,
   type PrintDocument,
@@ -37,7 +37,7 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 
 import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
-import { buildPrintableCover, getPrintFooterLabel } from './printCover.js';
+import { buildPrintableCover, getPrintFooterLabel } from './print-cover.js';
 
 const QuestionBlockSizeSchema = z.enum(QUESTION_BLOCK_SIZES);
 const QuestionNumberSchema = z.string().min(1);

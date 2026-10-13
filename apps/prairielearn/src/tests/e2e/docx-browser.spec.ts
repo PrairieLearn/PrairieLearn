@@ -7,8 +7,8 @@ import * as unzipper from 'unzipper';
 
 import type { AssetsManifest } from '@prairielearn/compiled-assets';
 
-import type { DocxSource } from '../../lib/printing/docxBrowser.js';
-import { createDocxDocument } from '../../lib/printing/docxDocument.js';
+import type { DocxSource } from '../../lib/printing/docx-browser.js';
+import { createDocxDocument } from '../../lib/printing/docx-document.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -58,14 +58,14 @@ test('exports shadow-root figures and visible slotted text from a paginated page
       '<p>Nested question text</p>';
   });
   await page.addStyleTag({
-    path: path.join(buildDirectory, manifest['stylesheets/examPrinting.css'].assetPath),
+    path: path.join(buildDirectory, manifest['stylesheets/exam-printing.css'].assetPath),
   });
   await page.addStyleTag({ content: '@page { size: Letter; }' });
   await page.addScriptTag({
     path: fileURLToPath(new URL('../dist/paged.polyfill.min.js', import.meta.resolve('pagedjs'))),
   });
   await page.addScriptTag({
-    path: path.join(buildDirectory, manifest['scripts/examPrintingClient.ts'].assetPath),
+    path: path.join(buildDirectory, manifest['scripts/exam-printing-client.ts'].assetPath),
   });
   await expect(page.locator(':root')).toHaveAttribute('data-print-status', 'ready');
 

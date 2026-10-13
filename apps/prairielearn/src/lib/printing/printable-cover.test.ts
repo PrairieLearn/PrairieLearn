@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { htmlToTextBlocks } from './printableCover.js';
+import { htmlToTextBlocks } from './printable-cover.js';
 
 describe('htmlToTextBlocks', () => {
   it('maps headings, paragraphs, and lists to text blocks', () => {

@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
-import { PrintRenderer } from '../../lib/printing/printRenderer.js';
+import { PrintRenderer } from '../../lib/printing/print-renderer.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 

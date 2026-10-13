@@ -15,7 +15,7 @@ const playwrightMocks = {
   launch: vi.fn(),
 };
 
-import { PrintRenderer, type RenderPdfOptions } from './printRenderer.js';
+import { PrintRenderer, type RenderPdfOptions } from './print-renderer.js';
 
 const READY_HTML =
   '<!doctype html><html data-print-status="ready"><body>Prepared pages</body></html>';
@@ -363,13 +363,19 @@ describe('PrintRenderer', () => {
         return Buffer.from('%PDF-test');
       },
     });
-    const renderer = new PrintRenderer();
+    const renderer = new PrintRenderer({ maxQueuedRenders: 1 });
     const active = renderPdf(renderer, { url: 'http://localhost:3000/print/active', timeoutMs: 0 });
 
     try {
       await expect(
         renderPdf(renderer, { url: 'http://localhost:3000/print/waiting', timeoutMs: 10 }),
       ).rejects.toThrow('Timed out after 10 ms waiting to render the PDF');
+      const next = renderPdf(renderer, {
+        url: 'http://localhost:3000/print/next',
+        timeoutMs: 0,
+      });
+      gate.open();
+      await next;
     } finally {
       gate.open();
       await active;

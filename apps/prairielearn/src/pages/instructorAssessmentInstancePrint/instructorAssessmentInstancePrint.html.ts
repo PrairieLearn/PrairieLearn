@@ -10,7 +10,7 @@ import {
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
 import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
-import type { PaperSize } from '../../lib/printing/pdfOutput.js';
+import type { PaperSize } from '../../lib/printing/pdf-output.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 import {
@@ -19,7 +19,7 @@ import {
   getDefaultHonorCodePledge,
   getPrintCoverFields,
   getPrintFooterLabel,
-} from './printCover.js';
+} from './print-cover.js';
 
 export function InstructorAssessmentInstancePrint({
   resLocals,
@@ -112,7 +112,7 @@ export function InstructorAssessmentInstancePrint({
             },
           };
         </script>
-        ${compiledScriptTag('examPrintingClient.ts')}
+        ${compiledScriptTag('exam-printing-client.ts')}
         <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>
         <style>
           @page {
@@ -250,7 +250,7 @@ export function InstructorAssessmentInstancePrint({
               `
             : ''
         }
-        ${compiledStylesheetTag('examPrinting.css')}
+        ${compiledStylesheetTag('exam-printing.css')}
         <style>
           @page {
             @bottom-right {
