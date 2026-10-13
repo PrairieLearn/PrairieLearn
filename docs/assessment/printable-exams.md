@@ -57,6 +57,8 @@ Uploaded covers do not appear in the preview. Download a student PDF or booklet 
 
 Select **Update preview** after making changes, then open **Download**. The menu includes downloads for each form:
 
+If a download says the preview has expired or changed, select **Update preview** and try again.
+
 | Option                               | What you get                                                                     |
 | ------------------------------------ | -------------------------------------------------------------------------------- |
 | **Download Form A (PDF)**            | One student copy of Form A, including your cover pages.                          |

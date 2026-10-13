@@ -6,6 +6,8 @@ Utilities for rendering printable HTML as PDFs and editable Word documents, and 
 
 The rendering browser lays out and paginates question HTML. PDF exports use its completed page snapshot. Word exports use the editable source captured before pagination and screenshots of figures. Create one renderer per application process:
 
+The preview response carries a signed snapshot ID covering its HTML, editable Word source, assessment instance, generating user, layout query, and selected question identities and order. PDF and Word exports verify the ID and current question list before rendering. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
+
 ```ts
 import { closePrintRenderer, getPrintRenderer } from '../printing.js';
 import { createDocxOutput } from './docx-output.js';

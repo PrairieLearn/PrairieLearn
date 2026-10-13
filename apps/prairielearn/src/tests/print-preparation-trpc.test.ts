@@ -9,7 +9,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
-import { DEFAULT_PRINT_SETTINGS } from '../lib/client/print-preparation.js';
+import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -18,6 +18,8 @@ import {
   assessmentHasPrintRandomization,
   inspectPrintPreparationQuestions,
 } from '../lib/print-preparation.js';
+import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
+import { getPrintableQuestionListDigest } from '../lib/printing.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseById } from '../models/course.js';
@@ -314,6 +316,41 @@ describe('print preparation', { timeout: 60_000 }, () => {
     data.append('coverPages', new File(['invalid PDF'], 'bad.pdf', { type: 'application/pdf' }));
     await expect(api.printableExamExport.pdf.mutate(data)).rejects.toThrow(
       'valid PDF without password protection',
+    );
+  });
+
+  test('rejects a changed PDF snapshot before rendering', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const api = client(assessment.id);
+    const instance = await api.printableExams.create.mutate();
+    const data = packetInput(instance.assessmentInstanceId);
+    const html = '<!doctype html><html data-print-status="ready"></html>';
+    const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
+    search.set('form_label', 'A');
+    search.set('document', 'exam');
+    data.append(
+      'snapshotIds',
+      createPrintSnapshotId(
+        {
+          assessmentInstanceId: instance.assessmentInstanceId,
+          authnUserId: '1',
+          search,
+          questionListDigest: await getPrintableQuestionListDigest(
+            instance.assessmentInstanceId,
+            new Set(),
+          ),
+          html,
+          source: { html: '', figures: [] },
+        },
+        config.secretKey,
+      ),
+    );
+    data.append('pages', new File([html + 'changed'], 'changed.html'));
+    await expect(api.printableExamExport.pdf.mutate(data)).rejects.toThrow(
+      'This print preview has expired or changed.',
     );
   });
 

@@ -56,6 +56,43 @@ test('recovers when creating the first preview fails', async ({ page, courseInst
   await expect(page.getByRole('button', { name: 'Start assessment' })).toBeVisible();
 });
 
+test('rejects a changed Word snapshot and offers a fresh preview', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam20-assessmentTools',
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
+  );
+  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+
+  await page.route(
+    '**/paper/docx?*',
+    async (route) => {
+      const snapshot = JSON.parse(route.request().postData()!) as {
+        id: string;
+        html: string;
+        source: unknown;
+      };
+      snapshot.html += 'changed';
+      await route.continue({ postData: JSON.stringify(snapshot) });
+    },
+    { times: 1 },
+  );
+  await chooseDownload(page, 'Download Form A Word (.docx)');
+  await expect(
+    page.getByRole('alert').getByText('This print preview has expired or changed.'),
+  ).toBeVisible();
+  const updatePreview = page.getByRole('button', { name: 'Update preview', exact: true });
+  await expect(updatePreview).toBeEnabled();
+  await updatePreview.click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+});
+
 test('shows errors while preparing PDF pages', async ({ page, courseInstance }) => {
   const assessment = await selectAssessmentByTid({
     course_instance_id: courseInstance.id,

@@ -13,6 +13,7 @@ import {
   MAX_PRINT_PACKET_SNAPSHOT_BYTES,
   MAX_PRINT_SNAPSHOT_BYTES,
 } from '../../lib/client/print-snapshot-limits.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
@@ -22,9 +23,11 @@ import {
   readPrintCoverPages,
 } from '../../lib/print-packet.js';
 import { createPdfOutput } from '../../lib/printing/pdf-output.js';
+import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import {
   type PrintDocument,
   getPrintRenderer,
+  getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   validatePrintDocument,
   validateQuestionsForPrinting,
@@ -78,6 +81,7 @@ export const printableExamExportRouter = t.router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
       }
       const pages = z.array(z.instanceof(File)).safeParse(input.getAll('pages'));
+      const snapshotIds = z.array(z.string().min(1)).safeParse(input.getAll('snapshotIds'));
       if (
         !pages.success ||
         pages.data.some((file) => file.size > MAX_PRINT_SNAPSHOT_BYTES) ||
@@ -139,6 +143,9 @@ export const printableExamExportRouter = t.router({
             message: 'The printable pages are incomplete.',
           });
         }
+        if (!snapshotIds.success || snapshotIds.data.length !== expectedPageFiles) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
+        }
         let pageFileIndex = 0;
         for (const [index, instance] of selectedInstances.entries()) {
           const overrides = new Map(
@@ -151,6 +158,10 @@ export const printableExamExportRouter = t.router({
             overrides,
             new Set(instance.settings.excludedQuestions),
           );
+          const questionListDigest = await getPrintableQuestionListDigest(
+            instance.assessmentInstanceId,
+            new Set(instance.settings.excludedQuestions),
+          );
           for (const printDocument of plan.documents) {
             // Every selected form gets a key, even if there are fewer copies than forms.
             if (printDocument === 'exam' && index >= metadata.copies) continue;
@@ -161,7 +172,23 @@ export const printableExamExportRouter = t.router({
               `${getAssessmentInstanceUrl({ courseInstanceId: ctx.course_instance.id, assessmentInstanceId: instance.assessmentInstanceId })}/paper/preview?${search}`,
               `${config.serverType}://localhost:${config.serverPort}`,
             );
-            const html = await pages.data[pageFileIndex++].text();
+            const html = await pages.data[pageFileIndex].text();
+            const id = snapshotIds.data[pageFileIndex++];
+            if (
+              !checkPrintSnapshotId(
+                {
+                  id,
+                  assessmentInstanceId: instance.assessmentInstanceId,
+                  authnUserId: ctx.authn_user.id,
+                  search: previewUrl.searchParams,
+                  questionListDigest,
+                  html,
+                },
+                config.secretKey,
+              )
+            ) {
+              throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
+            }
             const pdfOutput = createPdfOutput({
               encodePage: (pageNumber) =>
                 encodePrintPageIdentity({

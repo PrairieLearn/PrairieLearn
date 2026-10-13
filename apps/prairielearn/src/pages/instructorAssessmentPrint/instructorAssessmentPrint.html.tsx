@@ -25,6 +25,7 @@ import {
 } from '../../lib/client/print-preparation.js';
 import {
   type PrintSnapshot,
+  STALE_PRINT_SNAPSHOT_MESSAGE,
   capturePrintSnapshot,
   renderPrintSnapshot,
 } from '../../lib/client/print-snapshot.js';
@@ -129,6 +130,7 @@ function PrintPreparation({
   const snapshotsRef = useRef(new Map<string, PrintSnapshot>());
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
   const [retry, setRetry] = useState(0);
+  const [snapshotStale, setSnapshotStale] = useState(false);
   const {
     register,
     handleSubmit,
@@ -183,6 +185,13 @@ function PrintPreparation({
     link.download = filename;
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  function markStaleSnapshot(error: unknown) {
+    if (error instanceof Error && error.message.includes(STALE_PRINT_SNAPSHOT_MESSAGE)) {
+      snapshotsRef.current.clear();
+      setSnapshotStale(true);
+    }
   }
 
   function settingsForInstance(id: string, appliedSettings = settings): PrintSettings {
@@ -251,6 +260,7 @@ function PrintPreparation({
           'pages',
           new File([snapshot.html], `form-${instance.formLabel}-${printDocument}.html`),
         );
+        input.append('snapshotIds', snapshot.id);
       }
     }
     return input;
@@ -287,10 +297,15 @@ function PrintPreparation({
     outputDocument: PrintDocument | 'booklet',
   ) {
     packet.reset();
-    const result = await packet.mutateAsync(
-      await preparePdfInput(packetMetadata(ids, copyCount, outputDocument), 'packet'),
-    );
-    savePdf(result);
+    try {
+      const result = await packet.mutateAsync(
+        await preparePdfInput(packetMetadata(ids, copyCount, outputDocument), 'packet'),
+      );
+      savePdf(result);
+    } catch (error) {
+      markStaleSnapshot(error);
+      throw error;
+    }
   }
 
   function switchDocument(next: PrintDocument) {
@@ -361,10 +376,12 @@ function PrintPreparation({
       }
       saveDownload(await response.blob(), `assessment-form-${label}.docx`);
     },
+    onError: (error: Error) => markStaleSnapshot(error),
   });
   const onPreviewState = useCallback(
     (state: PreviewState) => {
       setPreview({ url: previewUrl, state });
+      if (state.status === 'ready') setSnapshotStale(false);
       if (state.status !== 'loading') setPreviewPending(false);
     },
     [previewUrl],
@@ -392,25 +409,31 @@ function PrintPreparation({
       (question) => question.concerns.length || omitted.has(question.number),
     ).length ?? 0;
   const noQuestionsSelected = questions.isSuccess && includedQuestions?.length === 0;
-  const previewHasError = currentPreview?.status === 'error' || omitted.size > 0;
+  const previewHasError = currentPreview?.status === 'error' || omitted.size > 0 || snapshotStale;
   const canDownload =
     validInstance &&
     !isDirty &&
     currentPreview?.status === 'ready' &&
     currentPreview.questions > 0 &&
     omitted.size === 0 &&
+    !snapshotStale &&
     !download.isPending &&
     !busy;
 
   async function downloadBooklet(studentCount: number) {
     setCopies(studentCount);
     booklet.reset();
-    savePdf(
-      await booklet.mutateAsync(
-        await preparePdfInput(packetMetadata(instanceIds, studentCount, 'booklet'), 'booklet'),
-      ),
-    );
-    setShowBookletModal(false);
+    try {
+      savePdf(
+        await booklet.mutateAsync(
+          await preparePdfInput(packetMetadata(instanceIds, studentCount, 'booklet'), 'booklet'),
+        ),
+      );
+      setShowBookletModal(false);
+    } catch (error) {
+      markStaleSnapshot(error);
+      throw error;
+    }
   }
 
   async function applySettings(values: PrintSettings) {
@@ -423,6 +446,10 @@ function PrintPreparation({
     setPreviewPending(true);
     setPreview(null);
     snapshotsRef.current.clear();
+    packet.reset();
+    booklet.reset();
+    download.reset();
+    setPdfPreparationError(null);
     try {
       if (!instanceId) {
         const result = await create.mutateAsync();

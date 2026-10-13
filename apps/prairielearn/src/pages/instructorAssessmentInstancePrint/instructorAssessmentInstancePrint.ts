@@ -13,10 +13,15 @@ import {
   PrintIdentityFieldsSchema,
 } from '../../lib/client/print-cover.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import {
+  checkPrintSnapshotId,
+  createPrintSnapshotId,
+} from '../../lib/printing/print-snapshot-id.js';
 import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
@@ -26,6 +31,7 @@ import {
   type PrintDocument,
   describeOmittedQuestions,
   getPrintRenderer,
+  getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
   validatePrintDocument,
@@ -89,6 +95,7 @@ const DocumentQuerySchema = LayoutQuerySchema.extend({
   document: z.enum(PRINT_DOCUMENTS).default('exam'),
 });
 const PrintSnapshotSchema = z.strictObject({
+  id: z.string().min(1),
   html: z.string().min(1).max(MAX_PRINT_SNAPSHOT_BYTES),
   source: z.strictObject({
     html: z.string().max(MAX_PRINT_SNAPSHOT_BYTES),
@@ -264,6 +271,27 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
     const snapshot = PrintSnapshotSchema.parse(
       JSON.parse(z.instanceof(Buffer).parse(req.body).toString('utf8')),
     );
+    const previewUrl = new URL(
+      printUrl(req.baseUrl, 'preview', layout, document),
+      `${config.serverType}://localhost:${config.serverPort}`,
+    );
+    if (
+      !checkPrintSnapshotId(
+        {
+          ...snapshot,
+          assessmentInstanceId: res.locals.assessment_instance.id,
+          authnUserId: res.locals.authn_user.id,
+          search: previewUrl.searchParams,
+          questionListDigest: await getPrintableQuestionListDigest(
+            res.locals.assessment_instance.id,
+            layout.excludedQuestionNumbers,
+          ),
+        },
+        config.secretKey,
+      )
+    ) {
+      throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+    }
     const $ = load(snapshot.html);
     const hasExecutableAttributes =
       $('*').filter((_index, node) =>
@@ -280,10 +308,6 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
     ) {
       throw new HttpStatusError(400, 'The printable pages contain executable content.');
     }
-    const previewUrl = new URL(
-      printUrl(req.baseUrl, 'preview', layout, document),
-      `${config.serverType}://localhost:${config.serverPort}`,
-    );
     const output = createDocxOutput({
       source: snapshot.source,
       cover: layout.includeCoverPage
@@ -431,23 +455,35 @@ router.get(
             copy
               .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
               .forEach((node) => node.remove());
-            const data = globalThis.document.createElement('script');
-            data.id = 'pl-print-docx-source';
-            data.type = 'application/json';
-            data.textContent = JSON.stringify(source).replaceAll('<', '\\u003c');
-            copy.querySelector('head')?.append(data);
             return { html: `<!doctype html>\n${copy.outerHTML}`, source };
           }),
       },
     );
-    PrintSnapshotSchema.shape.source.parse(source);
+    const parsedSource = PrintSnapshotSchema.shape.source.parse(source);
+    const id = createPrintSnapshotId(
+      {
+        assessmentInstanceId: res.locals.assessment_instance.id,
+        authnUserId: res.locals.authn_user.id,
+        search: previewUrl.searchParams,
+        questionListDigest: printingResult.questionListDigest,
+        html,
+        source: parsedSource,
+      },
+      config.secretKey,
+    );
+    const snapshotHtml = html
+      .replace('<html', `<html data-print-snapshot-id="${id}"`)
+      .replace(
+        '</head>',
+        `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(parsedSource).replaceAll('<', '\\u003c')}</script></head>`,
+      );
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
     );
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.send(html);
+    res.send(snapshotHtml);
   }),
 );
 

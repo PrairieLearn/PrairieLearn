@@ -1,9 +1,13 @@
 import type { DocxSource } from '../printing/docx-browser.js';
 
 export interface PrintSnapshot {
+  id: string;
   html: string;
   source: DocxSource;
 }
+
+export const STALE_PRINT_SNAPSHOT_MESSAGE =
+  'This print preview has expired or changed. Select Update preview and try again.';
 
 /** Save the pages exactly as the instructor sees them, before handing them to an exporter. */
 export function capturePrintSnapshot(doc: Document): PrintSnapshot {
@@ -14,14 +18,17 @@ export function capturePrintSnapshot(doc: Document): PrintSnapshot {
   const sourceText = doc.getElementById('pl-print-docx-source')?.textContent;
   const source = sourceText ? (JSON.parse(sourceText) as DocxSource) : undefined;
   if (!source) throw new Error('The preview did not capture editable question content.');
+  const id = root.dataset.printSnapshotId;
+  if (!id) throw new Error('The printable preview has no snapshot ID.');
 
   const copy = root.cloneNode(true) as HTMLElement;
+  copy.removeAttribute('data-print-snapshot-id');
   copy
     .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
     .forEach((element) => {
       element.remove();
     });
-  return { html: `<!doctype html>\n${copy.outerHTML}`, source };
+  return { id, html: `<!doctype html>\n${copy.outerHTML}`, source };
 }
 
 /** Lay out another form in an offscreen frame when it is needed for a download. */
