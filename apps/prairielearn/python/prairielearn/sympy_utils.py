@@ -725,16 +725,17 @@ def sympy_check(
 
     while work_stack:
         item = work_stack.pop()
-        str_item = str(item)
 
+        # Avoid str(item) on every node: printing each subtree is quadratic in
+        # the size of the expression and dominates parse time.
         if (
             not allow_extra_symbols
             and isinstance(item, sympy.Symbol)
-            and str_item not in valid_symbols
+            and (str_item := str(item)) not in valid_symbols
         ):
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
-            raise HasFloatError(float(str_item))
+            raise HasFloatError(float(str(item)))
         if not allow_sets and isinstance(item, sympy.Set):
             raise HasSetNotationError
         # Detect complex numbers both in simplified form (sympy.I) and in

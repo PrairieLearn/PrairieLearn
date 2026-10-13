@@ -60,6 +60,9 @@ def make_question_data(
         ("|x + |y||", "abs(x + abs(y))"),
         ("|x+|-x+1+2+3+4||", "abs(x+abs(-x+1+2+3+4))"),
         ("|x+|x+1+2+3+4 ||", "abs(x+abs(x+1+2+3+4 ))"),
+        ("|a|+||b|+c|", "abs(a)+abs(abs(b)+c)"),
+        ("y*|x| + |(|z|+1)|", "y*abs(x) + abs((abs(z)+1))"),
+        ("|x|||y||", "abs(x)abs(abs(y))"),
         ("", ""),
         # The formula editor writes \lvert and \rvert as U+2223
         ("2\u2223x\u2223", "2abs(x)"),
@@ -68,6 +71,14 @@ def make_question_data(
 def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
     out, error_msg = symbolic_input.format_submission_for_sympy(sub)
     assert (out, error_msg) == (expected, None)
+
+
+def test_format_submission_for_sympy_long_input() -> None:
+    out, error_msg = symbolic_input.format_submission_for_sympy(
+        "|x|" * 5000 + "|x+" * 2000 + "y" + "|" * 2000
+    )
+    assert error_msg is None
+    assert out == "abs(x)" * 5000 + "abs(x+" * 2000 + "y" + ")" * 2000
 
 
 @pytest.mark.parametrize(
@@ -80,6 +91,8 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
         ("[0,1] | (2,3) | [4,5]", "[0,1] | (2,3) | [4,5]"),
         ("(0,1) | (2,3)", "(0,1) | (2,3)"),
         ("{1} | (2,3) | [4,5]", "{1} | (2,3) | [4,5]"),
+        ("(0,|x|) | |y,z|", "(0,abs(x)) | |y,z|"),
+        ("|1,|x||", "|1,abs(x)|"),
     ],
 )
 def test_format_submission_for_sympy_preserves_set_union(
