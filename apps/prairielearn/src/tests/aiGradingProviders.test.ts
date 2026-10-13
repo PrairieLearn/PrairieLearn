@@ -108,6 +108,23 @@ describe('custom AI grading provider API', { concurrent: false }, () => {
     });
   });
 
+  it('lists only safe custom provider metadata for model selection', async () => {
+    const api = await client();
+    await expect(api.aiGradingProviders.list.query()).resolves.toEqual({
+      credential: {
+        id: credentialId,
+        provider: 'openai-compatible',
+        base_url: 'https://provider.example/v1',
+      },
+    });
+    await withUser(editor, async () => {
+      const editorApi = await client('1', editor);
+      expect((await editorApi.aiGradingProviders.list.query()).credential?.id).toBe(credentialId);
+    });
+    const other = await client('2');
+    await expect(other.aiGradingProviders.list.query()).resolves.toEqual({ credential: null });
+  });
+
   it('loads models using only the saved server-side configuration', async () => {
     const api = await client();
     await expect(

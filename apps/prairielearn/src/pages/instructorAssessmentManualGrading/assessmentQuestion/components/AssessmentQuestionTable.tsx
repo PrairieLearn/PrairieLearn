@@ -82,6 +82,7 @@ interface AssessmentQuestionTableProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  courseInstanceTrpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -136,6 +137,7 @@ function AiGradingOption({
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
+  courseInstanceTrpcCsrfToken,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
   assessment,
@@ -269,6 +271,9 @@ export function AssessmentQuestionTable({
   const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     assessmentQuestion.ai_grading_last_selected_model ?? null,
+  );
+  const [lastSelectedCredentialId, setLastSelectedCredentialId] = useState<string | null>(
+    assessmentQuestion.ai_grading_last_selected_credential_id,
   );
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -949,11 +954,14 @@ export function AssessmentQuestionTable({
       />
 
       <AiGradingModelSelectionModal
-        key={lastSelectedModel ?? 'default'}
+        key={`${lastSelectedCredentialId ?? 'official'}:${lastSelectedModel ?? 'default'}`}
+        courseInstanceId={courseInstance.id}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         show={modelSelectionModalState.show}
         data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
+        aiGradingLastSelectedCredentialId={lastSelectedCredentialId}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
@@ -982,12 +990,15 @@ export function AssessmentQuestionTable({
             numToGrade: ids.length,
           });
         }}
-        onSuccess={(data, modelId) => {
+        onSuccess={(data, selection) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
             data.job_sequence_token,
           );
-          setLastSelectedModel(modelId);
+          setLastSelectedModel(selection.model_id);
+          setLastSelectedCredentialId(
+            selection.provider === 'openai-compatible' ? selection.credential_id : null,
+          );
           setRowSelection({});
         }}
       />

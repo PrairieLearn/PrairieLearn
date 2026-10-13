@@ -2,148 +2,25 @@ import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/re
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
 
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
-import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
+import { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
 import {
-  AI_GRADING_PROVIDER_DISPLAY_NAMES,
-  AI_GRADING_PROVIDER_OPTIONS,
-} from '../../lib/ai-grading/ai-grading-models.shared.js';
+  TRPCProvider as CourseInstanceTRPCProvider,
+  useTRPC as useCourseInstanceTRPC,
+} from '../../../trpc/courseInstance/context.js';
+import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
+import { AI_GRADING_PROVIDER_DISPLAY_NAMES } from '../../lib/ai-grading/ai-grading-models.shared.js';
 
+import { AddApiKeyModal } from './AddApiKeyModal.js';
 import { PurchaseCreditsModal } from './PurchaseCreditsModal.js';
 import { RedeemFreeCreditModal } from './RedeemFreeCreditModal.js';
 import type { AiGradingApiKeyCredential } from './utils/format.js';
 import { createAiGradingSettingsTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
-
-function AddApiKeyModal({
-  show,
-  providerOptions,
-  credentials,
-  onHide,
-  onExited,
-  onSuccess,
-}: {
-  show: boolean;
-  providerOptions: readonly (typeof AI_GRADING_PROVIDER_OPTIONS)[number][];
-  credentials: AiGradingApiKeyCredential[];
-  onHide: () => void;
-  onExited: () => void;
-  onSuccess: (credential: AiGradingApiKeyCredential) => void;
-}) {
-  const trpc = useTRPC();
-
-  const addMutation = useMutation({
-    ...trpc.addCredential.mutationOptions(),
-    onSuccess: (data) => {
-      onSuccess(data.credential);
-    },
-  });
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<{
-    provider: (typeof AI_GRADING_PROVIDER_OPTIONS)[number]['value'];
-    apiKey: string;
-  }>({
-    defaultValues: {
-      provider: providerOptions[0].value,
-      apiKey: '',
-    },
-  });
-
-  const selectedProvider = watch('provider');
-  const existingProvider = credentials.find((c) => c.provider === selectedProvider);
-
-  return (
-    <Modal
-      show={show}
-      backdrop="static"
-      onHide={onHide}
-      onExited={() => {
-        reset();
-        addMutation.reset();
-        onExited();
-      }}
-    >
-      <Modal.Header closeButton>
-        <Modal.Title>Add API key</Modal.Title>
-      </Modal.Header>
-      <form
-        onSubmit={handleSubmit((data) =>
-          addMutation.mutate({
-            provider: data.provider,
-            secret_key: data.apiKey.trim(),
-          }),
-        )}
-      >
-        <Modal.Body>
-          {addMutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => addMutation.reset()}>
-              {addMutation.error.message}
-            </Alert>
-          )}
-          <Form.Group className="mb-3">
-            <Form.Label htmlFor="add-key-provider">Provider</Form.Label>
-            <Form.Select id="add-key-provider" {...register('provider')}>
-              {providerOptions.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label htmlFor="add-key-value">API key</Form.Label>
-            <Form.Control
-              id="add-key-value"
-              type="password"
-              placeholder="Enter your API key"
-              autoComplete="off"
-              className={clsx(errors.apiKey && 'is-invalid')}
-              aria-invalid={!!errors.apiKey}
-              aria-errormessage={errors.apiKey ? 'add-key-value-error' : undefined}
-              {...register('apiKey', { required: 'API key is required' })}
-            />
-            {errors.apiKey && (
-              <div className="invalid-feedback" id="add-key-value-error">
-                {errors.apiKey.message}
-              </div>
-            )}
-          </Form.Group>
-          {existingProvider && (
-            <Alert variant="warning" className="mb-0">
-              <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />A key for{' '}
-              <strong>{AI_GRADING_PROVIDER_DISPLAY_NAMES[existingProvider.provider]}</strong>{' '}
-              already exists. Saving will overwrite the existing key.
-            </Alert>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            disabled={addMutation.isPending}
-            onClick={onHide}
-          >
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={addMutation.isPending}>
-            {addMutation.isPending ? 'Saving...' : 'Save key'}
-          </button>
-        </Modal.Footer>
-      </form>
-    </Modal>
-  );
-}
 
 function DeleteApiKeyModal({
   data,
@@ -160,20 +37,44 @@ function DeleteApiKeyModal({
 }) {
   const trpc = useTRPC();
 
+  const courseInstanceTRPC = useCourseInstanceTRPC();
+  const customDeleteMutation = useMutation({
+    ...courseInstanceTRPC.aiGradingProviders.destroy.mutationOptions(),
+    onSuccess,
+  });
   const deleteMutation = useMutation({
     ...trpc.deleteCredential.mutationOptions(),
     onSuccess,
   });
 
+  const isPending = deleteMutation.isPending || customDeleteMutation.isPending;
+  const deleteError = deleteMutation.error ?? customDeleteMutation.error;
   return (
-    <Modal show={show} onHide={onHide} onExited={onExited}>
-      <Modal.Header closeButton>
+    <Modal
+      show={show}
+      onHide={() => {
+        if (!isPending) onHide();
+      }}
+      onExited={() => {
+        deleteMutation.reset();
+        customDeleteMutation.reset();
+        onExited();
+      }}
+    >
+      <Modal.Header closeButton={!isPending}>
         <Modal.Title>Delete API key</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {deleteMutation.isError && (
-          <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
-            {deleteMutation.error.message}
+        {deleteError && (
+          <Alert
+            variant="danger"
+            dismissible
+            onClose={() => {
+              deleteMutation.reset();
+              customDeleteMutation.reset();
+            }}
+          >
+            {deleteError.message}
           </Alert>
         )}
         <p>
@@ -186,7 +87,7 @@ function DeleteApiKeyModal({
         <button
           type="button"
           className="btn btn-outline-secondary"
-          disabled={deleteMutation.isPending}
+          disabled={isPending}
           onClick={onHide}
         >
           Cancel
@@ -194,13 +95,17 @@ function DeleteApiKeyModal({
         <button
           type="button"
           className="btn btn-danger"
-          disabled={deleteMutation.isPending}
+          disabled={isPending}
           onClick={() => {
             if (!data) return;
-            deleteMutation.mutate({ credential_id: data.id });
+            if (data.provider === 'openai-compatible') {
+              customDeleteMutation.mutate({ credential_id: data.id });
+            } else {
+              deleteMutation.mutate({ credential_id: data.id });
+            }
           }}
         >
-          {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+          {isPending ? 'Deleting...' : 'Delete'}
         </button>
       </Modal.Footer>
     </Modal>
@@ -209,6 +114,8 @@ function DeleteApiKeyModal({
 
 export function InstructorInstanceAdminAiGrading({
   trpcCsrfToken,
+  courseInstanceTrpcCsrfToken,
+  courseInstanceId,
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
@@ -218,6 +125,8 @@ export function InstructorInstanceAdminAiGrading({
   courseLabel,
 }: {
   trpcCsrfToken: string;
+  courseInstanceTrpcCsrfToken: string;
+  courseInstanceId: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
@@ -231,19 +140,24 @@ export function InstructorInstanceAdminAiGrading({
     createAiGradingSettingsTrpcClient({ csrfToken: trpcCsrfToken }),
   );
 
+  const [courseInstanceTrpcClient] = useState(() =>
+    createCourseInstanceTrpcClient({ csrfToken: courseInstanceTrpcCsrfToken, courseInstanceId }),
+  );
   return (
     <QueryClientProviderDebug client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <AiGradingSettingsContent
-          initialUseCustomApiKeys={initialUseCustomApiKeys}
-          initialApiKeyCredentials={initialApiKeyCredentials}
-          canEdit={canEdit}
-          stripePurchasingEnabled={stripePurchasingEnabled}
-          initialCheckoutStatus={initialCheckoutStatus}
-          initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
-          courseLabel={courseLabel}
-        />
-      </TRPCProvider>
+      <CourseInstanceTRPCProvider trpcClient={courseInstanceTrpcClient} queryClient={queryClient}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <AiGradingSettingsContent
+            initialUseCustomApiKeys={initialUseCustomApiKeys}
+            initialApiKeyCredentials={initialApiKeyCredentials}
+            canEdit={canEdit}
+            stripePurchasingEnabled={stripePurchasingEnabled}
+            initialCheckoutStatus={initialCheckoutStatus}
+            initialCheckoutAmountMilliDollars={initialCheckoutAmountMilliDollars}
+            courseLabel={courseLabel}
+          />
+        </TRPCProvider>
+      </CourseInstanceTRPCProvider>
     </QueryClientProviderDebug>
   );
 }
@@ -354,6 +268,11 @@ function AiGradingSettingsContent({
                       <tr key={cred.id}>
                         <td className="align-middle fw-bold px-3 py-2">
                           {AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider]}
+                          {cred.base_url && (
+                            <div className="small fw-normal text-muted text-break">
+                              {cred.base_url}
+                            </div>
+                          )}
                         </td>
                         <td className="align-middle font-monospace px-3 py-2">
                           {cred.apiKeyMasked}
@@ -397,11 +316,9 @@ function AiGradingSettingsContent({
 
       <AddApiKeyModal
         {...addModalState}
-        providerOptions={AI_GRADING_PROVIDER_OPTIONS}
         credentials={credentials}
         onSuccess={(credential) => {
-          // The server upserts by provider, so replace any existing credential
-          // for the same provider with the newly returned one.
+          // Replace the local entry for this provider with the returned configuration.
           setCredentials((prev) => {
             const filtered = prev.filter((c) => c.provider !== credential.provider);
             return [...filtered, credential];
