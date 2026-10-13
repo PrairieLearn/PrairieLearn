@@ -3,8 +3,8 @@ import { Packer } from 'docx';
 import JSZip from 'jszip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDocxDocument } from './docxDocument.js';
-import type { PrintableCover } from './printableCover.js';
+import { createDocxDocument } from './docx-document.js';
+import type { PrintableCover } from './printable-cover.js';
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 // A US Letter sheet at 96 CSS pixels per inch with 0.55in top and side margins and a 0.68in

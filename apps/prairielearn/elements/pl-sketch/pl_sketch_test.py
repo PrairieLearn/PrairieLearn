@@ -173,6 +173,34 @@ def test_generated_submission_can_be_parsed_graded_and_rendered(
     assert submission["gradeable"]["point"] == [{"point": [point["x"], point["y"]]}]
 
 
+def test_question_panel_uses_unique_dom_ids_and_stable_submission_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data = _make_question_data()
+    data["panel"] = "question"
+    data["editable"] = True
+    pl_sketch.prepare(POINT_SKETCH_HTML, data)
+
+    first = lxml.html.fragment_fromstring(
+        pl_sketch.render(POINT_SKETCH_HTML, data), create_parent=True
+    )
+    second = lxml.html.fragment_fromstring(
+        pl_sketch.render(POINT_SKETCH_HTML, data), create_parent=True
+    )
+    first_input = first.xpath('.//input[@name="graph-sketchresponse-submission"]')[0]
+    second_input = second.xpath('.//input[@name="graph-sketchresponse-submission"]')[0]
+
+    assert first_input.attrib["id"] != second_input.attrib["id"]
+    for rendered, hidden_input in [(first, first_input), (second, second_input)]:
+        prefix = hidden_input.attrib["id"].removesuffix("-sketchresponse-submission")
+        assert rendered.xpath(f'.//div[@id="{prefix}-si-container"]')
+        assert rendered.xpath(f'.//div[@id="{prefix}-sketchresponse-data"]')
+        assert f"window.SketchInput('{prefix}'" in lxml.html.tostring(
+            rendered, encoding="unicode"
+        )
+
+
 @pytest.mark.parametrize(
     ("test_type", "solution_y_offset"),
     [

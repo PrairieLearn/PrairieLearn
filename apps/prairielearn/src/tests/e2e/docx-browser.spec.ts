@@ -7,8 +7,8 @@ import * as unzipper from 'unzipper';
 
 import type { AssetsManifest } from '@prairielearn/compiled-assets';
 
-import type { DocxSource } from '../../lib/printing/docxBrowser.js';
-import { createDocxDocument } from '../../lib/printing/docxDocument.js';
+import type { DocxSource } from '../../lib/printing/docx-browser.js';
+import { createDocxDocument } from '../../lib/printing/docx-document.js';
 
 import { expect, test } from './fixtures.js';
 

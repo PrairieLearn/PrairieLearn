@@ -1,5 +1,5 @@
-import { type PageCodeOptions, addPdfPageCodes } from './pageCode.js';
-import type { PrintablePageOutput } from './printablePageOutput.js';
+import { type PageCodeOptions, addPdfPageCodes } from './page-code.js';
+import type { PrintablePageOutput } from './printable-page-output.js';
 
 /** Prints the paginated page with Chromium's PDF engine at the selected sheet size. */
 export function createPdfOutput(pageCode?: PageCodeOptions): PrintablePageOutput<Buffer> {
