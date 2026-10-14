@@ -54,7 +54,6 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   type AiGradingPrompt,
   addAiGradingCostToIntervalUsage,
-  containsSubmissionAttachment,
   correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
@@ -624,10 +623,6 @@ export async function aiGrade({
           })
         : {};
       const hasImage = Object.keys(submittedImages).length > 0;
-      const hasAttachment = containsSubmissionAttachment({
-        submission_text,
-        submitted_answer: submission.submitted_answer,
-      });
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
@@ -683,21 +678,20 @@ export async function aiGrade({
         true_answer: variant.true_answer ?? {},
       });
 
-      // If the submission contains attachments, prompt the model to transcribe any relevant
-      // information out of them.
-      const explanationDescription = run(() => {
-        const parts = ['Instructor-facing explanation of the grading decision.'];
-        if (hasAttachment) {
-          parts.push(
-            'You MUST include a complete transcription of all relevant text, numbers, and information from any files or images the student submitted.',
-            'You MUST transcribe the final answer(s) from the files and images.',
-            'You MUST use LaTeX formatting for mathematical expressions, equations, and formulas.',
-            'You MUST wrap inline LaTeX in dollar signs ($).',
-            'You MUST wrap block LaTeX in double dollar signs ($$).',
-          );
-        }
-        return parts.join(' ');
-      });
+      const explanationDescription = [
+        'Instructor-facing explanation of the grading decision. Explain the reasoning concisely.',
+        'For content supplied as text or in document attachments such as PDFs, quote or describe only the specific evidence needed to justify the grade; do not provide a full transcript.',
+        ...(hasImage
+          ? [
+              'For each submitted standalone image file, you MUST include a complete transcription of all relevant text, numbers, and information, including the final answer(s), whether handwritten or typed.',
+            ]
+          : []),
+        'For handwritten work, include your reading of the final answer(s) and any details whose interpretation affects the grade.',
+        'For diagrams, plots, or other visual content, describe the features that affect the grade.',
+        'Flag any unclear or ambiguous readings.',
+        'Use LaTeX formatting for mathematical expressions, equations, and formulas.',
+        'Wrap inline LaTeX in dollar signs ($) and block LaTeX in double dollar signs ($$).',
+      ].join(' ');
 
       const openaiProviderOptions: OpenAIResponsesProviderOptions = {
         strictJsonSchema: true,

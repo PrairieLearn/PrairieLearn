@@ -9,7 +9,6 @@ import { sanitizeObject } from '@prairielearn/sanitize';
 import { type RubricItem } from '../../../lib/db-types.js';
 
 import {
-  containsSubmissionAttachment,
   correctImagesOrientation,
   extractAiGradingExplanationFromCompletion,
   extractSubmissionImages,
@@ -407,18 +406,6 @@ describe('generateSubmissionContent', () => {
         submitted_answer: { _files: [{ name: 'answer.txt', contents: 'aGVsbG8=!' }] },
       }),
     ).toThrow('Submitted file "answer.txt" has invalid base64 data');
-  });
-
-  it('recognizes unmarked attachments for grading explanations', () => {
-    expect(
-      containsSubmissionAttachment({
-        submission_text: '',
-        submitted_answer: { _files: [{ name: 'answer.txt', contents: '' }] },
-      }),
-    ).toBe(true);
-    expect(containsSubmissionAttachment({ submission_text: '', submitted_answer: null })).toBe(
-      false,
-    );
   });
 
   it('generates named PDF file parts', () => {
