@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const PREFIX = 'PL:PRINT:2:';
+const PREFIX = 'PL:PRINT:V1:';
 const IdSchema = z.string().regex(/^[1-9]\d*$/);
 const IdentitySchema = z.strictObject({
   assessmentInstanceId: IdSchema,
@@ -28,7 +28,7 @@ export function encodePrintPageIdentity(identity: PrintPageIdentity): string {
 /** Validates scanned metadata. A valid code does not authenticate its contents or grant access. */
 export function decodePrintPageIdentity(value: string): PrintPageIdentity {
   if (!value.startsWith(PREFIX)) throw new Error('Unsupported printable page QR code');
-  const match = /^PL:PRINT:2:([1-9]\d*):([1-9]\d*):([EK]):([PW]):([A-F0-9]{32})$/.exec(value);
+  const match = /^PL:PRINT:V1:([1-9]\d*):([1-9]\d*):([EK]):([PW]):([A-F0-9]{32})$/.exec(value);
   if (!match) throw new Error('Invalid printable page QR code');
   const hex = match[5].toLowerCase();
   return IdentitySchema.parse({
