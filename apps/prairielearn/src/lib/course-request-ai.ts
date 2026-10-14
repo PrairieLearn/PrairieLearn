@@ -1,4 +1,4 @@
-import { createOpenAI } from '@ai-sdk/openai';
+import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { type ModelMessage, Output, generateText } from 'ai';
 import { z } from 'zod';
 
@@ -106,7 +106,12 @@ export async function checkInstructorLegitimacy({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-4o-mini'),
+    model: openai.responses('gpt-6-luna'),
+    providerOptions: {
+      openai: {
+        reasoningEffort: 'low',
+      } satisfies OpenAIResponsesProviderOptions,
+    },
     output: Output.object({ schema: legitimacySchema }),
     instructions,
     messages: input,
@@ -145,7 +150,12 @@ export async function suggestTimezone({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-4o-mini'),
+    model: openai.responses('gpt-6-luna'),
+    providerOptions: {
+      openai: {
+        reasoningEffort: 'low',
+      } satisfies OpenAIResponsesProviderOptions,
+    },
     output: Output.object({ schema: timezoneSchema }),
     instructions,
     messages: input,
@@ -195,7 +205,12 @@ export async function suggestInstitutionPrefix({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-4o-mini'),
+    model: openai.responses('gpt-6-luna'),
+    providerOptions: {
+      openai: {
+        reasoningEffort: 'low',
+      } satisfies OpenAIResponsesProviderOptions,
+    },
     output: Output.object({ schema: prefixSchema }),
     instructions,
     messages: input,
