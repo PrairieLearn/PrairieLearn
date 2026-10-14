@@ -363,6 +363,14 @@ class TestSympy:
             allow_sets=True,
         )
 
+    def test_set_subtraction_ignores_custom_complement(self) -> None:
+        assert sympy.FiniteSet(1) == psu.convert_string_to_sympy(
+            "{1, 2} - {2}",
+            simplify_expression=False,
+            allow_sets=True,
+            custom_functions=["Complement"],
+        )
+
     @pytest.mark.parametrize("simplify_expression", [True, False])
     @pytest.mark.parametrize(
         ("a_sub", "sympy_ref"),

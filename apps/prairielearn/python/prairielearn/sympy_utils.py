@@ -775,15 +775,37 @@ def ast_check_str(
 class _SetOperationTransformer(ast.NodeTransformer):
     """Rewrite only binary operations validated as set operations."""
 
-    def __init__(self, set_operations: frozenset[ast.BinOp]) -> None:
+    def __init__(
+        self,
+        set_operations: frozenset[ast.BinOp],
+        occupied_names: Iterable[str],
+    ) -> None:
         self._set_operations = set_operations
+        self._function_names: dict[type[ast.operator], str] = {}
+        self.evaluation_locals: SympyFunctionMapT = {}
+
+        used_names = set(occupied_names)
+        protected_names: dict[str, str] = {}
+        for operation_type in {type(node.op) for node in set_operations}:
+            function_name = _SET_OPERATION_FUNCTIONS[operation_type]
+            protected_name = protected_names.get(function_name)
+            if protected_name is None:
+                protected_name = f"_pl_set_operation_{function_name}"
+                while protected_name in used_names:
+                    protected_name += "_"
+                used_names.add(protected_name)
+                protected_names[function_name] = protected_name
+                self.evaluation_locals[protected_name] = _Constants.set_functions[
+                    function_name
+                ]
+            self._function_names[operation_type] = protected_name
 
     def visit_BinOp(self, node: ast.BinOp) -> ast.AST:
         node = cast(ast.BinOp, self.generic_visit(node))
         if node not in self._set_operations:
             return node
 
-        function_name = _SET_OPERATION_FUNCTIONS[type(node.op)]
+        function_name = self._function_names[type(node.op)]
         return ast.copy_location(
             ast.Call(
                 func=ast.Name(id=function_name, ctx=ast.Load()),
@@ -1047,7 +1069,7 @@ def _evaluate_with_source(
             r"\1*\2",
         )
 
-    local_dict = {
+    local_dict: DICT = {
         k: v
         for inner_dict in locals_for_eval.values()
         for k, v in cast(SympyMapT, inner_dict).items()
@@ -1131,10 +1153,17 @@ def _evaluate_with_source(
     evaluation_code: str | CodeType = code
     if not simplify_expression:
         if allow_sets:
+            set_operation_transformer = _SetOperationTransformer(
+                set_operations,
+                local_dict.keys() | global_dict.keys(),
+            )
             expression_ast = cast(
                 ast.Expression,
-                _SetOperationTransformer(set_operations).visit(expression_ast),
+                set_operation_transformer.visit(expression_ast),
             )
+            # These names are introduced after validating the user-provided AST so
+            # custom functions cannot replace the generated set operations.
+            local_dict.update(set_operation_transformer.evaluation_locals)
         expression_ast = cast(
             ast.Expression,
             sympy_parser.EvaluateFalseTransformer().visit(expression_ast),
