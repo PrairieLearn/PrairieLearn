@@ -59,16 +59,8 @@ export function InstructorAssessmentInstancePrint({
   const isAnswerKey = document === 'answer_key';
   const documentLabel = isAnswerKey ? 'Answer key' : resLocals.assessment.type;
   const pageIdentity = encodePrintPageIdentity({
-    courseId: resLocals.course.id,
-    assessmentId: resLocals.assessment.id,
     assessmentInstanceId: resLocals.assessment_instance.id,
     pageNumber: 1,
-    generatedBy: {
-      userId: resLocals.authn_user.id,
-      uid: resLocals.authn_user.uid,
-      name: resLocals.authn_user.name,
-    },
-    generatedAt: new Date().toISOString(),
     document,
     format: 'pdf',
     exportId: randomUUID(),

@@ -5,6 +5,25 @@ import { expect, it } from 'vitest';
 
 import { buildDocxContent } from './docx-content.js';
 
+it('keeps centered and right-aligned authored text in Word', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <h2 data-docx-align="center">Centered heading</h2>
+    <p data-docx-align="right">Right-aligned note</p>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const paragraphs = word('w\\:p').toArray();
+  const heading = paragraphs.find(
+    (node) => word(node).find('w\\:t').text() === 'Centered heading',
+  )!;
+  const note = paragraphs.find((node) => word(node).find('w\\:t').text() === 'Right-aligned note')!;
+  expect(word(heading).find('w\\:jc').attr('w:val')).toBe('center');
+  expect(word(note).find('w\\:jc').attr('w:val')).toBe('right');
+});
+
 it('preserves mathematical symbols and XML punctuation in native Office Math', async () => {
   const mathml =
     '<math><mi>x</mi><mo>&lt;</mo><mn>2</mn><mo>&#x2227;</mo><mi>y</mi><mo>&gt;</mo><mn>0</mn><mo>&amp;</mo><mi>α</mi></math>';

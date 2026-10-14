@@ -105,7 +105,6 @@ export const printableExamExportRouter = t.router({
           });
         }
         const renderer = getPrintRenderer();
-        const generatedAt = new Date().toISOString();
         const exportId = randomUUID();
         const forms: { pdf: Buffer; coverPageCount: number }[] = [];
         const answerKeys: Buffer[] = [];
@@ -198,16 +197,8 @@ export const printableExamExportRouter = t.router({
             const pdfOutput = createPdfOutput({
               encodePage: (pageNumber) =>
                 encodePrintPageIdentity({
-                  courseId: ctx.course.id,
-                  assessmentId: ctx.assessment.id,
                   assessmentInstanceId: instance.assessmentInstanceId,
                   pageNumber,
-                  generatedBy: {
-                    userId: ctx.authn_user.id,
-                    uid: ctx.authn_user.uid,
-                    name: ctx.authn_user.name,
-                  },
-                  generatedAt,
                   exportId,
                   document: printDocument,
                   format: 'pdf',

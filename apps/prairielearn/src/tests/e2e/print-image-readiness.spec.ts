@@ -20,7 +20,7 @@ test('waits for images in the question and its shadow roots', async ({ page }) =
   };
   try {
     await page.setContent(
-      `<div id="source"><img src="${origin}/light.svg"><div id="host"></div></div>`,
+      `<div id="source"><img src="${origin}/light.svg"><img srcset="${origin}/srcset.svg"><div id="host"></div></div>`,
       { waitUntil: 'domcontentloaded' },
     );
     await page.locator('#host').evaluate((host, origin) => {
@@ -28,7 +28,7 @@ test('waits for images in the question and its shadow roots', async ({ page }) =
       image.src = `${origin}/shadow.svg`;
       host.attachShadow({ mode: 'open' }).append(image);
     }, origin);
-    await expect.poll(() => responses.size).toBe(2);
+    await expect.poll(() => responses.size).toBe(3);
 
     let complete = false;
     const waiting = page
@@ -42,6 +42,12 @@ test('waits for images in the question and its shadow roots', async ({ page }) =
     expect(complete).toBe(false);
 
     sendImage(responses.get('/shadow.svg')!);
+    await page.waitForFunction(
+      () => document.querySelector('#host')!.shadowRoot!.querySelector('img')!.complete,
+    );
+    expect(complete).toBe(false);
+
+    sendImage(responses.get('/srcset.svg')!);
     await waiting;
     expect(complete).toBe(true);
   } finally {
