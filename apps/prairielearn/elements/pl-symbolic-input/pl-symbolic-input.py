@@ -900,7 +900,14 @@ def _is_implicit_multiplication_paren(
     if name is not None:
         return name.group(0) not in function_names
 
-    return text[argument_end - 1].isdigit() or text[argument_end - 1] in ")]}"
+    # Known digit-suffixed functions were handled above, so a remaining digit
+    # ends a numeric argument before the next implicitly multiplied factor.
+    if text[argument_end - 1].isdigit():
+        return True
+
+    # A closing delimiter completes a grouped argument, making the following
+    # "(" the start of a new implicitly multiplied factor.
+    return text[argument_end - 1] in ")]}"
 
 
 @lru_cache(maxsize=128)
