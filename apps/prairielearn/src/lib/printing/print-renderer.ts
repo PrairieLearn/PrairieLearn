@@ -104,7 +104,7 @@ class RenderQueue {
   }
 }
 
-async function fetchCloudflareAsset(url: URL, cookieHeader?: string) {
+async function fetchCloudflareAsset(url: URL, signal: AbortSignal, cookieHeader?: string) {
   if (url.protocol === 'https:' && url.hostname === 'localhost') {
     // The local development server can use a certificate that Node does not trust. This
     // exception applies only to requests back to the same machine, never to public hosts.
@@ -116,6 +116,7 @@ async function fetchCloudflareAsset(url: URL, cookieHeader?: string) {
             {
               headers: cookieHeader ? { cookie: cookieHeader } : undefined,
               rejectUnauthorized: false,
+              signal,
             },
             async (response) => {
               try {
@@ -138,6 +139,7 @@ async function fetchCloudflareAsset(url: URL, cookieHeader?: string) {
   const response = await fetch(url, {
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
     redirect: 'manual',
+    signal,
   });
   return {
     status: response.status,
@@ -332,6 +334,7 @@ export class PrintRenderer {
       context: null,
       timedOut: false,
     };
+    const assetController = new AbortController();
     let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
 
     const render = async () => {
@@ -368,7 +371,11 @@ export class PrintRenderer {
           // otherwise leave the allowed origin without passing through these checks again.
           if (this.cloudflare) {
             const assetUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, localUrl.origin);
-            const response = await fetchCloudflareAsset(assetUrl, cookieHeader);
+            const response = await fetchCloudflareAsset(
+              assetUrl,
+              assetController.signal,
+              cookieHeader,
+            );
             if (response.status >= 300 && response.status < 400) {
               await route.abort('blockedbyclient');
               return;
@@ -447,6 +454,7 @@ export class PrintRenderer {
       return await Promise.race([render(), deadlineExpired]);
     } finally {
       if (deadlineTimer) clearTimeout(deadlineTimer);
+      assetController.abort();
       const openContext = state.context;
       // A context created after the deadline may still be pending, so discard its browser.
       if (state.timedOut && !openContext) this.discardBrowser(browser);
