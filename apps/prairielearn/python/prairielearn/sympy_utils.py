@@ -382,6 +382,13 @@ _SET_OPERATION_FUNCTIONS: Final[FrozenDict[type[ast.operator], str]] = FrozenDic
     ast.BitOr: "Union",
 })
 
+# Complement was accepted as a custom function before it became a set builtin.
+_LEGACY_CUSTOM_FUNCTION_OVERRIDES: Final[frozenset[str]] = frozenset({"Complement"})
+
+
+def _allows_legacy_custom_function_override(name: str) -> bool:
+    return name in _LEGACY_CUSTOM_FUNCTION_OVERRIDES
+
 
 @dataclass
 class HasArgumentTypeError(BaseSympyError):
@@ -581,6 +588,7 @@ class CheckAST(ast.NodeVisitor):
             return self._set_type(node, None)
 
         name, args = node.func.id, node.args
+        resolved_function = self.resolved_names.get(name)
         match name:
             case "Symbol":
                 return self._set_type(node, None)
@@ -588,7 +596,11 @@ class CheckAST(ast.NodeVisitor):
                 overloads = [ASTSympyType.SCALAR], [ASTSympyType.STRING]
                 self._enforce_signature(name, args, *overloads)
                 return self._set_type(node, ASTSympyType.SCALAR)
-            case fn if self.allow_sets and fn in _Constants.set_functions:
+            case fn if (
+                self.allow_sets
+                and fn in _Constants.set_functions
+                and resolved_function == _Constants.set_functions[fn]
+            ):
                 return self._set_type(node, self._infer_set_function_type(name, args))
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
                 arities = _builtin_function_arities(fn) or (len(args),)
@@ -1463,8 +1475,17 @@ def sympy_to_json(
     }
 
     # Don't check for conflicts here, that happens in parsing.
-    functions_set = {str(func_obj.func) for func_obj in a.atoms(sympy.Function)}
-    custom_functions = list(functions_set - reserved)
+    function_atoms = a.atoms(sympy.Function)
+    functions_set = {str(func_obj.func) for func_obj in function_atoms}
+    legacy_custom_function_overrides = {
+        name
+        for func_obj in function_atoms
+        if _allows_legacy_custom_function_override(name := str(func_obj.func))
+        and func_obj.func != const.set_functions[name]
+    }
+    custom_functions = list(
+        (functions_set - reserved) | legacy_custom_function_overrides
+    )
 
     return {
         "_type": "sympy",
@@ -2008,7 +2029,10 @@ def _build_name_conflict_data(
 
     for raw in custom_functions:
         sanitized = greek_unicode_transform(raw)
-        if sanitized in valid_names or _conflicts(sanitized):
+        if sanitized in valid_names or (
+            _conflicts(sanitized)
+            and not _allows_legacy_custom_function_override(sanitized)
+        ):
             conflict_fns.append(raw)
         else:
             valid_names[sanitized] = (False, raw)

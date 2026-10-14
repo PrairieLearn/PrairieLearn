@@ -628,7 +628,6 @@ class TestSympy:
             ("Interval", (0, 1)),
             ("Union", (sympy.EmptySet, sympy.EmptySet)),
             ("Intersection", (sympy.EmptySet, sympy.EmptySet)),
-            ("Complement", (sympy.EmptySet, sympy.EmptySet)),
         ],
     )
     def test_sets_reserveds_respected_by_json_conversion(
@@ -644,6 +643,33 @@ class TestSympy:
 
         assert without_sets["_custom_functions"] == [fn_name]  # type: ignore
         assert with_sets["_custom_functions"] == []  # type: ignore
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_custom_complement_round_trips_with_sets(
+        self, *, simplify_expression: bool
+    ) -> None:
+        x = sympy.Symbol("x")
+        expected = sympy.Function("Complement")(x)
+
+        parsed = psu.convert_string_to_sympy(
+            "Complement(x)",
+            ["x"],
+            allow_sets=True,
+            custom_functions=["Complement"],
+            simplify_expression=simplify_expression,
+        )
+        encoded = psu.sympy_to_json(parsed, allow_sets=True)
+
+        assert parsed == expected
+        assert encoded.get("_custom_functions") == ["Complement"]
+        assert (
+            psu.json_to_sympy(
+                encoded,
+                allow_sets=True,
+                simplify_expression=simplify_expression,
+            )
+            == expected
+        )
 
     def test_sets_reserveds_are_custom_functions_by_default(self) -> None:
         x = sympy.Symbol("x")
@@ -1341,6 +1367,14 @@ class TestValidateNamesForConflicts:
     def test_custom_function_conflicts_with_builtin(self) -> None:
         with pytest.raises(ValueError, match="cos"):
             psu.validate_names_for_conflicts("test", [], ["cos"])
+
+    def test_custom_complement_override_only_applies_to_functions(self) -> None:
+        psu.validate_names_for_conflicts("test", [], ["Complement"], allow_sets=True)
+
+        with pytest.raises(ValueError, match="Complement"):
+            psu.validate_names_for_conflicts(
+                "test", ["Complement"], [], allow_sets=True
+            )
 
     @pytest.mark.parametrize("conflicting_name", ["i", "j"])
     def test_complex_constants_only_conflict_when_enabled(

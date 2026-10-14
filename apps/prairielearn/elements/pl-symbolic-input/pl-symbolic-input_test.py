@@ -536,6 +536,56 @@ def test_set_difference_submission_round_trips_without_simplification() -> None:
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+def test_custom_complement_function_round_trips_with_set_notation() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'custom-functions="Complement"',
+        'correct-answer="Complement(x)"',
+    )
+    data = make_question_data(submitted_answers={"test": "Complement(x)"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert data["submitted_answers"]["test"]["_custom_functions"] == ["Complement"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_legacy_custom_complement_submission_remains_readable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    legacy_json: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "Complement(x)",
+        "_variables": ["x"],
+        "_custom_functions": ["Complement"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'custom-functions="Complement"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": legacy_json},
+        raw_submitted_answers={"test": "Complement(x)"},
+        correct_answers={"test": legacy_json},
+        panel="submission",
+        editable=False,
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.render(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 @pytest.mark.parametrize("operator", ["|", "&"])
 def test_legacy_scalar_set_operator_submission_remains_readable(
     monkeypatch: pytest.MonkeyPatch, operator: str
