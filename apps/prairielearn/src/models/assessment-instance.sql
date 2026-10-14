@@ -25,6 +25,7 @@ FROM
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.user_id = $user_id
+  AND ai.for_printing
 ORDER BY
   ai.number DESC;
 

@@ -11,8 +11,12 @@ FROM
 WHERE
   ai.assessment_id = $assessment_id
   AND NOT ai.for_printing
-  AND ai.number = 1
   AND (
     (gu.user_id = $user_id)
     OR (ai.user_id = $user_id)
-  );
+  )
+ORDER BY
+  ai.number,
+  ai.id
+LIMIT
+  1;
