@@ -888,15 +888,21 @@ def _is_implicit_multiplication_paren(
         True if the argument ends with a number, a closing bracket, or a name
         that isn't a function.
     """
+    # An empty candidate provides no left-hand factor for implicit multiplication.
     if argument_end == argument_start:
         return False
 
+    # Isolate the final identifier before checking its last character. This keeps
+    # digit-suffixed function names such as atan2 from looking like numbers.
     name_start = argument_end
     while name_start > argument_start and (
         text[name_start - 1].isalnum() or text[name_start - 1] == "_"
     ):
         name_start -= 1
     name = _TRAILING_IDENTIFIER_PATTERN.search(text, name_start, argument_end)
+
+    # Known functions consume the "(" as a call; all other names multiply the
+    # parenthesized factor.
     if name is not None:
         return name.group(0) not in function_names
 
