@@ -406,7 +406,7 @@ export function InstructorAssessmentInstancePrint({
           </div>
         </div>
         <main id="exam-print-pages"></main>
-        <noscript>This printable assessment requires JavaScript to paginate its pages.</noscript>
+        <noscript>This printable assessment requires JavaScript to to prepare its layout.</noscript>
       </body>
     </html>`;
 }
