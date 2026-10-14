@@ -890,8 +890,6 @@ def _is_implicit_multiplication_paren(
     """
     if argument_end == argument_start:
         return False
-    if text[argument_end - 1].isdigit() or text[argument_end - 1] in ")]}":
-        return True
 
     name_start = argument_end
     while name_start > argument_start and (
@@ -899,7 +897,10 @@ def _is_implicit_multiplication_paren(
     ):
         name_start -= 1
     name = _TRAILING_IDENTIFIER_PATTERN.search(text, name_start, argument_end)
-    return name is not None and name.group(0) not in function_names
+    if name is not None:
+        return name.group(0) not in function_names
+
+    return text[argument_end - 1].isdigit() or text[argument_end - 1] in ")]}"
 
 
 @lru_cache(maxsize=128)

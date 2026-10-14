@@ -190,6 +190,8 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         # A "(" that groups an exponent or calls a function stays in the argument
         ("l n x^(2)", False, ["x"], [], "ln x^(2)"),
         ("l n f(x)", False, ["x"], ["f"], "ln f(x)"),
+        ("l n f2(x)", False, ["x"], ["f2"], "ln f2(x)"),
+        ("l n a t a n 2(y,x)", True, ["x", "y"], [], "ln atan2(y,x)"),
         ("l n a b s (x)(x+1)", False, ["x"], [], "ln (abs (x))(x+1)"),
         ("l n Α(x)", False, ["x"], ["Α"], "ln  Alpha (x)"),  # ruff:ignore[ambiguous-unicode-character-string]
         # Operators the editor writes in AsciiMath form (\div and \ast)
@@ -286,6 +288,18 @@ def test_formula_editor_bare_argument_before_implicit_multiplication() -> None:
     assert "test" not in data["format_errors"]
     assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.log(8) * (
         x + 1
+    )
+
+
+def test_formula_editor_function_ending_in_digit_stays_in_bare_argument() -> None:
+    x, y = sympy.symbols("x y")
+    element_html = build_element_html('variables="x,y"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": "ln atan2(y,x)"})
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.log(
+        sympy.atan2(y, x)
     )
 
 
