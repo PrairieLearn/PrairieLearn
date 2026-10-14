@@ -57,7 +57,7 @@ const QuestionBlockSizeOverrideSchema = z
     };
   });
 
-const LayoutQuerySchema = z.strictObject({
+const LayoutQuerySchema = z.object({
   paper_size: z.enum(PAPER_SIZES),
   include_honor_code: z
     .enum(['true', 'false'])
@@ -88,12 +88,12 @@ const LayoutQuerySchema = z.strictObject({
 const DocumentQuerySchema = LayoutQuerySchema.extend({
   document: z.enum(PRINT_DOCUMENTS).default('exam'),
 });
-const PrintSnapshotSchema = z.strictObject({
+const PrintSnapshotSchema = z.object({
   html: z.string().min(1).max(MAX_PRINT_SNAPSHOT_BYTES),
-  source: z.strictObject({
+  source: z.object({
     html: z.string().max(MAX_PRINT_SNAPSHOT_BYTES),
     figures: z.array(
-      z.strictObject({
+      z.object({
         id: z.string().regex(/^[1-9]\d*$/),
         width: z.number().positive().max(4096),
         height: z.number().positive().max(4096),
@@ -382,6 +382,7 @@ router.get(
       );
     }
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const warnings = describeOmittedQuestions(printingResult.questionResults);
 
     const rawHtml = InstructorAssessmentInstancePrint({
       resLocals: res.locals,
@@ -394,8 +395,8 @@ router.get(
       formLabel: layout.formLabel,
       identityFields: layout.identityFields,
       questionHtmls: printingResult.questionHtmls,
-      omittedQuestionCount: describeOmittedQuestions(printingResult.questionResults).length,
-      warnings: describeOmittedQuestions(printingResult.questionResults),
+      omittedQuestionCount: warnings.length,
+      warnings,
       extraHeadersHtml: printingResult.extraHeadersHtml,
       hasLegacyQuestions: printingResult.hasLegacyQuestions,
       maxPoints: printingResult.maxPoints,

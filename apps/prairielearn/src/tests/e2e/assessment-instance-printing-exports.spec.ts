@@ -228,11 +228,14 @@ test('previews and exports an exam with more than 64 figures', async ({
   }
 });
 
-test('rejects invalid print query parameters', async ({ page, courseInstance }) => {
+test('ignores unknown print query parameters and rejects invalid values', async ({
+  page,
+  courseInstance,
+}) => {
   const { paperUrl } = await createPrintableExam(courseInstance, 'exam1-automaticTestSuite');
 
   expect((await page.request.get(`${paperUrl}/preview?paper_size=Letter&bogus=1`)).status()).toBe(
-    400,
+    200,
   );
   expect((await page.request.get(`${paperUrl}/preview?paper_size=Tabloid`)).status()).toBe(400);
   expect(
