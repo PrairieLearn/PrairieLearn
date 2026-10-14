@@ -4,6 +4,7 @@ import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
 from typing import Literal, assert_never
 
 import chevron
@@ -42,20 +43,33 @@ def _format_submission_for_sympy(
 ) -> tuple[str | None, str | None]:
     """Replace absolute-value bars with syntax understood by the SymPy parser."""
     original_submission = submission
+    # The formula editor writes \lvert, \rvert and \mid as U+2223 (DIVIDES).
+    submission = submission.replace("\u2223", "|")
+
     pattern = re.compile(
         r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
     )
+    bar_pattern = re.compile(r"\|")
     search_from = 0
+    preceding_bars: list[int] = []
     while match := pattern.search(submission, search_from):
+        preceding_bars.extend(
+            bar_match.start()
+            for bar_match in bar_pattern.finditer(
+                submission, search_from, match.start()
+            )
+        )
+
         content = match.group(0)[1:-1]
         if allow_sets and "," in content:
+            preceding_bars.append(match.start())
             search_from = match.start() + 1
             continue
 
         submission = (
             submission[: match.start()] + f"abs({content})" + submission[match.end() :]
         )
-        search_from = 0
+        search_from = preceding_bars.pop() if preceding_bars else match.start()
 
     if not allow_sets and "|" in submission:
         error = f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_submission}</code>."
@@ -67,15 +81,42 @@ def _format_submission_for_sympy(
     return submission, None
 
 
+_PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
+
+
+def _restore_plus_minus(submission: str, latex: str) -> str | None:
+    r"""Restore formula-editor ``\pm`` tokens without changing typed ``+-``."""
+    from_plus_minus = [
+        match.group(0).startswith("\\")
+        for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
+    ]
+    parts = submission.split("+-")
+    if len(parts) - 1 != len(from_plus_minus):
+        return None
+    if not any(from_plus_minus):
+        return submission
+
+    result = [parts[0]]
+    for is_plus_minus, part in zip(from_plus_minus, parts[1:], strict=True):
+        result.extend(("±" if is_plus_minus else "+-", part))
+    return "".join(result)
+
+
 def _format_formula_editor_submission_for_sympy(
     submission: str,
     variables: Sequence[str],
     custom_functions: Sequence[str],
     *,
     allow_trig_functions: bool,
-) -> str:
+    latex: str | None = None,
+) -> str | None:
     """Normalize formula-editor output before parsing it with SymPy."""
-    text = submission.replace("{:", "").replace(":}", "")
+    text = submission if latex is None else _restore_plus_minus(submission, latex)
+    if text is None:
+        return None
+
+    text = text.replace("{:", "").replace(":}", "")
+    text = text.replace("-:", "/").replace(" ** ", " * ")
     known_tokens = _build_formula_editor_tokens(
         variables,
         custom_functions,
@@ -83,7 +124,13 @@ def _format_formula_editor_submission_for_sympy(
     )
     text = "".join(_format_formula_editor_greek_character(char) for char in text)
     text = _merge_formula_editor_tokens(text, known_tokens)
-    return _add_formula_editor_multiplication_spaces(text, known_tokens)
+    text = _add_formula_editor_multiplication_spaces(text, known_tokens)
+
+    function_names = frozenset(
+        psu.get_builtin_functions(allow_trig_functions=allow_trig_functions)
+        | set(custom_functions)
+    )
+    return _wrap_bare_function_arguments(text, function_names)
 
 
 def _build_formula_editor_tokens(
@@ -105,7 +152,7 @@ def _build_formula_editor_tokens(
         for token in tokens
         if psu.greek_unicode_transform(token) != token
     ]
-    return [token for token in tokens if len(token) > 1]
+    return [token for token in tokens if len(token) > 1 and token != "**"]
 
 
 def _format_formula_editor_greek_character(character: str) -> str:
@@ -155,11 +202,64 @@ def _add_formula_editor_multiplication_spaces(
     return "".join(result)
 
 
+@lru_cache(maxsize=128)
+def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+    names = sorted(function_names, key=len, reverse=True)
+    return re.compile(
+        r"(?P<function>(?<![A-Za-z_])(?:"
+        + "|".join(map(re.escape, names))
+        + r")\s+(?=[^\s(]))|(?P<token>\*+|[()\[\]{}+\-/,])"
+    )
+
+
+def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
+    """Parenthesize bare function arguments that end at multiplication."""
+    if not function_names:
+        return text
+    pattern = _bare_function_token_pattern(function_names)
+
+    insertions: list[tuple[int, str]] = []
+    pending_arguments: dict[int, int] = {}
+    depth = 0
+    for match in pattern.finditer(text):
+        if match.lastgroup == "function":
+            pending_arguments.setdefault(depth, match.end())
+            continue
+
+        token = match.group(0)
+        match token:
+            case "(" | "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
+            case "*":
+                start = pending_arguments.pop(depth, None)
+                if start is not None:
+                    argument_end = match.start()
+                    while argument_end > start and text[argument_end - 1].isspace():
+                        argument_end -= 1
+                    insertions.extend(((start, "("), (argument_end, ")")))
+            case "+" | "-" | "/" | ",":
+                pending_arguments.pop(depth, None)
+            case _:
+                pass
+
+    result: list[str] = []
+    position = 0
+    for index, parenthesis in sorted(insertions):
+        result.extend((text[position:index], parenthesis))
+        position = index
+    result.append(text[position:])
+    return "".join(result)
+
+
 def try_parse_symbolic_submission(
     submission: str | None,
     variables: Iterable[str] | None,
     *,
     formula_editor: bool = False,
+    formula_editor_latex: str | None = None,
     allow_blank: bool = False,
     blank_value: str = "0",
     allow_complex: bool = False,
@@ -177,12 +277,16 @@ def try_parse_symbolic_submission(
     variable_list = list(variables or ())
     custom_function_list = list(custom_functions)
     if formula_editor and submission is not None:
-        submission = _format_formula_editor_submission_for_sympy(
+        formatted_submission = _format_formula_editor_submission_for_sympy(
             submission,
             variable_list,
             custom_function_list,
             allow_trig_functions=allow_trig_functions,
+            latex=formula_editor_latex,
         )
+        if formatted_submission is None:
+            return psu.SympyParseFailure(psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
+        submission = formatted_submission
     if submission is None:
         return psu.SympyParseFailure("No submitted answer.")
     formatted_submission, error = _format_submission_for_sympy(
