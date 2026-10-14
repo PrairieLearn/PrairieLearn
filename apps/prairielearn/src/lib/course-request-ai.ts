@@ -134,7 +134,6 @@ export async function suggestTimezone({
   const instructions = formatPrompt([
     'You are helping a PrairieLearn administrator configure a new institution.',
     'Search the web to determine the correct timezone for the institution provided by the user.',
-    'Cite the web sources supporting your findings in the reasoning.',
   ]);
   const input: ModelMessage[] = [
     {
