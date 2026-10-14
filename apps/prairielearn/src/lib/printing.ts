@@ -22,6 +22,7 @@ import { namespaceQuestionHtmls } from './printing/namespace-question-htmls.js';
 import { PrintRenderer } from './printing/print-renderer.js';
 import type { PrintablePageOutput } from './printing/printable-page-output.js';
 import type { QuestionBlockSize } from './printing/question-block-size.js';
+import { RenderQueue } from './printing/render-queue.js';
 import { getAndRenderVariant } from './question-render.js';
 import type { ResLocalsForPage } from './res-locals.js';
 
@@ -56,6 +57,7 @@ export const PRINT_DOCUMENTS = ['exam', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
 
 let printRenderer: PrintRenderer | null = null;
+const questionPreparationQueue = new RenderQueue(4, 50);
 
 /**
  * The process-wide renderer reuses one browser connection and bounds concurrent print jobs.
@@ -68,6 +70,7 @@ export function getPrintRenderer(): PrintRenderer {
 }
 
 export async function closePrintRenderer(): Promise<void> {
+  questionPreparationQueue.rejectAll(new Error('Print preparation is shutting down'));
   const renderer = printRenderer;
   printRenderer = null;
   await renderer?.close();
@@ -235,7 +238,7 @@ export interface RenderAssessmentInstanceQuestionsForPrintingOptions {
   document?: PrintDocument;
 }
 
-export async function renderAssessmentInstanceQuestionsForPrinting(
+async function renderAssessmentInstanceQuestionsUnbounded(
   resLocals: ResLocalsForPage<'assessment-instance'>,
   {
     defaultQuestionBlockSize = 'auto',
@@ -402,4 +405,16 @@ export async function renderAssessmentInstanceQuestionsForPrinting(
     hasLegacyQuestions,
     maxPoints,
   };
+}
+
+/** Limit question preparation as well as browser pagination during a preview burst. */
+export async function renderAssessmentInstanceQuestionsForPrinting(
+  resLocals: ResLocalsForPage<'assessment-instance'>,
+  options: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
+) {
+  return await questionPreparationQueue.run(
+    async () => await renderAssessmentInstanceQuestionsUnbounded(resLocals, options),
+    120_000,
+    'print preview',
+  );
 }

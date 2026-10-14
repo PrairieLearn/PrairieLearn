@@ -170,6 +170,36 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     );
   });
 
+  it('bounds concurrent question preparation across previews', async () => {
+    mocks.queryRows.mockResolvedValue([questions[0]]);
+    const render = mocks.getAndRenderVariant.getMockImplementation()!;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let active = 0;
+    let peak = 0;
+    mocks.getAndRenderVariant.mockImplementation(async (...args: unknown[]) => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await gate;
+      active -= 1;
+      return await render(...args);
+    });
+
+    const previews = Array.from(
+      { length: 6 },
+      async () => await renderAssessmentInstanceQuestionsForPrinting(resLocals),
+    );
+    try {
+      await vi.waitFor(() => expect(active).toBe(4));
+    } finally {
+      release();
+    }
+    await Promise.all(previews);
+    expect(peak).toBe(4);
+  });
+
   it('excludes canonically broken variants and retains safe ordered result metadata', async () => {
     const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals);
 
