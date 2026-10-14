@@ -632,6 +632,32 @@ def test_legacy_scalar_set_operator_submission_remains_readable(
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+def test_legacy_boolean_expressions_are_graded_by_symbolic_equivalence() -> None:
+    correct_answer: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "x | (y & z)",
+        "_variables": ["x", "y", "z"],
+    }
+    submitted_answer: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "(x | y) & (x | z)",
+        "_variables": ["x", "y", "z"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'variables="x,y,z"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": submitted_answer},
+        correct_answers={"test": correct_answer},
+    )
+
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',

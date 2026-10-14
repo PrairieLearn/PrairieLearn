@@ -977,7 +977,9 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
                 compare(left_arg, right_arg)
                 for left_arg, right_arg in zip(left.args, right.args, strict=True)
             )
-        elif isinstance(left, sympy.Expr) and isinstance(right, sympy.Expr):
+        elif isinstance(left, (sympy.Expr, sympy.logic.boolalg.Boolean)) and isinstance(
+            right, (sympy.Expr, sympy.logic.boolalg.Boolean)
+        ):
             result = left.equals(right) is True
         else:
             result = False
