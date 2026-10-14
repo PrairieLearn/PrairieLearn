@@ -1,6 +1,6 @@
 # Printable exams
 
-You can use PrairieLearn to prepare paper exams from an existing assessment. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file.
+You can prepare paper copies of an existing exam or homework assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. If you have permission to edit the course instance, you can also preview and download answer keys.
 
 For assessments with randomization, you can prepare several versions, called _forms_. Each form has its own questions and matching answer key. Printable forms are not currently supported for group assessments.
 
@@ -10,7 +10,7 @@ For assessments with randomization, you can prepare several versions, called _fo
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
 3. Choose what to include on the [cover page](#cover-pages), then select **Create preview**.
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
-5. Select **Update preview** to apply your changes. Check both **Student copy** and **Answer key** above the preview.
+5. Select **Update preview** to apply your changes. Check the **Student copy** and, if available, the **Answer key** above the preview.
 6. When you are satisfied with the exam, open **Download** and [choose a file](#download-files).
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
@@ -19,14 +19,14 @@ The spacing you choose is a minimum. Longer questions can take more space and mo
 
 Review every question in the preview, including its instructions, figures, and answer choices. Questions that work well online may need changes for a paper exam. Expandable sections print in full, even when they are closed in the online question.
 
-Questions that use custom course elements are supported on a best-effort basis. Check their preview and downloaded files carefully, especially if their scripts or styles refer to HTML element IDs.
+If your course uses custom elements in questions, check those questions in both the preview and downloaded files. Some elements designed for the screen may not print as expected.
 
 The question list highlights two kinds of items to check:
 
 - **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the exam.
 - **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of this form. Then select **Update preview**. Downloads are unavailable while included questions have these errors.
 
-Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and answer key before printing.
+Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and, if you can access it, the answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
 
 ## Prepare multiple forms
 
@@ -55,9 +55,7 @@ Uploaded covers do not appear in the preview. Download a student PDF or booklet 
 
 ## Download files
 
-Select **Update preview** after making changes, then open **Download**. The menu includes downloads for each form:
-
-If a download says the preview has expired or changed, select **Update preview** and try again.
+Select **Update preview** after making changes, then open **Download**. The available files depend on your forms and permissions:
 
 | Option                               | What you get                                                                     |
 | ------------------------------------ | -------------------------------------------------------------------------------- |
@@ -67,11 +65,15 @@ If a download says the preview has expired or changed, select **Update preview**
 | **Download all forms (PDF)**         | One student copy of each form, in order. Available when you have multiple forms. |
 | **Download booklet PDF…**            | A student copy for each student, followed by the answer keys.                    |
 
+Answer key and booklet downloads require permission to edit the course instance. If a download says the preview has expired or changed, select **Update preview** and try again.
+
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
+
+Larger PDFs are prepared in the background. Keep the page open or save its URL so you can return to the download link. The link is available for 24 hours after the PDF is ready.
 
 ### Print copies for a class
 
-Select **Download booklet PDF…**, enter the **Number of students**, and select **Download booklet PDF**. Each student gets a complete copy. With multiple forms, copies repeat in order: for example, A, B, C, A, B, C. With one form, every student gets the same version.
+Select **Download booklet PDF…**, enter the **Number of students** (up to 500), and select **Download booklet PDF**. Each student gets a complete copy. With multiple forms, copies repeat in order: for example, A, B, C, A, B, C. With one form, every student gets the same version. A booklet can contain up to 10,000 pages; for larger classes, download it in batches.
 
 The booklet ends with one answer key for each form. Print it single-sided and set aside the answer keys before distributing the student copies.
 
