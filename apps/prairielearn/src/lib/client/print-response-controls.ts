@@ -402,7 +402,7 @@ function normalizeFigures(source: HTMLElement): void {
 }
 
 function normalizeVariableOutputs(source: HTMLElement): void {
-  for (const output of source.querySelectorAll('.pl-variable-output, .card:has(.nav-tabs)')) {
+  for (const output of source.querySelectorAll('.pl-variable-output')) {
     const tabs = output.querySelector('.nav-tabs');
     const label = document.createElement('span');
     label.textContent = tabs?.querySelector('.active')?.textContent ?? 'Variables';

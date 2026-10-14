@@ -40,6 +40,21 @@ describe('htmlToTextBlocks', () => {
     expect(htmlToTextBlocks('  \n<p> </p><div></div><ol></ol>')).toEqual([]);
   });
 
+  it('omits hidden cover instructions and figures', () => {
+    expect(
+      htmlToTextBlocks(`
+        <p>Visible <span style="display: none">secret</span> instructions</p>
+        <div hidden><p>Hidden paragraph</p><img src="/hidden.png"></div>
+        <h2>Title <img aria-hidden="true" src="/other.png"></h2>
+        <ul><li>Keep this <span style="visibility: hidden">private</span></li></ul>
+      `),
+    ).toEqual([
+      { type: 'paragraph', text: 'Visible instructions' },
+      { type: 'heading', text: 'Title' },
+      { type: 'list', ordered: false, items: ['Keep this'] },
+    ]);
+  });
+
   it('preserves authored images and SVGs among cover instructions', () => {
     const blocks = htmlToTextBlocks(
       '<p>Use the diagram <img src="/clientFilesAssessment/diagram.png" alt="Circuit diagram"> below.</p><svg viewBox="0 0 20 10" aria-label="Graph"><path d="M0 0L20 10"/></svg>',

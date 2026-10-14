@@ -61,8 +61,12 @@ export function annotateDocxMath(source: HTMLElement): void {
     | undefined;
   for (const item of mathJax?.startup?.document?.math ?? []) {
     if (!source.contains(item.typesetRoot)) continue;
-    const mathml = mathJax?.tex2mml?.(item.math, { display: item.display });
-    if (mathml) item.typesetRoot.setAttribute('data-docx-math', mathml);
+    try {
+      const mathml = mathJax?.tex2mml?.(item.math, { display: item.display });
+      if (mathml) item.typesetRoot.setAttribute('data-docx-math', mathml);
+    } catch {
+      // Word can use an image of this equation; a failed conversion must not block the PDF.
+    }
   }
 }
 
@@ -70,6 +74,17 @@ export function annotateDocxMath(source: HTMLElement): void {
 export function captureDocxSource(source: HTMLElement): DocxSource {
   const figures: DocxSource['figures'] = [];
   const result = document.createElement('div');
+
+  function recordFigure(element: Element, alt: string): Element | null {
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const id = String(figures.length + 1);
+    figures.push({ id, width: rect.width, height: rect.height, alt });
+    element.setAttribute('data-docx-figure', id);
+    const image = document.createElement('img');
+    image.setAttribute('data-docx-figure', id);
+    return image;
+  }
 
   function copy(element: Element): Element | null {
     const style = getComputedStyle(element);
@@ -87,7 +102,7 @@ export function captureDocxSource(source: HTMLElement): DocxSource {
       const mathml =
         element.getAttribute('data-docx-math') ??
         element.querySelector('mjx-assistive-mml math')?.outerHTML;
-      if (!mathml) throw new Error('An equation could not be converted to editable Word math');
+      if (!mathml) return recordFigure(element, 'Equation');
       const container = document.createElement('span');
       container.setAttribute('data-docx-math', mathml);
       if (element.getAttribute('display') === 'true') {
@@ -96,22 +111,16 @@ export function captureDocxSource(source: HTMLElement): DocxSource {
       return container;
     }
 
-    const rect = element.getBoundingClientRect();
     if (element.matches('img, svg, canvas')) {
-      if (!rect.width || !rect.height) return null;
-      const id = String(figures.length + 1);
       const alt =
         element.getAttribute('alt') ??
         element.getAttribute('aria-label') ??
         element.querySelector('title')?.textContent ??
         'Question figure';
-      figures.push({ id, width: rect.width, height: rect.height, alt });
-      element.setAttribute('data-docx-figure', id);
-      const image = document.createElement('img');
-      image.setAttribute('data-docx-figure', id);
-      return image;
+      return recordFigure(element, alt);
     }
 
+    const rect = element.getBoundingClientRect();
     const clone = element.cloneNode(false) as Element;
     clone.removeAttribute('style');
     if (element.tagName.toLowerCase() === 'ol') {

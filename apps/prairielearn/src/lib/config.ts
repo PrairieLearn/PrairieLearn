@@ -752,7 +752,7 @@ const loader = new ConfigLoader(ConfigSchema);
 
 export const config = loader.config;
 
-/** Production browser renders belong on chunk hosts; development can use Cloudflare for testing. */
+/** Use Browser Run wherever its credentials are configured. */
 export function getPrintingCloudflareConfig(): { accountId: string; apiToken: string } | undefined {
   const { printingCloudflareAccountId: accountId, printingCloudflareApiToken: apiToken } = config;
   if (accountId === null && apiToken === null) return undefined;
@@ -761,7 +761,6 @@ export function getPrintingCloudflareConfig(): { accountId: string; apiToken: st
       'printingCloudflareAccountId and printingCloudflareApiToken must both be set to use Cloudflare Browser Run',
     );
   }
-  if (!config.chunksConsumer && !config.devMode) return undefined;
   return { accountId, apiToken };
 }
 

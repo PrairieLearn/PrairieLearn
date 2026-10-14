@@ -65,6 +65,19 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
   const blocks: PrintableTextBlock[] = [];
   const blockTags = new Set(['article', 'blockquote', 'div', 'ol', 'p', 'section', 'ul']);
   const ignoredTags = new Set(['script', 'style', 'noscript', 'template']);
+  const isHidden = (node: HtmlElement): boolean => {
+    for (const element of $(node).parents().addBack()) {
+      if (
+        $(element).is('[hidden], [aria-hidden="true"]') ||
+        /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\s*(?:!important\s*)?(?:;|$)/i.test(
+          $(element).attr('style') ?? '',
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
   const isBlock = (node: HtmlNode): node is HtmlElement =>
     node.type === 'tag' && (blockTags.has(node.tagName) || /^h[1-6]$/.test(node.tagName));
   const isFigure = (node: HtmlNode): boolean =>
@@ -86,7 +99,7 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
 
   function contentText(node: HtmlNode): string {
     if (node.type === 'text') return node.data;
-    if (node.type !== 'tag' || ignoredTags.has(node.tagName)) return '';
+    if (node.type !== 'tag' || ignoredTags.has(node.tagName) || isHidden(node)) return '';
     if (isFigure(node)) return '';
     if (node.tagName === 'br') return ' ';
     return node.children
@@ -105,7 +118,7 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
     function appendInline(node: HtmlNode): void {
       if (node.type === 'text') {
         inlineText += node.data;
-      } else if (node.type === 'tag' && !ignoredTags.has(node.tagName)) {
+      } else if (node.type === 'tag' && !ignoredTags.has(node.tagName) && !isHidden(node)) {
         if (isFigure(node)) {
           flush();
           blocks.push(figure(node));
@@ -118,7 +131,7 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
     }
 
     for (const node of nodes) {
-      if (node.type === 'tag' && ignoredTags.has(node.tagName)) continue;
+      if (node.type === 'tag' && (ignoredTags.has(node.tagName) || isHidden(node))) continue;
       if (!isBlock(node)) {
         appendInline(node);
         continue;
@@ -127,7 +140,9 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
       if (/^h[1-6]$/.test(node.tagName)) {
         const text = normalizeText(contentText(node));
         if (text) blocks.push({ type: 'heading', text });
-        for (const image of $(node).find('img, svg')) blocks.push(figure(image));
+        for (const image of $(node).find('img, svg')) {
+          if (!isHidden(image)) blocks.push(figure(image));
+        }
       } else if (node.tagName === 'ul' || node.tagName === 'ol') {
         const items = $(node)
           .children('li')
@@ -137,7 +152,9 @@ export function htmlToTextBlocks(html: string): PrintableTextBlock[] {
         if (items.length > 0) {
           blocks.push({ type: 'list', ordered: node.tagName === 'ol', items });
         }
-        for (const image of $(node).find('img, svg')) blocks.push(figure(image));
+        for (const image of $(node).find('img, svg')) {
+          if (!isHidden(image)) blocks.push(figure(image));
+        }
       } else {
         append(node.children);
       }

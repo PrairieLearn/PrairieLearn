@@ -12,9 +12,9 @@ export async function waitForPrintImages(source: HTMLElement): Promise<void> {
 
   await Promise.all(
     images.map(async (image) => {
-      // Elements such as image capture ship placeholder images that only receive a source once a
-      // student acts, so an image without one has nothing to load and cannot block printing.
-      if (!image.getAttribute('src')) return;
+      // Image capture placeholders have no source until a student acts. Images selected through
+      // srcset or a picture source still need to finish loading before pagination.
+      if (!image.currentSrc && !image.getAttribute('src') && !image.getAttribute('srcset')) return;
       if (!image.complete) {
         await new Promise<void>((resolve, reject) => {
           image.addEventListener('load', () => resolve(), { once: true });
