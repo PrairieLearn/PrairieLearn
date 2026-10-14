@@ -178,8 +178,8 @@ export async function suggestInstitutionPrefix({
   const instructions = formatPrompt([
     'You are helping a PrairieLearn administrator name a GitHub repository for a new course.',
     'Repository names follow the pattern "pl-{institution-prefix}-{course-name}". Your job is to determine the correct institution prefix.',
-    'Identify the institution as a whole, NOT a department. For example, if the domain is "cs.illinois.edu", the prefix is "uiuc" (not "cs").',
-    'Use the institution prefixes from the examples above when they apply. Otherwise, derive the prefix from the institution\'s primary domain name. For example, "berkeley.edu" gives "berkeley", "ubc.ca" gives "ubc".',
+    'Identify the institution as a whole, NOT a department. For example, if the domain is "cs.berkeley.edu", the prefix is "berkeley" (not "cs").',
+    'Derive the prefix from the institution\'s primary domain name. For example, "berkeley.edu" gives "berkeley", "ubc.ca" gives "ubc".',
     'The contact email and PrairieLearn account UID domains are supporting hints. The contact email may be self-reported, while the UID domain may identify an institution without being a routable email address.',
     "Search the web to find the institution's primary domain if it is not obvious from the provided domains.",
     'If you use web sources, cite them in your reasoning.',
