@@ -260,7 +260,6 @@ class _Constants:
     })
 
     set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "Complement": sympy.Complement,
         "Interval": sympy.Interval,
         "FiniteSet": sympy.FiniteSet,
         "Union": sympy.Union,
@@ -320,25 +319,6 @@ class _SympyJsonStrPrinter(StrPrinter):
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
         return f"{left}{start}, {end}{right}"
-
-    def _print_Set(self, expr: sympy.Set) -> str:  # ruff: ignore[invalid-function-name]
-        if (
-            type(expr) is sympy.Set
-            and len(expr.args) == 1
-            and isinstance(expr.args[0], sympy.Symbol)
-            and expr.args[0].name in _SET_DOMAIN_NAMES
-        ):
-            return self.doprint(expr.args[0])
-        return self.emptyPrinter(expr)
-
-    def _print_Union(self, expr: sympy.Union) -> str:  # ruff: ignore[invalid-function-name]
-        return f"Union({', '.join(map(self.doprint, expr.args))})"
-
-    def _print_Intersection(self, expr: sympy.Intersection) -> str:  # ruff: ignore[invalid-function-name]
-        return f"Intersection({', '.join(map(self.doprint, expr.args))})"
-
-    def _print_Complement(self, expr: sympy.Complement) -> str:  # ruff: ignore[invalid-function-name]
-        return f"Complement({', '.join(map(self.doprint, expr.args))})"
 
 
 # Safe evaluation of user input to convert from string to sympy expression.
