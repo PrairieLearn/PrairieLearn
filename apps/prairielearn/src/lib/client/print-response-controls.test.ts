@@ -2,6 +2,7 @@ import { JSDOM } from 'jsdom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  normalizeAnswerPresentation,
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
 } from './print-response-controls.js';
@@ -21,6 +22,26 @@ function printQuestion(html: string): HTMLElement {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('printable response controls', () => {
+  it('only collapses tabs in variable outputs for answer keys', () => {
+    const dom = new JSDOM(`
+      <div class="card authored-card">
+        <ul class="nav-tabs"><li class="active">First</li></ul>
+        <div class="tab-pane">Authored alternative</div>
+      </div>
+      <div class="card pl-variable-output">
+        <ul class="nav-tabs"><li class="active">Python</li></ul>
+        <div class="tab-pane active">Selected output</div>
+        <div class="tab-pane">Other output</div>
+      </div>
+    `);
+    vi.stubGlobal('document', dom.window.document);
+    normalizeAnswerPresentation(dom.window.document.body);
+    expect(dom.window.document.querySelector('.authored-card .tab-pane')?.textContent).toBe(
+      'Authored alternative',
+    );
+    expect(dom.window.document.querySelectorAll('.pl-variable-output .tab-pane')).toHaveLength(1);
+  });
+
   it('keeps plain dropdown labels as text while preserving authored choice markup', () => {
     const question = printQuestion(`
       <div class="pl-multiple-choice-dropdown"><select>
