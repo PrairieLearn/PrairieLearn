@@ -60,4 +60,26 @@ describe('print snapshot IDs', () => {
     vi.setSystemTime(new Date('2026-10-14T12:00:01Z'));
     expect(checkPrintSnapshotId({ ...snapshot, id }, secretKey)).toBe(false);
   });
+
+  it('accepts equivalent HTML attribute serialization from different browsers', () => {
+    const html =
+      '<!doctype html>\n<html><head></head><body><math data-speech="<mark name=&quot;0&quot;/> a">a</math></body></html>';
+    const id = createPrintSnapshotId({ ...snapshot, html }, secretKey);
+    expect(
+      checkPrintSnapshotId(
+        {
+          ...snapshot,
+          id,
+          html: html.replace('<mark name=&quot;0&quot;/>', '&lt;mark name=&quot;0&quot;/&gt;'),
+        },
+        secretKey,
+      ),
+    ).toBe(true);
+    expect(
+      checkPrintSnapshotId(
+        { ...snapshot, id, html: html.replace('>a</math>', '>b</math>') },
+        secretKey,
+      ),
+    ).toBe(false);
+  });
 });

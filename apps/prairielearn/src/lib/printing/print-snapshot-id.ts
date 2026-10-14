@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 
+import { load } from 'cheerio';
 import { z } from 'zod';
 
 import {
@@ -22,6 +23,11 @@ const SnapshotIdSchema = z.strictObject({
 
 function digest(value: string): string {
   return createHash('sha256').update(value).digest('hex');
+}
+
+function digestHtml(html: string): string {
+  // Browser versions serialize characters in HTML attributes differently.
+  return digest(load(html).html());
 }
 
 function normalizedSearch(search: URLSearchParams): string {
@@ -55,7 +61,7 @@ export function createPrintSnapshotId(
       authnUserId,
       search: normalizedSearch(search),
       questionListDigest,
-      htmlDigest: digest(html),
+      htmlDigest: digestHtml(html),
       sourceDigest: digest(JSON.stringify(source)),
     },
     secretKey,
@@ -92,7 +98,7 @@ export function checkPrintSnapshotId(
     snapshot.authnUserId === authnUserId &&
     snapshot.search === normalizedSearch(search) &&
     snapshot.questionListDigest === questionListDigest &&
-    snapshot.htmlDigest === digest(html) &&
+    snapshot.htmlDigest === digestHtml(html) &&
     (source === undefined || snapshot.sourceDigest === digest(JSON.stringify(source)))
   );
 }

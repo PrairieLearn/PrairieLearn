@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
+import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
 import { parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
@@ -392,6 +393,25 @@ router.get(
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     const { printLayout: layout, printDocument: document } = res.locals;
+    const meter = metrics.getMeter('prairielearn');
+    const attributes = { document };
+    const startedAt = performance.now();
+    res.once('finish', () => {
+      getHistogram(meter, 'print.preview.request.duration', {
+        unit: 'milliseconds',
+        valueType: ValueType.DOUBLE,
+      }).record(performance.now() - startedAt, attributes);
+      getHistogram(meter, 'print.preview.rss', {
+        unit: 'bytes',
+        valueType: ValueType.INT,
+      }).record(process.memoryUsage().rss, attributes);
+      if (res.statusCode >= 400) {
+        getCounter(meter, 'print.preview.failures', { valueType: ValueType.INT }).add(
+          1,
+          attributes,
+        );
+      }
+    });
 
     const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
       defaultQuestionBlockSize: layout.blockSize ?? 'auto',
@@ -399,6 +419,10 @@ router.get(
       excludedQuestionNumbers: layout.excludedQuestionNumbers,
       document,
     });
+    getHistogram(meter, 'print.preview.questions.duration', {
+      unit: 'milliseconds',
+      valueType: ValueType.DOUBLE,
+    }).record(performance.now() - startedAt, attributes);
     if (printingResult.questionHtmls.length === 0) {
       throw new HttpStatusError(
         422,
@@ -455,7 +479,11 @@ router.get(
             copy
               .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
               .forEach((node) => node.remove());
-            return { html: `<!doctype html>\n${copy.outerHTML}`, source };
+            const normalized = new DOMParser().parseFromString(
+              `<!doctype html>\n${copy.outerHTML}`,
+              'text/html',
+            );
+            return { html: `<!doctype html>\n${normalized.documentElement.outerHTML}`, source };
           }),
       },
     );
