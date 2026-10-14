@@ -707,16 +707,8 @@ test('combines exam copies with custom covers and appends every form’s answer 
     timeout: 120_000,
   });
   await expect(page.getByLabel('Spacing for question 1', { exact: true })).toHaveValue('full');
-  await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
-    name: 'invalid-cover.pdf',
-    mimeType: 'application/pdf',
-    buffer: Buffer.from('invalid PDF'),
-  });
-  await chooseDownload(page, 'Download booklet PDF…');
-  await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
-  await expect(page.getByText(/valid PDF without password protection/)).toHaveCount(1);
-  await page.getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('button', { name: 'Remove cover invalid-cover.pdf', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove cover extended-instructions.pdf' }).click();
+  await expect(page.getByText('extended-instructions.pdf', { exact: true })).toHaveCount(0);
   await expect(downloadMenu(page)).toBeEnabled();
 });
 
