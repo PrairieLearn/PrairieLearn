@@ -10,41 +10,17 @@ it('uses local rendering when Cloudflare credentials are absent', async () => {
   });
 });
 
-it('uses Cloudflare when both credentials are configured', async () => {
+it.each([
+  { host: 'chunks consumer', chunksConsumer: true, devMode: false },
+  { host: 'local development', chunksConsumer: false, devMode: true },
+  { host: 'main production server', chunksConsumer: false, devMode: false },
+])('uses Cloudflare on a $host when configured', async ({ chunksConsumer, devMode }) => {
   await withConfig(
     {
       printingCloudflareAccountId: 'account',
       printingCloudflareApiToken: 'token',
-      chunksConsumer: true,
-      devMode: false,
-    },
-    () => {
-      expect(getPrintingCloudflareConfig()).toEqual({ accountId: 'account', apiToken: 'token' });
-    },
-  );
-});
-
-it('allows local development to use Cloudflare', async () => {
-  await withConfig(
-    {
-      printingCloudflareAccountId: 'account',
-      printingCloudflareApiToken: 'token',
-      chunksConsumer: false,
-      devMode: true,
-    },
-    () => {
-      expect(getPrintingCloudflareConfig()).toEqual({ accountId: 'account', apiToken: 'token' });
-    },
-  );
-});
-
-it('uses Cloudflare on a main production server when configured', async () => {
-  await withConfig(
-    {
-      printingCloudflareAccountId: 'account',
-      printingCloudflareApiToken: 'token',
-      chunksConsumer: false,
-      devMode: false,
+      chunksConsumer,
+      devMode,
     },
     () => {
       expect(getPrintingCloudflareConfig()).toEqual({ accountId: 'account', apiToken: 'token' });
