@@ -103,7 +103,6 @@ describe('loadQuestionImage', () => {
       variant_course: context.variantCourse,
       user_id: context.userId,
       authn_user_id: context.authnUserId,
-      maxFileBytes: 10 * 1024 * 1024,
     });
     expect(publicFetchModule.publicFetch).not.toHaveBeenCalled();
   });

@@ -1,4 +1,6 @@
+import base64
 import copy
+import io
 import os
 import pathlib
 import sys
@@ -8,7 +10,6 @@ from typing import Any, Literal, TypedDict, assert_never
 import lxml.html
 
 from prairielearn.internal.check_data import Phase, check_data
-from prairielearn.internal.file_utils import filelike_to_string
 from prairielearn.internal.traverse import (
     get_source_definition,
     traverse_and_execute,
@@ -41,11 +42,27 @@ class RenderContext(TypedDict):
     """The path to the course directory."""
 
 
+def filelike_to_string(filelike: Any) -> str:
+    # if val is None, replace it with empty string
+    if filelike is None:
+        filelike = ""
+
+    # if val is a file-like object, read whatever is inside
+    if isinstance(filelike, io.IOBase):
+        filelike.seek(0)
+        filelike = filelike.read()
+
+    # if val is a string, treat it as utf-8
+    if isinstance(filelike, str):
+        filelike = bytes(filelike, "utf-8")
+
+    # if this next call does not work, it will throw an error, because
+    # the thing returned by file() does not have the correct format
+    return base64.b64encode(filelike).decode()
+
+
 def process(
-    phase: Phase,
-    data: dict[str, Any],
-    context: RenderContext,
-    max_file_bytes: int | None = None,
+    phase: Phase, data: dict[str, Any], context: RenderContext
 ) -> tuple[str | None, set[str]]:
     html = context["html"]
     elements = context["elements"]
@@ -206,7 +223,7 @@ def process(
         traverse_and_execute(html, process_element_return_none)
 
     if phase == "file":
-        result = filelike_to_string(result, max_file_bytes)
+        result = filelike_to_string(result)
 
     return result, processed_elements
 

@@ -152,7 +152,6 @@ export async function makeVariant({
  * @param options.variant_course - The course for the variant.
  * @param options.user_id - The current effective user.
  * @param options.authn_user_id - The current authenticated user.
- * @param options.maxFileBytes - Optional limit on generated file size before transport.
  */
 export async function getDynamicFile({
   filename,
@@ -162,7 +161,6 @@ export async function getDynamicFile({
   variant_course,
   user_id,
   authn_user_id,
-  maxFileBytes,
 }: {
   filename: string;
   variant: Variant;
@@ -171,26 +169,24 @@ export async function getDynamicFile({
   variant_course: Course;
   user_id: string;
   authn_user_id: string;
-  maxFileBytes?: number;
 }): Promise<Buffer> {
   const question_course = await getQuestionCourse(question, variant_course);
   const questionModule = questionServers.getModule(question.type);
   if (!questionModule.file) {
     throw new Error(`Question type ${question.type} does not support file generation`);
   }
-  const { courseIssues, data: fileData } = await questionModule.file({
+  const { courseIssues, data: fileData } = await questionModule.file(
     filename,
     variant,
     submission,
     question,
-    course: question_course,
-    caller: {
+    question_course,
+    {
       userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
-    maxFileBytes,
-  });
+  );
 
   const studentMessage = 'Error creating file: ' + filename;
   const courseData = { variant, question, course: variant_course };

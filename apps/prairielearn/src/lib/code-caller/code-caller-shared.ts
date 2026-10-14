@@ -28,7 +28,6 @@ export interface CodeCaller {
     file: string | null,
     fcn: string | null,
     args: any[],
-    maxFileBytes?: number,
   ) => Promise<{ result: any; output: string }>;
   restart: () => Promise<boolean>;
   done: () => void;
