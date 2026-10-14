@@ -1,5 +1,7 @@
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
+import type { RequestHandler } from 'express';
 
+import { MAX_PRINT_EXPORT_UPLOAD_BYTES } from '../../lib/client/print-packet.js';
 import { config } from '../../lib/config.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 
@@ -26,7 +28,7 @@ const assessmentRouter = t.router({
 
 export type AssessmentRouter = typeof assessmentRouter;
 
-export const assessmentTrpcRouter = createExpressMiddleware({
+const assessmentMiddleware = createExpressMiddleware({
   router: assessmentRouter,
   createContext,
   onError: handleTrpcError,
@@ -34,3 +36,16 @@ export const assessmentTrpcRouter = createExpressMiddleware({
   // the previous multer-based upload route did.
   maxBodySize: config.fileUploadMaxBytes,
 });
+
+const printableExamPdfMiddleware = createExpressMiddleware({
+  router: assessmentRouter,
+  createContext,
+  onError: handleTrpcError,
+  maxBodySize: MAX_PRINT_EXPORT_UPLOAD_BYTES,
+});
+
+export const assessmentTrpcRouter: RequestHandler = (req, res, next) => {
+  const middleware =
+    req.path === '/printableExamExport.pdf' ? printableExamPdfMiddleware : assessmentMiddleware;
+  middleware(req, res, next);
+};

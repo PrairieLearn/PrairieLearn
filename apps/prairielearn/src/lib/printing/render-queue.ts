@@ -75,7 +75,12 @@ export class RenderQueue {
         this.waiters.filter((waiter) => waiter.priority === 'export').length >=
           this.maxWaiters - this.reservedPreviewWaiters)
     ) {
-      throw new HttpStatusError(503, 'Print rendering is busy. Try this export again shortly.');
+      throw new HttpStatusError(
+        503,
+        priority === 'preview'
+          ? 'Print preview is busy. Try again shortly.'
+          : 'Print rendering is busy. Try this export again shortly.',
+      );
     }
 
     // withTimeout() leaves expired acquisitions in async-mutex's queue until a permit is

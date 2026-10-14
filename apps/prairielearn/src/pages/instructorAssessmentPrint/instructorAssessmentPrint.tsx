@@ -1,7 +1,11 @@
+import { pipeline } from 'node:stream/promises';
+
 import { Router } from 'express';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
@@ -10,6 +14,7 @@ import { MAX_PRINT_COPIES } from '../../lib/client/print-packet.js';
 import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { getPrintExportStream, selectPrintExportJob } from '../../lib/print-export-jobs.js';
 import { assessmentHasPrintRandomization } from '../../lib/print-preparation.js';
 import { isBrowserRenderingAvailable } from '../../lib/printing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -21,6 +26,33 @@ import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js'
 import { InstructorAssessmentPrint } from './instructorAssessmentPrint.html.js';
 
 const router = Router();
+
+router.get(
+  '/exports/:jobSequenceId.pdf',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'block',
+  }),
+  typedAsyncHandler<'assessment'>(async (req, res) => {
+    const job = await selectPrintExportJob({
+      jobSequenceId: IdSchema.parse(req.params.jobSequenceId),
+      assessmentId: res.locals.assessment.id,
+      authnUserId: res.locals.authn_user.id,
+    });
+    if (!job?.result) throw new HttpStatusError(404, 'PDF not found or no longer available');
+    if (
+      job.result.document !== 'exam' &&
+      !res.locals.authz_data.has_course_instance_permission_edit
+    ) {
+      throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+    const stream = await getPrintExportStream(job.result.key);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.type('application/pdf');
+    res.attachment(job.result.filename);
+    await pipeline(stream, res);
+  }),
+);
 
 router.get(
   '/',

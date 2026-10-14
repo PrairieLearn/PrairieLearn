@@ -8,6 +8,7 @@ import * as unzipper from 'unzipper';
 import { withResolvers } from '@prairielearn/utils';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { MAX_INLINE_PRINT_PACKET_PAGES } from '../../lib/client/print-packet.js';
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import {
@@ -126,6 +127,86 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   await expect(
     modal.getByRole('button', { name: 'Download booklet PDF', exact: true }),
   ).toBeEnabled();
+});
+
+test('shows the prepared PDF size beside its download link', async ({ page, courseInstance }) => {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam20-assessmentTools',
+  });
+  await page.route('**/printableExamExport.status?*', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        result: {
+          data: {
+            json: {
+              status: 'Success',
+              ready: true,
+              sizeBytes: 1_647_482,
+              failureMessage: null,
+              canViewJobLogs: true,
+            },
+          },
+        },
+      }),
+    }),
+  );
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?export=999999`,
+  );
+  await expect(page.getByRole('link', { name: 'Download prepared PDF (1.6 MB)' })).toBeVisible();
+});
+
+test('explains a failed background export and offers a fresh preview', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam20-assessmentTools',
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
+  );
+  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+
+  const jobSequenceId = '999999';
+  await page.route('**/printableExamExport.status?*', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        result: {
+          data: {
+            json: {
+              status: 'Error',
+              ready: false,
+              sizeBytes: null,
+              failureMessage:
+                'This print preview has expired or changed. Select Update preview and try again.',
+              canViewJobLogs: true,
+            },
+          },
+        },
+      }),
+    }),
+  );
+  const url = new URL(page.url());
+  url.searchParams.set('export', jobSequenceId);
+  await page.goto(url.href);
+  await expect(
+    page.getByRole('alert').getByText('This print preview has expired or changed.'),
+  ).toBeVisible({ timeout: 120_000 });
+  await expect(downloadMenu(page)).toBeDisabled();
+  await expect(page.getByRole('link', { name: 'View job details' })).toHaveAttribute(
+    'href',
+    `/pl/course_instance/${courseInstance.id}/instructor/jobSequence/${jobSequenceId}`,
+  );
+
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await expect(page.getByRole('link', { name: 'View job details' })).toHaveCount(0);
 });
 
 test('defaults booklet copies to the number of enrolled students', async ({
@@ -507,7 +588,11 @@ test('combines exam copies with custom covers and appends every form’s answer 
 
   // Every form, one copy each, before any cover pages are uploaded.
   const allForms = page.waitForEvent('download', { timeout: 120_000 });
+  const allFormsResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/printableExamExport.pdf'),
+  );
   await chooseDownload(page, 'Download all forms (PDF)');
+  expect((await allFormsResponse).status()).toBe(200);
   const allFormsDownload = await allForms;
   expect(allFormsDownload.suggestedFilename()).toMatch(/assessment_3_copies\.pdf$/);
   expect(
@@ -571,6 +656,20 @@ test('combines exam copies with custom covers and appends every form’s answer 
     const exportCount = exports;
     const downloaded = page.waitForEvent('download', { timeout: 120_000 });
     await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
+    const expectedPageCount =
+      Array.from(
+        { length: copies },
+        (_, index) => pageCounts[index % pageCounts.length] + 1,
+      ).reduce((total, count) => total + count, 0) +
+      answerKeyPageCounts.reduce((total, count) => total + count, 0);
+    if (copies === 45) {
+      expect(expectedPageCount).toBeGreaterThanOrEqual(MAX_INLINE_PRINT_PACKET_PAGES);
+    }
+    if (expectedPageCount >= MAX_INLINE_PRINT_PACKET_PAGES) {
+      const preparedPdf = page.getByRole('link', { name: 'Download prepared PDF' });
+      await expect(preparedPdf).toBeVisible({ timeout: 120_000 });
+      await preparedPdf.click();
+    }
     const download = await downloaded;
     expect(download.suggestedFilename()).toMatch(new RegExp(`booklet_${copies}_copies\\.pdf$`));
     expect(await download.failure()).toBeNull();

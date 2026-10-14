@@ -10,9 +10,17 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { makeAssessmentInstance } from '../lib/assessment.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
+import { MAX_PRINT_SNAPSHOT_BYTES } from '../lib/client/print-snapshot-limits.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import {
+  cleanExpiredPrintExports,
+  processQueuedPrintExports,
+  queuePrintExport,
+  selectPrintExportJob,
+  storeCompletedPrintExport,
+} from '../lib/print-export-jobs.js';
 import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
 import {
   assessmentHasPrintRandomization,
@@ -22,6 +30,11 @@ import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
 import { getPrintableQuestionListDigest } from '../lib/printing.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import {
+  insertCoursePermissionsByUserUid,
+  upsertCourseInstancePermissionsRole,
+} from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById } from '../models/question.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
@@ -337,6 +350,203 @@ describe('print preparation', { timeout: 60_000 }, () => {
     );
   });
 
+  test('rejects a predictable page limit before rendering', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const api = client(assessment.id);
+    const instance = await api.printableExams.create.mutate();
+    const data = packetInput(instance.assessmentInstanceId, 500);
+    data.append('pages', new File(['<div class="pagedjs_page"></div>'.repeat(21)], 'large.html'));
+    data.append('snapshotIds', 'placeholder');
+    await expect(api.printableExamExport.pdf.mutate(data)).rejects.toThrow(
+      'The export would exceed 10,000 pages.',
+    );
+  });
+
+  test('accepts the maximum expected snapshot and cover upload before validation', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const api = client(assessment.id);
+    const instance = await api.printableExams.create.mutate();
+    const data = packetInput(instance.assessmentInstanceId);
+    const snapshot = new Uint8Array(MAX_PRINT_SNAPSHOT_BYTES);
+    for (let i = 0; i < 5; i++) {
+      data.append('pages', new File([snapshot], `page-${i}.html`));
+    }
+    data.append('coverPages', new File([new Uint8Array(10_000_000)], 'invalid.pdf'));
+    await expect(api.printableExamExport.pdf.mutate(data)).rejects.toThrow(
+      'valid PDF without password protection',
+    );
+  });
+
+  test('stores a background PDF and streams it only to the owner', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const pdf = Buffer.from('%PDF-1.4\nbackground export\n');
+    const courseInstance = await selectCourseInstanceById('1');
+    const jobSequenceId = await storeCompletedPrintExport({
+      owner: {
+        assessmentId: assessment.id,
+        authnUserId: '1',
+        courseId: courseInstance.course_id,
+        courseInstanceId: '1',
+        userId: '1',
+      },
+      packet: pdf,
+      filename: 'test-export.pdf',
+      document: 'exam',
+    });
+    await expect
+      .poll(
+        async () =>
+          (
+            await selectPrintExportJob({
+              jobSequenceId,
+              assessmentId: assessment.id,
+              authnUserId: '1',
+            })
+          )?.status,
+      )
+      .toBe('Success');
+    expect(await client(assessment.id).printableExamExport.status.query({ jobSequenceId })).toEqual(
+      {
+        status: 'Success',
+        ready: true,
+        sizeBytes: pdf.length,
+        failureMessage: null,
+        canViewJobLogs: true,
+      },
+    );
+    const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${jobSequenceId}.pdf`;
+    const response = await fetch(url);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-disposition')).toBe(
+      'attachment; filename="test-export.pdf"',
+    );
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(pdf);
+    const studentResponse = await fetch(url, { headers: { cookie: 'pl_test_user=test_student' } });
+    expect(studentResponse.status).toBe(403);
+    const otherAssessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam1-automaticTestSuite',
+    });
+    await expect(
+      client(otherAssessment.id).printableExamExport.status.query({ jobSequenceId }),
+    ).rejects.toThrow('NOT_FOUND');
+    expect(
+      (
+        await fetch(
+          `${siteUrl}/pl/course_instance/1/instructor/assessment/${otherAssessment.id}/print_preparation/exports/${jobSequenceId}.pdf`,
+        )
+      ).status,
+    ).toBe(404);
+    await execute(sql.age_print_export_job, { job_sequence_id: jobSequenceId });
+    await execute(sql.age_print_export_sequence, { job_sequence_id: jobSequenceId });
+    await cleanExpiredPrintExports();
+    expect(await client(assessment.id).printableExamExport.status.query({ jobSequenceId })).toEqual(
+      {
+        status: 'Success',
+        ready: false,
+        sizeBytes: null,
+        failureMessage: null,
+        canViewJobLogs: true,
+      },
+    );
+    expect((await fetch(url)).status).toBe(404);
+  });
+
+  test('shows a safe reason when a background PDF fails', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    const jobSequenceId = await queuePrintExport({
+      owner: {
+        assessmentId: assessment.id,
+        authnUserId: '1',
+        courseId: courseInstance.course_id,
+        courseInstanceId: '1',
+        userId: '1',
+      },
+      work: {
+        document: 'booklet',
+        copies: 1,
+        filename: 'failed-export.pdf',
+        snapshots: [],
+        cookieHeader: 'pl_test_user=test_instructor',
+        covers: [
+          { name: 'invalid-cover.pdf', base64: Buffer.from('not a pdf').toString('base64') },
+        ],
+      },
+    });
+    await processQueuedPrintExports();
+    await expect
+      .poll(
+        async () =>
+          (
+            await selectPrintExportJob({
+              jobSequenceId,
+              assessmentId: assessment.id,
+              authnUserId: '1',
+            })
+          )?.status,
+      )
+      .toBe('Error');
+    expect(await client(assessment.id).printableExamExport.status.query({ jobSequenceId })).toEqual(
+      {
+        status: 'Error',
+        ready: false,
+        sizeBytes: null,
+        failureMessage:
+          '“invalid-cover.pdf” could not be read. Upload a valid PDF without password protection.',
+        canViewJobLogs: true,
+      },
+    );
+  });
+
+  test('stops retrying after three expired worker leases', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    const jobSequenceId = await queuePrintExport({
+      owner: {
+        assessmentId: assessment.id,
+        authnUserId: '1',
+        courseId: courseInstance.course_id,
+        courseInstanceId: '1',
+        userId: '1',
+      },
+      work: {
+        document: 'exam',
+        copies: 1,
+        filename: 'retry-export.pdf',
+        snapshots: [],
+        covers: [],
+      },
+    });
+    await execute(sql.expire_print_export_lease, { job_sequence_id: jobSequenceId });
+    await processQueuedPrintExports();
+    expect(await client(assessment.id).printableExamExport.status.query({ jobSequenceId })).toEqual(
+      {
+        status: 'Error',
+        ready: false,
+        sizeBytes: null,
+        failureMessage:
+          'The export stopped repeatedly while rendering. Try fewer forms or contact support.',
+        canViewJobLogs: true,
+      },
+    );
+  });
+
   test('rejects a changed PDF snapshot before rendering', async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
@@ -480,12 +690,40 @@ describe('print preparation', { timeout: 60_000 }, () => {
       course_instance_id: '1',
       tid: 'exam20-assessmentTools',
     });
-    const instance = await client(assessment.id).printableExams.create.mutate();
+    const courseInstance = await selectCourseInstanceById('1');
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Instructor User',
+      uin: '100000000',
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid: instructor.uid,
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    await upsertCourseInstancePermissionsRole({
+      course_id: courseInstance.course_id,
+      course_instance_id: courseInstance.id,
+      user_id: instructor.id,
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '1',
+    });
+    const instanceId = await makeAssessmentInstance({
+      assessment,
+      user_id: instructor.id,
+      authn_user_id: instructor.id,
+      mode: 'Public',
+      time_limit_min: null,
+      date: new Date(),
+      client_fingerprint_id: null,
+      forPrinting: true,
+    });
     const trpcUrl = getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: assessment.id });
     const headers = {
       'X-TRPC': 'true',
       'X-CSRF-Token': generatePrefixCsrfToken(
-        { url: trpcUrl, authn_user_id: '1' },
+        { url: trpcUrl, authn_user_id: instructor.id },
         config.secretKey,
       ),
       cookie:
@@ -500,7 +738,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       const response = await fetch(`${siteUrl}${trpcUrl}/printableExamExport.pdf`, {
         method: 'POST',
         headers,
-        body: packetInput(instance.assessmentInstanceId, 1, document),
+        body: packetInput(instanceId, 1, document),
       });
       expect(response.status).toBe(expectedStatus);
     }

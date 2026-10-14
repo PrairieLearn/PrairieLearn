@@ -1,5 +1,6 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
+import { filesize } from 'filesize';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { type ChangeEvent, Fragment, useCallback, useRef, useState } from 'react';
 import { Alert, Badge, Button, ButtonGroup, Card, Dropdown, Form, Spinner } from 'react-bootstrap';
@@ -30,7 +31,11 @@ import {
   renderPrintSnapshot,
 } from '../../lib/client/print-snapshot.js';
 import type { StaffAssessmentInstance } from '../../lib/client/safe-db-types.js';
-import { getAssessmentInstanceUrl, getQuestionUrl } from '../../lib/client/url.js';
+import {
+  getAssessmentInstanceUrl,
+  getCourseInstanceJobSequenceUrl,
+  getQuestionUrl,
+} from '../../lib/client/url.js';
 import type { PrintDocument } from '../../lib/printing.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
@@ -133,6 +138,7 @@ function PrintPreparation({
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
   const [retry, setRetry] = useState(0);
   const [snapshotStale, setSnapshotStale] = useState(false);
+  const [exportJobId, setExportJobId] = useQueryState('export', parseAsString);
   const {
     register,
     handleSubmit,
@@ -172,6 +178,24 @@ function PrintPreparation({
   );
   const packet = useMutation(trpc.printableExamExport.pdf.mutationOptions());
   const booklet = useMutation(trpc.printableExamExport.pdf.mutationOptions());
+  const exportStatus = useQuery(
+    trpc.printableExamExport.status.queryOptions(
+      { jobSequenceId: exportJobId ?? '1' },
+      {
+        enabled: exportJobId !== null,
+        refetchInterval: (query) =>
+          query.state.data?.status === 'Running' || query.state.data?.status === 'Stopping'
+            ? 2_000
+            : false,
+      },
+    ),
+  );
+  const exportNeedsNewPreview = exportStatus.data?.failureMessage === STALE_PRINT_SNAPSHOT_MESSAGE;
+  const exportPending =
+    exportJobId !== null &&
+    (exportStatus.isPending ||
+      exportStatus.data?.status === 'Running' ||
+      exportStatus.data?.status === 'Stopping');
   const busy =
     create.isPending ||
     regenerate.isPending ||
@@ -290,9 +314,13 @@ function PrintPreparation({
     }
   }
 
-  function savePdf(result: { base64: string; filename: string }) {
-    const bytes = Uint8Array.from(atob(result.base64), (character) => character.charCodeAt(0));
-    saveDownload(new Blob([bytes], { type: 'application/pdf' }), result.filename);
+  function receivePdf(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
+    if (result.type === 'background') {
+      void setExportJobId(result.jobSequenceId);
+    } else {
+      const bytes = Uint8Array.from(atob(result.base64), (character) => character.charCodeAt(0));
+      saveDownload(new Blob([bytes], { type: 'application/pdf' }), result.filename);
+    }
   }
 
   async function downloadPacket(
@@ -305,7 +333,7 @@ function PrintPreparation({
       const result = await packet.mutateAsync(
         await preparePdfInput(packetMetadata(ids, copyCount, outputDocument), 'packet'),
       );
-      savePdf(result);
+      receivePdf(result);
     } catch (error) {
       markStaleSnapshot(error);
       throw error;
@@ -413,7 +441,11 @@ function PrintPreparation({
       (question) => question.concerns.length || omitted.has(question.number),
     ).length ?? 0;
   const noQuestionsSelected = questions.isSuccess && includedQuestions?.length === 0;
-  const previewHasError = currentPreview?.status === 'error' || omitted.size > 0 || snapshotStale;
+  const previewHasError =
+    currentPreview?.status === 'error' ||
+    omitted.size > 0 ||
+    snapshotStale ||
+    exportNeedsNewPreview;
   const canDownload =
     validInstance &&
     !isDirty &&
@@ -421,6 +453,8 @@ function PrintPreparation({
     currentPreview.questions > 0 &&
     omitted.size === 0 &&
     !snapshotStale &&
+    !exportNeedsNewPreview &&
+    !exportPending &&
     !download.isPending &&
     !busy;
 
@@ -428,7 +462,7 @@ function PrintPreparation({
     setCopies(studentCount);
     booklet.reset();
     try {
-      savePdf(
+      receivePdf(
         await booklet.mutateAsync(
           await preparePdfInput(packetMetadata(instanceIds, studentCount, 'booklet'), 'booklet'),
         ),
@@ -450,6 +484,7 @@ function PrintPreparation({
     setPreviewPending(true);
     setPreview(null);
     snapshotsRef.current.clear();
+    if (exportNeedsNewPreview) void setExportJobId(null);
     packet.reset();
     booklet.reset();
     download.reset();
@@ -506,6 +541,57 @@ function PrintPreparation({
           setPdfPreparationError(null);
         }}
       />
+      {exportJobId && (
+        <Alert
+          variant={
+            exportStatus.data?.status === 'Error' ||
+            exportStatus.data?.status === 'Stopped' ||
+            exportStatus.isError
+              ? 'danger'
+              : 'info'
+          }
+        >
+          {exportStatus.data?.ready ? (
+            <a
+              href={`/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/print_preparation/exports/${exportJobId}.pdf`}
+            >
+              Download prepared PDF
+              {exportStatus.data.sizeBytes !== null &&
+                ` (${filesize(exportStatus.data.sizeBytes, { base: 10, round: 1 })})`}
+            </a>
+          ) : exportStatus.data?.status === 'Error' ? (
+            <>
+              {exportStatus.data.failureMessage ??
+                'The PDF could not be prepared because of a server error.'}{' '}
+              {exportStatus.data.canViewJobLogs && (
+                <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, exportJobId)}>
+                  View job details
+                </a>
+              )}
+            </>
+          ) : exportStatus.data?.status === 'Stopped' ? (
+            'PDF preparation was stopped. Try the export again.'
+          ) : exportStatus.isError ? (
+            'Could not check the PDF preparation status. Refresh the page to try again.'
+          ) : exportStatus.data?.status === 'Success' ? (
+            'This PDF is no longer available. Prepare it again.'
+          ) : (
+            'Preparing your PDF in the background. You can return to this page to download it within 24 hours.'
+          )}
+          {!exportPending && (
+            <Button
+              variant="link"
+              size="sm"
+              className="ms-2 p-0"
+              onClick={() => {
+                void setExportJobId(null);
+              }}
+            >
+              Dismiss
+            </Button>
+          )}
+        </Alert>
+      )}
       {groupWork && (
         <Alert variant="info">
           Creating printable forms for group assessments is not supported yet.
@@ -1134,6 +1220,7 @@ function PrintPreparation({
                 <PrintPreview
                   key={`${previewUrl}:${retry}`}
                   url={previewUrl}
+                  document={document}
                   paperWidth={settings.paperSize === 'Letter' ? 816 : 794}
                   selectedQuestion={selectedQuestion}
                   onStateChange={onPreviewState}

@@ -1,13 +1,24 @@
-import { randomUUID } from 'node:crypto';
-
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import {
+  ValueType,
+  getCounter,
+  getHistogram,
+  instrumentedWithMetrics,
+  metrics,
+} from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
-import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
+import {
+  MAX_INLINE_PRINT_PACKET_BYTES,
+  MAX_INLINE_PRINT_PACKET_INPUT_BYTES,
+  MAX_INLINE_PRINT_PACKET_PAGES,
+  MAX_PACKET_PAGES,
+} from '../../lib/client/print-packet.js';
 import { printLayoutSearch } from '../../lib/client/print-preparation.js';
 import {
   MAX_PRINT_PACKET_SNAPSHOT_BYTES,
@@ -16,20 +27,20 @@ import {
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
 import {
-  PrintPacketError,
-  assemblePrintPacket,
-  readPrintCoverPages,
-} from '../../lib/print-packet.js';
-import { createPdfOutput } from '../../lib/printing/pdf-output.js';
+  queuePrintExport,
+  selectPrintExportJob,
+  storeCompletedPrintExport,
+} from '../../lib/print-export-jobs.js';
+import { type PrintExportWork, renderPrintExport } from '../../lib/print-export-render.js';
+import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
+import { PrintPacketError, readPrintCoverPages } from '../../lib/print-packet.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import {
   type PrintDocument,
   getPrintRenderer,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
-  validatePrintDocument,
   validateQuestionsForPrinting,
 } from '../../lib/printing.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
@@ -39,6 +50,7 @@ import { requireCoursePermissionPreview, t } from './init.js';
 
 export interface PrintableExamExportError {
   pdf: never;
+  status: never;
 }
 
 export const printableExamExportRouter = t.router({
@@ -110,10 +122,6 @@ export const printableExamExportRouter = t.router({
             message: 'PDF rendering is not configured on this server.',
           });
         }
-        const renderer = getPrintRenderer();
-        const exportId = randomUUID();
-        const forms: { pdf: Buffer; coverPageCount: number }[] = [];
-        const answerKeys: Buffer[] = [];
         const plan = run(() => {
           switch (metadata.document) {
             case 'exam':
@@ -157,24 +165,56 @@ export const printableExamExportRouter = t.router({
         if (!snapshotIds.success || snapshotIds.data.length !== expectedPageFiles) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
         }
+        const pageHtmls = await Promise.all(pages.data.map((page) => page.text()));
+        const pageCounts = pageHtmls.map((html) =>
+          Math.max(1, [...html.matchAll(/class="[^"]*\bpagedjs_page\b[^"]*"/g)].length),
+        );
+        const formPageCounts: number[] = [];
+        const answerKeyPageCounts: number[] = [];
+        let pageCountIndex = 0;
+        for (const index of selectedInstances.keys()) {
+          for (const printDocument of plan.documents) {
+            if (printDocument === 'exam' && index >= metadata.copies) continue;
+            const count = pageCounts[pageCountIndex++];
+            if (plan.appendAnswerKeys && printDocument === 'answer_key') {
+              answerKeyPageCounts.push(count);
+            } else {
+              formPageCounts.push(count);
+            }
+          }
+        }
+        const coverPageCount = covers.reduce((count, cover) => count + cover.getPageCount(), 0);
+        const estimatedPages =
+          Array.from({ length: metadata.copies }, (_, index) =>
+            formPageCounts.length > 0
+              ? formPageCounts[index % formPageCounts.length] + coverPageCount
+              : 0,
+          ).reduce((sum, count) => sum + count, 0) +
+          answerKeyPageCounts.reduce((sum, count) => sum + count, 0);
+        if (estimatedPages > MAX_PACKET_PAGES) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'The export would exceed 10,000 pages. Reduce the number of copies.',
+          });
+        }
+        const snapshots: PrintExportWork['snapshots'] = [];
         let pageFileIndex = 0;
         for (const [index, instance] of selectedInstances.entries()) {
-          const overrides = new Map(
-            Object.entries(instance.settings.questionSizes).flatMap(([number, size]) =>
-              size ? [[number, size] as const] : [],
-            ),
-          );
+          const excludedQuestions = new Set(instance.settings.excludedQuestions);
           await validateQuestionsForPrinting(
             instance.assessmentInstanceId,
-            overrides,
-            new Set(instance.settings.excludedQuestions),
+            new Map(
+              Object.entries(instance.settings.questionSizes).flatMap(([number, size]) =>
+                size ? [[number, size] as const] : [],
+              ),
+            ),
+            excludedQuestions,
           );
           const questionListDigest = await getPrintableQuestionListDigest(
             instance.assessmentInstanceId,
-            new Set(instance.settings.excludedQuestions),
+            excludedQuestions,
           );
           for (const printDocument of plan.documents) {
-            // Every selected form gets a key, even if there are fewer copies than forms.
             if (printDocument === 'exam' && index >= metadata.copies) continue;
             const search = new URLSearchParams(printLayoutSearch(instance.settings));
             search.set('document', printDocument);
@@ -183,7 +223,7 @@ export const printableExamExportRouter = t.router({
               `${getAssessmentInstanceUrl({ courseInstanceId: ctx.course_instance.id, assessmentInstanceId: instance.assessmentInstanceId })}/paper/preview?${search}`,
               `${config.serverType}://localhost:${config.serverPort}`,
             );
-            const html = await pages.data[pageFileIndex].text();
+            const html = pageHtmls[pageFileIndex];
             const id = snapshotIds.data[pageFileIndex++];
             if (
               !checkPrintSnapshotId(
@@ -200,73 +240,116 @@ export const printableExamExportRouter = t.router({
             ) {
               throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
             }
-            const pdfOutput = createPdfOutput({
-              encodePage: (pageNumber) =>
-                encodePrintPageIdentity({
-                  assessmentInstanceId: instance.assessmentInstanceId,
-                  pageNumber,
-                  exportId,
-                  document: printDocument,
-                  format: 'pdf',
-                }),
+            snapshots.push({
+              assessmentInstanceId: instance.assessmentInstanceId,
+              formLabel: instance.formLabel,
+              paperSize: instance.settings.paperSize,
+              printDocument,
+              previewUrl: previewUrl.href,
+              html,
             });
-            const rendered = await renderer.render(
-              {
-                url: previewUrl.href,
-                browserOrigin: config.serverCanonicalHost ?? undefined,
-                html,
-                cookieHeader: ctx.cookieHeader,
-              },
-              {
-                label: plan.appendAnswerKeys ? 'booklet PDF' : 'PDF',
-                produce: async (page) => {
-                  const identity = await page.evaluate(() => ({
-                    document: document.documentElement.dataset.printDocument,
-                    formLabel: document.documentElement.dataset.printFormLabel,
-                    paperSize: document.documentElement.dataset.printPaperSize,
-                  }));
-                  if (
-                    identity.document !== printDocument ||
-                    identity.formLabel !== instance.formLabel ||
-                    identity.paperSize !== instance.settings.paperSize
-                  ) {
-                    throw new TRPCError({
-                      code: 'BAD_REQUEST',
-                      message: 'The printable pages do not match the selected form.',
-                    });
-                  }
-                  const state = await validatePrintDocument(page);
-                  return {
-                    pdf: await pdfOutput.produce(page),
-                    coverPageCount: state.coverPageCount,
-                  };
-                },
-              },
-            );
-            if (plan.appendAnswerKeys && printDocument === 'answer_key') {
-              answerKeys.push(rendered.pdf);
-            } else {
-              forms.push(rendered);
-            }
           }
         }
-        const packet = await assemblePrintPacket({
-          forms,
-          covers,
-          copies: metadata.copies,
-          answerKeys,
-        });
         const prefix = assessmentFilenamePrefix(
           ctx.assessment,
           ctx.locals.assessment_set,
           ctx.course_instance,
           ctx.course,
         );
-        return {
-          base64: packet.toString('base64'),
-          filename: `${prefix}${plan.filename}_${metadata.copies}_copies.pdf`,
+        const filename = `${prefix}${plan.filename}_${metadata.copies}_copies.pdf`;
+        const work: PrintExportWork = {
+          document: metadata.document,
+          copies: metadata.copies,
+          filename,
+          snapshots,
+          covers: await Promise.all(
+            files.data.map(async (file) => ({
+              name: file.name,
+              base64: Buffer.from(await file.arrayBuffer()).toString('base64'),
+            })),
+          ),
+          cookieHeader: ctx.cookieHeader,
         };
+        const inputBytes =
+          pages.data.reduce((sum, page) => sum + page.size, 0) +
+          files.data.reduce((sum, file) => sum + file.size, 0);
+        const meter = metrics.getMeter('prairielearn');
+        const attributes = { document: metadata.document };
+        const pathCounter = getCounter(meter, 'print.export.path', { valueType: ValueType.INT });
+        getHistogram(meter, 'print.export.pages', { valueType: ValueType.INT }).record(
+          estimatedPages,
+          attributes,
+        );
+        getHistogram(meter, 'print.export.input_bytes', {
+          unit: 'bytes',
+          valueType: ValueType.INT,
+        }).record(inputBytes, attributes);
+        const renderPacketUnmeasured = async () => await renderPrintExport(work, covers);
+        const renderPacket = async () =>
+          await instrumentedWithMetrics(
+            meter,
+            'print.export.packet',
+            renderPacketUnmeasured,
+            () => {
+              getHistogram(meter, 'print.export.rss', {
+                unit: 'bytes',
+                valueType: ValueType.INT,
+              }).record(process.memoryUsage().rss, attributes);
+            },
+          );
+        const owner = {
+          assessmentId: ctx.assessment.id,
+          authnUserId: ctx.authn_user.id,
+          courseId: ctx.course.id,
+          courseInstanceId: ctx.course_instance.id,
+          userId: ctx.locals.user.id,
+        };
+        const queue = async () => ({
+          type: 'background' as const,
+          jobSequenceId: await queuePrintExport({ owner, work }),
+        });
+        const backgroundReason =
+          estimatedPages >= MAX_INLINE_PRINT_PACKET_PAGES
+            ? 'page_count'
+            : inputBytes >= MAX_INLINE_PRINT_PACKET_INPUT_BYTES
+              ? 'input_bytes'
+              : null;
+        if (backgroundReason) {
+          pathCounter.add(1, { ...attributes, path: 'background', reason: backgroundReason });
+          return await queue();
+        }
+        // Admission is best effort; the render queue still bounds requests that race this check.
+        if (!getPrintRenderer().getLoad().canStartImmediately) {
+          pathCounter.add(1, { ...attributes, path: 'background', reason: 'capacity' });
+          return await queue();
+        }
+        const packet = await renderPacket();
+        getHistogram(meter, 'print.export.output_bytes', {
+          unit: 'bytes',
+          valueType: ValueType.INT,
+        }).record(packet.length, attributes);
+        if (packet.length > MAX_INLINE_PRINT_PACKET_BYTES) {
+          pathCounter.add(1, { ...attributes, path: 'background', reason: 'output_size' });
+          return {
+            type: 'background' as const,
+            jobSequenceId: await storeCompletedPrintExport({
+              owner,
+              packet,
+              filename,
+              document: metadata.document,
+            }),
+          };
+        }
+        pathCounter.add(1, { ...attributes, path: 'inline', reason: 'small' });
+        return { type: 'inline' as const, base64: packet.toString('base64'), filename };
       } catch (error) {
+        if (error instanceof HttpStatusError && error.status === 503) {
+          throw new TRPCError({
+            code: 'SERVICE_UNAVAILABLE',
+            message: error.message,
+            cause: error,
+          });
+        }
         if (
           error instanceof PrintPacketError ||
           (error instanceof HttpStatusError && error.status === 400)
@@ -275,5 +358,30 @@ export const printableExamExportRouter = t.router({
         }
         throw error;
       }
+    }),
+  status: t.procedure
+    .use(requireCoursePermissionPreview)
+    .input(z.object({ jobSequenceId: IdSchema }))
+    .query(async ({ ctx, input }) => {
+      const job = await selectPrintExportJob({
+        jobSequenceId: input.jobSequenceId,
+        assessmentId: ctx.assessment.id,
+        authnUserId: ctx.authn_user.id,
+      });
+      if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (
+        job.result?.document !== 'exam' &&
+        job.result &&
+        !ctx.authz_data.has_course_instance_permission_edit
+      ) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      return {
+        status: job.status,
+        ready: !!job.result,
+        sizeBytes: job.result?.sizeBytes ?? null,
+        failureMessage: job.failureMessage,
+        canViewJobLogs: ctx.authz_data.has_course_instance_permission_view,
+      };
     }),
 });

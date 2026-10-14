@@ -5,6 +5,32 @@ SET
 WHERE
   id = $assessment_id;
 
+-- BLOCK age_print_export_job
+UPDATE jobs
+SET
+  finish_date = CURRENT_TIMESTAMP - INTERVAL '25 hours'
+WHERE
+  job_sequence_id = $job_sequence_id;
+
+-- BLOCK age_print_export_sequence
+UPDATE job_sequences
+SET
+  finish_date = CURRENT_TIMESTAMP - INTERVAL '25 hours'
+WHERE
+  id = $job_sequence_id;
+
+-- BLOCK expire_print_export_lease
+UPDATE jobs
+SET
+  data = data || jsonb_build_object(
+    'attempts',
+    3,
+    'leaseUntil',
+    (CURRENT_TIMESTAMP - INTERVAL '1 minute')::text
+  )
+WHERE
+  job_sequence_id = $job_sequence_id;
+
 -- BLOCK set_static_assessment
 WITH
   updated_assessment AS (

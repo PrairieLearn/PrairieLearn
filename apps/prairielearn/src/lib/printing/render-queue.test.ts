@@ -61,6 +61,9 @@ describe('RenderQueue', () => {
       await expect(queue.run(async () => {}, 0, 'PDF')).rejects.toThrow(
         'Print rendering is busy. Try this export again shortly.',
       );
+      await expect(queue.run(async () => {}, 0, 'preview', 'preview')).rejects.toThrow(
+        'Print preview is busy. Try again shortly.',
+      );
       expect(queue.getLoad()).toMatchObject({ waiting: 4, waitingPreviews: 1 });
     } finally {
       gate.open();
