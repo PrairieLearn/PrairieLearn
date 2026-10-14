@@ -26,6 +26,7 @@ columns
     sync_warnings: text
     template_course: boolean not null default false
     title: text
+    uuid: uuid default gen_random_uuid()
     yearly_enrollment_limit: integer
 
 indexes

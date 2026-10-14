@@ -271,6 +271,7 @@ export const RawStaffCourseSchema = RawAdminCourseSchema.pick({
   sync_warnings: true,
   template_course: true,
   title: true,
+  uuid: true,
 });
 export const StaffCourseSchema = RawStaffCourseSchema.brand<'StaffCourse'>();
 export type StaffCourse = z.infer<typeof StaffCourseSchema>;
