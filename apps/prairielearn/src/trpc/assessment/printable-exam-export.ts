@@ -335,8 +335,7 @@ export const printableExamExportRouter = t.router({
             jobSequenceId: await storeCompletedPrintExport({
               owner,
               packet,
-              filename,
-              document: metadata.document,
+              work,
             }),
           };
         }
@@ -380,6 +379,7 @@ export const printableExamExportRouter = t.router({
         status: job.status,
         ready: !!job.result,
         sizeBytes: job.result?.sizeBytes ?? null,
+        exportLabel: job.result?.exportLabel ?? null,
         failureMessage: job.failureMessage,
         canViewJobLogs: ctx.authz_data.has_course_instance_permission_view,
       };

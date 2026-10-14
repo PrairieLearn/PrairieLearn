@@ -129,7 +129,10 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   ).toBeEnabled();
 });
 
-test('shows the prepared PDF size beside its download link', async ({ page, courseInstance }) => {
+test('shows the prepared PDF type and size in its download link', async ({
+  page,
+  courseInstance,
+}) => {
   const assessment = await selectAssessmentByTid({
     course_instance_id: courseInstance.id,
     tid: 'exam20-assessmentTools',
@@ -144,6 +147,7 @@ test('shows the prepared PDF size beside its download link', async ({ page, cour
               status: 'Success',
               ready: true,
               sizeBytes: 1_647_482,
+              exportLabel: 'Form A answer key PDF',
               failureMessage: null,
               canViewJobLogs: true,
             },
@@ -155,7 +159,9 @@ test('shows the prepared PDF size beside its download link', async ({ page, cour
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?export=999999`,
   );
-  await expect(page.getByRole('link', { name: 'Download prepared PDF (1.6 MB)' })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Download Form A answer key PDF (1.6 MB)' }),
+  ).toBeVisible();
 });
 
 test('explains a failed background export and offers a fresh preview', async ({
@@ -666,7 +672,9 @@ test('combines exam copies with custom covers and appends every form’s answer 
       expect(expectedPageCount).toBeGreaterThanOrEqual(MAX_INLINE_PRINT_PACKET_PAGES);
     }
     if (expectedPageCount >= MAX_INLINE_PRINT_PACKET_PAGES) {
-      const preparedPdf = page.getByRole('link', { name: 'Download prepared PDF' });
+      const preparedPdf = page.getByRole('link', {
+        name: `Download booklet PDF for ${copies} students`,
+      });
       await expect(preparedPdf).toBeVisible({ timeout: 120_000 });
       await preparedPdf.click();
     }

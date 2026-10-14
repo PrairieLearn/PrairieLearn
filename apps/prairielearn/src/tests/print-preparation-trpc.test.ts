@@ -399,8 +399,22 @@ describe('print preparation', { timeout: 60_000 }, () => {
         userId: '1',
       },
       packet: pdf,
-      filename: 'test-export.pdf',
-      document: 'exam',
+      work: {
+        document: 'exam',
+        copies: 1,
+        filename: 'test-export.pdf',
+        snapshots: [
+          {
+            assessmentInstanceId: '1',
+            formLabel: 'A',
+            paperSize: 'Letter',
+            printDocument: 'exam',
+            previewUrl: 'http://localhost/',
+            html: '',
+          },
+        ],
+        covers: [],
+      },
     });
     await expect
       .poll(
@@ -419,6 +433,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         status: 'Success',
         ready: true,
         sizeBytes: pdf.length,
+        exportLabel: 'Form A PDF',
         failureMessage: null,
         canViewJobLogs: true,
       },
@@ -454,6 +469,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         status: 'Success',
         ready: false,
         sizeBytes: null,
+        exportLabel: null,
         failureMessage: null,
         canViewJobLogs: true,
       },
@@ -504,6 +520,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         status: 'Error',
         ready: false,
         sizeBytes: null,
+        exportLabel: null,
         failureMessage:
           '“invalid-cover.pdf” could not be read. Upload a valid PDF without password protection.',
         canViewJobLogs: true,
@@ -540,6 +557,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         status: 'Error',
         ready: false,
         sizeBytes: null,
+        exportLabel: null,
         failureMessage:
           'The export stopped repeatedly while rendering. Try fewer forms or contact support.',
         canViewJobLogs: true,

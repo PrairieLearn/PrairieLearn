@@ -555,7 +555,7 @@ function PrintPreparation({
             <a
               href={`/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/print_preparation/exports/${exportJobId}.pdf`}
             >
-              Download prepared PDF
+              Download {exportStatus.data.exportLabel ?? 'prepared PDF'}
               {exportStatus.data.sizeBytes !== null &&
                 ` (${filesize(exportStatus.data.sizeBytes, { base: 10, round: 1 })})`}
             </a>

@@ -52,6 +52,20 @@ const PrintExportJobSchema = z.object({
   data: z.record(z.string(), z.unknown()).nullable(),
 });
 
+function getPrintExportLabel({ document, copies, snapshots }: PrintExportWork): string {
+  if (document === 'booklet') {
+    return `booklet PDF for ${copies} ${copies === 1 ? 'student' : 'students'}`;
+  }
+  const formLabels = new Set(snapshots.map((snapshot) => snapshot.formLabel));
+  if (formLabels.size === 1) {
+    const form = `Form ${[...formLabels][0]}`;
+    return document === 'answer_key' ? `${form} answer key PDF` : `${form} PDF`;
+  }
+  return document === 'answer_key'
+    ? `PDF with ${formLabels.size} form answer keys`
+    : `PDF with ${formLabels.size} forms`;
+}
+
 function printableFailureMessage(error: unknown): string | null {
   if (
     error instanceof Error &&
@@ -139,13 +153,11 @@ export async function queuePrintExport({
 export async function storeCompletedPrintExport({
   owner,
   packet,
-  filename,
-  document,
+  work,
 }: {
   owner: PrintExportOwner;
   packet: Buffer;
-  filename: string;
-  document: PrintExportWork['document'];
+  work: PrintExportWork;
 }) {
   const bucket = getFileStoreS3Bucket();
   const key = `${KEY_PREFIX}${randomUUID()}.pdf`;
@@ -153,9 +165,15 @@ export async function storeCompletedPrintExport({
   try {
     return await insertPrintExportJob({
       owner,
-      filename,
+      filename: work.filename,
       status: 'Success',
-      data: { key, filename, document, sizeBytes: packet.length },
+      data: {
+        key,
+        filename: work.filename,
+        document: work.document,
+        exportLabel: getPrintExportLabel(work),
+        sizeBytes: packet.length,
+      },
     });
   } catch (error) {
     await deleteFromS3(bucket, key);
@@ -253,7 +271,13 @@ async function runClaimedPrintExport({
         jobSequenceId,
         owner,
         status: 'Success',
-        data: { key, filename: persisted.filename, document, sizeBytes: packet.length },
+        data: {
+          key,
+          filename: persisted.filename,
+          document,
+          exportLabel: getPrintExportLabel(persisted),
+          sizeBytes: packet.length,
+        },
         output: 'PDF ready to download',
       });
     } finally {
@@ -352,6 +376,7 @@ export async function selectPrintExportJob({
       key: z.string(),
       filename: z.string(),
       document: z.enum(['exam', 'answer_key', 'booklet']),
+      exportLabel: z.string().optional(),
       sizeBytes: z.number().int().nonnegative().optional(),
     })
     .safeParse(job.data);
