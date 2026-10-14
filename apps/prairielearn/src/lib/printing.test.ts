@@ -153,6 +153,23 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     expect($('script[src="/element.js"]')).toHaveLength(1);
   });
 
+  it('rejects conflicting URLs for the same question import', async () => {
+    mocks.queryRows.mockResolvedValue([questions[0], questions[2]]);
+    const render = mocks.getAndRenderVariant.getMockImplementation()!;
+    mocks.getAndRenderVariant.mockImplementation(async (...args: unknown[]) => {
+      const state = await render(...args);
+      const { question } = args[2] as { question: { id: string } };
+      return {
+        ...state,
+        extraHeadersHtml: `<script type="importmap">${JSON.stringify({ imports: { marked: `/marked-${question.id}.js` } })}</script>`,
+      };
+    });
+
+    await expect(renderAssessmentInstanceQuestionsForPrinting(resLocals)).rejects.toThrow(
+      'Questions use conflicting import maps for marked',
+    );
+  });
+
   it('excludes canonically broken variants and retains safe ordered result metadata', async () => {
     const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals);
 

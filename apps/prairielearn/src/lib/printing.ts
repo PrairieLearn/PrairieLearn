@@ -377,7 +377,12 @@ export async function renderAssessmentInstanceQuestionsForPrinting(
     const importMap = z
       .object({ imports: z.record(z.string(), z.string()) })
       .parse(JSON.parse(headers(element).text()));
-    Object.assign(imports, importMap.imports);
+    for (const [specifier, url] of Object.entries(importMap.imports)) {
+      if (imports[specifier] && imports[specifier] !== url) {
+        throw new Error(`Questions use conflicting import maps for ${specifier}`);
+      }
+      imports[specifier] = url;
+    }
     headers(element).remove();
   });
 
