@@ -823,26 +823,10 @@ def sympy_check(
     allow_complex: bool,
     allow_sets: bool,
     allow_extra_symbols: bool = False,
-) -> None:
-    """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
-    _sympy_check(
-        expr,
-        locals_for_eval,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-        allow_extra_symbols=allow_extra_symbols,
-    )
-
-
-def _sympy_check(
-    expr: sympy.Expr,
-    locals_for_eval: LocalsForEval,
-    *,
-    allow_complex: bool,
-    allow_sets: bool,
-    allow_extra_symbols: bool,
+    # True would ensure semantic checks by default but break compatibility.
     check_evaluated_complex: bool = False,
 ) -> None:
+    """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
@@ -1221,7 +1205,7 @@ def _evaluate_with_source(
         raise BaseSympyError from exc
 
     # Finally, validate the result.
-    _sympy_check(
+    sympy_check(
         res,
         locals_for_eval,
         allow_complex=allow_complex,
