@@ -216,6 +216,12 @@ test('previews and exports an exam with more than 64 figures', async ({
 
     const response = await downloadPrintableWord(page, paperUrl, 'paper_size=Letter');
     expect(response.status()).toBe(200);
+    const archive = await unzipper.Open.buffer(await response.body());
+    const documentXml = (
+      await archive.files.find((file) => file.path === 'word/document.xml')!.buffer()
+    ).toString();
+    expect(documentXml.match(/<w:drawing>/g)?.length).toBeGreaterThan(64);
+    expect(documentXml).toContain('Figure 65');
   } finally {
     await fs.writeFile(questionPath, original);
     await syncCourse(testCoursePath);
