@@ -12,7 +12,7 @@ import re
 import string
 import unicodedata
 from collections import deque
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
@@ -816,6 +816,21 @@ class _SetOperationTransformer(ast.NodeTransformer):
         )
 
 
+def _iter_sympy_nodes(
+    expr: sympy.Basic, *, checked_nodes: set[sympy.Basic] | None = None
+) -> Iterator[sympy.Basic]:
+    work_stack: deque[sympy.Basic] = deque([expr])
+
+    while work_stack:
+        item = work_stack.pop()
+        if checked_nodes is not None:
+            if item in checked_nodes:
+                continue
+            checked_nodes.add(item)
+        yield item
+        work_stack.extend(item.args)
+
+
 def sympy_check(
     expr: sympy.Expr,
     locals_for_eval: LocalsForEval,
@@ -847,15 +862,7 @@ def _sympy_check(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
 
-    work_stack: deque[sympy.Basic] = deque([expr])
-
-    while work_stack:
-        item = work_stack.pop()
-        if checked_nodes is not None:
-            if item in checked_nodes:
-                continue
-            checked_nodes.add(item)
-
+    for item in _iter_sympy_nodes(expr, checked_nodes=checked_nodes):
         # Avoid str(item) on every node: printing each subtree is quadratic in
         # the size of the expression and dominates parse time.
         if (
@@ -870,8 +877,6 @@ def _sympy_check(
             raise HasSetNotationError
         if not allow_complex and _is_disallowed_complex(item):
             raise HasComplexError("complex values not allowed")
-
-        work_stack.extend(item.args)
 
 
 def _is_disallowed_complex(item: sympy.Basic) -> bool:
@@ -896,17 +901,9 @@ def _check_complex(
     expr: sympy.Basic, *, checked_nodes: set[sympy.Basic] | None = None
 ) -> None:
     """Raise an error if an expression contains a finite complex value."""
-    work_stack: deque[sympy.Basic] = deque([expr])
-
-    while work_stack:
-        item = work_stack.pop()
-        if checked_nodes is not None:
-            if item in checked_nodes:
-                continue
-            checked_nodes.add(item)
+    for item in _iter_sympy_nodes(expr, checked_nodes=checked_nodes):
         if _is_disallowed_complex(item):
             raise HasComplexError("complex values not allowed")
-        work_stack.extend(item.args)
 
 
 def evaluate(
