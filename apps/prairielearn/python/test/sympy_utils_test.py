@@ -496,6 +496,22 @@ class TestSympy:
             "All numbers must be expressed as integers (or ratios of integers)."
         )
 
+    @pytest.mark.parametrize("a_sub", ["sqrt(-1)", "log(-1)", "asin(2)"])
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_complex_error_is_generic(
+        self, a_sub: str, *, simplify_expression: bool
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            a_sub,
+            self.SYMBOL_NAMES,
+            imaginary_unit="i",
+            simplify_expression=simplify_expression,
+        )
+        assert result == psu.SympyParseFailure(
+            "Your answer contains a complex number. "
+            "All numbers must be expressed as integers (or ratios of integers). "
+        )
+
     @pytest.mark.parametrize(
         ("a_sub", "sympy_ref"),
         [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)],
@@ -880,6 +896,23 @@ class TestExceptions:
             psu.convert_string_to_sympy(
                 a_sub, self.VARIABLES, allow_complex=False, simplify_expression=True
             )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_complex_cube_root(self, *, simplify_expression: bool) -> None:
+        with pytest.raises(psu.HasComplexError):
+            psu.convert_string_to_sympy(
+                "(-8)**(1/3)",
+                self.VARIABLES,
+                allow_complex=False,
+                simplify_expression=simplify_expression,
+            )
+
+        psu.convert_string_to_sympy(
+            "(-8)**(1/3)",
+            self.VARIABLES,
+            allow_complex=True,
+            simplify_expression=simplify_expression,
+        )
 
     @pytest.mark.parametrize(
         "text",

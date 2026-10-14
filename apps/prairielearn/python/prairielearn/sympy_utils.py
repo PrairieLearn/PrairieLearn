@@ -825,6 +825,24 @@ def sympy_check(
     allow_extra_symbols: bool = False,
 ) -> None:
     """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
+    _sympy_check(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+
+
+def _sympy_check(
+    expr: sympy.Expr,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    allow_extra_symbols: bool,
+    checked_nodes: set[sympy.Basic] | None = None,
+) -> None:
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
@@ -833,6 +851,10 @@ def sympy_check(
 
     while work_stack:
         item = work_stack.pop()
+        if checked_nodes is not None:
+            if item in checked_nodes:
+                continue
+            checked_nodes.add(item)
 
         # Avoid str(item) on every node: printing each subtree is quadratic in
         # the size of the expression and dominates parse time.
@@ -846,27 +868,44 @@ def sympy_check(
             raise HasFloatError(float(str(item)))
         if not allow_sets and isinstance(item, sympy.Set):
             raise HasSetNotationError
-        # Detect complex numbers both in simplified form (sympy.I) and in
-        # unevaluated form (e.g. sqrt(-2) kept as Pow(-2, 1/2) by evaluateFalse).
-        # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
-        # non-finite values, which aren't complex in the student-input sense.
-        #
-        # The is_extended_real query can trigger internal sympy bugs on certain
-        # unevaluated expressions (e.g. sec(0) with evaluateFalse), so we catch
-        # AttributeError and skip the check for those items.
-        if not allow_complex:
-            if item is sympy.I:
-                raise HasComplexError("complex values not allowed")
-            try:
-                is_complex = (
-                    item.is_extended_real is False
-                    and getattr(item, "is_finite", None) is not False
-                )
-            except AttributeError:
-                is_complex = False
-            if is_complex:
-                raise HasComplexError("complex values not allowed")
+        if not allow_complex and _is_disallowed_complex(item):
+            raise HasComplexError("complex values not allowed")
 
+        work_stack.extend(item.args)
+
+
+def _is_disallowed_complex(item: sympy.Basic) -> bool:
+    """Return whether an expression is a finite complex value."""
+    if item is sympy.I:
+        return True
+
+    # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
+    # non-finite values, which aren't complex in the student-input sense.
+    # is_extended_real can trigger internal SymPy bugs on certain unevaluated
+    # expressions (e.g. sec(0) with evaluateFalse).
+    try:
+        return (
+            item.is_extended_real is False
+            and getattr(item, "is_finite", None) is not False
+        )
+    except AttributeError:
+        return False
+
+
+def _check_complex(
+    expr: sympy.Basic, *, checked_nodes: set[sympy.Basic] | None = None
+) -> None:
+    """Raise an error if an expression contains a finite complex value."""
+    work_stack: deque[sympy.Basic] = deque([expr])
+
+    while work_stack:
+        item = work_stack.pop()
+        if checked_nodes is not None:
+            if item in checked_nodes:
+                continue
+            checked_nodes.add(item)
+        if _is_disallowed_complex(item):
+            raise HasComplexError("complex values not allowed")
         work_stack.extend(item.args)
 
 
@@ -1189,13 +1228,20 @@ def _evaluate_with_source(
         raise BaseSympyError from exc
 
     # Finally, check for invalid symbols
-    sympy_check(
+    checked_nodes: set[sympy.Basic] = set()
+    _sympy_check(
         res,
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         allow_extra_symbols=allow_extra_symbols,
+        checked_nodes=checked_nodes,
     )
+
+    if not simplify_expression and not allow_complex:
+        # Reevaluate the existing tree without reparsing, while preserving the
+        # unevaluated result returned for display.
+        _check_complex(res.doit(deep=True), checked_nodes=checked_nodes)
 
     return res, evaluation_code
 
@@ -1580,7 +1626,8 @@ def try_parse_string_as_sympy(
     allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
-    imaginary_unit: str | None = None,
+    # Retained for backwards compatibility with existing callers.
+    imaginary_unit: str | None = None,  # ruff:ignore[unused-function-argument]
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
 ) -> SympyParseResult:
@@ -1717,18 +1764,6 @@ def try_parse_string_as_sympy(
     except Exception as exc:
         return SympyParseFailure(
             f"Unexpected error: {exc}. Please contact the course staff."
-        )
-
-    # If complex numbers are not allowed, raise error if expression has the imaginary unit
-    if (
-        (not allow_complex)
-        and (imaginary_unit is not None)
-        and (expr_parsed.has(sympy.I))
-    ):
-        expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        return SympyParseFailure(
-            "Your answer was simplified to this, which contains a complex number "
-            f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
         )
 
     return SympyParseSuccess(expr_parsed)
