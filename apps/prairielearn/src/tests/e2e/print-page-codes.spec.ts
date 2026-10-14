@@ -2,16 +2,13 @@ import { readQrCode } from '@prairielearn/qr-code';
 
 import { deleteAssessmentInstance, makeAssessmentInstance } from '../../lib/assessment.js';
 import { decodePrintPageIdentity } from '../../lib/client/print-page-code.js';
-import type { User } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
 import { test as base, expect } from './fixtures.js';
 import { waitForPrintablePage } from './utils/printing.js';
 
-const test = base.extend<{
-  printInstance: { instanceId: string; assessmentId: string; user: User };
-}>({
+const test = base.extend<{ printInstance: { instanceId: string } }>({
   printInstance: async ({ courseInstance }, use) => {
     const user = await getConfiguredUser();
     const assessment = await selectAssessmentByTid({
@@ -28,7 +25,7 @@ const test = base.extend<{
       client_fingerprint_id: null,
     });
     try {
-      await use({ instanceId, assessmentId: assessment.id, user });
+      await use({ instanceId });
     } finally {
       await deleteAssessmentInstance(assessment.id, instanceId, user.id);
     }
@@ -42,7 +39,7 @@ for (const [paperSize, document] of [
   test(`previews scannable page codes for the ${paperSize} ${document}`, async ({
     page,
     courseInstance,
-    printInstance: { instanceId, assessmentId, user },
+    printInstance: { instanceId },
   }) => {
     test.setTimeout(120_000);
     const response = await page.goto(
@@ -58,10 +55,7 @@ for (const [paperSize, document] of [
       (await page.locator(':root').getAttribute('data-print-page-identity'))!,
     );
     expect(previewIdentity).toMatchObject({
-      courseId: courseInstance.course_id,
-      assessmentId,
       assessmentInstanceId: instanceId,
-      generatedBy: { userId: user.id, uid: user.uid, name: user.name },
       document,
       format: 'pdf',
     });

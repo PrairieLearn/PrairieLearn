@@ -79,6 +79,12 @@ export function buildDocxContent(
   const has = (node: HtmlElement, selector: string) => $(node).is(selector);
   const number = (node: HtmlElement, name: string, fallback: number) =>
     Number(Object.hasOwn(node.attribs, name) ? attribute(node, name) : fallback);
+  const alignment = (node: HtmlElement) =>
+    attribute(node, 'data-docx-align') === 'center'
+      ? AlignmentType.CENTER
+      : attribute(node, 'data-docx-align') === 'right'
+        ? AlignmentType.RIGHT
+        : undefined;
   let keepFollowing = false;
   const text = (value: string, format: Format = {}) =>
     new TextRun({
@@ -645,6 +651,7 @@ export function buildDocxContent(
         const next = $(node).next();
         blocks.push(
           paragraph(inline(node.children, formatFor(node, format), maxWidth), {
+            alignment: alignment(node),
             keepNext:
               keepFollowing ||
               next.is('[data-docx-figure], .printing-keep-together') ||
@@ -754,6 +761,7 @@ export function buildDocxContent(
         flush();
         blocks.push(
           paragraph(inline(node.children, { ...format, bold: true }, maxWidth), {
+            alignment: alignment(node),
             keepNext: true,
             spacing: { before: 160, after: 80 },
           }),
@@ -774,7 +782,7 @@ export function buildDocxContent(
       }
       if (attribute(node, 'data-docx-figure')) {
         flush();
-        blocks.push(paragraph([image(node, maxWidth)]));
+        blocks.push(paragraph([image(node, maxWidth)], { alignment: alignment(node) }));
         continue;
       }
       if (attribute(node, 'data-docx-block') && !has(node, '[data-print-response-line]')) {

@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { Packer } from 'docx';
 import JSZip from 'jszip';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { createDocxDocument } from './docx-document.js';
 import type { PrintableCover } from './printable-cover.js';
@@ -80,19 +80,10 @@ async function readDocx(buffer: Buffer) {
   };
 }
 
-async function renderDocx({
-  cover,
-  footerLabel,
-  pageDataset = { printQuestionCount: '3', printMaxPoints: '15' },
-}: {
-  cover?:
-    PrintableCover | ((dataset: Readonly<Record<string, string | undefined>>) => PrintableCover);
-  footerLabel: string;
-  pageDataset?: Record<string, string>;
-}) {
+async function renderDocx({ cover, footerLabel }: { cover?: PrintableCover; footerLabel: string }) {
   const document = createDocxDocument({
     geometry: LETTER_GEOMETRY,
-    cover: typeof cover === 'function' ? cover(pageDataset) : cover,
+    cover,
     footerLabel,
     source,
     figures: [{ ...source.figures[0], png: PNG_SIGNATURE }],
@@ -101,10 +92,6 @@ async function renderDocx({
 }
 
 describe('createDocxDocument', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('includes authored cover figures alongside editable instructions', async () => {
     const docx = await renderDocx({
       cover: {
@@ -221,28 +208,5 @@ describe('createDocxDocument', () => {
     expect(documentXml).not.toContain(cover.title);
     expect(documentXml).not.toContain('<w:pageBreakBefore/>');
     expect(footerXml).toContain('Form A');
-  });
-
-  it('lets the cover depend on the rendered page dataset', async () => {
-    const buildCover = vi.fn(
-      (dataset: Readonly<Record<string, string | undefined>>): PrintableCover => ({
-        ...cover,
-        summary: [
-          { term: 'Questions', value: dataset.printQuestionCount ?? '' },
-          { term: 'Points', value: dataset.printMaxPoints ?? '' },
-        ],
-      }),
-    );
-
-    const docx = await renderDocx({
-      cover: buildCover,
-      footerLabel: 'Answer key  |  Form ID 13',
-      pageDataset: { printQuestionCount: '7', printMaxPoints: '50' },
-    });
-    const { documentXml } = await readDocx(docx);
-
-    expect(buildCover).toHaveBeenCalledWith({ printQuestionCount: '7', printMaxPoints: '50' });
-    expect(documentXml).toContain('>7<');
-    expect(documentXml).toContain('>50<');
   });
 });

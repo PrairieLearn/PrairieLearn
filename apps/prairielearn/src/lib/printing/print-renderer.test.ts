@@ -29,6 +29,7 @@ function renderPdf(
 
 interface HarnessOptions {
   response?: Response | null;
+  goto?: () => Promise<Response | null>;
   printStatus?: 'error' | 'ready';
   printError?: string | null;
   printErrorCode?: string | null;
@@ -39,6 +40,7 @@ interface HarnessOptions {
 
 function createBrowserHarness({
   response = { ok: () => true, status: () => 200 } as Response,
+  goto,
   printStatus = 'ready',
   printError = null,
   printErrorCode = null,
@@ -59,7 +61,7 @@ function createBrowserHarness({
       peakOpenContexts = Math.max(peakOpenContexts, openContexts);
       const page = {
         emulateMedia: vi.fn(async () => undefined),
-        goto: vi.fn(async () => response),
+        goto: vi.fn(async () => (goto ? await goto() : response)),
         waitForFunction: vi.fn(async () => undefined),
         evaluate: vi.fn(async () => ({
           status: printStatus,
@@ -271,6 +273,40 @@ describe('PrintRenderer', () => {
     expect(abort).toHaveBeenCalledExactlyOnceWith('failed');
   });
 
+  it('cancels Cloudflare asset requests when a render times out', async () => {
+    const assetStarted = createGate();
+    const abort = vi.fn(async () => undefined);
+    let assetSignal: AbortSignal | undefined;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
+      assetSignal = init?.signal ?? undefined;
+      assetStarted.open();
+      return await new Promise<globalThis.Response>((_resolve, reject) => {
+        assetSignal?.addEventListener('abort', () => reject(new Error('Asset request aborted')));
+      });
+    });
+    const harness = createBrowserHarness({
+      goto: async () => {
+        const routeHandler = harness.getRouteHandler();
+        if (!routeHandler) throw new Error('Route handler was not registered');
+        await routeHandler({
+          request: () => ({
+            method: () => 'GET',
+            url: () => 'https://example.com/assets/question.png',
+          }),
+          abort,
+        } as unknown as Route);
+        return { ok: () => true, status: () => 200 } as Response;
+      },
+    });
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+
+    const render = renderPdf(renderer, { url: 'http://localhost:3000/print', timeoutMs: 20 });
+    await assetStarted.opened;
+    await expect(render).rejects.toThrow('Timed out after 20 ms rendering the PDF');
+    expect(assetSignal?.aborted).toBe(true);
+    await vi.waitFor(() => expect(abort).toHaveBeenCalledWith('failed'));
+  });
+
   it('connects once to Cloudflare Browser Run when configured', async () => {
     const harness = createBrowserHarness();
     const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
@@ -303,6 +339,33 @@ describe('PrintRenderer', () => {
     gate.open();
     await Promise.all(renders);
     expect(harness.pages).toHaveLength(5);
+  });
+
+  it('keeps each render deadline while sharing a browser connection', async () => {
+    const gate = createGate();
+    const harness = createBrowserHarness();
+    playwrightMocks.launch.mockImplementation(async () => {
+      await gate.opened;
+      return harness.browser;
+    });
+    const renderer = new PrintRenderer({ maxConcurrentRenders: 2 });
+    const first = renderPdf(renderer, {
+      url: 'http://localhost:3000/print/first',
+      timeoutMs: 2000,
+    });
+    const second = renderPdf(renderer, {
+      url: 'http://localhost:3000/print/second',
+      timeoutMs: 20,
+    });
+
+    try {
+      await expect(second).rejects.toThrow('Timed out after 20 ms rendering the PDF');
+      expect(harness.browser.newContext).not.toHaveBeenCalled();
+    } finally {
+      gate.open();
+      await first;
+    }
+    expect(harness.browser.newContext).toHaveBeenCalledOnce();
   });
 
   it('renders one page at a time and queues the rest', async () => {
