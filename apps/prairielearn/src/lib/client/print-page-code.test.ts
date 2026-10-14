@@ -23,10 +23,10 @@ describe('print page identity', () => {
 
   it('rejects unsupported versions, malformed metadata, and nonphysical page numbers', () => {
     const value = encodePrintPageIdentity(identity);
-    expect(() => decodePrintPageIdentity(value.replace('PL:PRINT:2:', 'PL:PRINT:3:'))).toThrow(
+    expect(() => decodePrintPageIdentity(value.replace('PL:PRINT:V1:', 'PL:PRINT:V2:'))).toThrow(
       'Unsupported',
     );
-    expect(() => decodePrintPageIdentity('PL:PRINT:2:invalid')).toThrow();
+    expect(() => decodePrintPageIdentity('PL:PRINT:V1:invalid')).toThrow();
     for (const pageNumber of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
       expect(() => encodePrintPageIdentity({ ...identity, pageNumber })).toThrow();
     }
