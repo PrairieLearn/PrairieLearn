@@ -167,7 +167,7 @@ AI grading requires either PrairieLearn-managed credits or a custom API key. Bil
 ### Billing modes
 
 - **PrairieLearn-managed credits** — Simpler setup, no provider account needed. You purchase credits through PrairieLearn and pay a 20% infrastructure fee on top of provider costs.
-- **Custom API key** — Bring your own key for OpenAI, Anthropic, Google, or an OpenAI-compatible endpoint. You're billed directly by the provider and PrairieLearn charges no infrastructure fee.
+- **Custom API key** — Bring your own key for OpenAI, Anthropic, Google, or an OpenAI-compatible endpoint. PrairieLearn charges no infrastructure fee; endpoint charges depend on the provider's terms.
 
 You can switch between billing modes at any time. Purchased credits and saved API keys persist until you explicitly remove them, so switching back later does not require re-purchasing credits or re-entering keys.
 
