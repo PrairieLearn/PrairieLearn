@@ -312,7 +312,21 @@ export class PrintRenderer {
           .href
       : url;
     const renderOrigin = new URL(navigationUrl).origin;
-    const browser = await this.getBrowser(remainingTimeoutMs());
+    let startupTimer: ReturnType<typeof setTimeout> | undefined;
+    const browser = await (deadline === null
+      ? this.getBrowser(0)
+      : Promise.race([
+          this.getBrowser(remainingTimeoutMs()),
+          new Promise<never>((_resolve, reject) => {
+            startupTimer = setTimeout(
+              () =>
+                reject(new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`)),
+              remainingTimeoutMs(),
+            );
+          }),
+        ]).finally(() => {
+          if (startupTimer) clearTimeout(startupTimer);
+        }));
 
     const state: { context: BrowserContext | null; timedOut: boolean } = {
       context: null,

@@ -309,6 +309,33 @@ describe('PrintRenderer', () => {
     expect(harness.pages).toHaveLength(5);
   });
 
+  it('keeps each render deadline while sharing a browser connection', async () => {
+    const gate = createGate();
+    const harness = createBrowserHarness();
+    playwrightMocks.launch.mockImplementation(async () => {
+      await gate.opened;
+      return harness.browser;
+    });
+    const renderer = new PrintRenderer({ maxConcurrentRenders: 2 });
+    const first = renderPdf(renderer, {
+      url: 'http://localhost:3000/print/first',
+      timeoutMs: 2000,
+    });
+    const second = renderPdf(renderer, {
+      url: 'http://localhost:3000/print/second',
+      timeoutMs: 20,
+    });
+
+    try {
+      await expect(second).rejects.toThrow('Timed out after 20 ms rendering the PDF');
+      expect(harness.browser.newContext).not.toHaveBeenCalled();
+    } finally {
+      gate.open();
+      await first;
+    }
+    expect(harness.browser.newContext).toHaveBeenCalledOnce();
+  });
+
   it('renders one page at a time and queues the rest', async () => {
     const gate = createGate();
     const harness = createBrowserHarness({
