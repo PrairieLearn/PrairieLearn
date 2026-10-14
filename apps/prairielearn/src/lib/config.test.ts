@@ -38,7 +38,7 @@ it('allows local development to use Cloudflare', async () => {
   );
 });
 
-it('does not use Cloudflare on a main production server', async () => {
+it('uses Cloudflare on a main production server when configured', async () => {
   await withConfig(
     {
       printingCloudflareAccountId: 'account',
@@ -47,7 +47,7 @@ it('does not use Cloudflare on a main production server', async () => {
       devMode: false,
     },
     () => {
-      expect(getPrintingCloudflareConfig()).toBeUndefined();
+      expect(getPrintingCloudflareConfig()).toEqual({ accountId: 'account', apiToken: 'token' });
     },
   );
 });
