@@ -323,6 +323,20 @@ describe('print preparation', { timeout: 60_000 }, () => {
     );
   });
 
+  test('rejects cover PDFs on answer-key-only exports', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam20-assessmentTools',
+    });
+    const api = client(assessment.id);
+    const instance = await api.printableExams.create.mutate();
+    const data = packetInput(instance.assessmentInstanceId, 1, 'answer_key');
+    data.append('coverPages', new File(['unused'], 'cover.pdf', { type: 'application/pdf' }));
+    await expect(api.printableExamExport.pdf.mutate(data)).rejects.toThrow(
+      'Answer key exports do not use uploaded cover pages.',
+    );
+  });
+
   test('rejects a changed PDF snapshot before rendering', async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',

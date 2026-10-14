@@ -246,7 +246,9 @@ function PrintPreparation({
   async function packetInput(metadata: ReturnType<typeof packetMetadata>) {
     const input = new FormData();
     input.set('metadata', JSON.stringify(metadata));
-    for (const { file } of coverPages) input.append('coverPages', file);
+    if (metadata.document !== 'answer_key') {
+      for (const { file } of coverPages) input.append('coverPages', file);
+    }
     for (const [index, instance] of metadata.instances.entries()) {
       for (const printDocument of metadata.document === 'booklet'
         ? (['exam', 'answer_key'] as const)

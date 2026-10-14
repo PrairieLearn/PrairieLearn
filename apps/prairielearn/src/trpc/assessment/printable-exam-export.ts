@@ -86,6 +86,12 @@ export const printableExamExportRouter = t.router({
       if (!files.success) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
       }
+      if (metadata.document === 'answer_key' && files.data.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Answer key exports do not use uploaded cover pages.',
+        });
+      }
       const pages = z.array(z.instanceof(File)).safeParse(input.getAll('pages'));
       const snapshotIds = z.array(z.string().min(1)).safeParse(input.getAll('snapshotIds'));
       if (
