@@ -865,7 +865,11 @@ def sympy_check(
     if check_evaluated_complex:
         # Reevaluate the existing tree without reparsing, while preserving the
         # unevaluated result returned for display.
-        check_nodes(expr.doit(deep=True), check_structure=False)
+        try:
+            evaluated_expr = expr.doit(deep=True)
+        except Exception as exc:
+            raise BaseSympyError from exc
+        check_nodes(evaluated_expr, check_structure=False)
 
 
 def _is_disallowed_complex(item: sympy.Basic) -> bool:
