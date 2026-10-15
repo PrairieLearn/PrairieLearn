@@ -15,7 +15,7 @@ WHERE
 -- BLOCK select_expired_print_exports
 SELECT
   j.id,
-  coalesce(j.data ->> 'key', j.data ->> 'inputKey') AS key
+  coalesce(j.data ->> 'inputKey', j.data ->> 'key') AS key
 FROM
   jobs AS j
 WHERE
@@ -31,13 +31,24 @@ LIMIT
 -- BLOCK mark_print_export_expired
 UPDATE jobs
 SET
-  data = data - 'key' - 'inputKey'
+  data = CASE
+    WHEN data ->> 'inputKey' = $key THEN data - 'inputKey'
+    ELSE data - 'key'
+  END
 WHERE
   id = $job_id
   AND (
     data ->> 'key' = $key
     OR data ->> 'inputKey' = $key
   );
+
+-- BLOCK clear_print_export_input_key
+UPDATE jobs
+SET
+  data = data - 'inputKey'
+WHERE
+  id = $job_id
+  AND data ->> 'inputKey' = $input_key;
 
 -- BLOCK lock_course_job_sequence
 SELECT
@@ -149,6 +160,7 @@ WITH
       AND coalesce((j.data ->> 'attempts')::integer, 0) >= 3
       AND (j.data ->> 'leaseUntil')::timestamptz <= CURRENT_TIMESTAMP
     RETURNING
+      j.id,
       j.job_sequence_id,
       j.data ->> 'inputKey' AS input_key
   ),
@@ -164,6 +176,7 @@ WITH
       AND js.status = 'Running'
   )
 SELECT
+  id,
   input_key
 FROM
   failed;

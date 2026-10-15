@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -8,11 +9,13 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
+import { getFromS3, uploadToS3 } from '../lib/aws.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../lib/client/print-snapshot-limits.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { getFileStoreS3Bucket } from '../lib/file-store.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
   cleanExpiredPrintExports,
@@ -438,6 +441,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
         )
       ).status,
     ).toBe(404);
+    const inputKey = `print-exports/input/${randomUUID()}.json`;
+    const bucket = getFileStoreS3Bucket();
+    await uploadToS3(bucket, inputKey, null, false, Buffer.from('{}'));
+    await execute(sql.add_print_export_input_key, {
+      job_sequence_id: jobSequenceId,
+      input_key: inputKey,
+    });
     await execute(sql.age_print_export_job, { job_sequence_id: jobSequenceId });
     await execute(sql.age_print_export_sequence, { job_sequence_id: jobSequenceId });
     await cleanExpiredPrintExports();
@@ -452,6 +462,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       },
     );
     expect((await fetch(url)).status).toBe(404);
+    await expect(getFromS3(bucket, inputKey, true)).rejects.toThrow();
   });
 
   test('shows a safe reason when a background PDF fails', async () => {

@@ -12,6 +12,13 @@ SET
 WHERE
   job_sequence_id = $job_sequence_id;
 
+-- BLOCK add_print_export_input_key
+UPDATE jobs
+SET
+  data = data || jsonb_build_object('inputKey', $input_key::text)
+WHERE
+  job_sequence_id = $job_sequence_id;
+
 -- BLOCK age_print_export_sequence
 UPDATE job_sequences
 SET
