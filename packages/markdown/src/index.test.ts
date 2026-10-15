@@ -122,6 +122,11 @@ describe('Markdown processing', () => {
     testMarkdown(question, expected);
   });
 
+  it('removes data attributes from rendered Markdown', () => {
+    const markdown = '**Instructions** <span data-bs-toggle="popover">Help</span>';
+    testMarkdown(markdown, '<p><strong>Instructions</strong> <span>Help</span></p>');
+  });
+
   it('sanitizes HTML javascript event tags', () => {
     const question = 'testing<img src="x" onerror="alert(\'XSS\')">';
     const expected = '<p>testing<img src="x"></p>';

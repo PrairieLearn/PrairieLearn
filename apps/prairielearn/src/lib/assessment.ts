@@ -88,7 +88,7 @@ export function renderText(
     .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
     .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
 
-  return sanitizeHtml(mustache.render(text, context), { allowDataAttributes: false });
+  return sanitizeHtml(mustache.render(text, context));
 }
 
 /**

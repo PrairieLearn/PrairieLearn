@@ -40,11 +40,7 @@ import { sanitizeHtml } from '@prairielearn/markdown';
 const html = sanitizeHtml(originalHtml);
 ```
 
-Data attributes are allowed by default. Pass `{ allowDataAttributes: false }` to remove them:
-
-```ts
-const html = sanitizeHtml(originalHtml, { allowDataAttributes: false });
-```
+Data attributes are removed when sanitizing HTML or Markdown.
 
 ### Advanced usage with custom extensions
 
