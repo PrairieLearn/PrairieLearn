@@ -1,7 +1,7 @@
-import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { CourseSchema } from '../lib/db-types.js';
@@ -17,6 +17,7 @@ import * as helperDb from './helperDb.js';
 import * as util from './sync/util.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+const MigrationCourseSchema = CourseSchema.extend({ uuid: z.string().nullable() });
 
 // This migration establishes the writer before a later deployed backfill.
 // Its nullable state is intentional and must remain readable during rollout.
@@ -31,7 +32,7 @@ describe('Course UUID migration', () => {
         const existingCourse = await queryRow(
           sql.select_course,
           { course_id: courseId },
-          CourseSchema,
+          MigrationCourseSchema,
         );
         assert.equal(existingCourse.path, '/existing-course');
         assert.isNull(existingCourse.uuid);
@@ -41,7 +42,7 @@ describe('Course UUID migration', () => {
         const newCourse = await queryRow(
           sql.select_course,
           { course_id: newCourseId },
-          CourseSchema,
+          MigrationCourseSchema,
         );
         z.guid().parse(newCourse.uuid);
       },
@@ -53,6 +54,19 @@ describe('Course UUIDs', () => {
   beforeAll(helperDb.before);
   afterAll(helperDb.after);
   beforeEach(helperDb.resetDatabase);
+
+  it('rejects null and duplicate course UUIDs', async () => {
+    const sourceId = await queryScalar(sql.insert_course, { path: '/source-course' }, IdSchema);
+    const source = await selectCourseById(sourceId);
+    const otherId = await queryScalar(sql.insert_course, { path: '/other-course' }, IdSchema);
+
+    await expect(
+      execute(sql.update_course_uuid, { course_id: otherId, uuid: null }),
+    ).rejects.toMatchObject({ code: '23502', column: 'uuid' });
+    await expect(
+      execute(sql.update_course_uuid, { course_id: otherId, uuid: source.uuid }),
+    ).rejects.toMatchObject({ code: '23505', constraint: 'courses_uuid_key' });
+  });
 
   it('generates a UUID through the administrative course creation path', async () => {
     const user = await selectOrInsertUserByUid('admin@example.com');

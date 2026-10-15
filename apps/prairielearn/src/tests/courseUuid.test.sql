@@ -13,3 +13,10 @@ FROM
   courses
 WHERE
   id = $course_id;
+
+-- BLOCK update_course_uuid
+UPDATE courses
+SET
+  uuid = $uuid::uuid
+WHERE
+  id = $course_id;
