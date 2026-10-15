@@ -56,7 +56,7 @@ SELECT
 
 -- BLOCK insert_print_export_job
 WITH
-  sequence AS (
+  new_job_sequence AS (
     INSERT INTO
       job_sequences (
         course_id,
@@ -114,7 +114,7 @@ WITH
       $course_id,
       $course_instance_id,
       $assessment_id,
-      sequence.id,
+      new_job_sequence.id,
       1,
       TRUE,
       $user_id,
@@ -128,12 +128,12 @@ WITH
       END,
       $data::jsonb
     FROM
-      sequence
+      new_job_sequence
   )
 SELECT
   id AS job_sequence_id
 FROM
-  sequence;
+  new_job_sequence;
 
 -- BLOCK lock_print_export_queue
 SELECT
@@ -164,7 +164,7 @@ WITH
       j.job_sequence_id,
       j.data ->> 'inputKey' AS input_key
   ),
-  sequences AS (
+  updated_job_sequences AS (
     UPDATE job_sequences AS js
     SET
       status = 'Error',
