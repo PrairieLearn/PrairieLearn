@@ -212,12 +212,15 @@ export async function calculateAiGradingStats(
         ai_points: aiGradingResult.score_source.grading_job.manual_points,
       });
     }
-    if (manualGradingResult && aiGradingResult) {
+    if (
+      manualGradingResult?.score_source?.rubric_grading &&
+      aiGradingResult?.score_source?.rubric_grading
+    ) {
       testRubricResults.push({
         reference_items: new Set(
-          manualGradingResult.score_source?.rubric_items.map((item) => item.id),
+          manualGradingResult.score_source.rubric_items.map((item) => item.id),
         ),
-        ai_items: new Set(aiGradingResult.score_source?.rubric_items.map((item) => item.id)),
+        ai_items: new Set(aiGradingResult.score_source.rubric_items.map((item) => item.id)),
       });
     }
   }
