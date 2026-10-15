@@ -487,6 +487,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             allow_trig,
             variables,
             custom_functions,
+            allow_sets=allow_sets,
             latex=data["raw_submitted_answers"].get(name + "-latex"),
         )
         if submitted_answer is not None and formatted_answer is None:
@@ -675,6 +676,7 @@ def format_formula_editor_submission_for_sympy(
     variables: list[str],
     custom_functions: list[str],
     *,
+    allow_sets: bool = False,
     latex: str | None = None,
 ) -> str | None:
     r"""
@@ -692,6 +694,7 @@ def format_formula_editor_submission_for_sympy(
         allow_trig: Whether trig functions (sin, cos, etc.) are available
         variables: List of allowed variable names
         custom_functions: List of custom function names
+        allow_sets: Whether set operators and constructors are available
         latex: Raw LaTeX from the formula editor
 
     Returns:
@@ -713,7 +716,9 @@ def format_formula_editor_submission_for_sympy(
     text = text.replace("-:", "/").replace(" ** ", " * ")
 
     # Build list of all multi-character tokens that should be recognized as units
-    known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
+    known_tokens = _build_known_tokens(
+        allow_trig, variables, custom_functions, allow_sets=allow_sets
+    )
 
     # Replace Greek unicode letters with spaced ASCII for consistent handling further on
     text = "".join(_greek_transform(char) for char in text)
@@ -728,7 +733,10 @@ def format_formula_editor_submission_for_sympy(
     function_names = frozenset(
         psu.greek_unicode_transform(name)
         for name in (
-            psu.get_builtin_functions(allow_trig_functions=allow_trig)
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+            )
             | set(custom_functions)
         )
     )
@@ -741,6 +749,8 @@ def _build_known_tokens(
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
+    *,
+    allow_sets: bool = False,
 ) -> list[str]:
     """
     Build a list of all multi-character tokens that should be recognized as single units.
@@ -748,17 +758,18 @@ def _build_known_tokens(
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
-    constants_class = psu._Constants
-
     # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
     tokens = (
         list(psu.STANDARD_OPERATORS)
-        + list(constants_class.functions.keys())
+        + list(
+            psu.get_builtin_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+            )
+        )
         + custom_functions
         + variables
     )
-    if allow_trig:
-        tokens += list(constants_class.trig_functions.keys())
 
     # Add transformed versions of Greek letters
     tokens += [

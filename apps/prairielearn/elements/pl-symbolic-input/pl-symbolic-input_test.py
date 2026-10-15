@@ -218,6 +218,26 @@ def test_format_formula_editor_submission_for_sympy(
 
 
 @pytest.mark.parametrize(
+    ("sub", "expected"),
+    [
+        ("C o m p l e m e n t ({1},{2})", "Complement ({1},{2})"),
+        ("{1} c u p {2} * {3}", "{1} cup {2} * {3}"),
+    ],
+)
+def test_format_formula_editor_submission_with_set_names(
+    sub: str, expected: str
+) -> None:
+    out = symbolic_input.format_formula_editor_submission_for_sympy(
+        sub,
+        False,
+        [],
+        [],
+        allow_sets=True,
+    )
+    assert out == expected
+
+
+@pytest.mark.parametrize(
     "a_sub",
     [
         # Reported as containing set notation: 4^{csc(9x)}·(-9·ln 4)·cot(9x)csc(9x)
@@ -289,6 +309,43 @@ def test_formula_editor_bare_argument_before_implicit_multiplication() -> None:
     assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.log(8) * (
         x + 1
     )
+
+
+def test_formula_editor_bare_argument_with_unsimplified_set_grading() -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        'formula-editor="true"',
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'correct-answer="{ln(8)*(x+1)}"',
+    )
+    data = make_question_data(submitted_answers={"test": "{l n 8(x+1)}"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_formula_editor_set_constructor_is_recognized() -> None:
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'correct-answer="{1} - {2}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "C o m p l e m e n t ({1},{2})"}
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
 
 
 def test_formula_editor_function_ending_in_digit_stays_in_bare_argument() -> None:
