@@ -163,8 +163,8 @@ export async function generatePrompt({
   params,
   true_answer,
 }: {
-  questionPrompt: string | UserContentParts;
-  questionAnswer: string | UserContentParts;
+  questionPrompt: UserContentParts;
+  questionAnswer: UserContentParts;
   /** If true, the prompt will include that rotation correction was applied prior to grading. */
   rotationCorrected?: boolean;
   submission_text: string;
@@ -245,21 +245,9 @@ export async function generatePrompt({
     content.push(textSection('Rubric items', rubricItems));
   }
 
-  if (typeof questionPrompt === 'string') {
-    content.push(textSection('Question', questionPrompt));
-  } else {
-    content.push(...questionPrompt);
-  }
-
-  if (typeof questionAnswer === 'string') {
-    if (questionAnswer.trim()) {
-      content.push(textSection('Instructor reference answer', questionAnswer.trim()));
-    }
-  } else {
-    content.push(...questionAnswer);
-  }
-
   content.push(
+    ...questionPrompt,
+    ...questionAnswer,
     {
       type: 'text',
       text: '## Student submission',
