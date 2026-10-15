@@ -83,8 +83,9 @@ export async function discoverAiGradingModels(
     ? `ai-grading-models:${credentialIdentity.courseInstanceId}:${credentialIdentity.credentialId}`
     : null;
   if (cacheKey) {
-    const cached = await modelCache.get<string[]>(cacheKey);
-    if (cached !== null) return cached;
+    const cached = await modelCache.get<unknown[]>(cacheKey);
+    const result = z.array(z.string()).safeParse(cached);
+    if (result.success) return result.data;
   }
 
   const signal = AbortSignal.timeout(DISCOVERY_TIMEOUT_MS);
