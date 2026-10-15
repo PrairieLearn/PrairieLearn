@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
+import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
@@ -17,6 +18,17 @@ import * as helperServer from './helperServer.js';
 const redirectSql = loadSqlEquiv(
   new URL('../middlewares/studentAssessmentRedirect.ts', import.meta.url).href,
 );
+const instancesSql = loadSqlEquiv(
+  new URL('../trpc/assessment/assessment-instances.ts', import.meta.url).href,
+);
+const downloadsSql = loadSqlEquiv(
+  new URL(
+    '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.tsx',
+    import.meta.url,
+  ).href,
+);
+const assessmentSql = loadSqlEquiv(new URL('../lib/assessment.ts', import.meta.url).href);
+const regradingSql = loadSqlEquiv(new URL('../lib/regrading.ts', import.meta.url).href);
 
 beforeAll(helperServer.before());
 afterAll(helperServer.after);
@@ -66,5 +78,35 @@ it('keeps a printable instance separate from a single student attempt', async ()
     ).toEqual([printableId]);
     expect(await create(false)).toBe(studentId);
     expect(await create(true)).not.toBe(printableId);
+
+    const tableRows = await queryRows(
+      instancesSql.select_assessment_instances,
+      { assessment_id: assessment.id },
+      z.object({ assessment_instance: z.object({ id: IdSchema }) }),
+    );
+    const downloadRows = await queryRows(
+      downloadsSql.select_assessment_instances,
+      { assessment_id: assessment.id, group_work: false, highest_score: false },
+      z.object({ assessment_instance_id: IdSchema }),
+    );
+    const gradingRows = await queryRows(
+      assessmentSql.select_instances_to_grade,
+      { assessment_id: assessment.id, assessment_instance_ids: null },
+      z.object({ assessment_instance_id: IdSchema }),
+    );
+    const regradingRows = await queryRows(
+      regradingSql.select_regrade_assessment_instances,
+      { assessment_id: assessment.id, assessment_instance_ids: null },
+      z.object({ assessment_instance: z.object({ id: IdSchema }) }),
+    );
+    for (const ids of [
+      tableRows.map((row) => row.assessment_instance.id),
+      downloadRows.map((row) => row.assessment_instance_id),
+      gradingRows.map((row) => row.assessment_instance_id),
+      regradingRows.map((row) => row.assessment_instance.id),
+    ]) {
+      expect(ids).toContain(studentId);
+      expect(ids).not.toContain(printableId);
+    }
   });
 });

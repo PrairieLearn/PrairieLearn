@@ -457,6 +457,7 @@ FROM
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
+  AND NOT ai.for_printing
   AND ai.open
   AND (
     $assessment_instance_ids::bigint[] IS NULL

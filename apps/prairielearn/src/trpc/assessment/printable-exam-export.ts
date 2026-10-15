@@ -48,11 +48,6 @@ import { selectAssessmentInstancesForUser } from '../../models/assessment-instan
 
 import { requireCoursePermissionPreview, t } from './init.js';
 
-export interface PrintableExamExportError {
-  pdf: never;
-  status: never;
-}
-
 export const printableExamExportRouter = t.router({
   pdf: t.procedure
     .use(requireCoursePermissionPreview)
@@ -116,12 +111,6 @@ export const printableExamExportRouter = t.router({
       try {
         const covers =
           metadata.document === 'answer_key' ? [] : await readPrintCoverPages(files.data);
-        if (!isBrowserRenderingAvailable()) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: 'PDF rendering is not configured on this server.',
-          });
-        }
         const plan = run(() => {
           switch (metadata.document) {
             case 'exam':
@@ -273,6 +262,12 @@ export const printableExamExportRouter = t.router({
         const inputBytes =
           pages.data.reduce((sum, page) => sum + page.size, 0) +
           files.data.reduce((sum, file) => sum + file.size, 0);
+        if (!isBrowserRenderingAvailable()) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'PDF rendering is not configured on this server.',
+          });
+        }
         const meter = metrics.getMeter('prairielearn');
         const attributes = { document: metadata.document };
         const pathCounter = getCounter(meter, 'print.export.path', { valueType: ValueType.INT });

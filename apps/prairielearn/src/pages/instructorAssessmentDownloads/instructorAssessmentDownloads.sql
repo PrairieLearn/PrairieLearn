@@ -44,6 +44,7 @@ WITH
       )
     WHERE
       a.id = $assessment_id
+      AND NOT ai.for_printing
     ORDER BY
       CASE
         WHEN $group_work THEN ai.team_id
@@ -118,6 +119,7 @@ FROM
   JOIN courses AS c ON (c.id = q.course_id)
 WHERE
   a.id = $assessment_id
+  AND NOT ai.for_printing
 ORDER BY
   u.uid,
   u.uin,
@@ -143,6 +145,7 @@ WITH
       LEFT JOIN users AS u ON (u.id = ai.user_id)
     WHERE
       ai.assessment_id = $assessment_id
+      AND NOT ai.for_printing
     ORDER BY
       g.id ASC,
       u.id ASC,
@@ -315,6 +318,7 @@ WITH
       JOIN courses AS c ON (c.id = q.course_id)
     WHERE
       a.id = $assessment_id
+      AND NOT ai.for_printing
   )
 SELECT
   *
@@ -380,6 +384,7 @@ FROM
   assessment_instances
 WHERE
   assessment_id = $assessment_id
+  AND NOT for_printing
   AND max_points IS NOT NULL
 LIMIT
   1;

@@ -26,7 +26,7 @@ import { PAPER_SIZES } from './printing/pdf-output.js';
 const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
 const WORKER_LIMIT = 2;
-export const PRINT_EXPORT_EXPIRY_MS = 24 * 60 * 60 * 1000;
+const PRINT_EXPORT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 const PersistedWorkSchema = z.object({
   document: z.enum(['exam', 'answer_key', 'booklet']),
@@ -258,7 +258,7 @@ async function runClaimedPrintExport({
         jobSequenceId,
         owner,
         status: 'Error',
-        data: { failureMessage },
+        data: { inputKey, failureMessage },
         output: error instanceof Error ? (error.stack ?? error.message) : String(error),
       });
       return;
@@ -272,6 +272,7 @@ async function runClaimedPrintExport({
         owner,
         status: 'Success',
         data: {
+          inputKey,
           key,
           filename: persisted.filename,
           document,
@@ -294,6 +295,7 @@ async function runClaimedPrintExport({
     if (inputCanBeDeleted) {
       try {
         await deleteFromS3(bucket, inputKey);
+        await execute(sql.clear_print_export_input_key, { job_id: id, input_key: inputKey });
       } catch (error) {
         logger.error('Could not remove completed print export input', error);
       }
@@ -317,7 +319,7 @@ export async function processQueuedPrintExports(): Promise<void> {
     const exhausted = await queryRows(
       sql.fail_exhausted_print_exports,
       {},
-      z.object({ input_key: z.string() }),
+      z.object({ id: IdSchema, input_key: z.string() }),
     );
     const claimed = await queryRows(
       sql.claim_print_exports,
@@ -335,6 +337,10 @@ export async function processQueuedPrintExports(): Promise<void> {
   for (const job of exhausted) {
     try {
       await deleteFromS3(getFileStoreS3Bucket(), job.input_key);
+      await execute(sql.clear_print_export_input_key, {
+        job_id: job.id,
+        input_key: job.input_key,
+      });
     } catch (error) {
       logger.error('Could not remove failed print export input', error);
     }

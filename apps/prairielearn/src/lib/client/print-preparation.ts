@@ -35,13 +35,6 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   excludedQuestions: [],
 };
 
-export const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
-  auto: 'Fit to content',
-  third: 'One third of a page',
-  half: 'Half a page',
-  full: 'A full page',
-};
-
 function printIdentityFields(value: string): string[] {
   return value
     .split('\n')

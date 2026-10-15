@@ -10,13 +10,6 @@ import { selectAssessmentInstancesForUser } from '../../models/assessment-instan
 
 import { requireCoursePermissionPreview, t } from './init.js';
 
-export interface PrintableExamsError {
-  list: never;
-  create: never;
-  regenerate: never;
-  questions: never;
-}
-
 const printableAssessmentProcedure = t.procedure.use(requireCoursePermissionPreview);
 
 const createInstanceProcedure = printableAssessmentProcedure.use(async ({ ctx, next }) => {
