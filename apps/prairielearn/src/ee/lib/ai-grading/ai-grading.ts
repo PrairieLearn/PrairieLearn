@@ -50,7 +50,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { resolveAiGradingKeys } from './ai-grading-credentials.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { createAiGradingOpenAI } from './ai-grading-openai-provider.js';
-import { selectGradingJobsInfo } from './ai-grading-stats.js';
+import { selectGradingResults } from './ai-grading-stats.js';
 import {
   type AiGradingPrompt,
   addAiGradingCostToIntervalUsage,
@@ -406,14 +406,14 @@ export async function aiGrade({
     assessment_question_id: assessment_question.id,
   });
 
-  const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
+  const instanceQuestionGradingResults = await selectGradingResults(all_instance_questions);
 
   const instance_questions = all_instance_questions.filter((instance_question) => {
     switch (mode) {
       case 'human_graded':
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        return instanceQuestionGradingJobs[instance_question.id]?.some(
-          (job) => job.grading_method === 'Manual',
+        return instanceQuestionGradingResults[instance_question.id]?.some(
+          (result) => result.latest_update.grading_job.grading_method === 'Manual',
         );
       case 'all':
         return true;
@@ -566,8 +566,8 @@ export async function aiGrade({
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
-        (job) => job.grading_method === 'Manual',
+      const shouldUpdateScore = !instanceQuestionGradingResults[instance_question.id]?.some(
+        (result) => result.latest_update.grading_job.grading_method === 'Manual',
       );
 
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
