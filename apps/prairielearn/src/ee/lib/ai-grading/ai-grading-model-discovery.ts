@@ -76,11 +76,7 @@ export async function discoverAiGradingModels(
     apiKey: string;
     credentialIdentity?: { courseInstanceId: string; credentialId: string };
   },
-  {
-    fetch = publicFetch,
-    modelCache = cache,
-    timeoutMs = DISCOVERY_TIMEOUT_MS,
-  }: { fetch?: PublicFetch; modelCache?: Cache; timeoutMs?: number } = {},
+  { fetch = publicFetch, modelCache = cache }: { fetch?: PublicFetch; modelCache?: Cache } = {},
 ): Promise<string[]> {
   const normalizedUrl = normalizeAiGradingBaseUrl(baseUrl);
   const cacheKey = credentialIdentity
@@ -91,7 +87,7 @@ export async function discoverAiGradingModels(
     if (cached !== null) return cached;
   }
 
-  const signal = AbortSignal.timeout(timeoutMs);
+  const signal = AbortSignal.timeout(DISCOVERY_TIMEOUT_MS);
   try {
     const response = await fetch(`${normalizedUrl}/models`, {
       headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' },
