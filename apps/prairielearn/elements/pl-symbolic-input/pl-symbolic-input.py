@@ -941,6 +941,56 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
     return "".join(result)
 
 
+def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
+    """Compare set components by symbolic equivalence instead of structure."""
+    comparison_cache: dict[tuple[sympy.Basic, sympy.Basic], bool] = {}
+
+    def compare(left: sympy.Basic, right: sympy.Basic) -> bool:
+        pair = (left, right)
+        if pair in comparison_cache:
+            return comparison_cache[pair]
+        reverse_pair = (right, left)
+        if reverse_pair in comparison_cache:
+            return comparison_cache[reverse_pair]
+
+        if left is right or left == right:
+            result = True
+        elif type(left) is type(right) and isinstance(
+            left, (sympy.FiniteSet, sympy.Union, sympy.Intersection)
+        ):
+            result = all(
+                any(compare(value, candidate) for candidate in right.args)
+                for value in left.args
+            ) and all(
+                any(compare(value, candidate) for candidate in left.args)
+                for value in right.args
+            )
+        elif isinstance(left, sympy.Interval) and isinstance(right, sympy.Interval):
+            result = (
+                left.left_open == right.left_open
+                and left.right_open == right.right_open
+                and compare(left.start, right.start)
+                and compare(left.end, right.end)
+            )
+        elif isinstance(left, sympy.Complement) and isinstance(right, sympy.Complement):
+            result = len(left.args) == len(right.args) and all(
+                compare(left_arg, right_arg)
+                for left_arg, right_arg in zip(left.args, right.args, strict=True)
+            )
+        elif isinstance(left, (sympy.Expr, sympy.logic.boolalg.Boolean)) and isinstance(
+            right, (sympy.Expr, sympy.logic.boolalg.Boolean)
+        ):
+            result = left.equals(right) is True
+        else:
+            result = False
+
+        comparison_cache[pair] = result
+        comparison_cache[reverse_pair] = result
+        return result
+
+    return compare(a, b)
+
+
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
@@ -1033,10 +1083,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             assert isinstance(a_sub_sympy, sympy.Expr)
             assert isinstance(a_tru_sympy, sympy.Expr)
 
-        if isinstance(a_tru_sympy, sympy.Set) or isinstance(a_sub_sympy, sympy.Set):
-            return a_tru_sympy == a_sub_sympy, None
-
-        return a_tru_sympy.equals(a_sub_sympy) is True, None
+        return _sympy_values_equal(a_tru_sympy, a_sub_sympy), None
 
     try:
         pl.grade_answer_parameterized(

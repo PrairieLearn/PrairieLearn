@@ -513,6 +513,151 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "variables", "expected_score"),
+    [
+        ("{x + 1, x - 1}", "{x + 1, x - 1}", "x", 1),
+        ("{x}", "{x + 0, x - 0}", "x", 1),
+        ("{x, 1}", "{x + 0, x - 0}", "x", 0),
+        (
+            "[0, (x + 1)^2] U {y}",
+            "[0, x^2 + 2*x + 1] U {y}",
+            "x,y",
+            1,
+        ),
+        ("[0, x] U {y}", "(0, x + 0] U {y}", "x,y", 0),
+        ("{x} - {y}", "{x} - {y}", "x,y", 1),
+    ],
+)
+def test_unsimplified_set_grading(
+    correct_answer: str,
+    submission: str,
+    variables: str,
+    expected_score: int,
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        f'variables="{variables}"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == expected_score
+
+
+def test_custom_complement_function_round_trips_with_set_notation() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'custom-functions="Complement"',
+        'correct-answer="Complement(x)"',
+    )
+    data = make_question_data(submitted_answers={"test": "Complement(x)"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert data["submitted_answers"]["test"]["_custom_functions"] == ["Complement"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_legacy_custom_complement_submission_remains_readable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    legacy_json: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "Complement(x)",
+        "_variables": ["x"],
+        "_custom_functions": ["Complement"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'custom-functions="Complement"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": legacy_json},
+        raw_submitted_answers={"test": "Complement(x)"},
+        correct_answers={"test": legacy_json},
+        panel="submission",
+        editable=False,
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.render(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize("operator", ["|", "&"])
+def test_legacy_scalar_set_operator_submission_remains_readable(
+    monkeypatch: pytest.MonkeyPatch, operator: str
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    legacy_json: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": f"x {operator} y",
+        "_variables": ["x", "y"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'variables="x,y"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": legacy_json},
+        raw_submitted_answers={"test": f"x {operator} y"},
+        correct_answers={"test": legacy_json},
+        panel="submission",
+        editable=False,
+    )
+
+    symbolic_input.render(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_legacy_boolean_expressions_are_graded_by_symbolic_equivalence() -> None:
+    correct_answer: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "x | (y & z)",
+        "_variables": ["x", "y", "z"],
+    }
+    submitted_answer: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "(x | y) & (x | z)",
+        "_variables": ["x", "y", "z"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'variables="x,y,z"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": submitted_answer},
+        correct_answers={"test": correct_answer},
+    )
+
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',
