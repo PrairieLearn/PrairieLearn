@@ -508,7 +508,6 @@ async function processQuestionPhase<T>(
   const courseIssues: CourseIssueError[] = [];
   let result: any = null;
   let output: string | null = null;
-  let fileData: Buffer = Buffer.from('');
 
   try {
     const res = await codeCaller.call(
@@ -520,7 +519,6 @@ async function processQuestionPhase<T>(
     );
     result = res.result;
     output = res.output;
-    fileData = Buffer.from(result?.file ?? '', 'base64');
   } catch (err: any) {
     // Log the error message and any Python output to help diagnose test failures.
     if (config.devMode) {
@@ -555,7 +553,7 @@ async function processQuestionPhase<T>(
     // to change the top-level shape of the data.
     data: result?.data ?? data,
     html: result?.html ?? '',
-    fileData,
+    fileData: Buffer.from(result?.file ?? '', 'base64'),
     renderedElementNames: result?.processed_elements ?? [],
   };
 }
@@ -668,9 +666,6 @@ async function processQuestionServer<T extends ExecutionData>(
   let result, output;
   try {
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
-    if (phase === 'file') {
-      result = Buffer.from(result, 'base64');
-    }
   } catch (err: any) {
     // Log the error message and any Python output to help diagnose test failures.
     if (config.devMode) {
@@ -705,7 +700,9 @@ async function processQuestionServer<T extends ExecutionData>(
   if (phase === 'render') {
     html = result;
   } else if (phase === 'file') {
-    const buf = result;
+    // Convert ret_val from base64 back to buffer (this always works,
+    // whether or not ret_val is valid base64)
+    const buf = Buffer.from(result, 'base64');
 
     // If the buffer has non-zero length...
     if (buf.length > 0) {

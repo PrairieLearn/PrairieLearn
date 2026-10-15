@@ -107,6 +107,14 @@ describe('loadQuestionImage', () => {
     expect(publicFetchModule.publicFetch).not.toHaveBeenCalled();
   });
 
+  it('rejects generated images exceeding the byte limit', async () => {
+    vi.mocked(questionVariant.getDynamicFile).mockResolvedValue(Buffer.alloc(11 * 1024 * 1024));
+
+    await expect(
+      loadQuestionImage('/question/1/generatedFilesQuestion/variant/2/image.png', context),
+    ).rejects.toThrow('Question image exceeds the size limit');
+  });
+
   it.each([
     '/admin',
     '/question/1/generatedFilesQuestion/variant/99/image.png',

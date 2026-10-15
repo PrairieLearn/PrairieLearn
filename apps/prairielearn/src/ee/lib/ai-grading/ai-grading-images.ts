@@ -73,8 +73,11 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
 
   if (url.protocol === 'data:') {
     const match = /^data:image\/(?:png|jpeg|webp);base64,([A-Za-z0-9+/]*={0,2})$/i.exec(src);
-    if (!match || match[1].length > Math.ceil(MAX_IMAGE_BYTES / 3) * 4) {
-      throw new Error('Invalid or oversized inline question image');
+    if (!match) {
+      throw new Error('Invalid inline question image');
+    }
+    if (Buffer.byteLength(match[1], 'base64') > MAX_IMAGE_BYTES) {
+      throw new Error('Question image exceeds the size limit');
     }
     image = Buffer.from(match[1], 'base64');
   } else {
@@ -117,6 +120,7 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
         user_id: context.userId,
         authn_user_id: context.authnUserId,
       });
+      if (image.length > MAX_IMAGE_BYTES) throw new Error('Question image exceeds the size limit');
     } else {
       // Same-origin URLs must identify an asset for this question, never an arbitrary server route.
       if (url.origin === base.origin) {
@@ -131,7 +135,6 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
     }
   }
 
-  if (image.length > MAX_IMAGE_BYTES) throw new Error('Question image exceeds the size limit');
   const { format } = await sharp(image).metadata();
   if (format !== 'png' && format !== 'jpeg' && format !== 'webp') {
     throw new Error('Unsupported question image format');
