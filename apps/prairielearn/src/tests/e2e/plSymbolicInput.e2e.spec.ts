@@ -191,6 +191,7 @@ test('does not mark restored formula editor answers as unsaved', async ({
     // Ensure the form captures its initial state before the element populates its hidden inputs.
     Object.defineProperty(window, 'PLSymbolicInput', {
       configurable: true,
+      get: () => undefined,
       set(initialize: (name: string) => void) {
         Object.defineProperty(window, 'PLSymbolicInput', {
           configurable: true,
