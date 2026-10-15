@@ -4,6 +4,29 @@ import { sanitizeHtml } from './sanitize.js';
 
 describe('sanitizeHtml', () => {
   it.each([
+    [
+      '<a href="/formulas.pdf" target="_blank">Formula sheet</a>',
+      '<a href="/formulas.pdf" target="_blank" rel="noopener noreferrer">Formula sheet</a>',
+    ],
+    [
+      '<a href="/formulas.pdf" target="_BLANK" rel="nofollow noreferrer">Formula sheet</a>',
+      '<a href="/formulas.pdf" target="_BLANK" rel="nofollow noreferrer noopener">Formula sheet</a>',
+    ],
+  ])('preserves new-tab links and their existing rel values: %s', (html, expected) => {
+    assert.equal(sanitizeHtml(html), expected);
+  });
+
+  it('leaves same-tab links unchanged', () => {
+    const html = '<a href="/first">First</a><a href="/second" target="_self">Second</a>';
+    assert.equal(sanitizeHtml(html), html);
+  });
+
+  it('sanitizes URLs and event handlers on new-tab links', () => {
+    const html = '<a href="javascript:alert(1)" target="_blank" onclick="alert(1)">Link</a>';
+    assert.equal(sanitizeHtml(html), '<a target="_blank" rel="noopener noreferrer">Link</a>');
+  });
+
+  it.each([
     ['inline scripts', '<p>Instructions</p><script>alert(1)</script>', '<p>Instructions</p>'],
     ['image error handlers', '<img src="/image.png" onerror="alert(1)">', '<img src="/image.png">'],
     ['encoded JavaScript URLs', '<a href="java&#x73;cript:alert(1)">Link</a>', '<a>Link</a>'],

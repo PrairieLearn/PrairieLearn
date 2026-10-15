@@ -35,6 +35,15 @@ function getOrCreateInstance(): SanitizeInstance {
   const jsdom = new JSDOM('');
   const dompurify = createDOMPurify(jsdom.window as any);
 
+  dompurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.localName !== 'a' || node.getAttribute('target')?.toLowerCase() !== '_blank') return;
+
+    const rel = new Set(node.getAttribute('rel')?.split(/\s+/).filter(Boolean));
+    rel.add('noopener');
+    rel.add('noreferrer');
+    node.setAttribute('rel', [...rel].join(' '));
+  });
+
   // Sanity check: make sure that DOMPurify is fully supported.
   assert(dompurify.isSupported);
 
@@ -44,5 +53,8 @@ function getOrCreateInstance(): SanitizeInstance {
 
 export function sanitizeHtml(html: string): string {
   const instance = getOrCreateInstance();
-  return instance.dompurify.sanitize(html, { ALLOW_DATA_ATTR: false });
+  return instance.dompurify.sanitize(html, {
+    ALLOW_DATA_ATTR: false,
+    ADD_ATTR: (attributeName, tagName) => attributeName === 'target' && tagName === 'a',
+  });
 }
