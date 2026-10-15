@@ -513,27 +513,44 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert data["partial_scores"]["test"]["score"] == 1
 
 
-def test_set_difference_submission_round_trips_without_simplification() -> None:
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "variables", "expected_score"),
+    [
+        ("{x + 1, x - 1}", "{x + 1, x - 1}", "x", 1),
+        ("{x}", "{x + 0, x - 0}", "x", 1),
+        ("{x, 1}", "{x + 0, x - 0}", "x", 0),
+        (
+            "[0, (x + 1)^2] U {y}",
+            "[0, x^2 + 2*x + 1] U {y}",
+            "x,y",
+            1,
+        ),
+        ("[0, x] U {y}", "(0, x + 0] U {y}", "x,y", 0),
+        ("{x} - {y}", "{x} - {y}", "x,y", 1),
+    ],
+)
+def test_unsimplified_set_grading(
+    correct_answer: str,
+    submission: str,
+    variables: str,
+    expected_score: int,
+) -> None:
     element_html = build_element_html(
         'allow-sets="true"',
         'display-simplified-expression="false"',
-        'variables="x,y"',
-        'correct-answer="{x} - {y}"',
+        f'variables="{variables}"',
+        f'correct-answer="{correct_answer}"',
     )
-    data = make_question_data(submitted_answers={"test": "{x} - {y}"})
+    data = make_question_data(submitted_answers={"test": submission})
 
     symbolic_input.prepare(element_html, data)
     symbolic_input.parse(element_html, data)
 
     assert "test" not in data["format_errors"]
     assert isinstance(data["submitted_answers"]["test"], dict)
-    x, y = sympy.symbols("x y")
-    assert psu.json_to_sympy(
-        data["submitted_answers"]["test"], allow_sets=True
-    ) == sympy.Complement(sympy.FiniteSet(x), sympy.FiniteSet(y))
 
     symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 1
+    assert data["partial_scores"]["test"]["score"] == expected_score
 
 
 def test_custom_complement_function_round_trips_with_set_notation() -> None:
@@ -610,6 +627,32 @@ def test_legacy_scalar_set_operator_submission_remains_readable(
     )
 
     symbolic_input.render(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_legacy_boolean_expressions_are_graded_by_symbolic_equivalence() -> None:
+    correct_answer: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "x | (y & z)",
+        "_variables": ["x", "y", "z"],
+    }
+    submitted_answer: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "(x | y) & (x | z)",
+        "_variables": ["x", "y", "z"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'variables="x,y,z"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": submitted_answer},
+        correct_answers={"test": correct_answer},
+    )
+
     symbolic_input.grade(element_html, data)
 
     assert data["partial_scores"]["test"]["score"] == 1
