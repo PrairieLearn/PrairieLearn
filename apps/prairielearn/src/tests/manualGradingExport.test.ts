@@ -12,10 +12,14 @@ import {
   AssessmentQuestionSchema,
   GradingJobSchema,
 } from '../lib/db-types.js';
+import { saveSubmission } from '../lib/grading.js';
 import { updateInstanceQuestionScore } from '../lib/manualGrading.js';
+import { ensureVariant } from '../lib/question-variant.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import { selectQuestionById } from '../models/question.js';
 import {
   addLabelToEnrollment,
   selectStudentLabelsInCourseInstance,
@@ -101,10 +105,35 @@ async function createGradingExportFixture() {
     assigned_grader: null,
     last_grader: null,
   });
-  const submissionId = await sqldb.queryScalar(
-    sql.insert_submission_for_instance_question,
-    { instance_question_id: iqId },
-    IdSchema,
+  const question = await selectQuestionById(aq.question_id);
+  const courseInstance = await selectCourseInstanceById(assessment.course_instance_id);
+  const course = await selectCourseById(courseInstance.course_id);
+  const variant = await ensureVariant({
+    question_id: question.id,
+    instance_question_id: iqId,
+    user_id: student.id,
+    authn_user_id: student.id,
+    course_instance: courseInstance,
+    variant_course: course,
+    question_course: course,
+    options: {},
+    require_open: false,
+    client_fingerprint_id: null,
+  });
+  const { submission_id: submissionId } = await saveSubmission(
+    {
+      variant_id: variant.id,
+      user_id: student.id,
+      auth_user_id: student.id,
+      submitted_answer: {
+        _files: [
+          { name: 'fib.py', contents: Buffer.from('def fib(n): return 1').toString('base64') },
+        ],
+      },
+    },
+    variant,
+    question,
+    course,
   );
   return {
     assessment,

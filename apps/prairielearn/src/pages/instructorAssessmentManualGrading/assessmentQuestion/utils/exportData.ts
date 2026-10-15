@@ -1,6 +1,6 @@
 import type { TanstackTableCsvCell } from '@prairielearn/ui';
 
-import type { GradingJobInfo } from '../../../../ee/lib/ai-grading/types.js';
+import type { GradingResult } from '../../../../ee/lib/ai-grading/types.js';
 import type {
   StaffAssessment,
   StaffInstanceQuestionGroup,
@@ -26,7 +26,7 @@ function rubricItemToExportFields(item: RubricItem) {
   return { rubric_item_id: item.id, description: item.description, points: item.points };
 }
 
-function gradingSourceToExportFields(source: GradingJobInfo['auto_points_source']) {
+function gradingSourceToExportFields(source: GradingResult['auto_points_source']) {
   return source
     ? {
         grading_job_id: source.grading_job.id,
@@ -36,27 +36,28 @@ function gradingSourceToExportFields(source: GradingJobInfo['auto_points_source'
     : null;
 }
 
-function gradingJobToExportFields(job: GradingJobInfo | null) {
-  if (!job) return null;
+function gradingResultToExportFields(result: GradingResult | null) {
+  if (!result) return null;
+  const scoreSource = result.score_source ?? result.latest_update;
   return {
-    grading_job_id: job.grading_job.id,
-    graded_at: job.grading_job.graded_at?.toISOString() ?? null,
-    grader: userToExportFields(job.grader),
-    auto_points: job.auto_points,
-    manual_points: job.grading_job.manual_points,
-    feedback: job.feedback,
-    latest_update: gradingSourceToExportFields(job.latest_update),
-    auto_points_source: gradingSourceToExportFields(job.auto_points_source),
+    grading_job_id: scoreSource.grading_job.id,
+    graded_at: scoreSource.grading_job.graded_at?.toISOString() ?? null,
+    grader: userToExportFields(scoreSource.grader),
+    auto_points: result.auto_points_source?.grading_job.auto_points ?? null,
+    manual_points: result.score_source?.grading_job.manual_points ?? null,
+    feedback: result.feedback,
+    latest_update: gradingSourceToExportFields(result.latest_update),
+    auto_points_source: gradingSourceToExportFields(result.auto_points_source),
     feedback_sources: Object.fromEntries(
-      Object.entries(job.feedback_sources).map(([key, source]) => [
+      Object.entries(result.feedback_sources).map(([key, source]) => [
         key,
         gradingSourceToExportFields(source),
       ]),
     ),
-    rubric: job.rubric_grading
+    rubric: result.score_source?.rubric_grading
       ? {
-          ...job.rubric_grading,
-          items: job.rubric_grading_items.map((item) => ({
+          ...result.score_source.rubric_grading,
+          items: result.score_source.rubric_grading_items.map((item) => ({
             rubric_item_id: item.rubric_item_id,
             description: item.description,
             points: item.points,
@@ -116,8 +117,14 @@ export function getManualGradingJsonData(
       .filter(({ rubric_item }) => row.rubric_grading_item_ids.includes(rubric_item.id))
       .map(({ rubric_item }) => rubricItemToExportFields(rubric_item)),
     is_ai_graded: iq.is_ai_graded,
-    human_grading: gradingJobToExportFields(iq.human_grading),
-    ai_grading: gradingJobToExportFields(iq.ai_grading),
+    human_grading: gradingResultToExportFields(iq.human_grading),
+    ai_grading: iq.ai_grading
+      ? {
+          ...gradingResultToExportFields(iq.ai_grading),
+          explanation: iq.ai_grading.explanation,
+          generated_feedback: iq.ai_grading.generated_feedback,
+        }
+      : null,
     ai_grading_status: iq.ai_grading_status,
     ai_grading_comparison: {
       points_ai_minus_human: iq.point_difference,
@@ -200,5 +207,7 @@ export function getManualGradingCsvData(
     },
     { name: 'Rubric Difference', value: jsonCell(data.ai_grading_comparison.rubric_difference) },
     { name: 'Rubric Similarity', value: jsonCell(data.ai_grading_comparison.rubric_similarity) },
+    { name: 'AI Explanation', value: data.ai_grading?.explanation ?? '' },
+    { name: 'AI Generated Feedback', value: data.ai_grading?.generated_feedback ?? '' },
   ];
 }

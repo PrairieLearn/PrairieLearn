@@ -15,21 +15,20 @@ export const GradingJobDetailsSchema = z.object({
   rubric_grading: RubricGradingSchema.nullable(),
   rubric_grading_items: z.array(RubricGradingItemSchema),
 });
-const GradingJobUpdateSourceSchema = GradingJobDetailsSchema.pick({ grader: true }).extend({
-  grading_job: GradingJobSchema.pick({ id: true, graded_at: true }),
-});
-const GradingJobInfoSchema = GradingJobDetailsSchema.extend({
-  auto_points: GradingJobSchema.shape.auto_points,
+const GradingResultSchema = z.object({
+  score_source: GradingJobDetailsSchema.nullable(),
+  auto_points_source: GradingJobDetailsSchema.nullable(),
   feedback: GradingJobSchema.shape.feedback,
-  latest_update: GradingJobUpdateSourceSchema,
-  auto_points_source: GradingJobUpdateSourceSchema.nullable(),
-  feedback_sources: z.record(z.string(), GradingJobUpdateSourceSchema),
+  feedback_sources: z.record(z.string(), GradingJobDetailsSchema),
+  latest_update: GradingJobDetailsSchema,
+  explanation: z.string().nullable(),
+  generated_feedback: z.string().nullable(),
 });
-export type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
+export type GradingResult = z.infer<typeof GradingResultSchema>;
 
 export const AIGradingStatsSchema = z.object({
-  human_grading: GradingJobInfoSchema.nullable(),
-  ai_grading: GradingJobInfoSchema.nullable(),
+  human_grading: GradingResultSchema.nullable(),
+  ai_grading: GradingResultSchema.nullable(),
   last_human_grader: z.string().nullable(),
   ai_grading_status: z.enum(['Graded', 'LatestRubric', 'OutdatedRubric', 'None']),
   point_difference: z.number().nullable(),

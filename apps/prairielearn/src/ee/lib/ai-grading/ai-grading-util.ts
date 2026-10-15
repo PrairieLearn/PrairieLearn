@@ -1016,10 +1016,6 @@ const AiGradingJobDataForSubmissionSchema = z.object({
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
 });
 
-const AiGradingExplanationSchema = z.object({
-  explanation: z.string(),
-});
-
 /**
  * The persisted completion is a schemaless JSON blob whose shape depends on
  * which API/library produced it. We've used several over the lifetime of AI
@@ -1042,18 +1038,23 @@ const AiGradingCompletionSchema = z.object({
   _output: z.unknown().optional(),
 });
 
-export function extractAiGradingExplanationFromCompletion(completion: unknown): string | null {
+export function extractAiGradingTextFromCompletion(
+  completion: unknown,
+  field: 'explanation' | 'feedback' = 'explanation',
+): string | null {
   const parsed = AiGradingCompletionSchema.safeParse(completion);
   if (!parsed.success) return null;
 
   const { choices, output_parsed, object, _output } = parsed.data;
-  const explanation = AiGradingExplanationSchema.safeParse(
+  const output = z.record(z.string(), z.unknown()).safeParse(
     // The 4 different formats
     choices?.[0]?.message?.parsed ?? output_parsed ?? object ?? _output,
   );
-  if (!explanation.success) return null;
+  if (!output.success) return null;
 
-  return explanation.data.explanation.trim() || null;
+  const text = output.data[field];
+  if (typeof text !== 'string') return null;
+  return field === 'explanation' ? text.trim() || null : text;
 }
 
 /**
@@ -1094,7 +1095,7 @@ export async function buildAiGradingInfo({
           .trimStart()
       : '';
 
-  const explanation = extractAiGradingExplanationFromCompletion(aiGradingJobData.completion);
+  const explanation = extractAiGradingTextFromCompletion(aiGradingJobData.completion);
 
   const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
   const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});

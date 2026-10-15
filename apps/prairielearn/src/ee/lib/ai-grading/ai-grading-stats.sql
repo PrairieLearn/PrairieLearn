@@ -47,6 +47,18 @@ WITH
   )
 SELECT
   to_jsonb(gj.*) AS grading_job,
+  (
+    SELECT
+      to_jsonb(agj.*)
+    FROM
+      ai_grading_jobs AS agj
+    WHERE
+      agj.grading_job_id = gj.id
+    ORDER BY
+      agj.id DESC
+    LIMIT
+      1
+  ) AS ai_grading_job,
   ls.instance_question_id,
   to_jsonb(u.*) AS grader,
   to_jsonb(rg.*) AS rubric_grading,
