@@ -493,6 +493,7 @@ export const AssessmentInstanceSchema = z.object({
   date: DateFromISOString.nullable(),
   date_limit: DateFromISOString.nullable(),
   duration: IntervalSchema.nullable(),
+  for_printing: z.boolean(),
   grading_needed: z.boolean(),
   id: IdSchema,
   include_in_statistics: z.boolean(),

@@ -6,6 +6,8 @@ Utilities for rendering printable HTML as PDFs and editable Word documents, and 
 
 The rendering browser lays out and paginates question HTML. PDF exports use its completed page snapshot. Word exports use the editable source captured before pagination and screenshots of figures. Create one renderer per application process:
 
+The preview response carries a signed snapshot ID covering its HTML, editable Word source, assessment instance, generating user, layout query, and selected question identities and order. PDF and Word exports verify the ID and current question list before rendering. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
+
 ```ts
 import { closePrintRenderer, getPrintRenderer } from '../printing.js';
 import { createDocxOutput } from './docx-output.js';
@@ -19,7 +21,7 @@ const docx = await renderer.render(
 await closePrintRenderer(); // during shutdown
 ```
 
-The renderer connects to one Cloudflare browser on first use and runs up to four independent contexts concurrently. Another 64 requests may wait, bounded by the 120-second end-to-end deadline. Local development uses one Chromium render at a time and a queue of 16. Set `maxConcurrentRenders` or `maxQueuedRenders` to override those limits. Each render has its own short-lived context. A browser that disconnects is reconnected on the next render, and `close()` rejects queued renders and closes the browser.
+The renderer connects to one Cloudflare browser on first use and runs up to four independent contexts concurrently. Another 50 requests may wait, bounded by the 120-second end-to-end deadline. Local development uses one Chromium render at a time and a queue of 50. Set `maxConcurrentRenders` or `maxQueuedRenders` to override those limits. Each render has its own short-lived context. A browser that disconnects is reconnected on the next render, and `close()` rejects queued renders and closes the browser.
 
 Set both `printingCloudflareAccountId` and `printingCloudflareApiToken` on every server that handles print requests to use Cloudflare Browser Run. If both are unset, the renderer uses local Chromium. A missing or empty value in either setting is a configuration error. The token needs Browser Run Edit permission. The renderer connects over CDP and forwards same-origin asset GET requests from the application server without sending the instructor's cookie to Cloudflare. Without Cloudflare credentials, a Playwright-compatible Chromium executable must be installed locally for development and tests.
 
@@ -60,6 +62,10 @@ The PrairieLearn print endpoint accepts layout choices as query parameters. `blo
 `include_honor_code=true` or `false` controls the student cover pledge independently of the online assessment requirement. Omitting it uses the assessment’s `requireHonorCode` setting. The printed pledge uses the configured `honorCode` when present, with a blank name line for `{{user_name}}`; otherwise it uses the standard pledge.
 
 `grading_table=true` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
+
+The print preparation page can combine multiple assessment instances and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that instance's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included only in the student copies. Generated page numbers and identification codes continue to identify pages within the original form; uploaded pages retain their own appearance and have no generated identification codes.
+
+Small packets use the direct PDF response when a render slot is free and the output is at most 15 MB. Larger packets are queued in the shared `jobs` table. The request stores signed page snapshots and encrypted rendering credentials in S3; a cron worker claims up to two exports across all hosts and uploads completed PDFs to S3. Each claim has a renewable lease so another worker can retry it after a process crash. Download links are available to the requesting instructor for 24 hours. Run `processPrintExports` and `cleanPrintExports` cron jobs, and configure Cloudflare rendering on worker hosts.
 
 Automatic blocks are measured at the final printable width after asynchronous question content, MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an exact fraction of the printable content height, including the question's internal spacing, when the content fits. Taller content uses its measured height and moves to the next page or flows across pages when needed.
 
