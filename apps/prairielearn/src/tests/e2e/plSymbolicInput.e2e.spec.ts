@@ -143,6 +143,23 @@ test.describe('pl-symbolic-input formula editor', () => {
     });
   });
 
+  test('does not group the preceding term when typing a multiplication', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await expect(formulaEditor).toBeVisible();
+
+    for (const key of 'cos(x)*') await formulaEditor.press(key);
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(
+      '\\operatorname{\\mathrm{cos}}\\left(x\\right)\\cdot',
+    );
+
+    // Backspacing past the "·" should only remove the ")", not the whole preceding term.
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Backspace');
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(
+      '\\operatorname{\\mathrm{cos}}\\left(x\\right.',
+    );
+  });
+
   test('keeps preceding content outside natural log when configured', async ({ page }) => {
     const formulaEditor = page.locator('#symbolic-input-lnx');
     await expect(formulaEditor).toBeVisible();
@@ -177,7 +194,7 @@ test.describe('pl-symbolic-input unicode multiplication keys', () => {
       }, key);
       await page.keyboard.press('y');
 
-      await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^\{2\}\\cdot y$/);
+      await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^2\\cdot y$/);
       await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('2 * y');
     }
   });
