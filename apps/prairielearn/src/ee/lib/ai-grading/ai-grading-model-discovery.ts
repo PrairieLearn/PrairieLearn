@@ -101,7 +101,6 @@ export async function discoverAiGradingModels(
   try {
     const response = await fetch(`${normalizedUrl}/models`, {
       headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' },
-      redirect: 'follow',
       signal,
     });
     if (!response.ok) {
