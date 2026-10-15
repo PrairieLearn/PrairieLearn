@@ -10,7 +10,7 @@ import { type RubricItem } from '../../../lib/db-types.js';
 
 import {
   correctImagesOrientation,
-  extractAiGradingExplanationFromCompletion,
+  extractAiGradingTextFromCompletion,
   extractSubmissionImages,
   generatePrompt,
   generateSubmissionContent,
@@ -567,40 +567,38 @@ describe('parseAiRubricItems', () => {
   });
 });
 
-describe('extractAiGradingExplanationFromCompletion', () => {
+describe('extractAiGradingTextFromCompletion', () => {
   it('reads the explanation from each persisted completion format', () => {
     // OpenAI chat completions.
     expect(
-      extractAiGradingExplanationFromCompletion({
+      extractAiGradingTextFromCompletion({
         choices: [{ message: { parsed: { explanation: ' from choices ' } } }],
       }),
     ).toBe('from choices');
 
     // OpenAI responses API.
     expect(
-      extractAiGradingExplanationFromCompletion({
+      extractAiGradingTextFromCompletion({
         output_parsed: { explanation: ' from output_parsed ' },
       }),
     ).toBe('from output_parsed');
 
     // `ai` package `generateObject`.
-    expect(
-      extractAiGradingExplanationFromCompletion({ object: { explanation: ' from object ' } }),
-    ).toBe('from object');
+    expect(extractAiGradingTextFromCompletion({ object: { explanation: ' from object ' } })).toBe(
+      'from object',
+    );
 
     // `ai` package `generateText` with structured output.
-    expect(
-      extractAiGradingExplanationFromCompletion({ _output: { explanation: ' from _output ' } }),
-    ).toBe('from _output');
+    expect(extractAiGradingTextFromCompletion({ _output: { explanation: ' from _output ' } })).toBe(
+      'from _output',
+    );
   });
 
   it('returns null for missing or blank explanations', () => {
-    expect(
-      extractAiGradingExplanationFromCompletion({ _output: { explanation: '   ' } }),
-    ).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion({ _output: {} })).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion({})).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion(null)).toBeNull();
+    expect(extractAiGradingTextFromCompletion({ _output: { explanation: '   ' } })).toBeNull();
+    expect(extractAiGradingTextFromCompletion({ _output: {} })).toBeNull();
+    expect(extractAiGradingTextFromCompletion({})).toBeNull();
+    expect(extractAiGradingTextFromCompletion(null)).toBeNull();
   });
 
   // Regression test: a `generateText` result exposes its structured output via a
@@ -642,7 +640,7 @@ describe('extractAiGradingExplanationFromCompletion', () => {
     expect(completion).not.toHaveProperty('output');
     expect(completion).toHaveProperty('_output');
 
-    expect(extractAiGradingExplanationFromCompletion(completion)).toBe('graded via generateText');
+    expect(extractAiGradingTextFromCompletion(completion)).toBe('graded via generateText');
   });
 });
 

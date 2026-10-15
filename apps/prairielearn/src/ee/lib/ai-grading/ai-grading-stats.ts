@@ -1,34 +1,30 @@
 import assert from 'node:assert';
 
-import { z } from 'zod';
-
 import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import {
+  AiGradingJobSchema,
   type Assessment,
   type AssessmentQuestion,
   type RubricItem,
-  RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
-import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.js';
-import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
+import {
+  extractAiGradingTextFromCompletion,
+  selectInstanceQuestionsForAssessmentQuestion,
+} from './ai-grading-util.js';
+import {
+  type AiGradingGeneralStats,
+  GradingJobDetailsSchema,
+  type GradingResult,
+  type WithAIGradingStats,
+} from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-const GradingJobInfoSchema = z.object({
-  grading_job_id: IdSchema,
-  graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Manual', 'AI']),
-  manual_points: z.number().nullable(),
-  manual_rubric_grading_id: IdSchema.nullable(),
-  grader_name: z.string(),
-  rubric_items: z.array(RubricItemSchema),
-});
-type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 type FillInstanceQuestionColumnEntriesResultType<
   T extends {
@@ -65,7 +61,9 @@ export async function fillInstanceQuestionColumnEntries<
     DateFromISOString,
   );
 
-  const gradingJobMapping = await selectGradingJobsInfo(rows.map((row) => row.instance_question));
+  const gradingResultsByInstanceQuestion = await selectGradingResults(
+    rows.map((row) => row.instance_question),
+  );
 
   const instanceQuestionIdToGroupName = (
     await selectInstanceQuestionGroups({
@@ -83,6 +81,8 @@ export async function fillInstanceQuestionColumnEntries<
 
     const instance_question: WithAIGradingStats<T['instance_question']> = {
       ...base_instance_question,
+      human_grading: null,
+      ai_grading: null,
       last_human_grader: null,
       ai_grading_status: 'None',
       point_difference: null,
@@ -95,32 +95,49 @@ export async function fillInstanceQuestionColumnEntries<
       instance_question,
     });
 
-    const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
+    const gradingResults = gradingResultsByInstanceQuestion[instance_question.id] ?? [];
 
-    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+    const manualGradingResult = gradingResults.find(
+      (result) => result.latest_update.grading_job.grading_method === 'Manual',
+    );
+    const aiGradingResult = gradingResults.find(
+      (result) => result.latest_update.grading_job.grading_method === 'AI',
+    );
 
-    if (manualGradingJob) {
-      instance_question.last_human_grader = manualGradingJob.grader_name;
+    instance_question.human_grading = manualGradingResult ?? null;
+    instance_question.ai_grading = aiGradingResult ?? null;
+
+    if (manualGradingResult) {
+      instance_question.last_human_grader =
+        manualGradingResult.latest_update.grader.name ??
+        manualGradingResult.latest_update.grader.uid;
     }
 
-    if (aiGradingJob) {
-      assert(aiGradingJob.graded_at);
+    if (aiGradingResult) {
+      const aiScoreJob = aiGradingResult.score_source ?? aiGradingResult.latest_update;
+      assert(aiScoreJob.grading_job.graded_at);
       instance_question.ai_grading_status = 'Graded';
       if (rubric_modify_time) {
         instance_question.ai_grading_status =
-          aiGradingJob.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
+          aiScoreJob.grading_job.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
       }
     }
 
-    if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+    if (
+      manualGradingResult?.score_source?.grading_job.manual_points != null &&
+      aiGradingResult?.score_source?.grading_job.manual_points != null
+    ) {
       instance_question.point_difference =
-        aiGradingJob.manual_points - manualGradingJob.manual_points;
+        aiGradingResult.score_source.grading_job.manual_points -
+        manualGradingResult.score_source.grading_job.manual_points;
     }
 
-    if (manualGradingJob?.manual_rubric_grading_id && aiGradingJob?.manual_rubric_grading_id) {
-      const manualItems = manualGradingJob.rubric_items;
-      const aiItems = aiGradingJob.rubric_items;
+    if (
+      manualGradingResult?.score_source?.rubric_grading &&
+      aiGradingResult?.score_source?.rubric_grading
+    ) {
+      const manualItems = manualGradingResult.score_source.rubric_items;
+      const aiItems = aiGradingResult.score_source.rubric_items;
 
       const { rubric_items: allRubricItems } = await selectCompleteRubric(assessment_question.id);
 
@@ -165,7 +182,7 @@ export async function calculateAiGradingStats(
 
   const { rubric_items } = await selectCompleteRubric(assessment_question.id);
 
-  const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
+  const gradingResultsByInstanceQuestion = await selectGradingResults(instance_questions);
 
   const testRubricResults: {
     reference_items: Set<string>;
@@ -177,21 +194,33 @@ export async function calculateAiGradingStats(
   }[] = [];
 
   for (const instance_question of instance_questions) {
-    const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
+    const gradingResults = gradingResultsByInstanceQuestion[instance_question.id] ?? [];
 
-    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+    const manualGradingResult = gradingResults.find(
+      (result) => result.latest_update.grading_job.grading_method === 'Manual',
+    );
+    const aiGradingResult = gradingResults.find(
+      (result) => result.latest_update.grading_job.grading_method === 'AI',
+    );
 
-    if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+    if (
+      manualGradingResult?.score_source?.grading_job.manual_points != null &&
+      aiGradingResult?.score_source?.grading_job.manual_points != null
+    ) {
       testPointResults.push({
-        reference_points: manualGradingJob.manual_points,
-        ai_points: aiGradingJob.manual_points,
+        reference_points: manualGradingResult.score_source.grading_job.manual_points,
+        ai_points: aiGradingResult.score_source.grading_job.manual_points,
       });
     }
-    if (manualGradingJob?.rubric_items != null && aiGradingJob?.rubric_items != null) {
+    if (
+      manualGradingResult?.score_source?.rubric_grading &&
+      aiGradingResult?.score_source?.rubric_grading
+    ) {
       testRubricResults.push({
-        reference_items: new Set(manualGradingJob.rubric_items.map((item) => item.id)),
-        ai_items: new Set(aiGradingJob.rubric_items.map((item) => item.id)),
+        reference_items: new Set(
+          manualGradingResult.score_source.rubric_items.map((item) => item.id),
+        ),
+        ai_items: new Set(aiGradingResult.score_source.rubric_items.map((item) => item.id)),
       });
     }
   }
@@ -216,27 +245,74 @@ export async function calculateAiGradingStats(
 }
 
 /**
- * Select the latest human grading job and AI grading job
- * information, including rubric grading information for each input instance question.
+ * Reconstruct human and AI grading results for the latest submission. Grading
+ * jobs contain updates, so unchanged scores and feedback come from earlier jobs
+ * of the same method, with their provenance preserved.
  * @param instance_questions the array of instance questions (including their ids)
- * @returns a record mapping each id to its grading jobs
+ * @returns a record mapping each id to its grading results
  */
-export async function selectGradingJobsInfo<T extends { id: string }>(
+export async function selectGradingResults<T extends { id: string }>(
   instance_questions: T[],
-): Promise<Record<string, GradingJobInfo[]>> {
+): Promise<Record<string, GradingResult[]>> {
   const grading_jobs = await queryRows(
     sql.select_ai_and_human_grading_jobs_and_rubric,
     { instance_question_ids: instance_questions.map((iq) => iq.id) },
-    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
+    GradingJobDetailsSchema.extend({
+      instance_question_id: IdSchema,
+      ai_grading_job: AiGradingJobSchema.nullable(),
+    }),
   );
-  // Construct mapping from instance question id to grading job info
-  return grading_jobs.reduce(
+  const historyByInstanceQuestion = grading_jobs.reduce(
     (acc, item) => {
       acc[item.instance_question_id] ??= [];
       acc[item.instance_question_id].push(item);
       return acc;
     },
-    {} as Record<string, GradingJobInfo[]>,
+    {} as Record<string, typeof grading_jobs>,
+  );
+
+  const source = (job: (typeof grading_jobs)[number]) => {
+    const { grading_job, grader, rubric_items, rubric_grading, rubric_grading_items } = job;
+    return { grading_job, grader, rubric_items, rubric_grading, rubric_grading_items };
+  };
+
+  return Object.fromEntries(
+    Object.entries(historyByInstanceQuestion).map(([id, history]) => [
+      id,
+      ['Manual', 'AI'].flatMap((method): GradingResult[] => {
+        const jobs = history.filter((job) => job.grading_job.grading_method === method);
+        const latest = jobs.at(0);
+        if (!latest) return [];
+        const scoreJob = jobs.find((job) => job.grading_job.manual_points != null);
+        const autoPointsJob = jobs.find((job) => job.grading_job.auto_points != null);
+        let feedback: GradingResult['feedback'] = null;
+        const feedbackSources = new Map<string, GradingResult['latest_update']>();
+        for (const job of jobs.slice().reverse()) {
+          if (job.grading_job.feedback == null) continue;
+          feedback ??= {};
+          Object.assign(feedback, job.grading_job.feedback);
+          for (const key of Object.keys(job.grading_job.feedback)) {
+            feedbackSources.set(key, source(job));
+          }
+        }
+        return [
+          {
+            score_source: scoreJob ? source(scoreJob) : null,
+            auto_points_source: autoPointsJob ? source(autoPointsJob) : null,
+            feedback,
+            latest_update: source(latest),
+            feedback_sources: Object.fromEntries(feedbackSources),
+            explanation: extractAiGradingTextFromCompletion(
+              (scoreJob ?? latest).ai_grading_job?.completion,
+            ),
+            generated_feedback: extractAiGradingTextFromCompletion(
+              (scoreJob ?? latest).ai_grading_job?.completion,
+              'feedback',
+            ),
+          },
+        ];
+      }),
+    ]),
   );
 }
 
