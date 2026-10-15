@@ -78,7 +78,6 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
     }
     image = Buffer.from(match[1], 'base64');
   } else {
-    if (url.username || url.password) throw new Error('Question image URL contains credentials');
     const questionFilename = assetFilename(url, context.urls.clientFilesQuestionUrl, base);
     const courseFilename = assetFilename(url, context.urls.clientFilesCourseUrl, base);
     const generatedFilename = assetFilename(
