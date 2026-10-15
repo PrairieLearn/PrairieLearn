@@ -1,8 +1,24 @@
 import type { Page } from '@playwright/test';
 
+import { makeAssessmentInstance } from '../../../lib/assessment.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
+import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { expect } from '../fixtures.js';
+
+export async function createPrintableAssessmentInstance(courseInstanceId: string, tid: string) {
+  const user = await getConfiguredUser();
+  const assessment = await selectAssessmentByTid({ course_instance_id: courseInstanceId, tid });
+  return await makeAssessmentInstance({
+    assessment,
+    user_id: user.id,
+    authn_user_id: user.id,
+    mode: 'Public',
+    time_limit_min: null,
+    date: new Date(),
+    client_fingerprint_id: null,
+  });
+}
 
 export async function waitForPrintablePage(page: Page): Promise<void> {
   const root = page.locator(':root');

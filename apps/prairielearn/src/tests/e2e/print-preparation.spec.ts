@@ -32,15 +32,30 @@ async function chooseDownload(page: Page, item: string) {
   await page.getByRole('button', { name: item, exact: true }).click();
 }
 
-test('recovers when creating the first preview fails', async ({ page, courseInstance }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.route('**/printableExams.create', (route) => route.abort('failed'), { times: 1 });
+async function assessmentFor(courseInstanceId: string, tid = 'exam20-assessmentTools') {
+  return await selectAssessmentByTid({ course_instance_id: courseInstanceId, tid });
+}
+
+async function openPrintPreparation(
+  page: Page,
+  courseInstanceId: string,
+  tid = 'exam20-assessmentTools',
+) {
+  const assessment = await assessmentFor(courseInstanceId, tid);
   await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
+    `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
   );
+  return assessment;
+}
+
+async function preparePreview(page: Page) {
+  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+}
+
+test('recovers when creating the first preview fails', async ({ page, courseInstance }) => {
+  await page.route('**/printableExams.create', (route) => route.abort('failed'), { times: 1 });
+  const assessment = await openPrintPreparation(page, courseInstance.id);
 
   const createPreview = page.getByRole('button', { name: 'Create preview', exact: true });
   await createPreview.click();
@@ -61,15 +76,8 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
 
   await page.route(
     '**/paper/docx?*',
@@ -95,15 +103,8 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
 });
 
 test('shows errors while preparing PDF pages', async ({ page, courseInstance }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
 
   await page.route('**/paper/preview?*', (route) => {
     if (new URL(route.request().url()).searchParams.get('document') !== 'answer_key') {
@@ -133,10 +134,7 @@ test('shows the prepared PDF type and size in its download link', async ({
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
+  const assessment = await assessmentFor(courseInstance.id);
   await page.route('**/printableExamExport.status?*', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -168,15 +166,8 @@ test('explains a failed background export and offers a fresh preview', async ({
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
 
   const jobSequenceId = '999999';
   await page.route('**/printableExamExport.status?*', (route) =>
@@ -220,15 +211,8 @@ test('defaults booklet copies to the number of enrolled students', async ({
   courseInstance,
 }) => {
   const initialStudentCount = await countJoinedStudentsInCourseInstance(courseInstance);
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
   await chooseDownload(page, 'Download booklet PDF…');
   const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
   await expect(modal.getByLabel('Number of students')).toHaveValue(
@@ -261,10 +245,7 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
+  const assessment = await assessmentFor(courseInstance.id);
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
@@ -508,16 +489,10 @@ test('combines exam copies with custom covers and appends every form’s answer 
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
   const instancesLoaded = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith('/printableExams.list'),
   );
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
+  await openPrintPreparation(page, courseInstance.id);
   await instancesLoaded;
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   await expect(downloadMenu(page)).toBeEnabled({
@@ -724,16 +699,10 @@ test('distinguishes paper review flags from broken questions omitted from the do
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam23-printing',
-  });
   const instancesLoaded = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith('/printableExams.list'),
   );
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
+  await openPrintPreparation(page, courseInstance.id, 'exam23-printing');
   await instancesLoaded;
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   await expect(page.getByText('Review printability', { exact: true }).first()).toBeVisible({
@@ -781,13 +750,7 @@ test('protects pending preview settings and shows a PDF export error once', asyn
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
+  await openPrintPreparation(page, courseInstance.id);
   await page.getByLabel('Additional student information').fill('Section');
   await page.getByRole('button', { name: 'Create preview', exact: true }).click();
   const downloadButton = downloadMenu(page);
@@ -843,15 +806,8 @@ test('validates booklet counts and preserves preview recovery after a failed dow
   courseInstance,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
   await chooseDownload(page, 'Download booklet PDF…');
   const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
   const students = modal.getByLabel('Number of students', { exact: true });
@@ -932,13 +888,7 @@ test('limits static assessments to one form even when the saved URL selects seve
     );
     await fs.writeFile(assessmentFile, JSON.stringify(assessmentInfo));
     await syncCourse(testCoursePath);
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
-      tid: 'exam20-assessmentTools',
-    });
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-    );
+    const assessment = await openPrintPreparation(page, courseInstance.id);
     await expect(
       page.getByRole('heading', { name: 'Assessment instances', exact: true }),
     ).toBeVisible();
@@ -999,20 +949,13 @@ test('can omit the default cover in previews and every download while keeping cu
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
+  await openPrintPreparation(page, courseInstance.id);
   const includeCover = page.getByRole('checkbox', {
     name: 'Include default cover page',
     exact: true,
   });
   await expect(includeCover).toBeChecked();
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await preparePreview(page);
   const frame = page.frameLocator('iframe[title="Printable document preview"]');
   const pageCountWithCover = await frame.locator('.pagedjs_page').count();
   await page.getByLabel('Additional student information').fill('Room');
@@ -1094,13 +1037,7 @@ test('lets instructors choose grading and pledge content on the cover', async ({
   page,
   courseInstance,
 }) => {
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
-  );
+  await openPrintPreparation(page, courseInstance.id);
   const pledge = page.getByRole('checkbox', {
     name: 'Include academic integrity pledge',
     exact: true,
@@ -1110,8 +1047,7 @@ test('lets instructors choose grading and pledge content on the cover', async ({
   await expect(grading).not.toBeChecked();
   await grading.check();
   await pledge.uncheck();
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await preparePreview(page);
   const frame = page.frameLocator('iframe[title="Printable document preview"]');
   await expect(frame.getByRole('region', { name: 'Grading table' })).toBeVisible();
   await expect(frame.getByRole('heading', { name: 'Academic integrity pledge' })).toHaveCount(0);

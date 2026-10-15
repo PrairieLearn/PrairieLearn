@@ -75,6 +75,13 @@ function packetInput(
   return data;
 }
 
+async function printAssessment() {
+  return await selectAssessmentByTid({
+    course_instance_id: '1',
+    tid: 'exam20-assessmentTools',
+  });
+}
+
 describe('print preparation', { timeout: 60_000 }, () => {
   let courseDirectory: tmp.DirectoryResult;
   beforeAll(async () => {
@@ -143,10 +150,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   );
 
   test('does not expose or regenerate another user’s instance or another assessment’s instance', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const otherAssessment = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'exam1-automaticTestSuite',
@@ -192,10 +196,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('ordinary and printable requests share a number sequence under concurrent creation', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     await execute(sql.set_multiple_instance, {
       assessment_id: assessment.id,
       multiple_instance: true,
@@ -260,10 +261,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   );
 
   test('warns about missing question files but propagates unexpected inspection failures', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableExams.create.mutate();
     const questions = await api.printableExams.questions.query(instance);
@@ -296,10 +294,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test.each(['Name', 'Section\nsection', 'x'.repeat(41)])(
     'returns actionable errors for invalid cover labels: %s',
     async (identityFields) => {
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid: 'exam20-assessmentTools',
-      });
+      const assessment = await printAssessment();
       const input = packetInput('1');
       const metadata = PrintPacketMetadataSchema.parse(
         JSON.parse(input.get('metadata')!.toString()),
@@ -313,20 +308,14 @@ describe('print preparation', { timeout: 60_000 }, () => {
   );
 
   test('validates packet export settings before rendering', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     await expect(
       client(assessment.id).printableExamExport.pdf.mutate(packetInput('1', 0)),
     ).rejects.toThrow('Invalid print export settings.');
   });
 
   test('rejects invalid custom cover PDFs before rendering', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableExams.create.mutate();
     const data = packetInput(instance.assessmentInstanceId);
@@ -337,10 +326,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('rejects cover PDFs on answer-key-only exports', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableExams.create.mutate();
     const data = packetInput(instance.assessmentInstanceId, 1, 'answer_key');
@@ -351,10 +337,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('rejects a predictable page limit before rendering', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableExams.create.mutate();
     const data = packetInput(instance.assessmentInstanceId, 500);
@@ -366,10 +349,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('accepts the maximum expected snapshot and cover upload before validation', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableExams.create.mutate();
     const data = packetInput(instance.assessmentInstanceId);
@@ -384,10 +364,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('stores a background PDF and streams it only to the owner', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const pdf = Buffer.from('%PDF-1.4\nbackground export\n');
     const courseInstance = await selectCourseInstanceById('1');
     const jobSequenceId = await storeCompletedPrintExport({
@@ -478,10 +455,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('shows a safe reason when a background PDF fails', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const jobSequenceId = await queuePrintExport({
       owner: {
@@ -529,10 +503,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('stops retrying after three expired worker leases', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const jobSequenceId = await queuePrintExport({
       owner: {
@@ -566,10 +537,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('rejects a changed PDF snapshot before rendering', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableExams.create.mutate();
     const data = packetInput(instance.assessmentInstanceId);
@@ -601,10 +569,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('reports exams with questions that support multiple variants', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     expect(await assessmentHasPrintRandomization(assessment.id)).toBe(true);
   });
 
@@ -613,10 +578,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ['zone selection', sql.enable_zone_selection],
     ['alternative selection', sql.enable_alternative_selection],
   ])('detects randomized %s even when all question variants are fixed', async (_, query) => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     await runInTransactionAndRollback(async () => {
       await execute(sql.set_static_assessment, { assessment_id: assessment.id });
       expect(await assessmentHasPrintRandomization(assessment.id)).toBe(false);
@@ -628,10 +590,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test.each([1, 100])(
     'treats choose-all pools (%s) as static when variants and order are fixed',
     async (numberChoose) => {
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid: 'exam20-assessmentTools',
-      });
+      const assessment = await printAssessment();
       await runInTransactionAndRollback(async () => {
         await execute(sql.set_static_assessment, { assessment_id: assessment.id });
         // Both zones and alternative groups in this assessment contain exactly one question.
@@ -671,10 +630,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   );
 
   test('requires course preview permission', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const response = await fetch(
       `${siteUrl}${getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: assessment.id })}/printableExams.list`,
       {
@@ -704,10 +660,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test('requires student data edit permission for PDFs containing answer keys', async () => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam20-assessmentTools',
-    });
+    const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const instructor = await getOrCreateUser({
       uid: 'instructor@example.com',

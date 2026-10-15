@@ -4,14 +4,15 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
-import { makeAssessmentInstance } from '../../lib/assessment.js';
 import type { CourseInstance } from '../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
-import { getConfiguredUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
-import { downloadPrintableWord, waitForPrintablePage } from './utils/printing.js';
+import {
+  createPrintableAssessmentInstance,
+  downloadPrintableWord,
+  waitForPrintablePage,
+} from './utils/printing.js';
 
 // Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
 test.describe.configure({ timeout: 180_000 });
@@ -31,20 +32,7 @@ async function readWarnings(page: Page) {
 }
 
 async function createPrintableExam(courseInstance: CourseInstance, tid: string) {
-  const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid,
-  });
-  const assessmentInstanceId = await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
+  const assessmentInstanceId = await createPrintableAssessmentInstance(courseInstance.id, tid);
   const paperUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper`;
   return { paperUrl, assessmentInstanceId };
 }
