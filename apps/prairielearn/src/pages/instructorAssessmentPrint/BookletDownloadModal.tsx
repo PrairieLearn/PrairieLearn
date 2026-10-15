@@ -5,13 +5,13 @@ import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
 import { MAX_PRINT_COPIES } from '../../lib/client/print-packet.js';
-import type { PrintableExamExportError } from '../../trpc/assessment/printable-exam-export.js';
 
 export function BookletDownloadModal({
   show,
   students,
   formLabels,
   pending,
+  progress,
   error,
   onHide,
   onDownload,
@@ -20,6 +20,7 @@ export function BookletDownloadModal({
   students: number;
   formLabels: string[];
   pending: boolean;
+  progress: { completed: number; total: number } | null;
   error: unknown;
   onHide: () => void;
   onDownload: (students: number) => void;
@@ -50,7 +51,7 @@ export function BookletDownloadModal({
         </Modal.Header>
         <Modal.Body>
           <AppErrorAlert
-            error={getAppError<PrintableExamExportError['pdf']>(error)}
+            error={getAppError<never>(error)}
             render={{ UNKNOWN: ({ message }) => message }}
           />
           <Form.Group controlId="print-booklet-students">
@@ -93,7 +94,9 @@ export function BookletDownloadModal({
             {pending ? (
               <span role="status">
                 <Spinner size="sm" className="me-2" aria-hidden="true" />
-                Generating…
+                {progress
+                  ? `Preparing documents ${progress.completed} of ${progress.total}…`
+                  : 'Generating…'}
               </span>
             ) : (
               <>

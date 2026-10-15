@@ -106,11 +106,12 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
 
-  await page.route('**/paper/preview?*', (route) => {
+  await page.route('**/paper/preview?*', async (route) => {
     if (new URL(route.request().url()).searchParams.get('document') !== 'answer_key') {
-      return route.continue();
+      return await route.continue();
     }
-    return route.fulfill({
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    return await route.fulfill({
       status: 200,
       contentType: 'text/html',
       body: '<!doctype html><html data-print-status="error" data-print-error="Answer key preparation failed"></html>',
@@ -118,12 +119,14 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   });
 
   await chooseDownload(page, 'Download Form A answer key (PDF)');
+  await expect(page.getByText('Preparing documents 0 of 1…')).toBeVisible();
   await expect(page.getByRole('alert').getByText('Answer key preparation failed')).toBeVisible();
   await expect(downloadMenu(page)).toBeEnabled();
 
   await chooseDownload(page, 'Download booklet PDF…');
   const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
   await modal.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
+  await expect(modal.getByText('Preparing documents 0 of 2…')).toBeVisible();
   await expect(modal.getByRole('alert').getByText('Answer key preparation failed')).toBeVisible();
   await expect(
     modal.getByRole('button', { name: 'Download booklet PDF', exact: true }),

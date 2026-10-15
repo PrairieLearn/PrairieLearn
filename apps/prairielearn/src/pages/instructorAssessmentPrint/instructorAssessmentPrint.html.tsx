@@ -18,7 +18,6 @@ import {
   MAX_PRINT_INSTANCES,
 } from '../../lib/client/print-packet.js';
 import {
-  BLOCK_SIZE_LABELS,
   DEFAULT_PRINT_SETTINGS,
   PrintIdentityFieldsTextSchema,
   type PrintSettings,
@@ -36,14 +35,22 @@ import {
   getCourseInstanceJobSequenceUrl,
   getQuestionUrl,
 } from '../../lib/client/url.js';
+import type { QuestionBlockSize } from '../../lib/printing/question-block-size.js';
 import type { PrintDocument } from '../../lib/printing.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
-import type { PrintableExamExportError } from '../../trpc/assessment/printable-exam-export.js';
-import type { PrintableExamsError } from '../../trpc/assessment/printable-exams.js';
 
 import { BookletDownloadModal } from './BookletDownloadModal.js';
 import { type PreviewState, PrintPreview } from './PrintPreview.js';
+
+const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
+  auto: 'Fit to content',
+  third: 'One third of a page',
+  half: 'Half a page',
+  full: 'A full page',
+};
+
+const SNAPSHOT_PREPARATION_BATCH_SIZE = 3;
 
 interface PrintPreparationProps {
   assessmentId: string;
@@ -130,6 +137,10 @@ function PrintPreparation({
   const [preview, setPreview] = useState<{ url: string; state: PreviewState } | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
   const [preparingPdf, setPreparingPdf] = useState<'packet' | 'booklet' | null>(null);
+  const [pdfPreparationProgress, setPdfPreparationProgress] = useState<{
+    completed: number;
+    total: number;
+  } | null>(null);
   const [pdfPreparationError, setPdfPreparationError] = useState<{
     target: 'packet' | 'booklet';
     error: Error;
@@ -273,23 +284,39 @@ function PrintPreparation({
     if (metadata.document !== 'answer_key') {
       for (const { file } of coverPages) input.append('coverPages', file);
     }
-    for (const [index, instance] of metadata.instances.entries()) {
-      for (const printDocument of metadata.document === 'booklet'
+    const snapshotRequests = metadata.instances.flatMap((instance, index) =>
+      (metadata.document === 'booklet'
         ? (['exam', 'answer_key'] as const)
-        : ([metadata.document] as PrintDocument[])) {
-        if (printDocument === 'exam' && index >= metadata.copies) continue;
-        const snapshot = await snapshotFor(
-          instance.assessmentInstanceId,
-          instance.formLabel,
-          instance.settings,
-          printDocument,
-        );
+        : ([metadata.document] as PrintDocument[])
+      )
+        .filter((printDocument) => printDocument !== 'exam' || index < metadata.copies)
+        .map((printDocument) => ({ instance, printDocument })),
+    );
+    setPdfPreparationProgress({ completed: 0, total: snapshotRequests.length });
+    for (let index = 0; index < snapshotRequests.length; index += SNAPSHOT_PREPARATION_BATCH_SIZE) {
+      const batch = snapshotRequests.slice(index, index + SNAPSHOT_PREPARATION_BATCH_SIZE);
+      const snapshots = await Promise.all(
+        batch.map(({ instance, printDocument }) =>
+          snapshotFor(
+            instance.assessmentInstanceId,
+            instance.formLabel,
+            instance.settings,
+            printDocument,
+          ),
+        ),
+      );
+      for (const [batchIndex, snapshot] of snapshots.entries()) {
+        const { instance, printDocument } = batch[batchIndex];
         input.append(
           'pages',
           new File([snapshot.html], `form-${instance.formLabel}-${printDocument}.html`),
         );
         input.append('snapshotIds', snapshot.id);
       }
+      setPdfPreparationProgress({
+        completed: index + batch.length,
+        total: snapshotRequests.length,
+      });
     }
     return input;
   }
@@ -299,6 +326,7 @@ function PrintPreparation({
     target: 'packet' | 'booklet',
   ) {
     setPdfPreparationError(null);
+    setPdfPreparationProgress(null);
     setPreparingPdf(target);
     try {
       return await packetInput(metadata);
@@ -311,6 +339,7 @@ function PrintPreparation({
       throw error;
     } finally {
       setPreparingPdf(null);
+      setPdfPreparationProgress(null);
     }
   }
 
@@ -518,21 +547,21 @@ function PrintPreparation({
       </a>
       <h1 className="h4 mb-3">Print assessment</h1>
       <AppErrorAlert
-        error={getAppError<PrintableExamsError['create']>(create.error)}
+        error={getAppError<never>(create.error)}
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => create.reset()}
       />
       <AppErrorAlert
-        error={getAppError<PrintableExamsError['list']>(instances.error)}
+        error={getAppError<never>(instances.error)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
       <AppErrorAlert
-        error={getAppError<PrintableExamsError['regenerate']>(regenerate.error)}
+        error={getAppError<never>(regenerate.error)}
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => regenerate.reset()}
       />
       <AppErrorAlert
-        error={getAppError<PrintableExamExportError['pdf']>(
+        error={getAppError<never>(
           pdfPreparationError?.target === 'packet' ? pdfPreparationError.error : packet.error,
         )}
         render={{ UNKNOWN: ({ message }) => message }}
@@ -958,7 +987,7 @@ function PrintPreparation({
                     )}
                   </Card.Header>
                   <AppErrorAlert
-                    error={getAppError<PrintableExamsError['questions']>(questions.error)}
+                    error={getAppError<never>(questions.error)}
                     render={{ UNKNOWN: ({ message }) => message }}
                   />
                   {questions.isPending && (
@@ -1321,7 +1350,9 @@ function PrintPreparation({
                         role="status"
                       >
                         <Spinner size="sm" className="me-2" aria-hidden="true" />
-                        Generating…
+                        {preparingPdf === 'packet' && pdfPreparationProgress
+                          ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
+                          : 'Generating…'}
                       </div>
                     )}
                   </div>
@@ -1341,6 +1372,7 @@ function PrintPreparation({
         students={copies}
         formLabels={instanceIds.map((_, index) => String.fromCharCode(65 + index))}
         pending={booklet.isPending || preparingPdf === 'booklet'}
+        progress={preparingPdf === 'booklet' ? pdfPreparationProgress : null}
         error={
           pdfPreparationError?.target === 'booklet' ? pdfPreparationError.error : booklet.error
         }
