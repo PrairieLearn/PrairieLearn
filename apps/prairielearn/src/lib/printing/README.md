@@ -7,11 +7,17 @@ Utilities for rendering printable HTML as PDFs and namespacing question HTML so 
 `PrintRenderer` turns a paginated printable page into a PDF (`renderPdf`). Create one renderer per process and keep it for the life of the process. For example, from a caller in `src/lib`:
 
 ```ts
-import { getPrintingCloudflareConfig } from './config.js';
+import { config } from './config.js';
 import { PrintRenderer } from './printing/print-renderer.js';
 
 const renderer = new PrintRenderer({
-  cloudflare: getPrintingCloudflareConfig(),
+  cloudflare:
+    config.printingCloudflareAccountId && config.printingCloudflareApiToken
+      ? {
+          accountId: config.printingCloudflareAccountId,
+          apiToken: config.printingCloudflareApiToken,
+        }
+      : undefined,
 });
 const pdf = await renderer.renderPdf({
   url: previewUrl,
