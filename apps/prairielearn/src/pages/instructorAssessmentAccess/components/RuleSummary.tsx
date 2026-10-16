@@ -1115,14 +1115,14 @@ export function DefaultRuleCurrentIndicator({
 
 export function PrairieTestExamsTable({
   exams,
-  beforeReleaseListed,
+  dateControlEnabled,
   initialMetadata,
   ptHost,
   formErrors,
   canFetchMetadata,
 }: {
   exams: DefaultRuleData['prairieTestExams'];
-  beforeReleaseListed: boolean;
+  dateControlEnabled: boolean;
   initialMetadata: PrairieTestExamMetadata[];
   ptHost: string;
   formErrors?: FieldErrors<DefaultRuleData>;
@@ -1225,9 +1225,8 @@ export function PrairieTestExamsTable({
         })}
       </div>
       <div className="access-summary-card-footer">
-        <span>{formatListedForStudents(beforeReleaseListed)} before the exam</span>
-        <span className="mx-1">·</span>
-        <span>PrairieTest controls access and time limits during reservations</span>
+        PrairieTest controls access and time limits during reservations.
+        {dateControlEnabled && <> Date control also allows access outside PrairieTest.</>}
       </div>
     </div>
   );
