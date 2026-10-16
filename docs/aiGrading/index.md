@@ -167,7 +167,7 @@ AI grading requires either PrairieLearn-managed credits or a custom API key. Bil
 ### Billing modes
 
 - **PrairieLearn-managed credits** — Simpler setup, no provider account needed. You purchase credits through PrairieLearn and pay a 20% infrastructure fee on top of provider costs.
-- **Custom API key** — Bring your own provider key (OpenAI, Anthropic, Google). You're billed directly by the provider and PrairieLearn charges no infrastructure fee.
+- **Custom API key** — Bring your own key for OpenAI, Anthropic, Google, or an OpenAI-compatible endpoint. PrairieLearn charges no infrastructure fee; endpoint charges depend on the provider's terms.
 
 You can switch between billing modes at any time. Purchased credits and saved API keys persist until you explicitly remove them, so switching back later does not require re-purchasing credits or re-entering keys.
 
@@ -204,6 +204,35 @@ API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
     When using custom API keys, instructors are responsible for the provider terms and account configuration.
 
     ![Custom API key billing configuration.](ai-grading-byok.png)
+
+### OpenAI-compatible providers
+
+You can configure one OpenAI-compatible provider per course instance, alongside your keys for official providers. This allows you to use a university-supported or other custom endpoint that offers an OpenAI-compatible API.
+
+#### Configure a provider
+
+As a course owner:
+
+1. Go to **Instance settings → AI grading** and enable **Use custom API keys**.
+2. Click **Add key** and select **OpenAI-compatible**.
+3. Enter the API base URL and API key. The URL must use HTTPS and be publicly reachable from PrairieLearn. Include the provider's API path, such as `https://provider.example/v1`; do not include `/models` or `/chat/completions`.
+4. Click **Next** to load the provider's available models. PrairieLearn requests `/models` relative to the base URL you entered.
+5. Review the model list and save the configuration. Loading the list confirms access to the catalog; it does not verify that each model can grade submissions.
+
+When starting AI grading, choose a model from **Custom provider models** in the model-selection dialog.
+
+#### Model requirements and limitations
+
+- **Structured outputs are required.** Choose a model and endpoint that support JSON schema structured outputs. Appearing in the model list does not guarantee this support.
+- **Image and PDF support is strongly recommended.** PrairieLearn attempts to send attachments to the selected model. If the endpoint or model cannot process an attachment, that submission can fail; separate text-only submissions can still succeed. Test representative submissions before grading a full batch.
+- **Pricing is unavailable.** The model catalog does not provide token prices, so PrairieLearn cannot show relative costs for custom models. A name matching an official model does not establish the custom endpoint's price. Check pricing with your provider; unknown pricing does not mean the model is free.
+- **Compatibility varies by endpoint.** Some features supported by official providers may not be available through an OpenAI-compatible endpoint.
+
+With a custom endpoint, review the provider's terms, data retention, and account configuration before sending student submissions. PrairieLearn's managed-credit data-use assurances do not establish the policies of your custom provider.
+
+#### Replace or remove a provider
+
+To change the URL or API key, use **Add key → OpenAI-compatible** again. Saving replaces the existing configuration; it does not add a second compatible provider to the course instance. You can also delete the configuration from the API-key table.
 
 ## Accuracy
 
