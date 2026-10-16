@@ -634,6 +634,17 @@ class CGrader:
         ):
             points = 0
 
+        # The results page shows only the first few dozen lines of the output
+        # without scrolling, so the TIMEOUT and TRUNCATED notes at its end are
+        # easy to miss. Repeat the reason at the start of the message.
+        reason = None
+        if timeout and "TIMEOUT" in outcmp:
+            reason = "TIMEOUT: the program did not finish within the time limit."
+        elif size_limit and len(outcmp) > size_limit:
+            reason = "TRUNCATED: the program produced too much output."
+        if reason:
+            msg = f"{reason}\n\n{msg}" if msg else reason
+
         return self.add_test_result(
             name,
             points=points,

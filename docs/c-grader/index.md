@@ -342,7 +342,7 @@ To avoid issues with student-provided code running longer than expected, such as
 self.test_run("./slowprogram", exp_output="COMPLETED", timeout=10)
 ```
 
-To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10 KB (more precisely, 10240 characters) of output will fail and have its output truncated. A program that keeps producing output is stopped soon after it exceeds this limit. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
+To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10 KB (more precisely, 10240 characters) of output will fail and have its output truncated. A program that keeps producing output is stopped soon after it exceeds this limit. To change this limit, use the `size_limit` argument, which should be set to a number of characters. When a test fails because it timed out or because its output was too long, the reason is also added at the start of the test message, since the note at the end of a long output is easy to miss.
 
 ```python
 self.test_run("./verboseprogram", exp_output="COMPLETED", size_limit=102400)
