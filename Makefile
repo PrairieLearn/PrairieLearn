@@ -248,3 +248,9 @@ dangerous-drop-all-dbs:
 	done
 
 ci: lint typecheck lint-dependencies test
+
+check-codex-protocol:
+	@node scripts/gen-codex-protocol.mts check
+
+update-codex-protocol:
+	@node scripts/gen-codex-protocol.mts

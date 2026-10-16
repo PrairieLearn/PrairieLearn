@@ -3,6 +3,7 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { handleTrpcError } from '../../lib/trpc.js';
 
 import { assessmentModulesRouter } from './assessment-modules.js';
+import { courseAgentRouter } from './course-agent.js';
 import { courseStaffRouter } from './course-staff.js';
 import { githubAccessRouter } from './github-access.js';
 import { createContext, t } from './init.js';
@@ -11,6 +12,7 @@ import { questionsRouter } from './questions.js';
 import { sharingRouter } from './sharing.js';
 
 const courseRouter = t.router({
+  courseAgent: courseAgentRouter,
   assessmentModules: assessmentModulesRouter,
   courseStaff: courseStaffRouter,
   githubAccess: githubAccessRouter,

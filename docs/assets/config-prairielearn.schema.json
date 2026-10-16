@@ -2,6 +2,37 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "courseAgent": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "workerUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "serviceToken": {
+              "default": null,
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["workerUrl"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "startServer": {
       "default": true,
       "type": "boolean"

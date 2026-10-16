@@ -25,6 +25,8 @@ overrides:
 minimumReleaseAge: 4320
 
 allowBuilds:
+  workerd: true
+  core-js-pure: false
   '@datadog/pprof': false
   '@parcel/watcher': false
   '@prairielearn/bind-mount': true

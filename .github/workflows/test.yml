@@ -159,11 +159,13 @@ jobs:
       - uses: ./.github/actions/native-test-setup
 
       - name: Vitest suite
+        env:
+          COURSE_AGENT_FIXTURE_URL: http://localhost:8791
+          SHARDED_TESTS: true
         run: |
           make start-support
+          bash apps/course-agent/scripts/start-fixture.sh
           pnpm test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-        env:
-          SHARDED_TESTS: true
 
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
@@ -228,8 +230,11 @@ jobs:
           install-playwright-browsers: 'true'
 
       - name: Playwright suite
+        env:
+          COURSE_AGENT_FIXTURE_URL: http://localhost:8791
         run: |
           make start-support
+          bash apps/course-agent/scripts/start-fixture.sh
           pnpm --filter @prairielearn/prairielearn test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
       - name: Upload Playwright blob report to GitHub Actions Artifacts

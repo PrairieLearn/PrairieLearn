@@ -69,6 +69,7 @@ node_modules
 ## Programming languages
 
 ### Python
+.venv
 .venv/
 __pycache__/
 *.egg-info

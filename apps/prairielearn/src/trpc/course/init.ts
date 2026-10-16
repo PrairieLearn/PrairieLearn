@@ -7,7 +7,7 @@ import { appErrorFormatter } from '@prairielearn/trpc/server';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
+export function createContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'course'>;
   const { authz_data: authzData, course } = extractPageContext(locals, {
     pageType: 'course',
@@ -16,6 +16,7 @@ export function createContext({ res }: CreateExpressContextOptions) {
 
   return {
     course,
+    session: req.session,
     authz_data: authzData,
     locals,
   };

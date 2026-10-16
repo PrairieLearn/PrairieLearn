@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { type Result, withBrand } from '@prairielearn/utils';
@@ -340,6 +340,7 @@ export interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
 }
 
 export interface ResLocalsCourse {
+  course_agent_panel?: HtmlSafeString;
   course: ConstructedCourseOrInstanceSuccessContext['course'];
   institution: ConstructedCourseOrInstanceSuccessContext['institution'];
   side_nav_expanded: boolean;
