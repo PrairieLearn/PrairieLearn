@@ -1,15 +1,13 @@
-import { type PageCodeOptions, addPdfPageCodes } from './page-code.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 
 export const PAPER_SIZES = ['Letter', 'A4'] as const;
 export type PaperSize = (typeof PAPER_SIZES)[number];
 
 /** Prints the paginated page with Chromium's PDF engine at the selected sheet size. */
-export function createPdfOutput(pageCode?: PageCodeOptions): PrintablePageOutput<Buffer> {
+export function createPdfOutput(): PrintablePageOutput<Buffer> {
   return {
     label: 'PDF',
     produce: async (page) => {
-      if (pageCode) await addPdfPageCodes(page, pageCode);
       await page.emulateMedia({ media: 'print' });
       const paperSize = await page.evaluate(() => document.documentElement.dataset.printPaperSize);
       return await page.pdf({

@@ -4,7 +4,6 @@ import { type Browser, type BrowserContext, chromium } from 'playwright';
 
 import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
 
-import type { PageCodeOptions } from './page-code.js';
 import { createPdfOutput } from './pdf-output.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import { RenderQueue } from './render-queue.js';
@@ -87,7 +86,7 @@ export interface RenderPageOptions {
   timeoutMs?: number;
 }
 
-export type RenderPdfOptions = RenderPageOptions & { pageCode?: PageCodeOptions };
+export type RenderPdfOptions = RenderPageOptions;
 
 /**
  * Reuses one browser connection with a bounded number of isolated rendering contexts. The browser
@@ -127,7 +126,7 @@ export class PrintRenderer {
   }
 
   renderPdf(options: RenderPdfOptions): Promise<Buffer> {
-    return this.render(options, createPdfOutput(options.pageCode));
+    return this.render(options, createPdfOutput());
   }
 
   render<T>(options: RenderPageOptions, output: PrintablePageOutput<T>): Promise<T> {

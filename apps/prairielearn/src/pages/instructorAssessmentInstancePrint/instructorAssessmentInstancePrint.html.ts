@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.js';
@@ -9,7 +7,6 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
-import { encodePrintPageIdentity } from '../../lib/client/print-page-code.js';
 import type { PaperSize } from '../../lib/printing/pdf-output.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
@@ -58,13 +55,6 @@ export function InstructorAssessmentInstancePrint({
 }) {
   const isAnswerKey = document === 'answer_key';
   const documentLabel = isAnswerKey ? 'Answer key' : resLocals.assessment.type;
-  const pageIdentity = encodePrintPageIdentity({
-    assessmentInstanceId: resLocals.assessment_instance.id,
-    pageNumber: 1,
-    document,
-    format: 'pdf',
-    exportId: randomUUID(),
-  });
   const footerLabel = getPrintFooterLabel({
     document,
     formId: resLocals.assessment_instance.id,
@@ -78,7 +68,6 @@ export function InstructorAssessmentInstancePrint({
       data-print-form-label="${formLabel ?? ''}"
       data-print-paper-size="${paperSize}"
       data-print-include-cover="${includeCoverPage}"
-      data-print-page-identity="${pageIdentity}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
       data-print-omitted-question-count="${omittedQuestionCount}"
