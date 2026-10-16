@@ -176,6 +176,9 @@ export const ConfigSchema = z.object({
    * `https://us.prairielearn.com`.
    */
   serverCanonicalHost: z.string().nullable().default(null),
+  /** Cloudflare Browser Run account and API token for printable assessments. */
+  printingCloudflareAccountId: z.string().nullable().default(null),
+  printingCloudflareApiToken: z.string().nullable().default(null),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**
@@ -757,6 +760,13 @@ export async function loadConfig(paths: string[]) {
     makeSecretsManagerConfigSource('ConfSecret'),
     makeKmsConfigSource(),
   ]);
+
+  const { printingCloudflareAccountId: accountId, printingCloudflareApiToken: apiToken } = config;
+  if ((accountId !== null || apiToken !== null) && (!accountId || !apiToken)) {
+    throw new Error(
+      'printingCloudflareAccountId and printingCloudflareApiToken must both be set to use Cloudflare Browser Run',
+    );
+  }
 
   if (config.questionRenderCacheType !== null) {
     logger.warn(
