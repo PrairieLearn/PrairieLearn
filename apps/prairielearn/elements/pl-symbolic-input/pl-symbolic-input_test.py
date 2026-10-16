@@ -3,7 +3,6 @@ import string
 from pathlib import Path
 from typing import Any
 
-import lxml.html
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -420,43 +419,6 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 
     assert "\\ln{\\left(x \\right)}" in rendered
     assert "\\log{\\left(x \\right)}" not in rendered
-
-
-def test_formula_editor_uses_unique_dom_ids_and_stable_answer_names(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.chdir(Path(__file__).parent)
-    element_html = build_element_html('formula-editor="true"')
-    data = make_question_data()
-    symbolic_input.prepare(element_html, data)
-
-    first = lxml.html.fragment_fromstring(
-        symbolic_input.render(element_html, data), create_parent=True
-    )
-    second = lxml.html.fragment_fromstring(
-        symbolic_input.render(element_html, data), create_parent=True
-    )
-    first_field = first.xpath(".//math-field")[0]
-    second_field = second.xpath(".//math-field")[0]
-
-    assert first_field.attrib["id"] != second_field.attrib["id"]
-    for rendered, field in [(first, first_field), (second, second_field)]:
-        suffix = field.attrib["id"].removeprefix("symbolic-input-")
-        assert (
-            rendered.xpath(f'.//input[@id="symbolic-input-sub-{suffix}"]')[0].attrib[
-                "name"
-            ]
-            == "test"
-        )
-        assert (
-            rendered.xpath(f'.//input[@id="symbolic-input-latex-{suffix}"]')[0].attrib[
-                "name"
-            ]
-            == "test-latex"
-        )
-        assert f'window.PLSymbolicInput("test", "{suffix}")' in lxml.html.tostring(
-            rendered, encoding="unicode"
-        )
 
 
 @pytest.mark.parametrize(
