@@ -210,6 +210,33 @@ describe('PrintRenderer', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it('serves prepared HTML when the browser normalizes the navigation URL', async () => {
+    const harness = createBrowserHarness();
+    const url = 'http://localhost:3000';
+    const normalizedUrl = 'http://localhost:3000/';
+    const html = '<html data-print-status="ready"><body>Prepared pages</body></html>';
+
+    await renderPdf(new PrintRenderer(), { url, html });
+
+    expect(harness.pages[0].goto).toHaveBeenCalledWith(normalizedUrl, {
+      waitUntil: 'load',
+      timeout: expect.any(Number),
+    });
+    const fulfill = vi.fn(async () => undefined);
+    const fetch = vi.fn();
+    await harness.getRouteHandler()!({
+      request: () => ({ url: () => normalizedUrl, isNavigationRequest: () => true }),
+      fulfill,
+      fetch,
+    } as unknown as Route);
+    expect(fulfill).toHaveBeenCalledExactlyOnceWith({
+      status: 200,
+      contentType: 'text/html',
+      body: html,
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('allows same-origin GET requests and blocks everything else', async () => {
     const harness = createBrowserHarness();
     await renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print?paper_size=A4' });

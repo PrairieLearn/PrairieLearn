@@ -312,7 +312,7 @@ export class PrintRenderer {
     const navigationUrl = this.cloudflare
       ? new URL(`${localUrl.pathname}${localUrl.search}`, browserOrigin ?? 'https://example.com')
           .href
-      : url;
+      : localUrl.href;
     const renderOrigin = new URL(navigationUrl).origin;
     let startupTimer: ReturnType<typeof setTimeout> | undefined;
     const browser = await (deadline === null
