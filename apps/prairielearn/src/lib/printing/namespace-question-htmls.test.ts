@@ -1,3 +1,5 @@
+import { runInNewContext } from 'node:vm';
+
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
@@ -115,6 +117,44 @@ describe('namespaceQuestionHtmls', () => {
     const script = load(first, undefined, false)('script').html();
     expect(script).toContain(String.raw`querySelector("[data-x=\"a\"] #question-1-details")`);
     expect(script).toContain(String.raw`$("[name=\"ans\"] #question-1-details")`);
+  });
+
+  it('decodes JavaScript escapes before rewriting selectors', () => {
+    const script = String.raw`document.querySelector('#answer\\:part #details');`;
+    const [first] = namespaceQuestionHtmls([
+      {
+        namespace: 'question-1',
+        html: `<div id="answer:part"><span id="details"></span></div><script>${script}</script>`,
+      },
+      {
+        namespace: 'question-2',
+        html: '<div id="details"></div>',
+      },
+    ]);
+
+    const selectors: string[] = [];
+    runInNewContext(load(first, undefined, false)('script').html()!, {
+      document: { querySelector: (selector: string) => selectors.push(selector) },
+    });
+    expect(selectors).toEqual([String.raw`#answer\:part #question-1-details`]);
+  });
+
+  it('does not rewrite call-like text inside script strings', () => {
+    const script = String.raw`const source = "document.querySelector('#details')"; document.querySelector('#details');`;
+    const [first] = namespaceQuestionHtmls([
+      {
+        namespace: 'question-1',
+        html: `<div id="details"></div><script>${script}</script>`,
+      },
+      {
+        namespace: 'question-2',
+        html: '<div id="details"></div>',
+      },
+    ]);
+
+    const rewrittenScript = load(first, undefined, false)('script').html();
+    expect(rewrittenScript).toContain('const source = "document.querySelector(\'#details\')";');
+    expect(rewrittenScript).toContain("document.querySelector('#question-1-details');");
   });
 
   it('preserves template selectors in scripts', () => {
