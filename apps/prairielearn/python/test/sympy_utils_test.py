@@ -1356,6 +1356,15 @@ def test_get_items_list(items_string: str | None, expected_output: list[str]) ->
     assert psu.get_items_list(items_string) == expected_output
 
 
+def test_builtin_callable_functions_exclude_set_operators() -> None:
+    callable_functions = psu.get_builtin_callable_functions(allow_sets=True)
+
+    assert {"Interval", "FiniteSet", "Union", "Intersection", "Complement"} <= (
+        callable_functions
+    )
+    assert callable_functions.isdisjoint({"U", "cup", "cap", "∪", "∩"})  # ruff:ignore[ambiguous-unicode-character-string]
+
+
 class TestValidateNamesForConflicts:
     """Tests for validate_names_for_conflicts()."""
 
