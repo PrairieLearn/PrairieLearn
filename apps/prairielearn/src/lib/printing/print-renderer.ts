@@ -148,6 +148,14 @@ async function fetchCloudflareAsset(url: URL, signal: AbortSignal, cookieHeader?
   };
 }
 
+function urlAtOrigin(url: URL, origin: string): URL {
+  const result = new URL(origin);
+  // Assign the path separately so a leading // cannot replace the intended host.
+  result.pathname = url.pathname;
+  result.search = url.search;
+  return result;
+}
+
 export interface PrintRendererOptions {
   /** Cloudflare Browser Run credentials. */
   cloudflare?: { accountId: string; apiToken: string };
@@ -310,8 +318,7 @@ export class PrintRenderer {
     const remainingTimeoutMs = () => (deadline === null ? 0 : Math.max(1, deadline - Date.now()));
     const localUrl = new URL(url);
     const navigationUrl = this.cloudflare
-      ? new URL(`${localUrl.pathname}${localUrl.search}`, browserOrigin ?? 'https://example.com')
-          .href
+      ? urlAtOrigin(localUrl, browserOrigin ?? 'https://example.com').href
       : localUrl.href;
     const renderOrigin = new URL(navigationUrl).origin;
     let startupTimer: ReturnType<typeof setTimeout> | undefined;
@@ -370,7 +377,7 @@ export class PrintRenderer {
           // Playwright only routes the first request in a redirect chain, so a redirect could
           // otherwise leave the allowed origin without passing through these checks again.
           if (this.cloudflare) {
-            const assetUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, localUrl.origin);
+            const assetUrl = urlAtOrigin(requestUrl, localUrl.origin);
             const response = await fetchCloudflareAsset(
               assetUrl,
               assetController.signal,
