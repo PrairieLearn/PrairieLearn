@@ -19,6 +19,14 @@ tr:not(.doc-section-item) > td:not(.code) > code {
   white-space: nowrap;
 }
 
+.md-typeset .big-operator-formats table td {
+  vertical-align: middle;
+}
+
+.md-typeset .big-operator-formats table td mjx-container {
+  font-size: 1rem;
+}
+
 .md-nav__item--section > .md-nav__link[for],
 .md-nav__title {
   text-transform: uppercase;
