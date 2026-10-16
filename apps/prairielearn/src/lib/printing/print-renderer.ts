@@ -437,7 +437,9 @@ export class PrintRenderer {
 
       await page.evaluate(async () => {
         await document.fonts.ready;
-        await Promise.all(Array.from(document.images, (image) => image.decode()));
+        await Promise.all(
+          Array.from(document.images, (image) => image.decode().catch(() => undefined)),
+        );
       });
 
       return await output.produce(page);
