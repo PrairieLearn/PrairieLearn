@@ -1,6 +1,10 @@
 import type { DirectoryBackup, getSandbox } from '@cloudflare/sandbox';
 
-import type { CleanupDiagnostics, PendingTool } from '@prairielearn/course-agent-contract';
+import type {
+  CleanupDiagnostics,
+  ConversationUsage,
+  PendingTool,
+} from '@prairielearn/course-agent-contract';
 
 import { AppServer } from './app-server.js';
 import { safeFailure } from './cleanup-error.js';
@@ -30,10 +34,16 @@ export interface Run {
 export interface CodexState {
   rejectedDispatches?: Record<string, true>;
   repository?: { repository: string; branch: string };
-  /**
-   * Dispatch status receipts correlate native acceptance with PL retries.
-   * Terminal entries are archived to SQLite so broadcasts remain bounded.
-   */
+  usageTotal?: {
+    threadId: string;
+    input: number;
+    cached: number;
+    cacheWrite: number;
+    output: number;
+  };
+  /** Lifetime totals stay in the DO and never rewind with an R2 filesystem checkpoint. */
+  usage?: ConversationUsage;
+  /** Acceptance/outcome receipts fence retries independently of billing. */
   executions?: Record<string, { dispatchId?: string; status: Run['status'] }>;
   /**
    * Corrections belong to an existing turn. Persist before sending turn/steer:
@@ -64,6 +74,7 @@ export interface CodexState {
   checkpoint?: {
     backup: DirectoryBackup;
     threadId?: string;
+    usageTotal?: CodexState['usageTotal'];
   };
   obsoleteCheckpoints?: string[];
   lastCheckpointError?: string;

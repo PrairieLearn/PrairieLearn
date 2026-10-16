@@ -13,6 +13,8 @@ const test = createTest({
   courseAgent: {
     workerUrl: 'http://localhost:8791',
     serviceToken: 'local-fixture-service-token-not-a-secret',
+    maxConcurrentPerUser: 2,
+    hourlyCostLimit: 10,
   },
 });
 test.skip(!process.env.COURSE_AGENT_FIXTURE_URL, 'Run the local course-agent fixture first.');
@@ -678,6 +680,8 @@ const unavailableTest = createTest({
   courseAgent: {
     workerUrl: 'http://localhost:8791',
     serviceToken: null,
+    maxConcurrentPerUser: 2,
+    hourlyCostLimit: 10,
   },
 });
 
@@ -711,6 +715,8 @@ const noPublishingTokenTest = createTest({
   courseAgent: {
     workerUrl: 'http://localhost:8791',
     serviceToken: 'local-fixture-service-token-not-a-secret',
+    maxConcurrentPerUser: 2,
+    hourlyCostLimit: 10,
   },
 });
 

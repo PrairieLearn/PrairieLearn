@@ -86,6 +86,8 @@ it('scopes conversations and serializes stale/duplicate admissions', async () =>
 const settings = {
   workerUrl: 'http://localhost:8791',
   serviceToken: 'local-fixture-service-token-not-a-secret',
+  maxConcurrentPerUser: 2,
+  hourlyCostLimit: 10,
 };
 
 async function setupConversation() {
@@ -165,7 +167,18 @@ it('uses the existing PL GitHub client token for proposal validation', async () 
     .spyOn(agentProvider, 'createCloudflareProvider')
     .mockImplementation((...args) => ({
       ...originalProvider(...args),
-      getSnapshot: async () => ({ messages: [], operationNumber: 0 }),
+      getSnapshot: async () => ({
+        messages: [],
+        operationNumber: 0,
+        conversationUsage: {
+          version: 0,
+          model: 'gpt-6-astra',
+          input: 0,
+          cached: 0,
+          cacheWrite: 0,
+          output: 0,
+        },
+      }),
       deliverToolResult: async () => {},
     }));
   const fetcher = vi
@@ -232,7 +245,18 @@ it('returns unsupported file modes to the agent, retries delivery, and only expo
     .spyOn(agentProvider, 'createCloudflareProvider')
     .mockImplementation((...args) => ({
       ...originalProvider(...args),
-      getSnapshot: async () => ({ messages: [], operationNumber: 0 }),
+      getSnapshot: async () => ({
+        messages: [],
+        operationNumber: 0,
+        conversationUsage: {
+          version: 0,
+          model: 'gpt-6-astra',
+          input: 0,
+          cached: 0,
+          cacheWrite: 0,
+          output: 0,
+        },
+      }),
       deliverToolResult: delivery,
     }));
   const id = randomUUID();
@@ -273,7 +297,20 @@ it('returns unsupported file modes to the agent, retries delivery, and only expo
         expect(failed.error).toContain('ordinary text');
         expect(failed.outcome).toContain('Code change request failed');
         expect(
-          (await snapshot(conversation, { messages: [], operationNumber: 0 })).approvals,
+          (
+            await snapshot(conversation, {
+              messages: [],
+              operationNumber: 0,
+              conversationUsage: {
+                version: 0,
+                model: 'gpt-6-astra',
+                input: 0,
+                cached: 0,
+                cacheWrite: 0,
+                output: 0,
+              },
+            })
+          ).approvals,
         ).toEqual([]);
         await expect(
           reserveOperation(conversation, randomUUID(), { kind: 'message', text: 'Hello' }, 0),
@@ -310,7 +347,18 @@ it('returns unsupported file modes to the agent, retries delivery, and only expo
               .digest('hex'),
           },
         });
-        const state = await snapshot(conversation, { messages: [], operationNumber: 0 });
+        const state = await snapshot(conversation, {
+          messages: [],
+          operationNumber: 0,
+          conversationUsage: {
+            version: 0,
+            model: 'gpt-6-astra',
+            input: 0,
+            cached: 0,
+            cacheWrite: 0,
+            output: 0,
+          },
+        });
         expect(state.approvals).toHaveLength(1);
         expect(state.approvals[0].id).toBe(validId);
         expect(delivery).toHaveBeenCalledTimes(2);
@@ -403,12 +451,38 @@ it.each(['transient', 'unconfigured'] as const)(
           expect(preparation).toHaveBeenCalledTimes(failure === 'unconfigured' ? 0 : 1);
           expect((await selectOptionalProposal(conversation.id, id))!.outcome).toBeNull();
           expect(
-            (await snapshot(conversation, { messages: [], operationNumber: 0 })).preparation?.id,
+            (
+              await snapshot(conversation, {
+                messages: [],
+                operationNumber: 0,
+                conversationUsage: {
+                  version: 0,
+                  model: 'gpt-6-astra',
+                  input: 0,
+                  cached: 0,
+                  cacheWrite: 0,
+                  output: 0,
+                },
+              })
+            ).preparation?.id,
           ).toBe(id);
           await withConfig({ githubClientToken: 'test' }, () => prepare(scope, conversation, tool));
           expect((await selectOptionalProposal(conversation.id, id))!.prepared).toBe(true);
           expect(
-            (await snapshot(conversation, { messages: [], operationNumber: 0 })).approvals,
+            (
+              await snapshot(conversation, {
+                messages: [],
+                operationNumber: 0,
+                conversationUsage: {
+                  version: 0,
+                  model: 'gpt-6-astra',
+                  input: 0,
+                  cached: 0,
+                  cacheWrite: 0,
+                  output: 0,
+                },
+              })
+            ).approvals,
           ).toHaveLength(1);
         },
       );
@@ -485,12 +559,20 @@ it.each([
       vi.spyOn(agentEvents, 'notify').mockResolvedValue(),
       vi
         .spyOn(globalThis, 'fetch')
-        .mockImplementation(async () => Response.json({ model: 'fixture-model' })),
+        .mockImplementation(async () => Response.json({ model: 'gpt-6-astra' })),
       vi.spyOn(agentProvider, 'createCloudflareProvider').mockImplementation((...args) => ({
         ...original(...args),
         getSnapshot: async () => ({
           messages: [],
           operationNumber: 0,
+          conversationUsage: {
+            version: 0,
+            model: 'gpt-6-astra',
+            input: 0,
+            cached: 0,
+            cacheWrite: 0,
+            output: 0,
+          },
           executions: {
             [id]: {
               status: 'running',
@@ -631,7 +713,18 @@ it('fences uncertain sends, retries rejected dispatches and retains terminal sta
     getSnapshot: vi.fn().mockResolvedValue({ messages: [], operationNumber: 0, executions: {} }),
     reconcileAdmissions: vi.fn().mockResolvedValue({ rejected: [] }),
   };
-  const empty = { messages: [], operationNumber: 0 };
+  const empty = {
+    messages: [],
+    operationNumber: 0,
+    conversationUsage: {
+      version: 0,
+      model: 'gpt-6-astra',
+      input: 0,
+      cached: 0,
+      cacheWrite: 0,
+      output: 0,
+    },
+  };
   await reconcileOperations(conversation, chat, empty);
   expect((await selectOptionalOperation(conversation.id, operationId))!.status).toBe('admitted');
   chat.reconcileAdmissions.mockResolvedValue({ rejected: [first.dispatch_id] });
@@ -837,13 +930,17 @@ it('finishes a warm decision without leaving a phantom active conversation', asy
       getSnapshot: async () => ({
         messages: [],
         operationNumber: 0,
+        conversationUsage: {
+          version: 0,
+          model: 'gpt-6-astra',
+          input: 0,
+          cached: 0,
+          cacheWrite: 0,
+          output: 0,
+        },
         executions: {
           [randomUUID()]: {
             status: 'running' as const,
-            model: 'gpt-6-astra',
-            input: 0,
-            cached: 0,
-            output: 0,
           },
         },
       }),

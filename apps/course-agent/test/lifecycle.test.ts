@@ -82,7 +82,45 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     expect((await c.request('test/status')).launches).toBe(1);
     await c.request('cancel', {});
   });
-  it('compacts broadcast state without losing archived receipts or dispatch fences', async () => {
+  it('counts cache writes once and preserves the usage baseline through checkpoint recovery', async () => {
+    const c = conversation();
+    expect((await c.request('snapshot')).conversationUsage).toMatchObject({
+      input: 0,
+      cached: 0,
+      cacheWrite: 0,
+      output: 0,
+    });
+    const first = await c.send();
+    const usage = { input: 100, cached: 40, cacheWrite: 50, output: 20 };
+    await c.request('test/usage', usage);
+    await expect
+      .poll(async () => (await c.request('snapshot')).conversationUsage.cacheWrite)
+      .toBe(50);
+    await c.request('test/usage', usage);
+    expect((await c.request('snapshot')).conversationUsage).toMatchObject(usage);
+    await expect
+      .poll(async () => (await c.request('diagnostics')).state, { timeout: 15000 })
+      .toBe('waiting_for_user');
+    await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
+    await expect.poll(async () => (await c.request('diagnostics')).state).toBe('absent');
+    const second = await c.send();
+    expect((await c.request('snapshot')).conversationUsage).toMatchObject(usage);
+    await c.request('test/usage', { input: 200, cached: 80, cacheWrite: 100, output: 40 });
+    await expect
+      .poll(async () => (await c.request('snapshot')).conversationUsage.cacheWrite)
+      .toBe(100);
+    expect((await c.request('snapshot')).conversationUsage).toMatchObject({
+      input: 200,
+      cached: 80,
+      cacheWrite: 100,
+      output: 40,
+    });
+    expect((await c.request('snapshot')).executions[first].input).toBeUndefined();
+    expect((await c.request('snapshot')).executions[second].input).toBeUndefined();
+    await c.request('cancel', {});
+  });
+
+  it('compacts broadcast state without losing archived dispatch receipts or fences', async () => {
     const c = conversation();
     const ids = Array.from({ length: 150 }, () => randomUUID());
     const dispatches = ids.map(() => randomUUID());

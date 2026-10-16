@@ -42,6 +42,7 @@ import { HostTools } from './host-tools.js';
 import { ReceiptStore } from './receipt-store.js';
 import type { Sandbox } from './sandbox.js';
 import { getTool, isPreparedTool, toolResult } from './tools.js';
+import { accumulateUsage } from './usage.js';
 
 export interface Env {
   Sandbox: DurableObjectNamespace<Sandbox>;
@@ -420,6 +421,14 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         {
           messages: this.snapshotMessages(),
           executions: this.executionReceipts(ids),
+          conversationUsage: this.state.usage ?? {
+            version: 0,
+            model: this.env.CODEX_MODEL,
+            input: 0,
+            cached: 0,
+            cacheWrite: 0,
+            output: 0,
+          },
           operationNumber: 0, // PL supplies the authoritative operation number.
           blocked: !!this.state.pendingTool || this.toolPreparing,
           pendingTool: this.state.pendingTool,
@@ -877,7 +886,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     const previous = this.state.checkpoint?.backup.id;
     this.saveState({
       ...this.state,
-      checkpoint,
+      checkpoint: { ...checkpoint, usageTotal: this.state.usageTotal },
       lastCheckpointError: undefined,
       obsoleteCheckpoints: [
         ...new Set([
@@ -1312,7 +1321,13 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     if (!this.env.CODEX_MODEL) {
       throw new Error('Configure CODEX_MODEL before running the course agent.');
     }
+    if (this.state.usage && this.state.usage.model !== this.env.CODEX_MODEL) {
+      throw new Error('The conversation model changed. Start a new conversation.');
+    }
     checkDispatch();
+    if (!this.state.sandbox && this.state.checkpoint) {
+      this.saveState({ ...this.state, usageTotal: this.state.checkpoint.usageTotal });
+    }
     const fresh = !this.state.sandbox && !this.state.checkpoint;
     const sandbox = this.state.sandbox ?? {
       id: crypto.randomUUID(),
@@ -1327,6 +1342,18 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     };
     this.saveState({
       ...this.state,
+      // Keep the last reported totals while work runs. Delayed reports can temporarily
+      // undercount the soft spending limit; admission never cancels an in-flight turn.
+      usage: {
+        ...(this.state.usage ?? {
+          model: this.env.CODEX_MODEL,
+          input: 0,
+          cached: 0,
+          cacheWrite: 0,
+          output: 0,
+        }),
+        version: (this.state.usage?.version ?? 0) + 1,
+      },
       executions: {
         ...this.state.executions,
         [run.messageId]: {
@@ -1426,6 +1453,12 @@ export class Chat extends AIChatAgent<Env, CodexState> {
                   ),
                   client!.disconnected,
                 ]);
+              },
+              onUsage: (total) => {
+                const usage = accumulateUsage(this.state.usage!, this.state.usageTotal, total);
+                if (usage) {
+                  this.saveState({ ...this.state, usage, usageTotal: total });
+                }
               },
               onTurnStarted: (turnId) =>
                 this.setRun({ ...this.state.run!, turnId, accepted: true }),

@@ -404,6 +404,20 @@ export function Conversation({
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          <dl className="mb-3">
+            <dt>Estimated cost</dt>
+            <dd>
+              {!id
+                ? '$0.0000'
+                : snapshot.usage?.estimatedCost == null
+                  ? 'Unknown'
+                  : `$${snapshot.usage.estimatedCost.toFixed(4)}`}
+            </dd>
+            <dt>Input tokens</dt>
+            <dd>{!id ? 0 : (snapshot.usage?.input ?? 'Unknown')}</dd>
+            <dt>Output tokens</dt>
+            <dd>{!id ? 0 : (snapshot.usage?.output ?? 'Unknown')}</dd>
+          </dl>
           {statisticsOpen && (
             <SandboxStatistics
               diagnostics={snapshot.diagnostics}

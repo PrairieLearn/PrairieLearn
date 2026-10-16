@@ -194,6 +194,42 @@ export async function reserveContinuation(
   });
 }
 
+/** Latest cumulative snapshot, not an increment: repeated/out-of-order deliveries are safe. */
+export const saveConversationUsage = async (
+  id: string,
+  usage: Pick<
+    CourseAgentConversation,
+    | 'usage_model'
+    | 'usage_version'
+    | 'usage_input_tokens'
+    | 'usage_input_tokens_cache_read'
+    | 'usage_input_tokens_cache_write'
+    | 'usage_output_tokens'
+    | 'usage_cost'
+    | 'usage_input_price'
+    | 'usage_cache_read_price'
+    | 'usage_cache_write_price'
+    | 'usage_output_price'
+  >,
+) => {
+  await execute(sql.update_conversation_usage, {
+    id,
+    ...usage,
+  });
+  return queryRow(sql.select_conversation_by_id, { id }, CourseAgentConversationSchema);
+};
+export const selectUserAccountingConversations = (user_id: string) =>
+  queryRows(sql.select_user_accounting_conversations, { user_id }, CourseAgentConversationSchema);
+export const selectUserCapacity = (user_id: string, id: string) =>
+  queryRow(
+    sql.select_user_capacity,
+    { user_id, id },
+    z.object({ active: z.number(), current_active: z.boolean(), unknown: z.boolean() }),
+  );
+
+export const selectConversationForUpdate = (id: string) =>
+  queryRow(sql.select_conversation_for_update, { id }, CourseAgentConversationSchema);
+
 /** A result returned to a live native turn finishes the decision without admitting another execution. */
 export const completeDecisionOperation = (id: string, operation_id: string) =>
   execute(sql.complete_decision_operation, { id, operation_id });

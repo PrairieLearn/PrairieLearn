@@ -193,6 +193,103 @@ WHERE
   AND o.status IN ('admitted', 'running')
   AND o.status <> v.status;
 
+-- BLOCK update_conversation_usage
+UPDATE course_agent_conversations
+SET
+  usage_model = $usage_model,
+  usage_version = $usage_version,
+  usage_input_tokens = $usage_input_tokens,
+  usage_input_tokens_cache_read = $usage_input_tokens_cache_read,
+  usage_input_tokens_cache_write = $usage_input_tokens_cache_write,
+  usage_output_tokens = $usage_output_tokens,
+  usage_cost = $usage_cost,
+  usage_input_price = $usage_input_price,
+  usage_cache_read_price = $usage_cache_read_price,
+  usage_cache_write_price = $usage_cache_write_price,
+  usage_output_price = $usage_output_price
+WHERE
+  id = $id
+  AND (
+    usage_model IS NULL
+    OR usage_version < $usage_version
+    OR (
+      usage_version = $usage_version
+      AND usage_cost IS NULL
+    )
+  )
+  AND usage_input_tokens <= $usage_input_tokens
+  AND usage_input_tokens_cache_read <= $usage_input_tokens_cache_read
+  AND usage_input_tokens_cache_write <= $usage_input_tokens_cache_write
+  AND usage_output_tokens <= $usage_output_tokens;
+
+-- BLOCK select_conversation_by_id
+SELECT
+  *
+FROM
+  course_agent_conversations
+WHERE
+  id = $id;
+
+-- BLOCK select_user_accounting_conversations
+SELECT
+  c.*
+FROM
+  course_agent_conversations AS c
+  JOIN courses AS course ON course.id = c.course_id
+  AND course.deleted_at IS NULL
+WHERE
+  c.user_id = $user_id
+  AND (
+    c.usage_cost IS NULL
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        course_agent_operations AS o
+      WHERE
+        o.conversation_id = c.id
+        AND o.status IN ('admitted', 'running')
+    )
+  );
+
+-- BLOCK select_user_capacity
+WITH
+  activity AS (
+    SELECT
+      c.id,
+      EXISTS (
+        SELECT
+          1
+        FROM
+          course_agent_operations AS o
+        WHERE
+          o.conversation_id = c.id
+          AND o.status IN ('admitted', 'running')
+      ) AS active,
+      c.usage_cost IS NULL AS unknown
+    FROM
+      course_agent_conversations AS c
+      JOIN courses AS course ON course.id = c.course_id
+      AND course.deleted_at IS NULL
+    WHERE
+      c.user_id = $user_id
+  )
+SELECT
+  count(*) FILTER (
+    WHERE
+      active
+  )::integer AS active,
+  COALESCE(
+    bool_or(active) FILTER (
+      WHERE
+        id = $id
+    ),
+    FALSE
+  ) AS current_active,
+  COALESCE(bool_or(unknown), FALSE) AS unknown
+FROM
+  activity;
+
 -- BLOCK complete_decision_operation
 UPDATE course_agent_operations
 SET

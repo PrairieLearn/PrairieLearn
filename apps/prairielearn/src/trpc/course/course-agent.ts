@@ -17,7 +17,6 @@ import {
   createConversation,
   nameConversation,
   rejectOperation,
-  reserveOperation,
   selectConversation,
   selectConversationActivity,
   selectOptionalOperation,
@@ -109,14 +108,8 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const c = await selectConversation(ctx.scope, input.conversationId);
       const chat = await ctx.service.provider(ctx.scope, c, true);
-      const { reconcileOperations } = await import('../../ee/lib/course-agent/lifecycle.js');
-      await reconcileOperations(c, chat, await chat.getSnapshot(AbortSignal.timeout(10000)));
-      const operationNumber = await reserveOperation(
-        c,
-        input.message.id,
-        { kind: 'message', text: input.message.text },
-        input.message.expectedOperationNumber,
-      );
+      const { admit } = await import('../../ee/lib/course-agent/usage.js');
+      const operationNumber = await admit(c, input.message, chat);
       const operation = (await selectOptionalOperation(c.id, input.message.id))!;
       const title = formatCourseAgentDate(c.created_at, ctx.course.display_timezone);
       let dispatched = false;
