@@ -29,6 +29,7 @@ import {
   AssessmentSetSchema as RawAssessmentSetSchema,
   AuditEventSchema as RawAuditEventSchema,
   AuthnProviderSchema as RawAuthnProviderSchema,
+  CourseInstanceAiGradingCredentialSchema as RawCourseInstanceAiGradingCredentialSchema,
   CourseInstancePublishingExtensionSchema as RawCourseInstancePublishingExtensionSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
@@ -600,3 +601,13 @@ export const RawStaffStudentLabelSchema = RawStudentLabelSchema.pick({
 });
 export const StaffStudentLabelSchema = RawStaffStudentLabelSchema.brand<'StaffStudentLabel'>();
 export type StaffStudentLabel = z.infer<typeof StaffStudentLabelSchema>;
+
+/** AI grading provider configuration metadata; keys are never exposed. */
+export const StaffAiGradingCredentialSchema = RawCourseInstanceAiGradingCredentialSchema.pick({
+  base_url: true,
+  created_at: true,
+  id: true,
+  provider: true,
+})
+  .extend({ apiKeyMasked: z.string() })
+  .brand<'StaffAiGradingCredential'>();
