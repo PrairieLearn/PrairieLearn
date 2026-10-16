@@ -76,7 +76,13 @@ export class Conversation extends AIChatAgent<Env> {
       messages: await convertToModelMessages(this.messages),
       abortSignal: options?.abortSignal,
     });
-    const reply = toUIMessageStream({ stream: result.stream });
+    const reply = toUIMessageStream({
+      stream: result.stream,
+      // Put the reply's ID in its `start` chunk before the stream is split, so
+      // the copy streamed to the caller and the copy the SDK persists share it.
+      originalMessages: this.messages,
+      generateMessageId: () => crypto.randomUUID(),
+    });
     return createUIMessageStreamResponse({ stream: turn ? turn.split(reply) : reply });
   }
 }
