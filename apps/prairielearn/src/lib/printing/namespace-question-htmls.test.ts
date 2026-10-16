@@ -239,6 +239,40 @@ describe('namespaceQuestionHtmls', () => {
     expect($second('input').attr('name')).toBe('ans');
   });
 
+  it('namespaces each Graphviz SVG and its internal references independently', () => {
+    const graph = `
+      <div class="pl-graph">
+        <svg>
+          <g id="graph0">
+            <defs><clipPath id="clip"><rect /></clipPath></defs>
+            <g id="node1" clip-path="url(#clip)"><use href="#graph0" /></g>
+          </g>
+        </svg>
+      </div>
+    `;
+    const [html] = namespaceQuestionHtmls([
+      {
+        namespace: 'question-1',
+        html: `<div id="question-1-graph-1-graph0"></div>${graph}${graph}`,
+      },
+    ]);
+    const $ = load(html, undefined, false);
+    const ids = $('[id]')
+      .toArray()
+      .map((element) => $(element).attr('id'));
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect($('.pl-graph > svg')).toHaveLength(2);
+    expect($('[id="question-1-graph-1-graph0"]')).toHaveLength(1);
+    $('.pl-graph > svg').each((index, element) => {
+      const graphId = $(element).find('g').first().attr('id');
+      const clipId = $(element).find('[id$="-clip"]').attr('id');
+      expect(graphId).toMatch(new RegExp(`^question-1-graph-${index + 1}-graph0`));
+      expect($(element).find('g[id$="node1"]').attr('clip-path')).toBe(`url(#${clipId})`);
+      expect($(element).find('use').attr('href')).toBe(`#${graphId}`);
+    });
+  });
+
   it('rejects duplicate or invalid namespaces', () => {
     expect(() =>
       namespaceQuestionHtmls([
