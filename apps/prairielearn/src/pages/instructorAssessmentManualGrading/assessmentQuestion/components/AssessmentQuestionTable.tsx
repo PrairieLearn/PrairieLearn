@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
@@ -273,6 +273,33 @@ export function AssessmentQuestionTable({
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
+  const exportAiGradingTextMutation = useMutation(
+    trpc.manualGrading.exportAiGradingText.mutationOptions(),
+  );
+
+  async function getExportOptions(rows: InstanceQuestionRowWithAIGradingStats[]) {
+    const grading_job_ids = rows.flatMap(({ instance_question: iq }) => {
+      const id =
+        iq.ai_grading?.score_source?.grading_job.id ?? iq.ai_grading?.latest_update.grading_job.id;
+      return id ? [id] : [];
+    });
+    try {
+      const text =
+        grading_job_ids.length > 0
+          ? await exportAiGradingTextMutation.mutateAsync({ grading_job_ids })
+          : [];
+      return {
+        assessment,
+        studentLabels,
+        instanceQuestionGroups,
+        rubricData,
+        aiGradingTextByJobId: Object.fromEntries(text.map((item) => [item.grading_job_id, item])),
+      };
+    } catch {
+      // QueryErrors displays the mutation error; cancel this download.
+      return null;
+    }
+  }
 
   // Fetch instance questions data
   const {
@@ -650,6 +677,7 @@ export function AssessmentQuestionTable({
           setAssignedGraderMutation,
           setRequiresManualGradingMutation,
           stopAiGradingJobMutation,
+          exportAiGradingTextMutation,
         ]}
       />
       {deleteAiGradingJobsMutation.isSuccess && (
@@ -929,20 +957,15 @@ export function AssessmentQuestionTable({
         pluralLabel="submissions"
         downloadButtonOptions={{
           filenameBase: `manual_grading_${questionQid}`,
-          mapRowToData: (row) =>
-            getManualGradingCsvData(row, {
-              assessment,
-              studentLabels,
-              instanceQuestionGroups,
-              rubricData,
-            }),
-          mapRowToJsonData: (row) =>
-            getManualGradingJsonData(row, {
-              assessment,
-              studentLabels,
-              instanceQuestionGroups,
-              rubricData,
-            }),
+          isPending: exportAiGradingTextMutation.isPending,
+          getCsvData: async (rows) => {
+            const options = await getExportOptions(rows);
+            return options ? rows.map((row) => getManualGradingCsvData(row, options)) : null;
+          },
+          getJsonData: async (rows) => {
+            const options = await getExportOptions(rows);
+            return options ? rows.map((row) => getManualGradingJsonData(row, options)) : null;
+          },
           hasSelection: true,
         }}
         onResetColumnFilters={onResetColumnFilters}

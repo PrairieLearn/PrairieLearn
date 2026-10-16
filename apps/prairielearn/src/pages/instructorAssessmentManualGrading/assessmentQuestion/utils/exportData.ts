@@ -1,6 +1,6 @@
 import type { TanstackTableCsvCell } from '@prairielearn/ui';
 
-import type { GradingResult } from '../../../../ee/lib/ai-grading/types.js';
+import type { AiGradingExportText, GradingResult } from '../../../../ee/lib/ai-grading/types.js';
 import type {
   StaffAssessment,
   StaffInstanceQuestionGroup,
@@ -16,6 +16,7 @@ interface ExportOptions {
   studentLabels: StaffStudentLabel[];
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   rubricData: RubricData | null;
+  aiGradingTextByJobId?: Record<string, AiGradingExportText>;
 }
 
 function userToExportFields(user: StaffUser | null) {
@@ -70,9 +71,18 @@ function gradingResultToExportFields(result: GradingResult | null) {
 
 export function getManualGradingJsonData(
   row: InstanceQuestionRowWithAIGradingStats,
-  { assessment, studentLabels, instanceQuestionGroups, rubricData }: ExportOptions,
+  {
+    assessment,
+    studentLabels,
+    instanceQuestionGroups,
+    rubricData,
+    aiGradingTextByJobId,
+  }: ExportOptions,
 ) {
   const iq = row.instance_question;
+  const aiJobId =
+    iq.ai_grading?.score_source?.grading_job.id ?? iq.ai_grading?.latest_update.grading_job.id;
+  const aiText = aiJobId ? aiGradingTextByJobId?.[aiJobId] : undefined;
   const submissionGroupId =
     iq.manual_instance_question_group_id ?? iq.ai_instance_question_group_id;
   const submissionGroup = instanceQuestionGroups.find((group) => group.id === submissionGroupId);
@@ -121,8 +131,8 @@ export function getManualGradingJsonData(
     ai_grading: iq.ai_grading
       ? {
           ...gradingResultToExportFields(iq.ai_grading),
-          explanation: iq.ai_grading.explanation,
-          generated_feedback: iq.ai_grading.generated_feedback,
+          explanation: aiText?.explanation ?? null,
+          generated_feedback: aiText?.generated_feedback ?? null,
         }
       : null,
     ai_grading_status: iq.ai_grading_status,
