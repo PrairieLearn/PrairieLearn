@@ -141,6 +141,7 @@ export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInst
   open: true,
   team_id: true,
   // '__UNSAFE' indicates that this schema needs further transformations before being sent to the client.
+  grading_pending: true, // potentially sensitive
   points: true, // potentially sensitive
   score_perc: true, // potentially sensitive
   score_perc_pending: true, // potentially sensitive

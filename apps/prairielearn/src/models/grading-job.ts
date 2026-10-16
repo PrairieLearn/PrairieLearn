@@ -8,7 +8,10 @@ import {
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
+import {
+  updateAssessmentInstanceGrade,
+  updateAssessmentInstancesScorePending,
+} from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
@@ -72,16 +75,15 @@ export async function insertGradingJob({
   return await runInTransactionAsync(async () => {
     await lockSubmission({ submission_id });
 
-    const { assessment_instance_id, credit, ...grading_job } = await queryRow(
+    const { assessment_instance_id, ...grading_job } = await queryRow(
       sql.insert_grading_job,
       { submission_id, authn_user_id },
       GradingJobSchema.extend({
         assessment_instance_id: IdSchema.nullable(),
-        credit: SubmissionSchema.shape.credit,
       }),
     );
     if (assessment_instance_id != null) {
-      await updateAssessmentInstanceGrade({ assessment_instance_id, authn_user_id, credit });
+      await updateAssessmentInstancesScorePending([assessment_instance_id], authn_user_id);
     }
     return grading_job;
   });
@@ -201,6 +203,13 @@ export async function updateGradingJobAfterGrading({
         authn_user_id: gradingJob.auth_user_id,
         credit,
       });
+    }
+
+    if (!gradable && assessment_instance_id != null) {
+      await updateAssessmentInstancesScorePending(
+        [assessment_instance_id],
+        gradingJob.auth_user_id,
+      );
     }
 
     return gradingJob;

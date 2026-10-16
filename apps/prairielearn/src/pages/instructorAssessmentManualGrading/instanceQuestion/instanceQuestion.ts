@@ -714,10 +714,12 @@ router.post(
           );
         }
       }
-      await sqldb.execute(sql.update_assigned_grader, {
-        instance_question_id: res.locals.instance_question.id,
-        assigned_grader,
+      await manualGrading.updateInstanceQuestionsManualGrading({
+        assessment_question_id: res.locals.instance_question.assessment_question_id,
+        instance_question_ids: [res.locals.instance_question.id],
+        assigned_grader: actionPrompt !== 'graded' ? assigned_grader : undefined,
         requires_manual_grading: actionPrompt !== 'graded',
+        authn_user_id: res.locals.authn_user.id,
       });
 
       const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);

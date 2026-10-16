@@ -9,7 +9,10 @@ import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
-import { updateAssessmentInstancesTimeLimit } from '../models/assessment-instance.js';
+import {
+  selectAssessmentInstanceById,
+  updateAssessmentInstancesTimeLimit,
+} from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import {
   insertCourseInstancePermissions,
@@ -553,6 +556,11 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
           InstanceQuestionSchema,
         );
         assert.equal(instanceQuestion.requires_manual_grading, true);
+        const assessmentInstance = await selectAssessmentInstanceById(
+          instanceQuestion.assessment_instance_id,
+        );
+        assert.isTrue(assessmentInstance.grading_pending);
+        assert.closeTo(assessmentInstance.score_perc_pending, (6 / 32) * 100, 0.001);
       });
 
       test('assessments listing page should show manual grading badge', async () => {

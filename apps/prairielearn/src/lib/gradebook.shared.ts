@@ -30,6 +30,8 @@ const StudentGradebookRowSchema = z
     if (!data.modern_access_control && !data.show_closed_assessment_score) {
       data.assessment_instance.points = null;
       data.assessment_instance.score_perc = null;
+      data.assessment_instance.score_perc_pending = 0;
+      data.assessment_instance.grading_pending = false;
     }
     return data;
   })
