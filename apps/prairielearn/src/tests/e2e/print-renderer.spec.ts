@@ -36,12 +36,11 @@ test('renders allowed resources and blocks redirects before requesting their des
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(requests).toContain('/figure.svg');
 
-    await expect(
-      renderer.renderPdf({
-        url: `${origin}/print`,
-        html: '<!doctype html><html data-print-status="ready"><body><img src="/redirect"></body></html>',
-      }),
-    ).rejects.toThrow();
+    const pdfWithBlockedImage = await renderer.renderPdf({
+      url: `${origin}/print`,
+      html: '<!doctype html><html data-print-status="ready"><body><img src="/redirect"></body></html>',
+    });
+    expect(pdfWithBlockedImage.subarray(0, 5).toString()).toBe('%PDF-');
     expect(requests).toContain('/redirect');
     expect(requests).not.toContain('/destination');
   } finally {
