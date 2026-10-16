@@ -50,9 +50,9 @@ RETURNING
 
 -- BLOCK lock_course_instance_for_custom_provider
 SELECT
-  id
+  ai_grading_use_custom_api_keys
 FROM
   course_instances
 WHERE
   id = $course_instance_id
-FOR KEY SHARE;
+FOR SHARE;
