@@ -211,8 +211,9 @@ describe('Assessment lockpoints', { timeout: 60_000, concurrent: false }, functi
     const response = await helperClient.fetchCheerio(context.questionStates[0].url);
     assert.isTrue(response.ok);
     assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+    assert.isTrue(response.$('#question-nav-next').is(':disabled'));
     assert.include(
-      response.$('#question-nav-next').attr('data-bs-content') ?? '',
+      response.$('#question-nav-next-reason').text(),
       'You must cross the lockpoint on the assessment overview page',
     );
   });
@@ -230,13 +231,12 @@ describe('Assessment lockpoints', { timeout: 60_000, concurrent: false }, functi
       ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
     );
 
-    // The read_only_lockpoint question should have a lock icon button.
-    // (blocked_lockpoint shows status in the Status column on exams, so
-    // only the one read_only_lockpoint row produces this button.)
+    // The read_only_lockpoint question should explain why it is read-only.
+    // blocked_lockpoint shows status in the Status column on exams.
     assert.equal(response.$('[data-testid="locked-instance-question-row"]').length, 1);
 
     assert.include(
-      response.$.html(),
+      response.$('[data-testid="locked-instance-question-row"]').text(),
       'You can no longer submit answers to this question because you have advanced past a lockpoint',
     );
   });

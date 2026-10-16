@@ -299,9 +299,8 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       lockedRows.each((_, element) => {
         const rowLabelText = $(element).closest('td').find('span').text();
         assert.match(rowLabelText, /HW5\.[23]\./);
-        const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
-          popoverText,
+          $(element).text().trim(),
           'Your current group role (Manager) restricts access to this question.',
         );
       });

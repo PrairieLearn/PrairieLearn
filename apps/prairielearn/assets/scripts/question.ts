@@ -390,9 +390,9 @@ function updateDynamicPanels({
   if (msg.questionNavNextButton) {
     // Note: we use `document` and not `container` here because this button
     // is outside the question container.
-    const questionNavNextButton = document.getElementById('question-nav-next');
-    if (questionNavNextButton) {
-      questionNavNextButton.outerHTML = msg.questionNavNextButton;
+    const questionNavNextButtonContainer = document.getElementById('question-nav-next-container');
+    if (questionNavNextButtonContainer) {
+      questionNavNextButtonContainer.outerHTML = msg.questionNavNextButton;
     }
   }
 }
