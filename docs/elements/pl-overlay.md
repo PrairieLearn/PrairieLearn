@@ -62,7 +62,13 @@ Floating child elements are wrapped with a `<pl-location>` tag that specifies th
 ## Example implementations
 
 - [element/overlay]
+- [demo/overlayDropdown]
+- [demo/overlayMap]
+- [demo/overlayTriangle]
 
 ---
 
+[demo/overlaydropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayDropdown
+[demo/overlaymap]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayMap
+[demo/overlaytriangle]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayTriangle
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
