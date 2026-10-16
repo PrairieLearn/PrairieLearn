@@ -260,6 +260,21 @@ function reserveUniqueId(preferredId: string, reservedIds: Set<string>): string 
   return candidate;
 }
 
+function namespaceGraphSvgs($: cheerio.CheerioAPI, namespace: string): void {
+  const reservedIds = new Set(getIds($));
+  $('.pl-graph > svg').each((index, element) => {
+    const svg = cheerio.load($.html(element), undefined, false);
+    const idRenames = new Map(
+      [...new Set(getIds(svg))].map((id) => [
+        id,
+        reserveUniqueId(`${namespace}-graph-${index + 1}-${id}`, reservedIds),
+      ]),
+    );
+    renameIdsAndReferences(svg, idRenames);
+    $(element).replaceWith(svg.root().html() ?? '');
+  });
+}
+
 /** Namespaces IDs that occur in more than one independently rendered question fragment. */
 export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespace[]): string[] {
   const namespaces = questions.map((question) => question.namespace);
@@ -274,6 +289,7 @@ export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespa
 
   const fragments = questions.map(({ html, namespace }) => {
     const $ = cheerio.load(html, undefined, false);
+    namespaceGraphSvgs($, namespace);
     assertNoDuplicateIds($, namespace);
     return { $, namespace };
   });
