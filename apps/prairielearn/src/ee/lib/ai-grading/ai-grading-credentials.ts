@@ -48,7 +48,7 @@ export async function resolveAiGradingKeys(
       keys.openai = { apiKey: decryptedKey, organization: null };
     } else if (cred.provider === 'google') {
       keys.google = { apiKey: decryptedKey };
-    } else {
+    } else if (cred.provider === 'anthropic') {
       keys.anthropic = { apiKey: decryptedKey };
     }
   }
