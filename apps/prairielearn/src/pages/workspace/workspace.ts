@@ -3,9 +3,10 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
+import { generatePrefixCsrfToken, generateSignedToken } from '@prairielearn/signed-token';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
+import { getWorkspaceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { selectVariantIdForWorkspace } from '../../models/workspace.js';
 
@@ -66,6 +67,18 @@ export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: b
             res.locals.authz_data?.has_course_permission_preview,
           heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
           visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
+          workspaceIsolationMode: config.workspaceIsolationMode,
+          publicQuestionEndpoint,
+          trpcCsrfToken: generatePrefixCsrfToken(
+            {
+              url: getWorkspaceTrpcUrl({
+                workspaceId: res.locals.workspace_id,
+                publicQuestionEndpoint,
+              }),
+              authn_user_id: res.locals.authn_user.id,
+            },
+            config.secretKey,
+          ),
           socketToken: generateSignedToken(
             { workspace_id: res.locals.workspace_id.toString() },
             config.secretKey,

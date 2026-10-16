@@ -14,6 +14,9 @@ export function Workspace({
   showLogs,
   heartbeatIntervalSec,
   visibilityTimeoutSec,
+  workspaceIsolationMode,
+  publicQuestionEndpoint,
+  trpcCsrfToken,
   socketToken,
   resLocals,
 }: {
@@ -24,6 +27,9 @@ export function Workspace({
   showLogs: boolean;
   heartbeatIntervalSec: number;
   visibilityTimeoutSec: number;
+  workspaceIsolationMode: 'same-origin' | 'cross-origin';
+  publicQuestionEndpoint: boolean;
+  trpcCsrfToken: string;
   socketToken: string;
   resLocals: UntypedResLocals;
 }) {
@@ -45,6 +51,9 @@ export function Workspace({
         'workspace-id': workspace_id,
         'heartbeat-interval-sec': heartbeatIntervalSec.toString(),
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
+        'workspace-isolation-mode': workspaceIsolationMode,
+        'public-question-endpoint': publicQuestionEndpoint.toString(),
+        'trpc-csrf-token': trpcCsrfToken,
       },
       enableNavbar: false,
       contentPadding: false,
@@ -194,8 +203,17 @@ export function Workspace({
              so role="alert" announces it. -->
         <p id="failed-message" role="alert"></p>
       </div>
+      <div
+        id="authorization-expired"
+        class="d-none h-100 flex-grow flex-column justify-content-center align-items-center p-2 text-center"
+      >
+        <h2>Workspace connection expired</h2>
+        <p>Your files remain saved. Reconnect when you are ready to continue.</p>
+        <button id="reconnect" class="btn btn-primary">Reconnect workspace</button>
+      </div>
       <iframe
         id="workspace"
+        name="workspace-frame"
         class="d-none flex-grow h-100 w-100 border-0"
         title="Workspace"
       ></iframe>

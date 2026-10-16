@@ -58,6 +58,7 @@ interface ResLocalsForPageLookup {
     ResLocalsAssessment &
     ResLocalsAssessmentInstance;
   assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
+  workspace: ResLocals & { workspace_access_authorized: boolean; workspace_id: string };
 }
 
 // Only apply MergeUnion when T is a union of page types; preserve unions for single types

@@ -134,6 +134,7 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       publicQuestionPreview: publicQuestionEndpoint,
     });
 
+    res.locals.workspace_access_authorized = true;
     next();
   });
 }

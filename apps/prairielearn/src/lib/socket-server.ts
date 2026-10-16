@@ -10,6 +10,7 @@ import { Adapter } from 'socket.io-adapter';
 import { logger } from '@prairielearn/logger';
 
 import { config } from './config.js';
+import { classifyWorkspaceSandboxRequestHost } from './workspace-sandbox.js';
 
 const debug = debugfn('prairielearn:socket-server');
 
@@ -49,7 +50,11 @@ let sub: Redis | undefined;
 
 export async function init(server: http.Server) {
   debug('init(): creating socket server');
-  io = new Server(server);
+  io = new Server(server, {
+    allowRequest: (req, callback) => {
+      callback(null, classifyWorkspaceSandboxRequestHost(req).type === 'not-sandbox');
+    },
+  });
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers.
     //
