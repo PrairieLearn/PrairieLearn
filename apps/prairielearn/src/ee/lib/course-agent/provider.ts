@@ -13,11 +13,15 @@ import {
   sandboxDiagnosticsSchema,
 } from '@prairielearn/course-agent-contract';
 import * as Sentry from '@prairielearn/sentry';
+import { assertNever } from '@prairielearn/utils';
 
 import { config } from '../../../lib/config.js';
 
 import { workerResponseError } from './errors.js';
 import { executeHostTool } from './host-tools.js';
+
+// Reuse an existing backend watch socket when possible. A result can also arrive with every browser closed.
+const hostSockets = new Map<string, Set<WebSocket>>();
 
 const CONNECTION_TIMEOUT_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -33,6 +37,19 @@ const resumeEventSchema = z.discriminatedUnion('type', [
 const snapshotSchema = z.object({
   messages: z.array(z.unknown()),
   operationNumber: z.number().int().nonnegative(),
+  blocked: z.boolean(),
+  pendingTool: z
+    .object({
+      id: z.uuid(),
+      sequence: z.number().int().positive(),
+      name: z.string(),
+      args: z.unknown(),
+      result: z.string().optional(),
+      resultSuccess: z.boolean().optional(),
+      prepared: z.boolean().optional(),
+      error: z.string().optional(),
+    })
+    .optional(),
   executions: z.record(
     z.string(),
     z.object({
@@ -44,6 +61,11 @@ const snapshotSchema = z.object({
 const watchMessageSchema = z.union([
   hostToolCallSchema,
   z.object({ type: z.enum(['cf_agent_state', 'cf_agent_chat_messages']) }),
+]);
+
+const deliveryMessageSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('host-tool-delivered'), id: z.uuid() }),
+  z.object({ type: z.literal('host-tool-delivery-error'), id: z.uuid() }),
 ]);
 
 /** Isolate Cloudflare transport behind the provider contract; the browser only sees HTTP and AI SDK SSE. */
@@ -93,7 +115,15 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
             : {}),
         },
       });
+      const peers = hostSockets.get(agentUrl.href) ?? new Set<WebSocket>();
+      hostSockets.set(agentUrl.href, peers);
+      const forget = () => {
+        peers.delete(socket);
+        if (peers.size === 0) hostSockets.delete(agentUrl.href);
+      };
+      socket.once('close', forget);
       const close = () => {
+        forget();
         socket.close();
       };
       signal.addEventListener('abort', close, { once: true });
@@ -116,8 +146,15 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
             })
             .catch((error: unknown) => {
               Sentry.captureException(error);
-              close();
-              failed();
+              if (message.sequence !== undefined && socket.readyState === WebSocket.OPEN) {
+                socket.send(
+                  JSON.stringify({ type: 'host-tool-preparation-error', id: message.id }),
+                );
+                changed();
+              } else {
+                close();
+                failed();
+              }
             });
           return;
         }
@@ -135,6 +172,8 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
         close();
         throw error;
       }
+      hostSockets.set(agentUrl.href, peers);
+      peers.add(socket);
       socket.send(JSON.stringify({ type: 'host-tools-ready' }));
       return () => {
         signal.removeEventListener('abort', close);
@@ -142,6 +181,88 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
         socket.removeListener('error', failed);
         close();
       };
+    },
+    async markToolPrepared(id, signal) {
+      await request('tool-prepared', 'POST', signal, { id });
+    },
+    async deliverToolResult(outcome, signal) {
+      const existing = Array.from(hostSockets.get(agentUrl.href) ?? []).find(
+        (socket) => socket.readyState === WebSocket.OPEN,
+      );
+      const url = new URL(agentUrl);
+      url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+      const socket =
+        existing ??
+        new WebSocket(url, {
+          maxPayload: 8 * 1024 * 1024,
+          headers: {
+            'X-Host-Tools': '1',
+            ...(config.courseAgent?.serviceToken
+              ? { Authorization: `Bearer ${config.courseAgent.serviceToken}` }
+              : {}),
+          },
+        });
+      // A cold continuation includes sandbox restore and native acceptance;
+      // its caller supplies a budget for that work, not an ordinary control RPC.
+      const deadline = signal;
+      let cleanup = () => {};
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const fail = () =>
+            reject(new Error('Tool result delivery interrupted. Retry completion.'));
+          const send = () =>
+            socket.send(
+              JSON.stringify({
+                type: 'host-tool-result',
+                id: outcome.id,
+                outcome,
+              }),
+            );
+          const receive = (data: WebSocket.RawData) => {
+            let value: unknown;
+            try {
+              value = JSON.parse(String(data));
+            } catch {
+              return;
+            }
+            const parsed = deliveryMessageSchema.safeParse(value);
+            if (!parsed.success) return;
+            const frame = parsed.data;
+            if (frame.id !== outcome.id) return;
+            switch (frame.type) {
+              case 'host-tool-delivered':
+                resolve();
+                break;
+              case 'host-tool-delivery-error':
+                reject(new Error('Tool result delivery failed. Retry completion.'));
+                break;
+              default:
+                assertNever(frame);
+            }
+          };
+          cleanup = () => {
+            deadline.removeEventListener('abort', fail);
+            socket.off('close', fail);
+            socket.off('error', fail);
+            socket.off('open', send);
+            socket.off('message', receive);
+          };
+          deadline.addEventListener('abort', fail, { once: true });
+          socket.once('close', fail);
+          socket.once('error', fail);
+          socket.on('message', receive);
+          if (deadline.aborted) fail();
+          else if (existing) send();
+          else socket.once('open', send);
+        });
+      } finally {
+        cleanup();
+        if (!existing) {
+          // Closing during the handshake can emit an asynchronous error after request listeners are removed.
+          socket.once('error', () => {});
+          socket.close();
+        }
+      }
     },
     async getSnapshot(signal, operationIds) {
       const path = operationIds
@@ -154,7 +275,9 @@ export function createCloudflareProvider(workerUrl: URL, id: string): ChatProvid
       return {
         messages,
         executions: value.executions,
+        blocked: value.blocked,
         operationNumber: value.operationNumber,
+        pendingTool: value.pendingTool,
       };
     },
     async getDiagnostics(signal) {

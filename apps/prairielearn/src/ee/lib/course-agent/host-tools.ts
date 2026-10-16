@@ -23,3 +23,14 @@ export async function executeHostTool(message: unknown) {
   }
   return { type: 'host-tool-result' as const, id: call.id, result };
 }
+
+/** Durable preparation is supplied by PL; transport remains independent of its database and approval schemas. */
+export async function dispatchHostTool(
+  message: unknown,
+  prepare: (call: z.infer<typeof hostToolCallSchema> & { sequence: number }) => Promise<void>,
+) {
+  const call = hostToolCallSchema.parse(message);
+  if (call.sequence === undefined) return executeHostTool(call);
+  await prepare({ ...call, sequence: call.sequence });
+  return { type: 'host-tool-prepared', id: call.id };
+}

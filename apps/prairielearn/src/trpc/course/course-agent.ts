@@ -1,7 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { ChatError, sendRequestSchema } from '@prairielearn/course-agent-contract';
+import {
+  ChatError,
+  approvalDecisionSchema,
+  sendRequestSchema,
+} from '@prairielearn/course-agent-contract';
 import { IdSchema } from '@prairielearn/zod';
 
 import { formatCourseAgentDate } from '../../lib/course-agent-date.js';
@@ -18,6 +22,7 @@ import {
   selectConversationActivity,
   selectOptionalOperation,
 } from '../../models/course-agent-conversation.js';
+import { selectOptionalProposal } from '../../models/course-agent-proposal.js';
 
 import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.js';
 
@@ -26,9 +31,24 @@ const procedure = t.procedure
   .use(requireNotExampleCourse)
   .use(async ({ ctx, next }) => {
     if (!isEnterprise()) throw new TRPCError({ code: 'FORBIDDEN' });
-    const { authorize, destination, provider, newWorkEnabled } =
-      await import('../../ee/lib/course-agent/service.js');
-    const service = { authorize, destination, provider, newWorkEnabled };
+    const {
+      authorize,
+      destination,
+      provider,
+      prepare,
+      complete,
+      newWorkEnabled,
+      unavailableReason,
+    } = await import('../../ee/lib/course-agent/service.js');
+    const service = {
+      authorize,
+      destination,
+      provider,
+      prepare,
+      complete,
+      newWorkEnabled,
+      unavailableReason,
+    };
     const scope: AgentScope = {
       course_id: ctx.course.id,
       user_id: ctx.authz_data.user.id,
@@ -63,7 +83,9 @@ export const courseAgentRouter = t.router({
       }),
     )
     .query(async ({ ctx }) => ({
-      canStartNewWork: await ctx.service.newWorkEnabled(ctx.scope, ctx.course),
+      canStartNewWork:
+        (await ctx.service.newWorkEnabled(ctx.scope, ctx.course)) &&
+        !ctx.service.unavailableReason(),
       conversations: (await selectConversationActivity(ctx.scope)).map(
         ({ conversation, running, finished_at }) => ({
           ...conversation,
@@ -127,6 +149,42 @@ export const courseAgentRouter = t.router({
     );
     await chat.retryCleanup(AbortSignal.timeout(30000));
   }),
+  decide: procedure
+    .input(id.extend({ decision: approvalDecisionSchema }))
+    .mutation(async ({ ctx, input }) =>
+      ctx.service.complete(
+        ctx.scope,
+        await selectConversation(ctx.scope, input.conversationId),
+        input.decision,
+      ),
+    ),
+  prepare: procedure
+    .input(id.extend({ operationId: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = await selectConversation(ctx.scope, input.conversationId);
+      const row = await selectOptionalProposal(c.id, input.operationId);
+      const retained = !row
+        ? (await (await ctx.service.provider(ctx.scope, c)).getSnapshot(AbortSignal.timeout(10000)))
+            .pendingTool
+        : undefined;
+      if (!row && retained?.id !== input.operationId) throw new TRPCError({ code: 'NOT_FOUND' });
+      await ctx.service.prepare(
+        ctx.scope,
+        c,
+        row
+          ? {
+              id: row.operation_id,
+              sequence: row.sequence,
+              name: 'push_sync',
+              args: row.payload,
+            }
+          : retained!,
+      );
+      if ((await selectOptionalProposal(c.id, input.operationId))?.prepared) {
+        const chat = await ctx.service.provider(ctx.scope, c);
+        await chat.markToolPrepared(input.operationId, AbortSignal.timeout(30000));
+      }
+    }),
 });
 
 export interface CourseAgentError {
@@ -136,4 +194,6 @@ export interface CourseAgentError {
   Send: never;
   Stop: never;
   Cleanup: never;
+  Decide: never;
+  Prepare: never;
 }

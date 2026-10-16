@@ -7,6 +7,8 @@ import type { Turn } from '../../src/generated/v2/Turn.js';
 interface State {
   files: Record<string, string>;
   waitingTool?: boolean;
+  waitingToolCalls?: string[];
+  captureDelay?: number;
   toolResults?: unknown[];
   backup?: Record<string, string>;
   backupEvents: string[];
@@ -100,8 +102,8 @@ export class TestSandbox extends DurableObject {
     server.addEventListener('close', () => this.sockets.delete(server));
     server.addEventListener('message', (event) => {
       const frame = JSON.parse(String(event.data));
-      if (!frame.method && frame.id === 'host-call') {
-        void this.acceptToolResult(frame.result);
+      if (!frame.method && String(frame.id).startsWith('approval-call')) {
+        void this.acceptToolResult(frame.result, frame.id);
         return;
       }
       void this.rpc(frame.method, frame.params ?? {})
@@ -331,12 +333,52 @@ export class TestSandbox extends DurableObject {
     });
   }
 
-  async requestHostTool(tool: string, args: Record<string, string>) {
+  async exec(command: string) {
+    const path = command.match(/(\/tmp\/approval-[\w-]+\.json)/)?.[1];
+    if (path) {
+      const delay = (await this.state()).captureDelay;
+      if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+      await this.writeFile(
+        path,
+        JSON.stringify({
+          diff: 'diff --git a/hello.txt b/hello.txt\n--- a/hello.txt\n+++ b/hello.txt\n@@ -1 +1 @@\n-old\n+new\n',
+          files: [
+            {
+              path: 'hello.txt',
+              content: 'new\n',
+              previousMode: '100644',
+              mode: '100644',
+            },
+          ],
+        }),
+      );
+    }
+    return {
+      success: true,
+      stdout:
+        'diff --git a/hello.txt b/hello.txt\n--- a/hello.txt\n+++ b/hello.txt\n@@ -1 +1 @@\n-old\n+new\n',
+    };
+  }
+
+  async requestApproval(
+    tool = 'push_sync',
+    args: Record<string, string> = {
+      baseSha: 'a'.repeat(40),
+      proposedSha: 'b'.repeat(40),
+    },
+    count = 1,
+    captureDelay = 0,
+  ) {
     const state = await this.state();
     state.waitingTool = true;
-    const item: ThreadItem = {
+    state.captureDelay = captureDelay;
+    const calls = Array.from({ length: count }, (_, index) =>
+      index === 0 ? 'approval-call' : `approval-call-${index}`,
+    );
+    state.waitingToolCalls = [...(state.waitingToolCalls ?? []), ...calls];
+    const items: ThreadItem[] = calls.map((id) => ({
       type: 'dynamicToolCall',
-      id: 'host-call',
+      id,
       namespace: null,
       tool,
       arguments: args,
@@ -344,41 +386,47 @@ export class TestSandbox extends DurableObject {
       contentItems: null,
       success: null,
       durationMs: null,
-    };
-    state.turns.at(-1)!.items.push(item);
+    }));
+    state.turns.at(-1)!.items.push(...items);
     await this.save(state);
-    this.emit('item/started', {
-      threadId: 'native-thread',
-      turnId: state.turns.at(-1)!.id,
-      item,
-    });
-    for (const socket of this.sockets) {
-      socket.send(
-        JSON.stringify({
-          id: 'host-call',
-          method: 'item/tool/call',
-          params: {
-            threadId: 'native-thread',
-            turnId: state.turns.at(-1)!.id,
-            callId: 'host-call',
-            namespace: null,
-            tool,
-            arguments: args,
-          },
-        }),
-      );
+    for (const item of items) {
+      this.emit('item/started', {
+        threadId: 'native-thread',
+        turnId: state.turns.at(-1)!.id,
+        item,
+      });
+      for (const socket of this.sockets) {
+        socket.send(
+          JSON.stringify({
+            id: item.id,
+            method: 'item/tool/call',
+            params: {
+              threadId: 'native-thread',
+              turnId: state.turns.at(-1)!.id,
+              callId: item.id,
+              namespace: null,
+              tool,
+              arguments: args,
+            },
+          }),
+        );
+      }
     }
   }
 
-  private async acceptToolResult(result: {
-    success: boolean;
-    contentItems: Extract<ThreadItem, { type: 'dynamicToolCall' }>['contentItems'];
-  }) {
+  private async acceptToolResult(
+    result: {
+      success: boolean;
+      contentItems: Extract<ThreadItem, { type: 'dynamicToolCall' }>['contentItems'];
+    },
+    callId: string,
+  ) {
     const state = await this.state();
-    state.toolResults = [...(state.toolResults ?? []), result];
-    state.waitingTool = false;
+    state.toolResults = [...(state.toolResults ?? []), { ...result, callId }];
+    state.waitingToolCalls = state.waitingToolCalls?.filter((id) => id !== callId);
+    state.waitingTool = !!state.waitingToolCalls?.length;
     const turn = state.turns.at(-1)!;
-    const item = turn.items.find((item) => item.type === 'dynamicToolCall');
+    const item = turn.items.find((item) => item.id === callId);
     if (item?.type === 'dynamicToolCall') {
       Object.assign(item, result, { status: 'completed' });
       this.emit('item/completed', {
@@ -389,10 +437,6 @@ export class TestSandbox extends DurableObject {
     }
     await this.save(state);
     await this.ctx.storage.setAlarm(Math.max(Date.now() + 100, turn.startedAt! * 1000 + 8000));
-  }
-
-  async exec(_command: string) {
-    return { success: true, stdout: '' };
   }
 
   async startProcess(_command: string, _options: { processId: string }) {

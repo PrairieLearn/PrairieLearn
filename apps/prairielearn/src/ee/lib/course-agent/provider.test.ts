@@ -40,6 +40,7 @@ test('rejects malformed Worker receipts at the JSON boundary', async () => {
       Response.json({
         messages: [],
         operationNumber: 0,
+        blocked: false,
         executions: { invalid: { status: 'finished' } },
       }),
     ),

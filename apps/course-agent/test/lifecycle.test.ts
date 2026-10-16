@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
 
 import { describe, expect, it } from 'vitest';
+import WebSocket from 'ws';
 
 const origin = process.env.COURSE_AGENT_FIXTURE_URL;
 const headers = {
@@ -34,6 +36,25 @@ function conversation() {
       });
       expect(response.ok).toBe(true);
       return id;
+    },
+    async host(prepared = true) {
+      const socket = new WebSocket(root.replace('http', 'ws'), {
+        headers: { ...headers, 'X-Host-Tools': '1' },
+      });
+      await once(socket, 'open');
+      socket.send(JSON.stringify({ type: 'host-tools-ready' }));
+      socket.on('message', (raw) => {
+        const frame = JSON.parse(String(raw));
+        if (frame.type === 'host-tool-call' && frame.sequence) {
+          socket.send(
+            JSON.stringify({
+              type: prepared ? 'host-tool-prepared' : 'host-tool-preparation-error',
+              id: frame.id,
+            }),
+          );
+        }
+      });
+      return socket;
     },
   };
 }
@@ -99,7 +120,26 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
       ).status,
     ).toBe(409);
   });
-
+  it('keeps a preparation failure connected and acknowledges a successful explicit retry', async () => {
+    const c = conversation();
+    const socket = await c.host(false);
+    try {
+      await c.send();
+      await c.request('test/approval', {});
+      await expect
+        .poll(async () => (await c.request('snapshot')).pendingTool?.error)
+        .toBe('Retry preparation.');
+      expect(socket.readyState).toBe(WebSocket.OPEN);
+      const tool = (await c.request('snapshot')).pendingTool;
+      expect(tool.prepared).not.toBe(true);
+      await c.request('tool-prepared', { id: tool.id });
+      expect((await c.request('snapshot')).pendingTool.prepared).toBe(true);
+      expect((await c.request('snapshot')).pendingTool.error).toBeUndefined();
+      await c.request('cancel', {});
+    } finally {
+      socket.close();
+    }
+  });
   it('suspends after ten idle minutes, keeps one checkpoint, and restores on the next message', async () => {
     const c = conversation();
     await c.send();
@@ -183,5 +223,117 @@ describe.skipIf(!origin)('Durable Object lifecycle in workerd', { timeout: 45000
     expect(diagnostics.cleanup.retryAt).toBeNull();
     await c.request('cleanup', {});
     expect((await c.request('diagnostics')).state).toBe('absent');
+  });
+  it('rejects an overlapping prepared call without overwriting the first approval gate', async () => {
+    const c = conversation();
+    const socket = await c.host();
+    try {
+      await c.send();
+      await c.request('test/approval', { count: 2, captureDelay: 200 });
+      await expect.poll(async () => (await c.request('test/status')).toolResults?.length).toBe(1);
+      expect((await c.request('test/status')).toolResults[0]).toMatchObject({
+        callId: 'approval-call-1',
+        success: false,
+      });
+      await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
+      const pending = (await c.request('snapshot')).pendingTool;
+      expect((await c.request('test/state')).toolSequence).toBe(1);
+      socket.send(
+        JSON.stringify({
+          type: 'host-tool-result',
+          id: pending.id,
+          outcome: { id: pending.id, result: 'Denied. Nothing was published.' },
+        }),
+      );
+      await expect.poll(async () => (await c.request('test/status')).toolResults?.length).toBe(2);
+      expect((await c.request('test/status')).toolResults[1]).toMatchObject({
+        callId: 'approval-call',
+        success: true,
+      });
+      await expect.poll(async () => (await c.request('snapshot')).blocked).toBe(false);
+      await c.request('cancel', {});
+    } finally {
+      socket.close();
+    }
+  });
+  it('delivers a failed native tool result and releases the gate without an approval decision', async () => {
+    const c = conversation();
+    const socket = await c.host();
+    try {
+      await c.send();
+      await c.request('test/approval', {});
+      await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
+      const pending = (await c.request('snapshot')).pendingTool;
+      const error = 'Unrecognized key: accessRules. Correct the file and submit a new proposal.';
+      const result = {
+        type: 'host-tool-result',
+        id: pending.id,
+        outcome: {
+          id: pending.id,
+          result: error,
+          success: false,
+          display: { name: 'push_sync', value: { error } },
+        },
+      };
+      socket.send(JSON.stringify(result));
+      await expect
+        .poll(async () => (await c.request('test/status')).toolResults?.[0]?.success)
+        .toBe(false);
+      await expect.poll(async () => (await c.request('snapshot')).blocked).toBe(false);
+      expect((await c.request('test/status')).toolResults[0].contentItems[0].text).toBe(error);
+      socket.send(JSON.stringify(result));
+      await c.request('cancel', {});
+      expect((await c.request('test/status')).toolResults).toHaveLength(1);
+    } finally {
+      socket.close();
+    }
+  });
+  it('retains the pending tool across suspension and delivers a cold hidden continuation exactly once', async () => {
+    const c = conversation();
+    const socket = await c.host();
+    try {
+      await c.send();
+      await c.request('test/approval', {});
+      await expect.poll(async () => (await c.request('snapshot')).pendingTool?.prepared).toBe(true);
+      const pending = (await c.request('snapshot')).pendingTool;
+      await c.request('test/advance', { milliseconds: 10 * 60_000 + 1000 });
+      expect((await c.request('snapshot')).pendingTool.id).toBe(pending.id);
+      expect((await c.request('diagnostics')).state).toBe('absent');
+      const outcome = {
+        type: 'host-tool-result',
+        id: pending.id,
+        outcome: { id: pending.id, result: 'Denied. Nothing was published.' },
+      };
+      const received: unknown[] = [];
+      const rejected: unknown[] = [];
+      socket.on('message', (raw) => {
+        const frame = JSON.parse(String(raw));
+        if (frame.type === 'host-tool-delivered') received.push(frame);
+        if (frame.type === 'host-tool-delivery-error') rejected.push(frame);
+      });
+      socket.send(JSON.stringify(outcome));
+      await expect.poll(() => rejected.length).toBe(1);
+      expect(received).toHaveLength(0);
+      expect((await c.request('test/status')).restores).toBe(0);
+      expect((await c.request('snapshot')).pendingTool.id).toBe(pending.id);
+      const dispatchId = randomUUID();
+      const admitted = { ...outcome, outcome: { ...outcome.outcome, dispatchId } };
+      socket.send(JSON.stringify(admitted));
+      await expect.poll(() => received.length, { timeout: 15000 }).toBe(1);
+      socket.send(JSON.stringify(outcome));
+      await expect.poll(() => received.length).toBe(2);
+      const snapshot = await c.request('snapshot');
+      expect(snapshot.pendingTool).toBeUndefined();
+      expect(snapshot.executions[pending.id].dispatchId).toBe(dispatchId);
+      expect(
+        snapshot.messages.filter(
+          (m: { metadata?: { source: string } }) => m.metadata?.source === 'tool-result',
+        ),
+      ).toHaveLength(1);
+      expect((await c.request('test/status')).restores).toBe(1);
+      await c.request('cancel', {});
+    } finally {
+      socket.close();
+    }
   });
 });

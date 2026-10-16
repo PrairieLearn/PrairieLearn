@@ -1,3 +1,4 @@
+import { ExecaError } from 'execa';
 import fs from 'fs-extra';
 import z from 'zod';
 
@@ -57,10 +58,20 @@ export async function pullAndUpdateCourse({
   course,
   userId,
   authnUserId,
+  onJobCreated,
+  expectedAncestorSha,
+  onSynced,
+  onValidationFailure,
+  onAncestryFailure,
 }: {
   course: Course;
   userId: string | null;
   authnUserId: string | null;
+  onJobCreated?: (jobSequenceId: string) => Promise<void>;
+  expectedAncestorSha?: string;
+  onSynced?: (commitHash: string) => Promise<void>;
+  onValidationFailure?: () => Promise<void>;
+  onAncestryFailure?: () => Promise<void>;
 }): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
   const serverJob = await createServerJob({
     type: 'sync',
@@ -76,6 +87,7 @@ export async function pullAndUpdateCourse({
   }
 
   const jobPromise = serverJob.execute(async (job) => {
+    await onJobCreated?.(serverJob.jobSequenceId);
     const { path, branch, repository, commit_hash } = course;
 
     if (!path) {
@@ -116,6 +128,24 @@ export async function pullAndUpdateCourse({
         }
 
         const gitOptions = { cwd: path, env: gitEnv };
+
+        const checkAncestry = async (reference: string) => {
+          if (!expectedAncestorSha) return;
+          try {
+            await job.exec(
+              'git',
+              ['merge-base', '--is-ancestor', expectedAncestorSha, reference],
+              gitOptions,
+            );
+          } catch (error) {
+            // Exit 1 means divergent history; 128 includes a missing approved
+            // object. Neither is fixed by repeating the same Course Sync job.
+            if (error instanceof ExecaError && [1, 128].includes(error.exitCode ?? 0)) {
+              await onAncestryFailure?.();
+            }
+            throw error;
+          }
+        };
         const coursePathExists = await fs.pathExists(path);
         if (!coursePathExists) {
           // path does not exist, start with 'git clone'
@@ -153,6 +183,8 @@ export async function pullAndUpdateCourse({
             cancelSignal: AbortSignal.timeout(30_000),
           });
 
+          await checkAncestry(`origin/${branch}`);
+
           job.info('Restore staged and unstaged changes');
           await job.exec('git', ['restore', '--staged', '--worktree', '.'], gitOptions);
 
@@ -173,9 +205,12 @@ export async function pullAndUpdateCourse({
         // hash next time.
         const endGitHash = await getCourseCommitHash(path);
 
+        await checkAncestry(endGitHash);
+
         job.info('Sync git repository to database');
         const syncResult = await syncDiskToSqlWithLock(course, job);
         if (syncResult.status === 'sharing_error') {
+          await onValidationFailure?.();
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
           }
@@ -197,7 +232,10 @@ export async function pullAndUpdateCourse({
         await updateCourseCommitHash({ id: course.id, path });
 
         if (syncResult.hadJsonErrors) {
+          await onValidationFailure?.();
           job.fail('One or more JSON files contained errors and were unable to be synced.');
+        } else {
+          await onSynced?.(endGitHash);
         }
       },
     );

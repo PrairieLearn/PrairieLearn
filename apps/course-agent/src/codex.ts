@@ -1,6 +1,6 @@
 import type { DirectoryBackup, getSandbox } from '@cloudflare/sandbox';
 
-import type { CleanupDiagnostics } from '@prairielearn/course-agent-contract';
+import type { CleanupDiagnostics, PendingTool } from '@prairielearn/course-agent-contract';
 
 import { AppServer } from './app-server.js';
 import { safeFailure } from './cleanup-error.js';
@@ -40,6 +40,11 @@ export interface CodexState {
    * after a lost acknowledgment native history decides whether it was accepted.
    */
   steering?: Record<string, { sandboxId: string; threadId: string; accepted: boolean }>;
+  /** Captured tool arguments outlive the socket/container while PL waits for approval. */
+  pendingTool?: PendingTool;
+  toolSequence?: number;
+  /** Completed results fence retries after a lost native result-delivery acknowledgment. */
+  toolReceipts?: Record<string, { result: string; success: boolean }>;
   sandbox?: {
     id: string;
     phase:

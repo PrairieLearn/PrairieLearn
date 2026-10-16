@@ -8,13 +8,19 @@ import {
   createUIMessageStreamResponse,
   readUIMessageStream,
 } from 'ai';
+import { z } from 'zod';
 
 import {
   ChatError,
   type DispatchRequest,
+  type PendingTool,
   type SandboxDiagnostics,
+  type ToolOutcome,
   admissionReconciliationSchema,
   dispatchRequestSchema,
+  hostToolResultSchema,
+  preparedToolSchema,
+  toolOutcomeSchema,
 } from '@prairielearn/course-agent-contract';
 
 import { type AppServer, AppServerError, within } from './app-server.js';
@@ -30,10 +36,12 @@ import {
   checkpointCodex,
   connectCodex,
 } from './codex.js';
+import type { DynamicToolCallResponse } from './generated/v2/DynamicToolCallResponse.js';
 import type { Turn } from './generated/v2/Turn.js';
 import { HostTools } from './host-tools.js';
 import { ReceiptStore } from './receipt-store.js';
 import type { Sandbox } from './sandbox.js';
+import { getTool, isPreparedTool, toolResult } from './tools.js';
 
 export interface Env {
   Sandbox: DurableObjectNamespace<Sandbox>;
@@ -51,6 +59,13 @@ interface Expiration {
   attempt?: number;
   retryOf?: string;
 }
+const hostFrameSchema = z.union([
+  z.object({ type: z.literal('host-tools-ready') }),
+  z.object({ type: z.literal('host-tool-prepared'), id: z.uuid() }),
+  z.object({ type: z.literal('host-tool-preparation-error'), id: z.uuid() }),
+  z.object({ type: z.literal('host-tool-result'), id: z.uuid(), outcome: toolOutcomeSchema }),
+  hostToolResultSchema,
+]);
 const MAX_CLEANUP_ATTEMPTS = 3;
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : 'Codex failed.');
 const expiredMessage =
@@ -76,6 +91,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
   initialState: CodexState = {};
   private active?: CodexTurn;
   private hostTools = new HostTools();
+  private durableExecutor?: string;
   private receiptStore?: ReceiptStore;
   private get receipts() {
     return (this.receiptStore ??= new ReceiptStore(this.ctx.storage.sql));
@@ -130,22 +146,68 @@ export class Chat extends AIChatAgent<Env, CodexState> {
   /** Explicit tool frames share the watch socket; SDK chat messages keep their normal path. */
   override async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message === 'string' && message.length <= 1_000_000) {
-      let frame: unknown;
+      let value: unknown;
       try {
-        frame = JSON.parse(message);
+        value = JSON.parse(message);
       } catch {
         return;
       }
       if (
-        frame &&
-        typeof frame === 'object' &&
-        'type' in frame &&
-        typeof frame.type === 'string' &&
-        frame.type.startsWith('host-tool')
+        value &&
+        typeof value === 'object' &&
+        'type' in value &&
+        typeof value.type === 'string' &&
+        value.type.startsWith('host-tool')
       ) {
         if (!(connection.state as { hostPeer?: boolean } | null)?.hostPeer) return;
+        const parsedFrame = hostFrameSchema.safeParse(value);
+        if (!parsedFrame.success) return;
+        const frame = parsedFrame.data;
         if (frame.type === 'host-tools-ready') {
           connection.setState({ ...connection.state, hostExecutor: true });
+          this.dispatchTool(connection);
+        } else if (frame.type === 'host-tool-prepared') {
+          const tool = this.state.pendingTool;
+          if (
+            tool &&
+            tool.id === frame.id &&
+            !tool.result &&
+            this.durableExecutor === connection.id
+          ) {
+            this.saveState({
+              ...this.state,
+              pendingTool: { ...tool, prepared: true, error: undefined },
+            });
+            if (this.state.run && !tool.prepared) {
+              await this.finishRun(this.state.run, this.state.run.status);
+            }
+          }
+        } else if (frame.type === 'host-tool-preparation-error') {
+          const tool = this.state.pendingTool;
+          if (tool && tool.id === frame.id && this.durableExecutor === connection.id) {
+            this.durableExecutor = undefined;
+            this.saveState({
+              ...this.state,
+              pendingTool: { ...tool, error: 'Retry preparation.' },
+            });
+          }
+        } else if (frame.type === 'host-tool-result' && 'outcome' in frame) {
+          const parsed = toolOutcomeSchema.safeParse(frame.outcome);
+          if (!parsed.success || frame.id !== parsed.data.id) return;
+          const operation = this.controlTail.then(() => this.deliverToolResult(parsed.data));
+          this.controlTail = operation.catch(() => {});
+          try {
+            await operation;
+            connection.send(JSON.stringify({ type: 'host-tool-delivered', id: frame.id }));
+          } catch {
+            connection.send(
+              JSON.stringify({
+                type: 'host-tool-delivery-error',
+                id: frame.id,
+                error: 'Result delivery failed. Retry completion; the saved decision is unchanged.',
+              }),
+            );
+          }
         } else if (frame.type === 'host-tool-result') {
           this.hostTools.receive(connection.id, frame);
         }
@@ -160,16 +222,49 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       'Host disconnected; outcome may be unknown. It was not retried.',
       connection.id,
     );
+    if (this.durableExecutor === connection.id) {
+      this.durableExecutor = undefined;
+      this.dispatchTool(undefined, connection.id);
+    }
     return super.onClose(connection, code, reason, wasClean);
   }
 
-  // Serialize Send/Stop, not the full model turn: users must retain control while it runs.
+  /** Replay only durable preparation, with a stable ID; PL never publishes on receipt. */
+  private dispatchTool(preferred?: Connection, excludedId?: string) {
+    const tool = this.state.pendingTool;
+    if (!tool || tool.result || this.durableExecutor) return;
+    const executor =
+      preferred ??
+      Array.from(this.getConnections<{ hostExecutor?: boolean }>()).find(
+        (c) => c.state?.hostExecutor && c.id !== excludedId,
+      );
+    if (!executor) return;
+    this.durableExecutor = executor.id;
+    try {
+      executor.send(
+        JSON.stringify({
+          type: 'host-tool-call',
+          id: tool.id,
+          name: tool.name,
+          input: tool.args,
+          sequence: tool.sequence,
+        }),
+      );
+    } catch {
+      this.durableExecutor = undefined;
+    }
+  }
+
+  // Serialize Send/Stop/decisions, not the full model turn: users must retain control while it runs.
   private controlTail: Promise<unknown> = Promise.resolve();
   private chatTask?: Promise<void>;
   private acceptance?: { resolve(): void; reject(error: unknown): void };
   private turnInProgress = false;
   private streamedMessage?: UIMessage;
+  // Capture has no resumable work; a DO restart must not preserve an in-flight lock.
+  private toolPreparing = false;
   private recovery?: Promise<void>;
+  private resolveToolResult?: (result: DynamicToolCallResponse) => void;
   // Cleanup joins setup instead of cancelling individual SDK operations.
   private startup?: Promise<unknown>;
 
@@ -263,6 +358,24 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       return Response.json({ rejected: await operation });
     }
     const path = new URL(request.url).pathname;
+    if (request.method === 'POST' && path.endsWith('/tool-prepared')) {
+      const parsed = preparedToolSchema.safeParse(await request.json().catch(() => null));
+      if (!parsed.success) return Response.json({ error: 'Invalid tool.' }, { status: 400 });
+      const operation = this.controlTail.then(async () => {
+        const tool = this.state.pendingTool;
+        if (!tool || tool.id !== parsed.data.id || tool.result) return;
+        this.saveState({
+          ...this.state,
+          pendingTool: { ...tool, prepared: true, error: undefined },
+        });
+        if (this.state.run && !tool.prepared) {
+          await this.finishRun(this.state.run, this.state.run.status);
+        }
+      });
+      this.controlTail = operation.catch(() => {});
+      await operation;
+      return new Response(null, { status: 204 });
+    }
     if (request.method === 'POST' && path.endsWith('/configure')) {
       if (!this.env.CODEX_MODEL) {
         return Response.json({ error: 'Course agent model is not configured.' }, { status: 503 });
@@ -307,7 +420,9 @@ export class Chat extends AIChatAgent<Env, CodexState> {
         {
           messages: this.snapshotMessages(),
           executions: this.executionReceipts(ids),
-          operationNumber: 0, // PL supplies its authoritative admission operationNumber.
+          operationNumber: 0, // PL supplies the authoritative operation number.
+          blocked: !!this.state.pendingTool || this.toolPreparing,
+          pendingTool: this.state.pendingTool,
         },
         { headers: { 'Cache-Control': 'no-store' } },
       );
@@ -421,16 +536,16 @@ export class Chat extends AIChatAgent<Env, CodexState> {
   }
 
   /**
-   * Admit a operationNumber-checked prompt, then steer an active turn or start a new one.
-   * Return on native acceptance, not completion; users can keep steering while it runs.
+   * Admit a prompt checked against the last observed operation number, then steer an active turn or start a new one.
+   * Return on native acceptance, not completion. Hidden tool results use the same delivery path.
    */
-  private async send(input: DispatchRequest) {
+  private async send(input: DispatchRequest, continuation = false) {
     if (input.dispatchId && this.rejectedDispatch(input.dispatchId)) {
       throw new ChatError(409, 'This dispatch was rejected before execution. Retry your message.');
     }
     const existing = this.messages.find((message) => message.id === input.id);
     const oldDispatch = messageDispatchId(existing);
-    if (existing && !(oldDispatch && this.rejectedDispatch(oldDispatch))) {
+    if (existing && !continuation && !(oldDispatch && this.rejectedDispatch(oldDispatch))) {
       return;
     }
     const steering = this.state.steering?.[input.id];
@@ -465,6 +580,29 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       await this.saveSteering(input);
       return;
     }
+    if (existing && continuation) {
+      if (this.state.run?.messageId === input.id && this.state.run.accepted) return;
+      if (this.turnInProgress) {
+        throw new ChatError(409, 'Approval delivery is still starting. Retry shortly.');
+      }
+      if (this.state.run?.messageId === input.id && this.state.run.submitted) {
+        await this.reconcile();
+        if (this.state.run?.accepted) return;
+        if (this.state.run?.submitted) {
+          throw new ChatError(
+            503,
+            'Approval delivery is unconfirmed. The outcome remains pending.',
+          );
+        }
+      }
+      // A stored UI message is not proof of delivery. Retry only a confirmed pre-submission failure.
+      if (this.state.run?.messageId === input.id) this.saveState({ ...this.state, run: undefined });
+    }
+    if (!continuation) {
+      if (!!this.state.pendingTool || this.toolPreparing) {
+        throw new ChatError(409, 'Resolve the pending tool before sending another message.');
+      }
+    }
     const phase = this.state.sandbox?.phase;
     if (phase && ['suspending', 'destroying', 'cleanup_failed'].includes(phase)) {
       throw new ChatError(409, 'Sandbox cleanup is pending. Your message was not sent.');
@@ -484,6 +622,7 @@ export class Chat extends AIChatAgent<Env, CodexState> {
       id: input.id,
       role: 'user' as const,
       metadata: {
+        ...(continuation ? { source: 'tool-result', toolCallId: input.id } : {}),
         dispatchId: input.dispatchId,
       },
       parts: [{ type: 'text' as const, text: input.text }],
@@ -567,6 +706,144 @@ export class Chat extends AIChatAgent<Env, CodexState> {
     } finally {
       this.acceptance = undefined;
     }
+  }
+
+  /** Deliver the persisted decision to a waiting tool, or resume Codex after sandbox suspension. */
+  private async deliverToolResult(input: ToolOutcome) {
+    if (input.dispatchId && this.rejectedDispatch(input.dispatchId)) {
+      throw new ChatError(409, 'Result dispatch was rejected before execution. Retry completion.');
+    }
+    const success = input.success !== false;
+    const receipt = this.state.toolReceipts?.[input.id];
+    if (receipt !== undefined) {
+      if (receipt.result !== input.result || receipt.success !== success) {
+        throw new ChatError(409, 'A different tool result was already delivered.');
+      }
+      return;
+    }
+    const tool = this.state.pendingTool;
+    if (!tool || tool.id !== input.id) {
+      throw new ChatError(409, 'Tool request is no longer current.');
+    }
+    if (
+      tool.result &&
+      (tool.result !== input.result || (tool.resultSuccess !== false) !== success)
+    ) {
+      throw new ChatError(409, 'Tool result changed.');
+    }
+    if (input.display) {
+      if (input.display.name !== tool.name) {
+        throw new ChatError(409, 'Tool display does not match the call.');
+      }
+      const id = `tool-display-${tool.id}`;
+      const display = {
+        type: 'data-tool-display' as const,
+        data: { id: tool.id, ...input.display },
+      };
+      const existing = this.messages.find((message) => message.id === id);
+      if (existing && JSON.stringify(existing.parts) !== JSON.stringify([display])) {
+        throw new ChatError(409, 'Final tool display changed.');
+      }
+      if (!existing) {
+        await this.persistMessages([...this.messages, { id, role: 'assistant', parts: [display] }]);
+      }
+    }
+    this.saveState({
+      ...this.state,
+      pendingTool: { ...tool, result: input.result, resultSuccess: success },
+    });
+    if (
+      this.state.sandbox &&
+      ['suspending', 'destroying', 'cleanup_failed'].includes(this.state.sandbox.phase)
+    ) {
+      throw new ChatError(409, 'Sandbox cleanup is pending. Retry result delivery after cleanup.');
+    }
+    if (this.resolveToolResult && this.active && !this.active.terminal) {
+      this.saveState({
+        ...this.state,
+        sandbox: {
+          ...this.state.sandbox!,
+          phase: 'waiting_for_agent',
+          waitingSince: undefined,
+          cleanup: undefined,
+        },
+      });
+      await this.interaction();
+      this.resolveToolResult(toolResult(input.result, success));
+      this.resolveToolResult = undefined;
+    } else {
+      // The resolver can disappear after PL observes a warm turn. Require a
+      // fresh admission before restoring a sandbox and starting another turn.
+      if (!input.dispatchId) {
+        throw new ChatError(409, 'Cold result delivery needs admission. Retry completion.');
+      }
+      await this.send(
+        {
+          id: tool.id,
+          text: `${tool.name} result for operation ${tool.id}: ${input.result}`,
+          expectedOperationNumber: 0,
+          dispatchId: input.dispatchId,
+        },
+        true,
+      );
+    }
+    this.durableExecutor = undefined;
+    this.saveState({
+      ...this.state,
+      pendingTool: undefined,
+      toolReceipts: { [input.id]: { result: input.result, success } },
+    });
+  }
+
+  /** Persist the gate before waiting, including across sandbox suspension and DO restart. */
+  private async requestTool(name: string, args: unknown, captured: (id: string) => void) {
+    // Native tool requests arrive concurrently, including while capture awaits sandbox I/O.
+    if (this.state.pendingTool || this.toolPreparing) {
+      throw new Error('A tool decision is already pending.');
+    }
+    const run = this.state.run!;
+    this.toolPreparing = true;
+    let payload: unknown;
+    try {
+      payload = await getTool(name).prepare(this.sandbox(run.sandboxId), args);
+    } finally {
+      this.toolPreparing = false;
+    }
+    this.ensureUsable(run.sandboxId);
+    if (this.state.run?.id !== run.id || !this.active || this.active.terminal) {
+      throw new Error('Tool request is no longer active.');
+    }
+    const sequence = (this.state.toolSequence ?? 0) + 1;
+    const tool: PendingTool = {
+      id: crypto.randomUUID(),
+      sequence,
+      name,
+      args: payload,
+    };
+    const result = new Promise<DynamicToolCallResponse>((resolve) => {
+      this.resolveToolResult = resolve;
+    });
+    this.saveState({ ...this.state, toolSequence: sequence, pendingTool: tool });
+    captured(tool.id);
+    this.durableExecutor = undefined;
+    this.dispatchTool();
+    // The immutable payload is already durable in the DO. A disconnected PL webserver must not keep compute alive forever.
+    await this.schedule(15, 'expireToolPreparation', { id: tool.id });
+    return result;
+  }
+
+  /** A durable one-shot deadline survives DO eviction; human approval itself has no RPC timeout. */
+  async expireToolPreparation({ id }: { id: string }) {
+    const tool = this.state.pendingTool;
+    if (!tool || tool.id !== id || tool.prepared || tool.result) return;
+    this.saveState({
+      ...this.state,
+      pendingTool: {
+        ...tool,
+        error: 'PL has not acknowledged preparation. Reconnect the page to retry.',
+      },
+    });
+    if (this.state.run) await this.finishRun(this.state.run, this.state.run.status);
   }
 
   /** Ask Codex to interrupt; cancellation is distinct from closing a browser stream. */
@@ -898,6 +1175,20 @@ export class Chat extends AIChatAgent<Env, CodexState> {
           ...this.state,
           sandbox: { ...this.state.sandbox!, phase: 'suspending' },
         });
+        if (!!this.state.pendingTool && this.state.run?.status === 'running' && !this.active) {
+          await this.reconcile();
+        }
+        if (this.state.sandbox?.id !== id) return;
+        if (this.active && this.state.run?.turnId && !!this.state.pendingTool) {
+          const active = this.active;
+          const turnId = this.state.run.turnId;
+          await within(
+            active.interrupt(turnId).then(() => active.completed),
+            5000,
+            'Could not stop pending tool turn.',
+          );
+          await within(this.chatTask ?? Promise.resolve(), 5_000, 'Chat shutdown timed out.');
+        }
         this.saveState({
           ...this.state,
           sandbox: { ...this.state.sandbox!, phase: 'suspending' },
@@ -1109,14 +1400,33 @@ export class Chat extends AIChatAgent<Env, CodexState> {
               development: this.env.LOCAL_DEV === 'true',
               runId: run.id,
               write,
-              onToolCall: (params) =>
-                this.hostTools.call(
-                  params.tool,
-                  params.arguments,
-                  Array.from(this.getConnections<{ hostExecutor?: boolean }>()).filter(
-                    (c) => c.state?.hostExecutor,
+              onToolCall: (params) => {
+                if (!isPreparedTool(params.tool)) {
+                  return this.hostTools.call(
+                    params.tool,
+                    params.arguments,
+                    Array.from(this.getConnections<{ hostExecutor?: boolean }>()).filter(
+                      (c) => c.state?.hostExecutor,
+                    ),
+                  );
+                }
+                if (
+                  params.threadId !== this.state.threadId ||
+                  params.turnId !== this.state.run?.turnId
+                ) {
+                  throw new Error('Unknown tool request.');
+                }
+                return Promise.race([
+                  this.requestTool(params.tool, params.arguments, (id) =>
+                    write({
+                      type: 'data-tool',
+                      id,
+                      data: { id, name: params.tool },
+                    }),
                   ),
-                ),
+                  client!.disconnected,
+                ]);
+              },
               onTurnStarted: (turnId) =>
                 this.setRun({ ...this.state.run!, turnId, accepted: true }),
             });
@@ -1194,6 +1504,10 @@ export class Chat extends AIChatAgent<Env, CodexState> {
             await execution?.close();
             client?.close();
             this.active = undefined;
+            this.resolveToolResult?.(
+              toolResult('Turn ended. Tool result will be delivered on continuation.'),
+            );
+            this.resolveToolResult = undefined;
             if (!failure && !this.usable(run.sandboxId)) failure = new Error(expiredMessage);
             if (failure) {
               const id = `${run.id}:error`;
