@@ -342,7 +342,7 @@ To avoid issues with student-provided code running longer than expected, such as
 self.test_run("./slowprogram", exp_output="COMPLETED", timeout=10)
 ```
 
-To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10 KB (more precisely, 10240 characters) of output will fail and have its output truncated. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
+To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10 KB (more precisely, 10240 characters) of output will fail and have its output truncated. A program that keeps producing output is stopped soon after it exceeds this limit. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
 
 ```python
 self.test_run("./verboseprogram", exp_output="COMPLETED", size_limit=102400)
@@ -525,6 +525,12 @@ To ensure the program does not run forever, you may set a `timeout` option, whic
 
 ```python
 result = self.run_command("./square", timeout=1)
+```
+
+Student-provided code may also produce more output than you can process or include in the test results, such as when it contains an infinite loop. To limit the output, set the `max_output_size` argument to a number of bytes. If the program produces more output than this limit, it is stopped, and the method returns the output up to the limit followed by a standard message. If `max_output_size` is set and the program times out, the output produced before the timeout is returned before the timeout message; otherwise, this output is discarded. It is highly recommended that you set this argument if the output of student-provided code is included in test results.
+
+```python
+result = self.run_command("./square", timeout=1, max_output_size=10240)
 ```
 
 If the program requires specific environment variables, you may set the `env` argument. This argument must be provided as a key-value `dict`.
