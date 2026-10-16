@@ -1,3 +1,5 @@
+import { type Expression, parse } from 'acorn';
+import { simple } from 'acorn-walk';
 import * as cheerio from 'cheerio';
 import * as csstree from 'css-tree';
 
@@ -83,31 +85,71 @@ function rewriteCssIdReferences(
   return state.changed ? csstree.generate(ast) : css;
 }
 
-function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<string, string>) {
-  const rewriteSelectorCall = (call: string, quote: string, selector: string) => {
-    const namespacedSelector = rewriteCssIdReferences(selector, 'selectorList', idRenames);
-    if (namespacedSelector === selector) return call;
-    const escapedSelector = namespacedSelector
-      .replaceAll('\\', '\\\\')
-      .replaceAll(quote, `\\${quote}`);
-    return call.replace(`${quote}${selector}${quote}`, () => `${quote}${escapedSelector}${quote}`);
-  };
+function literalString(argument: Expression): string | null {
+  if (argument.type === 'Literal' && typeof argument.value === 'string') return argument.value;
+  if (argument.type === 'TemplateLiteral' && argument.expressions.length === 0) {
+    return argument.quasis[0].value.cooked ?? null;
+  }
+  return null;
+}
 
-  return scriptHtml
-    .replaceAll(
-      /\bgetElementById\(\s*(["'`])([^"'`]+)\1\s*\)/g,
-      (call, quote: string, id: string) => {
-        const renamedId = idRenames.get(id);
-        return renamedId
-          ? call.replace(`${quote}${id}${quote}`, `${quote}${renamedId}${quote}`)
-          : call;
-      },
-    )
-    .replaceAll(
-      /\b(?:querySelector(?:All)?|closest|matches)\(\s*(["'`])((?:(?!\1)[\s\S])+)\1\s*\)/g,
-      rewriteSelectorCall,
-    )
-    .replaceAll(/\$\(\s*(["'`])((?:(?!\1)[\s\S])+)\1\s*\)/g, rewriteSelectorCall);
+function serializeScriptString(value: string, original: string): string {
+  const escaped = JSON.stringify(value).slice(1, -1).replaceAll('<', '\\u003c');
+  return original.startsWith("'") ? `'${escaped.replaceAll("'", "\\'")}'` : `"${escaped}"`;
+}
+
+function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<string, string>) {
+  if (idRenames.size === 0) return scriptHtml;
+  let program: ReturnType<typeof parse>;
+  try {
+    program = parse(scriptHtml, { ecmaVersion: 'latest', sourceType: 'script' });
+  } catch {
+    try {
+      program = parse(scriptHtml, { ecmaVersion: 'latest', sourceType: 'module' });
+    } catch {
+      return scriptHtml;
+    }
+  }
+
+  const replacements: { start: number; end: number; value: string }[] = [];
+  simple(program, {
+    CallExpression(call) {
+      const argument = call.arguments[0];
+      if (call.arguments.length !== 1 || argument.type === 'SpreadElement') return;
+      const callee = call.callee;
+      const name =
+        callee.type === 'Identifier'
+          ? callee.name
+          : callee.type === 'MemberExpression' &&
+              !callee.computed &&
+              callee.property.type === 'Identifier'
+            ? callee.property.name
+            : null;
+      if (!name) return;
+
+      const value = literalString(argument);
+      if (value === null) return;
+      const renamed =
+        name === 'getElementById'
+          ? (idRenames.get(value) ?? value)
+          : ['querySelector', 'querySelectorAll', 'closest', 'matches', '$'].includes(name)
+            ? rewriteCssIdReferences(value, 'selectorList', idRenames)
+            : value;
+      if (renamed === value) return;
+      replacements.push({
+        start: argument.start,
+        end: argument.end,
+        value: serializeScriptString(renamed, scriptHtml.slice(argument.start, argument.end)),
+      });
+    },
+  });
+
+  return replacements
+    .sort((first, second) => second.start - first.start)
+    .reduce(
+      (script, { start, end, value }) => script.slice(0, start) + value + script.slice(end),
+      scriptHtml,
+    );
 }
 
 function attributeSelector(attribute: string): string {

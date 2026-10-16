@@ -765,6 +765,12 @@ importers:
       ace-code:
         specifier: ^1.44.0
         version: 1.44.0
+      acorn:
+        specifier: 8.18.0
+        version: 8.18.0
+      acorn-walk:
+        specifier: 8.3.5
+        version: 8.3.5
       ai:
         specifier: ^7.0.116
         version: 7.0.118(zod@4.6.5)
