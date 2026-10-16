@@ -198,6 +198,25 @@ test.describe('pl-symbolic-input unicode multiplication keys', () => {
       await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('2 * y');
     }
   });
+
+  test('wraps a selection in parentheses for unicode multiplication keys', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await expect(formulaEditor).toBeVisible();
+
+    for (const key of ['•', '∙', '∗']) {
+      await fillFormulaEditor(formulaEditor, 'x+y');
+      await formulaEditor.press('ControlOrMeta+A');
+      await formulaEditor.evaluate((el, key) => {
+        el.shadowRoot
+          ?.querySelector('[part="keyboard-sink"]')
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }),
+          );
+      }, key);
+
+      await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('\\left(x+y\\right)\\cdot');
+    }
+  });
 });
 
 test.describe('pl-symbolic-input plus-minus', () => {
