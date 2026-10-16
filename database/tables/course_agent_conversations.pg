@@ -1,0 +1,16 @@
+columns
+    agent_conversation_id: uuid not null default gen_random_uuid()
+    course_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('course_agent_conversations_id_seq'::regclass)
+    title: text not null
+    user_id: bigint not null
+
+indexes
+    course_agent_conversations_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_conversations_agent_conversation_id_key: UNIQUE (agent_conversation_id) USING btree (agent_conversation_id)
+    course_agent_conversations_course_id_user_id_created_at_id_idx: USING btree (course_id, user_id, created_at, id)
+
+foreign-key constraints
+    course_agent_conversations_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_conversations_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

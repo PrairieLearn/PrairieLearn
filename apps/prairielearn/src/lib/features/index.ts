@@ -10,6 +10,7 @@ const featureNames = [
   'ai-grading',
   'ai-submission-grouping',
   'disable-public-workspaces',
+  'course-agent',
 
   // Should be applied to courses only.
   'ai-question-generation-course-toggle',

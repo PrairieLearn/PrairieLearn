@@ -1,0 +1,107 @@
+.course-agent-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(38rem, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--bs-body-bg);
+  border-left: 1px solid var(--bs-border-color);
+  z-index: 1030;
+  transform: translateX(100%);
+  visibility: hidden;
+}
+
+.course-agent-panel[data-open='true'] {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.course-agent-toggle {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.4rem;
+  box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 20%);
+  z-index: 1040;
+}
+
+.course-agent-user-message {
+  max-width: 90%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.course-agent-panel .markdown-body {
+  overflow-wrap: anywhere;
+}
+
+.course-agent-panel .markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+body:has(.course-agent-panel) .app-main {
+  min-width: 0;
+}
+
+/* On wide screens the open panel sits beside the page content instead of covering it. */
+@media (min-width: 768px) {
+  body:has(.course-agent-panel) {
+    --course-agent-width: min(38rem, 35vw);
+  }
+
+  body:has(.course-agent-panel[data-open='true']) .app-main {
+    margin-right: var(--course-agent-width);
+  }
+
+  .course-agent-panel {
+    width: var(--course-agent-width);
+    top: var(--course-agent-top, var(--navbar-height));
+  }
+}
+
+/* Animations are enabled only after the user toggles the panel. */
+.course-agent-panel-animate {
+  transition:
+    transform 300ms,
+    visibility 300ms;
+}
+
+body:has(.course-agent-panel-animate) .app-main {
+  transition: margin-right 300ms;
+}
+
+/* On narrow screens the panel is a full-screen modal. */
+@media (max-width: 767.98px) {
+  .course-agent-panel,
+  .course-agent-panel[data-open='true'] {
+    width: 100vw;
+    transform: none;
+    opacity: 0;
+    z-index: 1050;
+  }
+
+  .course-agent-panel[data-open='true'] {
+    opacity: 1;
+  }
+
+  .course-agent-panel-animate {
+    transition:
+      opacity 300ms,
+      visibility 300ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .course-agent-panel-animate,
+  body:has(.course-agent-panel-animate) .app-main {
+    transition: none;
+  }
+}
