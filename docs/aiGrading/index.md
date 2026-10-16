@@ -219,7 +219,7 @@ As a course owner:
 4. Click **Next** to load the provider's available models. PrairieLearn requests `/models` relative to the base URL you entered.
 5. Review the model list and save the configuration. Loading the list confirms access to the catalog; it does not verify that each model can grade submissions.
 
-When starting AI grading, choose a model from **Custom provider models** in the model-selection dialog. Provider filtering and model search include these models.
+When starting AI grading, choose a model from **Custom provider models** in the model-selection dialog.
 
 #### Model requirements and limitations
 
