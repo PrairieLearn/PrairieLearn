@@ -22,6 +22,7 @@ interface Result {
   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
   /** `undefined` when every enabled filter is at its default. */
   onResetColumnFilters: (() => void) | undefined;
+  activeColumnFilterIds: string[];
 }
 
 /** Pure derivation of the hook's result. Exported only for unit testing. */
@@ -34,7 +35,7 @@ export function buildColumnFiltersResult(
 
   const columnFilters: ColumnFiltersState = enabledIds.map((id) => ({ id, value: values[id] }));
 
-  const hasActive = enabledIds.some(
+  const activeColumnFilterIds = enabledIds.filter(
     (id) => !registry[id].parser.eq(values[id], registry[id].defaultValue),
   );
 
@@ -45,11 +46,13 @@ export function buildColumnFiltersResult(
 
   return {
     columnFilters,
+    activeColumnFilterIds,
     onColumnFiltersChange: (updater) => {
       const next = typeof updater === 'function' ? updater(columnFilters) : updater;
       applyPatch(buildPatch(new Map(next.map((f) => [f.id, f.value]))));
     },
-    onResetColumnFilters: hasActive ? () => applyPatch(buildPatch(new Map())) : undefined,
+    onResetColumnFilters:
+      activeColumnFilterIds.length > 0 ? () => applyPatch(buildPatch(new Map())) : undefined,
   };
 }
 

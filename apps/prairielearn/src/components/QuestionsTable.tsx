@@ -151,7 +151,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     return registry;
   }, [courseInstances, showSharingSets]);
 
-  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+  const { columnFilters, activeColumnFilterIds, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -473,6 +473,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
           ),
         }}
         statusContent={statusContent}
+        activeColumnFilterIds={activeColumnFilterIds}
         onResetColumnFilters={onResetColumnFilters}
       />
     </>

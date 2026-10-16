@@ -140,7 +140,7 @@ function GradebookTable({
     return registry;
   }, [assessmentIds]);
 
-  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+  const { columnFilters, activeColumnFilterIds, onColumnFiltersChange, onResetColumnFilters } =
     useColumnFilters(filterRegistry);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -542,6 +542,7 @@ function GradebookTable({
           filters,
           scrollRef: tableRef,
         }}
+        activeColumnFilterIds={activeColumnFilterIds}
         onResetColumnFilters={onResetColumnFilters}
       />
       <CanvasCsvModal
