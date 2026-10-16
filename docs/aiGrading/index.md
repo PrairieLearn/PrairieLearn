@@ -234,8 +234,6 @@ With a custom endpoint, review the provider's terms, data retention, and account
 
 To change the URL or API key, use **Add key → OpenAI-compatible** again. Saving replaces the existing configuration; it does not add a second compatible provider to the course instance. You can also delete the configuration from the API-key table.
 
-After replacement or deletion, select an available model again before grading. A previously remembered custom selection does not automatically switch to another endpoint or to an official model with the same name.
-
 ## Accuracy
 
 AI grading has been piloted at the University of Illinois Urbana-Champaign since Fall 2025, across multiple STEM courses and thousands of student submissions.
