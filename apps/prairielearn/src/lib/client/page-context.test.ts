@@ -167,7 +167,7 @@ const mockInstructorData = {
     repository: 'https://github.com/example/example.git',
     sharing_name: 'example',
     show_getting_started: false,
-    uuid: null,
+    uuid: '00000000-0000-4000-8000-000000000001',
   },
   institution: TEST_INSTITUTION,
 };
