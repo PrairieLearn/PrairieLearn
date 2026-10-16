@@ -1,7 +1,4 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
-import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
@@ -9,48 +6,20 @@ import {
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessPopovers.js';
-import type { AssessmentAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
-import {
-  AssessmentInstanceSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
-} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
-
-export const StudentAssessmentsRowBaseSchema = z.object({
-  assessment_id: AssessmentSchema.shape.id,
-  multiple_instance_header: z.boolean(),
-  assessment_number: AssessmentSchema.shape.number,
-  title: AssessmentSchema.shape.title,
-  team_work: AssessmentSchema.shape.team_work.nullable(),
-  modern_access_control: AssessmentSchema.shape.modern_access_control,
-  assessment_set_name: AssessmentSetSchema.shape.name,
-  assessment_set_color: AssessmentSetSchema.shape.color,
-  label: z.string(),
-  assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
-  assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
-  assessment_instance_open: AssessmentInstanceSchema.shape.open.nullable(),
-  assessment_instance_date_limit: AssessmentInstanceSchema.shape.date_limit.nullable(),
-  link: z.string(),
-  assessment_group_id: IdSchema,
-  assessment_group_heading: z.string(),
-});
-
-export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowBaseSchema> & {
-  authz_result: AssessmentAuthzResult;
-};
+import type { StudentAssessmentRow } from '../../lib/student-assessments.js';
 
 export function StudentAssessments({
   resLocals,
   rows,
 }: {
   resLocals: ResLocalsForPage<'course-instance'>;
-  rows: StudentAssessmentsRow[];
+  rows: StudentAssessmentRow[];
 }) {
   const { urlPrefix, authz_data } = resLocals;
 
-  const assessmentGroups: StudentAssessmentsRow[][] = [];
+  const assessmentGroups: StudentAssessmentRow[][] = [];
   rows.forEach((row) => {
     if (assessmentGroups.length === 0) {
       assessmentGroups.push([row]);
@@ -162,13 +131,13 @@ export function StudentAssessments({
   });
 }
 
-function AssessmentScore(row: StudentAssessmentsRow) {
+function AssessmentScore(row: StudentAssessmentRow) {
   if (row.assessment_instance_id == null) return 'Not started';
   if (!row.authz_result.show_closed_assessment_score) return 'Score not shown';
   return ScorebarHtml(row.assessment_instance_score_perc, { classes: 'mx-auto' });
 }
 
-function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {
+function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentRow }) {
   if (row.authz_result.active) {
     return html`<a href="${urlPrefix}${row.link}" class="btn btn-primary btn-sm">New instance</a>`;
   } else {
@@ -182,7 +151,7 @@ function AvailableCredit({
   row,
   displayTimezone,
 }: {
-  row: StudentAssessmentsRow;
+  row: StudentAssessmentRow;
   displayTimezone: string;
 }) {
   const authzResult = row.authz_result;

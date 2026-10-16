@@ -25,6 +25,7 @@ const AssessmentAuthzResultSchema = z.object({
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
+  credit_end_date: DateFromISOString.nullable(),
   credit_date_string: z.string().nullable(),
   exam_access_end: DateFromISOString.nullable(),
   mode: EnumModeSchema.nullable(),
