@@ -16,6 +16,7 @@ import * as progress from '../../../lib/serverJobProgressSocket.js';
 import {
   deleteCredential,
   replaceCustomCredential,
+  updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
 import { selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
@@ -87,7 +88,11 @@ describe('custom AI grading model', () => {
       })
     ).id;
   });
-  beforeEach(() => {
+  beforeEach(async () => {
+    await updateUseCustomApiKeys({
+      course_instance_id: courseInstance.id,
+      ai_grading_use_custom_api_keys: true,
+    });
     discover.mockReset().mockResolvedValue([model_id, 'campus-text']);
   });
   afterAll(async () => {
@@ -341,6 +346,45 @@ describe('custom AI grading model', () => {
       ai_grading_last_selected_credential_id: credentialId,
     });
     expect(await selectCreditPool(courseInstance.id)).toEqual(credits);
+  });
+
+  it('rejects custom API keys disabled during discovery before creating a grading job', async () => {
+    const course = await selectCourseByShortName('QA 101');
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: 'hw10-aiGrading',
+    });
+    const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
+    const assessment_question = await selectAssessmentQuestionByQuestionId({
+      assessment_id: assessment.id,
+      question_id: question.id,
+    });
+    const countBefore = await queryScalar(sql.count_test_job_sequences, {}, z.number());
+    discover.mockImplementationOnce(async () => {
+      await updateUseCustomApiKeys({
+        course_instance_id: courseInstance.id,
+        ai_grading_use_custom_api_keys: false,
+      });
+      return [model_id];
+    });
+    await expect(
+      aiGrade({
+        course,
+        course_instance: courseInstance,
+        assessment,
+        question,
+        assessment_question,
+        urlPrefix: '/pl',
+        authn_user_id: userId,
+        user_id: userId,
+        mode: 'selected',
+        instance_question_ids: [],
+        model_id,
+        provider: 'openai-compatible',
+        credential_id: credentialId,
+      }),
+    ).rejects.toThrow('Custom API keys are not enabled');
+    expect(await queryScalar(sql.count_test_job_sequences, {}, z.number())).toBe(countBefore);
   });
 
   it('rejects a configuration deleted during discovery before creating a grading job', async () => {

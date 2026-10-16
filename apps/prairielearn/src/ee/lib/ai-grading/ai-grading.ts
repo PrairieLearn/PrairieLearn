@@ -384,9 +384,14 @@ export async function aiGrade({
 
     if (resolved.credential_id !== null) {
       // Match credential replacement's lock order before remembering a FK to the credential.
-      await execute(sql.lock_course_instance_for_custom_provider, {
-        course_instance_id: course_instance.id,
-      });
+      const customApiKeysEnabled = await queryScalar(
+        sql.lock_course_instance_for_custom_provider,
+        { course_instance_id: course_instance.id },
+        z.boolean(),
+      );
+      if (!customApiKeysEnabled) {
+        throw new error.HttpStatusError(403, 'Custom API keys are not enabled');
+      }
       const credential = await selectOptionalCredential({
         course_instance_id: course_instance.id,
         credential_id: resolved.credential_id,
