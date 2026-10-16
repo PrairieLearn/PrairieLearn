@@ -1,10 +1,7 @@
-import { randomUUID } from 'node:crypto';
-
 import type { PDFDocument } from 'pdf-lib';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { encodePrintPageIdentity } from './client/print-page-code.js';
 import { config } from './config.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
 import { type PaperSize, createPdfOutput } from './printing/pdf-output.js';
@@ -15,7 +12,6 @@ export interface PrintExportWork {
   copies: number;
   filename: string;
   snapshots: {
-    assessmentInstanceId: string;
     formLabel: string;
     paperSize: PaperSize;
     printDocument: PrintDocument;
@@ -39,20 +35,10 @@ export async function renderPrintExport(
       ),
     ));
   const renderer = getPrintRenderer();
-  const exportId = randomUUID();
   const forms: { pdf: Buffer; coverPageCount: number }[] = [];
   const answerKeys: Buffer[] = [];
   for (const snapshot of work.snapshots) {
-    const pdfOutput = createPdfOutput({
-      encodePage: (pageNumber) =>
-        encodePrintPageIdentity({
-          assessmentInstanceId: snapshot.assessmentInstanceId,
-          pageNumber,
-          exportId,
-          document: snapshot.printDocument,
-          format: 'pdf',
-        }),
-    });
+    const pdfOutput = createPdfOutput();
     const rendered = await renderer.render(
       {
         url: snapshot.previewUrl,

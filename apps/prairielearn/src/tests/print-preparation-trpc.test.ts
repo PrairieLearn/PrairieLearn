@@ -385,7 +385,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
         filename: 'test-export.pdf',
         snapshots: [
           {
-            assessmentInstanceId: '1',
             formLabel: 'A',
             paperSize: 'Letter',
             printDocument: 'exam',

@@ -230,7 +230,6 @@ export const printableExamExportRouter = t.router({
               throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
             }
             snapshots.push({
-              assessmentInstanceId: instance.assessmentInstanceId,
               formLabel: instance.formLabel,
               paperSize: instance.settings.paperSize,
               printDocument,
