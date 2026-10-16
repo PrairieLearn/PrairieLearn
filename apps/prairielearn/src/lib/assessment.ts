@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { formatDate, formatInterval } from '@prairielearn/formatter';
+import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -59,7 +60,7 @@ export type InstanceLogEntry = Omit<
 >;
 
 /**
- * Render the "text" property of an assessment.
+ * Render the "text" property of an assessment as sanitized Markdown.
  *
  * @param assessment - The assessment to render the text for.
  * @param assessment.id - The assessment ID.
@@ -87,7 +88,7 @@ export function renderText(
     .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
     .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
 
-  return mustache.render(text, context);
+  return markdownToHtml(mustache.render(text, context), { interpretMath: false });
 }
 
 /**
