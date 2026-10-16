@@ -12,7 +12,7 @@ Every request must send `Authorization: Bearer <PL_SERVICE_TOKEN>`.
 - `POST /conversations/<uuid>/chat` with `{ message, context? }` streams the reply as an AI SDK UI message stream.
   - `message` is a user `UIMessage` with a single text part. Only the newest message is sent; the history lives here.
   - `context` is optional `{ courseTitle, courseShortName }`, used in the system prompt.
-  - Closing the response stops the turn. The partial reply is saved.
+  - Cancelling the response stream aborts the turn and saves the partial reply. (Closing the request from PrairieLearn does not reliably cancel it yet; an explicit stop request is a follow-up.)
 
 Errors: `400` invalid body, `401` bad or missing token, `404` unknown path, `409` a reply is already in progress or the message ID was already used, `426` WebSocket upgrade.
 
