@@ -221,6 +221,36 @@ export function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
+function renderAiGradingExplanationText(explanation: string) {
+  const parts: HtmlValue[] = [];
+  let fence: string | null = null;
+  let offset = 0;
+
+  // Preserve the plain text, including fence markers, while excluding fenced code from MathJax.
+  for (const match of explanation.matchAll(/^ {0,3}(`{3,}|~{3,})([^\r\n]*)/gm)) {
+    const [, delimiter, suffix] = match;
+    if (fence === null) {
+      if (delimiter.startsWith('`') && suffix.includes('`')) continue;
+      parts.push(explanation.slice(offset, match.index));
+      offset = match.index;
+      fence = delimiter;
+    } else if (
+      delimiter.startsWith(fence[0]) &&
+      delimiter.length >= fence.length &&
+      /^[ \t]*$/.test(suffix)
+    ) {
+      const end = match.index + match[0].length;
+      parts.push(html`<span class="mathjax_ignore">${explanation.slice(offset, end)}</span>`);
+      offset = end;
+      fence = null;
+    }
+  }
+
+  const remaining = explanation.slice(offset);
+  parts.push(fence === null ? remaining : html`<span class="mathjax_ignore">${remaining}</span>`);
+  return html`${parts}`;
+}
+
 export function AIGradingExplanation({
   explanation,
   hasImage,
@@ -293,7 +323,7 @@ export function AIGradingExplanation({
             explanation
               ? html`
                   <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
-${explanation}
+${renderAiGradingExplanationText(explanation)}
 </pre>
                 `
               : ''
