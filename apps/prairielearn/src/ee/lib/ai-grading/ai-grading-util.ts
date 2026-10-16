@@ -255,7 +255,7 @@ function getAiGradingFileMediaType(fileName: string): string | null {
   return null;
 }
 
-function decodeAiGradingTextFile(fileName: string, fileData: string): string {
+function decodeAiGradingTextFile(fileName: string, fileData: string): string | null {
   const bytes = Buffer.from(fileData, 'base64');
   if (bytes.toString('base64') !== fileData) {
     throw new Error(`Submitted file "${fileName}" has invalid base64 data.`);
@@ -272,19 +272,14 @@ function decodeAiGradingTextFile(fileName: string, fileData: string): string {
   let text: string;
   try {
     text = new TextDecoder(encoding, { fatal: true }).decode(bytes);
-  } catch (cause) {
-    throw new Error(
-      `AI grading could not read "${fileName}" as text. Use UTF-8 or UTF-16 with a byte-order mark, or submit a PDF, JPEG, PNG, or WebP file.`,
-      { cause },
-    );
+  } catch {
+    return null;
   }
 
   // Binary files can contain valid Unicode but still include non-text control characters.
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/u.test(text)) {
-    throw new Error(
-      `AI grading cannot read binary file "${fileName}". Submit its contents as text, PDF, JPEG, PNG, or WebP instead.`,
-    );
+    return null;
   }
   return text;
 }
@@ -324,10 +319,11 @@ export function generateSubmissionContent({
 
         const mediaType = getAiGradingFileMediaType(segment.fileName);
         if (!mediaType) {
+          const text = decodeAiGradingTextFile(segment.fileName, segment.fileData);
           return [
             {
               type: 'text',
-              text: `Submitted file: ${segment.fileName}\n\n${decodeAiGradingTextFile(segment.fileName, segment.fileData)}`,
+              text: `Submitted file: ${segment.fileName}\n\n${text ?? 'File contents unavailable: unsupported file format or text encoding.'}`,
             },
           ];
         }
