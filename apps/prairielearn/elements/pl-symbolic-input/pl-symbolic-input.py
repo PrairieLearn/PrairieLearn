@@ -487,6 +487,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             allow_trig,
             variables,
             custom_functions,
+            allow_sets=allow_sets,
             latex=data["raw_submitted_answers"].get(name + "-latex"),
         )
         if submitted_answer is not None and formatted_answer is None:
@@ -675,6 +676,7 @@ def format_formula_editor_submission_for_sympy(
     variables: list[str],
     custom_functions: list[str],
     *,
+    allow_sets: bool = False,
     latex: str | None = None,
 ) -> str | None:
     r"""
@@ -692,6 +694,7 @@ def format_formula_editor_submission_for_sympy(
         allow_trig: Whether trig functions (sin, cos, etc.) are available
         variables: List of allowed variable names
         custom_functions: List of custom function names
+        allow_sets: Whether set operators and constructors are available
         latex: Raw LaTeX from the formula editor
 
     Returns:
@@ -713,7 +716,9 @@ def format_formula_editor_submission_for_sympy(
     text = text.replace("-:", "/").replace(" ** ", " * ")
 
     # Build list of all multi-character tokens that should be recognized as units
-    known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
+    known_tokens = _build_known_tokens(
+        allow_trig, variables, custom_functions, allow_sets=allow_sets
+    )
 
     # Replace Greek unicode letters with spaced ASCII for consistent handling further on
     text = "".join(_greek_transform(char) for char in text)
@@ -726,8 +731,14 @@ def format_formula_editor_submission_for_sympy(
     text = _add_multiplication_spaces(text, known_tokens)
 
     function_names = frozenset(
-        psu.get_builtin_functions(allow_trig_functions=allow_trig)
-        | set(custom_functions)
+        psu.greek_unicode_transform(name)
+        for name in (
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+            )
+            | set(custom_functions)
+        )
     )
     text = _wrap_bare_function_arguments(text, function_names)
 
@@ -738,6 +749,8 @@ def _build_known_tokens(
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
+    *,
+    allow_sets: bool = False,
 ) -> list[str]:
     """
     Build a list of all multi-character tokens that should be recognized as single units.
@@ -745,17 +758,18 @@ def _build_known_tokens(
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
-    constants_class = psu._Constants
-
     # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
     tokens = (
         list(psu.STANDARD_OPERATORS)
-        + list(constants_class.functions.keys())
+        + list(
+            psu.get_builtin_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+            )
+        )
         + custom_functions
         + variables
     )
-    if allow_trig:
-        tokens += list(constants_class.trig_functions.keys())
 
     # Add transformed versions of Greek letters
     tokens += [
@@ -868,6 +882,51 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
+_TRAILING_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_]\w*$")
+
+
+def _is_implicit_multiplication_paren(
+    text: str,
+    argument_start: int,
+    argument_end: int,
+    function_names: frozenset[str],
+) -> bool:
+    """
+    Whether a "(" after an argument multiplies it rather than calling a function
+    or grouping an exponent.
+
+    Returns:
+        True if the argument ends with a number, a closing bracket, or a name
+        that isn't a function.
+    """
+    # An empty candidate provides no left-hand factor for implicit multiplication.
+    if argument_end == argument_start:
+        return False
+
+    # Isolate the final identifier before checking its last character. This keeps
+    # digit-suffixed function names such as atan2 from looking like numbers.
+    name_start = argument_end
+    while name_start > argument_start and (
+        text[name_start - 1].isalnum() or text[name_start - 1] == "_"
+    ):
+        name_start -= 1
+    name = _TRAILING_IDENTIFIER_PATTERN.search(text, name_start, argument_end)
+
+    # Known functions consume the "(" as a call; all other names multiply the
+    # parenthesized factor.
+    if name is not None:
+        return name.group(0) not in function_names
+
+    # Known digit-suffixed functions were handled above, so a remaining digit
+    # ends a numeric argument before the next implicitly multiplied factor.
+    if text[argument_end - 1].isdigit():
+        return True
+
+    # A closing delimiter completes a grouped argument, making the following
+    # "(" the start of a new implicitly multiplied factor.
+    return text[argument_end - 1] in ")]}"
+
+
 @lru_cache(maxsize=128)
 def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
     """
@@ -886,13 +945,15 @@ def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[s
 
 def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
     r"""
-    Parenthesize unparenthesized function arguments that are followed by "*".
+    Parenthesize unparenthesized function arguments that are followed by "*" or "(".
 
     The formula editor displays `{\ln 4}\cdot x` as ln(4)·x but submits it as
     "ln 4 * x". SymPy's implicit function application ends the argument at "+",
-    "-", or "/", but not at "*", so it would parse this as ln(4x).
+    "-", or "/", but not at "*", so it would parse this as ln(4x). It also can't
+    end the argument at a "(" that multiplies it, so "ln 8(x+1)" is a syntax error.
 
-    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)"
+    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)", and "ln 8(x+1)"
+    becomes "ln (8)(x+1)"
 
     Returns:
         The text with those arguments wrapped in parentheses
@@ -905,7 +966,7 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
     # empty argument.
     insertions: list[tuple[int, str]] = []
     # Only the first bare function at a given nesting depth can claim the next
-    # multiplication operator; any later one is inside its implicit argument.
+    # implicit multiplication boundary; any later one is inside its argument.
     pending_arguments: dict[int, int] = {}
     depth = 0
     for match in pattern.finditer(text):
@@ -915,18 +976,24 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
         token = match.group(0)
         match token:
-            case "(" | "[" | "{":
-                depth += 1
-            case ")" | "]" | "}":
-                pending_arguments.pop(depth, None)
-                depth -= 1
-            case "*":
-                start = pending_arguments.pop(depth, None)
+            case "(" | "*":
+                start = pending_arguments.get(depth)
                 if start is not None:
                     argument_end = match.start()
                     while argument_end > start and text[argument_end - 1].isspace():
                         argument_end -= 1
-                    insertions.extend(((start, "("), (argument_end, ")")))
+                    if token == "*" or _is_implicit_multiplication_paren(
+                        text, start, argument_end, function_names
+                    ):
+                        pending_arguments.pop(depth)
+                        insertions.extend(((start, "("), (argument_end, ")")))
+                if token == "(":
+                    depth += 1
+            case "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
             case "+" | "-" | "/" | ",":
                 pending_arguments.pop(depth, None)
             case _:

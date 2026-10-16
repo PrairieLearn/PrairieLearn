@@ -1984,17 +1984,17 @@ def get_builtin_constants(
     return names
 
 
-def get_builtin_functions(
+def get_builtin_callable_functions(
     *, allow_trig_functions: bool = True, allow_sets: bool = False
 ) -> set[str]:
-    """Return the set of built-in function names.
+    """Return the set of built-in callable function names.
 
     Parameters:
         allow_trig_functions: Whether to include trigonometric functions.
-        allow_sets: Whether to include set operators and constructors.
+        allow_sets: Whether to include set constructors.
 
     Returns:
-        A set of built-in function names.
+        A set of built-in callable function names.
     """
     const = _Constants
     names = const.functions.keys() | const.helpers.keys()
@@ -2002,6 +2002,27 @@ def get_builtin_functions(
         names |= const.trig_functions.keys()
     if allow_sets:
         names |= const.set_functions.keys()
+    return names
+
+
+def get_builtin_functions(
+    *, allow_trig_functions: bool = True, allow_sets: bool = False
+) -> set[str]:
+    """Return the set of built-in function and operator names.
+
+    Parameters:
+        allow_trig_functions: Whether to include trigonometric functions.
+        allow_sets: Whether to include set operators and constructors.
+
+    Returns:
+        A set of built-in function and operator names.
+    """
+    const = _Constants
+    names = get_builtin_callable_functions(
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    )
+    if allow_sets:
         names |= const.set_operators.keys()
     return names
 
