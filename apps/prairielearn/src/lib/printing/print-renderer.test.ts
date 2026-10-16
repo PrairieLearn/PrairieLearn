@@ -353,6 +353,49 @@ describe('PrintRenderer', () => {
     expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps Cloudflare navigation and asset requests on their intended hosts', async () => {
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new globalThis.Response('asset', { headers: { 'content-type': 'image/png' } }),
+      );
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000//attacker.com/preview',
+      browserOrigin: 'https://example.com',
+      cookieHeader: 'session=test',
+    });
+
+    expect(harness.pages[0].goto).toHaveBeenCalledWith(
+      'https://example.com//attacker.com/preview',
+      { waitUntil: 'load', timeout: expect.any(Number) },
+    );
+
+    const fulfill = vi.fn(async () => undefined);
+    await harness.getRouteHandler()!({
+      request: () => ({
+        method: () => 'GET',
+        url: () => 'https://example.com//attacker.com/evil?x=1',
+      }),
+      abort: vi.fn(),
+      fulfill,
+    } as unknown as Route);
+
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][0].toString()).toBe('http://localhost:3000//attacker.com/evil?x=1');
+    expect(fetch.mock.calls[0][1]).toMatchObject({
+      headers: { cookie: 'session=test' },
+      redirect: 'manual',
+    });
+    expect(fulfill).toHaveBeenCalledWith({
+      status: 200,
+      contentType: 'image/png',
+      body: Buffer.from('asset'),
+    });
+  });
+
   it('runs four Cloudflare renders concurrently and queues the next one', async () => {
     const gate = createGate();
     const harness = createBrowserHarness({
