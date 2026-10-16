@@ -6,7 +6,7 @@ import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import type { Server as SocketIOServer } from 'socket.io';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalScalar, queryRow } from '@prairielearn/postgres';
 import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 export {
@@ -69,18 +69,29 @@ export async function updateWorkspaceMessage(
  * @param workspace_id The workspace's id.
  * @param state The workspace's new state.
  * @param message The workspace's new message.
+ * @param expectedLaunch Only update if this launch attempt is still current.
+ * @param expectedLaunch.launch_uuid The launch attempt's UUID.
+ * @param expectedLaunch.version The workspace version at launch.
  */
 export async function updateWorkspaceState(
   workspace_id: string | number,
   state: string,
   message = '',
+  expectedLaunch?: { launch_uuid: string; version: number },
 ): Promise<void> {
-  // TODO: add locking
-  const duration_milliseconds = await queryScalar(
+  const duration_milliseconds = await queryOptionalScalar(
     sql.update_workspace_state,
-    { workspace_id, state, message },
+    {
+      workspace_id,
+      state,
+      message,
+      expected_launch_uuid: expectedLaunch?.launch_uuid ?? null,
+      expected_version: expectedLaunch?.version ?? null,
+    },
     IntervalSchema,
   );
+  if (duration_milliseconds === null) return;
+
   if (duration_milliseconds > 0) {
     await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration_milliseconds });
   }
