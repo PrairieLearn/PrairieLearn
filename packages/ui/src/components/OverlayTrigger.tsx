@@ -110,13 +110,20 @@ export function OverlayTrigger({
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
   const handleToggle = (nextShow: boolean) => {
+    if (nextShow && returnFocus && document.activeElement instanceof HTMLElement) {
+      triggerElementRef.current = document.activeElement;
+    }
     if (show === undefined) setInternalShow(nextShow);
     onToggle?.(nextShow);
   };
 
   const handleEntered = (node: HTMLElement, isAppearing: boolean) => {
     // Store the currently focused element (the trigger) before we move focus
-    if (returnFocus && document.activeElement instanceof HTMLElement) {
+    if (
+      returnFocus &&
+      triggerElementRef.current === null &&
+      document.activeElement instanceof HTMLElement
+    ) {
       triggerElementRef.current = document.activeElement;
     }
 
