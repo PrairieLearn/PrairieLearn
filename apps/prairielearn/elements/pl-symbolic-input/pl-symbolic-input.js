@@ -483,7 +483,7 @@
           makeShortcutProxy(
             {
               latex: '\\times',
-              insert: '{#@}\\cdot',
+              insert: '#@\\cdot',
             },
             mf,
           ),
@@ -643,7 +643,7 @@
           // MathLive would insert these as \bullet, \textbullet, or \ast, which are
           // not submitted as multiplication. Treat them like the "×" keyboard key.
           ev.preventDefault();
-          mf.executeCommand(['insert', '{#@}\\cdot']);
+          mf.executeCommand(['insert', isSelected(mf) ? '\\left(#@\\right)\\cdot' : '#@\\cdot']);
         } else if (ev.key === 'Escape') {
           ev.preventDefault();
         }
@@ -730,7 +730,7 @@
         value: '#@^{#?}',
       },
       '*': {
-        value: '{#@}\\cdot',
+        value: '#@\\cdot',
       },
       '|': {
         value: '|{#0}|',
