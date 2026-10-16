@@ -53,6 +53,7 @@ import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
+import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
@@ -96,11 +97,7 @@ router.get(
       { course_id: course.id },
       z.object({ short_name: z.string(), long_name: z.string().nullable() }),
     );
-    const enrollmentCount = await sqldb.queryScalar(
-      sql.select_enrollment_count,
-      { course_instance_id: courseInstance.id },
-      z.number(),
-    );
+    const enrollmentCount = await countJoinedStudentsInCourseInstance(courseInstance);
     let enrollmentAndBilling: EnrollmentAndBillingCardProps | null = null;
     if (isEnterprise()) {
       const requiredPlans = await getRequiredPlansForCourseInstance(courseInstance.id);
