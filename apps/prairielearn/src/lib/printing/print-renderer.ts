@@ -3,6 +3,8 @@ import * as https from 'node:https';
 import { Semaphore } from 'async-mutex';
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
+import { config } from '../config.js';
+
 import { createPdfOutput } from './pdf-output.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 
@@ -374,8 +376,18 @@ export class PrintRenderer {
             await route.abort('blockedbyclient');
             return;
           }
-          // Playwright only routes the first request in a redirect chain, so a redirect could
-          // otherwise leave the allowed origin without passing through these checks again.
+          // Public app assets need no session, so Cloudflare can fetch them directly.
+          if (
+            this.cloudflare &&
+            !config.devMode &&
+            browserOrigin !== undefined &&
+            requestUrl.pathname.startsWith(`${config.assetsPrefix}/`)
+          ) {
+            await route.continue();
+            return;
+          }
+          // Playwright only routes the first request in a redirect chain, so proxied requests
+          // cannot follow redirects without potentially leaving the allowed origin.
           if (this.cloudflare) {
             const assetUrl = urlAtOrigin(requestUrl, localUrl.origin);
             const response = await fetchCloudflareAsset(

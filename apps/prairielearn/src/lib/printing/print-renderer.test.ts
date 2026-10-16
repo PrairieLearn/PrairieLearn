@@ -10,6 +10,8 @@ import {
 } from 'playwright';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { config } from '../config.js';
+
 const playwrightMocks = {
   connectOverCDP: vi.fn(),
   launch: vi.fn(),
@@ -123,7 +125,10 @@ function createGate() {
 }
 
 describe('PrintRenderer', () => {
+  let originalDevMode: boolean;
+
   beforeEach(() => {
+    originalDevMode = config.devMode;
     playwrightMocks.connectOverCDP.mockReset();
     playwrightMocks.launch.mockReset();
     vi.spyOn(chromium, 'connectOverCDP').mockImplementation(playwrightMocks.connectOverCDP);
@@ -131,6 +136,7 @@ describe('PrintRenderer', () => {
   });
 
   afterEach(() => {
+    config.devMode = originalDevMode;
     vi.restoreAllMocks();
   });
 
@@ -351,6 +357,91 @@ describe('PrintRenderer', () => {
     );
     expect(playwrightMocks.launch).not.toHaveBeenCalled();
     expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
+  });
+
+  it('loads public assets directly in production and proxies protected assets', async () => {
+    config.devMode = false;
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new globalThis.Response('protected', { headers: { 'content-type': 'image/svg+xml' } }),
+      );
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000/print',
+      browserOrigin: 'https://us.prairielearn.com',
+      cookieHeader: 'session=test',
+    });
+
+    const routeHandler = harness.getRouteHandler()!;
+    const continueRequest = vi.fn(async () => undefined);
+    const fulfill = vi.fn(async () => undefined);
+    await routeHandler({
+      request: () => ({
+        method: () => 'GET',
+        url: () => `https://us.prairielearn.com${config.assetsPrefix}/public/hash/figure.svg`,
+      }),
+      continue: continueRequest,
+      fulfill,
+    } as unknown as Route);
+
+    expect(continueRequest).toHaveBeenCalledOnce();
+    expect(fulfill).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+
+    await routeHandler({
+      request: () => ({
+        method: () => 'GET',
+        url: () => 'https://us.prairielearn.com/pl/course_instance/1/figure.svg',
+      }),
+      continue: continueRequest,
+      fulfill,
+    } as unknown as Route);
+
+    expect(continueRequest).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][0].toString()).toBe(
+      'http://localhost:3000/pl/course_instance/1/figure.svg',
+    );
+    expect(fetch.mock.calls[0][1]).toMatchObject({
+      headers: { cookie: 'session=test' },
+      redirect: 'manual',
+    });
+    expect(fulfill).toHaveBeenCalledWith({
+      status: 200,
+      contentType: 'image/svg+xml',
+      body: Buffer.from('protected'),
+    });
+  });
+
+  it('proxies public assets when Cloudflare renders in development', async () => {
+    config.devMode = true;
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new globalThis.Response('asset'));
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000/print',
+      browserOrigin: 'https://example.com',
+    });
+
+    const continueRequest = vi.fn(async () => undefined);
+    await harness.getRouteHandler()!({
+      request: () => ({
+        method: () => 'GET',
+        url: () => `https://example.com${config.assetsPrefix}/public/hash/figure.svg`,
+      }),
+      continue: continueRequest,
+      fulfill: vi.fn(async () => undefined),
+    } as unknown as Route);
+
+    expect(continueRequest).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][0].toString()).toBe(
+      `http://localhost:3000${config.assetsPrefix}/public/hash/figure.svg`,
+    );
   });
 
   it('keeps Cloudflare navigation and asset requests on their intended hosts', async () => {
