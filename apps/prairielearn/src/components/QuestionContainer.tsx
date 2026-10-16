@@ -105,22 +105,14 @@ export function QuestionContainer({
             `
           : QuestionPanel({ resLocals, showFooter, questionContext })
       }
-      ${
-        // The correct answer isn't used when performing AI grading, so we hide
-        // it here to avoid confusion.
-        questionRenderContext !== 'ai_grading'
-          ? html`
-              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
-                <div class="card-header bg-secondary text-white">
-                  <h2>Correct answer</h2>
-                </div>
-                <div class="card-body overflow-x-auto answer-body">
-                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
-                </div>
-              </div>
-            `
-          : ''
-      }
+      <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
+        <div class="card-header bg-secondary text-white">
+          <h2>Correct answer</h2>
+        </div>
+        <div class="card-body overflow-x-auto answer-body">
+          ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
+        </div>
+      </div>
       ${
         ['instructor', 'manual_grading'].includes(questionContext)
           ? html`
