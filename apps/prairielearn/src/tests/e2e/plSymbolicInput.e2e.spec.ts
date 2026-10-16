@@ -201,7 +201,7 @@ test('does not mark restored formula editor answers as unsaved', async ({
             const form = formulaEditor.closest<HTMLFormElement>('form.question-form')!;
             const initializeAfterBaselineCapture = () => {
               initialize(name);
-              formulaEditor.dataset.initialized = 'true';
+              formulaEditor.dataset.testInitialized = 'true';
             };
 
             // The asynchronous handoff is essential to exercise deferred initialization,
@@ -227,7 +227,10 @@ test('does not mark restored formula editor answers as unsaved', async ({
 
   const formulaEditor = page.locator('#symbolic-input-x');
   await expect(formulaEditor).toBeVisible();
-  await expect(formulaEditor).toHaveAttribute('data-initialized', 'true');
+  await expect(
+    formulaEditor,
+    'deferred symbolic input test setup should finish initializing',
+  ).toHaveAttribute('data-test-initialized', 'true');
   await fillFormulaEditor(formulaEditor, 'y');
   await page.getByRole('button', { name: /Save & Grade/ }).click();
 
