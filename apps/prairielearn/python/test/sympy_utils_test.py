@@ -497,10 +497,17 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
-    def test_adjacent_decimal_points_report_source(
-        self, *, simplify_expression: bool
+    @pytest.mark.parametrize(
+        "caret_spec",
+        [
+            pytest.param("2.!.3", id="real"),
+            pytest.param("2.j!.3", id="complex"),
+        ],
+    )
+    def test_adjacent_number_tokens_report_source(
+        self, caret_spec: str, *, simplify_expression: bool
     ) -> None:
-        expr, expected_caret = _caret_template("2.!.3")
+        expr, expected_caret = _caret_template(caret_spec)
         result = psu.try_parse_string_as_sympy(
             expr,
             self.SYMBOL_NAMES,
