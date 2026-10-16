@@ -94,3 +94,10 @@ VALUES
   )
 RETURNING
   *;
+
+-- BLOCK clear_remembered_custom_model
+UPDATE assessment_questions
+SET
+  ai_grading_last_selected_model = NULL
+WHERE
+  ai_grading_last_selected_credential_id = $credential_id;
