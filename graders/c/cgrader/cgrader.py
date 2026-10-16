@@ -196,7 +196,12 @@ class CGrader:
                 status = "timeout"
         if status != "eof":
             proc.kill()
-            if status == "timeout":
+        if status == "timeout":
+            if max_output_size is None:
+                # Without a size limit, the output of a program that did not
+                # finish can be too large to use, so it is discarded.
+                output.clear()
+            else:
                 # Keep output that was written before the program was stopped.
                 read_output(proc, output, time.monotonic() + 1, max_output_size)
         assert proc.stdout is not None
