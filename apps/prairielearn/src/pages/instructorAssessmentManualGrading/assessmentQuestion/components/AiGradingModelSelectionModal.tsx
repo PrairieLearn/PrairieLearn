@@ -11,14 +11,21 @@ import { assertNever } from '@prairielearn/utils';
 
 import {
   AI_GRADING_MODELS,
+  AI_GRADING_PROVIDER_DISPLAY_NAMES,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import type { AiGradingSelection } from '../../../../ee/lib/ai-grading/ai-grading-selection.shared.js';
 import { FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION } from '../../../../ee/lib/ai-grading-free-credit-constants.js';
 import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';
 import type { ManualGradingError } from '../../../../trpc/assessmentQuestion/manual-grading.js';
+import { createCourseInstanceTrpcClient } from '../../../../trpc/courseInstance/client.js';
+import {
+  TRPCProvider as CourseInstanceTRPCProvider,
+  useTRPC as useCourseInstanceTRPC,
+} from '../../../../trpc/courseInstance/context.js';
 
 type AiGradingAvailabilityState =
   | { kind: 'loading' }
@@ -62,13 +69,15 @@ function getDefaultModel(
 
 function ModelOption({
   model,
+  optionId = `model-${model.modelId}`,
   isSelected,
   isAvailable,
   aiGradingEnabled,
   relativeCost,
   onSelect,
 }: {
-  model: (typeof AI_GRADING_MODELS)[number];
+  model: { modelId: string; name: string; sublabel?: string };
+  optionId?: string;
   isSelected: boolean;
   isAvailable: boolean;
   aiGradingEnabled: boolean;
@@ -79,7 +88,7 @@ function ModelOption({
   const option = (
     <label
       key={model.modelId}
-      htmlFor={`model-${model.modelId}`}
+      htmlFor={optionId}
       className={clsx('rounded-2 px-3 py-2 mb-0 border', {
         'border-primary bg-primary bg-opacity-10': isSelected,
         'border-transparent': !isSelected && isInteractive,
@@ -87,27 +96,26 @@ function ModelOption({
       })}
       style={{ cursor: isInteractive ? 'pointer' : 'default' }}
     >
-      <div className="d-flex align-items-center justify-content-between">
-        <Form.Check
-          type="radio"
-          id={`model-${model.modelId}`}
-          name="ai-grading-model"
-          className="mb-0"
-          disabled={!isInteractive}
-          checked={isSelected}
-          label={
-            <div>
-              <span className="fw-medium">{model.name}</span>
-              <div className="text-muted small">{model.sublabel}</div>
-              {/* Cost shown below sublabel on xs viewports */}
-              <div className="text-muted small d-sm-none">{relativeCost}</div>
-            </div>
-          }
-          onChange={onSelect}
-        />
+      <span className="d-flex align-items-center justify-content-between">
+        <span className="form-check mb-0">
+          <Form.Check.Input
+            type="radio"
+            id={optionId}
+            name="ai-grading-model"
+            disabled={!isInteractive}
+            checked={isSelected}
+            onChange={onSelect}
+          />
+          <span className="form-check-label">
+            <span className="fw-medium">{model.name}</span>
+            <span className="text-muted small d-block">{model.sublabel}</span>
+            {/* Cost shown below sublabel on xs viewports */}
+            <span className="text-muted small d-block d-sm-none">{relativeCost}</span>
+          </span>
+        </span>
         {/* Cost shown inline on sm+ viewports */}
         <span className="text-muted small text-nowrap ms-3 d-none d-sm-inline">{relativeCost}</span>
-      </div>
+      </span>
     </label>
   );
 
@@ -133,78 +141,193 @@ function ModelList({
   aiGradingEnabled,
   relativeCosts,
   onSelect,
+  customProvider,
+  customModels,
+  customLoading,
+  customError,
+  showCustom,
+  onRetryCustom,
 }: {
-  selectedModel: AiGradingModelId;
+  selectedModel: AiGradingSelection;
   availableProviders: EnumAiGradingProvider[];
   aiGradingEnabled: boolean;
   relativeCosts: Record<string, string>;
-  onSelect: (modelId: AiGradingModelId) => void;
+  onSelect: (selection: AiGradingSelection) => void;
+  customProvider: { id: string; base_url: string | null } | null;
+  customModels: string[];
+  customLoading: boolean;
+  customError: string | null;
+  showCustom: boolean;
+  onRetryCustom: () => void;
 }) {
-  const recommended = AI_GRADING_MODELS.filter((m) => m.recommended);
-  const other = AI_GRADING_MODELS.filter((m) => !m.recommended);
-  const hasOtherSelected = other.some((m) => m.modelId === selectedModel);
+  const [providerFilter, setProviderFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const filteredModels = AI_GRADING_MODELS.filter(
+    (m) =>
+      (providerFilter === 'all' || m.provider === providerFilter) &&
+      `${m.name} ${m.modelId}`.toLowerCase().includes(search.toLowerCase()),
+  );
+  const recommended = filteredModels.filter((m) => m.recommended);
+  const other = filteredModels.filter((m) => !m.recommended);
+  const filteredCustomModels = customModels.filter((id) =>
+    id.toLowerCase().includes(search.toLowerCase()),
+  );
+  const hasOtherSelected = other.some(
+    (m) => selectedModel.provider !== 'openai-compatible' && m.modelId === selectedModel.model_id,
+  );
   const [otherExpanded, setOtherExpanded] = useState(hasOtherSelected);
 
   return (
     <div className="d-flex flex-column gap-4">
-      <div>
-        <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
-          <span className="fw-semibold">Recommended</span>
-          <span className="text-muted small text-end">
-            Relative cost{' '}
-            <OverlayTrigger
-              placement="top"
-              tooltip={{
-                props: { id: 'cost-tooltip' },
-                body: 'Relative cost compared to the default model, based on standard token usage.',
-              }}
-            >
-              <i className="bi bi-question-circle" aria-hidden="true" />
-            </OverlayTrigger>
-          </span>
-        </div>
-        <div className="d-flex flex-column gap-1">
-          {recommended.map((model) => (
-            <ModelOption
-              key={model.modelId}
-              model={model}
-              isSelected={selectedModel === model.modelId}
-              isAvailable={availableProviders.includes(model.provider)}
-              aiGradingEnabled={aiGradingEnabled}
-              relativeCost={relativeCosts[model.modelId]}
-              onSelect={() => onSelect(model.modelId)}
-            />
-          ))}
-        </div>
-      </div>
-      <div>
-        <button
-          type="button"
-          className="btn btn-sm btn-link p-0 text-muted text-decoration-none"
-          onClick={() => setOtherExpanded((prev) => !prev)}
-        >
-          <i
-            className={`bi bi-chevron-${otherExpanded ? 'down' : 'right'} me-1`}
-            aria-hidden="true"
+      <div className="row g-3">
+        <Form.Group className="col-sm-5">
+          <Form.Label htmlFor="grading-provider-filter">Provider</Form.Label>
+          <Form.Select
+            id="grading-provider-filter"
+            value={providerFilter}
+            onChange={(event) => setProviderFilter(event.target.value)}
+          >
+            <option value="all">All providers</option>
+            {(['openai', 'google', 'anthropic'] as const).map((provider) => (
+              <option key={provider} value={provider}>
+                {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
+              </option>
+            ))}
+            {showCustom && <option value="openai-compatible">OpenAI-compatible</option>}
+          </Form.Select>
+        </Form.Group>
+        <Form.Group className="col-sm-7">
+          <Form.Label htmlFor="grading-model-search">Search models</Form.Label>
+          <Form.Control
+            id="grading-model-search"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
           />
-          Other models
-        </button>
-        {otherExpanded && (
-          <div className="d-flex flex-column gap-1 mt-2">
-            {other.map((model) => (
+        </Form.Group>
+      </div>
+      {recommended.length > 0 && (
+        <div>
+          <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+            <span className="fw-semibold">Recommended</span>
+            <span className="text-muted small text-end">
+              Relative cost{' '}
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: 'cost-tooltip' },
+                  body: 'Relative cost compared to the default model, based on standard token usage.',
+                }}
+              >
+                <i className="bi bi-question-circle" aria-hidden="true" />
+              </OverlayTrigger>
+            </span>
+          </div>
+          <div className="d-flex flex-column gap-1">
+            {recommended.map((model) => (
               <ModelOption
                 key={model.modelId}
                 model={model}
-                isSelected={selectedModel === model.modelId}
+                isSelected={
+                  selectedModel.provider !== 'openai-compatible' &&
+                  selectedModel.model_id === model.modelId
+                }
                 isAvailable={availableProviders.includes(model.provider)}
                 aiGradingEnabled={aiGradingEnabled}
                 relativeCost={relativeCosts[model.modelId]}
-                onSelect={() => onSelect(model.modelId)}
+                onSelect={() => onSelect({ model_id: model.modelId })}
               />
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+      {showCustom && (providerFilter === 'all' || providerFilter === 'openai-compatible') && (
+        <section aria-label="Custom provider models">
+          <h2 className="h6 mb-2">Custom provider models</h2>
+          {customProvider && (
+            <p className="text-muted small text-break mb-2">{customProvider.base_url}</p>
+          )}
+          <p className="small text-muted">
+            Pricing is unavailable for custom models, even when their names match official models.
+          </p>
+          {customLoading && (
+            <div role="status">
+              <Spinner size="sm" className="me-2" />
+              Loading custom models...
+            </div>
+          )}
+          {customError && (
+            <Alert variant="warning">
+              {customError}{' '}
+              <Button size="sm" variant="outline-secondary" onClick={onRetryCustom}>
+                Try again
+              </Button>
+            </Alert>
+          )}
+          {!customLoading && !customError && customModels.length === 0 && (
+            <p className="text-muted small">No models were found for this provider.</p>
+          )}
+          <div className="d-flex flex-column gap-1 overflow-auto" style={{ maxHeight: '24rem' }}>
+            {customProvider &&
+              !customError &&
+              filteredCustomModels.map((modelId) => (
+                <ModelOption
+                  key={modelId}
+                  optionId={`custom-model-${customProvider.id}-${encodeURIComponent(modelId)}`}
+                  model={{ modelId, name: modelId }}
+                  isSelected={
+                    selectedModel.provider === 'openai-compatible' &&
+                    selectedModel.credential_id === customProvider.id &&
+                    selectedModel.model_id === modelId
+                  }
+                  isAvailable={true}
+                  aiGradingEnabled={aiGradingEnabled && !customLoading}
+                  relativeCost="Price unknown"
+                  onSelect={() =>
+                    onSelect({
+                      provider: 'openai-compatible',
+                      model_id: modelId,
+                      credential_id: customProvider.id,
+                    })
+                  }
+                />
+              ))}
+          </div>
+        </section>
+      )}
+      {other.length > 0 && (
+        <div>
+          <button
+            type="button"
+            className="btn btn-sm btn-link p-0 text-muted text-decoration-none"
+            onClick={() => setOtherExpanded((prev) => !prev)}
+          >
+            <i
+              className={`bi bi-chevron-${otherExpanded ? 'down' : 'right'} me-1`}
+              aria-hidden="true"
+            />
+            Other models
+          </button>
+          {otherExpanded && (
+            <div className="d-flex flex-column gap-1 mt-2">
+              {other.map((model) => (
+                <ModelOption
+                  key={model.modelId}
+                  model={model}
+                  isSelected={
+                    selectedModel.provider !== 'openai-compatible' &&
+                    selectedModel.model_id === model.modelId
+                  }
+                  isAvailable={availableProviders.includes(model.provider)}
+                  aiGradingEnabled={aiGradingEnabled}
+                  relativeCost={relativeCosts[model.modelId]}
+                  onSelect={() => onSelect({ model_id: model.modelId })}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -510,10 +633,30 @@ function AiGradingAvailabilityAlert({
 }
 
 export function AiGradingModelSelectionModal({
+  courseInstanceId,
+  courseInstanceTrpcCsrfToken,
+  ...props
+}: Parameters<typeof AiGradingModelSelectionModalInner>[0] & {
+  courseInstanceId: string;
+  courseInstanceTrpcCsrfToken: string;
+}) {
+  const queryClient = useQueryClient();
+  const [client] = useState(() =>
+    createCourseInstanceTrpcClient({ courseInstanceId, csrfToken: courseInstanceTrpcCsrfToken }),
+  );
+  return (
+    <CourseInstanceTRPCProvider trpcClient={client} queryClient={queryClient}>
+      <AiGradingModelSelectionModalInner {...props} />
+    </CourseInstanceTRPCProvider>
+  );
+}
+
+function AiGradingModelSelectionModalInner({
   show,
   data: modalState,
   availableProviders,
   aiGradingLastSelectedModel,
+  aiGradingLastSelectedCredentialId,
   relativeCosts,
   useCustomApiKeys,
   aiGradingSettingsUrl,
@@ -528,6 +671,7 @@ export function AiGradingModelSelectionModal({
   data: AiGradingModelSelectionModalState | null;
   availableProviders: EnumAiGradingProvider[];
   aiGradingLastSelectedModel: string | null;
+  aiGradingLastSelectedCredentialId: string | null;
   relativeCosts: Record<string, string>;
   useCustomApiKeys: boolean;
   aiGradingSettingsUrl: string;
@@ -536,12 +680,35 @@ export function AiGradingModelSelectionModal({
   onSelectFirstSubmissions?: (n: number) => void;
   onSuccess: (
     data: { job_sequence_id: string; job_sequence_token: string },
-    modelId: AiGradingModelId,
+    selection: AiGradingSelection,
   ) => void;
   onHide: () => void;
   onExited: () => void;
 }) {
   const trpc = useTRPC();
+  const courseInstanceTRPC = useCourseInstanceTRPC();
+  const customProviderQuery = useQuery({
+    ...courseInstanceTRPC.aiGradingProviders.list.queryOptions(),
+    enabled: show && useCustomApiKeys,
+    retry: false,
+    refetchOnMount: 'always',
+  });
+  const customProvider = useCustomApiKeys ? (customProviderQuery.data?.credential ?? null) : null;
+  const customModelsQuery = useQuery({
+    ...courseInstanceTRPC.aiGradingProviders.models.queryOptions({
+      credential_id: customProvider?.id ?? '0',
+    }),
+    enabled: show && useCustomApiKeys && customProvider != null,
+    retry: false,
+    refetchOnMount: 'always',
+  });
+  const customModels = customModelsQuery.data?.models ?? [];
+  const customLoading =
+    customProviderQuery.isFetching || (customProvider != null && customModelsQuery.isFetching);
+  const customError =
+    customProviderQuery.error?.message ??
+    (customProvider ? customModelsQuery.error?.message : null) ??
+    null;
   const queryClient = useQueryClient();
   const { mutate, reset, isPending, isError, error } = useMutation(
     trpc.manualGrading.aiGradeInstanceQuestions.mutationOptions(),
@@ -571,15 +738,22 @@ export function AiGradingModelSelectionModal({
     enabled: show,
     refetchOnMount: 'always',
   });
-  const defaultModel = getDefaultModel(aiGradingLastSelectedModel, availableProviders);
-  const [selectedModel, setSelectedModel] = useState<AiGradingModelId>(defaultModel);
+  const defaultModel: AiGradingSelection =
+    aiGradingLastSelectedCredentialId && aiGradingLastSelectedModel
+      ? {
+          provider: 'openai-compatible',
+          model_id: aiGradingLastSelectedModel,
+          credential_id: aiGradingLastSelectedCredentialId,
+        }
+      : { model_id: getDefaultModel(aiGradingLastSelectedModel, availableProviders) };
+  const [selectedModel, setSelectedModel] = useState<AiGradingSelection>(defaultModel);
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     setSelectedModel(defaultModel);
     reset();
     resetRedeem();
     onHide();
-  }, [onHide, reset, resetRedeem, defaultModel]);
+  };
 
   const handleOpenRubricSettings = useCallback(() => {
     openRubricSettings();
@@ -594,7 +768,7 @@ export function AiGradingModelSelectionModal({
       mutate(
         {
           selection: getSelection(modalState),
-          model_id: selectedModel,
+          ...selectedModel,
         },
         {
           onSuccess: (data) => {
@@ -607,19 +781,24 @@ export function AiGradingModelSelectionModal({
     [modalState, selectedModel, mutate, onSuccess, onHide],
   );
 
-  const selectedModelProvider = AI_GRADING_MODELS.find(
-    (m) => m.modelId === selectedModel,
-  )?.provider;
-
-  const isSelectedModelAvailable = selectedModelProvider
-    ? availableProviders.includes(selectedModelProvider)
-    : false;
+  const selectedModelProvider =
+    selectedModel.provider === 'openai-compatible'
+      ? 'openai-compatible'
+      : AI_GRADING_MODELS.find((m) => m.modelId === selectedModel.model_id)?.provider;
+  const isSelectedModelAvailable =
+    selectedModel.provider === 'openai-compatible'
+      ? !customLoading &&
+        !customError &&
+        customProvider?.id === selectedModel.credential_id &&
+        customModels.includes(selectedModel.model_id)
+      : selectedModelProvider != null && availableProviders.includes(selectedModelProvider);
 
   const aiGradingAvailabilityState = run<AiGradingAvailabilityState>(() => {
     // Show the spinner while a refetch is in flight so the error UI doesn't
     // persist after the user clicks "Try again".
-    if (isAvailabilityFetching || aiGradingAvailabilityInfo == null) return { kind: 'loading' };
+    if (isAvailabilityFetching) return { kind: 'loading' };
     if (isAvailabilityError) return { kind: 'error' };
+    if (aiGradingAvailabilityInfo == null) return { kind: 'loading' };
 
     const {
       running_job_count,
@@ -632,7 +811,13 @@ export function AiGradingModelSelectionModal({
       return { kind: 'concurrency_limit', maxConcurrentJobs: max_concurrent_jobs };
     }
     if (useCustomApiKeys) {
-      if (availableProviders.length === 0) return { kind: 'no_keys' };
+      if (
+        availableProviders.length === 0 &&
+        customProvider == null &&
+        !customProviderQuery.isFetching
+      ) {
+        return { kind: 'no_keys' };
+      }
       return { kind: 'ready_with_keys' };
     }
     if (credit_balance_milli_dollars <= 0) {
@@ -699,8 +884,30 @@ export function AiGradingModelSelectionModal({
             availableProviders={availableProviders}
             aiGradingEnabled={aiGradingEnabled}
             relativeCosts={relativeCosts}
+            customProvider={customProvider}
+            customModels={customModels}
+            customLoading={customLoading}
+            customError={customError}
+            showCustom={
+              useCustomApiKeys &&
+              (customProvider != null ||
+                customProviderQuery.isFetching ||
+                customProviderQuery.isError)
+            }
             onSelect={setSelectedModel}
+            onRetryCustom={() => {
+              void customProviderQuery.refetch();
+              if (customProvider) void customModelsQuery.refetch();
+            }}
           />
+          {selectedModel.provider === 'openai-compatible' &&
+            !customLoading &&
+            !customError &&
+            !isSelectedModelAvailable && (
+              <Alert variant="warning" className="mt-3">
+                The previously selected custom model is no longer available. Select a model again.
+              </Alert>
+            )}
           <BeforeYouGradeSection items={beforeYouGradeItems} />
         </Modal.Body>
 

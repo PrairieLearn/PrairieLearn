@@ -609,5 +609,5 @@ export const StaffAiGradingCredentialSchema = RawCourseInstanceAiGradingCredenti
   id: true,
   provider: true,
 })
-  .extend({ apiKeyMasked: z.string() })
+  .extend({ apiKeyMasked: z.string(), dateAdded: z.string() })
   .brand<'StaffAiGradingCredential'>();

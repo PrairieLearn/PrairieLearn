@@ -16,12 +16,14 @@ import {
   AiGradingCredentialConflictError,
   deleteCredential,
   replaceCustomCredential,
+  selectCredentials,
   selectOptionalCredential,
 } from '../../models/ai-grading-credentials.js';
 
 import { requireCourseInstancePermissionEdit, requireCoursePermissionOwn, t } from './init.js';
 
 export interface AiGradingProvidersError {
+  List: never;
   Discover: never;
   Save: never;
   Models: never;
@@ -47,6 +49,11 @@ const connectionSchema = z.object({
   secret_key: z.string().trim().min(1),
 });
 const credentialIdSchema = z.object({ credential_id: IdSchema });
+const customProviderMetadataSchema = StaffAiGradingCredentialSchema.pick({
+  id: true,
+  provider: true,
+  base_url: true,
+});
 const modelsSchema = z.object({ models: z.array(z.string()) });
 
 async function discoverModels(input: Parameters<typeof discoverAiGradingModels>[0]) {
@@ -79,6 +86,15 @@ async function getCustomCredential(course_instance_id: string, credential_id: st
 }
 
 export const aiGradingProvidersRouter = t.router({
+  list: featureProcedure
+    .use(requireCourseInstancePermissionEdit)
+    .output(z.object({ credential: customProviderMetadataSchema.nullable() }))
+    .query(async ({ ctx }) => {
+      const credential = (await selectCredentials(ctx.course_instance.id)).find(
+        (c) => c.provider === 'openai-compatible',
+      );
+      return { credential: credential ? customProviderMetadataSchema.parse(credential) : null };
+    }),
   discover: featureProcedure
     .use(requireCoursePermissionOwn)
     .input(connectionSchema)
@@ -106,6 +122,7 @@ export const aiGradingProvidersRouter = t.router({
           credential: StaffAiGradingCredentialSchema.parse({
             ...credential,
             apiKeyMasked: formatted.apiKeyMasked,
+            dateAdded: formatted.dateAdded,
           }),
         };
       } catch (error) {
