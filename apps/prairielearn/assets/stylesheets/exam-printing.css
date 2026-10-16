@@ -30,8 +30,8 @@
 
 .printing-page-code {
   display: block;
-  width: 0.35in;
-  height: 0.35in;
+  width: 0.65in;
+  height: 0.65in;
   object-fit: contain;
 }
 

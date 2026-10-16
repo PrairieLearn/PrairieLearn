@@ -27,7 +27,7 @@ The browser permits only same-origin `GET` requests during rendering; redirects,
 
 The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. Set `data-print-paper-size="A4"` on the root element to produce A4 PDF sheets; otherwise, the renderer uses Letter sheets. The page's CSS uses the same attribute to size printable content.
 
-For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
+For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput(pageCode).produce(page)` to reuse the standard PDF output and identification codes.
 
 ### Word output
 
@@ -38,6 +38,14 @@ The rendering browser captures normalized HTML and MathML before Paged.js fragme
 `htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
 
 Omit the `cover` option to start with questions on the first page.
+
+### Page identification codes
+
+`renderPdf` accepts `pageCode: { encodePage(pageNumber) }`. After pagination, it generates a QR code for each physical page, including the cover. Browser previews use `addPreviewPageCodes` from `page-code.ts`; PDF exports replace those codes with their final export identity. The PrairieLearn template reserves 0.7 inches below the content for a 0.65-inch vector code, including its four-module quiet zone. Physical print-and-scan validation is still needed before relying on these codes for ingestion.
+
+PrairieLearn's `PL:PRINT:V1:` payload identifies the assessment instance, one-based physical page, document kind, output format, and a UUID for that export. The instance ID stays a string to preserve PostgreSQL bigint precision. The uppercase payload uses QR's compact alphanumeric mode and excludes names and UIDs from student-facing pages. A future scanning workflow can look up the course and assessment through the instance after authorization. `decodePrintPageIdentity` validates the version and fields; decoded metadata is untrusted and does not authenticate the document or authorize database access.
+
+Editable DOCX output currently has no page identification codes. Static codes cannot follow Word repagination, and Word's `DISPLAYBARCODE` field is not supported in Word for Mac. A finalization workflow or an explicitly fixed-page document format is needed before promising physical-page identification in Word.
 
 ## Combining question fragments
 

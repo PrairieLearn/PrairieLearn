@@ -3,6 +3,7 @@ import * as https from 'node:https';
 import { Semaphore } from 'async-mutex';
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
+import type { PageCodeOptions } from './page-code.js';
 import { createPdfOutput } from './pdf-output.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 
@@ -165,7 +166,7 @@ export interface RenderPageOptions {
   timeoutMs?: number;
 }
 
-export type RenderPdfOptions = RenderPageOptions;
+export type RenderPdfOptions = RenderPageOptions & { pageCode?: PageCodeOptions };
 
 /**
  * Reuses one browser connection with a bounded number of isolated rendering contexts. The browser
@@ -198,7 +199,7 @@ export class PrintRenderer {
   }
 
   renderPdf(options: RenderPdfOptions): Promise<Buffer> {
-    return this.render(options, createPdfOutput());
+    return this.render(options, createPdfOutput(options.pageCode));
   }
 
   render<T>(options: RenderPageOptions, output: PrintablePageOutput<T>): Promise<T> {
