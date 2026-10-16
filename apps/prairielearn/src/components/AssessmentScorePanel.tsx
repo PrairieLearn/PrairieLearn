@@ -47,7 +47,9 @@ export function AssessmentScorePanel({
           </tr>
           <tr>
             <td>Score:</td>
-            <td class="align-middle">${ScorebarHtml(assessment_instance.score_perc)}</td>
+            <td class="align-middle">
+              ${ScorebarHtml(assessment_instance.score_perc, { scorePending: assessment_instance.score_perc_pending, gradingPending: assessment_instance.grading_pending })}
+            </td>
           </tr>
         </tbody>
       </table>
