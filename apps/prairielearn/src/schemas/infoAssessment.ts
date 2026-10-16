@@ -451,7 +451,7 @@ export const AssessmentJsonSchema = z
     text: z
       .string()
       .describe(
-        'HTML text shown on the assessment overview page. HTML is sanitized; JavaScript is not supported.',
+        'Text shown on the assessment overview page. Supports Markdown and sanitized HTML; JavaScript is not supported.',
       )
       .optional(),
     maxPoints: z

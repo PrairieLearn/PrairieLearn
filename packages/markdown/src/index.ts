@@ -6,8 +6,6 @@ import { addMathjaxExtension } from '@prairielearn/marked-mathjax';
 
 import { sanitizeHtml } from './sanitize.js';
 
-export { sanitizeHtml } from './sanitize.js';
-
 // We can safely do this at the top level, as this only takes ~10ms to load.
 const MathJax = await mathjax.init({
   options: { ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore' },
