@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
+import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
 import { parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
@@ -13,10 +14,15 @@ import {
   PrintIdentityFieldsSchema,
 } from '../../lib/client/print-cover.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import {
+  checkPrintSnapshotId,
+  createPrintSnapshotId,
+} from '../../lib/printing/print-snapshot-id.js';
 import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
@@ -26,6 +32,7 @@ import {
   type PrintDocument,
   describeOmittedQuestions,
   getPrintRenderer,
+  getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
   validatePrintDocument,
@@ -57,7 +64,7 @@ const QuestionBlockSizeOverrideSchema = z
     };
   });
 
-const LayoutQuerySchema = z.object({
+const LayoutQuerySchema = z.strictObject({
   paper_size: z.enum(PAPER_SIZES),
   include_honor_code: z
     .enum(['true', 'false'])
@@ -88,12 +95,13 @@ const LayoutQuerySchema = z.object({
 const DocumentQuerySchema = LayoutQuerySchema.extend({
   document: z.enum(PRINT_DOCUMENTS).default('exam'),
 });
-const PrintSnapshotSchema = z.object({
+const PrintSnapshotSchema = z.strictObject({
+  id: z.string().min(1),
   html: z.string().min(1).max(MAX_PRINT_SNAPSHOT_BYTES),
-  source: z.object({
+  source: z.strictObject({
     html: z.string().max(MAX_PRINT_SNAPSHOT_BYTES),
     figures: z.array(
-      z.object({
+      z.strictObject({
         id: z.string().regex(/^[1-9]\d*$/),
         width: z.number().positive().max(4096),
         height: z.number().positive().max(4096),
@@ -264,6 +272,27 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
     const snapshot = PrintSnapshotSchema.parse(
       JSON.parse(z.instanceof(Buffer).parse(req.body).toString('utf8')),
     );
+    const previewUrl = new URL(
+      printUrl(req.baseUrl, 'preview', layout, document),
+      `${config.serverType}://localhost:${config.serverPort}`,
+    );
+    if (
+      !checkPrintSnapshotId(
+        {
+          ...snapshot,
+          assessmentInstanceId: res.locals.assessment_instance.id,
+          authnUserId: res.locals.authn_user.id,
+          search: previewUrl.searchParams,
+          questionListDigest: await getPrintableQuestionListDigest(
+            res.locals.assessment_instance.id,
+            layout.excludedQuestionNumbers,
+          ),
+        },
+        config.secretKey,
+      )
+    ) {
+      throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+    }
     const $ = load(snapshot.html);
     const hasExecutableAttributes =
       $('*').filter((_index, node) =>
@@ -280,10 +309,6 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
     ) {
       throw new HttpStatusError(400, 'The printable pages contain executable content.');
     }
-    const previewUrl = new URL(
-      printUrl(req.baseUrl, 'preview', layout, document),
-      `${config.serverType}://localhost:${config.serverPort}`,
-    );
     const output = createDocxOutput({
       source: snapshot.source,
       cover: layout.includeCoverPage
@@ -368,6 +393,25 @@ router.get(
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     const { printLayout: layout, printDocument: document } = res.locals;
+    const meter = metrics.getMeter('prairielearn');
+    const attributes = { document };
+    const startedAt = performance.now();
+    res.once('finish', () => {
+      getHistogram(meter, 'print.preview.request.duration', {
+        unit: 'milliseconds',
+        valueType: ValueType.DOUBLE,
+      }).record(performance.now() - startedAt, attributes);
+      getHistogram(meter, 'print.preview.rss', {
+        unit: 'bytes',
+        valueType: ValueType.INT,
+      }).record(process.memoryUsage().rss, attributes);
+      if (res.statusCode >= 400) {
+        getCounter(meter, 'print.preview.failures', { valueType: ValueType.INT }).add(
+          1,
+          attributes,
+        );
+      }
+    });
 
     const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
       defaultQuestionBlockSize: layout.blockSize ?? 'auto',
@@ -375,6 +419,10 @@ router.get(
       excludedQuestionNumbers: layout.excludedQuestionNumbers,
       document,
     });
+    getHistogram(meter, 'print.preview.questions.duration', {
+      unit: 'milliseconds',
+      valueType: ValueType.DOUBLE,
+    }).record(performance.now() - startedAt, attributes);
     if (printingResult.questionHtmls.length === 0) {
       throw new HttpStatusError(
         422,
@@ -382,7 +430,6 @@ router.get(
       );
     }
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-    const warnings = describeOmittedQuestions(printingResult.questionResults);
 
     const rawHtml = InstructorAssessmentInstancePrint({
       resLocals: res.locals,
@@ -395,8 +442,8 @@ router.get(
       formLabel: layout.formLabel,
       identityFields: layout.identityFields,
       questionHtmls: printingResult.questionHtmls,
-      omittedQuestionCount: warnings.length,
-      warnings,
+      omittedQuestionCount: describeOmittedQuestions(printingResult.questionResults).length,
+      warnings: describeOmittedQuestions(printingResult.questionResults),
       extraHeadersHtml: printingResult.extraHeadersHtml,
       hasLegacyQuestions: printingResult.hasLegacyQuestions,
       maxPoints: printingResult.maxPoints,
@@ -432,23 +479,39 @@ router.get(
             copy
               .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
               .forEach((node) => node.remove());
-            const data = globalThis.document.createElement('script');
-            data.id = 'pl-print-docx-source';
-            data.type = 'application/json';
-            data.textContent = JSON.stringify(source).replaceAll('<', '\\u003c');
-            copy.querySelector('head')?.append(data);
-            return { html: `<!doctype html>\n${copy.outerHTML}`, source };
+            const normalized = new DOMParser().parseFromString(
+              `<!doctype html>\n${copy.outerHTML}`,
+              'text/html',
+            );
+            return { html: `<!doctype html>\n${normalized.documentElement.outerHTML}`, source };
           }),
       },
     );
-    PrintSnapshotSchema.shape.source.parse(source);
+    const parsedSource = PrintSnapshotSchema.shape.source.parse(source);
+    const id = createPrintSnapshotId(
+      {
+        assessmentInstanceId: res.locals.assessment_instance.id,
+        authnUserId: res.locals.authn_user.id,
+        search: previewUrl.searchParams,
+        questionListDigest: printingResult.questionListDigest,
+        html,
+        source: parsedSource,
+      },
+      config.secretKey,
+    );
+    const snapshotHtml = html
+      .replace('<html', `<html data-print-snapshot-id="${id}"`)
+      .replace(
+        '</head>',
+        `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(parsedSource).replaceAll('<', '\\u003c')}</script></head>`,
+      );
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
     );
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.send(html);
+    res.send(snapshotHtml);
   }),
 );
 

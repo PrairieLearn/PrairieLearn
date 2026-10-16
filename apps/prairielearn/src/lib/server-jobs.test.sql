@@ -73,3 +73,10 @@ SET
   status = 'Stopped'
 WHERE
   id = $job_sequence_id;
+
+-- BLOCK mark_job_print_export
+UPDATE jobs
+SET
+  type = 'print_export'
+WHERE
+  id = $job_id;

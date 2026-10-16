@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 
 import { load } from 'cheerio';
@@ -52,6 +53,19 @@ const BROKEN_QUESTION_FAILURE_CODE = 'broken_variant';
 const BROKEN_QUESTION_FAILURE_STAGE = 'variant_creation';
 const BROKEN_QUESTION_FAILURE_MESSAGE =
   'Question could not be rendered due to an error in question code.';
+
+/** Development asset URLs use a fresh UUID for each render, even for the same package file. */
+function sameDevelopmentModuleAsset(first: string, second: string): boolean {
+  const pattern = /^(.*\/node_modules\/)[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}\/(.+)$/i;
+  const firstMatch = pattern.exec(first);
+  const secondMatch = pattern.exec(second);
+  return (
+    firstMatch !== null &&
+    secondMatch !== null &&
+    firstMatch[1] === secondMatch[1] &&
+    firstMatch[2] === secondMatch[2]
+  );
+}
 
 export const PRINT_DOCUMENTS = ['exam', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
@@ -219,6 +233,24 @@ function selectIncludedQuestions(
   return includedQuestions;
 }
 
+function digestPrintableQuestions(questions: PrintableQuestion[]): string {
+  const identities = questions.map((question) => [
+    question.instance_question.id,
+    question.assessment_question.id,
+    question.question.id,
+    question.question_number,
+  ]);
+  return createHash('sha256').update(JSON.stringify(identities)).digest('hex');
+}
+
+export async function getPrintableQuestionListDigest(
+  assessmentInstanceId: string,
+  excludedQuestionNumbers: ReadonlySet<string>,
+): Promise<string> {
+  const questions = await selectPrintableQuestions(assessmentInstanceId);
+  return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
+}
+
 export async function validateQuestionsForPrinting(
   assessmentInstanceId: string,
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,
@@ -248,6 +280,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   }: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
 ): Promise<{
   questionHtmls: string[];
+  questionListDigest: string;
   questionResults: PrintingQuestionResult[];
   extraHeadersHtml: string;
   hasLegacyQuestions: boolean;
@@ -381,7 +414,11 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       .object({ imports: z.record(z.string(), z.string()) })
       .parse(JSON.parse(headers(element).text()));
     for (const [specifier, url] of Object.entries(importMap.imports)) {
-      if (imports[specifier] && imports[specifier] !== url) {
+      if (
+        imports[specifier] &&
+        imports[specifier] !== url &&
+        !sameDevelopmentModuleAsset(imports[specifier], url)
+      ) {
         throw new Error(`Questions use conflicting import maps for ${specifier}`);
       }
       imports[specifier] = url;
@@ -391,6 +428,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
 
   return {
     questionHtmls: namespaceQuestionHtmls(renderedQuestions),
+    questionListDigest: digestPrintableQuestions(includedQuestions),
     questionResults,
     extraHeadersHtml: html`
       ${

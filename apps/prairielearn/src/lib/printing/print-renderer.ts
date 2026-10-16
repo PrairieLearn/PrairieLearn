@@ -2,14 +2,16 @@ import * as https from 'node:https';
 
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
+import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
+
 import type { PageCodeOptions } from './page-code.js';
 import { createPdfOutput } from './pdf-output.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import { RenderQueue } from './render-queue.js';
 
 const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
-const DEFAULT_MAX_QUEUED_RENDERS = 16;
-const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 64;
+const DEFAULT_MAX_QUEUED_RENDERS = 50;
+const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 50;
 const DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS = 4;
 const CLOUDFLARE_KEEP_ALIVE_MS = 180_000;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
@@ -110,11 +112,18 @@ export class PrintRenderer {
     this.cloudflare = cloudflare;
     this.defaultTimeoutMs = timeoutMs;
     this.contextCloseGraceMs = contextCloseGraceMs;
+    const waitingLimit =
+      maxQueuedRenders ??
+      (cloudflare ? DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS : DEFAULT_MAX_QUEUED_RENDERS);
     this.worker = new RenderQueue(
       maxConcurrentRenders ?? (cloudflare ? DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS : 1),
-      maxQueuedRenders ??
-        (cloudflare ? DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS : DEFAULT_MAX_QUEUED_RENDERS),
+      waitingLimit,
+      Math.floor(waitingLimit / 4),
     );
+  }
+
+  getLoad() {
+    return this.worker.getLoad();
   }
 
   renderPdf(options: RenderPdfOptions): Promise<Buffer> {
@@ -124,15 +133,51 @@ export class PrintRenderer {
   render<T>(options: RenderPageOptions, output: PrintablePageOutput<T>): Promise<T> {
     if (this.closed) return Promise.reject(new Error('The print renderer has been closed'));
     const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs;
-    return this.worker.run(
-      (queueWaitMs) => {
-        if (this.closed) throw new Error('The print renderer has been closed');
-        const remainingTimeoutMs = timeoutMs === 0 ? 0 : Math.max(1, timeoutMs - queueWaitMs);
-        return this.renderWithPermit({ ...options, timeoutMs: remainingTimeoutMs }, output);
-      },
-      timeoutMs,
-      output.label,
-    );
+    const kind = output.label === 'preview' ? 'preview' : 'export';
+    const meter = metrics.getMeter('prairielearn');
+    const queueWait = getHistogram(meter, 'print.render.queue_wait', {
+      unit: 'milliseconds',
+      valueType: ValueType.DOUBLE,
+    });
+    const duration = getHistogram(meter, 'print.render.duration', {
+      unit: 'milliseconds',
+      valueType: ValueType.DOUBLE,
+    });
+    const failures = getCounter(meter, 'print.render.failures', { valueType: ValueType.INT });
+    const load = this.worker.getLoad();
+    getHistogram(meter, 'print.render.waiting', { valueType: ValueType.INT }).record(load.waiting, {
+      kind,
+    });
+    getHistogram(meter, 'print.render.active', { valueType: ValueType.INT }).record(load.active, {
+      kind,
+    });
+    const startedAt = performance.now();
+    let acquiredAt: number | null = null;
+    return this.worker
+      .run(
+        (queueWaitMs) => {
+          acquiredAt = performance.now();
+          queueWait.record(queueWaitMs, { kind });
+          if (this.closed) throw new Error('The print renderer has been closed');
+          const remainingTimeoutMs = timeoutMs === 0 ? 0 : Math.max(1, timeoutMs - queueWaitMs);
+          return this.renderWithPermit({ ...options, timeoutMs: remainingTimeoutMs }, output);
+        },
+        timeoutMs,
+        output.label,
+        kind,
+      )
+      .catch((error: unknown) => {
+        if (acquiredAt === null) queueWait.record(performance.now() - startedAt, { kind });
+        failures.add(1, { kind });
+        throw error;
+      })
+      .finally(() => {
+        duration.record(performance.now() - startedAt, { kind });
+        getHistogram(meter, 'print.render.rss', {
+          unit: 'bytes',
+          valueType: ValueType.INT,
+        }).record(process.memoryUsage().rss, { kind });
+      });
   }
 
   /** Rejects queued renders and closes the browser. Further renders are refused. */
