@@ -716,15 +716,26 @@ export const CourseAgentConversationSchema = z.object({
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
 export const CourseAgentOperationSchema = z.object({
+  admitted_at: DateFromISOString,
   conversation_id: IdSchema,
   created_at: DateFromISOString,
+  dispatch_id: z.string(),
+  finished_at: DateFromISOString.nullable(),
   id: IdSchema,
   operation_id: z.string(),
   operation_number: z.number(),
   payload: z.object({ kind: z.literal('message'), text: z.string() }),
+  status: z.enum([
+    'admitted',
+    'running',
+    'completed',
+    'cancelled',
+    'failed',
+    'interrupted',
+    'rejected',
+  ]),
 });
 export type CourseAgentOperation = z.infer<typeof CourseAgentOperationSchema>;
-
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),

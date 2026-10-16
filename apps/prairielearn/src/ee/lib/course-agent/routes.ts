@@ -19,7 +19,9 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { type AgentScope, selectConversation } from '../../../models/course-agent-conversation.js';
 
 import { connectionFailure } from './errors.js';
+import { subscribe } from './events.js';
 import { executeHostTool } from './host-tools.js';
+import { reconcileOperations } from './lifecycle.js';
 import { provider, snapshot } from './service.js';
 
 const router = Router({ mergeParams: true });
@@ -72,6 +74,7 @@ router.get(
           const c = await selectConversation(scope, conversation_id);
           const next = await snapshot(c, await chat.getSnapshot(signal));
           next.diagnostics = await chat.getDiagnostics(signal);
+          await reconcileOperations(c, chat, next);
           if (!res.write(`data: ${JSON.stringify(next)}\n\n`)) {
             await once(res, 'drain', {
               signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
@@ -84,9 +87,11 @@ router.get(
         running = false;
       }
     };
+    let unlisten: (() => void) | undefined;
     let unwatch: (() => void) | undefined;
     const clean = () => {
       clearTimeout(expiry);
+      unlisten?.();
       unwatch?.();
     };
     res.once('close', clean);
@@ -97,6 +102,7 @@ router.get(
     });
     res.flushHeaders();
     try {
+      unlisten = await subscribe(conversation_id, () => void refresh());
       // HTTP exposes a safe status before a failed WebSocket upgrade hides its cause.
       await chat.getSnapshot(signal);
       unwatch = await chat.watch(signal, () => void refresh(), fail, executeHostTool);

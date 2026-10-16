@@ -792,6 +792,10 @@ export async function loadConfig(paths: string[]) {
     }
   }
 
+  if (config.courseAgent && !config.redisUrl) {
+    throw new Error('redisUrl must be set when courseAgent is configured');
+  }
+
   if (
     config.courseAgent &&
     !DEV_MODE &&

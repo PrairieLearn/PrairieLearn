@@ -11,6 +11,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as pageContext from '../../../lib/client/page-context.js';
 import * as conversations from '../../../models/course-agent-conversation.js';
 
+import * as events from './events.js';
 import { createCloudflareProvider } from './provider.js';
 import router from './routes.js';
 import * as service from './service.js';
@@ -57,6 +58,7 @@ beforeEach(() => {
     getSnapshot: mocks.getSnapshot,
     watch: mocks.watch,
   });
+  vi.spyOn(events, 'subscribe').mockResolvedValue(mocks.unsubscribe);
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -68,6 +70,7 @@ test('sends authentication failure through SSE without invoking the HTML error h
     'event: connection-error\ndata: {"message":"Authentication failed"}',
   );
   expect(mocks.watch).not.toHaveBeenCalled();
+  expect(mocks.unsubscribe).toHaveBeenCalled();
   expect(mocks.errorHandler).not.toHaveBeenCalled();
 });
 
@@ -79,6 +82,7 @@ test('ends a failed WebSocket connection cleanly and hides internal error detail
   expect(body).toContain('event: connection-error');
   expect(body).toContain('Your draft is preserved');
   expect(body).not.toContain('private transport details');
+  expect(mocks.unsubscribe).toHaveBeenCalled();
   expect(mocks.errorHandler).not.toHaveBeenCalled();
 });
 

@@ -1,18 +1,22 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { sendRequestSchema } from '@prairielearn/course-agent-contract';
+import { ChatError, sendRequestSchema } from '@prairielearn/course-agent-contract';
 import { IdSchema } from '@prairielearn/zod';
 
 import { formatCourseAgentDate } from '../../lib/course-agent-date.js';
+import { CourseAgentPanelStateSchema } from '../../lib/course-agent-panel.js';
 import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import {
   type AgentScope,
   createConversation,
   nameConversation,
+  rejectOperation,
   reserveOperation,
   selectConversation,
+  selectConversationActivity,
+  selectOptionalOperation,
 } from '../../models/course-agent-conversation.js';
 
 import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.js';
@@ -44,6 +48,34 @@ const newWorkProcedure = procedure.use(async ({ ctx, next }) => {
   return next();
 });
 export const courseAgentRouter = t.router({
+  panel: procedure.input(CourseAgentPanelStateSchema).mutation(({ ctx, input }) => {
+    const key = `${ctx.course.id}:${ctx.scope.user_id}`;
+    ctx.session.course_agent_panels ??= {};
+    ctx.session.course_agent_panels[key] = input;
+  }),
+  list: procedure
+    .output(
+      z.object({
+        canStartNewWork: z.boolean(),
+        conversations: z.array(
+          CatalogSchema.extend({ running: z.boolean(), finishedAt: z.string().nullable() }),
+        ),
+      }),
+    )
+    .query(async ({ ctx }) => ({
+      canStartNewWork: await ctx.service.newWorkEnabled(ctx.scope, ctx.course),
+      conversations: (await selectConversationActivity(ctx.scope)).map(
+        ({ conversation, running, finished_at }) => ({
+          ...conversation,
+          title:
+            conversation.title === 'New conversation'
+              ? conversation.title
+              : formatCourseAgentDate(conversation.created_at, ctx.course.display_timezone),
+          running,
+          finishedAt: finished_at?.toISOString() ?? null,
+        }),
+      ),
+    })),
   create: newWorkProcedure.output(CatalogSchema).mutation(({ ctx }) =>
     createConversation(ctx.scope, {
       title: 'New conversation',
@@ -55,17 +87,30 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const c = await selectConversation(ctx.scope, input.conversationId);
       const chat = await ctx.service.provider(ctx.scope, c, true);
+      const { reconcileOperations } = await import('../../ee/lib/course-agent/lifecycle.js');
+      await reconcileOperations(c, chat, await chat.getSnapshot(AbortSignal.timeout(10000)));
       const operationNumber = await reserveOperation(
         c,
         input.message.id,
         { kind: 'message', text: input.message.text },
         input.message.expectedOperationNumber,
       );
+      const operation = (await selectOptionalOperation(c.id, input.message.id))!;
       const title = formatCourseAgentDate(c.created_at, ctx.course.display_timezone);
-      await nameConversation(c.id, title);
-      // The browser's events connection owns host-tool execution. Codex keeps
-      // running in Cloudflare after that connection closes; PL holds no watcher.
-      await chat.send(input.message, AbortSignal.timeout(120000));
+      let dispatched = false;
+      try {
+        await nameConversation(c.id, title);
+        dispatched = true;
+        await chat.send(
+          { ...input.message, dispatchId: operation.dispatch_id },
+          AbortSignal.timeout(120000),
+        );
+      } catch (error) {
+        if (!dispatched || (error instanceof ChatError && [400, 409].includes(error.status))) {
+          await rejectOperation(c.id, input.message.id, operation.dispatch_id);
+        }
+        throw error;
+      }
       return { title, operationNumber };
     }),
   stop: procedure.input(id).mutation(async ({ ctx, input }) => {
@@ -85,6 +130,8 @@ export const courseAgentRouter = t.router({
 });
 
 export interface CourseAgentError {
+  Panel: never;
+  List: never;
   Create: never;
   Send: never;
   Stop: never;

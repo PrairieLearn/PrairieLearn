@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
 
 import { ChatError, type ChatSnapshot } from '@prairielearn/course-agent-contract';
 
@@ -114,6 +115,15 @@ export async function provider(
         });
       }
       throw workerResponseError(response.status);
+    }
+    const parsed = z
+      .object({ model: z.string().min(1) })
+      .safeParse(await response.json().catch(() => null));
+    if (!parsed.success) {
+      throw new ChatError(
+        502,
+        'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
+      );
     }
   } else {
     await authorize(scope);

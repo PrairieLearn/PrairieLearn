@@ -74,3 +74,24 @@ test('reports an unsent message without leaking a configure transport error', as
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });
+
+test.each(['{}', 'not JSON'])(
+  'rejects malformed configuration response %s before sending',
+  async (body) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
+    await withConfig({ isEnterprise: true, courseAgent: settings }, async () => {
+      await expect(provider(scope, conversation, true)).rejects.toMatchObject({
+        status: 502,
+        message:
+          'The course agent Worker returned an invalid configuration response. Your message was not sent. Check the Worker, then retry the send.',
+      });
+    });
+  },
+);
+
+test('validates the configured model response', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ model: 'fixture-model' })));
+  await withConfig({ isEnterprise: true, courseAgent: settings }, async () => {
+    await expect(provider(scope, conversation, true)).resolves.toBeDefined();
+  });
+});

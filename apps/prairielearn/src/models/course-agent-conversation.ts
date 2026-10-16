@@ -65,9 +65,9 @@ export async function createConversation(
   });
 }
 /**
- * Serialize writers on the conversation row. Retries may reuse a saved operation
- * only with identical input; a different operation must post the counter the
- * instructor actually observed. No network calls run inside this transaction.
+ * Lock the conversation before checking its observed operation number. An
+ * identical saved operation is a retry; different input under the same UUID is
+ * rejected. Admission and its operation row share the caller's transaction.
  */
 export async function reserveOperation(
   conversation: CourseAgentConversation,
@@ -98,6 +98,11 @@ export async function reserveOperation(
           message: 'Operation ID reused with different input.',
         });
       }
+      // A fenced rejection can be retried with a fresh dispatch identity. An
+      // uncertain send keeps its identity until the Worker acknowledges it.
+      if (existing.status === 'rejected') {
+        await execute(sql.retry_operation, { id: row.id, operation_id });
+      }
       return existing.operation_number;
     }
     if (row.operation_number !== expected) {
@@ -121,7 +126,28 @@ export async function reserveOperation(
   });
 }
 
+export const selectConversationActivity = (scope: AgentScope) =>
+  queryRows(
+    sql.select_conversation_activity,
+    { course_id: scope.course_id, user_id: scope.user_id },
+    z.object({
+      conversation: CourseAgentConversationSchema,
+      running: z.boolean(),
+      finished_at: z.coerce.date().nullable(),
+    }),
+  );
 export const nameConversation = (id: string, title: string) =>
   execute(sql.update_conversation_title, { id, title });
 export const selectConversationOperations = (id: string) =>
   queryRows(sql.select_message_operations, { id }, CourseAgentOperationSchema);
+
+export const selectOptionalOperation = (id: string, operation_id: string) =>
+  queryOptionalRow(sql.select_operation, { id, operation_id }, CourseAgentOperationSchema);
+export const selectActiveOperations = (id: string) =>
+  queryRows(sql.select_active_operations, { id }, CourseAgentOperationSchema);
+export const rejectOperation = (id: string, operation_id: string, dispatch_id: string) =>
+  execute(sql.reject_operation, { id, operation_id, dispatch_id });
+export const saveOperationStatuses = (
+  id: string,
+  updates: { operation_id: string; dispatch_id: string; status: CourseAgentOperation['status'] }[],
+) => execute(sql.update_operation_statuses, { id, updates: JSON.stringify(updates) });
