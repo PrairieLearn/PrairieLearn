@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 4.2.0
+
+### Minor Changes
+
+- 32a1f8b: Support async CSV and JSON data providers for table downloads, with shared row eligibility and a pending state.
+
 ## 4.1.2
 
 ### Patch Changes
