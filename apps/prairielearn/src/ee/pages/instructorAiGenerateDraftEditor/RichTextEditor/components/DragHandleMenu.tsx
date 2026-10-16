@@ -9,7 +9,6 @@ import { panelMeta } from '../extensions/pl-panel.js';
 
 // TODO: This doesn't actually handle dragging the node around yet.
 // TODO: Improve hover region for the drag handle to make it easier to click.
-// TODO: Make it more obvious that the drag handle is clickable (e.g. change the cursor to a pointer, tooltip)
 
 export function DragHandleMenu({ editor }: { editor: Editor | null }) {
   const [showMenu, setShowMenu] = useState(false);
@@ -99,7 +98,13 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
         rootClose
         onToggle={(next) => setShowMenu(next)}
       >
-        <i className="bi bi-grip-vertical" />
+        <button
+          type="button"
+          className="btn btn-sm btn-ghost"
+          aria-label="Panel visibility options"
+        >
+          <i className="bi bi-grip-vertical" aria-hidden="true" />
+        </button>
       </OverlayTrigger>
     </DragHandle>
   );
