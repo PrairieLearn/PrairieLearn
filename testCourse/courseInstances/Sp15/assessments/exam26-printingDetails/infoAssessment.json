@@ -1,0 +1,9 @@
+{
+  "uuid": "f0a39281-a3d1-4af2-9d68-0287d66762f8",
+  "type": "Exam",
+  "title": "Printing details",
+  "set": "Exam",
+  "number": "26",
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
+  "zones": [{ "questions": [{ "id": "printingDetails", "autoPoints": 1 }] }]
+}
