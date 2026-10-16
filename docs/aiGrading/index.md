@@ -207,7 +207,7 @@ API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
 
 ### OpenAI-compatible providers
 
-You can configure one OpenAI-compatible provider per course instance, alongside your keys for official providers. This allows you to use a university-supported or other custom endpoint that implements the OpenAI-compatible API.
+You can configure one OpenAI-compatible provider per course instance, alongside your keys for official providers. This allows you to use a university-supported or other custom endpoint that offers an OpenAI-compatible API.
 
 #### Configure a provider
 
