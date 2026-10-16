@@ -1333,6 +1333,14 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "courseAgentServiceUrl": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "courseAgentServiceToken": {
+      "default": null,
+      "type": ["string", "null"]
+    },
     "newsFeedUrl": {
       "default": null,
       "type": ["string", "null"]
