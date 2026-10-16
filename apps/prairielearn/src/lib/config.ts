@@ -674,6 +674,14 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
+  /**
+   * Base URL of the course agent service (`apps/course-agent`), e.g.
+   * `http://localhost:8790` in development. The course agent is unavailable
+   * unless both this and `courseAgentServiceToken` are set.
+   */
+  courseAgentServiceUrl: z.string().nullable().default(null),
+  /** Bearer token that authenticates PrairieLearn to the course agent service. */
+  courseAgentServiceToken: z.string().nullable().default(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
   /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */
