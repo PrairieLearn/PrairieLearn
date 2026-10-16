@@ -242,8 +242,10 @@ test('does not mark restored formula editor answers as unsaved', async ({
     .locator('form.question-form')
     .getAttribute('data-original-form-data');
   const initialValues = new URLSearchParams(originalFormData ?? '');
-  expect(initialValues.get('x')).toBe('y');
-  expect(initialValues.get('x-latex')).toBe('y');
+  expect(Object.fromEntries(initialValues)).toMatchObject({
+    x: 'y',
+    'x-latex': 'y',
+  });
 });
 
 test.describe('pl-symbolic-input plus-minus', () => {
