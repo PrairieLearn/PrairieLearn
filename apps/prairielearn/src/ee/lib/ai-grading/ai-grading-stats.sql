@@ -18,7 +18,7 @@ WITH
     WHERE
       v.instance_question_id = ANY ($instance_question_ids::bigint[])
     ORDER BY
-      v.instance_question_id,
+      v.instance_question_id ASC,
       v.date DESC,
       s.date DESC
   ),
@@ -127,7 +127,7 @@ WITH
       iq.assessment_question_id = $assessment_question_id
       AND iq.status != 'unanswered'
     ORDER BY
-      v.instance_question_id,
+      v.instance_question_id ASC,
       v.date DESC,
       s.date DESC
   ),
@@ -149,8 +149,8 @@ WITH
       AND gj.graded_at IS NOT NULL
       AND gj.manual_points IS NOT NULL
     ORDER BY
-      ls.instance_question_id,
-      gj.grading_method,
+      ls.instance_question_id ASC,
+      gj.grading_method ASC,
       gj.graded_at DESC,
       gj.id DESC
   )
