@@ -1,11 +1,13 @@
 #! /usr/bin/python3
 
+import contextlib
 import json
 import os
 import pathlib
 import re
 import select
 import shlex
+import signal
 import subprocess
 import tempfile
 import threading
@@ -159,7 +161,9 @@ class CGrader:
                 SB_USER,
                 "-s",
                 "/bin/bash",
-                "-c",
+                # Unlike -c, this keeps the command in the process group started
+                # below, so it can be stopped together with any processes it starts.
+                "--session-command",
                 shlex.join(["PATH=" + self.path, *command]),
             ]
 
@@ -170,6 +174,7 @@ class CGrader:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                start_new_session=True,
             )
         except Exception:
             return ""
@@ -195,7 +200,10 @@ class CGrader:
             except subprocess.TimeoutExpired:
                 status = "timeout"
         if status != "eof":
-            proc.kill()
+            # Processes started by the command would otherwise keep running and
+            # writing to the output after the command itself is killed.
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(proc.pid, signal.SIGKILL)
         if status == "timeout":
             if max_output_size is None:
                 # Without a size limit, the output of a program that did not
