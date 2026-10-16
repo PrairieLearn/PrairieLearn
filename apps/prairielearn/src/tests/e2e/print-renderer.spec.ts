@@ -69,15 +69,24 @@ test('closes a failed render with an in-flight asset request and renders the nex
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const renderer = new PrintRenderer();
   try {
+    await renderer.renderPdf({
+      url: `${origin}/warmup`,
+      html: '<!doctype html><html data-print-status="ready"><body>Warmup</body></html>',
+    });
+
     const failedRender = renderer.renderPdf({
       url: `${origin}/failed`,
       html: '<!doctype html><html data-print-status="ready"><body><img src="/slow"></body></html>',
-      timeoutMs: 300,
+      timeoutMs: 5_000,
     });
     const failure = expect(failedRender).rejects.toThrow(
-      'Timed out after 300 ms rendering the PDF',
+      'Timed out after 5000 ms rendering the PDF',
     );
-    await assetRequested;
+    const assetRequestStarted = await Promise.race([
+      assetRequested.then(() => true),
+      failure.then(() => false),
+    ]);
+    expect(assetRequestStarted).toBe(true);
     await failure;
 
     const pdf = await renderer.renderPdf({
