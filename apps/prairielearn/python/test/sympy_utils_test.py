@@ -496,6 +496,21 @@ class TestSympy:
             "All numbers must be expressed as integers (or ratios of integers)."
         )
 
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_adjacent_decimal_points_report_source(
+        self, *, simplify_expression: bool
+    ) -> None:
+        expr, expected_caret = _caret_template("2.!.3")
+        result = psu.try_parse_string_as_sympy(
+            expr,
+            self.SYMBOL_NAMES,
+            simplify_expression=simplify_expression,
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "invalid expression" in result.error
+        assert f"<pre>{expected_caret}</pre>" in result.error
+
     @pytest.mark.parametrize("a_sub", ["sqrt(-1)", "log(-1)", "asin(2)"])
     @pytest.mark.parametrize("simplify_expression", [True, False])
     def test_complex_error_is_generic(

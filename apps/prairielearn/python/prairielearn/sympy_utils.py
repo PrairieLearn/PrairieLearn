@@ -16,7 +16,8 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
-from tokenize import NAME, NUMBER, OP, TokenError
+from io import StringIO
+from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
 from types import CodeType
 from types import MappingProxyType as FrozenDict
 from typing import (
@@ -971,6 +972,30 @@ def _validate_multiplication(
             raise HasInvalidExpressionError(left_offset)
 
 
+def _validate_adjacent_numbers(expr: str, char_offsets: list[int]) -> None:
+    """Reject numeric tokens that implicit multiplication would silently combine."""
+    line_offsets = [0]
+    for line in expr.splitlines(keepends=True):
+        line_offsets.append(line_offsets[-1] + len(line))
+
+    previous_number_end: tuple[int, int] | None = None
+    try:
+        for token in generate_tokens(StringIO(expr).readline):
+            if token.type != NUMBER:
+                previous_number_end = None
+                continue
+
+            if token.start == previous_number_end:
+                row, column = token.start
+                offset = line_offsets[row - 1] + column
+                raise HasInvalidExpressionError(char_offsets[offset])
+
+            previous_number_end = token.end
+    except TokenError:
+        # The normal parsing path will report incomplete token streams.
+        return
+
+
 def _regex_sub_expr_and_map_offsets(
     expr: str, offsets: list[int], pattern: re.Pattern[str], replacement: str
 ) -> tuple[str, list[int]]:
@@ -1088,6 +1113,8 @@ def _evaluate_with_source(
             re.compile(r"(\d)([jJ])(?![a-zA-Z0-9])"),
             r"\1*\2",
         )
+
+    _validate_adjacent_numbers(normalized_expr, char_offsets)
 
     local_dict: DICT = {
         k: v

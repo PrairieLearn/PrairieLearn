@@ -473,6 +473,35 @@ def test_complex_cube_root_rejected_regardless_of_display_simplification(
     assert data["submitted_answers"]["test"] is None
 
 
+@pytest.mark.parametrize("simplify_expression", [True, False])
+@pytest.mark.parametrize(
+    ("formula_editor", "submission"),
+    [
+        pytest.param(False, "|x+1| + 2..3", id="plain-text"),
+        pytest.param(True, "∣x+1∣ + 2..3", id="formula-editor"),  # ruff:ignore[ambiguous-unicode-character-string]
+    ],
+)
+def test_adjacent_decimal_points_report_source(
+    formula_editor: bool, submission: str, *, simplify_expression: bool
+) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'formula-editor="{str(formula_editor).lower()}"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": submission},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(42))},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    error = data["format_errors"]["test"]
+    assert "invalid expression" in error
+    assert "2..3" in error
+    assert data["submitted_answers"]["test"] is None
+
+
 @pytest.mark.parametrize("a_sub", ["log(-x^2)", "sqrt(-x^2)"])
 def test_complex_from_real_assumptions_produces_format_error(a_sub: str) -> None:
     """When a correct answer has real variable assumptions, submitting an
