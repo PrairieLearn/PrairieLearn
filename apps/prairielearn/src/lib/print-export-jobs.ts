@@ -34,7 +34,6 @@ const PersistedWorkSchema = z.object({
   filename: z.string(),
   snapshots: z.array(
     z.object({
-      assessmentInstanceId: IdSchema,
       formLabel: z.string(),
       paperSize: z.enum(PAPER_SIZES),
       printDocument: z.enum(['exam', 'answer_key']),
