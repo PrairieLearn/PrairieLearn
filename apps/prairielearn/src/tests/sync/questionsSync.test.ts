@@ -14,7 +14,8 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
-import { updateCourseSharingName } from '../../models/course.js';
+import { selectCourseById, updateCourseSharingName } from '../../models/course.js';
+import { selectQuestionByQid } from '../../models/question.js';
 import {
   type QuestionJsonInput,
   type TagJsonInput,
@@ -73,6 +74,143 @@ describe('Question syncing', () => {
   afterAll(helperDb.after);
 
   beforeEach(helperDb.resetDatabase);
+
+  describe('copiedFrom', () => {
+    it('uses both UUIDs to resolve the source independently of the cosmetic QID', async () => {
+      const sourceData = util.getCourseData();
+      sourceData.courseInstances = {};
+      const source = await util.writeAndSyncCourseData(sourceData);
+      const sourceCourse = await selectCourseById(source.syncResults.courseId);
+      const sourceQuestion = await selectQuestionByQid({
+        course_id: sourceCourse.id,
+        qid: util.QUESTION_ID,
+      });
+      const consumingData = util.getCourseData();
+      consumingData.questions[util.QUESTION_ID].copiedFrom =
+        `${sourceCourse.uuid.toUpperCase()}/${sourceQuestion.uuid}/old/nested/qid`;
+      const consumer = await util.writeAndSyncCourseData(consumingData);
+      const copiedQuestion = await selectQuestionByQid({
+        course_id: consumer.syncResults.courseId,
+        qid: util.QUESTION_ID,
+      });
+      assert.equal(
+        copiedQuestion.copied_from,
+        consumingData.questions[util.QUESTION_ID].copiedFrom,
+      );
+      assert.equal(copiedQuestion.copied_from_question_id, sourceQuestion.id);
+
+      sourceData.questions.renamed = sourceData.questions[util.QUESTION_ID];
+      delete sourceData.questions[util.QUESTION_ID];
+      await util.overwriteAndSyncCourseData(sourceData, source.courseDir);
+      await util.syncCourseData(consumer.courseDir);
+      const resyncedQuestion = await selectQuestionByQid({
+        course_id: consumer.syncResults.courseId,
+        qid: util.QUESTION_ID,
+      });
+      assert.equal(resyncedQuestion.copied_from_question_id, sourceQuestion.id);
+      assert.isEmpty(resyncedQuestion.sync_warnings);
+    });
+
+    it('preserves unresolved references and resolves them on a later consumer sync', async () => {
+      const sourceData = util.getCourseData();
+      const sourceInfo = makeQuestion(sourceData);
+      sourceData.questions = {};
+      sourceData.courseInstances = {};
+      const source = await util.writeAndSyncCourseData(sourceData);
+      const sourceCourse = await selectCourseById(source.syncResults.courseId);
+      const consumingData = util.getCourseData();
+      consumingData.questions[util.QUESTION_ID].copiedFrom =
+        `${sourceCourse.uuid}/${sourceInfo.uuid}`;
+      const consumer = await util.writeAndSyncCourseData(consumingData);
+      const copiedQuestion = await selectQuestionByQid({
+        course_id: consumer.syncResults.courseId,
+        qid: util.QUESTION_ID,
+      });
+      assert.equal(
+        copiedQuestion.copied_from,
+        consumingData.questions[util.QUESTION_ID].copiedFrom,
+      );
+      assert.isNull(copiedQuestion.copied_from_question_id);
+      assert.include(copiedQuestion.sync_warnings, 'copiedFrom');
+      assert(consumer.syncResults.status === 'complete');
+      assert.isFalse(consumer.syncResults.hadJsonErrors);
+      assert.isTrue(consumer.syncResults.hadJsonErrorsOrWarnings);
+      assert.equal(
+        copiedQuestion.sync_warnings,
+        consumer.syncResults.courseData.questions[util.QUESTION_ID].warnings.join('\n'),
+      );
+
+      sourceData.questions.origin = sourceInfo;
+      await util.overwriteAndSyncCourseData(sourceData, source.courseDir);
+      await util.syncCourseData(consumer.courseDir);
+      const sourceQuestion = await selectQuestionByQid({
+        course_id: sourceCourse.id,
+        qid: 'origin',
+      });
+      const resyncedQuestion = await selectQuestionByQid({
+        course_id: consumer.syncResults.courseId,
+        qid: util.QUESTION_ID,
+      });
+      assert.equal(resyncedQuestion.copied_from_question_id, sourceQuestion.id);
+      assert.isEmpty(resyncedQuestion.sync_warnings);
+    });
+
+    it('updates and clears provenance, including references to soft-deleted sources', async () => {
+      const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+      const course = await selectCourseById(syncResults.courseId);
+      courseData.questions.firstSource = makeQuestion(courseData);
+      courseData.questions.secondSource = makeQuestion(courseData);
+      const questionInfo = courseData.questions[util.QUESTION_ID];
+      questionInfo.copiedFrom = `${course.uuid}/${courseData.questions.firstSource.uuid}`;
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+      const firstSource = await findSyncedQuestion('firstSource');
+      assert.equal(
+        (await findSyncedQuestion(util.QUESTION_ID)).copied_from_question_id,
+        firstSource.id,
+      );
+
+      questionInfo.copiedFrom = `${course.uuid}/${courseData.questions.secondSource.uuid}`;
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+      const secondSource = await findSyncedQuestion('secondSource');
+      assert.equal(
+        (await findSyncedQuestion(util.QUESTION_ID)).copied_from_question_id,
+        secondSource.id,
+      );
+
+      delete courseData.questions.secondSource;
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+      const copiedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+      assert.equal(copiedQuestion.copied_from_question_id, secondSource.id);
+      assert.isEmpty(copiedQuestion.sync_warnings);
+
+      delete questionInfo.copiedFrom;
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+      const clearedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+      assert.isNull(clearedQuestion.copied_from);
+      assert.isNull(clearedQuestion.copied_from_question_id);
+    });
+
+    it('rejects malformed identifiers without overwriting the last valid provenance', async () => {
+      const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+      const course = await selectCourseById(syncResults.courseId);
+      const questionInfo = courseData.questions[util.QUESTION_ID];
+      questionInfo.copiedFrom = `${course.uuid}/${questionInfo.uuid}`;
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+      const original = await findSyncedQuestion(util.QUESTION_ID);
+
+      for (const copiedFrom of [`sharing-name/${questionInfo.uuid}`, `${course.uuid}/not-a-uuid`]) {
+        await fs.writeJSON(path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'), {
+          ...questionInfo,
+          copiedFrom,
+        });
+        await util.syncCourseData(courseDir);
+        const invalid = await findSyncedQuestion(util.QUESTION_ID);
+        assert.include(invalid.sync_errors, 'copiedFrom');
+        assert.equal(invalid.copied_from, original.copied_from);
+        assert.equal(invalid.copied_from_question_id, original.copied_from_question_id);
+      }
+    });
+  });
 
   it('allows nesting of questions in subfolders', async () => {
     const courseData = util.getCourseData();

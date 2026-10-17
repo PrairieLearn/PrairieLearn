@@ -9,6 +9,8 @@ import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
 function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   if (!q) return null;
 
@@ -87,6 +89,47 @@ export async function sync(
     [questionParams, courseId],
     z.record(z.string(), IdSchema),
   );
+
+  const validQuestions = Object.entries(courseData.questions).flatMap(([qid, question]) => {
+    if (!question.data || infofile.hasErrors(question)) return [];
+    return [{ qid, question, copiedFrom: question.data.copiedFrom ?? null }];
+  });
+  if (validQuestions.length === 0) return result;
+
+  const references = validQuestions.flatMap(({ qid, copiedFrom }) => {
+    if (!copiedFrom) return [];
+    const [course_uuid, question_uuid] = copiedFrom.split('/', 2);
+    return [{ qid, course_uuid, question_uuid }];
+  });
+  const sources =
+    references.length > 0
+      ? await sqldb.queryRows(
+          sql.select_copied_from_questions,
+          { source_references: JSON.stringify(references) },
+          z.object({ qid: z.string(), copied_from_question_id: IdSchema.nullable() }),
+        )
+      : [];
+  const sourceIds = new Map(sources.map((source) => [source.qid, source.copied_from_question_id]));
+
+  const provenance = validQuestions.map(({ qid, question, copiedFrom }) => {
+    const sourceId = sourceIds.get(qid) ?? null;
+    if (copiedFrom && sourceId === null) {
+      infofile.addWarning(
+        question,
+        `The source question in copiedFrom "${copiedFrom}" could not be found. It will be looked up again on the next sync.`,
+      );
+    }
+    return {
+      question_id: result[qid],
+      copied_from: copiedFrom,
+      copied_from_question_id: sourceId,
+      sync_warnings: infofile.stringifyWarnings(question),
+    };
+  });
+  await sqldb.execute(sql.update_copied_from, {
+    course_id: courseId,
+    provenance: JSON.stringify(provenance),
+  });
 
   return result;
 }
