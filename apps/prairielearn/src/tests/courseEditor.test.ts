@@ -16,7 +16,7 @@ import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
-import { updateCourseSharingName } from '../models/course.js';
+import { selectCourseById, updateCourseSharingName } from '../models/course.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -185,6 +185,7 @@ const testEditData: EditData[] = [
     },
     action: 'copy_question',
     info: 'questions/test/question_copy1/info.json',
+    validateInfo: (infoJson) => assert.notProperty(infoJson, 'copiedFrom'),
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -487,6 +488,14 @@ const publicCopyTestData: EditData[] = [
       question_id: 2,
     },
     info: 'questions/shared-publicly/info.json',
+    validateInfo: async (infoJson) => {
+      const sourceCourse = await selectCourseById('2');
+      assert.equal(
+        infoJson.copiedFrom,
+        `${sourceCourse.uuid}/11111111-1111-1111-1111-111111111111/shared-publicly`,
+      );
+      assert.notProperty(infoJson, 'authors');
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -510,9 +519,20 @@ const publicCopyTestData: EditData[] = [
       course_instance_permission: 'Student Data Editor',
     },
     info: 'courseInstances/Fa19/assessments/test/infoAssessment.json',
-    validateInfo: (infoJson) => {
+    validateInfo: async (infoJson) => {
       assert.notProperty(infoJson, 'allowAccess');
       assert.deepEqual(infoJson.accessControl, []);
+      const sourceCourse = await selectCourseById('2');
+      const copiedQuestion = await fs.readJson(
+        path.join(
+          courseRepo.courseDevDir,
+          'questions/test-course/shared-source-publicly/info.json',
+        ),
+      );
+      assert.equal(
+        copiedQuestion.copiedFrom,
+        `${sourceCourse.uuid}/11111111-1111-1111-1111-111111111112/shared-source-publicly`,
+      );
     },
     files: new Set([
       'README.md',
@@ -785,6 +805,9 @@ async function createSharedCourse() {
       type: 'v3',
       title: 'Shared publicly',
       topic: 'TOPIC HERE',
+      authors: [{ email: 'author@example.org' }],
+      copiedFrom:
+        'ed80830c-fd51-43e3-9f13-6a41e4c7dfd5/cbf5cbf2-6458-4f13-a418-aa4d2b1093ff/upstream',
       sharePublicly: true,
       shareSourcePublicly: true,
     },

@@ -95,7 +95,9 @@ The first UUID identifies the source course, using the UUID assigned by the Prai
 
 The field can be edited or removed. During each sync, PrairieLearn looks up the declared source, including soft-deleted source questions. If the source is not available on this PrairieLearn installation, sync preserves the reference and reports a warning. PrairieLearn retries the lookup the next time the consuming course syncs.
 
-This field records a declared relationship; it does not verify authorship or grant access to the source. It does not change the sharing-name syntax used to reference shared questions in assessments. Copy operations do not yet populate this field automatically.
+This field records a declared relationship; it does not verify authorship or grant access to the source. It does not change the sharing-name syntax used to reference shared questions in assessments.
+
+Cross-course question copies, including questions copied when adopting a course instance, record their immediate source automatically and remove the copied `authors` list. Copying a copy records the intermediate question as the source. Copies within the same course preserve their existing authors and provenance.
 
 ## Sharing assessments
 
