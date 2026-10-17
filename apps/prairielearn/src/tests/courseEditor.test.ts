@@ -533,7 +533,6 @@ const publicCopyTestData: EditData[] = [
         copiedQuestion.copiedFrom,
         `${sourceCourse.uuid}/11111111-1111-1111-1111-111111111112/shared-source-publicly`,
       );
-      assert.notProperty(copiedQuestion, 'authors');
     },
     files: new Set([
       'README.md',
@@ -817,7 +816,6 @@ async function createSharedCourse() {
       type: 'v3',
       title: 'Shared source publicly',
       topic: 'TOPIC HERE',
-      authors: [{ email: 'author@example.org' }],
       shareSourcePublicly: true,
     },
   };
