@@ -14,7 +14,8 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
-import { updateCourseSharingName } from '../../models/course.js';
+import { selectCourseById, updateCourseSharingName } from '../../models/course.js';
+import { updateQuestion } from '../../models/question.js';
 import {
   type QuestionJsonInput,
   type TagJsonInput,
@@ -73,6 +74,61 @@ describe('Question syncing', () => {
   afterAll(helperDb.after);
 
   beforeEach(helperDb.resetDatabase);
+
+  describe('copiedFrom', () => {
+    it('resolves the correct source course, including a soft-deleted source', async () => {
+      const source = await util.createAndSyncCourseData();
+      const sourceCourse = await selectCourseById(source.syncResults.courseId);
+      const sourceQuestion = await findSyncedQuestion(util.QUESTION_ID);
+      await updateQuestion({ question_id: sourceQuestion.id, patch: { deleted_at: new Date() } });
+
+      const consumingData = util.getCourseData();
+      consumingData.courseInstances = {};
+      consumingData.questions = {
+        copy: {
+          ...source.courseData.questions[util.QUESTION_ID],
+          copiedFrom: `${sourceCourse.uuid}/${sourceQuestion.uuid}/cosmetic/qid`,
+        },
+      };
+      await util.writeAndSyncCourseData(consumingData);
+      const copiedQuestion = await findSyncedQuestion('copy');
+      assert.equal(copiedQuestion.copied_from, consumingData.questions.copy.copiedFrom);
+      assert.equal(copiedQuestion.copied_from_question_id, sourceQuestion.id);
+    });
+
+    it('preserves an unresolved reference and retries on the next consumer sync', async () => {
+      const sourceData = util.getCourseData();
+      const sourceInfo = sourceData.questions[util.QUESTION_ID];
+      sourceData.questions = {};
+      sourceData.courseInstances = {};
+      const source = await util.writeAndSyncCourseData(sourceData);
+      const sourceCourse = await selectCourseById(source.syncResults.courseId);
+      const consumingData = util.getCourseData();
+      consumingData.questions[util.QUESTION_ID].copiedFrom =
+        `${sourceCourse.uuid}/${sourceInfo.uuid}`;
+      const consumer = await util.writeAndSyncCourseData(consumingData);
+      const copiedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+      assert.equal(
+        copiedQuestion.copied_from,
+        consumingData.questions[util.QUESTION_ID].copiedFrom,
+      );
+      assert.isNull(copiedQuestion.copied_from_question_id);
+      assert.include(copiedQuestion.sync_warnings, 'copiedFrom');
+      assert(consumer.syncResults.status === 'complete');
+      assert.equal(
+        copiedQuestion.sync_warnings,
+        consumer.syncResults.courseData.questions[util.QUESTION_ID].warnings.join('\n'),
+      );
+
+      sourceData.questions.origin = sourceInfo;
+      await util.overwriteAndSyncCourseData(sourceData, source.courseDir);
+      await util.syncCourseData(consumer.courseDir);
+      const sourceQuestion = await findSyncedQuestion('origin');
+      const resolvedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+      assert.equal(resolvedQuestion.copied_from_question_id, sourceQuestion.id);
+      assert.isEmpty(resolvedQuestion.sync_warnings);
+    });
+  });
 
   it('allows nesting of questions in subfolders', async () => {
     const courseData = util.getCourseData();

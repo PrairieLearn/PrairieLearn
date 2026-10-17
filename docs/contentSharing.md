@@ -81,6 +81,22 @@ Just as anyone with access to a question in your course can access any file in `
 4. Optionally, add `"shareSourcePublicly": true` to the `info.json` file if you would like people to also be able to view and copy the source code of your question.
 5. Anyone with a PrairieLearn account may preview your question, and any PrairieLearn course may now use it by referencing it in their assessments.
 
+## Question-copy provenance
+
+A question's `info.json` can record its source in the optional `copiedFrom` field:
+
+```json title="info.json (partial)"
+{
+  "copiedFrom": "ed80830c-fd51-43e3-9f13-6a41e4c7dfd5/cbf5cbf2-6458-4f13-a418-aa4d2b1093ff/mechanics/newtonsThirdLaw"
+}
+```
+
+The first UUID identifies the source course, using the UUID assigned by the PrairieLearn database. It is separate from the course's sharing name and the deprecated UUID in `infoCourse.json`. The second UUID is the source question's `uuid` from its `info.json`. A reference containing just these two UUIDs is also valid. Everything after the second UUID is optional, human-readable text; PrairieLearn ignores it when looking up the source, so renaming the source QID does not break the reference. Source courses do not need a sharing name.
+
+The field can be edited or removed. During each sync, PrairieLearn looks up the declared source, including soft-deleted source questions. If the source is not available on this PrairieLearn installation, sync preserves the reference and reports a warning. PrairieLearn retries the lookup the next time the consuming course syncs.
+
+This field records a declared relationship; it does not verify authorship or grant access to the source. It does not change the sharing-name syntax used to reference shared questions in assessments. Copy operations do not yet populate this field automatically.
+
 ## Sharing assessments
 
 You may also publicly share whole assessments, provided that every question referenced by the assessment is also publicly shared. When an assessment is shared, the public URL for it can be found on the assessment settings page.
