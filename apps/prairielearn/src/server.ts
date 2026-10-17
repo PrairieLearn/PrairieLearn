@@ -460,6 +460,8 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/date.js')).default);
   app.use((await import('./middlewares/effectiveRequestChanged.js')).default);
 
+  app.use('/pl/pdf_viewer', (await import('./pages/pdfViewer/pdfViewer.js')).default);
+
   app.use('/pl/oauth2login', (await import('./pages/authLoginOAuth2/authLoginOAuth2.js')).default);
   app.use(
     '/pl/oauth2callback',

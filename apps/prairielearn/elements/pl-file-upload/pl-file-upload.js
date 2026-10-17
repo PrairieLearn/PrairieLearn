@@ -467,24 +467,30 @@
             // unicode text if needed.
             const binaryData = Uint8Array.from(atob(fileData), (c) => c.charCodeAt(0));
             const isPdf = this.isPdf(binaryData);
-            const url = URL.createObjectURL(
-              new Blob([binaryData], isPdf ? { type: 'application/pdf' } : undefined),
-            );
-
             if (isPdf) {
               const $objectPreview = $(
                 `<div class="mt-2 ratio ratio-4x3">
-                   <iframe src="${url}">
+                   <iframe title="PDF preview">
                      PDF file cannot be displayed.
                    </iframe>
                  </div>`,
               );
-              $objectPreview.find('iframe').on('load', () => {
-                URL.revokeObjectURL(url);
-              });
+              // The viewer installs its message listener before its load
+              // event, so it is ready to receive the PDF bytes here.
+              $objectPreview
+                .find('iframe')
+                .one('load', function () {
+                  this.contentWindow.postMessage(
+                    { type: 'pdf-preview', bytes: binaryData.buffer },
+                    window.location.origin,
+                    [binaryData.buffer],
+                  );
+                })
+                .attr('src', '/pl/pdf_viewer');
               $preview.append($objectPreview);
               this.expandPreviewForFile($file, $preview);
             } else {
+              const url = URL.createObjectURL(new Blob([binaryData]));
               // First try to display the file as an image. If that fails,
               // try to display it as text.
               $imgPreview
