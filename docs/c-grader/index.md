@@ -521,7 +521,7 @@ To provide a string to be used as standard input for the program, use the `input
 result = self.run_command("./square", input="3\n")
 ```
 
-To ensure the program does not run forever, you may set a `timeout` option, which provides a timeout in seconds. If the program doesn't complete within this timeout, the program and any processes it started are stopped, and the method will return a standard timeout message. It is highly recommended that student-provided code run with a timeout setting.
+To ensure the program does not run forever, you may set a `timeout` option, which provides a timeout in seconds. If the program doesn't complete within this timeout, the method will return a standard timeout message. It is highly recommended that student-provided code run with a timeout setting.
 
 ```python
 result = self.run_command("./square", timeout=1)
