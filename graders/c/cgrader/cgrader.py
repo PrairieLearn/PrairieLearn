@@ -533,16 +533,23 @@ class CGrader:
             msg = ""
 
         # Truncate even when the program timed out, since a program can produce
-        # a large amount of output before it is stopped.
-        output_too_long = bool(size_limit) and len(outcmp) > size_limit
+        # a large amount of output before it is stopped. The timeout message
+        # does not count toward size_limit and is kept intact after the cut.
+        timeout_reached = bool(timeout) and outcmp.endswith(TIMEOUT_MESSAGE)
+        output_len = len(outcmp) - (len(TIMEOUT_MESSAGE) if timeout_reached else 0)
+        output_too_long = bool(size_limit) and output_len > size_limit
         if output_too_long:
-            out = out[0:size_limit] + "\nTRUNCATED: Output too long."
-            if outcmp.endswith(TIMEOUT_MESSAGE):
+            if timeout_reached:
+                out = out[: -len(TIMEOUT_MESSAGE)]
+            # A highlight cut by the truncation would otherwise color the notes below.
+            reset = "\033[0m" if highlight_matches else ""
+            out = out[:size_limit] + reset + "\nTRUNCATED: Output too long."
+            if timeout_reached:
                 out += TIMEOUT_MESSAGE
 
         points = max_points
         if (
-            (timeout and "TIMEOUT" in outcmp)
+            timeout_reached
             or output_too_long
             or any(r.search(outcmp) is not None for _, r in reject_output_with_regex)
         ):
