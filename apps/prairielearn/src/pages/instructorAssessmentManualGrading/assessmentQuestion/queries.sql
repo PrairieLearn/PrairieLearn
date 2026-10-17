@@ -77,8 +77,9 @@ WITH
       team_users AS tu
       JOIN users AS tmu ON tmu.id = tu.user_id
       JOIN teams AS t ON t.id = tu.team_id
+      JOIN team_configs AS tc ON tc.id = t.team_config_id
     WHERE
-      t.course_instance_id = $course_instance_id
+      tc.assessment_id = $assessment_id
     GROUP BY
       tu.team_id
   )
