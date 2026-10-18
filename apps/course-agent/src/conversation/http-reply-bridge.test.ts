@@ -1,7 +1,7 @@
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it } from 'vitest';
 
-import { TurnStream } from './turn-stream.js';
+import { HttpReplyBridge } from './http-reply-bridge.js';
 
 const CHUNKS: UIMessageChunk[] = [
   { type: 'start' },
@@ -26,12 +26,12 @@ async function readAll(stream: ReadableStream<UIMessageChunk>) {
   return chunks;
 }
 
-describe('TurnStream', () => {
+describe('HttpReplyBridge', () => {
   it('gives the SDK and the caller the full reply', async () => {
-    const turn = new TurnStream(undefined);
-    const callerStream = turn.callerStream();
-    const forSdk = turn.split(replyStream(CHUNKS));
-    turn.end();
+    const turn = new HttpReplyBridge();
+    const callerStream = turn.waitForReplyStream();
+    const forSdk = turn.attachReplyStream(replyStream(CHUNKS));
+    turn.failIfReplyNotStarted();
 
     const [sdkChunks, callerChunks] = await Promise.all([
       readAll(forSdk),
@@ -42,16 +42,23 @@ describe('TurnStream', () => {
   });
 
   it('fails the caller if the turn ends without a reply', async () => {
-    const turn = new TurnStream(undefined);
-    const callerStream = turn.callerStream();
-    turn.end(new Error('model unavailable'));
+    const turn = new HttpReplyBridge();
+    const callerStream = turn.waitForReplyStream();
+    turn.failIfReplyNotStarted(new Error('model unavailable'));
     await expect(callerStream).rejects.toThrow('model unavailable');
   });
 
+  it('preserves non-Error rejection reasons', async () => {
+    const bridge = new HttpReplyBridge();
+    const response = bridge.waitForReplyStream();
+    bridge.failIfReplyNotStarted('provider unavailable');
+    await expect(response).rejects.toBe('provider unavailable');
+  });
+
   it('aborts the turn when the caller stops reading, without cutting off the SDK', async () => {
-    const turn = new TurnStream(undefined);
-    const callerStream = turn.callerStream();
-    const forSdk = turn.split(replyStream(CHUNKS.slice(0, 3), { close: false }));
+    const turn = new HttpReplyBridge();
+    const callerStream = turn.waitForReplyStream();
+    const forSdk = turn.attachReplyStream(replyStream(CHUNKS.slice(0, 3), { close: false }));
 
     const reader = (await callerStream).getReader();
     expect((await reader.read()).value).toEqual(CHUNKS[0]);
