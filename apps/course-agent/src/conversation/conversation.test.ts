@@ -7,6 +7,7 @@ import type { ChatContext } from '../http/chat-request.js';
 import { Conversation } from './conversation.js';
 
 interface State {
+  initialized: boolean;
   courseContext: ChatContext | null;
 }
 const storage = vi.hoisted(() => ({
@@ -20,7 +21,7 @@ const generateReply = vi.hoisted(() =>
 
 vi.mock('@cloudflare/ai-chat', () => ({
   AIChatAgent: class {
-    initialState: State = { courseContext: null };
+    initialState: State = { initialized: false, courseContext: null };
     messages: UIMessage[] = [];
     constructor(
       _ctx: DurableObjectState,
@@ -96,6 +97,24 @@ beforeEach(() => {
       },
     }),
   }));
+});
+
+describe('conversation initialization', () => {
+  it('starts uninitialized and persists creation across fresh instances', () => {
+    const conversation = createConversation();
+    expect(conversation.isInitialized()).toBe(false);
+    conversation.initialize();
+    expect(createConversation().isInitialized()).toBe(true);
+  });
+
+  it('keeps the creation marker when chat updates the course context', async () => {
+    const conversation = createConversation();
+    conversation.initialize();
+    await (await conversation.onRequest(chat(context))).text();
+    const recovered = createConversation();
+    expect(recovered.isInitialized()).toBe(true);
+    expect(storage.state).toEqual({ initialized: true, courseContext: context });
+  });
 });
 
 describe('conversation prompt context', () => {
