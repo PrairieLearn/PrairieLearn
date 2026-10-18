@@ -65,19 +65,23 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     };
     this.turn = turn;
 
-    // The SDK persists the user message to its tables, runs `onChatMessage`,
-    // and persists the reply, including a partial reply if the turn is aborted.
-    void this.saveMessages((messages) => [...messages, message], { signal: turn.abort.signal })
-      .then(
+    // Run persistence in the background so HTTP can stream before the turn finishes.
+    // The SDK saves the user message, runs onChatMessage, and saves the reply.
+    void (async () => {
+      try {
+        await this.saveMessages((messages) => [...messages, message], {
+          signal: turn.abort.signal,
+        });
         // If no stream was supplied, unblock the waiting HTTP handler with an error.
         // Once resolved, rejecting this promise cannot affect the ongoing response.
-        () => turn.replyReady.reject(new Error('The turn ended without producing a reply')),
-        (err: unknown) => turn.replyReady.reject(err),
-      )
-      .finally(() => {
+        turn.replyReady.reject(new Error('The turn ended without producing a reply'));
+      } catch (err) {
+        turn.replyReady.reject(err);
+      } finally {
         // Keep the turn active until SDK persistence finishes, even if HTTP closes first.
         if (this.turn === turn) this.turn = null;
-      });
+      }
+    })();
 
     try {
       const reader = (await turn.replyReady.promise).getReader();
@@ -122,7 +126,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       originalMessages: this.messages,
       generateMessageId: () => crypto.randomUUID(),
     });
-    // Recovery has no waiting HTTP request; the SDK alone consumes and saves the reply.
+    // When the SDK resumes a turn interrupted by a restart, the original HTTP
+    // request is gone. Return the stream directly for the SDK to consume and save.
     if (!turn) return createUIMessageStreamResponse({ stream: reply });
 
     // For an HTTP turn, hand one branch to the waiting handler and return the other
