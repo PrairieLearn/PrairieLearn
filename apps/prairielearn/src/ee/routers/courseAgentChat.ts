@@ -22,7 +22,6 @@ const PostRequestSchemas = {
   body: z.object({
     // `useChat` sends only the newest message; the history lives in the agent service.
     message: z.object({
-      id: z.string().min(1).max(100),
       role: z.literal('user'),
       parts: z
         .array(z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(20_000) }))
@@ -103,7 +102,7 @@ router.post(
       await pipeUiMessageStream(upstream.body, res);
     } catch (err) {
       // The browser closed the request (Stop, or navigating away). Cancel the
-      // upstream request too, which stops the agent's turn.
+      // upstream request too. Stopping generation in the DO is not yet reliable.
       abort.abort();
       if (!isPrematureClose(err)) logger.error('Course agent stream failed', err);
     }
