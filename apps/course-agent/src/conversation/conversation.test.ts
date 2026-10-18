@@ -72,11 +72,11 @@ function createConversation() {
   return new Conversation({} as DurableObjectState, env);
 }
 
-function chat(id: string, courseContext?: ChatContext) {
+function chat(courseContext?: ChatContext) {
   return new Request('https://agent.test/conversations/test/chat', {
     method: 'POST',
     body: JSON.stringify({
-      message: { id, role: 'user', parts: [{ type: 'text', text: 'Hello' }] },
+      message: { role: 'user', parts: [{ type: 'text', text: 'Hello' }] },
       context: courseContext,
     }),
   });
@@ -101,7 +101,7 @@ beforeEach(() => {
 describe('conversation prompt context', () => {
   it('retains accepted context for a fresh instance without a waiting HTTP request', async () => {
     const first = createConversation();
-    const response = await first.onRequest(chat('message-1', context));
+    const response = await first.onRequest(chat(context));
     expect(response.status).toBe(200);
     await response.text();
 
@@ -115,8 +115,8 @@ describe('conversation prompt context', () => {
   });
 
   it('reuses context when omitted and refreshes it when supplied', async () => {
-    await (await createConversation().onRequest(chat('message-1', context))).text();
-    await (await createConversation().onRequest(chat('message-2'))).text();
+    await (await createConversation().onRequest(chat(context))).text();
+    await (await createConversation().onRequest(chat())).text();
     expect(streamText).toHaveBeenLastCalledWith(
       expect.objectContaining({
         instructions: expect.stringContaining('CS 101: Intro to Programming'),
@@ -124,25 +124,26 @@ describe('conversation prompt context', () => {
     );
 
     await (
-      await createConversation().onRequest(
-        chat('message-3', { ...context, courseTitle: 'Renamed' }),
-      )
+      await createConversation().onRequest(chat({ ...context, courseTitle: 'Renamed' }))
     ).text();
     expect(streamText).toHaveBeenLastCalledWith(
       expect.objectContaining({ instructions: expect.stringContaining('CS 101: Renamed') }),
     );
   });
 
-  it('rejects older duplicate IDs without changing context or starting another turn', async () => {
+  it('assigns different server IDs to repeated message submissions', async () => {
     const conversation = createConversation();
     for (let i = 0; i < 3; i++) {
-      await (await conversation.onRequest(chat(`message-${i}`, context))).text();
+      const response = await conversation.onRequest(chat(context));
+      expect(response.status).toBe(200);
+      await response.text();
     }
-    const duplicate = await conversation.onRequest(
-      chat('message-0', { ...context, courseTitle: 'Wrong' }),
-    );
-    expect(duplicate.status).toBe(409);
-    expect(storage.state).toEqual({ courseContext: context });
+    const ids = conversation.messages.map((message) => message.id);
+    expect(ids).toHaveLength(3);
+    expect(new Set(ids).size).toBe(3);
+    for (const id of ids) {
+      expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    }
     expect(streamText).toHaveBeenCalledTimes(3);
   });
 });
@@ -159,12 +160,12 @@ describe('HTTP reply handoff', () => {
       }),
     }));
     const conversation = createConversation();
-    const response = await conversation.onRequest(chat('message-1'));
+    const response = await conversation.onRequest(chat());
     const reader = response.body!.getReader();
     const first = await reader.read();
     expect(new TextDecoder().decode(first.value)).toContain('"type":"start"');
     expect(storage.savedReplies).toEqual([]);
-    expect((await conversation.onRequest(chat('message-2'))).status).toBe(409);
+    expect((await conversation.onRequest(chat())).status).toBe(409);
 
     const controller = await source.promise;
     controller.enqueue({ type: 'finish' });
@@ -181,7 +182,7 @@ describe('HTTP reply handoff', () => {
   it('returns 502 if the SDK finishes without supplying a reply', async () => {
     const conversation = createConversation();
     vi.spyOn(conversation, 'onChatMessage').mockResolvedValueOnce(new Response());
-    expect((await conversation.onRequest(chat('message-1'))).status).toBe(502);
+    expect((await conversation.onRequest(chat())).status).toBe(502);
   });
 
   it.each([new Error('provider unavailable'), 'provider unavailable'])(
@@ -189,10 +190,10 @@ describe('HTTP reply handoff', () => {
     async (reason) => {
       const conversation = createConversation();
       vi.spyOn(conversation, 'saveMessages').mockRejectedValueOnce(reason);
-      const response = await conversation.onRequest(chat('message-1'));
+      const response = await conversation.onRequest(chat());
       expect(response.status).toBe(502);
       expect(await response.text()).toBe('The agent could not start a reply');
-      await (await conversation.onRequest(chat('message-2'))).text();
+      await (await conversation.onRequest(chat())).text();
     },
   );
 
@@ -206,7 +207,7 @@ describe('HTTP reply handoff', () => {
       }),
     }));
     const conversation = createConversation();
-    const response = await conversation.onRequest(chat('message-1'));
+    const response = await conversation.onRequest(chat());
     const reader = response.body!.getReader();
     await reader.read();
     await reader.cancel('Stop');
