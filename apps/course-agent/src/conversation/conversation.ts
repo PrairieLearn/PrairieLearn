@@ -10,10 +10,14 @@ import {
   toUIMessageStream,
 } from 'ai';
 
-import type { Env } from '../env.js';
 import { type ChatContext, parseChatRequest } from '../http/chat-request.js';
 
 import { buildInstructions } from './instructions.js';
+
+export interface ConversationEnv {
+  OPENAI_API_KEY: string;
+  OPENAI_MODEL: string;
+}
 
 interface ConversationState {
   courseContext: ChatContext | null;
@@ -25,7 +29,7 @@ interface ConversationState {
  * Chat is served over plain HTTP (from PrairieLearn) instead of the SDK's
  * WebSocket protocol, so the wire format is the AI SDK UI message stream.
  */
-export class Conversation extends AIChatAgent<Env, ConversationState> {
+export class Conversation extends AIChatAgent<ConversationEnv, ConversationState> {
   override initialState: ConversationState = { courseContext: null };
   /** The turn whose HTTP request is waiting for its reply, if any. */
   private turn: {
