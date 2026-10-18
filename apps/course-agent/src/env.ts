@@ -1,8 +1,6 @@
-import type { Conversation } from './conversation/conversation.js';
+import type { Conversation, ConversationEnv } from './conversation/conversation.js';
 
-export interface Env {
+export interface Env extends ConversationEnv {
   Conversation: DurableObjectNamespace<Conversation>;
-  OPENAI_API_KEY: string;
-  OPENAI_MODEL: string;
   PL_SERVICE_TOKEN: string;
 }
