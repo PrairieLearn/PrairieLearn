@@ -16,6 +16,7 @@ import { type ChatContext, parseChatRequest } from '../http/chat-request.js';
 import { buildInstructions } from './instructions.js';
 
 interface ConversationState {
+  initialized: boolean;
   courseContext: ChatContext | null;
 }
 
@@ -26,12 +27,21 @@ interface ConversationState {
  * WebSocket protocol, so the wire format is the AI SDK UI message stream.
  */
 export class Conversation extends AIChatAgent<Env, ConversationState> {
-  override initialState: ConversationState = { courseContext: null };
+  override initialState: ConversationState = { initialized: false, courseContext: null };
   /** The turn whose HTTP request is waiting for its reply, if any. */
   private turn: {
     replyReady: PromiseWithResolvers<ReadableStream<UIMessageChunk>>;
     abort: AbortController;
   } | null = null;
+
+  /** Called only by POST /conversations; persisted state distinguishes creation from DO lookup. */
+  initialize(): void {
+    this.setState({ ...this.state, initialized: true });
+  }
+
+  isInitialized(): boolean {
+    return this.state.initialized;
+  }
 
   // The Worker has already authenticated and routed the request. History is
   // served by `AIChatAgent`'s built-in `get-messages` route (the Worker forwards
@@ -53,7 +63,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
 
     // Retain the PL-supplied prompt context for SDK recovery without an HTTP request.
-    if (context) this.setState({ courseContext: context });
+    if (context) this.setState({ ...this.state, courseContext: context });
 
     // onChatMessage supplies the stream before saveMessages finishes consuming it.
     const turn = {
