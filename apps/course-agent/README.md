@@ -4,6 +4,8 @@ The course agent service: a Cloudflare Worker with one Durable Object per conver
 
 Each conversation is an `AIChatAgent` from the Cloudflare Agents SDK. The SDK stores the transcript (`this.messages`) and runs each turn through `saveMessages()`. Chat is served over plain HTTP instead of the SDK's WebSocket protocol, so the wire format is the AI SDK UI message stream that `useChat` understands.
 
+`HttpReplyBridge` connects the HTTP response to the stream created inside `onChatMessage()`: one stream branch goes to SDK history persistence, the other to PrairieLearn. Its promise waits for the stream to exist, not for the reply to finish.
+
 ## API
 
 Every request must send `Authorization: Bearer <PL_SERVICE_TOKEN>`.
@@ -11,7 +13,7 @@ Every request must send `Authorization: Bearer <PL_SERVICE_TOKEN>`.
 - `GET /conversations/<uuid>/messages` returns the conversation's `UIMessage[]` (`[]` for a new conversation).
 - `POST /conversations/<uuid>/chat` with `{ message, context? }` streams the reply as an AI SDK UI message stream.
   - `message` is a user `UIMessage` with a single text part. Only the newest message is sent; the history lives here.
-  - `context` is optional `{ courseTitle, courseShortName }`, used in the system prompt.
+  - `context` is optional `{ courseTitle, courseShortName }`, used in the system prompt. The last supplied context is persisted in SDK state for restart recovery; omit it to reuse that context. PrairieLearn remains authoritative and can refresh it on subsequent requests.
   - Cancelling the response stream aborts the turn and saves the partial reply. (Closing the request from PrairieLearn does not reliably cancel it yet; an explicit stop request is a follow-up.)
 
 Errors: `400` invalid body, `401` bad or missing token, `404` unknown path, `409` a reply is already in progress or the message ID was already used, `426` WebSocket upgrade.
@@ -42,3 +44,5 @@ pnpm --filter @prairielearn/course-agent deploy
 ```
 
 The model is set by `OPENAI_MODEL` in `wrangler.jsonc`.
+
+`PL_SERVICE_TOKEN` is a static service credential, not an expiring JWT. Store it only in deployment secrets and rotate/revoke it if compromised. For rotation, the current single-token configuration requires a coordinated change in the Worker and PrairieLearn; requests using the old token fail once the Worker switches. Short-lived service tokens and overlapping key rotation are follow-ups. Credential changes do not automatically terminate streams that were already accepted.
