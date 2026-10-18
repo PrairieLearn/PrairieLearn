@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { parseChatRequest } from './chat-request.js';
 
-const message = { id: 'msg-1', role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
+const message = { role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
 const context = { courseTitle: 'Intro to Programming', courseShortName: 'CS 101' };
 
 describe('parseChatRequest', () => {
@@ -17,15 +17,17 @@ describe('parseChatRequest', () => {
     expect(parseChatRequest(null)).toBeNull();
   });
 
-  it('rejects invalid IDs and course context', () => {
-    expect(parseChatRequest({ message: { ...message, id: '' } })).toBeNull();
-    expect(parseChatRequest({ message: { ...message, id: 'x'.repeat(101) } })).toBeNull();
+  it('rejects invalid course context', () => {
     expect(
       parseChatRequest({ message, context: { courseTitle: 'Missing short name' } }),
     ).toBeNull();
     expect(
       parseChatRequest({ message, context: { ...context, courseTitle: 'x'.repeat(501) } }),
     ).toBeNull();
+  });
+
+  it('does not use caller-supplied message IDs', () => {
+    expect(parseChatRequest({ message: { ...message, id: 'caller-id' } })).toEqual({ message });
   });
 
   it('preserves whitespace in non-empty messages', () => {
