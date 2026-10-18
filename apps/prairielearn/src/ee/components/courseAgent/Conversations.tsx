@@ -2,7 +2,7 @@ import { useChat } from '@ai-sdk/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
-import { Alert, Button, Form, Spinner } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
@@ -32,6 +32,10 @@ export function Conversations({
     return null;
   });
 
+  const selectedConversation = conversations.data?.find(
+    (conversation) => conversation.id === selectedId,
+  );
+
   const create = useMutation({
     ...trpc.courseAgent.create.mutationOptions(),
     onSuccess: async (conversation) => {
@@ -43,30 +47,37 @@ export function Conversations({
   return (
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
       <div className="d-flex gap-2 align-items-center border-bottom px-3 py-2">
-        <Form.Select
-          size="sm"
-          aria-label="Conversation"
-          value={selectedId ?? ''}
-          disabled={!conversations.data?.length}
-          onChange={(event) => setPickedId(event.target.value)}
-        >
-          {conversations.data?.length ? (
-            conversations.data.map((conversation) => (
-              <option key={conversation.id} value={conversation.id}>
-                {conversation.title}
-              </option>
-            ))
-          ) : (
-            <option value="">No conversations yet</option>
-          )}
-        </Form.Select>
+        <Dropdown className="flex-grow-1" style={{ minWidth: 0 }}>
+          <Dropdown.Toggle
+            variant="light"
+            className="border bg-white w-100 d-flex justify-content-between align-items-center gap-2"
+            aria-label="Conversation"
+            disabled={!conversations.data?.length}
+          >
+            <span className="text-truncate">
+              {selectedConversation?.title ?? 'No conversations yet'}
+            </span>
+          </Dropdown.Toggle>
+          <Dropdown.Menu className="w-100 overflow-y-auto" style={{ maxHeight: '50vh' }}>
+            {conversations.data?.map((conversation) => (
+              <Dropdown.Item
+                key={conversation.id}
+                as="button"
+                active={conversation.id === selectedId}
+                onClick={() => setPickedId(conversation.id)}
+              >
+                <span className="d-block text-truncate">{conversation.title}</span>
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        </Dropdown>
         <OverlayTrigger
           placement="bottom"
           tooltip={{ body: 'New conversation', props: { id: 'new-course-agent-conversation' } }}
         >
           <Button
-            size="sm"
             variant="outline-primary"
+            className="flex-shrink-0"
             aria-label="New conversation"
             // Wait for the list, so a click can't race the default selection.
             disabled={!conversations.isSuccess || create.isPending}
