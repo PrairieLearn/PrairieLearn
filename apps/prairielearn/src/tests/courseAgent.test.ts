@@ -1,6 +1,7 @@
 import fetchCookie from 'fetch-cookie';
-import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
+import { EventSchema } from '@prairielearn/course-agent-protocol';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import {
@@ -19,40 +20,11 @@ import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
+import { CourseAgentTestService } from './utils/course-agent-service.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
-const agentServiceUrl = 'http://course-agent.test';
 const coursePageUrl = `${siteUrl}/pl/course/1/course_admin/settings`;
 const courseInstancePageUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`;
-
-const userMessage = (text: string) => ({
-  id: `msg-${text}`,
-  role: 'user',
-  parts: [{ type: 'text', text }],
-});
-
-const assistantMessage = {
-  id: 'assistant-1',
-  role: 'assistant',
-  parts: [{ type: 'text', text: 'Hello!' }],
-};
-
-const SSE_BODY = [
-  { type: 'start' },
-  { type: 'text-start', id: 't1' },
-  { type: 'text-delta', id: 't1', delta: 'Hello!' },
-  { type: 'text-end', id: 't1' },
-  { type: 'finish' },
-]
-  .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
-  .join('')
-  .concat('data: [DONE]\n\n');
-
-function uiMessageStreamResponse(body: string | ReadableStream<Uint8Array>) {
-  return new Response(body, {
-    headers: { 'content-type': 'text/event-stream', 'x-vercel-ai-ui-message-stream': 'v1' },
-  });
-}
 
 function createClient(user: User, csrfToken?: string) {
   return createCourseTrpcClient({
@@ -67,44 +39,53 @@ function createClient(user: User, csrfToken?: string) {
   });
 }
 
-function postChat(
-  user: User,
-  conversationId: string,
-  text: string,
-  { csrfToken, signal }: { csrfToken?: string; signal?: AbortSignal } = {},
-) {
-  return fetch(`${siteUrl}/pl/course/1/course_agent/conversations/${conversationId}/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token':
-        csrfToken ??
-        generatePrefixCsrfToken(
-          { url: '/pl/course/1/course_agent', authn_user_id: user.id },
-          config.secretKey,
-        ),
-    },
-    body: JSON.stringify({ message: userMessage(text) }),
-    signal,
+async function eventReader(id: string) {
+  const abort = new AbortController();
+  const response = await fetch(`${siteUrl}/pl/course/1/course-agent/conversations/${id}/events`, {
+    signal: abort.signal,
   });
+  expect(response.status).toBe(200);
+  const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = '';
+  return {
+    close: () => {
+      abort.abort();
+      void reader.cancel().catch(() => {});
+    },
+    async next() {
+      for (;;) {
+        const boundary = buffer.indexOf('\n\n');
+        if (boundary !== -1) {
+          const frame = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          const data = frame.split('\n').find((line) => line.startsWith('data: '));
+          if (data) return EventSchema.parse(JSON.parse(data.slice(6)));
+        } else {
+          const result = await reader.read();
+          if (result.done) throw new Error('Event stream closed');
+          buffer += result.value;
+        }
+      }
+    },
+  };
 }
 
 describe('Course agent', () => {
+  const service = new CourseAgentTestService();
   let owner: User;
   let otherOwner: User;
-  const agentFetch = vi.fn<typeof fetch>();
-
-  // The course agent's routes are mounted only on Enterprise Edition servers.
-  const originalIsEnterprise = config.isEnterprise;
-  beforeAll(() => (config.isEnterprise = true));
-  afterAll(() => (config.isEnterprise = originalIsEnterprise));
+  const previous = { isEnterprise: config.isEnterprise };
+  beforeAll(async () => {
+    config.isEnterprise = true;
+    await service.start();
+  });
   beforeAll(helperServer.before());
   beforeAll(async () => {
     owner = await getOrCreateUser({ uid: 'owner@example.com', name: 'Course Owner', uin: 'owner' });
     otherOwner = await getOrCreateUser({
       uid: 'other-owner@example.com',
       name: 'Other Owner',
-      uin: 'other-owner',
+      uin: 'other',
     });
     for (const user of [owner, otherOwner]) {
       await insertCoursePermissionsByUserUid({
@@ -122,297 +103,190 @@ describe('Course agent', () => {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    const previous = {
-      courseAgentServiceUrl: config.courseAgentServiceUrl,
-      courseAgentServiceToken: config.courseAgentServiceToken,
-      features: config.features,
-    };
-    Object.assign(config, {
-      courseAgentServiceUrl: agentServiceUrl,
-      courseAgentServiceToken: 'service-token',
-      features: { ...config.features, 'course-agent': true },
-    });
-    agentFetch.mockReset().mockRejectedValue(new Error('Unexpected course agent request'));
-    const realFetch = fetch;
-    // Only requests to the agent service are faked; requests to PL stay real.
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-      const url = new URL(input instanceof Request ? input.url : input);
-      return url.origin === agentServiceUrl ? agentFetch(input, init) : realFetch(input, init);
-    });
-    return () => {
-      fetchSpy.mockRestore();
-      Object.assign(config, previous);
-    };
+    config.courseAgentServiceUrl = service.url;
+    config.courseAgentServiceToken = 'test-service-token';
+    config.features = { ...config.features, 'course-agent': true };
+    service.failCreation = false;
   });
   afterAll(helperServer.after);
+  afterAll(async () => {
+    await service.close();
+    config.isEnterprise = previous.isEnterprise;
+  });
 
-  describe('access', () => {
-    test('is unavailable when the feature flag is off', async () => {
-      await withUser(owner, () =>
-        withConfig({ features: { 'course-agent': false } }, async () => {
-          await expect(createClient(owner).courseAgent.list.query()).rejects.toMatchObject({
-            data: { code: 'FORBIDDEN' },
-          });
-          const conversation = await insertCourseAgentConversation({
-            agent_conversation_id: crypto.randomUUID(),
-            course_id: '1',
-            user_id: owner.id,
-          });
-          expect((await postChat(owner, conversation.id, 'Hi')).status).toBe(403);
-          const page = await fetchCheerio(coursePageUrl);
-          expect(page.$('.course-agent-panel').length).toBe(0);
-        }),
-      );
-      expect(agentFetch).not.toHaveBeenCalled();
+  test('renders the panel for owners on course and course-instance pages', async () => {
+    await withUser(owner, async () => {
+      for (const url of [coursePageUrl, courseInstancePageUrl]) {
+        expect((await fetchCheerio(url)).$('.course-agent-panel').length).toBe(1);
+      }
     });
-
-    test('renders the panel for owners on course and course instance pages', async () => {
-      await withUser(owner, async () => {
-        for (const url of [coursePageUrl, courseInstancePageUrl]) {
-          const page = await fetchCheerio(url);
-          expect(page.ok).toBe(true);
-          expect(page.$('.course-agent-panel').length).toBe(1);
-        }
-      });
-    });
-
-    test('is unavailable to non-owners', async () => {
-      await updateCoursePermissionsRole({
+  });
+  test('keeps catalog listing local and private to the authenticated user', async () => {
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      const record = await client.courseAgent.create.mutate();
+      const stored = await selectOptionalCourseAgentConversation({
+        id: record.id,
         course_id: '1',
         user_id: owner.id,
-        course_role: 'Editor',
-        authn_user_id: '1',
       });
-      await withUser(owner, async () => {
+      expect(service.conversations.has(stored!.agent_conversation_id)).toBe(true);
+      expect(record).not.toHaveProperty('agent_conversation_id');
+      const others = await insertCourseAgentConversation({
+        course_id: '1',
+        user_id: otherOwner.id,
+        agent_conversation_id: service.create(),
+      });
+      const calls = service.authorizations.length;
+      const list = await client.courseAgent.list.query();
+      expect(list.map((item) => item.id)).toContain(record.id);
+      expect(list.map((item) => item.id)).not.toContain(others.id);
+      expect(service.authorizations).toHaveLength(calls);
+    });
+  });
+  test('does not insert a catalog row when service creation fails', async () => {
+    service.failCreation = true;
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      const before = await client.courseAgent.list.query();
+      await expect(client.courseAgent.create.mutate()).rejects.toThrow('Could not create');
+      expect(await client.courseAgent.list.query()).toEqual(before);
+    });
+  });
+  test('requires CSRF for commands and rejects unknown catalog IDs before reaching the service', async () => {
+    await withUser(owner, async () => {
+      const before = service.commands.length;
+      await expect(
+        createClient(owner, 'invalid').courseAgent.send.mutate({
+          conversationId: '99999999',
+          text: 'Hi',
+        }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(
+        createClient(owner).courseAgent.send.mutate({ conversationId: '99999999', text: 'Hi' }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      expect(
+        (await fetch(`${siteUrl}/pl/course/1/course-agent/conversations/99999999/events`)).status,
+      ).toBe(404);
+      expect(service.commands).toHaveLength(before);
+    });
+  });
+  test('checks every catalog ID in an activity subscription before opening service sockets', async () => {
+    const others = await insertCourseAgentConversation({
+      course_id: '1',
+      user_id: otherOwner.id,
+      agent_conversation_id: service.create(),
+    });
+    await withUser(owner, async () => {
+      const own = await createClient(owner).courseAgent.create.mutate();
+      const before = service.commands.length;
+      const response = await fetch(
+        `${siteUrl}/pl/course/1/course-agent/activity?ids=${own.id},${others.id}`,
+      );
+      expect(response.status).toBe(404);
+      expect(service.commands).toHaveLength(before);
+      await expect(
+        createClient(owner).courseAgent.get.query({ conversationId: others.id }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+    });
+  });
+  test('blocks non-owners and feature-disabled users from commands and observation', async () => {
+    await withUser(owner, () =>
+      withConfig({ features: { 'course-agent': false } }, async () => {
         await expect(createClient(owner).courseAgent.list.query()).rejects.toMatchObject({
           data: { code: 'FORBIDDEN' },
         });
-        const page = await fetchCheerio(coursePageUrl);
-        expect(page.$('.course-agent-panel').length).toBe(0);
-      });
+        expect(
+          (await fetch(`${siteUrl}/pl/course/1/course-agent/conversations/1/events`)).status,
+        ).toBe(403);
+      }),
+    );
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: owner.id,
+      course_role: 'Editor',
+      authn_user_id: '1',
     });
-
-    test('requires a valid CSRF token', async () => {
-      await withUser(owner, async () => {
-        await expect(
-          createClient(owner, 'invalid').courseAgent.create.mutate(),
-        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        const { id } = await insertCourseAgentConversation({
-          course_id: '1',
-          user_id: owner.id,
-          agent_conversation_id: crypto.randomUUID(),
-        });
-        expect((await postChat(owner, id, 'Hi', { csrfToken: 'invalid' })).status).toBe(403);
+    await withUser(owner, async () => {
+      await expect(createClient(owner).courseAgent.list.query()).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
       });
-      expect(agentFetch).not.toHaveBeenCalled();
+      expect((await fetchCheerio(coursePageUrl)).$('.course-agent-panel').length).toBe(0);
     });
   });
-
-  describe('conversations', () => {
-    test('creates conversations in Cloudflare and stores the returned IDs in its catalog', async () => {
-      const serviceIds = [crypto.randomUUID(), crypto.randomUUID()];
-      agentFetch
-        .mockResolvedValueOnce(Response.json({ id: serviceIds[0] }, { status: 201 }))
-        .mockResolvedValueOnce(Response.json({ id: serviceIds[1] }, { status: 201 }));
-      await withUser(owner, async () => {
-        const client = createClient(owner);
-        const first = await client.courseAgent.create.mutate();
-        const second = await client.courseAgent.create.mutate();
-        for (const [index, record] of [first, second].entries()) {
-          const stored = await selectOptionalCourseAgentConversation({
-            id: record.id,
-            course_id: '1',
-            user_id: owner.id,
-          });
-          expect(stored?.agent_conversation_id).toBe(serviceIds[index]);
-        }
-        expect(first).toEqual({
-          id: first.id,
-          title: 'New conversation',
-          created_at: expect.any(Date),
+  test('uses distinct command and observation sockets, streams output, and records the first accepted title', async () => {
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      const record = await client.courseAgent.create.mutate();
+      const stored = (await selectOptionalCourseAgentConversation({
+        id: record.id,
+        course_id: '1',
+        user_id: owner.id,
+      }))!;
+      const events = await eventReader(record.id);
+      try {
+        expect((await events.next()).event).toBe('conversation.snapshot');
+        await client.courseAgent.send.mutate({
+          conversationId: record.id,
+          text: '  First question  ',
         });
-
-        const ids = (await client.courseAgent.list.query()).map((c) => c.id);
-        expect(ids.indexOf(second.id)).toBeLessThan(ids.indexOf(first.id));
-      });
-      expect(agentFetch).toHaveBeenCalledTimes(2);
-      for (const [url, init] of agentFetch.mock.calls) {
-        expect(String(url)).toBe(`${agentServiceUrl}/conversations`);
-        expect(init?.method).toBe('POST');
-        expect(init?.headers).toMatchObject({ Authorization: 'Bearer service-token' });
+        service.advance(stored.agent_conversation_id, 'Hello');
+        service.finish(stored.agent_conversation_id);
+        let event = await events.next();
+        while (event.event !== 'turn.finished') event = await events.next();
+        const snapshot = await client.courseAgent.get.query({ conversationId: record.id });
+        expect(snapshot.messages.at(-1)?.parts[0].text).toBe('Hello');
+        expect(snapshot.summary.capabilities.send).toBe(true);
+        expect(
+          (await client.courseAgent.list.query()).find((item) => item.id === record.id)?.title,
+        ).toBe('First question');
+        expect(
+          service.authorizations.every((header) => header === 'Bearer test-service-token'),
+        ).toBe(true);
+      } finally {
+        events.close();
       }
     });
-
-    test('does not add a catalog entry when Cloudflare creation fails', async () => {
-      agentFetch.mockResolvedValueOnce(new Response('Internal error', { status: 500 }));
-      await withUser(owner, async () => {
-        const client = createClient(owner);
-        const before = await client.courseAgent.list.query();
-        await expect(client.courseAgent.create.mutate()).rejects.toThrow(
-          'Could not create the course agent conversation',
-        );
-        expect(await client.courseAgent.list.query()).toEqual(before);
-      });
-    });
-
-    test('rejects unknown catalog IDs before contacting Cloudflare', async () => {
-      await withUser(owner, async () => {
-        await expect(
-          createClient(owner).courseAgent.messages.query({ conversationId: '999999999' }),
-        ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
-        expect((await postChat(owner, '999999999', 'Hi')).status).toBe(404);
-      });
-      expect(agentFetch).not.toHaveBeenCalled();
-    });
-
-    test('lists only the current user’s conversations', async () => {
-      const others = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: otherOwner.id,
-      });
-      await withUser(owner, async () => {
-        const ids = (await createClient(owner).courseAgent.list.query()).map((c) => c.id);
-        expect(ids).not.toContain(others.id);
-      });
-    });
-
-    test('loads history from the agent service', async () => {
-      const conversation = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
+  });
+  test('does not retry a send when the acknowledgement is lost', async () => {
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      const record = await client.courseAgent.create.mutate();
+      const stored = (await selectOptionalCourseAgentConversation({
+        id: record.id,
         course_id: '1',
         user_id: owner.id,
-      });
-      agentFetch.mockResolvedValueOnce(Response.json([userMessage('Hi'), assistantMessage]));
-      await withUser(owner, async () => {
-        const messages = await createClient(owner).courseAgent.messages.query({
-          conversationId: conversation.id,
-        });
-        expect(messages.map((m) => m.id)).toEqual(['msg-Hi', 'assistant-1']);
-      });
-      const [url, init] = agentFetch.mock.calls[0];
-      expect(String(url)).toBe(
-        `${agentServiceUrl}/conversations/${conversation.agent_conversation_id}/messages`,
-      );
-      expect(init?.headers).toMatchObject({ Authorization: 'Bearer service-token' });
-    });
-
-    test('hides other users’ conversations', async () => {
-      const others = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: otherOwner.id,
-      });
-      await withUser(owner, async () => {
-        await expect(
-          createClient(owner).courseAgent.messages.query({ conversationId: others.id }),
-        ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
-        expect((await postChat(owner, others.id, 'Hi')).status).toBe(404);
-      });
-      expect(agentFetch).not.toHaveBeenCalled();
+      }))!;
+      service.dropNextAcknowledgement = true;
+      await expect(
+        client.courseAgent.send.mutate({ conversationId: record.id, text: 'Only once' }),
+      ).rejects.toThrow('uncertain');
+      const snapshot = await client.courseAgent.get.query({ conversationId: record.id });
+      expect(snapshot.messages).toHaveLength(1);
+      expect(
+        service.commands.filter(
+          (entry) =>
+            entry.id === stored.agent_conversation_id && entry.command.method === 'turn.start',
+        ),
+      ).toHaveLength(1);
+      service.finish(stored.agent_conversation_id);
     });
   });
-
-  describe('chat', () => {
-    test('relays the reply stream and sets the title from the first message', async () => {
-      const conversation = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: owner.id,
-      });
-      agentFetch.mockImplementation(async () => uiMessageStreamResponse(SSE_BODY));
-
-      await withUser(owner, async () => {
-        const response = await postChat(owner, conversation.id, 'How do I add a question?');
-        expect(response.status).toBe(200);
-        expect(response.headers.get('x-vercel-ai-ui-message-stream')).toBe('v1');
-        expect(await response.text()).toBe(SSE_BODY);
-
-        await (await postChat(owner, conversation.id, 'A follow-up')).text();
-      });
-
-      const [url, init] = agentFetch.mock.calls[0];
-      expect(String(url)).toBe(
-        `${agentServiceUrl}/conversations/${conversation.agent_conversation_id}/chat`,
-      );
-      expect(init?.headers).toMatchObject({ Authorization: 'Bearer service-token' });
-      expect(JSON.parse(init?.body as string)).toEqual({
-        message: { role: 'user', parts: [{ type: 'text', text: 'How do I add a question?' }] },
-        context: { courseTitle: expect.any(String), courseShortName: expect.any(String) },
-      });
-
-      const updated = await selectOptionalCourseAgentConversation({
-        id: conversation.id,
-        course_id: '1',
-        user_id: owner.id,
-      });
-      // The first message sets the title; later messages don't change it.
-      expect(updated?.title).toBe('How do I add a question?');
-    });
-
-    test.each([
-      { upstreamStatus: 409, status: 409 },
-      { upstreamStatus: 500, status: 502 },
-    ])('maps an upstream $upstreamStatus to $status', async ({ upstreamStatus, status }) => {
-      const conversation = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: owner.id,
-      });
-      agentFetch.mockResolvedValueOnce(
-        new Response('Error: internal stack trace', { status: upstreamStatus }),
-      );
-      await withUser(owner, async () => {
-        const response = await postChat(owner, conversation.id, 'Hi');
-        expect(response.status).toBe(status);
-        expect(await response.text()).not.toContain('stack trace');
-      });
-    });
-
-    test('stopping the request cancels the agent service request', async () => {
-      const conversation = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: owner.id,
-      });
-      let upstreamSignal: AbortSignal | undefined;
-      agentFetch.mockImplementationOnce(async (_input, init) => {
-        upstreamSignal = init?.signal ?? undefined;
-        const encoder = new TextEncoder();
-        // A reply that never finishes on its own.
-        const body = new ReadableStream<Uint8Array>({
-          start(controller) {
-            controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'));
-          },
-        });
-        return uiMessageStreamResponse(body);
-      });
-
-      await withUser(owner, async () => {
-        const abort = new AbortController();
-        const response = await postChat(owner, conversation.id, 'Hi', { signal: abort.signal });
-        const reader = response.body!.getReader();
-        await reader.read();
-        abort.abort();
-      });
-      await vi.waitFor(() => expect(upstreamSignal?.aborted).toBe(true));
-    });
-  });
-
   test('remembers whether the panel is open', async () => {
     const cookieFetch = fetchCookie(fetch);
     await withUser(owner, async () => {
-      const panelOpen = async () => {
-        const response = await cookieFetch(coursePageUrl);
-        return (await response.text()).includes('data-open="true"');
-      };
+      const panelOpen = async () =>
+        (await (await cookieFetch(coursePageUrl)).text()).includes('data-open="true"');
       expect(await panelOpen()).toBe(false);
-      const response = await cookieFetch(`${siteUrl}/pl/course_agent/panel_settings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ open: true }),
-      });
-      expect(response.status).toBe(204);
+      expect(
+        (
+          await cookieFetch(`${siteUrl}/pl/course_agent/panel_settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ open: true }),
+          })
+        ).status,
+      ).toBe(204);
       expect(await panelOpen()).toBe(true);
     });
   });

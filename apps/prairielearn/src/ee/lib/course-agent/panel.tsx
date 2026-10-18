@@ -22,7 +22,7 @@ export function renderCourseAgentPanel({
       <CourseAgentPanel
         courseId={courseId}
         trpcCsrfToken={csrfToken(getCourseTrpcUrl(courseId))}
-        chatCsrfToken={csrfToken(`/pl/course/${courseId}/course_agent`)}
+        userId={authnUserId}
         initialOpen={initialOpen}
       />
     </Hydrate>,

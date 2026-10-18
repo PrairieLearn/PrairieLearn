@@ -1,0 +1,13 @@
+{
+  "name": "course-agent-continuity-test",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": { "bindings": [{ "name": "Conversation", "class_name": "Conversation" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Conversation"] }],
+  "vars": {
+    "PL_SERVICE_TOKEN": "scripted-local-test-only",
+    "OPENAI_MODEL": "scripted",
+    "OPENAI_API_KEY": "unused-scripted-test-key"
+  }
+}

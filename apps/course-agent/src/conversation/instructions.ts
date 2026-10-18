@@ -1,7 +1,7 @@
-import type { ChatContext } from '../http/chat-request.js';
+import type { CourseContext } from '@prairielearn/course-agent-protocol';
 
 /** TODO: Revise these instructions once the agent can read and edit course files. */
-export function buildInstructions(context: ChatContext | undefined): string {
+export function buildInstructions(context: CourseContext | undefined): string {
   const course = context
     ? `You are helping with the course "${context.courseShortName}: ${context.courseTitle}".`
     : 'You are helping with a PrairieLearn course.';

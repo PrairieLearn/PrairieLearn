@@ -1,14 +1,14 @@
 const CONVERSATION_ROUTE = new URLPattern({
   pathname:
-    '/conversations/:conversationId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/:action(chat|messages)',
+    '/conversations/:conversationId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/:action(socket|snapshot)',
 });
 
 export interface ConversationRoute {
   conversationId: string;
-  action: 'chat' | 'messages';
+  action: 'socket' | 'snapshot';
 }
 
-/** Matches `/conversations/<uuid>/(chat|messages)`, the per-conversation routes. */
+/** Matches `/conversations/<uuid>/(socket|snapshot)`, the per-conversation routes. */
 export function parseRoute(url: string): ConversationRoute | null {
   const groups = CONVERSATION_ROUTE.exec(url)?.pathname.groups;
   if (!groups?.conversationId || !groups.action) return null;

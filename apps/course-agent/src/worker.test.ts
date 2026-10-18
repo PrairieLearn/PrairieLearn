@@ -41,9 +41,9 @@ describe('conversation creation', () => {
     const firstConversation = createdConversationSchema.parse(await first.json());
     const secondConversation = createdConversationSchema.parse(await second.json());
     expect(firstConversation.id).not.toBe(secondConversation.id);
-    expect(parseRoute(`https://agent.test/conversations/${firstConversation.id}/chat`)).toEqual({
+    expect(parseRoute(`https://agent.test/conversations/${firstConversation.id}/socket`)).toEqual({
       conversationId: firstConversation.id,
-      action: 'chat',
+      action: 'socket',
     });
     expect(getAgentByName).toHaveBeenNthCalledWith(1, env.Conversation, firstConversation.id);
     expect(getAgentByName).toHaveBeenNthCalledWith(2, env.Conversation, secondConversation.id);
@@ -69,9 +69,7 @@ describe('conversation creation', () => {
 
   it('does not return a conversation ID if SDK startup fails', async () => {
     lookupConversation.mockRejectedValueOnce(new Error('storage unavailable'));
-    await expect(worker.fetch(request('/conversations'), env)).rejects.toThrow(
-      'storage unavailable',
-    );
+    expect((await worker.fetch(request('/conversations'), env)).status).toBe(503);
   });
 
   it('requires service authentication', async () => {
@@ -88,12 +86,10 @@ describe('conversation creation', () => {
 });
 
 describe('conversation routing', () => {
-  it.each([
-    ['chat', 'POST', `/conversations/${UUID}/chat`],
-    ['messages', 'GET', '/get-messages'],
-  ])('forwards %s requests from the trusted caller', async (action, method, pathname) => {
-    const response = await worker.fetch(request(`/conversations/${UUID}/${action}`, method), env);
-    expect(response.status).toBe(200);
-    expect(new URL(conversation.fetch.mock.lastCall![0].url).pathname).toBe(pathname);
+  it('rejects SDK history and mutation paths', async () => {
+    expect((await worker.fetch(request('/get-messages', 'GET'), env)).status).toBe(404);
+    expect((await worker.fetch(request(`/conversations/${UUID}/socket`, 'POST'), env)).status).toBe(
+      404,
+    );
   });
 });

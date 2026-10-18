@@ -766,11 +766,11 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
 
   if (isEnterprise()) {
-    // The course agent chat proxy, and the panel that PageLayout renders on
+    // The course agent event gateway, and the panel that PageLayout renders on
     // instructor pages. Both run after the instructor chains above.
     app.use(
-      '/pl/course/:course_id(\\d+)/course_agent',
-      (await import('./ee/routers/courseAgentChat.js')).default,
+      '/pl/course/:course_id(\\d+)/course-agent',
+      (await import('./ee/routers/courseAgentEvents.js')).default,
     );
     const courseAgentPanel = (await import('./ee/middlewares/courseAgentPanel.js')).default;
     app.use(

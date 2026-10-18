@@ -12,6 +12,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^4.0.78",
     "@cloudflare/ai-chat": "0.12.1",
+    "@prairielearn/course-agent-protocol": "workspace:^",
     "agents": "0.28.0",
     "ai": "^7.0.116",
     "zod": "^4.6.5"
@@ -20,8 +21,10 @@
     "@cloudflare/workers-types": "5.20260917.1",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
+    "@types/ws": "^8.18.1",
     "@typescript/native": "npm:typescript@^7.0.2",
     "vitest": "^5.0.2",
-    "wrangler": "^4.134.0"
+    "wrangler": "^4.134.0",
+    "ws": "^8.21.1"
   }
 }

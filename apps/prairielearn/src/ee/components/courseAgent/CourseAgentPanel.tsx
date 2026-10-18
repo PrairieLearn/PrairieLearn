@@ -41,12 +41,12 @@ function saveOpenState(open: boolean) {
 export function CourseAgentPanel({
   courseId,
   trpcCsrfToken,
-  chatCsrfToken,
+  userId,
   initialOpen,
 }: {
   courseId: string;
   trpcCsrfToken: string;
-  chatCsrfToken: string;
+  userId: string;
   initialOpen: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -56,7 +56,7 @@ export function CourseAgentPanel({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <Panel courseId={courseId} chatCsrfToken={chatCsrfToken} initialOpen={initialOpen} />
+        <Panel courseId={courseId} userId={userId} initialOpen={initialOpen} />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
@@ -66,11 +66,11 @@ CourseAgentPanel.displayName = 'CourseAgentPanel';
 
 function Panel({
   courseId,
-  chatCsrfToken,
+  userId,
   initialOpen,
 }: {
   courseId: string;
-  chatCsrfToken: string;
+  userId: string;
   initialOpen: boolean;
 }) {
   const [open, setOpen] = useState(initialOpen);
@@ -157,7 +157,7 @@ function Panel({
             <i className="bi bi-x-lg" aria-hidden="true" />
           </Button>
         </div>
-        {hasEverOpened && <Conversations courseId={courseId} chatCsrfToken={chatCsrfToken} />}
+        {hasEverOpened && <Conversations courseId={courseId} userId={userId} active={open} />}
       </Offcanvas>
     </>
   );
