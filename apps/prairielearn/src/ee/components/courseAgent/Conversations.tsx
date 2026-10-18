@@ -182,6 +182,14 @@ function Chat({
   });
   const [draft, setDraft] = useState('');
   const isBusy = status === 'submitted' || status === 'streaming';
+  const isLoading = run(() => {
+    if (!isBusy) return false;
+    const lastMessage = messages.at(-1);
+    if (lastMessage?.role !== 'assistant') return true;
+    return !lastMessage.parts.some(
+      (part) => (part.type === 'text' || part.type === 'reasoning') && part.text.trim(),
+    );
+  });
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
@@ -210,7 +218,7 @@ function Chat({
           {messages.map((message) => (
             <Message key={message.id} message={message} />
           ))}
-          {status === 'submitted' && (
+          {isLoading && (
             <div className="text-muted small">
               <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
               Thinking…
