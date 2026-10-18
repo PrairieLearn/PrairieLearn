@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { IdSchema } from '@prairielearn/zod';
 
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
-import { fetchCourseAgentMessages } from '../../ee/lib/course-agent/client.js';
+import {
+  createCourseAgentConversation,
+  fetchCourseAgentMessages,
+} from '../../ee/lib/course-agent/client.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
@@ -35,12 +38,13 @@ export const courseAgentRouter = t.router({
     return z.array(StaffCourseAgentConversationSchema).parse(conversations);
   }),
 
-  // Only inserts the catalog row. The agent service creates the conversation's
-  // Durable Object on first use.
+  // Record only conversations whose Cloudflare startup succeeded.
   create: courseAgentProcedure.mutation(async ({ ctx }) => {
+    const agentConversationId = await createCourseAgentConversation();
     const conversation = await insertCourseAgentConversation({
       course_id: ctx.course.id,
       user_id: ctx.locals.authn_user.id,
+      agent_conversation_id: agentConversationId,
     });
     return StaffCourseAgentConversationSchema.parse(conversation);
   }),

@@ -1,8 +1,13 @@
 -- BLOCK insert_course_agent_conversation
 INSERT INTO
-  course_agent_conversations (course_id, user_id, title)
+  course_agent_conversations (course_id, user_id, agent_conversation_id, title)
 VALUES
-  ($course_id, $user_id, $title)
+  (
+    $course_id,
+    $user_id,
+    $agent_conversation_id,
+    $title
+  )
 RETURNING
   *;
 

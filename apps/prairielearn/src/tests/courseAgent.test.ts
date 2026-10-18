@@ -154,6 +154,7 @@ describe('Course agent', () => {
             data: { code: 'FORBIDDEN' },
           });
           const conversation = await insertCourseAgentConversation({
+            agent_conversation_id: crypto.randomUUID(),
             course_id: '1',
             user_id: owner.id,
           });
@@ -196,7 +197,11 @@ describe('Course agent', () => {
         await expect(
           createClient(owner, 'invalid').courseAgent.create.mutate(),
         ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-        const { id } = await createClient(owner).courseAgent.create.mutate();
+        const { id } = await insertCourseAgentConversation({
+          course_id: '1',
+          user_id: owner.id,
+          agent_conversation_id: crypto.randomUUID(),
+        });
         expect((await postChat(owner, id, 'Hi', { csrfToken: 'invalid' })).status).toBe(403);
       });
       expect(agentFetch).not.toHaveBeenCalled();
@@ -204,11 +209,23 @@ describe('Course agent', () => {
   });
 
   describe('conversations', () => {
-    test('creates and lists conversations without calling the agent service', async () => {
+    test('creates conversations in Cloudflare and stores the returned IDs in its catalog', async () => {
+      const serviceIds = [crypto.randomUUID(), crypto.randomUUID()];
+      agentFetch
+        .mockResolvedValueOnce(Response.json({ id: serviceIds[0] }, { status: 201 }))
+        .mockResolvedValueOnce(Response.json({ id: serviceIds[1] }, { status: 201 }));
       await withUser(owner, async () => {
         const client = createClient(owner);
         const first = await client.courseAgent.create.mutate();
         const second = await client.courseAgent.create.mutate();
+        for (const [index, record] of [first, second].entries()) {
+          const stored = await selectOptionalCourseAgentConversation({
+            id: record.id,
+            course_id: '1',
+            user_id: owner.id,
+          });
+          expect(stored?.agent_conversation_id).toBe(serviceIds[index]);
+        }
         expect(first).toEqual({
           id: first.id,
           title: 'New conversation',
@@ -218,11 +235,39 @@ describe('Course agent', () => {
         const ids = (await client.courseAgent.list.query()).map((c) => c.id);
         expect(ids.indexOf(second.id)).toBeLessThan(ids.indexOf(first.id));
       });
+      expect(agentFetch).toHaveBeenCalledTimes(2);
+      for (const [url, init] of agentFetch.mock.calls) {
+        expect(String(url)).toBe(`${agentServiceUrl}/conversations`);
+        expect(init?.method).toBe('POST');
+        expect(init?.headers).toMatchObject({ Authorization: 'Bearer service-token' });
+      }
+    });
+
+    test('does not add a catalog entry when Cloudflare creation fails', async () => {
+      agentFetch.mockResolvedValueOnce(new Response('Internal error', { status: 500 }));
+      await withUser(owner, async () => {
+        const client = createClient(owner);
+        const before = await client.courseAgent.list.query();
+        await expect(client.courseAgent.create.mutate()).rejects.toThrow(
+          'Could not create the course agent conversation',
+        );
+        expect(await client.courseAgent.list.query()).toEqual(before);
+      });
+    });
+
+    test('rejects unknown catalog IDs before contacting Cloudflare', async () => {
+      await withUser(owner, async () => {
+        await expect(
+          createClient(owner).courseAgent.messages.query({ conversationId: '999999999' }),
+        ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+        expect((await postChat(owner, '999999999', 'Hi')).status).toBe(404);
+      });
       expect(agentFetch).not.toHaveBeenCalled();
     });
 
     test('lists only the current user’s conversations', async () => {
       const others = await insertCourseAgentConversation({
+        agent_conversation_id: crypto.randomUUID(),
         course_id: '1',
         user_id: otherOwner.id,
       });
@@ -234,6 +279,7 @@ describe('Course agent', () => {
 
     test('loads history from the agent service', async () => {
       const conversation = await insertCourseAgentConversation({
+        agent_conversation_id: crypto.randomUUID(),
         course_id: '1',
         user_id: owner.id,
       });
@@ -253,6 +299,7 @@ describe('Course agent', () => {
 
     test('hides other users’ conversations', async () => {
       const others = await insertCourseAgentConversation({
+        agent_conversation_id: crypto.randomUUID(),
         course_id: '1',
         user_id: otherOwner.id,
       });
@@ -269,6 +316,7 @@ describe('Course agent', () => {
   describe('chat', () => {
     test('relays the reply stream and sets the title from the first message', async () => {
       const conversation = await insertCourseAgentConversation({
+        agent_conversation_id: crypto.randomUUID(),
         course_id: '1',
         user_id: owner.id,
       });
@@ -289,7 +337,7 @@ describe('Course agent', () => {
       );
       expect(init?.headers).toMatchObject({ Authorization: 'Bearer service-token' });
       expect(JSON.parse(init?.body as string)).toEqual({
-        message: userMessage('How do I add a question?'),
+        message: { role: 'user', parts: [{ type: 'text', text: 'How do I add a question?' }] },
         context: { courseTitle: expect.any(String), courseShortName: expect.any(String) },
       });
 
@@ -307,6 +355,7 @@ describe('Course agent', () => {
       { upstreamStatus: 500, status: 502 },
     ])('maps an upstream $upstreamStatus to $status', async ({ upstreamStatus, status }) => {
       const conversation = await insertCourseAgentConversation({
+        agent_conversation_id: crypto.randomUUID(),
         course_id: '1',
         user_id: owner.id,
       });
@@ -322,6 +371,7 @@ describe('Course agent', () => {
 
     test('stopping the request cancels the agent service request', async () => {
       const conversation = await insertCourseAgentConversation({
+        agent_conversation_id: crypto.randomUUID(),
         course_id: '1',
         user_id: owner.id,
       });
