@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS course_agent_conversations (
   id bigserial PRIMARY KEY,
   -- Names the conversation's Durable Object in the course agent service.
-  agent_conversation_id uuid NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+  agent_conversation_id uuid NOT NULL UNIQUE,
   course_id bigint NOT NULL REFERENCES courses ON UPDATE CASCADE ON DELETE CASCADE,
   user_id bigint NOT NULL REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
   title text NOT NULL,
