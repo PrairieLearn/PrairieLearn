@@ -183,7 +183,7 @@ function Chat({
   const [draft, setDraft] = useState('');
   const isBusy = ['submitted', 'streaming'].includes(status);
   // Show loading while a turn is submitted or streaming and has no visible output yet.
-  // Completion or failure clears it even if the response is empty.
+  // When a turn finishes or fails, isBusy is false, so isLoading is false.
   const isLoading = run(() => {
     if (!isBusy) return false;
     const lastMessage = messages.at(-1);
