@@ -131,10 +131,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // request is gone. Return the stream directly for the SDK to consume and save.
     if (!turn) return createUIMessageStreamResponse({ stream: reply });
 
-    // For an HTTP turn, hand one branch to the waiting handler and return the other
-    // to saveMessages. Both consumers receive the same chunks and reply ID.
+    // Both branches receive the same chunks and reply ID.
     const [forHistory, forHttp] = reply.tee();
+    // The waiting HTTP handler sends forHttp through PrairieLearn to the user.
     turn.replyReady.resolve(forHttp);
+    // The Cloudflare Agents SDK automatically consumes forHistory and records the reply in history.
     return createUIMessageStreamResponse({ stream: forHistory });
   }
 }
