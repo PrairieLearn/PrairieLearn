@@ -15,11 +15,13 @@ export default {
     if (request.headers.get('Upgrade')) {
       return new Response('WebSocket connections are not supported', { status: 426 });
     }
+    if (request.method === 'POST' && new URL(request.url).pathname === '/conversations') {
+      // Issue the ID here; the Durable Object's storage is created lazily on first access.
+      return Response.json({ id: crypto.randomUUID() }, { status: 201 });
+    }
     const route = parseRoute(request.url);
     if (!route) return new Response('Not found', { status: 404 });
 
-    // The Durable Object is created on first access, so PrairieLearn never
-    // needs a separate "create conversation" call.
     const conversation = await getAgentByName(env.Conversation, route.conversationId);
     if (route.action === 'messages') {
       if (request.method !== 'GET') return new Response('Not found', { status: 404 });

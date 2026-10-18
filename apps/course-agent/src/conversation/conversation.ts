@@ -51,9 +51,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (this.turn) {
       return new Response('A reply is already in progress', { status: 409 });
     }
-    if (this.messages.some((m) => m.id === message.id)) {
-      return new Response('Duplicate message', { status: 409 });
-    }
 
     // Retain the PL-supplied prompt context for SDK recovery without an HTTP request.
     if (context) this.setState({ courseContext: context });
@@ -69,9 +66,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // The SDK saves the user message, runs onChatMessage, and saves the reply.
     void (async () => {
       try {
-        await this.saveMessages((messages) => [...messages, message], {
-          signal: turn.abort.signal,
-        });
+        await this.saveMessages(
+          (messages) => [...messages, { ...message, id: crypto.randomUUID() }],
+          {
+            signal: turn.abort.signal,
+          },
+        );
         // Normally, onChatMessage has already resolved replyReady with the stream,
         // so this reject call is a no-op. It only rejects if no stream was supplied,
         // preventing the HTTP handler from waiting forever.

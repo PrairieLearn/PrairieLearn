@@ -9,7 +9,6 @@ export type ChatContext = z.infer<typeof ChatContextSchema>;
 /** Only the newest user text message is sent; history lives in the service. */
 const ChatPostBodySchema = z.object({
   message: z.object({
-    id: z.string().min(1).max(100),
     role: z.literal('user'),
     parts: z.tuple([
       z.object({
