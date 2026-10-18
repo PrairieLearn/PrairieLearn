@@ -1,6 +1,8 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { AIChatAgent, type OnChatMessageOptions } from '@cloudflare/ai-chat';
 import {
+  type GenerateTextOnFinishCallback,
+  type ToolSet,
   convertToModelMessages,
   createUIMessageStreamResponse,
   streamText,
@@ -8,10 +10,14 @@ import {
 } from 'ai';
 
 import type { Env } from '../env.js';
-import { parseChatRequest } from '../http/chat-request.js';
+import { type ChatContext, parseChatRequest } from '../http/chat-request.js';
 
+import { HttpReplyBridge } from './http-reply-bridge.js';
 import { buildInstructions } from './instructions.js';
-import { TurnStream } from './turn-stream.js';
+
+interface ConversationState {
+  courseContext: ChatContext | null;
+}
 
 /**
  * One conversation. The transcript is `AIChatAgent`'s built-in `this.messages`,
@@ -19,9 +25,10 @@ import { TurnStream } from './turn-stream.js';
  * Chat is served over plain HTTP (from PrairieLearn) instead of the SDK's
  * WebSocket protocol, so the wire format is the AI SDK UI message stream.
  */
-export class Conversation extends AIChatAgent<Env> {
+export class Conversation extends AIChatAgent<Env, ConversationState> {
+  override initialState: ConversationState = { courseContext: null };
   /** The turn whose HTTP request is waiting for its reply, if any. */
-  private turn: TurnStream | null = null;
+  private turn: HttpReplyBridge | null = null;
 
   // The Worker has already authenticated and routed the request. History is
   // served by `AIChatAgent`'s built-in `get-messages` route (the Worker forwards
@@ -34,7 +41,7 @@ export class Conversation extends AIChatAgent<Env> {
   }
 
   private async handleChat(request: Request): Promise<Response> {
-    const chatRequest = await parseChatRequest(await request.json().catch(() => null));
+    const chatRequest = parseChatRequest(await request.json().catch(() => null));
     if (!chatRequest) return new Response('Invalid request', { status: 400 });
     const { message, context } = chatRequest;
 
@@ -45,22 +52,25 @@ export class Conversation extends AIChatAgent<Env> {
       return new Response('Duplicate message', { status: 409 });
     }
 
-    const turn = new TurnStream(context);
+    // Retain the PL-supplied prompt context for SDK recovery without an HTTP request.
+    if (context) this.setState({ courseContext: context });
+
+    const turn = new HttpReplyBridge();
     this.turn = turn;
 
     // The SDK persists the user message to its tables, runs `onChatMessage`,
     // and persists the reply, including a partial reply if the turn is aborted.
     void this.saveMessages((messages) => [...messages, message], { signal: turn.abort.signal })
       .then(
-        () => turn.end(),
-        (err: unknown) => turn.end(err),
+        () => turn.failIfReplyNotStarted(),
+        (err: unknown) => turn.failIfReplyNotStarted(err),
       )
       .finally(() => {
         if (this.turn === turn) this.turn = null;
       });
 
     try {
-      return createUIMessageStreamResponse({ stream: await turn.callerStream() });
+      return createUIMessageStreamResponse({ stream: await turn.waitForReplyStream() });
     } catch {
       return new Response('The agent could not start a reply', { status: 502 });
     }
@@ -68,11 +78,14 @@ export class Conversation extends AIChatAgent<Env> {
 
   // Runs for each turn started by `saveMessages()` in `handleChat`, and when the
   // SDK recovers a turn interrupted by a restart (then no request is waiting).
-  override async onChatMessage(_onFinish: unknown, options?: OnChatMessageOptions) {
+  override async onChatMessage(
+    _onFinish: GenerateTextOnFinishCallback<ToolSet>,
+    options?: OnChatMessageOptions,
+  ) {
     const turn = this.turn;
     const result = streamText({
       model: createOpenAI({ apiKey: this.env.OPENAI_API_KEY })(this.env.OPENAI_MODEL),
-      instructions: buildInstructions(turn?.context),
+      instructions: buildInstructions(this.state.courseContext ?? undefined),
       messages: await convertToModelMessages(this.messages),
       abortSignal: options?.abortSignal,
     });
@@ -83,6 +96,6 @@ export class Conversation extends AIChatAgent<Env> {
       originalMessages: this.messages,
       generateMessageId: () => crypto.randomUUID(),
     });
-    return createUIMessageStreamResponse({ stream: turn ? turn.split(reply) : reply });
+    return createUIMessageStreamResponse({ stream: turn ? turn.attachReplyStream(reply) : reply });
   }
 }
