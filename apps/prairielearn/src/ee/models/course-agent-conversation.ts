@@ -15,13 +15,15 @@ const DEFAULT_COURSE_AGENT_CONVERSATION_TITLE = 'New conversation';
 export async function insertCourseAgentConversation({
   course_id,
   user_id,
+  agent_conversation_id,
 }: {
   course_id: string;
   user_id: string;
+  agent_conversation_id: string;
 }) {
   return await queryRow(
     sql.insert_course_agent_conversation,
-    { course_id, user_id, title: DEFAULT_COURSE_AGENT_CONVERSATION_TITLE },
+    { course_id, user_id, agent_conversation_id, title: DEFAULT_COURSE_AGENT_CONVERSATION_TITLE },
     CourseAgentConversationSchema,
   );
 }
