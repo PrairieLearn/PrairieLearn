@@ -9,7 +9,10 @@ import worker from './worker.js';
 const conversation = vi.hoisted(() => ({
   fetch: vi.fn<(request: Request) => Promise<Response>>(),
 }));
-vi.mock('agents', () => ({ getAgentByName: vi.fn(async () => conversation) }));
+const lookupConversation = vi.hoisted(() =>
+  vi.fn<() => Promise<{ fetch: (request: Request) => Promise<Response> }>>(),
+);
+vi.mock('agents', () => ({ getAgentByName: lookupConversation }));
 vi.mock('./conversation/conversation.js', () => ({ Conversation: vi.fn() }));
 
 const env = { PL_SERVICE_TOKEN: 'test-token' } as Env;
@@ -25,7 +28,7 @@ function request(path: string, method = 'POST', token = env.PL_SERVICE_TOKEN) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getAgentByName).mockClear();
+  lookupConversation.mockReset().mockResolvedValue(conversation);
   conversation.fetch.mockReset().mockImplementation(async () => Response.json([]));
 });
 
@@ -48,9 +51,9 @@ describe('conversation creation', () => {
 
   it('waits for SDK startup before returning the ID', async () => {
     const initialized = Promise.withResolvers<undefined>();
-    vi.mocked(getAgentByName).mockImplementationOnce(async () => {
+    lookupConversation.mockImplementationOnce(async () => {
       await initialized.promise;
-      return conversation as Awaited<ReturnType<typeof getAgentByName>>;
+      return conversation;
     });
     let returned = false;
     const response = (async () => {
@@ -65,7 +68,7 @@ describe('conversation creation', () => {
   });
 
   it('does not return a conversation ID if SDK startup fails', async () => {
-    vi.mocked(getAgentByName).mockRejectedValueOnce(new Error('storage unavailable'));
+    lookupConversation.mockRejectedValueOnce(new Error('storage unavailable'));
     await expect(worker.fetch(request('/conversations'), env)).rejects.toThrow(
       'storage unavailable',
     );
