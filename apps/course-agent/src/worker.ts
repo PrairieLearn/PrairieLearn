@@ -16,13 +16,21 @@ export default {
       return new Response('WebSocket connections are not supported', { status: 426 });
     }
     if (request.method === 'POST' && new URL(request.url).pathname === '/conversations') {
-      // Issue the ID here; the Durable Object's storage is created lazily on first access.
-      return Response.json({ id: crypto.randomUUID() }, { status: 201 });
+      const id = crypto.randomUUID();
+      const conversation = await getAgentByName(env.Conversation, id);
+      // Finish durable initialization before exposing the ID to the caller.
+      await conversation.initialize();
+      return Response.json({ id }, { status: 201 });
     }
     const route = parseRoute(request.url);
     if (!route) return new Response('Not found', { status: 404 });
 
     const conversation = await getAgentByName(env.Conversation, route.conversationId);
+    // Looking up a DO can instantiate it, even when no conversation was created.
+    // Gate both chat and the SDK's history route on the persisted creation marker.
+    if (!(await conversation.isInitialized())) {
+      return new Response('Conversation not found', { status: 404 });
+    }
     if (route.action === 'messages') {
       if (request.method !== 'GET') return new Response('Not found', { status: 404 });
       // Served by `AIChatAgent`'s built-in history route.

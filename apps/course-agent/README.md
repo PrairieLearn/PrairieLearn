@@ -8,7 +8,7 @@ Each conversation is an `AIChatAgent` from the Cloudflare Agents SDK. The SDK st
 
 Every request must send `Authorization: Bearer <PL_SERVICE_TOKEN>`.
 
-- `POST /conversations` returns `201` with `{ "id": "<uuid>" }`. No body is needed; the service generates the conversation ID.
+- `POST /conversations` returns `201` with `{ "id": "<uuid>" }`. No body is needed; the service generates the ID and durably initializes the conversation before responding.
 - `GET /conversations/<uuid>/messages` returns the conversation's `UIMessage[]` (`[]` for a new conversation).
 - `POST /conversations/<uuid>/chat` with `{ message, context? }` streams the reply as an AI SDK UI message stream.
   - `message` contains `role: "user"` and a single text part in `parts`. Do not send a message ID; the service generates it. Only the newest message is sent; the history lives here.
@@ -16,9 +16,9 @@ Every request must send `Authorization: Bearer <PL_SERVICE_TOKEN>`.
   - `context` is optional `{ courseTitle, courseShortName }`, used in the system prompt. The last supplied context is persisted in SDK state for restart recovery; omit it to reuse that context. PrairieLearn remains authoritative and can refresh it on subsequent requests.
   - Cancelling the response stream aborts the turn and saves the partial reply. (Closing the request from PrairieLearn does not reliably cancel it yet; an explicit stop request is a follow-up.)
 
-Errors: `400` invalid body, `401` bad or missing token, `404` unknown path, `409` a reply is already in progress, `426` WebSocket upgrade.
+Errors: `400` invalid body, `401` bad or missing token, `404` unknown path or conversation not created with `POST /conversations`, `409` a reply is already in progress, `426` WebSocket upgrade.
 
-The ID endpoint only generates an identifier; the conversation's Durable Object storage is initialized on first access. PrairieLearn stores the returned ID in its conversation catalog.
+Create a conversation before requesting its history or sending messages. A persisted initialization marker distinguishes a created conversation from a DO instantiated by looking up an arbitrary ID. Unknown conversations return `404`. PrairieLearn stores the returned ID in its conversation catalog.
 
 ## Local development
 
