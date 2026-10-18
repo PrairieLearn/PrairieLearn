@@ -181,7 +181,9 @@ function Chat({
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
   });
   const [draft, setDraft] = useState('');
-  const isBusy = status === 'submitted' || status === 'streaming';
+  const isBusy = ['submitted', 'streaming'].includes(status);
+  // Show loading while a turn is submitted or streaming and has no visible output yet.
+  // Completion or failure clears it even if the response is empty.
   const isLoading = run(() => {
     if (!isBusy) return false;
     const lastMessage = messages.at(-1);
