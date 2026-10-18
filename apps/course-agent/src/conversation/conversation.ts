@@ -72,8 +72,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         await this.saveMessages((messages) => [...messages, message], {
           signal: turn.abort.signal,
         });
-        // If no stream was supplied, unblock the waiting HTTP handler with an error.
-        // Once resolved, rejecting this promise cannot affect the ongoing response.
+        // Normally, onChatMessage has already resolved replyReady with the stream,
+        // so this reject call is a no-op. It only rejects if no stream was supplied,
+        // preventing the HTTP handler from waiting forever.
         turn.replyReady.reject(new Error('The turn ended without producing a reply'));
       } catch (err) {
         turn.replyReady.reject(err);
