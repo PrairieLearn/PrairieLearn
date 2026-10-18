@@ -75,7 +75,7 @@ function Panel({
 }) {
   const [open, setOpen] = useState(initialOpen);
   // Stays mounted after the first open, so closing the panel doesn't cancel a reply in progress.
-  const [hasOpened, setHasOpened] = useState(initialOpen);
+  const [hasEverOpened, setHasEverOpened] = useState(initialOpen);
   // Animate only after the user toggles, so a panel restored open on page load doesn't slide in.
   const [animate, setAnimate] = useState(false);
   // The panel is a modal only on narrow screens; the server renders desktop markup.
@@ -105,7 +105,7 @@ function Panel({
     (nextOpen: boolean) => {
       setAnimate(true);
       setOpen(nextOpen);
-      if (nextOpen) setHasOpened(true);
+      if (nextOpen) setHasEverOpened(true);
       saveOpenState(nextOpen);
       if (!nextOpen && !mobile) requestAnimationFrame(() => toggleRef.current?.focus());
     },
@@ -157,7 +157,7 @@ function Panel({
             <i className="bi bi-x-lg" aria-hidden="true" />
           </Button>
         </div>
-        {hasOpened && <Conversations courseId={courseId} chatCsrfToken={chatCsrfToken} />}
+        {hasEverOpened && <Conversations courseId={courseId} chatCsrfToken={chatCsrfToken} />}
       </Offcanvas>
     </>
   );

@@ -680,7 +680,11 @@ export const ConfigSchema = z.object({
    * unless both this and `courseAgentServiceToken` are set.
    */
   courseAgentServiceUrl: z.string().nullable().default(null),
-  /** Bearer token that authenticates PrairieLearn to the course agent service. */
+  /**
+   * Bearer token that authenticates PrairieLearn to the course agent service.
+   * Must exactly match the Cloudflare Worker's PL_SERVICE_TOKEN secret, or
+   * PL_SERVICE_TOKEN in its .dev.vars file for local development.
+   */
   courseAgentServiceToken: z.string().nullable().default(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
