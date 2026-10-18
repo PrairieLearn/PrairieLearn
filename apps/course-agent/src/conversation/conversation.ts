@@ -3,6 +3,7 @@ import { AIChatAgent, type OnChatMessageOptions } from '@cloudflare/ai-chat';
 import {
   type GenerateTextOnFinishCallback,
   type ToolSet,
+  type UIMessageChunk,
   convertToModelMessages,
   createUIMessageStreamResponse,
   streamText,
@@ -12,7 +13,6 @@ import {
 import type { Env } from '../env.js';
 import { type ChatContext, parseChatRequest } from '../http/chat-request.js';
 
-import { HttpReplyBridge } from './http-reply-bridge.js';
 import { buildInstructions } from './instructions.js';
 
 interface ConversationState {
@@ -28,7 +28,10 @@ interface ConversationState {
 export class Conversation extends AIChatAgent<Env, ConversationState> {
   override initialState: ConversationState = { courseContext: null };
   /** The turn whose HTTP request is waiting for its reply, if any. */
-  private turn: HttpReplyBridge | null = null;
+  private turn: {
+    replyReady: PromiseWithResolvers<ReadableStream<UIMessageChunk>>;
+    abort: AbortController;
+  } | null = null;
 
   // The Worker has already authenticated and routed the request. History is
   // served by `AIChatAgent`'s built-in `get-messages` route (the Worker forwards
@@ -55,22 +58,45 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // Retain the PL-supplied prompt context for SDK recovery without an HTTP request.
     if (context) this.setState({ courseContext: context });
 
-    const turn = new HttpReplyBridge();
+    // onChatMessage supplies the stream before saveMessages finishes consuming it.
+    const turn = {
+      replyReady: Promise.withResolvers<ReadableStream<UIMessageChunk>>(),
+      abort: new AbortController(),
+    };
     this.turn = turn;
 
     // The SDK persists the user message to its tables, runs `onChatMessage`,
     // and persists the reply, including a partial reply if the turn is aborted.
     void this.saveMessages((messages) => [...messages, message], { signal: turn.abort.signal })
       .then(
-        () => turn.failIfReplyNotStarted(),
-        (err: unknown) => turn.failIfReplyNotStarted(err),
+        // If no stream was supplied, unblock the waiting HTTP handler with an error.
+        // Once resolved, rejecting this promise cannot affect the ongoing response.
+        () => turn.replyReady.reject(new Error('The turn ended without producing a reply')),
+        (err: unknown) => turn.replyReady.reject(err),
       )
       .finally(() => {
+        // Keep the turn active until SDK persistence finishes, even if HTTP closes first.
         if (this.turn === turn) this.turn = null;
       });
 
     try {
-      return createUIMessageStreamResponse({ stream: await turn.waitForReplyStream() });
+      const reader = (await turn.replyReady.promise).getReader();
+      return createUIMessageStreamResponse({
+        stream: new ReadableStream<UIMessageChunk>({
+          async pull(controller) {
+            const { done, value } = await reader.read();
+            if (done) controller.close();
+            else controller.enqueue(value);
+          },
+          cancel(reason) {
+            // Abort generation but leave the SDK's branch available to save the partial reply.
+            // PL disconnects do not reliably reach this callback; explicit Stop is a follow-up.
+            turn.abort.abort(reason);
+            // A tee branch's cancellation waits for the other branch, so don't await it here.
+            reader.cancel(reason).catch(() => {});
+          },
+        }),
+      });
     } catch {
       return new Response('The agent could not start a reply', { status: 502 });
     }
@@ -96,6 +122,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       originalMessages: this.messages,
       generateMessageId: () => crypto.randomUUID(),
     });
-    return createUIMessageStreamResponse({ stream: turn ? turn.attachReplyStream(reply) : reply });
+    // Recovery has no waiting HTTP request; the SDK alone consumes and saves the reply.
+    if (!turn) return createUIMessageStreamResponse({ stream: reply });
+
+    // For an HTTP turn, hand one branch to the waiting handler and return the other
+    // to saveMessages. Both consumers receive the same chunks and reply ID.
+    const [forHistory, forHttp] = reply.tee();
+    turn.replyReady.resolve(forHttp);
+    return createUIMessageStreamResponse({ stream: forHistory });
   }
 }

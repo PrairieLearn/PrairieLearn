@@ -4,7 +4,7 @@ The course agent service: a Cloudflare Worker with one Durable Object per conver
 
 Each conversation is an `AIChatAgent` from the Cloudflare Agents SDK. The SDK stores the transcript (`this.messages`) and runs each turn through `saveMessages()`. Chat is served over plain HTTP instead of the SDK's WebSocket protocol, so the wire format is the AI SDK UI message stream that `useChat` understands.
 
-`HttpReplyBridge` connects the HTTP response to the stream created inside `onChatMessage()`: one stream branch goes to SDK history persistence, the other to PrairieLearn. Its promise waits for the stream to exist, not for the reply to finish.
+`Conversation` splits the stream created inside `onChatMessage()`: one branch goes to SDK history persistence, the other to the waiting HTTP handler. The handler waits for the stream to exist, not for the reply to finish. During SDK recovery, there is no waiting HTTP handler, so the SDK consumes the stream directly.
 
 ## API
 
