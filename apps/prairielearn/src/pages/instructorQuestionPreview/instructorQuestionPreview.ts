@@ -3,11 +3,9 @@ import * as url from 'node:url';
 import * as path from 'path';
 
 import { Router } from 'express';
-import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -15,6 +13,7 @@ import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
+import { renderQuestionReadme } from '../../lib/question-readme.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
 import { processSubmission } from '../../lib/question-submission.js';
@@ -124,18 +123,11 @@ router.get(
     // the case where this process is a chunk consumer.
     const coursePath = getRuntimeDirectoryForCourse(question_course);
     assert(res.locals.question.qid !== null, 'question.qid is null');
-    const questionReadmePath = path.join(
-      path.join(coursePath, 'questions', res.locals.question.qid, 'README.md'),
-    );
+    const questionPath = path.join(coursePath, 'questions', res.locals.question.qid);
 
     // We do not need an explicit `ensureChunks()` call here as the `getAndRenderVariant()` call
     // above will have already done that.
-    const questionReadmeExists = await fs.pathExists(questionReadmePath);
-    let readmeHtml = '';
-    if (questionReadmeExists) {
-      const readme = await fs.readFile(questionReadmePath, 'utf8');
-      readmeHtml = markdownToHtml(readme, { allowHtml: false });
-    }
+    const readmeHtml = (await renderQuestionReadme(questionPath)) ?? '';
 
     res.send(
       InstructorQuestionPreview({
