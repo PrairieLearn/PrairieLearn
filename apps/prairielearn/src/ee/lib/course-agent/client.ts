@@ -21,7 +21,7 @@ function buildServiceRequest(path: string) {
 
 const CreatedConversationSchema = z.object({ id: z.uuid() });
 
-/** Starts the conversation in Cloudflare and returns its service-generated ID. */
+/** Creates a conversation in Cloudflare and returns its service-generated ID; no agent turn runs yet. */
 export async function createCourseAgentConversation(): Promise<string> {
   const { url, headers } = buildServiceRequest('conversations');
   const response = await fetch(url, {
