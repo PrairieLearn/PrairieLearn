@@ -5,6 +5,9 @@ import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
 import { Alert, Button, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
+import { run } from '@prairielearn/run';
+import { OverlayTrigger } from '@prairielearn/ui';
+
 import { useTRPC } from '../../../trpc/course/context.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
@@ -21,7 +24,10 @@ export function Conversations({
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
   // Default to the most recent conversation until the user selects one.
   const [pickedId, setPickedId] = useState<string | null>(null);
-  const selectedId = pickedId ?? conversations.data?.[0]?.id ?? null;
+  const selectedId = run(() => {
+    if (pickedId !== null) return pickedId;
+    return conversations.data?.[0]?.id ?? null;
+  });
 
   const create = useMutation({
     ...trpc.courseAgent.create.mutationOptions(),
@@ -51,16 +57,21 @@ export function Conversations({
             <option value="">No conversations yet</option>
           )}
         </Form.Select>
-        <Button
-          size="sm"
-          variant="outline-primary"
-          className="text-nowrap"
-          // Wait for the list, so a click can't race the default selection.
-          disabled={!conversations.isSuccess || create.isPending}
-          onClick={() => create.mutate()}
+        <OverlayTrigger
+          placement="bottom"
+          tooltip={{ body: 'New conversation', props: { id: 'new-course-agent-conversation' } }}
         >
-          New conversation
-        </Button>
+          <Button
+            size="sm"
+            variant="outline-primary"
+            aria-label="New conversation"
+            // Wait for the list, so a click can't race the default selection.
+            disabled={!conversations.isSuccess || create.isPending}
+            onClick={() => create.mutate()}
+          >
+            <i className="bi bi-plus-lg" aria-hidden="true" />
+          </Button>
+        </OverlayTrigger>
       </div>
       {conversations.isError || create.isError ? (
         <Alert variant="danger" className="m-3">
@@ -226,8 +237,8 @@ function Chat({
               Stop
             </Button>
           ) : (
-            <Button type="submit" size="sm" disabled={!draft.trim()}>
-              Send
+            <Button type="submit" size="sm" aria-label="Send" disabled={!draft.trim()}>
+              <i className="bi bi-send" aria-hidden="true" />
             </Button>
           )}
         </div>
