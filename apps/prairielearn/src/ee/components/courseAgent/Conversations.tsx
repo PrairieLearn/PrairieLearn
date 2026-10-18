@@ -19,7 +19,7 @@ export function Conversations({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
-  // `null` until the user picks one; then the most recent conversation is shown.
+  // Default to the most recent conversation until the user selects one.
   const [pickedId, setPickedId] = useState<string | null>(null);
   const selectedId = pickedId ?? conversations.data?.[0]?.id ?? null;
 
@@ -167,13 +167,13 @@ function Chat({
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
   });
   const [draft, setDraft] = useState('');
-  const busy = status === 'submitted' || status === 'streaming';
+  const isBusy = status === 'submitted' || status === 'streaming';
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || busy) return;
+    if (!text || isBusy) return;
     void sendMessage({ text });
     setDraft('');
   };
@@ -220,7 +220,7 @@ function Chat({
           onKeyDown={onKeyDown}
         />
         <div className="d-flex justify-content-end mt-2">
-          {busy ? (
+          {isBusy ? (
             <Button variant="outline-secondary" size="sm" onClick={() => void stop()}>
               <i className="bi bi-stop-fill me-1" aria-hidden="true" />
               Stop

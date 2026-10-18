@@ -256,8 +256,8 @@ export function PageLayout({
     forcedInitialNavToggleState?: boolean;
     /** Whether or not to show the branded page footer. */
     showFooter?: boolean;
-    /** Hides the course agent panel, e.g. on pages with their own AI chat. */
-    hideCourseAgentPanel?: boolean;
+    /** Whether to show the course agent panel. Disable on pages with their own AI chat. */
+    showCourseAgentPanel?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
@@ -278,6 +278,7 @@ export function PageLayout({
     enableNavbar: true,
     hideNavbarSessionControls: false,
     showFooter: false,
+    showCourseAgentPanel: true,
     ...options,
   };
 
@@ -294,7 +295,7 @@ export function PageLayout({
 
   // Rendered by the course agent panel middleware (EE) when the user has access.
   const courseAgentPanel =
-    sideNavEnabled && !resolvedOptions.hideCourseAgentPanel ? resLocals.course_agent_panel : null;
+    sideNavEnabled && resolvedOptions.showCourseAgentPanel ? resLocals.course_agent_panel : null;
 
   let showContextNavigation = [
     'instructor',
