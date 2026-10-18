@@ -26,7 +26,10 @@ export function Conversations({
   const [pickedId, setPickedId] = useState<string | null>(null);
   const selectedId = run(() => {
     if (pickedId !== null) return pickedId;
-    return conversations.data?.[0]?.id ?? null;
+    if (conversations.data && conversations.data.length > 0) {
+      return conversations.data[0].id;
+    }
+    return null;
   });
 
   const create = useMutation({
