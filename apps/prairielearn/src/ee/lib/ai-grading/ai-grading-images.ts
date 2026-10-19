@@ -72,7 +72,9 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
   let image: Buffer;
 
   if (url.protocol === 'data:') {
-    const match = /^data:image\/(?:png|jpeg|webp);base64,([A-Za-z0-9+/]*={0,2})$/i.exec(src);
+    const match = /^data:image\/(?:png|jpeg|webp|svg\+xml);base64,([A-Za-z0-9+/]*={0,2})$/i.exec(
+      src,
+    );
     if (!match) {
       throw new Error('Invalid inline question image');
     }
@@ -136,6 +138,12 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
   }
 
   const { format } = await sharp(image).metadata();
+  if (format === 'svg') {
+    // AI grading providers do not support SVG image inputs, so convert to PNG.
+    const png = await sharp(image).png().toBuffer();
+    if (png.length > MAX_IMAGE_BYTES) throw new Error('Question image exceeds the size limit');
+    return { data: png.toString('base64'), mediaType: 'image/png' };
+  }
   if (format !== 'png' && format !== 'jpeg' && format !== 'webp') {
     throw new Error('Unsupported question image format');
   }

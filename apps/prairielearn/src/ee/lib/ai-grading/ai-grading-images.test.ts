@@ -29,6 +29,8 @@ const context = {
 
 let root: string;
 let image: Buffer;
+const svg =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10" fill="red"/></svg>';
 
 beforeAll(async () => {
   root = await mkdtemp(path.join(tmpdir(), 'ai-grading-images-'));
@@ -38,6 +40,7 @@ beforeAll(async () => {
   await mkdir(path.join(root, 'questions/test/clientFilesQuestion'), { recursive: true });
   await mkdir(path.join(root, 'clientFilesCourse'));
   await writeFile(path.join(root, 'questions/test/clientFilesQuestion/image.png'), image);
+  await writeFile(path.join(root, 'questions/test/clientFilesQuestion/image.svg'), svg);
   await writeFile(path.join(root, 'clientFilesCourse/image.png'), image);
   await writeFile(path.join(root, 'secret.png'), image);
   await symlink(
@@ -89,6 +92,18 @@ describe('loadQuestionImage', () => {
     const result = await loadQuestionImage(src, context);
     expect(result.data).toBe(image.toString('base64'));
     expect(chunks.ensureChunksForCourseAsync).toHaveBeenCalledWith(courseId, expect.any(Object));
+    expect(publicFetchModule.publicFetch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['course asset', '/question/1/clientFilesQuestion/image.svg'],
+    ['inline image', `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`],
+  ])('converts an SVG %s to PNG', async (_, src) => {
+    const result = await loadQuestionImage(src, context);
+    const png = Buffer.from(result.data, 'base64');
+
+    expect(result.mediaType).toBe('image/png');
+    expect(await sharp(png).metadata()).toMatchObject({ format: 'png', width: 20, height: 10 });
     expect(publicFetchModule.publicFetch).not.toHaveBeenCalled();
   });
 
