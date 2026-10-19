@@ -46,7 +46,7 @@ export async function resolveAiGradingModel(
     const models = await discoverAiGradingModels({
       baseUrl,
       apiKey,
-      credentialIdentity: { courseInstanceId: courseInstance.id, credentialId: credential.id },
+      courseInstanceId: courseInstance.id,
     });
     if (!models.includes(selection.model_id)) {
       throw new HttpStatusError(400, 'Model not available from the custom provider');
