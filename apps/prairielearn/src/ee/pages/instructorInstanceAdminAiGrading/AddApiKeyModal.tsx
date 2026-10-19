@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -27,6 +27,9 @@ export function AddApiKeyModal({
   onExited: () => void;
   onSuccess: (credential: AiGradingApiKeyCredential) => void;
 }) {
+  const titleId = useId();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const previousConfirmationRef = useRef(false);
   const trpc = useTRPC();
   const courseInstanceTRPC = useCourseInstanceTRPC();
   const [confirmation, setConfirmation] = useState<{
@@ -40,6 +43,7 @@ export function AddApiKeyModal({
     handleSubmit,
     watch,
     reset,
+    setFocus,
     formState: { errors },
   } = useForm<{ provider: EnumAiGradingProvider; apiKey: string; baseUrl: string }>({
     defaultValues: { provider: AI_GRADING_PROVIDER_OPTIONS[0].value, apiKey: '', baseUrl: '' },
@@ -70,8 +74,19 @@ export function AddApiKeyModal({
   const isPending = addMutation.isPending || discoverMutation.isPending || saveMutation.isPending;
   const error = addMutation.error ?? discoverMutation.error ?? saveMutation.error;
 
+  // Keep keyboard focus on the active step when its controls are replaced.
+  useEffect(() => {
+    if (confirmation) {
+      titleRef.current?.focus();
+    } else if (previousConfirmationRef.current) {
+      setFocus('baseUrl');
+    }
+    previousConfirmationRef.current = confirmation !== null;
+  }, [confirmation, setFocus]);
+
   return (
     <Modal
+      aria-labelledby={titleId}
       show={show}
       backdrop="static"
       onHide={() => {
@@ -87,7 +102,9 @@ export function AddApiKeyModal({
       }}
     >
       <Modal.Header closeButton={!isPending}>
-        <Modal.Title>{confirmation ? 'Confirm provider models' : 'Add API key'}</Modal.Title>
+        <Modal.Title ref={titleRef} id={titleId} tabIndex={-1}>
+          {confirmation ? 'Confirm provider models' : 'Add API key'}
+        </Modal.Title>
       </Modal.Header>
       <Form
         onSubmit={handleSubmit((data) => {

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useCallback, useState } from 'react';
+import { useCallback, useId, useState } from 'react';
 import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -105,6 +105,12 @@ function ModelOption({
             disabled={!isInteractive}
             checked={isSelected}
             onChange={onSelect}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                onSelect();
+              }
+            }}
           />
           <span className="form-check-label">
             <span className="fw-medium">{model.name}</span>
@@ -161,6 +167,7 @@ function ModelList({
   onRetryCustom: () => void;
 }) {
   const [providerFilter, setProviderFilter] = useState('all');
+  const otherModelsId = useId();
   const [search, setSearch] = useState('');
   const filteredModels = AI_GRADING_MODELS.filter(
     (m) =>
@@ -202,6 +209,9 @@ function ModelList({
             id="grading-model-search"
             type="search"
             value={search}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.preventDefault();
+            }}
             onChange={(event) => setSearch(event.target.value)}
           />
         </Form.Group>
@@ -300,6 +310,8 @@ function ModelList({
           <button
             type="button"
             className="btn btn-sm btn-link p-0 text-muted text-decoration-none"
+            aria-expanded={otherExpanded}
+            aria-controls={otherModelsId}
             onClick={() => setOtherExpanded((prev) => !prev)}
           >
             <i
@@ -308,7 +320,7 @@ function ModelList({
             />
             Other models
           </button>
-          {otherExpanded && (
+          <div id={otherModelsId} hidden={!otherExpanded}>
             <div className="d-flex flex-column gap-1 mt-2">
               {other.map((model) => (
                 <ModelOption
@@ -325,7 +337,7 @@ function ModelList({
                 />
               ))}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
@@ -850,6 +862,7 @@ function AiGradingModelSelectionModalInner({
   return (
     <Modal
       show={show}
+      aria-labelledby="select-grading-model-title"
       size="lg"
       backdrop="static"
       keyboard={false}
@@ -858,7 +871,7 @@ function AiGradingModelSelectionModalInner({
     >
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
-          <Modal.Title>Select grading model</Modal.Title>
+          <Modal.Title id="select-grading-model-title">Select grading model</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>

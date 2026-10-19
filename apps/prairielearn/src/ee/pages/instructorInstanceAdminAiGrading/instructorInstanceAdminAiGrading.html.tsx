@@ -1,7 +1,7 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
-import { Alert, Form, Modal } from 'react-bootstrap';
+import { Accordion, Alert, Form, Modal } from 'react-bootstrap';
 
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
@@ -423,65 +423,78 @@ function CreditPoolSection({
           Payment cancelled. No credits were added.
         </Alert>
       )}
-      <div
-        className={clsx(
-          'd-flex justify-content-between align-items-center flex-wrap gap-2',
-          useCustomApiKeys || (!canEdit && !isLoading && !isCreditPoolEmpty) ? 'mb-1' : 'mb-3',
-        )}
+      <Accordion
+        key={String(useCustomApiKeys)}
+        defaultActiveKey={useCustomApiKeys ? undefined : 'credits'}
       >
-        <div className="d-flex align-items-center gap-2">
-          <h2 className="h5 mb-0">AI grading credits</h2>
-          {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
-        </div>
-        {!isLoading && !isCreditPoolEmpty && (
-          <div className="d-flex align-items-center gap-2 flex-wrap">
-            {hasFreeCreditAvailable && (
-              <button
-                type="button"
-                className="btn btn-sm btn-success d-flex align-items-center gap-2"
-                disabled={!canEdit}
-                onClick={() => redeemModalState.showWithData(null)}
-              >
-                <i className="bi bi-gift" aria-hidden="true" />
-                Redeem free credit
-              </button>
+        <Accordion.Item eventKey="credits">
+          <Accordion.Header>
+            <span className="d-flex align-items-center gap-2">
+              AI grading credits
+              {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
+            </span>
+          </Accordion.Header>
+          <Accordion.Body>
+            <div
+              className={clsx(
+                'd-flex justify-content-between align-items-center flex-wrap gap-2',
+                useCustomApiKeys || (!canEdit && !isLoading && !isCreditPoolEmpty)
+                  ? 'mb-1'
+                  : 'mb-3',
+              )}
+            >
+              {!isLoading && !isCreditPoolEmpty && (
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  {hasFreeCreditAvailable && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-success d-flex align-items-center gap-2"
+                      disabled={!canEdit}
+                      onClick={() => redeemModalState.showWithData(null)}
+                    >
+                      <i className="bi bi-gift" aria-hidden="true" />
+                      Redeem free credit
+                    </button>
+                  )}
+                  {stripePurchasingEnabled && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary d-flex align-items-center gap-2"
+                      disabled={!canEdit}
+                      onClick={() => purchaseModalState.showWithData(null)}
+                    >
+                      <i className="bi bi-cart-plus" aria-hidden="true" />
+                      Purchase credits
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            {useCustomApiKeys && (
+              <p className="text-muted small mb-3">
+                While custom API keys are active, PrairieLearn AI grading credits are not deducted.
+              </p>
             )}
-            {stripePurchasingEnabled && (
-              <button
-                type="button"
-                className="btn btn-sm btn-primary d-flex align-items-center gap-2"
-                disabled={!canEdit}
-                onClick={() => purchaseModalState.showWithData(null)}
-              >
-                <i className="bi bi-cart-plus" aria-hidden="true" />
-                Purchase credits
-              </button>
+            {!canEdit && !isLoading && !isCreditPoolEmpty && (
+              <p className="text-muted small mb-3">
+                You must be a course owner to purchase or redeem AI grading credits.
+              </p>
             )}
-          </div>
-        )}
-      </div>
-      {useCustomApiKeys && (
-        <p className="text-muted small mb-3">
-          While custom API keys are active, PrairieLearn AI grading credits are not deducted.
-        </p>
-      )}
-      {!canEdit && !isLoading && !isCreditPoolEmpty && (
-        <p className="text-muted small mb-3">
-          You must be a course owner to purchase or redeem AI grading credits.
-        </p>
-      )}
-      <CreditPoolDashboard
-        trpc={trpc}
-        balanceContext="instructor"
-        dimmed={useCustomApiKeys}
-        canEdit={canEdit}
-        onPurchaseClick={
-          stripePurchasingEnabled ? () => purchaseModalState.showWithData(null) : undefined
-        }
-        onRedeemFreeCreditClick={
-          hasFreeCreditAvailable ? () => redeemModalState.showWithData(null) : undefined
-        }
-      />
+            <CreditPoolDashboard
+              trpc={trpc}
+              balanceContext="instructor"
+              dimmed={useCustomApiKeys}
+              canEdit={canEdit}
+              onPurchaseClick={
+                stripePurchasingEnabled ? () => purchaseModalState.showWithData(null) : undefined
+              }
+              onRedeemFreeCreditClick={
+                hasFreeCreditAvailable ? () => redeemModalState.showWithData(null) : undefined
+              }
+            />
+          </Accordion.Body>
+        </Accordion.Item>
+      </Accordion>
       <PurchaseCreditsModal {...purchaseModalState} />
       <RedeemFreeCreditModal
         {...redeemModalState}
