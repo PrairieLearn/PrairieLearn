@@ -198,15 +198,15 @@ test('does not mark restored formula editor answers as unsaved', async ({
     Object.defineProperty(window, 'PLSymbolicInput', {
       configurable: true,
       get: () => undefined,
-      set(initialize: (name: string) => void) {
+      set(initialize: (uuid: string) => void) {
         Object.defineProperty(window, 'PLSymbolicInput', {
           configurable: true,
           writable: true,
-          value: (name: string) => {
-            const formulaEditor = document.getElementById(`symbolic-input-${name}`)!;
+          value: (uuid: string) => {
+            const formulaEditor = document.getElementById(`symbolic-input-${uuid}`)!;
             const form = formulaEditor.closest<HTMLFormElement>('form.question-form')!;
             const initializeAfterBaselineCapture = () => {
-              initialize(name);
+              initialize(uuid);
               formulaEditor.dataset.testInitialized = 'true';
             };
 
@@ -231,7 +231,7 @@ test('does not mark restored formula editor answers as unsaved', async ({
   });
   await openSymbolicInputEditorQuestion(page, courseInstance);
 
-  const formulaEditor = page.locator('#symbolic-input-x');
+  const formulaEditor = page.locator('.pl-symbolic-input:has(input[name="x-latex"]) math-field');
   await expect(formulaEditor).toBeVisible();
   await expect(
     formulaEditor,
@@ -241,8 +241,8 @@ test('does not mark restored formula editor answers as unsaved', async ({
   await page.getByRole('button', { name: /Save & Grade/ }).click();
 
   await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible();
-  await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('y');
-  await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('y');
+  await expect(page.locator('input[name="x"]')).toHaveValue('y');
+  await expect(page.locator('input[name="x-latex"]')).toHaveValue('y');
 
   const originalFormData = await page
     .locator('form.question-form')
