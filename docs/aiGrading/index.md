@@ -23,7 +23,7 @@ Common use cases include:
 - Source code, code explanations, and written reasoning
 - Short-answer justifications
 
-Questions can combine these elements. For example, when a question contains both `pl-file-upload` and `pl-image-capture`, every distinct submitted file is sent to the model once.
+Questions can combine these elements. For example, when a question contains both `pl-file-upload` and `pl-image-capture`, every distinct supported submitted file is sent to the model once.
 
 AI grading also includes files saved in the submission from [workspaces](../workspaces/index.md). Only files collected for grading are included; the AI grader does not read the live workspace. A [`pl-file-preview`](../elements/pl-file-preview.md) element is not required for AI grading, but is recommended so students can check their submitted files.
 
@@ -31,7 +31,7 @@ AI grading also includes files saved in the submission from [workspaces](../work
 
 - **Text and source code:** Files such as `.py`, `.cpp`, `.java`, `.txt`, `.csv`, and `.json` are decoded and sent as text with their filenames. Any filename or extension is accepted if the contents are readable text. Indentation and line breaks are preserved. Unicode is preserved when `pl-file-editor`'s `normalize-to-ascii` option is disabled (the default); enabling it normalizes non-ASCII characters before submission. Supported encodings are UTF-8 (with or without a byte-order mark) and UTF-16 (with a byte-order mark).
 - **PDFs and images:** PDF, JPEG, PNG, and WebP files are sent as attachments so the model can interpret their visual content.
-- **Other binary formats or encodings:** Files such as ZIP archives, compiled programs, and binary Office documents are not decoded as text. An unreadable file causes AI grading of that submission to fail with an error identifying the file, rather than producing a grade with missing content. Convert these files to a supported format or use manual grading.
+- **Other binary formats or encodings:** Files such as ZIP archives, compiled programs, and binary Office documents are not decoded as text. AI grading continues with the rest of the submission, and the model receives a message naming the unreadable file and explaining that its contents are unavailable. Convert these files to a supported format if their contents are needed for grading.
 
 Text files are passed as source text, without executing code or rendering HTML, Markdown, or SVG. File contents count toward the model's input limits; they are not truncated by PrairieLearn.
 
@@ -96,7 +96,9 @@ Instructors should review AI output before relying on it for grades. For each su
 
 - **Explanation** — The reasoning behind the model's grading decisions.
 
-  When the submission contains a file or image attachment, the model's transcription of relevant content is included.
+  The model is instructed to explain its grading decisions concisely. For each submitted standalone image file, it must also provide a complete transcription of relevant text, numbers, and final answers, whether handwritten or typed. This includes images submitted through `pl-image-capture` and `pl-file-upload`.
+
+  Text/code answers and document attachments such as PDFs do not trigger a full transcription requirement. The model quotes or describes the specific evidence needed to justify the grade, including relevant readings of handwritten answers and interpretations of diagrams or plots. Unclear or ambiguous readings are flagged.
 
   ??? example "Explanation example"
 
@@ -104,9 +106,9 @@ Instructors should review AI output before relying on it for grades. For each su
 
       ![AI grading explanation describing the model's reasoning.](ai-grading-explanation.png)
 
-      **Transcription (file and image submissions):**
+      **Transcription of submitted images:**
 
-      ![AI transcription of a student's image submission, shown beneath the explanation.](ai-grading-transcription.png)
+      ![AI transcription of a student's handwritten image submission, shown beneath the explanation.](ai-grading-transcription.png)
 
 After both AI and human grades are present, PrairieLearn can also show comparison information:
 
@@ -142,8 +144,7 @@ AI grading assembles a prompt from the following inputs and sends it to the sele
 **Outputs returned:**
 
 - Graded rubric (item-by-item scoring)
-- Explanation
-- Transcription _(file and image submissions)_
+- Explanation, including transcripts of submitted image files and relevant interpretations of other content
 
 For transparency and debugging, the exact prompt sent to the model is available on each graded submission.
 

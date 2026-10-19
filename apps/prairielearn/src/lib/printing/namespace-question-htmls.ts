@@ -1,3 +1,5 @@
+import { type Expression, parse } from 'acorn';
+import { simple } from 'acorn-walk';
 import * as cheerio from 'cheerio';
 import * as csstree from 'css-tree';
 
@@ -6,15 +8,15 @@ export interface QuestionHtmlToNamespace {
   namespace: string;
 }
 
-const SINGLE_ID_REFERENCE_ATTRIBUTES = new Set([
+const SINGLE_ID_REFERENCE_ATTRIBUTES = [
   'aria-activedescendant',
   'aria-details',
   'aria-errormessage',
   'for',
   'form',
   'list',
-]);
-const ID_REFERENCE_LIST_ATTRIBUTES = new Set([
+];
+const ID_REFERENCE_LIST_ATTRIBUTES = [
   'aria-controls',
   'aria-describedby',
   'aria-flowto',
@@ -22,15 +24,15 @@ const ID_REFERENCE_LIST_ATTRIBUTES = new Set([
   'aria-owns',
   'headers',
   'itemref',
-]);
-const FRAGMENT_REFERENCE_ATTRIBUTES = new Set([
+];
+const FRAGMENT_REFERENCE_ATTRIBUTES = [
   'data-bs-parent',
   'data-bs-target',
   'data-target',
   'href',
   'xlink:href',
-]);
-const URL_REFERENCE_ATTRIBUTES = new Set([
+];
+const URL_REFERENCE_ATTRIBUTES = [
   'clip-path',
   'fill',
   'filter',
@@ -39,7 +41,7 @@ const URL_REFERENCE_ATTRIBUTES = new Set([
   'marker-start',
   'mask',
   'stroke',
-]);
+];
 
 function rewriteCssIdReferences(
   css: string,
@@ -83,77 +85,144 @@ function rewriteCssIdReferences(
   return state.changed ? csstree.generate(ast) : css;
 }
 
-function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<string, string>) {
-  const rewriteSelectorCall = (call: string, quote: string, selector: string) => {
-    const namespacedSelector = rewriteCssIdReferences(selector, 'selectorList', idRenames);
-    if (namespacedSelector === selector) return call;
-    const escapedSelector = namespacedSelector
-      .replaceAll('\\', '\\\\')
-      .replaceAll(quote, `\\${quote}`);
-    return call.replace(`${quote}${selector}${quote}`, () => `${quote}${escapedSelector}${quote}`);
-  };
+function literalString(argument: Expression): string | null {
+  if (argument.type === 'Literal' && typeof argument.value === 'string') return argument.value;
+  if (argument.type === 'TemplateLiteral' && argument.expressions.length === 0) {
+    return argument.quasis[0].value.cooked ?? null;
+  }
+  return null;
+}
 
-  return scriptHtml
-    .replaceAll(
-      /\bgetElementById\(\s*(["'`])([^"'`]+)\1\s*\)/g,
-      (call, quote: string, id: string) => {
-        const renamedId = idRenames.get(id);
-        return renamedId
-          ? call.replace(`${quote}${id}${quote}`, `${quote}${renamedId}${quote}`)
-          : call;
-      },
-    )
-    .replaceAll(
-      /\b(?:querySelector(?:All)?|closest|matches)\(\s*(["'`])((?:(?!\1)[\s\S])+)\1\s*\)/g,
-      rewriteSelectorCall,
-    )
-    .replaceAll(/\$\(\s*(["'`])((?:(?!\1)[\s\S])+)\1\s*\)/g, rewriteSelectorCall);
+function serializeScriptString(value: string, original: string): string {
+  const escaped = JSON.stringify(value).slice(1, -1).replaceAll('<', '\\u003c');
+  return original.startsWith("'") ? `'${escaped.replaceAll("'", "\\'")}'` : `"${escaped}"`;
+}
+
+function rewriteScriptIdReferences(scriptHtml: string, idRenames: ReadonlyMap<string, string>) {
+  if (idRenames.size === 0) return scriptHtml;
+  let program: ReturnType<typeof parse>;
+  try {
+    program = parse(scriptHtml, { ecmaVersion: 'latest', sourceType: 'script' });
+  } catch {
+    try {
+      program = parse(scriptHtml, { ecmaVersion: 'latest', sourceType: 'module' });
+    } catch {
+      return scriptHtml;
+    }
+  }
+
+  const replacements: { start: number; end: number; value: string }[] = [];
+  simple(program, {
+    CallExpression(call) {
+      const argument = call.arguments[0];
+      if (call.arguments.length !== 1 || argument.type === 'SpreadElement') return;
+      const callee = call.callee;
+      const name =
+        callee.type === 'Identifier'
+          ? callee.name
+          : callee.type === 'MemberExpression' &&
+              !callee.computed &&
+              callee.property.type === 'Identifier'
+            ? callee.property.name
+            : null;
+      if (!name) return;
+
+      const value = literalString(argument);
+      if (value === null) return;
+      const renamed =
+        name === 'getElementById'
+          ? (idRenames.get(value) ?? value)
+          : ['querySelector', 'querySelectorAll', 'closest', 'matches', '$'].includes(name)
+            ? rewriteCssIdReferences(value, 'selectorList', idRenames)
+            : value;
+      if (renamed === value) return;
+      replacements.push({
+        start: argument.start,
+        end: argument.end,
+        value: serializeScriptString(renamed, scriptHtml.slice(argument.start, argument.end)),
+      });
+    },
+  });
+
+  return replacements
+    .sort((first, second) => second.start - first.start)
+    .reduce(
+      (script, { start, end, value }) => script.slice(0, start) + value + script.slice(end),
+      scriptHtml,
+    );
+}
+
+function attributeSelector(attribute: string): string {
+  return `[${attribute.replaceAll(':', '\\:')}]`;
 }
 
 function renameIdsAndReferences(
   $: cheerio.CheerioAPI,
   idRenames: ReadonlyMap<string, string>,
 ): void {
-  if (idRenames.size === 0) return;
+  $('[id]').each((_index, element) => {
+    const id = $(element).attr('id');
+    if (id && idRenames.has(id)) $(element).attr('id', idRenames.get(id));
+  });
 
-  $('*').each((_index, element) => {
-    const $element = $(element);
-    for (const [attribute, value] of Object.entries($element.attr() ?? {})) {
-      let rewrittenValue: string | undefined;
-      if (attribute === 'id' || SINGLE_ID_REFERENCE_ATTRIBUTES.has(attribute)) {
-        rewrittenValue = idRenames.get(value);
-      } else if (ID_REFERENCE_LIST_ATTRIBUTES.has(attribute) && value) {
-        rewrittenValue = value
+  for (const attribute of SINGLE_ID_REFERENCE_ATTRIBUTES) {
+    $(attributeSelector(attribute)).each((_index, element) => {
+      const value = $(element).attr(attribute);
+      if (value && idRenames.has(value)) $(element).attr(attribute, idRenames.get(value));
+    });
+  }
+
+  for (const attribute of ID_REFERENCE_LIST_ATTRIBUTES) {
+    $(attributeSelector(attribute)).each((_index, element) => {
+      const value = $(element).attr(attribute);
+      if (!value) return;
+
+      $(element).attr(
+        attribute,
+        value
           .split(/\s+/)
           .map((id) => idRenames.get(id) ?? id)
-          .join(' ');
-      } else if (FRAGMENT_REFERENCE_ATTRIBUTES.has(attribute) && value.startsWith('#')) {
-        const renamedId = idRenames.get(value.slice(1));
-        if (renamedId) rewrittenValue = `#${renamedId}`;
-      } else if (URL_REFERENCE_ATTRIBUTES.has(attribute) && value) {
-        rewrittenValue = rewriteCssIdReferences(value, 'value', idRenames);
-      } else if (attribute === 'style' && value) {
-        rewrittenValue = rewriteCssIdReferences(value, 'declarationList', idRenames);
-      }
-      if (rewrittenValue !== undefined && rewrittenValue !== value) {
-        $element.attr(attribute, rewrittenValue);
-      }
-    }
+          .join(' '),
+      );
+    });
+  }
 
-    const tagName = 'name' in element ? element.name : undefined;
-    if (tagName === 'style') {
-      const stylesheet = $element.html();
-      if (stylesheet) {
-        const rewrittenStylesheet = rewriteCssIdReferences(stylesheet, 'stylesheet', idRenames);
-        if (rewrittenStylesheet !== stylesheet) $element.html(rewrittenStylesheet);
-      }
-    } else if (tagName === 'script') {
-      const scriptHtml = $element.html();
-      if (scriptHtml) {
-        const rewrittenScript = rewriteScriptIdReferences(scriptHtml, idRenames);
-        if (rewrittenScript !== scriptHtml) $element.html(rewrittenScript);
-      }
+  for (const attribute of FRAGMENT_REFERENCE_ATTRIBUTES) {
+    $(attributeSelector(attribute)).each((_index, element) => {
+      const value = $(element).attr(attribute);
+      if (!value?.startsWith('#')) return;
+
+      const renamedId = idRenames.get(value.slice(1));
+      if (renamedId) $(element).attr(attribute, `#${renamedId}`);
+    });
+  }
+
+  for (const attribute of URL_REFERENCE_ATTRIBUTES) {
+    $(attributeSelector(attribute)).each((_index, element) => {
+      const value = $(element).attr(attribute);
+      if (!value) return;
+      $(element).attr(attribute, rewriteCssIdReferences(value, 'value', idRenames));
+    });
+  }
+
+  $('[style]').each((_index, element) => {
+    const style = $(element).attr('style');
+    if (style) {
+      $(element).attr('style', rewriteCssIdReferences(style, 'declarationList', idRenames));
     }
+  });
+
+  $('style').each((_index, element) => {
+    const stylesheet = $(element).html();
+    if (stylesheet) {
+      $(element).html(rewriteCssIdReferences(stylesheet, 'stylesheet', idRenames));
+    }
+  });
+
+  $('script').each((_index, element) => {
+    const scriptHtml = $(element).html();
+    if (!scriptHtml) return;
+    $(element).html(rewriteScriptIdReferences(scriptHtml, idRenames));
   });
 }
 
@@ -191,6 +260,21 @@ function reserveUniqueId(preferredId: string, reservedIds: Set<string>): string 
   return candidate;
 }
 
+function namespaceGraphSvgs($: cheerio.CheerioAPI, namespace: string): void {
+  const reservedIds = new Set(getIds($));
+  $('.pl-graph > svg').each((index, element) => {
+    const svg = cheerio.load($.html(element), undefined, false);
+    const idRenames = new Map(
+      [...new Set(getIds(svg))].map((id) => [
+        id,
+        reserveUniqueId(`${namespace}-graph-${index + 1}-${id}`, reservedIds),
+      ]),
+    );
+    renameIdsAndReferences(svg, idRenames);
+    $(element).replaceWith(svg.root().html() ?? '');
+  });
+}
+
 /** Namespaces IDs that occur in more than one independently rendered question fragment. */
 export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespace[]): string[] {
   const namespaces = questions.map((question) => question.namespace);
@@ -205,6 +289,7 @@ export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespa
 
   const fragments = questions.map(({ html, namespace }) => {
     const $ = cheerio.load(html, undefined, false);
+    namespaceGraphSvgs($, namespace);
     assertNoDuplicateIds($, namespace);
     return { $, namespace };
   });

@@ -125,6 +125,8 @@
     "@web3-storage/parse-link-header": "^3.1.0",
     "ace-builds": "^1.44.0",
     "ace-code": "^1.44.0",
+    "acorn": "8.18.0",
+    "acorn-walk": "8.3.5",
     "ai": "^7.0.116",
     "ajv": "^8.20.0",
     "ansi_up": "^6.0.6",
