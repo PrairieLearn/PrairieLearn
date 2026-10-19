@@ -378,13 +378,11 @@ class _Lowerer:
         self.functions = locals_for_eval["functions"] | locals_for_eval["helpers"]
         self.variables = _LEGACY_GLOBAL_VARIABLES | locals_for_eval["variables"]
         if allow_sets:
-            self.variables |= {
-                name: getattr(sympy.S, name) for name in psu._SET_DOMAIN_NAMES
-            }
+            for name in psu._SET_DOMAIN_NAMES:
+                self.variables.setdefault(name, getattr(sympy.S, name))
         elif allow_extra_symbols:
-            self.variables |= {
-                name: sympy.Symbol(name) for name in psu._SET_DOMAIN_NAMES
-            }
+            for name in psu._SET_DOMAIN_NAMES:
+                self.variables.setdefault(name, sympy.Symbol(name))
 
     def _expand_name(self, name: _Name) -> _Expression:
         if name.text in self.functions or name.text in self.variables:
@@ -610,13 +608,11 @@ class _Evaluator:
         self.functions = locals_for_eval["functions"] | locals_for_eval["helpers"]
         self.variables = _LEGACY_GLOBAL_VARIABLES | locals_for_eval["variables"]
         if allow_sets:
-            self.variables |= {
-                name: getattr(sympy.S, name) for name in psu._SET_DOMAIN_NAMES
-            }
+            for name in psu._SET_DOMAIN_NAMES:
+                self.variables.setdefault(name, getattr(sympy.S, name))
         elif allow_extra_symbols:
-            self.variables |= {
-                name: sympy.Symbol(name) for name in psu._SET_DOMAIN_NAMES
-            }
+            for name in psu._SET_DOMAIN_NAMES:
+                self.variables.setdefault(name, sympy.Symbol(name))
         self.allow_sets = allow_sets
         self.simplify_expression = simplify_expression
         self.allow_extra_symbols = allow_extra_symbols
@@ -698,15 +694,7 @@ class _Evaluator:
             self._set_call_type(name, arguments, span)
             result_type = psu.ASTSympyType.SET
         else:
-            arities = psu._builtin_function_arities(name)
-            if arities is not None:
-                self._require_signature(
-                    name,
-                    arguments,
-                    span,
-                    tuple(arity * (psu.ASTSympyType.SCALAR,) for arity in arities),
-                )
-            elif (
+            if (
                 name in psu._Constants.functions
                 or name in psu._Constants.trig_functions
             ):

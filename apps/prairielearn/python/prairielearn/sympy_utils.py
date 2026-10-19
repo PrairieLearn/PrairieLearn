@@ -370,26 +370,6 @@ class HasFunctionArityError(BaseSympyError):
     offset: int = -1
 
 
-# `sqrt` is a plain function whose second parameter is `evaluate`, so it has no
-# `nargs` and would otherwise silently accept a second student argument.
-_BUILTIN_FUNCTION_ARITY_OVERRIDES: Final[FrozenDict[str, tuple[int, ...]]] = (
-    FrozenDict({"sqrt": (1,)})
-)
-
-
-def _builtin_function_arities(  # pyright: ignore[reportUnusedFunction]
-    name: str,
-) -> tuple[int, ...] | None:
-    """Return the argument counts accepted by a built-in function."""
-    if name in _BUILTIN_FUNCTION_ARITY_OVERRIDES:
-        return _BUILTIN_FUNCTION_ARITY_OVERRIDES[name]
-    function = _Constants.functions.get(name) or _Constants.trig_functions.get(name)
-    nargs = getattr(function, "nargs", None)
-    if isinstance(nargs, sympy.FiniteSet):
-        return tuple(sorted(int(cast(sympy.Integer, arity)) for arity in nargs))
-    return None
-
-
 @dataclass(frozen=True, slots=True)
 class _IndexEvidence:
     index: int
