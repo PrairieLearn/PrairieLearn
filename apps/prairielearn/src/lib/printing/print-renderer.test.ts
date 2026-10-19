@@ -10,12 +10,18 @@ import {
 } from 'playwright';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { config } from '../config.js';
+
 const playwrightMocks = {
   connectOverCDP: vi.fn(),
   launch: vi.fn(),
 };
 
-import { PrintRenderer, type RenderPdfOptions } from './print-renderer.js';
+import {
+  PrintRenderer,
+  QuestionBlockSizeOverflowError,
+  type RenderPdfOptions,
+} from './print-renderer.js';
 
 const READY_HTML =
   '<!doctype html><html data-print-status="ready"><body>Prepared pages</body></html>';
@@ -32,6 +38,7 @@ interface HarnessOptions {
   goto?: () => Promise<Response | null>;
   printStatus?: 'error' | 'ready';
   printError?: string | null;
+  printErrorCode?: string | null;
   /** Called for every `page.pdf()`; lets a test stall or fail individual renders. */
   pdf?: (renderIndex: number) => Promise<Buffer>;
   contextClose?: () => Promise<void>;
@@ -42,6 +49,7 @@ function createBrowserHarness({
   goto,
   printStatus = 'ready',
   printError = null,
+  printErrorCode = null,
   pdf = async () => Buffer.from('%PDF-test'),
   contextClose = async () => undefined,
 }: HarnessOptions = {}) {
@@ -64,6 +72,7 @@ function createBrowserHarness({
         evaluate: vi.fn(async () => ({
           status: printStatus,
           error: printError,
+          errorCode: printErrorCode,
         })),
         pdf: vi.fn(async () => await pdf(renderIndex++)),
       } as unknown as Page;
@@ -116,7 +125,10 @@ function createGate() {
 }
 
 describe('PrintRenderer', () => {
+  let originalDevMode: boolean;
+
   beforeEach(() => {
+    originalDevMode = config.devMode;
     playwrightMocks.connectOverCDP.mockReset();
     playwrightMocks.launch.mockReset();
     vi.spyOn(chromium, 'connectOverCDP').mockImplementation(playwrightMocks.connectOverCDP);
@@ -124,6 +136,7 @@ describe('PrintRenderer', () => {
   });
 
   afterEach(() => {
+    config.devMode = originalDevMode;
     vi.restoreAllMocks();
   });
 
@@ -168,8 +181,8 @@ describe('PrintRenderer', () => {
       { waitUntil: 'load', timeout: expect.any(Number) },
     );
     expect(page.pdf).toHaveBeenCalledExactlyOnceWith({
-      format: 'Letter',
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      preferCSSPageSize: true,
       printBackground: true,
       tagged: true,
     });
@@ -192,6 +205,33 @@ describe('PrintRenderer', () => {
     const fetch = vi.fn();
     await harness.getRouteHandler()!({
       request: () => ({ url: () => url, isNavigationRequest: () => true }),
+      fulfill,
+      fetch,
+    } as unknown as Route);
+    expect(fulfill).toHaveBeenCalledExactlyOnceWith({
+      status: 200,
+      contentType: 'text/html',
+      body: html,
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('serves prepared HTML when the browser normalizes the navigation URL', async () => {
+    const harness = createBrowserHarness();
+    const url = 'http://localhost:3000';
+    const normalizedUrl = 'http://localhost:3000/';
+    const html = '<html data-print-status="ready"><body>Prepared pages</body></html>';
+
+    await renderPdf(new PrintRenderer(), { url, html });
+
+    expect(harness.pages[0].goto).toHaveBeenCalledWith(normalizedUrl, {
+      waitUntil: 'load',
+      timeout: expect.any(Number),
+    });
+    const fulfill = vi.fn(async () => undefined);
+    const fetch = vi.fn();
+    await harness.getRouteHandler()!({
+      request: () => ({ url: () => normalizedUrl, isNavigationRequest: () => true }),
       fulfill,
       fetch,
     } as unknown as Route);
@@ -317,6 +357,134 @@ describe('PrintRenderer', () => {
     );
     expect(playwrightMocks.launch).not.toHaveBeenCalled();
     expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
+  });
+
+  it('loads public assets directly in production and proxies protected assets', async () => {
+    config.devMode = false;
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new globalThis.Response('protected', { headers: { 'content-type': 'image/svg+xml' } }),
+      );
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000/print',
+      browserOrigin: 'https://us.prairielearn.com',
+      cookieHeader: 'session=test',
+    });
+
+    const routeHandler = harness.getRouteHandler()!;
+    const continueRequest = vi.fn(async () => undefined);
+    const fulfill = vi.fn(async () => undefined);
+    await routeHandler({
+      request: () => ({
+        method: () => 'GET',
+        url: () => `https://us.prairielearn.com${config.assetsPrefix}/public/hash/figure.svg`,
+      }),
+      continue: continueRequest,
+      fulfill,
+    } as unknown as Route);
+
+    expect(continueRequest).toHaveBeenCalledOnce();
+    expect(fulfill).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+
+    await routeHandler({
+      request: () => ({
+        method: () => 'GET',
+        url: () => 'https://us.prairielearn.com/pl/course_instance/1/figure.svg',
+      }),
+      continue: continueRequest,
+      fulfill,
+    } as unknown as Route);
+
+    expect(continueRequest).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][0].toString()).toBe(
+      'http://localhost:3000/pl/course_instance/1/figure.svg',
+    );
+    expect(fetch.mock.calls[0][1]).toMatchObject({
+      headers: { cookie: 'session=test' },
+      redirect: 'manual',
+    });
+    expect(fulfill).toHaveBeenCalledWith({
+      status: 200,
+      contentType: 'image/svg+xml',
+      body: Buffer.from('protected'),
+    });
+  });
+
+  it('proxies public assets when Cloudflare renders in development', async () => {
+    config.devMode = true;
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new globalThis.Response('asset'));
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000/print',
+      browserOrigin: 'https://example.com',
+    });
+
+    const continueRequest = vi.fn(async () => undefined);
+    await harness.getRouteHandler()!({
+      request: () => ({
+        method: () => 'GET',
+        url: () => `https://example.com${config.assetsPrefix}/public/hash/figure.svg`,
+      }),
+      continue: continueRequest,
+      fulfill: vi.fn(async () => undefined),
+    } as unknown as Route);
+
+    expect(continueRequest).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][0].toString()).toBe(
+      `http://localhost:3000${config.assetsPrefix}/public/hash/figure.svg`,
+    );
+  });
+
+  it('keeps Cloudflare navigation and asset requests on their intended hosts', async () => {
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new globalThis.Response('asset', { headers: { 'content-type': 'image/png' } }),
+      );
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000//attacker.com/preview',
+      browserOrigin: 'https://example.com',
+      cookieHeader: 'session=test',
+    });
+
+    expect(harness.pages[0].goto).toHaveBeenCalledWith(
+      'https://example.com//attacker.com/preview',
+      { waitUntil: 'load', timeout: expect.any(Number) },
+    );
+
+    const fulfill = vi.fn(async () => undefined);
+    await harness.getRouteHandler()!({
+      request: () => ({
+        method: () => 'GET',
+        url: () => 'https://example.com//attacker.com/evil?x=1',
+      }),
+      abort: vi.fn(),
+      fulfill,
+    } as unknown as Route);
+
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][0].toString()).toBe('http://localhost:3000//attacker.com/evil?x=1');
+    expect(fetch.mock.calls[0][1]).toMatchObject({
+      headers: { cookie: 'session=test' },
+      redirect: 'manual',
+    });
+    expect(fulfill).toHaveBeenCalledWith({
+      status: 200,
+      contentType: 'image/png',
+      body: Buffer.from('asset'),
+    });
   });
 
   it('runs four Cloudflare renders concurrently and queues the next one', async () => {
@@ -551,6 +719,37 @@ describe('PrintRenderer', () => {
     ).rejects.toThrow('The printable page failed: Paged.js failed');
     expect(harness.contexts[0].close).toHaveBeenCalledOnce();
     expect(harness.browser.close).not.toHaveBeenCalled();
+  });
+
+  it('identifies explicit question block overflows', async () => {
+    createBrowserHarness({
+      printStatus: 'error',
+      printError:
+        'Question 4 needs 451px, but the requested half print block provides 450px. Use auto or a larger block size.',
+      printErrorCode: 'question-block-size-overflow',
+    });
+
+    const render = renderPdf(new PrintRenderer(), {
+      url: 'http://localhost:3000/print?paper_size=Letter',
+    });
+    await expect(render).rejects.toBeInstanceOf(QuestionBlockSizeOverflowError);
+    await expect(render).rejects.toThrow(
+      'The printable page failed: Question 4 needs 451px, but the requested half print block provides 450px. Use auto or a larger block size.',
+    );
+  });
+
+  it('does not translate unrecognized printable-page failures into block overflows', async () => {
+    createBrowserHarness({
+      printStatus: 'error',
+      printError: 'Paged.js failed',
+      printErrorCode: 'unknown-print-error',
+    });
+
+    const render = renderPdf(new PrintRenderer(), {
+      url: 'http://localhost:3000/print?paper_size=Letter',
+    });
+    await expect(render).rejects.not.toBeInstanceOf(QuestionBlockSizeOverflowError);
+    await expect(render).rejects.toThrow('The printable page failed: Paged.js failed');
   });
 
   it('surfaces pagination failures that do not include an error message', async () => {

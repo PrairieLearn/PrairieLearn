@@ -63,6 +63,7 @@ const minimalStaffCourse: z.input<typeof StaffCourseSchema> = {
   sync_warnings: null,
   template_course: false,
   title: null,
+  uuid: '00000000-0000-4000-8000-000000000001',
 };
 
 // StudentCourse omits many fields from StaffCourse

@@ -464,6 +464,44 @@ Access permissions for course staff can be configured on the "Staff" tab. Course
 
     Course staff permissions and GitHub repository permissions are managed separately. Course Owners can grant themselves Admin access to the course's GitHub repository from the "Course settings" page. If you are not an Owner, ask a course Owner for access. You can find the list of Owners on the "Staff" page.
 
+### Exporting and importing staff with CSV
+
+Use **Export CSV** on the **Staff** tab to download `course-staff.csv` with the current staff permissions. The export includes all staff users and the course instances you can access, regardless of table filters or hidden columns. Course Owners can use **Import CSV** to add staff or update permissions in bulk.
+
+1. Click **Export CSV** and edit the downloaded file in a spreadsheet or text editor.
+2. Click **Import CSV**, select your edited file, and click **Preview changes**.
+3. Review the users to be added, updated, or removed, along with any enrollment removals.
+4. Click **Confirm sync** to apply the changes. Uploading a file and generating a preview does not change permissions.
+
+#### CSV format
+
+The first two headers must be `uid,course`, in that order. Each additional header is a course instance's exact short name, such as `Fa26`. Use one row per staff UID. For example:
+
+```csv
+uid,course,Fa26
+instructor@example.edu,Owner,Student Data Editor
+ta@example.edu,None,Student Data Editor
+developer@example.edu,Editor,None
+former-ta@example.edu,,
+```
+
+| Column                     | Accepted values                                         |
+| :------------------------- | :------------------------------------------------------ |
+| `uid`                      | The staff user's UID, typically an email address        |
+| `course`                   | `None`, `Previewer`, `Viewer`, `Editor`, or `Owner`     |
+| Course instance short name | `None`, `Student Data Viewer`, or `Student Data Editor` |
+
+Course instance columns also accept `Viewer` and `Editor` as aliases for `Student Data Viewer` and `Student Data Editor`. Role values are case-sensitive. Files must contain at least one staff row, with no duplicate UIDs or course instance headers, and may contain at most 5,000 staff users and be no larger than 1 MiB.
+
+#### How changes are applied
+
+- Users omitted from the CSV remain unchanged. Deleting a row from the exported file does not remove that user from the course staff.
+- Course instance columns omitted from the CSV remain unchanged for users being added or updated.
+- Use `None` to remove access for a particular course or course instance permission. Every permission cell in an add or update row must contain a role or `None`; individual blank cells are invalid.
+- To remove a staff user entirely, leave **every cell after their UID blank**, as in the `former-ta@example.edu` row above. This removes their staff record, all course instance permissions, and enrollments in the course, including instances omitted from the CSV. The preview lists affected enrollments, including those in deleted instances.
+
+The usual staff editing restrictions apply: only administrators can remove Owners, remove themselves, or change their own course content access. If staff permissions or affected enrollments change after you generate the preview, generate a new preview before confirming. Changes are applied together; a failed import does not apply partial updates.
+
 ### Course content access roles
 
 Course content access roles grant permission to access all course content, such as questions and assessments, including aggregate statistics from student usage.

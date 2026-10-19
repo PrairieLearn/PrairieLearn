@@ -765,6 +765,12 @@ importers:
       ace-code:
         specifier: ^1.44.0
         version: 1.44.0
+      acorn:
+        specifier: 8.18.0
+        version: 8.18.0
+      acorn-walk:
+        specifier: 8.3.5
+        version: 8.3.5
       ai:
         specifier: ^7.0.116
         version: 7.0.118(zod@4.6.5)
@@ -1426,9 +1432,6 @@ importers:
       '@socket.io/redis-emitter':
         specifier: ^5.1.0
         version: 5.1.0(supports-color@7.2.0)
-      archiver:
-        specifier: ^8.0.0
-        version: 8.0.0
       async:
         specifier: ^3.2.6
         version: 3.2.6
@@ -1466,9 +1469,6 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../../packages/tsconfig
-      '@types/archiver':
-        specifier: ^8.0.0
-        version: 8.0.0
       '@types/async':
         specifier: ^3.2.26
         version: 3.2.26
@@ -2959,6 +2959,9 @@ importers:
       '@socket.io/redis-emitter':
         specifier: ^5.1.0
         version: 5.1.0(supports-color@7.2.0)
+      archiver:
+        specifier: ^8.0.0
+        version: 8.0.0
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -2975,6 +2978,9 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
+      '@types/archiver':
+        specifier: ^8.0.0
+        version: 8.0.0
       '@types/node':
         specifier: ^24.19.0
         version: 24.19.0
