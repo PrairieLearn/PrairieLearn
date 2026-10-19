@@ -1,7 +1,15 @@
+import { createHash } from 'node:crypto';
+
 import { z } from 'zod';
 
 import { type Cache, cache } from '@prairielearn/cache';
-import { type PublicFetch, publicFetch, validatePublicHttpsUrl } from '@prairielearn/public-fetch';
+import {
+  type PublicFetch,
+  ResponseTooLargeError,
+  publicFetch,
+  readResponseWithLimit,
+  validatePublicHttpsUrl,
+} from '@prairielearn/public-fetch';
 
 // The timeout follows remote-image-copier.ts. The byte limit follows the JSON result limit in
 // externalGraderLocal.ts; count and ID limits additionally bound the catalog retained by the UI.
@@ -65,31 +73,29 @@ export function normalizeAiGradingBaseUrl(baseUrl: string): string {
   return url.href.replace(/\/+$/, '');
 }
 
-/** Credential identity must come from an authorized, immutable saved configuration, not the client. */
 export async function discoverAiGradingModels(
   {
     baseUrl,
     apiKey,
-    credentialIdentity,
+    courseInstanceId,
   }: {
     baseUrl: string;
     apiKey: string;
-    credentialIdentity?: { courseInstanceId: string; credentialId: string };
+    courseInstanceId: string;
   },
   { fetch = publicFetch, modelCache = cache }: { fetch?: PublicFetch; modelCache?: Cache } = {},
 ): Promise<string[]> {
   const normalizedUrl = normalizeAiGradingBaseUrl(baseUrl);
-  const cacheKey = credentialIdentity
-    ? `ai-grading-models:${credentialIdentity.courseInstanceId}:${credentialIdentity.credentialId}`
-    : null;
-  if (cacheKey) {
-    try {
-      const cached = await modelCache.get<unknown>(cacheKey);
-      const result = z.array(z.string()).safeParse(cached);
-      if (result.success) return result.data;
-    } catch {
-      // Cache failures must not prevent provider discovery.
-    }
+  const configurationHash = createHash('sha256')
+    .update(JSON.stringify([normalizedUrl, apiKey]))
+    .digest('hex');
+  const cacheKey = `ai-grading-models:${courseInstanceId}:${configurationHash}`;
+  try {
+    const cached = await modelCache.get<unknown>(cacheKey);
+    const result = z.array(z.string()).safeParse(cached);
+    if (result.success) return result.data;
+  } catch {
+    // Cache failures must not prevent provider discovery.
   }
 
   const signal = AbortSignal.timeout(DISCOVERY_TIMEOUT_MS);
@@ -130,29 +136,10 @@ export async function discoverAiGradingModels(
           );
       }
     }
-    if (Number(response.headers.get('content-length')) > MAX_RESPONSE_BYTES) {
-      await response.body?.cancel();
-      throw new AiGradingModelDiscoveryError(
-        'response_too_large',
-        'The provider returned a model list that is too large.',
-      );
-    }
-    const chunks: Buffer[] = [];
-    let bytes = 0;
-    for await (const chunk of response.body ?? []) {
-      const buffer = Buffer.from(chunk);
-      bytes += buffer.byteLength;
-      if (bytes > MAX_RESPONSE_BYTES) {
-        throw new AiGradingModelDiscoveryError(
-          'response_too_large',
-          'The provider returned a model list that is too large.',
-        );
-      }
-      chunks.push(buffer);
-    }
+    const body = await readResponseWithLimit(response, MAX_RESPONSE_BYTES);
     let parsed: unknown;
     try {
-      parsed = JSON.parse(Buffer.concat(chunks, bytes).toString('utf8'));
+      parsed = JSON.parse(body.toString('utf8'));
     } catch {
       throw new AiGradingModelDiscoveryError(
         'invalid_response',
@@ -167,9 +154,15 @@ export async function discoverAiGradingModels(
       );
     }
     const models = [...new Set(result.data.data.map((model) => model.id))].sort();
-    if (cacheKey) modelCache.set(cacheKey, models, CACHE_TTL_MS);
+    modelCache.set(cacheKey, models, CACHE_TTL_MS);
     return models;
   } catch (error) {
+    if (error instanceof ResponseTooLargeError) {
+      throw new AiGradingModelDiscoveryError(
+        'response_too_large',
+        'The provider returned a model list that is too large.',
+      );
+    }
     if (error instanceof AiGradingModelDiscoveryError) throw error;
     if (signal.aborted) {
       throw new AiGradingModelDiscoveryError(

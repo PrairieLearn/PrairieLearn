@@ -1,7 +1,6 @@
 import type * as http from 'node:http';
 import * as https from 'node:https';
 import type { AddressInfo } from 'node:net';
-import { gzipSync } from 'node:zlib';
 
 import * as pem from 'pem';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -80,7 +79,7 @@ describe('AI grading model discovery', () => {
       },
       async (baseUrl, options) => {
         await expect(
-          discoverAiGradingModels({ baseUrl, apiKey: 'test-key' }, options),
+          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
         ).resolves.toEqual(['a', 'z']);
       },
     );
@@ -102,7 +101,7 @@ describe('AI grading model discovery', () => {
       },
       async (baseUrl, options) => {
         await expect(
-          discoverAiGradingModels({ baseUrl, apiKey: 'test-key' }, options),
+          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
         ).rejects.toMatchObject({
           code,
           message: expect.not.stringContaining('secret provider diagnostics'),
@@ -123,37 +122,8 @@ describe('AI grading model discovery', () => {
       (_request, response) => response.end(body),
       async (baseUrl, options) => {
         await expect(
-          discoverAiGradingModels({ baseUrl, apiKey: 'test-key' }, options),
+          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
         ).rejects.toMatchObject({ code: 'invalid_response' });
-      },
-    );
-  });
-
-  it('bounds streamed responses without Content-Length', async () => {
-    await withServer(
-      (_request, response) => {
-        response.write(' '.repeat(1024 * 1024));
-        response.end('extra');
-      },
-      async (baseUrl, options) => {
-        await expect(
-          discoverAiGradingModels({ baseUrl, apiKey: 'test-key' }, options),
-        ).rejects.toMatchObject({ code: 'response_too_large' });
-      },
-    );
-  });
-
-  it('bounds decompressed responses', async () => {
-    await withServer(
-      (_request, response) => {
-        const body = gzipSync(' '.repeat(1024 * 1024 + 1));
-        response.writeHead(200, { 'Content-Encoding': 'gzip', 'Content-Length': body.byteLength });
-        response.end(body);
-      },
-      async (baseUrl, options) => {
-        await expect(
-          discoverAiGradingModels({ baseUrl, apiKey: 'test-key' }, options),
-        ).rejects.toMatchObject({ code: 'response_too_large' });
       },
     );
   });
@@ -177,7 +147,7 @@ describe('AI grading model discovery', () => {
           const input = {
             baseUrl,
             apiKey: 'test-key',
-            credentialIdentity: { courseInstanceId: '1', credentialId: '2' },
+            courseInstanceId: '1',
           };
           const cachedOptions = { ...options, modelCache };
           await expect(discoverAiGradingModels(input, cachedOptions)).rejects.toMatchObject({
@@ -192,7 +162,7 @@ describe('AI grading model discovery', () => {
     }
   });
 
-  it('caches saved configurations separately and never caches unsaved keys', async () => {
+  it('caches configurations by course instance, normalized URL, and API key', async () => {
     const modelCache = new Cache();
     await modelCache.init({ type: 'memory', keyPrefix: 'test:' });
     let requests = 0;
@@ -206,24 +176,19 @@ describe('AI grading model discovery', () => {
           const input = {
             baseUrl,
             apiKey: 'test-key',
-            credentialIdentity: { courseInstanceId: '1', credentialId: '2' },
+            courseInstanceId: '1',
           };
           const cachedOptions = { ...options, modelCache };
           await discoverAiGradingModels(input, cachedOptions);
           await discoverAiGradingModels(input, cachedOptions);
           expect(requests).toBe(1);
-          await discoverAiGradingModels(
-            { ...input, credentialIdentity: { courseInstanceId: '1', credentialId: '3' } },
-            cachedOptions,
-          );
-          await discoverAiGradingModels(
-            { ...input, credentialIdentity: { courseInstanceId: '4', credentialId: '2' } },
-            cachedOptions,
-          );
+          await discoverAiGradingModels({ ...input, apiKey: 'other-key' }, cachedOptions);
+          await discoverAiGradingModels({ ...input, courseInstanceId: '4' }, cachedOptions);
           expect(requests).toBe(3);
-          await discoverAiGradingModels({ baseUrl, apiKey: 'unsaved-key' }, cachedOptions);
-          await discoverAiGradingModels({ baseUrl, apiKey: 'unsaved-key' }, cachedOptions);
-          expect(requests).toBe(5);
+          await discoverAiGradingModels({ ...input, baseUrl: `${baseUrl}/other` }, cachedOptions);
+          expect(requests).toBe(4);
+          await discoverAiGradingModels({ ...input, baseUrl: `${baseUrl}///` }, cachedOptions);
+          expect(requests).toBe(4);
         },
       );
     } finally {
