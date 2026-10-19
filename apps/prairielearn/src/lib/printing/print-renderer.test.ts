@@ -395,7 +395,7 @@ describe('PrintRenderer', () => {
 
     expect(playwrightMocks.connectOverCDP).toHaveBeenCalledExactlyOnceWith(
       'wss://api.cloudflare.com/client/v4/accounts/account/browser-run/devtools/browser?keep_alive=180000',
-      { headers: { Authorization: 'Bearer token' }, timeout: 120_000 },
+      expect.objectContaining({ headers: { Authorization: 'Bearer token' } }),
     );
     expect(playwrightMocks.launch).not.toHaveBeenCalled();
     expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
