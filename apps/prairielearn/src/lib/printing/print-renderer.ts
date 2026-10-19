@@ -2,6 +2,8 @@ import * as https from 'node:https';
 
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
+import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
+
 import { config } from '../config.js';
 
 import { createPdfOutput } from './pdf-output.js';
