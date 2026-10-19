@@ -373,7 +373,7 @@ function CreateAssessmentModal({
       <div class="mb-3">
         <label class="form-label" for="set">Set</label>
         <select class="form-select" id="set" name="set" aria-describedby="set_help" required>
-          ${assessmentSets.map((set) => html`<option value="${set.name}">${set.name}</option>`)}
+          ${assessmentSets.map((set) => html`<option value="${set.name}">${set.heading}</option>`)}
         </select>
         <small id="set_help" class="form-text text-muted">
           The <a href="${urlPrefix}/course_admin/sets">assessment set</a> this assessment belongs

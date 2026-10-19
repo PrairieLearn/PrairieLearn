@@ -29,7 +29,9 @@ To refer to a question from another course, use the question ID (qid) prefixed b
 
 ### Sharing names
 
-In order for another course to use questions from your course into their assessments, you must have chosen a _sharing name_ for your course that they will use as a prefix to your question IDs when using them. This sharing name will be unique across all PrairieLearn instances and because it will be used in the JSON files for other courses, there will be no way to change the sharing name for your course once you have chosen it. It is recommended that you choose something short but descriptive. For example, if you're teaching a calculus course at a university that goes by the abbreviation "XYZ", then you could choose the sharing name "xyz-calculus". Then other courses will use questions from your course with the syntax `@xyz-calculus/qid`.
+In order for another course to use questions from your course in their assessments, you must choose a _sharing name_ for your course that they will use as a prefix to your question IDs. This sharing name will be unique across all PrairieLearn instances. Sharing names must be 1–64 characters long and contain only ASCII letters, digits, hyphens, or underscores. It is recommended that you choose something short but descriptive. For example, if you're teaching a calculus course at a university that goes by the abbreviation "XYZ", then you could choose the sharing name "xyz-calculus". Then other courses will use questions from your course with the syntax `@xyz-calculus/qid`.
+
+Course owners can choose or change the sharing name on the "Sharing" tab of the course settings page. An existing sharing name can be changed only while no question in the course is shared publicly (including source-code sharing) or included in a sharing set. This restriction protects references to shared questions in other courses, even if no other course is currently using them.
 
 ### Two ways to share: publicly or through "Sharing sets"
 

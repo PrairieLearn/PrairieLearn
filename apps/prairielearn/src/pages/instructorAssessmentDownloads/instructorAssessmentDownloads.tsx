@@ -1,3 +1,4 @@
+import { once } from 'node:events';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
@@ -364,11 +365,22 @@ async function pipeCursorToArchive<T>(
     '',
   );
   const prefix = `${dirname}/`;
-  archive.append('', { name: prefix });
-  archive.pipe(res);
+  const controller = new AbortController();
+  const archiveFinished = pipeline(archive, res);
+  void archiveFinished.catch((err) => controller.abort(err));
 
-  for await (const rows of cursor.iterate(100)) {
-    for (const row of rows) {
+  async function appendFile(contents: string | Buffer, name: string) {
+    controller.signal.throwIfAborted();
+    const added = once(archive, 'entry', { signal: controller.signal });
+    archive.append(contents, { name });
+    await added;
+  }
+
+  try {
+    // Submission files can be tens of megabytes each. Keep only one row in memory.
+    for await (const [row] of cursor.iterate(1)) {
+      controller.signal.throwIfAborted();
+
       // Sort files to ensure consistent ordering; this is done
       // for backwards compatibility and may not be necessary.
       const files = extractFiles(row)?.sort((a, b) =>
@@ -382,11 +394,17 @@ async function pipeCursorToArchive<T>(
         // We allow empty files, so we specifically check for null, not truthiness.
         if (!file.filename || file.contents == null) continue;
 
-        archive.append(file.contents, { name: prefix + file.filename });
+        // append() queues buffers without applying backpressure. Wait until this
+        // file has been consumed before fetching or decoding more submissions.
+        await appendFile(file.contents, prefix + file.filename);
       }
     }
+    await appendFile('', prefix);
+    await Promise.all([archive.finalize(), archiveFinished]);
+  } finally {
+    archive.destroy();
+    await archiveFinished.catch(() => {});
   }
-  await archive.finalize();
 }
 
 router.get(
@@ -665,7 +683,7 @@ router.get(
           feedback: '',
         };
       });
-      await pipeline(cursor.stream(100), stringifier, res);
+      await pipeline(cursor.stream(1), stringifier, res);
     } else if (
       req.params.filename === filenames.allSubmissionsCsvFilename ||
       req.params.filename === filenames.finalSubmissionsCsvFilename ||
@@ -723,7 +741,7 @@ router.get(
 
       res.attachment(req.params.filename);
       await pipeline(
-        cursor.stream(100),
+        cursor.stream(1),
         stringifyWithColumns(columns, (row: AssessmentInstanceSubmissionRow) => ({
           ...row,
           assessment_label: assessmentName,

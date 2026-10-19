@@ -22,15 +22,15 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.1106.0",
+    "@aws-sdk/client-ecr": "^3.1141.0",
     "@prairielearn/logger": "workspace:^",
     "date-fns": "^4.4.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.0",
-    "vitest": "^5.0.0"
+    "@vitest/coverage-v8": "^5.0.2",
+    "vitest": "^5.0.2"
   }
 }

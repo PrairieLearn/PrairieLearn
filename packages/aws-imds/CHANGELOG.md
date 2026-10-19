@@ -1,5 +1,11 @@
 # @prairielearn/aws-imds
 
+## 3.1.3
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 3.1.2
 
 ### Patch Changes

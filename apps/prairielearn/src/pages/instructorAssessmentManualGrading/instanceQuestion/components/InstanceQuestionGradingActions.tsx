@@ -59,8 +59,9 @@ export function InstanceQuestionGradingActions({
     </Button>
   );
 
+  // Bound menu widths to the action row rather than the individual button groups.
   return (
-    <li className="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
+    <li className="list-group-item position-relative d-flex align-items-center justify-content-end flex-wrap gap-2">
       <div>
         {context === 'main' && !disabled ? (
           <>
@@ -103,15 +104,22 @@ export function InstanceQuestionGradingActions({
         {!disabled && (
           <>
             {context === 'main' && selectedGroupId ? (
-              <Dropdown as={ButtonGroup} id="grade-button-with-options">
+              <Dropdown as={ButtonGroup} id="grade-button-with-options" className="position-static">
                 {gradeButton}
                 <Dropdown.Toggle aria-label="Grade options" split />
-                <Dropdown.Menu align="end">
-                  <Dropdown.Item as="button" type="submit" name="__action" value="add_manual_grade">
+                <Dropdown.Menu align="end" className="mw-100" style={{ width: 'max-content' }}>
+                  <Dropdown.Item
+                    className="text-wrap"
+                    as="button"
+                    type="submit"
+                    name="__action"
+                    value="add_manual_grade"
+                  >
                     This instance question
                   </Dropdown.Item>
                   <Dropdown.Divider />
                   <Dropdown.Item
+                    className="text-wrap"
                     as="button"
                     type="submit"
                     name="__action"
@@ -120,6 +128,7 @@ export function InstanceQuestionGradingActions({
                     All ungraded instance questions in submission group
                   </Dropdown.Item>
                   <Dropdown.Item
+                    className="text-wrap"
                     as="button"
                     type="submit"
                     name="__action"
@@ -127,7 +136,7 @@ export function InstanceQuestionGradingActions({
                   >
                     All instance questions in submission group
                   </Dropdown.Item>
-                  <Dropdown.Header>
+                  <Dropdown.Header className="text-wrap">
                     AI can make mistakes. Review submission groups before grading.
                   </Dropdown.Header>
                 </Dropdown.Menu>
@@ -152,7 +161,7 @@ export function InstanceQuestionGradingActions({
           </>
         )}
 
-        <Dropdown as={ButtonGroup}>
+        <Dropdown as={ButtonGroup} className="position-static">
           <Button
             ref={nextButtonRef}
             type="submit"
@@ -170,10 +179,11 @@ export function InstanceQuestionGradingActions({
           {!disabled && (
             <>
               <Dropdown.Toggle variant="secondary" aria-label="Change assigned grader" split />
-              <Dropdown.Menu align="end">
+              <Dropdown.Menu align="end" className="mw-100" style={{ width: 'max-content' }}>
                 {graders.map((grader) => (
                   <Dropdown.Item
                     key={grader.id}
+                    className="text-wrap"
                     as="button"
                     type="submit"
                     name="__action"
@@ -182,10 +192,22 @@ export function InstanceQuestionGradingActions({
                     Assign to {grader.name} ({grader.uid})
                   </Dropdown.Item>
                 ))}
-                <Dropdown.Item as="button" type="submit" name="__action" value="reassign_nobody">
+                <Dropdown.Item
+                  className="text-wrap"
+                  as="button"
+                  type="submit"
+                  name="__action"
+                  value="reassign_nobody"
+                >
                   Tag for grading without assigned grader
                 </Dropdown.Item>
-                <Dropdown.Item as="button" type="submit" name="__action" value="reassign_graded">
+                <Dropdown.Item
+                  className="text-wrap"
+                  as="button"
+                  type="submit"
+                  name="__action"
+                  value="reassign_graded"
+                >
                   Tag as graded (keep current grade)
                 </Dropdown.Item>
               </Dropdown.Menu>

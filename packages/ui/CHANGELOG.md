@@ -1,5 +1,24 @@
 # @prairielearn/ui
 
+## 4.2.0
+
+### Minor Changes
+
+- 32a1f8b: Support async CSV and JSON data providers for table downloads, with shared row eligibility and a pending state.
+
+## 4.1.2
+
+### Patch Changes
+
+- 4e683bf: Respect table filters when downloading selected rows as CSV or JSON, including the selected download count.
+
+## 4.1.1
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- 83590cf: Upgrade @tanstack/match-sorter-utils to version 9, preserving fuzzy matching and ranking behavior in table filters.
+
 ## 4.1.0
 
 ### Minor Changes

@@ -3,7 +3,7 @@ import type { MathfieldElement } from 'mathlive';
 import {
   type RestrictedCalculatorMode,
   isSupportedCalculatorInput,
-} from '../../src/lib/client/calculatorRestrictions.js';
+} from '../../../src/lib/client/calculatorRestrictions.js';
 
 interface CalculatorMathLiveInternals {
   model: {

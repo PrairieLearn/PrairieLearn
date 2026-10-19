@@ -15,12 +15,14 @@
                 id="symbolic-input-sub-{{name}}"
                 type="hidden"
                 value=""
+                data-deferred-initial-value="true"
             />
             <input
                 name="{{name}}-latex"
                 id="symbolic-input-latex-{{name}}"
                 type="hidden"
                 value="{{raw_submitted_answer_latex}}"
+                data-deferred-initial-value="true"
             />
             <math-field
                 id="symbolic-input-{{name}}"
@@ -34,6 +36,8 @@
                 {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
                 {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
                 {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+                {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
                 >
             </math-field>
         {{/formula_editor}}

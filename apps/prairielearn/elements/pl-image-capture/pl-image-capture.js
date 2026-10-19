@@ -670,7 +670,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       } else {
         // No submitted image available, yet
         this.setNoCaptureAvailableYetState(uploadedImageContainer);
-        this.setHiddenCaptureInputValue('');
+        if (this.editable) {
+          this.setHiddenCaptureInputValue('');
+        }
       }
     }
 

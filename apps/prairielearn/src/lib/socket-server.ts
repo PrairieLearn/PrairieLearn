@@ -69,8 +69,9 @@ export async function init(server: http.Server) {
     //   are fully ready before the adapter puts subClient into subscriber mode
     //
     // See: https://github.com/redis/ioredis/issues/2037
-    pub = new Redis(config.redisUrl, { lazyConnect: true });
-    sub = new Redis(config.redisUrl, { lazyConnect: true });
+    // Pin the default reply mapping to avoid expensive comparisons of Redis's command types.
+    pub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
+    sub = new Redis<'legacy'>(config.redisUrl, { lazyConnect: true });
 
     attachEventListeners(pub, 'pub');
     attachEventListeners(sub, 'sub');

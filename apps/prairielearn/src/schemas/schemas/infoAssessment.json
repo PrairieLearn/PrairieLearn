@@ -1073,17 +1073,7 @@
         "minLength": 1
       },
       "additionalProperties": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "number"
-          },
-          {
-            "type": "boolean"
-          }
-        ]
+        "type": ["string", "number", "boolean"]
       }
     },
     "LegacyGroupRoleJsonSchema": {
