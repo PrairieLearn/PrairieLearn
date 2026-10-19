@@ -9,7 +9,7 @@ import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ isEnterprise: true });
 
-test('the rich text visibility menu opens from the keyboard', async ({
+test('the rich text visibility menu opens from the keyboard and changes the selected panel', async ({
   page,
   courseInstance,
   testCoursePath,
@@ -32,7 +32,10 @@ test('the rich text visibility menu opens from the keyboard', async ({
   );
   await fs.writeFile(
     path.join(questionPath, 'question.html'),
-    '<pl-question-panel><p>Question text</p></pl-question-panel>',
+    [
+      '<pl-question-panel><p>First block</p></pl-question-panel>',
+      '<pl-question-panel><p>Second block</p></pl-question-panel>',
+    ].join(''),
   );
   await syncCourse(testCoursePath);
 
@@ -40,8 +43,16 @@ test('the rich text visibility menu opens from the keyboard', async ({
   await page.goto(`/pl/course/${courseInstance.course_id}/ai_generate_editor/${question.id}`);
   await page.getByRole('tab', { name: 'Rich text editor' }).click();
 
+  const editor = page.getByLabel('Main content area, start typing to enter text.');
+  const panelFor = (text: string) =>
+    editor.locator('[data-node-view-wrapper]').filter({ hasText: text });
+  const firstPanel = panelFor('First block');
+  const secondPanel = panelFor('Second block');
   const trigger = page.getByRole('button', { name: 'Panel visibility', exact: true });
-  await page.getByLabel('Main content area, start typing to enter text.').focus();
+
+  await expect(firstPanel.getByRole('img', { name: 'Question Panel' })).toBeVisible();
+  await expect(secondPanel.getByRole('img', { name: 'Question Panel' })).toBeVisible();
+  await editor.focus();
   await page.keyboard.press('Tab');
   await expect(trigger).toBeFocused();
   await trigger.press('Enter');
@@ -53,9 +64,11 @@ test('the rich text visibility menu opens from the keyboard', async ({
   await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
 
-  await trigger.press('Enter');
+  await editor.getByText('Second block', { exact: true }).click();
+  await trigger.click();
   await dialog.getByRole('button', { name: 'In answer' }).click();
-  await expect(page.getByRole('img', { name: 'Answer Panel' })).toBeVisible();
+  await expect(firstPanel.getByRole('img', { name: 'Question Panel' })).toBeVisible();
+  await expect(secondPanel.getByRole('img', { name: 'Answer Panel' })).toBeVisible();
   await expect(dialog).toBeHidden();
 
   await trigger.click();
@@ -78,6 +91,7 @@ test('the rich text visibility menu opens from the keyboard', async ({
 
   await dialog.getByRole('button', { name: 'Always' }).click();
   await expect(dialog).toBeHidden();
+  await expect(editor.getByText('Second block', { exact: true })).toBeVisible();
   await trigger.click();
   await expect(dialog.getByRole('button', { name: 'Always' })).toHaveAttribute(
     'aria-pressed',
