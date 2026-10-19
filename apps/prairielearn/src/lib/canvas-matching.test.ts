@@ -36,11 +36,30 @@ describe('parseCanvasCsv', () => {
     assert.isTrue(students.every((s) => s.name !== 'Points Possible'));
   });
 
-  it('returns an error for missing headers', () => {
-    const csv = 'Name,Email\nJohn,john@test.com\n';
+  it('parses reordered headers with additional columns', () => {
+    const csv = `Notes,Section,Student,Quiz 1,SIS Login ID,ID,Current Score,SIS User ID,Final Grade
+,,Points Possible,10.00,,,,,
+Ignored,XC 101,"Block, Jasen",8.00,jblock3430,11,80.00,658001234,B
+`;
     const { students, error } = parseCanvasCsv(csv);
-    assert.isNotNull(error);
-    assert.include(error, 'Missing required Canvas columns');
+    assert.isNull(error);
+    assert.deepEqual(students, [
+      {
+        name: 'Block, Jasen',
+        id: '11',
+        sisUserId: '658001234',
+        sisLoginId: 'jblock3430',
+        section: 'XC 101',
+      },
+    ]);
+  });
+
+  it('reports only headers that are missing', () => {
+    const csv = `Section,Student,SIS Login ID,ID,Quiz 1
+XC 101,"Block, Jasen",jblock3430,11,8.00
+`;
+    const { students, error } = parseCanvasCsv(csv);
+    assert.equal(error, 'Missing required Canvas columns: SIS User ID');
     assert.lengthOf(students, 0);
   });
 
