@@ -189,6 +189,71 @@ test.describe('pl-symbolic-input unicode multiplication keys', () => {
   });
 });
 
+test('does not mark restored formula editor answers as unsaved', async ({
+  page,
+  courseInstance,
+}) => {
+  await page.addInitScript(() => {
+    // Ensure the form captures its initial state before the element populates its hidden inputs.
+    Object.defineProperty(window, 'PLSymbolicInput', {
+      configurable: true,
+      get: () => undefined,
+      set(initialize: (name: string) => void) {
+        Object.defineProperty(window, 'PLSymbolicInput', {
+          configurable: true,
+          writable: true,
+          value: (name: string) => {
+            const formulaEditor = document.getElementById(`symbolic-input-${name}`)!;
+            const form = formulaEditor.closest<HTMLFormElement>('form.question-form')!;
+            const initializeAfterBaselineCapture = () => {
+              initialize(name);
+              formulaEditor.dataset.testInitialized = 'true';
+            };
+
+            // The asynchronous handoff is essential to exercise deferred initialization,
+            // but should not depend on how the unload tracker schedules baseline capture.
+            if (form.dataset.originalFormData !== undefined) {
+              initializeAfterBaselineCapture();
+              return;
+            }
+            const observer = new MutationObserver(() => {
+              observer.disconnect();
+              initializeAfterBaselineCapture();
+            });
+            observer.observe(form, {
+              attributes: true,
+              attributeFilter: ['data-original-form-data'],
+            });
+          },
+        });
+      },
+    });
+  });
+  await openSymbolicInputEditorQuestion(page, courseInstance);
+
+  const formulaEditor = page.locator('#symbolic-input-x');
+  await expect(formulaEditor).toBeVisible();
+  await expect(
+    formulaEditor,
+    'deferred symbolic input test setup should finish initializing',
+  ).toHaveAttribute('data-test-initialized', 'true');
+  await fillFormulaEditor(formulaEditor, 'y');
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+  await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible();
+  await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('y');
+  await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('y');
+
+  const originalFormData = await page
+    .locator('form.question-form')
+    .getAttribute('data-original-form-data');
+  const initialValues = new URLSearchParams(originalFormData ?? '');
+  expect(Object.fromEntries(initialValues)).toMatchObject({
+    x: 'y',
+    'x-latex': 'y',
+  });
+});
+
 test.describe('pl-symbolic-input plus-minus', () => {
   test.beforeEach(async ({ page, courseInstance }) => {
     await openSymbolicInputEditorQuestion(page, courseInstance);
