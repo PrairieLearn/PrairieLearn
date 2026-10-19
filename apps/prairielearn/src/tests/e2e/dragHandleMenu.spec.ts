@@ -56,4 +56,31 @@ test('the rich text visibility menu opens from the keyboard', async ({
   await trigger.press('Enter');
   await dialog.getByRole('button', { name: 'In answer' }).click();
   await expect(page.getByRole('img', { name: 'Answer Panel' })).toBeVisible();
+  await expect(dialog).toBeHidden();
+
+  await trigger.click();
+  await expect(dialog.getByRole('button', { name: 'In question' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  await expect(dialog.getByRole('button', { name: 'In answer' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(dialog.getByRole('button', { name: 'In submission' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  await expect(dialog.getByRole('button', { name: 'Always' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+
+  await dialog.getByRole('button', { name: 'Always' }).click();
+  await expect(dialog).toBeHidden();
+  await trigger.click();
+  await expect(dialog.getByRole('button', { name: 'Always' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 });

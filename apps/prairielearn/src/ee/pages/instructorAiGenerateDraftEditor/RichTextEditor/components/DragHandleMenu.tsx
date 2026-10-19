@@ -35,6 +35,7 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
             key={tag}
             type="button"
             className="btn btn-sm btn-light d-flex align-items-center gap-2"
+            aria-pressed={Boolean(tagActiveMap[tag])}
             onClick={() => {
               if (menuTrigger === 'selection') {
                 setMenuTrigger(null);
@@ -64,6 +65,7 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
         <button
           type="button"
           className="btn btn-sm btn-light d-flex align-items-center gap-2"
+          aria-pressed={!isInsidePanel}
           disabled={!isInsidePanel}
           onClick={() => {
             // TODO: there should be a better way than using .focus() here.
