@@ -1,5 +1,6 @@
 import {
   fitPrintChoiceImages,
+  waitForExcalidrawCanvases,
   waitForPrintImages,
 } from '../../src/lib/client/print-image-layout.js';
 import {
@@ -512,6 +513,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   if (!source || !output) throw new Error('Printable exam containers are missing');
 
   await Promise.all([waitForLegacyQuestions(source), ...extraReadinessPromises]);
+  await waitForExcalidrawCanvases(source);
   materializePrintableDetails(source);
   await waitForAnimationFrame();
   await waitForAnimationFrame();

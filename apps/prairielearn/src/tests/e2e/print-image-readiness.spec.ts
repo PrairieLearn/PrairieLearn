@@ -1,9 +1,15 @@
 import { type ServerResponse, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { waitForPrintImages } from '../../lib/client/print-image-layout.js';
+import {
+  waitForExcalidrawCanvases,
+  waitForPrintImages,
+} from '../../lib/client/print-image-layout.js';
 
 import { expect, test } from './fixtures.js';
+
+// These browser-only tests do not need the application server.
+test.use({ baseURL: '' });
 
 test('waits for images in the question and its shadow roots', async ({ page }) => {
   const responses = new Map<string, ServerResponse>();
@@ -56,4 +62,45 @@ test('waits for images in the question and its shadow roots', async ({ page }) =
       server.close((error) => (error ? reject(error) : resolve())),
     );
   }
+});
+
+test('waits for each Excalidraw canvas to render', async ({ page }) => {
+  await page.setContent(
+    '<div id="source"><div class="excalidraw-root"></div><div class="excalidraw-root"></div></div>',
+  );
+
+  let complete = false;
+  const waiting = page
+    .locator('#source')
+    .evaluate(waitForExcalidrawCanvases)
+    .then(() => {
+      complete = true;
+    });
+
+  const drawings = page.locator('.excalidraw-root');
+  await drawings.first().evaluate((drawing) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 0;
+    canvas.height = 0;
+    drawing.append(canvas);
+  });
+  expect(complete).toBe(false);
+
+  await drawings
+    .first()
+    .locator('canvas')
+    .evaluate((canvas) => {
+      canvas.setAttribute('width', '100');
+      canvas.setAttribute('height', '100');
+    });
+  expect(complete).toBe(false);
+
+  await drawings.last().evaluate((drawing) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    drawing.append(canvas);
+  });
+  await waiting;
+  expect(complete).toBe(true);
 });
