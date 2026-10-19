@@ -179,7 +179,7 @@ class LocalsForEval(TypedDict):
 
 
 class _SympyJsonStrPrinter(StrPrinter):
-    """String printer that keeps set notation parseable by avoiding banned ast nodes.
+    """String printer that keeps set notation parseable by the symbolic grammar.
 
     Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
     """
@@ -192,6 +192,16 @@ class _SympyJsonStrPrinter(StrPrinter):
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
         return f"{left}{start}, {end}{right}"
+
+    def _print_Set(self, expr: sympy.Set) -> str:  # ruff: ignore[invalid-function-name]
+        if (
+            type(expr) is sympy.Set
+            and len(expr.args) == 1
+            and isinstance(expr.args[0], sympy.Symbol)
+            and expr.args[0].name in _SET_DOMAIN_NAMES
+        ):
+            return self.doprint(expr.args[0])
+        return self.emptyPrinter(expr)
 
     def _print_Union(self, expr: sympy.Union) -> str:  # ruff: ignore[invalid-function-name]
         return f"Union({', '.join(map(self.doprint, expr.args))})"
@@ -1193,6 +1203,57 @@ def _evaluate_normalized_source(
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
     )
+    _check_evaluated_result(
+        result,
+        source,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+    return result
+
+
+def _evaluate_normalized_source_with_source(
+    source: "SourceText",
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+) -> tuple[SympyValue, str]:
+    from prairielearn.internal.sympy_expression import (
+        parse_and_evaluate_with_source,
+    )
+
+    result, lowered_source = parse_and_evaluate_with_source(
+        source,
+        locals_for_eval,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+    _check_evaluated_result(
+        result,
+        source,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+    return result, lowered_source
+
+
+def _check_evaluated_result(
+    result: SympyValue,
+    source: "SourceText",
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    allow_extra_symbols: bool,
+) -> None:
     try:
         sympy_check(
             result,
@@ -1208,7 +1269,6 @@ def _evaluate_normalized_source(
             _default_error_evidence(exc),
             cause=exc.__cause__,
         ) from None
-    return result
 
 
 def _evaluate_legacy_normalized_source(
@@ -1377,70 +1437,6 @@ def _evaluate_legacy_normalized_source(
     return res, evaluation_code
 
 
-def _legacy_source_for_compatibility(
-    source: sympy_source.SourceText,
-    locals_for_eval: LocalsForEval,
-    *,
-    allow_sets: bool,
-    simplify_expression: bool,
-    allow_extra_symbols: bool,
-) -> str | CodeType:
-    """Generate the historical Python artifact without evaluating it."""
-    local_dict: DICT = {
-        k: v
-        for inner_dict in locals_for_eval.values()
-        for k, v in cast(SympyMapT, inner_dict).items()
-    }
-    if allow_extra_symbols and not allow_sets:
-        for domain_name in _SET_DOMAIN_NAMES:
-            local_dict.setdefault(domain_name, sympy.Symbol(domain_name))
-
-    global_dict = dict(_SYMPY_GLOBALS)
-    transformations = (
-        *sympy_parser.standard_transformations,
-        sympy_parser.implicit_multiplication_application,
-    )
-    if allow_sets:
-        transformations = (
-            _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
-            _set_literal_transformation,
-            _set_operation_transformation,
-            _interval_transformation,
-            *transformations,
-        )
-    else:
-        transformations = (
-            _err_on_transform(_interval_transformation, HasSetNotationError),
-            *transformations,
-        )
-
-    try:
-        code = sympy_parser.stringify_expr(
-            source.text, local_dict, global_dict, transformations
-        )
-    except (TokenError, IndexError) as exc:
-        raise HasParseError(-1) from exc
-
-    if not simplify_expression:
-        try:
-            code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
-        except SyntaxError as exc:
-            parse_error = HasParseError(exc.offset if exc.offset is not None else -1)
-            evidence = None
-            if exc.text is not None and exc.offset is not None:
-                token = _token_at_offset(exc.text, exc.offset - 1)
-                if token is not None:
-                    evidence = _TokenEvidence(token)
-            raise _LocalizedSympyError(
-                parse_error,
-                source,
-                evidence,
-                cause=exc,
-            ) from None
-
-    return code
-
-
 @overload
 def evaluate_with_source(
     expr: str,
@@ -1474,14 +1470,14 @@ def evaluate_with_source(
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]:
-    """Evaluate a SymPy expression string and return its value and source code."""
+    """Evaluate a SymPy expression string and return its lowered structure."""
     source = _normalize_source(
         expr,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
     )
     try:
-        result = _evaluate_normalized_source(
+        return _evaluate_normalized_source_with_source(
             source,
             locals_for_eval,
             allow_complex=allow_complex,
@@ -1489,14 +1485,6 @@ def evaluate_with_source(
             simplify_expression=simplify_expression,
             allow_extra_symbols=allow_extra_symbols,
         )
-        legacy_source = _legacy_source_for_compatibility(
-            source,
-            locals_for_eval,
-            allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
-            allow_extra_symbols=allow_extra_symbols,
-        )
-        return result, legacy_source
     except _LocalizedSympyError as exc:
         _raise_unwrapped(exc)
 
@@ -1605,7 +1593,7 @@ def _convert_string_to_sympy_with_source(
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
 ) -> tuple[SympyValue, str | CodeType]:
-    """Convert a string to a SymPy expression and return its generated source."""
+    """Convert a string to a SymPy expression and return its lowered structure."""
     locals_for_eval = _prepare_locals_for_eval(
         variables,
         allow_hidden=allow_hidden,
@@ -1623,7 +1611,7 @@ def _convert_string_to_sympy_with_source(
         allow_sets=allow_sets,
     )
     try:
-        result = _evaluate_normalized_source(
+        return _evaluate_normalized_source_with_source(
             source,
             locals_for_eval,
             allow_complex=allow_complex,
@@ -1631,14 +1619,6 @@ def _convert_string_to_sympy_with_source(
             simplify_expression=simplify_expression,
             allow_extra_symbols=allow_extra_symbols,
         )
-        legacy_source = _legacy_source_for_compatibility(
-            source,
-            locals_for_eval,
-            allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
-            allow_extra_symbols=allow_extra_symbols,
-        )
-        return result, legacy_source
     except _LocalizedSympyError as exc:
         if resolved_name_overrides is None:
             _raise_unwrapped(exc)
@@ -1823,7 +1803,7 @@ def convert_string_to_sympy_with_source(
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]:
-    """Convert a string to a SymPy expression and return its source code."""
+    """Convert a string to a SymPy expression and return its lowered structure."""
     locals_for_eval = _prepare_locals_for_eval(
         variables,
         allow_hidden=allow_hidden,
@@ -1839,7 +1819,7 @@ def convert_string_to_sympy_with_source(
         allow_sets=allow_sets,
     )
     try:
-        result = _evaluate_normalized_source(
+        return _evaluate_normalized_source_with_source(
             source,
             locals_for_eval,
             allow_complex=allow_complex,
@@ -1847,14 +1827,6 @@ def convert_string_to_sympy_with_source(
             simplify_expression=simplify_expression,
             allow_extra_symbols=allow_extra_symbols,
         )
-        legacy_source = _legacy_source_for_compatibility(
-            source,
-            locals_for_eval,
-            allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
-            allow_extra_symbols=allow_extra_symbols,
-        )
-        return result, legacy_source
     except _LocalizedSympyError as exc:
         _raise_unwrapped(exc)
 

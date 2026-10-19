@@ -36,12 +36,18 @@ class _Number:
     text: str
     span: sympy_source.SourceSpan
 
+    def to_source(self) -> str:
+        return self.text
+
 
 @dataclass(frozen=True, slots=True)
 class _Name:
     text: str
     span: sympy_source.SourceSpan
     character_spans: tuple[sympy_source.SourceSpan, ...]
+
+    def to_source(self) -> str:
+        return self.text
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,12 +56,19 @@ class _Call:
     arguments: tuple[_Expression, ...]
     span: sympy_source.SourceSpan
 
+    def to_source(self) -> str:
+        arguments = ",".join(argument.to_source() for argument in self.arguments)
+        return f"{self.function.text}({arguments})"
+
 
 @dataclass(frozen=True, slots=True)
 class _Unary:
     operator: _Operator
     operand: _Expression
     span: sympy_source.SourceSpan
+
+    def to_source(self) -> str:
+        return f"({self.operator.text}{self.operand.to_source()})"
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +78,17 @@ class _Binary:
     right: _Expression
     span: sympy_source.SourceSpan
 
+    def to_source(self) -> str:
+        operator = {
+            "juxtapose": "*",
+            "cup": "|",
+            "U": "|",
+            "∪": "|",  # ruff: ignore[ambiguous-unicode-character-string]
+            "cap": "&",
+            "∩": "&",
+        }.get(self.operator.text, self.operator.text)
+        return f"({self.left.to_source()}{operator}{self.right.to_source()})"
+
 
 @dataclass(frozen=True, slots=True)
 class _Factorial:
@@ -72,11 +96,18 @@ class _Factorial:
     operator: _Operator
     span: sympy_source.SourceSpan
 
+    def to_source(self) -> str:
+        return f"factorial({self.operand.to_source()})"
+
 
 @dataclass(frozen=True, slots=True)
 class _FiniteSet:
     items: tuple[_Expression, ...]
     span: sympy_source.SourceSpan
+
+    def to_source(self) -> str:
+        items = ",".join(item.to_source() for item in self.items)
+        return f"FiniteSet({items})"
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,11 +118,22 @@ class _Interval:
     right_bracket: _Operator
     span: sympy_source.SourceSpan
 
+    def to_source(self) -> str:
+        left_open = self.left_bracket.text == "("
+        right_open = self.right_bracket.text == ")"
+        return (
+            f"Interval({self.left.to_source()},{self.right.to_source()},"
+            f"{left_open},{right_open})"
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class _Group:
     value: _Expression
     span: sympy_source.SourceSpan
+
+    def to_source(self) -> str:
+        return f"group({self.value.to_source()})"
 
 
 type _Expression = (
@@ -954,7 +996,7 @@ class Evaluator:
             if function is None:
                 if (
                     expression.function.text in sympy_constants.trig_functions
-                    or expression.function.text in sympy_constants.sympy_globals
+                    or expression.function.text in sympy_constants.sympy_global_names
                 ):
                     diagnostic: sympy_evaluation.EvaluationDiagnostic = (
                         sympy_evaluation.InvalidFunctionDiagnostic(
@@ -1015,11 +1057,10 @@ class Evaluator:
         raise AssertionError(expression)
 
 
-def parse_and_evaluate(
+def _parse_and_evaluate(
     source: sympy_source.SourceText,
     context: sympy_evaluation.EvaluationContext,
-) -> sympy_evaluation.SympyValue:
-    """Parse normalized source and evaluate it without generated Python."""
+) -> tuple[sympy_evaluation.SympyValue, _Expression]:
     try:
         parsed = _parse(source)
         lowerer = _Lowerer(source, context)
@@ -1061,4 +1102,22 @@ def parse_and_evaluate(
                 source,
                 name.span,
             )
+    return result, lowered
+
+
+def parse_and_evaluate(
+    source: sympy_source.SourceText,
+    context: sympy_evaluation.EvaluationContext,
+) -> sympy_evaluation.SympyValue:
+    """Parse normalized source and evaluate it without generated Python."""
+    result, _lowered = _parse_and_evaluate(source, context)
     return result
+
+
+def parse_and_evaluate_with_source(
+    source: sympy_source.SourceText,
+    context: sympy_evaluation.EvaluationContext,
+) -> tuple[sympy_evaluation.SympyValue, str]:
+    """Parse and evaluate normalized source, returning its lowered structure."""
+    result, lowered = _parse_and_evaluate(source, context)
+    return result, lowered.to_source()

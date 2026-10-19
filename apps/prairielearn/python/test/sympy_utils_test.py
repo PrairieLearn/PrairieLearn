@@ -1059,7 +1059,7 @@ class TestExceptions:
     COMPLEX_CASES = ("i", "5 * i", "j", "I")
     # Expressions that evaluate to complex numbers without containing an explicit
     # imaginary unit. These are important to test with simplify_expression=False,
-    # where evaluateFalse keeps expressions like sqrt(-2) unevaluated.
+    # where expressions like sqrt(-2) remain unevaluated.
     IMPLICIT_COMPLEX_CASES = ("sqrt(-2)", "sqrt(-1)", "(-2)^(1/2)", "sqrt(-2) + 3")
     NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
     INVALID_EXPRESSION_CASES = (
@@ -1368,15 +1368,13 @@ class TestExceptions:
     @pytest.mark.parametrize(
         ("caret_spec", "with_vars"),
         [
-            # #14141: '#' after large integer — stringify_expr wraps it as Integer(1234567890),
-            # shifting the '#' offset. Caret must still point at '#' in the original input.
+            # #14141: '#' after a large integer must point at '#' in the original input.
             ("1234567890 !# abcdefghij", ()),
             # '#' at the very start of the expression
             ("!# x + 1", ()),
             # '#' after '^' which becomes '**' (offset shift from replacement)
             ("n^2 !# comment", ()),
-            # #14141: '\\' at the start — previously misreported as generic "syntax error"
-            # because stringify_expr raised TokenError before ast_check_str ran
+            # #14141: '\\' at the start must not be reported as a generic syntax error.
             ("!\\n + 2", ()),
             # '\\' after a large integer
             ("1234567890 !\\", ()),
@@ -1640,30 +1638,19 @@ def test_unexpected_evaluation_errors_remain_staff_facing(
     assert result.error.endswith("Please contact the course staff.")
 
 
-def test_ordinary_parsing_does_not_use_generated_python(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def fail_legacy_pipeline(*_args: Any, **_kwargs: Any) -> Any:
-        raise AssertionError("ordinary parsing must not use the legacy pipeline")
-
-    monkeypatch.setattr(psu.sympy_parser, "stringify_expr", fail_legacy_pipeline)
-    monkeypatch.setattr(psu.ast, "parse", fail_legacy_pipeline)
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_legacy_pipeline)
-
-    assert psu.convert_string_to_sympy("2x + 1", ["x"]) == 2 * sympy.Symbol("x") + 1
-
-
-def test_source_compatibility_wrapper_does_not_evaluate_generated_python(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def fail_legacy_evaluation(*_args: Any, **_kwargs: Any) -> Any:
-        raise AssertionError("generated Python must not be evaluated")
-
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_legacy_evaluation)
-
-    result, source = psu.convert_string_to_sympy_with_source("2x + 1", ["x"])
-    assert result == 2 * sympy.Symbol("x") + 1
-    assert isinstance(source, str)
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        ("n**2", "n^2"),
+        ("factorial(n)", "n!"),
+        ("log(n)", "log n"),
+        ("n*log(n)**2", "n log^2 n"),
+    ],
+)
+def test_source_wrapper_returns_lowered_structure(left: str, right: str) -> None:
+    _, left_source = psu.convert_string_to_sympy_with_source(left, ["n"])
+    _, right_source = psu.convert_string_to_sympy_with_source(right, ["n"])
+    assert left_source == right_source
 
 
 @pytest.mark.parametrize(
@@ -1688,17 +1675,17 @@ def test_python_constructs_outside_symbolic_grammar_are_rejected(text: str) -> N
     "text",
     ["sin(1, 2)", "atan2(1)", "atan2(1, 2, 3)"],
 )
-def test_invalid_builtin_function_arities_match_legacy_failure(text: str) -> None:
-    with pytest.raises(psu.BaseSympyError) as exc_info:
+def test_invalid_builtin_function_arities(text: str) -> None:
+    with pytest.raises(psu.HasFunctionArityError):
         psu.convert_string_to_sympy(text)
-    assert type(exc_info.value) is psu.BaseSympyError
 
 
-def test_sqrt_second_argument_matches_legacy_behavior() -> None:
-    assert psu.convert_string_to_sympy("sqrt(1, 2)") == 1
-    with pytest.raises(psu.BaseSympyError) as exc_info:
-        psu.convert_string_to_sympy("sqrt(1, 2)", simplify_expression=False)
-    assert type(exc_info.value) is psu.BaseSympyError
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_sqrt_second_argument_is_rejected(*, simplify_expression: bool) -> None:
+    with pytest.raises(psu.HasFunctionArityError):
+        psu.convert_string_to_sympy(
+            "sqrt(1, 2)", simplify_expression=simplify_expression
+        )
 
 
 @pytest.mark.parametrize("simplify_expression", [True, False])
