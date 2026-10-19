@@ -923,6 +923,8 @@ Access control options can also be used to control the open/close dates of asses
 
 You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. The text supports Markdown formatting and HTML. JavaScript and unsafe HTML are removed before display. Embedded iframes and interactive Bootstrap components are not supported. Use links to external content instead.
 
+Custom CSS styles and classes are removed. Use Markdown or HTML elements such as headings, lists, and tables for formatting. HTML IDs and names receive a `user-content-` prefix, and local links and accessibility references are updated to match.
+
 ```json title="infoAssessment.json"
 {
   "text": "## Instructions\n\nAnswer **all questions**.\n\n- Show your work.\n- Check your answers."

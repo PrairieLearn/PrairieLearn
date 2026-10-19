@@ -30,7 +30,7 @@ const noHtml = markdownToHtml('Some text <em>with HTML</em>', { allowHtml: false
 - `allowHtml` (default: `true`): If true, allows HTML tags in the markdown. If false, HTML tags will be removed from the output.
 - `interpretMath` (default: `true`): If true, prepares and escapes LaTeX strings to be parsed by MathJax (assumes MathJax is available client-side).
 
-Data attributes are removed when sanitizing HTML or Markdown.
+Sanitization removes data attributes, inline styles, `<style>` elements, and classes other than `mathjax_ignore` and `tex2jax_ignore`. IDs and names receive a `user-content-` prefix; local fragment links and ID references are updated to match.
 
 ### Advanced usage with custom extensions
 

@@ -30,10 +30,13 @@ describe('renderText', () => {
     );
   });
 
-  it('preserves formatted HTML blocks and math', () => {
+  it('preserves semantic HTML and literal math while removing custom formatting', () => {
     const text =
       '<div class="alert alert-info"><p><strong>Instructions</strong>: $x^2$</p><ul><li>Use **bold** notation.</li></ul><a href="https://example.com/formulas.pdf">Formula sheet</a></div>';
-    assert.equal(renderText({ id: assessmentId, text }, urlPrefix), text);
+    assert.equal(
+      renderText({ id: assessmentId, text }, urlPrefix),
+      '<div><p><strong>Instructions</strong>: $x^2$</p><ul><li>Use **bold** notation.</li></ul><a href="https://example.com/formulas.pdf">Formula sheet</a></div>',
+    );
   });
 
   describe('EJS-style syntax (legacy)', () => {

@@ -67,9 +67,10 @@ describe('Markdown processing', () => {
     testMarkdown(question, expected);
   });
 
-  it('handles HTML tags', () => {
-    const question = 'testing with <strong>bold</strong> and <em>italics</em> words';
-    const expected = '<p>testing with <strong>bold</strong> and <em>italics</em> words</p>';
+  it('preserves HTML formatting and escaped math', () => {
+    const question = '<strong>Price:</strong> <em>only</em> \\$5 for $x^2$.';
+    const expected =
+      '<p><strong>Price:</strong> <em>only</em> <span class="mathjax_ignore">$</span>5 for $x^2$.</p>';
     testMarkdown(question, expected);
   });
 
