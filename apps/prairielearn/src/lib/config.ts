@@ -773,7 +773,12 @@ export async function loadConfig(paths: string[]) {
     makeKmsConfigSource(),
   ]);
 
-  getPrintingCloudflareConfig();
+  const { printingCloudflareAccountId: accountId, printingCloudflareApiToken: apiToken } = config;
+  if ((accountId !== null || apiToken !== null) && (!accountId || !apiToken)) {
+    throw new Error(
+      'printingCloudflareAccountId and printingCloudflareApiToken must both be set to use Cloudflare Browser Run',
+    );
+  }
 
   if (config.questionRenderCacheType !== null) {
     logger.warn(

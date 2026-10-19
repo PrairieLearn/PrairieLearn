@@ -2,9 +2,20 @@ import * as https from 'node:https';
 
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
+import { config } from '../config.js';
+
 import { createPdfOutput } from './pdf-output.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import { RenderQueue } from './render-queue.js';
+
+const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
+
+export class QuestionBlockSizeOverflowError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'QuestionBlockSizeOverflowError';
+  }
+}
 
 const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
@@ -56,6 +67,14 @@ async function fetchCloudflareAsset(url: URL, signal: AbortSignal, cookieHeader?
     contentType: response.headers.get('content-type') ?? 'application/octet-stream',
     body: Buffer.from(await response.arrayBuffer()),
   };
+}
+
+function urlAtOrigin(url: URL, origin: string): URL {
+  const result = new URL(origin);
+  // Assign the path separately so a leading // cannot replace the intended host.
+  result.pathname = url.pathname;
+  result.search = url.search;
+  return result;
 }
 
 export interface PrintRendererOptions {
@@ -220,9 +239,8 @@ export class PrintRenderer {
     const remainingTimeoutMs = () => (deadline === null ? 0 : Math.max(1, deadline - Date.now()));
     const localUrl = new URL(url);
     const navigationUrl = this.cloudflare
-      ? new URL(`${localUrl.pathname}${localUrl.search}`, browserOrigin ?? 'https://example.com')
-          .href
-      : url;
+      ? urlAtOrigin(localUrl, browserOrigin ?? 'https://example.com').href
+      : localUrl.href;
     const renderOrigin = new URL(navigationUrl).origin;
     let startupTimer: ReturnType<typeof setTimeout> | undefined;
     const browser = await (deadline === null
@@ -277,10 +295,20 @@ export class PrintRenderer {
             await route.abort('blockedbyclient');
             return;
           }
-          // Playwright only routes the first request in a redirect chain, so a redirect could
-          // otherwise leave the allowed origin without passing through these checks again.
+          // Public app assets need no session, so Cloudflare can fetch them directly.
+          if (
+            this.cloudflare &&
+            !config.devMode &&
+            browserOrigin !== undefined &&
+            requestUrl.pathname.startsWith(`${config.assetsPrefix}/`)
+          ) {
+            await route.continue();
+            return;
+          }
+          // Playwright only routes the first request in a redirect chain, so proxied requests
+          // cannot follow redirects without potentially leaving the allowed origin.
           if (this.cloudflare) {
-            const assetUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, localUrl.origin);
+            const assetUrl = urlAtOrigin(requestUrl, localUrl.origin);
             const response = await fetchCloudflareAsset(
               assetUrl,
               assetController.signal,
@@ -332,9 +360,13 @@ export class PrintRenderer {
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
+        errorCode: document.documentElement.dataset.printErrorCode ?? null,
       }));
       if (printState.status === 'error') {
         const message = `The printable page failed: ${printState.error ?? 'No pagination error was provided'}`;
+        if (printState.errorCode === QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE) {
+          throw new QuestionBlockSizeOverflowError(message);
+        }
         throw new Error(message);
       }
       if (printState.status !== 'ready') {
@@ -343,7 +375,9 @@ export class PrintRenderer {
 
       await page.evaluate(async () => {
         await document.fonts.ready;
-        await Promise.all(Array.from(document.images, (image) => image.decode()));
+        await Promise.all(
+          Array.from(document.images, (image) => image.decode().catch(() => undefined)),
+        );
       });
 
       return await output.produce(page);
