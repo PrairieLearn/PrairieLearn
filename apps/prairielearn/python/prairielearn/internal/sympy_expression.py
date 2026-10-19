@@ -594,7 +594,7 @@ _EVALUATE_FALSE_FUNCTIONS = frozenset({
 })
 
 
-class _Evaluator:
+class Evaluator:
     def __init__(
         self,
         source: SourceText,
@@ -963,7 +963,7 @@ def parse_and_evaluate(
             allow_extra_symbols=allow_extra_symbols,
         )
         lowered = lowerer.lower(parsed)
-        evaluator = _Evaluator(
+        evaluator = Evaluator(
             source,
             locals_for_eval,
             allow_sets=allow_sets,
