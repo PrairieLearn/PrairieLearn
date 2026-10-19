@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import { config } from '../../lib/config.js';
 import { PrintRenderer } from '../../lib/printing/print-renderer.js';
 
 import { expect, test } from './fixtures.js';
@@ -10,14 +11,16 @@ test.use({ baseURL: '' });
 
 test('renders allowed resources and blocks redirects before requesting their destination', async () => {
   const requests: string[] = [];
+  const figurePath = `${config.assetsPrefix}/figure.svg`;
+  const redirectPath = `${config.assetsPrefix}/redirect`;
   const server = createServer((request, response) => {
     requests.push(request.url!);
-    if (request.url === '/redirect') {
+    if (request.url === redirectPath) {
       response.writeHead(302, {
         Location: `http://localhost:${(server.address() as AddressInfo).port}/destination`,
       });
       response.end();
-    } else if (request.url === '/figure.svg') {
+    } else if (request.url === figurePath) {
       response.setHeader('Content-Type', 'image/svg+xml');
       response.end('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>');
     } else {
@@ -31,17 +34,17 @@ test('renders allowed resources and blocks redirects before requesting their des
   try {
     const pdf = await renderer.renderPdf({
       url: `${origin}/print`,
-      html: '<!doctype html><html data-print-status="ready"><body><img src="/figure.svg"></body></html>',
+      html: `<!doctype html><html data-print-status="ready"><body><img src="${figurePath}"></body></html>`,
     });
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(requests).toContain('/figure.svg');
+    expect(requests).toContain(figurePath);
 
     const pdfWithBlockedImage = await renderer.renderPdf({
       url: `${origin}/print`,
-      html: '<!doctype html><html data-print-status="ready"><body><img src="/redirect"></body></html>',
+      html: `<!doctype html><html data-print-status="ready"><body><img src="${redirectPath}"></body></html>`,
     });
     expect(pdfWithBlockedImage.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(requests).toContain('/redirect');
+    expect(requests).toContain(redirectPath);
     expect(requests).not.toContain('/destination');
   } finally {
     await renderer.close();
@@ -53,12 +56,13 @@ test('renders allowed resources and blocks redirects before requesting their des
 });
 
 test('closes a failed render with an in-flight asset request and renders the next document', async () => {
+  const slowPath = `${config.assetsPrefix}/slow`;
   let resolveAssetRequest: () => void;
   const assetRequested = new Promise<void>((resolve) => {
     resolveAssetRequest = resolve;
   });
   const server = createServer((request, response) => {
-    if (request.url === '/slow') {
+    if (request.url === slowPath) {
       resolveAssetRequest();
       return;
     }
@@ -76,7 +80,7 @@ test('closes a failed render with an in-flight asset request and renders the nex
 
     const failedRender = renderer.renderPdf({
       url: `${origin}/failed`,
-      html: '<!doctype html><html data-print-status="ready"><body><img src="/slow"></body></html>',
+      html: `<!doctype html><html data-print-status="ready"><body><img src="${slowPath}"></body></html>`,
       timeoutMs: 5_000,
     });
     const failure = expect(failedRender).rejects.toThrow(
