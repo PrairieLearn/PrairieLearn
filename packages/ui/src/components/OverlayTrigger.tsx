@@ -3,6 +3,7 @@ import {
   // eslint-disable-next-line no-restricted-imports
   OverlayTrigger as BootstrapOverlayTrigger,
   type OverlayTriggerProps as BootstrapOverlayTriggerProps,
+  CloseButton,
   Popover,
   type PopoverProps,
   Tooltip,
@@ -198,11 +199,9 @@ export function OverlayTrigger({
               {popover.header}
             </div>
           )}
-          <button
+          <CloseButton
             ref={closeButtonRef}
-            type="button"
-            className="btn-close ms-auto flex-shrink-0"
-            aria-label="Close"
+            className="ms-auto flex-shrink-0"
             onClick={() => handleToggle(false)}
           />
         </Popover.Header>
