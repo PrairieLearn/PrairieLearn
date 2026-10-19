@@ -12,7 +12,7 @@ import re
 import string
 import unicodedata
 from collections import deque
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
@@ -186,6 +186,7 @@ class _Constants:
         "FiniteSet": sympy.FiniteSet,
         "Union": sympy.Union,
         "Intersection": sympy.Intersection,
+        "Complement": sympy.Complement,
     })
 
     set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
@@ -374,6 +375,21 @@ class ASTSympyType(Enum):
         return self.value
 
 
+_SET_OPERATION_FUNCTIONS: Final[FrozenDict[type[ast.operator], str]] = FrozenDict({
+    ast.Add: "Union",
+    ast.Sub: "Complement",
+    ast.BitAnd: "Intersection",
+    ast.BitOr: "Union",
+})
+
+# Complement was accepted as a custom function before it became a set builtin.
+_LEGACY_CUSTOM_FUNCTION_OVERRIDES: Final[frozenset[str]] = frozenset({"Complement"})
+
+
+def _allows_legacy_custom_function_override(name: str) -> bool:
+    return name in _LEGACY_CUSTOM_FUNCTION_OVERRIDES
+
+
 @dataclass
 class HasArgumentTypeError(BaseSympyError):
     fn: str
@@ -434,7 +450,9 @@ class CheckAST(ast.NodeVisitor):
     whitelist: ASTWhiteListT
     variables: SympyMapT
     functions: SympyFunctionMapT
+    resolved_names: Mapping[str, Any]
     __parents: dict[int, ast.AST]
+    __set_operations: set[ast.BinOp]
     __type_cache: dict[int, ASTSympyType | None]
 
     __unparsed_opstr: FrozenDict[type[ast.AST], str] = FrozenDict({
@@ -455,11 +473,14 @@ class CheckAST(ast.NodeVisitor):
         functions: SympyFunctionMapT,
         *,
         allow_sets: bool = False,
+        resolved_names: Mapping[str, Any] | None = None,
     ) -> None:
         self.whitelist = whitelist
         self.variables = variables
         self.functions = functions
+        self.resolved_names = variables if resolved_names is None else resolved_names
         self.__parents = {}
+        self.__set_operations = set()
         self.__type_cache = {}
         self.allow_sets = allow_sets
 
@@ -491,6 +512,11 @@ class CheckAST(ast.NodeVisitor):
         return node
 
     def check_expression(self, expr: str) -> None:
+        self._check_expression(expr)
+
+    def _check_expression(
+        self, expr: str
+    ) -> tuple[ast.Expression, frozenset[ast.BinOp]]:
         # Parse (convert string to AST)
         try:
             root = ast.parse(expr, mode="eval")
@@ -506,8 +532,10 @@ class CheckAST(ast.NodeVisitor):
         }
         try:
             self.visit(root)
+            return root, frozenset(self.__set_operations)
         finally:
             self.__parents = {}
+            self.__set_operations = set()
             self.__type_cache = {}
 
     def _set_type(
@@ -532,21 +560,20 @@ class CheckAST(ast.NodeVisitor):
         return self._set_type(node, ASTSympyType.SCALAR)
 
     def visit_Name(self, node: ast.Name) -> ASTSympyType | None:
-        if (
-            isinstance(node.ctx, ast.Load)
-            and not self.is_name_of_function(node)
-            and node.id not in self.variables
-        ):
-            err_node = self.get_parent_with_location(node)
-            if node.id in self.functions:
-                raise FunctionNameWithoutArgumentsError(
-                    err_node.col_offset, err_node.id
-                )
+        if not isinstance(node.ctx, ast.Load) or self.is_name_of_function(node):
             return self._set_type(node, None)
 
-        if node.id in self.variables:
-            var_type = None if self.allow_sets else ASTSympyType.SCALAR
-            return self._set_type(node, var_type)
+        is_variable = node.id in self.variables
+        if not is_variable and node.id in self.functions:
+            err_node = self.get_parent_with_location(node)
+            raise FunctionNameWithoutArgumentsError(err_node.col_offset, err_node.id)
+
+        if is_variable or node.id in self.resolved_names:
+            value = self.resolved_names.get(node.id, self.variables.get(node.id))
+            if self.allow_sets and isinstance(value, sympy.Set):
+                return self._set_type(node, ASTSympyType.SET)
+            if isinstance(value, (sympy.Expr, complex)):
+                return self._set_type(node, ASTSympyType.SCALAR)
 
         return self._set_type(node, None)
 
@@ -561,6 +588,7 @@ class CheckAST(ast.NodeVisitor):
             return self._set_type(node, None)
 
         name, args = node.func.id, node.args
+        resolved_function = self.resolved_names.get(name)
         match name:
             case "Symbol":
                 return self._set_type(node, None)
@@ -568,7 +596,11 @@ class CheckAST(ast.NodeVisitor):
                 overloads = [ASTSympyType.SCALAR], [ASTSympyType.STRING]
                 self._enforce_signature(name, args, *overloads)
                 return self._set_type(node, ASTSympyType.SCALAR)
-            case fn if self.allow_sets and fn in _Constants.set_functions:
+            case fn if (
+                self.allow_sets
+                and fn in _Constants.set_functions
+                and resolved_function == _Constants.set_functions[fn]
+            ):
                 return self._set_type(node, self._infer_set_function_type(name, args))
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
                 arities = _builtin_function_arities(fn) or (len(args),)
@@ -591,6 +623,11 @@ class CheckAST(ast.NodeVisitor):
         if op_str is None:
             return self._set_type(node, None)
         inferred_type = self._infer_bin_op_type(op_str, node.left, node.right)
+        if (
+            inferred_type == ASTSympyType.SET
+            and type(node.op) in _SET_OPERATION_FUNCTIONS
+        ):
+            self.__set_operations.add(node)
         return self._set_type(node, inferred_type)
 
     def _enforce_signature(
@@ -633,6 +670,9 @@ class CheckAST(ast.NodeVisitor):
                     (2 * [ASTSympyType.SCALAR] + 2 * [ASTSympyType.BOOL]),
                 )
                 return ASTSympyType.SET
+            case "Complement":
+                self._enforce_signature(name, args, 2 * [ASTSympyType.SET])
+                return ASTSympyType.SET
             case "Union" | "Intersection":
                 if not args:
                     raise HasFunctionArityError(name, len(args), "1+")
@@ -646,12 +686,16 @@ class CheckAST(ast.NodeVisitor):
     ) -> ASTSympyType | None:
         match op:
             case "|" | "&":
-                self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SET])
-                return ASTSympyType.SET
+                left_type, right_type = self._enforce_signature(
+                    op, (left, right), 2 * [ASTSympyType.SET]
+                )
+                return left_type or right_type
             case "-" | "+":
                 overloads = (2 * [ASTSympyType.SET]), (2 * [ASTSympyType.SCALAR])
-                left_type, _ = self._enforce_signature(op, (left, right), *overloads)
-                return left_type
+                left_type, right_type = self._enforce_signature(
+                    op, (left, right), *overloads
+                )
+                return left_type or right_type
             case "**" | "*" | "/" | "%":
                 self._enforce_signature(op, (left, right), 2 * [ASTSympyType.SCALAR])
                 return ASTSympyType.SCALAR
@@ -662,13 +706,14 @@ class CheckAST(ast.NodeVisitor):
                 return None
 
 
-def ast_check_str(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_sets: bool = False
-) -> None:
-    """Check the AST of the expression for security, whitelisting only certain nodes.
-
-    This prevents the user from executing arbitrary code through `eval_expr`.
-    """
+def _ast_check_str(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_sets: bool = False,
+    resolved_names: Mapping[str, Any] | None = None,
+) -> tuple[ast.Expression, frozenset[ast.BinOp]]:
+    """Check an expression and return its parsed AST and validated set operations."""
     # Disallow AST nodes that are not in whitelist
     #
     # Be very careful about adding to the list below. In particular,
@@ -700,12 +745,75 @@ def ast_check_str(
         ast.BitOr,
     )
 
-    CheckAST(
+    if resolved_names is None:
+        local_names = {
+            name: value
+            for values in locals_for_eval.values()
+            for name, value in cast(Mapping[str, Any], values).items()
+        }
+        resolved_names = _SYMPY_GLOBALS | local_names
+
+    return CheckAST(
         whitelist,
         locals_for_eval["variables"],
         locals_for_eval["helpers"] | locals_for_eval["functions"],
         allow_sets=allow_sets,
-    ).check_expression(expr)
+        resolved_names=resolved_names,
+    )._check_expression(expr)
+
+
+def ast_check_str(
+    expr: str, locals_for_eval: LocalsForEval, *, allow_sets: bool = False
+) -> None:
+    """Check the AST of the expression for security, whitelisting only certain nodes.
+
+    This prevents the user from executing arbitrary code through `eval_expr`.
+    """
+    _ast_check_str(expr, locals_for_eval, allow_sets=allow_sets)
+
+
+class _SetOperationTransformer(ast.NodeTransformer):
+    """Rewrite only binary operations validated as set operations."""
+
+    def __init__(
+        self,
+        set_operations: frozenset[ast.BinOp],
+        occupied_names: Iterable[str],
+    ) -> None:
+        self._set_operations = set_operations
+        self._function_names: dict[type[ast.operator], str] = {}
+        self.evaluation_locals: SympyFunctionMapT = {}
+
+        used_names = set(occupied_names)
+        protected_names: dict[str, str] = {}
+        for operation_type in {type(node.op) for node in set_operations}:
+            function_name = _SET_OPERATION_FUNCTIONS[operation_type]
+            protected_name = protected_names.get(function_name)
+            if protected_name is None:
+                protected_name = f"_pl_set_operation_{function_name}"
+                while protected_name in used_names:
+                    protected_name += "_"
+                used_names.add(protected_name)
+                protected_names[function_name] = protected_name
+                self.evaluation_locals[protected_name] = _Constants.set_functions[
+                    function_name
+                ]
+            self._function_names[operation_type] = protected_name
+
+    def visit_BinOp(self, node: ast.BinOp) -> ast.AST:
+        node = cast(ast.BinOp, self.generic_visit(node))
+        if node not in self._set_operations:
+            return node
+
+        function_name = self._function_names[type(node.op)]
+        return ast.copy_location(
+            ast.Call(
+                func=ast.Name(id=function_name, ctx=ast.Load()),
+                args=[node.left, node.right],
+                keywords=[],
+            ),
+            node,
+        )
 
 
 def sympy_check(
@@ -725,16 +833,17 @@ def sympy_check(
 
     while work_stack:
         item = work_stack.pop()
-        str_item = str(item)
 
+        # Avoid str(item) on every node: printing each subtree is quadratic in
+        # the size of the expression and dominates parse time.
         if (
             not allow_extra_symbols
             and isinstance(item, sympy.Symbol)
-            and str_item not in valid_symbols
+            and (str_item := str(item)) not in valid_symbols
         ):
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
-            raise HasFloatError(float(str_item))
+            raise HasFloatError(float(str(item)))
         if not allow_sets and isinstance(item, sympy.Set):
             raise HasSetNotationError
         # Detect complex numbers both in simplified form (sympy.I) and in
@@ -877,7 +986,7 @@ def _regex_sub_expr_and_map_offsets(
     return "".join(parts), new_offsets
 
 
-def evaluate_with_source(
+def _evaluate_with_source(
     expr: str,
     locals_for_eval: LocalsForEval,
     *,
@@ -885,6 +994,7 @@ def evaluate_with_source(
     allow_sets: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
+    resolved_name_overrides: Mapping[str, Any] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
 
@@ -959,7 +1069,7 @@ def evaluate_with_source(
             r"\1*\2",
         )
 
-    local_dict = {
+    local_dict: DICT = {
         k: v
         for inner_dict in locals_for_eval.values()
         for k, v in cast(SympyMapT, inner_dict).items()
@@ -1013,6 +1123,7 @@ def evaluate_with_source(
         Interval=sympy.Interval,
         Union=sympy.Union,
         Intersection=sympy.Intersection,
+        Complement=sympy.Complement,
     )
 
     parsed_locals_to_eval["variables"].update(
@@ -1021,7 +1132,15 @@ def evaluate_with_source(
     )
 
     try:
-        ast_check_str(code, parsed_locals_to_eval, allow_sets=allow_sets)
+        resolved_names = global_dict | local_dict
+        if resolved_name_overrides is not None:
+            resolved_names.update(resolved_name_overrides)
+        expression_ast, set_operations = _ast_check_str(
+            code,
+            parsed_locals_to_eval,
+            allow_sets=allow_sets,
+            resolved_names=resolved_names,
+        )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
         index = _find_type_error_offset(
             normalized_expr, char_offsets, exc.as_type_error()
@@ -1031,12 +1150,31 @@ def evaluate_with_source(
 
         raise
 
+    evaluation_code: str | CodeType = code
     if not simplify_expression:
-        code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+        if allow_sets:
+            set_operation_transformer = _SetOperationTransformer(
+                set_operations,
+                local_dict.keys() | global_dict.keys(),
+            )
+            expression_ast = cast(
+                ast.Expression,
+                set_operation_transformer.visit(expression_ast),
+            )
+            # These names are introduced after validating the user-provided AST so
+            # custom functions cannot replace the generated set operations.
+            local_dict.update(set_operation_transformer.evaluation_locals)
+        expression_ast = cast(
+            ast.Expression,
+            sympy_parser.EvaluateFalseTransformer().visit(expression_ast),
+        )
+        evaluation_code = compile(
+            ast.fix_missing_locations(expression_ast), "<string>", "eval"
+        )
 
     # Now that it's safe, get sympy expression
     try:
-        res = sympy_parser.eval_expr(code, local_dict, global_dict)
+        res = sympy_parser.eval_expr(evaluation_code, local_dict, global_dict)
     except TypeError as exc:
         # SymPy raises TypeError for semantically invalid set operations that are
         # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
@@ -1059,7 +1197,27 @@ def evaluate_with_source(
         allow_extra_symbols=allow_extra_symbols,
     )
 
-    return res, code
+    return res, evaluation_code
+
+
+def evaluate_with_source(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    simplify_expression: bool = True,
+    allow_extra_symbols: bool = False,
+) -> tuple[sympy.Expr, str | CodeType]:
+    """Evaluate a SymPy expression string and return its value and source code."""
+    return _evaluate_with_source(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+    )
 
 
 def convert_string_to_sympy(
@@ -1116,7 +1274,7 @@ def convert_string_to_sympy(
     )[0]
 
 
-def convert_string_to_sympy_with_source(
+def _convert_string_to_sympy_with_source(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
@@ -1128,6 +1286,7 @@ def convert_string_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
+    resolved_name_overrides: Mapping[str, Any] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1202,12 +1361,41 @@ def convert_string_to_sympy_with_source(
             locals_for_eval["functions"][name] = sympy.Function(name)
 
     # Do the conversion
-    return evaluate_with_source(
+    return _evaluate_with_source(
         expr,
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+        resolved_name_overrides=resolved_name_overrides,
+    )
+
+
+def convert_string_to_sympy_with_source(
+    expr: str,
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
+) -> tuple[sympy.Expr, str | CodeType]:
+    """Convert a string to a SymPy expression and return its source code."""
+    return _convert_string_to_sympy_with_source(
+        expr,
+        variables,
+        allow_hidden=allow_hidden,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
+        custom_functions=custom_functions,
+        assumptions=assumptions,
         allow_extra_symbols=allow_extra_symbols,
     )
 
@@ -1316,8 +1504,17 @@ def sympy_to_json(
     }
 
     # Don't check for conflicts here, that happens in parsing.
-    functions_set = {str(func_obj.func) for func_obj in a.atoms(sympy.Function)}
-    custom_functions = list(functions_set - reserved)
+    function_atoms = a.atoms(sympy.Function)
+    functions_set = {str(func_obj.func) for func_obj in function_atoms}
+    legacy_custom_function_overrides = {
+        name
+        for func_obj in function_atoms
+        if _allows_legacy_custom_function_override(name := str(func_obj.func))
+        and func_obj.func != const.set_functions[name]
+    }
+    custom_functions = list(
+        (functions_set - reserved) | legacy_custom_function_overrides
+    )
 
     return {
         "_type": "sympy",
@@ -1353,9 +1550,13 @@ def json_to_sympy(
     if "_variables" not in sympy_expr_dict:
         sympy_expr_dict["_variables"] = None
 
-    return convert_string_to_sympy(
+    variables = sympy_expr_dict["_variables"]
+    # Older set-enabled submissions could contain scalar `x | y` or `x & y`.
+    # Keep their variables untyped during validation so stored answers remain
+    # renderable and gradable, while new text submissions use strict scalar types.
+    result, _ = _convert_string_to_sympy_with_source(
         sympy_expr_dict["_value"],
-        sympy_expr_dict["_variables"],
+        variables,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
@@ -1363,7 +1564,11 @@ def json_to_sympy(
         simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
         assumptions=sympy_expr_dict.get("_assumptions"),
+        resolved_name_overrides=(
+            dict.fromkeys(variables) if allow_sets and variables is not None else None
+        ),
     )
+    return result
 
 
 def try_parse_string_as_sympy(
@@ -1779,17 +1984,17 @@ def get_builtin_constants(
     return names
 
 
-def get_builtin_functions(
+def get_builtin_callable_functions(
     *, allow_trig_functions: bool = True, allow_sets: bool = False
 ) -> set[str]:
-    """Return the set of built-in function names.
+    """Return the set of built-in callable function names.
 
     Parameters:
         allow_trig_functions: Whether to include trigonometric functions.
-        allow_sets: Whether to include set operators and constructors.
+        allow_sets: Whether to include set constructors.
 
     Returns:
-        A set of built-in function names.
+        A set of built-in callable function names.
     """
     const = _Constants
     names = const.functions.keys() | const.helpers.keys()
@@ -1797,6 +2002,27 @@ def get_builtin_functions(
         names |= const.trig_functions.keys()
     if allow_sets:
         names |= const.set_functions.keys()
+    return names
+
+
+def get_builtin_functions(
+    *, allow_trig_functions: bool = True, allow_sets: bool = False
+) -> set[str]:
+    """Return the set of built-in function and operator names.
+
+    Parameters:
+        allow_trig_functions: Whether to include trigonometric functions.
+        allow_sets: Whether to include set operators and constructors.
+
+    Returns:
+        A set of built-in function and operator names.
+    """
+    const = _Constants
+    names = get_builtin_callable_functions(
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    )
+    if allow_sets:
         names |= const.set_operators.keys()
     return names
 
@@ -1853,7 +2079,10 @@ def _build_name_conflict_data(
 
     for raw in custom_functions:
         sanitized = greek_unicode_transform(raw)
-        if sanitized in valid_names or _conflicts(sanitized):
+        if sanitized in valid_names or (
+            _conflicts(sanitized)
+            and not _allows_legacy_custom_function_override(sanitized)
+        ):
             conflict_fns.append(raw)
         else:
             valid_names[sanitized] = (False, raw)

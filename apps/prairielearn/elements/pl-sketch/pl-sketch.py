@@ -948,8 +948,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             score_class = alert_class = "warning"
 
-    # Each SketchResponse instance needs a unique DOM ID. The question panel still
-    # submits under the stable answer name so existing variants keep working.
+    # Print views may show the same answer more than once, so DOM IDs must differ.
+    # The question panel's form name must match the answer key used for grading.
     random_id = "".join(random.choice(string.ascii_lowercase) for _ in range(15))
 
     scoring_params = {

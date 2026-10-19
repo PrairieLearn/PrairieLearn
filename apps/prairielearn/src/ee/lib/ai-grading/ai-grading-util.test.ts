@@ -9,9 +9,8 @@ import { sanitizeObject } from '@prairielearn/sanitize';
 import { type RubricItem } from '../../../lib/db-types.js';
 
 import {
-  containsSubmissionAttachment,
   correctImagesOrientation,
-  extractAiGradingExplanationFromCompletion,
+  extractAiGradingTextFromCompletion,
   extractSubmissionImages,
   generatePrompt,
   generateSubmissionContent,
@@ -377,13 +376,18 @@ describe('generateSubmissionContent', () => {
     Buffer.from([0xff]),
     Buffer.from([0xff, 0xfe, 0x61]),
     Buffer.from([0xff, 0xfe, 0x00, 0xd8]),
-  ])('rejects invalid text encodings', (bytes) => {
-    expect(() =>
+  ])('reports invalid text encodings as unavailable', (bytes) => {
+    expect(
       generateSubmissionContent({
         submission_text: '',
         submitted_answer: { _files: [{ name: 'answer.py', contents: bytes.toString('base64') }] },
       }),
-    ).toThrow('AI grading could not read "answer.py" as text');
+    ).toEqual([
+      {
+        type: 'text',
+        text: 'Submitted file: answer.py\n\nFile contents unavailable: unsupported file format or text encoding.',
+      },
+    ]);
   });
 
   it.each([
@@ -391,13 +395,18 @@ describe('generateSubmissionContent', () => {
     Buffer.from('hello\u0000world'),
     Buffer.from('text without BOM', 'utf16le'),
     Buffer.from([0xff, 0xfe, 0, 0, 0x61, 0, 0, 0]),
-  ])('rejects binary data even when it can be decoded', (bytes) => {
-    expect(() =>
+  ])('reports binary data as unavailable even when it can be decoded', (bytes) => {
+    expect(
       generateSubmissionContent({
         submission_text: '',
         submitted_answer: { _files: [{ name: 'answer.txt', contents: bytes.toString('base64') }] },
       }),
-    ).toThrow('AI grading cannot read binary file "answer.txt"');
+    ).toEqual([
+      {
+        type: 'text',
+        text: 'Submitted file: answer.txt\n\nFile contents unavailable: unsupported file format or text encoding.',
+      },
+    ]);
   });
 
   it('rejects invalid base64 instead of silently losing bytes', () => {
@@ -407,18 +416,6 @@ describe('generateSubmissionContent', () => {
         submitted_answer: { _files: [{ name: 'answer.txt', contents: 'aGVsbG8=!' }] },
       }),
     ).toThrow('Submitted file "answer.txt" has invalid base64 data');
-  });
-
-  it('recognizes unmarked attachments for grading explanations', () => {
-    expect(
-      containsSubmissionAttachment({
-        submission_text: '',
-        submitted_answer: { _files: [{ name: 'answer.txt', contents: '' }] },
-      }),
-    ).toBe(true);
-    expect(containsSubmissionAttachment({ submission_text: '', submitted_answer: null })).toBe(
-      false,
-    );
   });
 
   it('generates named PDF file parts', () => {
@@ -440,17 +437,27 @@ describe('generateSubmissionContent', () => {
     ]);
   });
 
-  it('rejects uploaded file types that are not portable across grading providers', () => {
-    expect(() =>
+  it('preserves the rest of the submission when an uploaded file is unsupported', () => {
+    expect(
       generateSubmissionContent({
-        submission_text: '<div data-ai-grading-file-name="solution.zip">solution.zip</div>',
+        submission_text:
+          '<p>Before</p><div data-ai-grading-file-name="solution.zip">solution.zip</div><p>After</p>',
         submitted_answer: {
           _files: [
             { name: 'solution.zip', contents: Buffer.from('PK\u0003\u0004').toString('base64') },
+            { name: 'answer.txt', contents: Buffer.from('My answer').toString('base64') },
           ],
         },
       }),
-    ).toThrow('AI grading cannot read binary file "solution.zip"');
+    ).toEqual([
+      { type: 'text', text: '<p>Before</p>' },
+      {
+        type: 'text',
+        text: 'Submitted file: solution.zip\n\nFile contents unavailable: unsupported file format or text encoding.',
+      },
+      { type: 'text', text: '<p>After</p>' },
+      { type: 'text', text: 'Submitted file: answer.txt\n\nMy answer' },
+    ]);
   });
 
   it('includes uploaded images in orientation correction', () => {
@@ -580,40 +587,38 @@ describe('parseAiRubricItems', () => {
   });
 });
 
-describe('extractAiGradingExplanationFromCompletion', () => {
+describe('extractAiGradingTextFromCompletion', () => {
   it('reads the explanation from each persisted completion format', () => {
     // OpenAI chat completions.
     expect(
-      extractAiGradingExplanationFromCompletion({
+      extractAiGradingTextFromCompletion({
         choices: [{ message: { parsed: { explanation: ' from choices ' } } }],
       }),
     ).toBe('from choices');
 
     // OpenAI responses API.
     expect(
-      extractAiGradingExplanationFromCompletion({
+      extractAiGradingTextFromCompletion({
         output_parsed: { explanation: ' from output_parsed ' },
       }),
     ).toBe('from output_parsed');
 
     // `ai` package `generateObject`.
-    expect(
-      extractAiGradingExplanationFromCompletion({ object: { explanation: ' from object ' } }),
-    ).toBe('from object');
+    expect(extractAiGradingTextFromCompletion({ object: { explanation: ' from object ' } })).toBe(
+      'from object',
+    );
 
     // `ai` package `generateText` with structured output.
-    expect(
-      extractAiGradingExplanationFromCompletion({ _output: { explanation: ' from _output ' } }),
-    ).toBe('from _output');
+    expect(extractAiGradingTextFromCompletion({ _output: { explanation: ' from _output ' } })).toBe(
+      'from _output',
+    );
   });
 
   it('returns null for missing or blank explanations', () => {
-    expect(
-      extractAiGradingExplanationFromCompletion({ _output: { explanation: '   ' } }),
-    ).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion({ _output: {} })).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion({})).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion(null)).toBeNull();
+    expect(extractAiGradingTextFromCompletion({ _output: { explanation: '   ' } })).toBeNull();
+    expect(extractAiGradingTextFromCompletion({ _output: {} })).toBeNull();
+    expect(extractAiGradingTextFromCompletion({})).toBeNull();
+    expect(extractAiGradingTextFromCompletion(null)).toBeNull();
   });
 
   // Regression test: a `generateText` result exposes its structured output via a
@@ -655,7 +660,7 @@ describe('extractAiGradingExplanationFromCompletion', () => {
     expect(completion).not.toHaveProperty('output');
     expect(completion).toHaveProperty('_output');
 
-    expect(extractAiGradingExplanationFromCompletion(completion)).toBe('graded via generateText');
+    expect(extractAiGradingTextFromCompletion(completion)).toBe('graded via generateText');
   });
 });
 
