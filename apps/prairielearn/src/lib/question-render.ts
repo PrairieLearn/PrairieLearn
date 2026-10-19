@@ -666,23 +666,26 @@ export async function getAndRenderVariant(
     showCorrectAnswer,
   });
 
+  // The AI grading preview mirrors the arguments used by the AI grader: the answer is always
+  // rendered, with no submission and with `showCorrectAnswer` false.
+  const isAiGradingPreview = questionRenderContext === 'ai_grading';
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
-    answer: showCorrectAnswer,
+    answer: showCorrectAnswer || isAiGradingPreview,
   };
   const htmls = await render({
     variant_course: course,
     renderSelection,
     variant,
     question,
-    submission: submission as Submission,
+    submission: isAiGradingPreview ? null : (submission as Submission),
     submissions: submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
     question_course,
     locals: {
       ...urls,
       urlPrefix,
-      showCorrectAnswer,
+      showCorrectAnswer: showCorrectAnswer && !isAiGradingPreview,
       allowAnswerEditing: newLocals.allowAnswerEditing,
       questionRenderContext,
     },
