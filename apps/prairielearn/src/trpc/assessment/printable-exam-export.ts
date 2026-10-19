@@ -39,6 +39,7 @@ import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import {
   type PrintDocument,
   getPrintRenderer,
+  getPrintableInstanceQuestionIds,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
@@ -203,6 +204,17 @@ export const printableExamExportRouter = t.router({
             instance.assessmentInstanceId,
             excludedQuestions,
           );
+          const assetScope = {
+            courseInstanceId: ctx.course_instance.id,
+            assessmentId: ctx.assessment.id,
+            assessmentInstanceId: instance.assessmentInstanceId,
+            instanceQuestionIds: await getPrintableInstanceQuestionIds(
+              instance.assessmentInstanceId,
+              excludedQuestions,
+            ),
+            authnUserId: ctx.authn_user.id,
+            userId: ctx.locals.user.id,
+          };
           for (const printDocument of plan.documents) {
             if (printDocument === 'exam' && index >= metadata.copies) continue;
             const search = new URLSearchParams(printLayoutSearch(instance.settings));
@@ -235,6 +247,7 @@ export const printableExamExportRouter = t.router({
               printDocument,
               previewUrl: previewUrl.href,
               html,
+              assetScope,
             });
           }
         }
@@ -256,7 +269,6 @@ export const printableExamExportRouter = t.router({
               base64: Buffer.from(await file.arrayBuffer()).toString('base64'),
             })),
           ),
-          cookieHeader: ctx.cookieHeader,
         };
         const inputBytes =
           pages.data.reduce((sum, page) => sum + page.size, 0) +

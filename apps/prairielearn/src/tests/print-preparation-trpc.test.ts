@@ -390,6 +390,14 @@ describe('print preparation', { timeout: 60_000 }, () => {
             printDocument: 'exam',
             previewUrl: 'http://localhost/',
             html: '',
+            assetScope: {
+              courseInstanceId: '1',
+              assessmentId: assessment.id,
+              assessmentInstanceId: '1',
+              instanceQuestionIds: [],
+              authnUserId: '1',
+              userId: '1',
+            },
           },
         ],
         covers: [],
@@ -480,7 +488,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
         copies: 1,
         filename: 'failed-export.pdf',
         snapshots: [],
-        cookieHeader: 'pl_test_user=test_instructor',
         covers: [
           { name: 'invalid-cover.pdf', base64: Buffer.from('not a pdf').toString('base64') },
         ],

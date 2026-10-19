@@ -19,6 +19,7 @@ import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import {
   checkPrintSnapshotId,
   createPrintSnapshotId,
@@ -32,6 +33,7 @@ import {
   type PrintDocument,
   describeOmittedQuestions,
   getPrintRenderer,
+  getPrintableInstanceQuestionIds,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
@@ -222,6 +224,20 @@ function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
   };
 }
 
+function printAssetScope(
+  resLocals: ResLocalsForPage<'assessment-instance'>,
+  instanceQuestionIds: string[],
+): PrintAssetScope {
+  return {
+    courseInstanceId: resLocals.course_instance.id,
+    assessmentId: resLocals.assessment.id,
+    assessmentInstanceId: resLocals.assessment_instance.id,
+    instanceQuestionIds,
+    authnUserId: resLocals.authn_user.id,
+    userId: resLocals.user.id,
+  };
+}
+
 const parseDocxBody: RequestHandler = (req, res, next) => {
   if (!req.is('application/octet-stream')) {
     next(new HttpStatusError(415, 'The Word export request has an unsupported format.'));
@@ -328,7 +344,13 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
         url: previewUrl.href,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: snapshot.html,
-        cookieHeader: req.get('cookie'),
+        assetScope: printAssetScope(
+          res.locals,
+          await getPrintableInstanceQuestionIds(
+            res.locals.assessment_instance.id,
+            layout.excludedQuestionNumbers,
+          ),
+        ),
         runScripts: true,
       },
       {
@@ -465,7 +487,10 @@ router.get(
         url: previewUrl.href,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: rawHtml,
-        cookieHeader: req.get('cookie'),
+        assetScope: printAssetScope(
+          res.locals,
+          printingResult.questionResults.map(({ instanceQuestionId }) => instanceQuestionId),
+        ),
         runScripts: true,
       },
       {

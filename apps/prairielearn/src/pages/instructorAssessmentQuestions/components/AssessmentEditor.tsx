@@ -154,6 +154,7 @@ interface AssessmentEditorInnerProps {
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
+  renderingAvailable: boolean;
   courseHasQuestions: boolean;
   csrfToken: string;
   origHash: string;
@@ -178,6 +179,7 @@ function AssessmentEditorInner({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
+  renderingAvailable,
   courseHasQuestions,
   csrfToken,
   origHash,
@@ -1136,7 +1138,7 @@ function AssessmentEditorInner({
                           setEditMode(false);
                         }}
                       />
-                      {!editMode && (
+                      {!editMode && renderingAvailable && (
                         <Button
                           variant="outline-secondary"
                           size="sm"

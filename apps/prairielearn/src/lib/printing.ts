@@ -11,7 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { QuestionContainer } from '../components/QuestionContainer.js';
 
-import { getPrintingCloudflareConfig } from './config.js';
+import { config } from './config.js';
 import {
   AssessmentQuestionSchema,
   InstanceQuestionSchema,
@@ -78,7 +78,13 @@ const questionPreparationQueue = new RenderQueue(4, 50);
  */
 export function getPrintRenderer(): PrintRenderer {
   printRenderer ??= new PrintRenderer({
-    cloudflare: getPrintingCloudflareConfig(),
+    cloudflare:
+      config.printingCloudflareAccountId && config.printingCloudflareApiToken
+        ? {
+            accountId: config.printingCloudflareAccountId,
+            apiToken: config.printingCloudflareApiToken,
+          }
+        : undefined,
   });
   return printRenderer;
 }
@@ -92,7 +98,10 @@ export async function closePrintRenderer(): Promise<void> {
 
 /** Export only when a remote browser or the matching local Chromium build is installed. */
 export function isBrowserRenderingAvailable(): boolean {
-  return getPrintingCloudflareConfig() !== undefined || existsSync(chromium.executablePath());
+  return (
+    Boolean(config.printingCloudflareAccountId && config.printingCloudflareApiToken) ||
+    existsSync(chromium.executablePath())
+  );
 }
 
 /** Previews may omit broken questions for review; downloads must include every selected question. */
@@ -249,6 +258,16 @@ export async function getPrintableQuestionListDigest(
 ): Promise<string> {
   const questions = await selectPrintableQuestions(assessmentInstanceId);
   return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
+}
+
+export async function getPrintableInstanceQuestionIds(
+  assessmentInstanceId: string,
+  excludedQuestionNumbers: ReadonlySet<string>,
+): Promise<string[]> {
+  const questions = await selectPrintableQuestions(assessmentInstanceId);
+  return selectIncludedQuestions(questions, excludedQuestionNumbers).map(
+    ({ instance_question }) => instance_question.id,
+  );
 }
 
 export async function validateQuestionsForPrinting(

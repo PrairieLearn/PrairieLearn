@@ -17,11 +17,11 @@ import {
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
-import { decryptFromStorage, encryptForStorage } from './encrypted-storage.js';
 import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
 import { PAPER_SIZES } from './printing/pdf-output.js';
+import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
@@ -39,10 +39,10 @@ const PersistedWorkSchema = z.object({
       printDocument: z.enum(['exam', 'answer_key']),
       previewUrl: z.url(),
       html: z.string(),
+      assetScope: PrintAssetScopeDataSchema,
     }),
   ),
   covers: z.array(z.object({ name: z.string(), base64: z.string() })),
-  encryptedCookieHeader: z.string().optional(),
 });
 
 const PrintExportJobSchema = z.object({
@@ -130,12 +130,7 @@ export async function queuePrintExport({
 }) {
   const bucket = getFileStoreS3Bucket();
   const inputKey = `${KEY_PREFIX}input/${randomUUID()}.json`;
-  const { cookieHeader, ...rest } = work;
-  const persisted = {
-    ...rest,
-    ...(cookieHeader ? { encryptedCookieHeader: encryptForStorage(cookieHeader) } : {}),
-  };
-  await uploadToS3(bucket, inputKey, null, false, Buffer.from(JSON.stringify(persisted)));
+  await uploadToS3(bucket, inputKey, null, false, Buffer.from(JSON.stringify(work)));
   try {
     return await insertPrintExportJob({
       owner,
@@ -239,11 +234,7 @@ async function runClaimedPrintExport({
       persisted = PersistedWorkSchema.parse(
         JSON.parse((await getFromS3(bucket, inputKey, true)).toString('utf8')),
       );
-      const { encryptedCookieHeader, ...rest } = persisted;
-      packet = await renderPrintExport({
-        ...rest,
-        cookieHeader: encryptedCookieHeader ? decryptFromStorage(encryptedCookieHeader) : undefined,
-      });
+      packet = await renderPrintExport(persisted);
     } catch (error) {
       getCounter(meter, 'print.export.background.failures', { valueType: ValueType.INT }).add(
         1,

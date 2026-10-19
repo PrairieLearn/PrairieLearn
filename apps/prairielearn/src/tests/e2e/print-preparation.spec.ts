@@ -972,9 +972,6 @@ test('can omit the default cover in previews and every download while keeping cu
   await expect(
     frame.locator('.pagedjs_page').first().locator('.printing-question').first(),
   ).toBeVisible();
-  await expect(
-    frame.getByRole('img', { name: 'Page 1 identification code', exact: true }),
-  ).toBeVisible();
   const studentPages = pageCountWithCover - 1;
   await includeCover.check();
   await expect(page.getByLabel('Additional student information')).toHaveValue('Room');

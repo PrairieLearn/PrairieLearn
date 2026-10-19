@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { PrintRenderer } from '../../lib/printing/print-renderer.js';
+import { getPrintableInstanceQuestionIds } from '../../lib/printing.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
@@ -30,6 +31,10 @@ test('serves completed pages and builds an editable Word document in the renderi
     course_instance_id: courseInstance.id,
     tid: 'exam20-assessmentTools',
   });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
+  );
+  await expect(page.getByRole('button', { name: 'Print', exact: true })).toBeVisible();
   const assessmentInstanceId = await makeAssessmentInstance({
     assessment,
     user_id: user.id,
@@ -64,15 +69,37 @@ test('serves completed pages and builds an editable Word document in the renderi
         : undefined,
   });
   try {
-    const cookies = await page.context().cookies(page.url());
     const html = await page.content();
-    const cookieHeader = cookies.map(({ name, value }) => `${name}=${value}`).join('; ');
+    const assetScope = {
+      courseInstanceId: courseInstance.id,
+      assessmentId: assessment.id,
+      assessmentInstanceId,
+      instanceQuestionIds: await getPrintableInstanceQuestionIds(assessmentInstanceId, new Set()),
+      authnUserId: user.id,
+      userId: user.id,
+    };
     const pdfs = await Promise.all(
-      Array.from({ length: 4 }, () => renderer.renderPdf({ url: page.url(), html, cookieHeader })),
+      Array.from({ length: 4 }, () => renderer.renderPdf({ url: page.url(), html, assetScope })),
     );
     for (const pdf of pdfs) {
       expect(pdf.subarray(0, 5).toString('ascii')).toBe('%PDF-');
     }
+
+    const color = await renderer.render(
+      {
+        url: page.url(),
+        html: `<!doctype html><html data-print-status="ready"><head><link rel="stylesheet" href="/pl/course_instance/${courseInstance.id}/instructor/clientFilesCourse/sharedElementStyles.css"></head><body><span class="example-shared-style">Print asset</span></body></html>`,
+        assetScope,
+      },
+      {
+        label: 'print asset',
+        produce: async (renderedPage) =>
+          await renderedPage
+            .locator('.example-shared-style')
+            .evaluate((element) => getComputedStyle(element).getPropertyValue('color')),
+      },
+    );
+    expect(color).toBe('rgb(255, 0, 0)');
   } finally {
     await renderer.close();
   }
