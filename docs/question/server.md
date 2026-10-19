@@ -232,6 +232,10 @@ Any custom grading function for the whole question should set `data["score"]` as
 - [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
 - [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
 
+!!! note "Partial credit settings"
+
+    Setting `data["score"]` to a value other than 0 or 1 will assign partial credit to the submission, even if the question is configured to not allow partial credit. If you want to disable partial credit, you should ensure that `data["score"]` is either 0 or 1, or use the [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] utility to compute the score.
+
 This can be used like so:
 
 ```python title="server.py"
