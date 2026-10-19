@@ -1,3 +1,4 @@
+import { parse as csvParse } from 'csv-parse/sync';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
@@ -58,6 +59,7 @@ describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, f
     assert.lengthOf(row, 1);
     assert.lengthOf(row.find('td:contains("Not started")'), 1);
     assert.lengthOf(row.find('div.progress'), 0);
+    assert.lengthOf(row.find('a'), 0);
   });
 
   test('omits an unstarted assessment that is not available', async () => {
@@ -66,6 +68,42 @@ describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, f
     });
     assert.equal(response.status, 200);
     assert.lengthOf(response.$(`tr:contains("${TITLE}")`), 0);
+  });
+
+  test.each([
+    ['before release', '2026-04-05T00:00:00Z', false],
+    ['after release', '2026-04-15T00:00:00Z', true],
+  ])('handles a listed modern assessment %s', async (_label, date, visible) => {
+    const modernHeaders = { cookie: `pl_test_user=test_student; pl_test_date=${date}` };
+    const title = 'Access control UI tests';
+    const assessments = await helperClient.fetchCheerio(`${courseInstanceBaseUrl}/assessments`, {
+      headers: modernHeaders,
+    });
+    assert.equal(assessments.status, 200);
+    assert.lengthOf(assessments.$(`tr:contains("${title}")`), 1);
+
+    const gradebook = await helperClient.fetchCheerio(gradebookUrl, { headers: modernHeaders });
+    assert.equal(gradebook.status, 200);
+    const row = gradebook.$(`tr:contains("${title}")`);
+    assert.lengthOf(row, visible ? 1 : 0);
+    if (visible) {
+      assert.lengthOf(row.find('td:contains("Not started")'), 1);
+    }
+  });
+
+  test('exports an empty score for an unstarted assessment', async () => {
+    const page = await helperClient.fetchCheerio(gradebookUrl, { headers });
+    const download = page.$('a[aria-label="Download gradebook CSV"]').attr('href');
+    const response = await fetch(new URL(download!, siteUrl), { headers });
+    assert.equal(response.status, 200);
+    const csv = await response.text();
+    const records = csvParse<{ Assessment: string; Set: string; Score: string }>(csv, {
+      columns: true,
+    });
+    assert.deepEqual(
+      records.filter((record) => record.Assessment === TITLE),
+      [{ Assessment: TITLE, Set: 'Exams', Score: '' }],
+    );
   });
 
   test('shows the score instead of "Not started" once the assessment is started', async () => {
@@ -80,6 +118,8 @@ describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, f
       headers,
     });
     assert.isTrue(started.ok);
+    const instancePath = new URL(started.url).pathname;
+    assert.include(instancePath, '/assessment_instance/');
 
     const response = await helperClient.fetchCheerio(gradebookUrl, { headers });
     const row = response.$(`tr:contains("${TITLE}")`);
@@ -89,5 +129,14 @@ describe('Student gradebook lists unstarted assessments', { timeout: 60_000 }, f
     const scorebar = row.find('[data-testid="scorebar"]');
     assert.lengthOf(scorebar, 1);
     assert.equal(scorebar.text().trim(), '0%');
+    const link = row.find('a');
+    assert.lengthOf(link, 1);
+    assert.equal(link.text().trim(), TITLE);
+    assert.equal(link.attr('href'), instancePath);
+    const instance = await helperClient.fetchCheerio(new URL(link.attr('href')!, siteUrl).href, {
+      headers,
+    });
+    assert.equal(instance.status, 200);
+    assert.equal(new URL(instance.url).pathname, instancePath);
   });
 });

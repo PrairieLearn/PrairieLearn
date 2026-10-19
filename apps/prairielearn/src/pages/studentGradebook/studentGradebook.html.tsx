@@ -87,7 +87,15 @@ export function StudentGradebook({
                         </span>
                       </td>
                       <td className="align-middle">
-                        {row.title}{' '}
+                        {row.assessment_instance_id == null ? (
+                          row.title
+                        ) : (
+                          <a
+                            href={`/pl/course_instance/${resLocals.course_instance.id}/assessment_instance/${row.assessment_instance_id}`}
+                          >
+                            {row.title}
+                          </a>
+                        )}{' '}
                         {row.assessment_group_work && (
                           <i className="fas fa-users" aria-hidden="true" />
                         )}
