@@ -66,11 +66,17 @@ export function QuestionContainer({
     course_instance,
     authz_data,
     is_administrator,
-    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
   } = resLocals;
+
+  const isAiGradingPreview = questionRenderContext === 'ai_grading';
+  // The AI grader always receives the answer when it is non-blank, regardless of `showCorrectAnswer`.
+  const answerVisible = isAiGradingPreview ? !!answerHtml.trim() : resLocals.showCorrectAnswer;
+  const answerBody = isAiGradingPreview
+    ? AiGradingHtmlPreview(answerHtml.trim())
+    : unsafeHtml(answerHtml);
 
   return html`
     <div
@@ -106,16 +112,15 @@ export function QuestionContainer({
           : QuestionPanel({ resLocals, showFooter, questionContext })
       }
       ${
-        // The correct answer isn't used when performing AI grading, so we hide
-        // it here to avoid confusion.
-        questionRenderContext !== 'ai_grading'
+        // The AI grader omits a blank answer, so the preview omits the card entirely.
+        !isAiGradingPreview || answerVisible
           ? html`
-              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
+              <div class="card mb-3 grading-block${answerVisible ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${answerVisible ? answerBody : ''}
                 </div>
               </div>
             `
