@@ -14,9 +14,9 @@ Embeds a workspace launcher in the question that allows for code that needs a ri
 
 ## Customizations
 
-| Attribute | Type   | Default          | Description                                                               |
-| --------- | ------ | ---------------- | ------------------------------------------------------------------------- |
-| `label`   | string | "Open workspace" | The text displayed on the workspace button. Blank labels use the default. |
+| Attribute | Type   | Default          | Description                                 |
+| --------- | ------ | ---------------- | ------------------------------------------- |
+| `label`   | string | "Open workspace" | The text displayed on the workspace button. |
 
 ## Example implementations
 
