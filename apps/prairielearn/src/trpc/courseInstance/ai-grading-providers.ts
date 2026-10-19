@@ -60,7 +60,14 @@ async function discoverModels(input: Parameters<typeof discoverAiGradingModels>[
           ? 'TIMEOUT'
           : error.code === 'rate_limit'
             ? 'TOO_MANY_REQUESTS'
-            : 'BAD_REQUEST',
+            : [
+                  'provider_error',
+                  'request_failed',
+                  'invalid_response',
+                  'response_too_large',
+                ].includes(error.code)
+              ? 'BAD_GATEWAY'
+              : 'BAD_REQUEST',
       message: error.message,
     });
   }
