@@ -54,6 +54,14 @@ Ignored,XC 101,"Block, Jasen",8.00,jblock3430,11,80.00,658001234,B
     ]);
   });
 
+  it('returns an error for missing headers', () => {
+    const csv = 'Name,Email\nJohn,john@test.com\n';
+    const { students, error } = parseCanvasCsv(csv);
+    assert.isNotNull(error);
+    assert.include(error, 'Missing required Canvas columns');
+    assert.lengthOf(students, 0);
+  });
+
   it('reports only headers that are missing', () => {
     const csv = `Section,Student,SIS Login ID,ID,Quiz 1
 XC 101,"Block, Jasen",jblock3430,11,8.00
