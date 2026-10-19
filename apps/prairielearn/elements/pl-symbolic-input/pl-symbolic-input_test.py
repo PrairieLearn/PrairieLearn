@@ -562,7 +562,7 @@ def test_formula_editor_uses_unique_dom_ids_and_stable_answer_names(
             ]
             == "test-latex"
         )
-        assert f'window.PLSymbolicInput("test", "{suffix}")' in lxml.html.tostring(
+        assert f'window.PLSymbolicInput("{suffix}")' in lxml.html.tostring(
             rendered, encoding="unicode"
         )
 
