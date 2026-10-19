@@ -79,7 +79,11 @@ describe('custom AI grading provider API', { concurrent: false }, () => {
       { models: ['model-a', 'model-b'] },
     );
     expect(await selectCredentials('1')).toEqual([]);
-    expect(discover).toHaveBeenCalledWith({ baseUrl: base_url, apiKey: secret_key });
+    expect(discover).toHaveBeenCalledWith({
+      baseUrl: base_url,
+      apiKey: secret_key,
+      courseInstanceId: '1',
+    });
   });
 
   it('saves encrypted configuration with safe metadata and redacted audit', async () => {
@@ -116,7 +120,7 @@ describe('custom AI grading provider API', { concurrent: false }, () => {
     expect(discover).toHaveBeenCalledWith({
       baseUrl: 'https://provider.example/v1',
       apiKey: secret_key,
-      credentialIdentity: { courseInstanceId: '1', credentialId },
+      courseInstanceId: '1',
     });
   });
 

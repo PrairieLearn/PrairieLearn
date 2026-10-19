@@ -83,8 +83,12 @@ export const aiGradingProvidersRouter = t.router({
     .use(requireCoursePermissionOwn)
     .input(connectionSchema)
     .output(modelsSchema)
-    .mutation(async ({ input }) => ({
-      models: await discoverModels({ baseUrl: input.base_url, apiKey: input.secret_key }),
+    .mutation(async ({ ctx, input }) => ({
+      models: await discoverModels({
+        baseUrl: input.base_url,
+        apiKey: input.secret_key,
+        courseInstanceId: ctx.course_instance.id,
+      }),
     })),
   save: featureProcedure
     .use(requireCoursePermissionOwn)
@@ -92,7 +96,11 @@ export const aiGradingProvidersRouter = t.router({
     .output(z.object({ credential: StaffAiGradingCredentialSchema }))
     .mutation(async ({ ctx, input }) => {
       // Recheck the submitted connection outside the transaction; never trust the client's catalog.
-      await discoverModels({ baseUrl: input.base_url, apiKey: input.secret_key });
+      await discoverModels({
+        baseUrl: input.base_url,
+        apiKey: input.secret_key,
+        courseInstanceId: ctx.course_instance.id,
+      });
       try {
         const credential = await replaceCustomCredential({
           course_instance_id: ctx.course_instance.id,
@@ -125,10 +133,7 @@ export const aiGradingProvidersRouter = t.router({
         models: await discoverModels({
           baseUrl: credential.base_url,
           apiKey: decryptFromStorage(credential.encrypted_secret_key),
-          credentialIdentity: {
-            courseInstanceId: ctx.course_instance.id,
-            credentialId: credential.id,
-          },
+          courseInstanceId: ctx.course_instance.id,
         }),
       };
     }),
