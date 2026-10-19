@@ -176,15 +176,14 @@ export function OverlayTrigger({
     <Popover
       {...popover.props}
       id={popover.props?.id ?? popoverId}
-      role={isClickTriggered ? 'dialog' : popover.props?.role}
-      aria-labelledby={
-        isClickTriggered && popover.header ? headerId : popover.props?.['aria-labelledby']
-      }
-      aria-label={
-        isClickTriggered && !popover.header
-          ? (popover.props?.['aria-label'] ?? 'Popover')
-          : popover.props?.['aria-label']
-      }
+      {...(isClickTriggered
+        ? {
+            role: 'dialog' as const,
+            ...(popover.header
+              ? { 'aria-labelledby': headerId }
+              : { 'aria-label': popover.props?.['aria-label'] ?? 'Popover' }),
+          }
+        : {})}
       onKeyDown={(event) => {
         popover.props?.onKeyDown?.(event);
         if (isClickTriggered && event.key === 'Escape' && !event.defaultPrevented) {
