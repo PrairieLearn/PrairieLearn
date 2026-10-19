@@ -14,6 +14,7 @@ import type { QuestionUrls } from '../../../lib/question-render.types.js';
 import { getDynamicFile } from '../../../lib/question-variant.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_SVG_PIXELS = 16_000_000;
 const IMAGE_TIMEOUT_MS = 10_000;
 
 export interface QuestionImageContext {
@@ -140,7 +141,7 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
   const { format } = await sharp(image).metadata();
   if (format === 'svg') {
     // AI grading providers do not support SVG image inputs, so convert to PNG.
-    const png = await sharp(image).png().toBuffer();
+    const png = await sharp(image, { limitInputPixels: MAX_SVG_PIXELS }).png().toBuffer();
     if (png.length > MAX_IMAGE_BYTES) throw new Error('Question image exceeds the size limit');
     return { data: png.toString('base64'), mediaType: 'image/png' };
   }

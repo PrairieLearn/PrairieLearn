@@ -107,6 +107,18 @@ describe('loadQuestionImage', () => {
     expect(publicFetchModule.publicFetch).not.toHaveBeenCalled();
   });
 
+  it('rejects SVG images exceeding the pixel limit', async () => {
+    const oversizedSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="5000" height="5000"><rect width="5000" height="5000" fill="red"/></svg>';
+
+    await expect(
+      loadQuestionImage(
+        `data:image/svg+xml;base64,${Buffer.from(oversizedSvg).toString('base64')}`,
+        context,
+      ),
+    ).rejects.toThrow('pixel limit');
+  });
+
   it('generates files using the current variant context', async () => {
     vi.mocked(questionVariant.getDynamicFile).mockResolvedValue(image);
     await loadQuestionImage('/question/1/generatedFilesQuestion/variant/2/image.png', context);
