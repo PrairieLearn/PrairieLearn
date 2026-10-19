@@ -12,7 +12,7 @@ import { IdSchema } from '@prairielearn/zod';
 export const PRINT_ASSET_TOKEN_HEADER = 'X-PL-Print-Asset-Token';
 const PRINT_ASSET_TOKEN_MAX_AGE_MS = 5 * 60 * 1000;
 
-export const PrintAssetScopeSchema = z.strictObject({
+const PrintAssetScopeSchema = z.strictObject({
   jobId: z.uuid(),
   courseInstanceId: IdSchema,
   assessmentId: IdSchema,
