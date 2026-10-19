@@ -60,17 +60,20 @@ export type InstanceLogEntry = Omit<
 >;
 
 /**
- * Render the "text" property of an assessment as sanitized Markdown.
+ * Render the "text" property of an assessment, optionally as sanitized Markdown.
  *
  * @param assessment - The assessment to render the text for.
  * @param assessment.id - The assessment ID.
  * @param assessment.text - The assessment text.
  * @param urlPrefix - The current server urlPrefix.
+ * @param options - Rendering options.
+ * @param options.markdownEnabled - Whether to render sanitized Markdown instead of HTML.
  * @returns The rendered text.
  */
 export function renderText(
   assessment: { id: string; text: string | null },
   urlPrefix: string,
+  { markdownEnabled = false }: { markdownEnabled?: boolean } = {},
 ): string | null {
   if (!assessment.text) return null;
 
@@ -88,7 +91,10 @@ export function renderText(
     .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
     .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
 
-  return markdownToHtml(mustache.render(text, context), { interpretMath: false });
+  const rendered = mustache.render(text, context);
+  return markdownEnabled
+    ? markdownToHtml(rendered, { interpretMath: false, sanitize: 'strict' })
+    : rendered;
 }
 
 /**

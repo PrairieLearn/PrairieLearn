@@ -62,7 +62,7 @@
     },
     "text": {
       "type": "string",
-      "description": "Text shown on the assessment overview page. Supports Markdown and HTML. JavaScript and unsafe HTML are removed."
+      "description": "HTML text shown on the assessment overview page."
     },
     "maxPoints": {
       "type": "number",

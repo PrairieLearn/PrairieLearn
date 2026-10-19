@@ -43,6 +43,6 @@ describe('sanitizeHtml', () => {
       '</div>',
     ].join('');
 
-    assert.equal(sanitizeHtml(html), expected);
+    assert.equal(sanitizeHtml(html, { strict: true }), expected);
   });
 });

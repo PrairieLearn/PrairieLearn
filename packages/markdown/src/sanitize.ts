@@ -37,9 +37,11 @@ interface SanitizeInstance {
   uses: number;
 }
 
-let instance: SanitizeInstance | null = null;
+const instances: Partial<Record<'default' | 'strict', SanitizeInstance>> = {};
 
-function getOrCreateInstance(): SanitizeInstance {
+function getOrCreateInstance(strict: boolean): SanitizeInstance {
+  const mode = strict ? 'strict' : 'default';
+  let instance = instances[mode];
   if (instance && instance.uses < INSTANCE_MAX_USES) {
     instance.uses += 1;
     return instance;
@@ -52,45 +54,53 @@ function getOrCreateInstance(): SanitizeInstance {
   const jsdom = new JSDOM('');
   const dompurify = createDOMPurify(jsdom.window as any);
 
-  dompurify.addHook('afterSanitizeAttributes', (node) => {
-    if (node.hasAttribute('class')) {
-      // These classes suppress math interpretation without activating UI behavior.
-      const classes = [...node.classList].filter(
-        (name) => name === 'mathjax_ignore' || name === 'tex2jax_ignore',
-      );
-      if (classes.length > 0) node.setAttribute('class', classes.join(' '));
-      else node.removeAttribute('class');
-    }
-
-    for (const attribute of node.attributes) {
-      if (ID_REFERENCE_ATTRIBUTES.has(attribute.name)) {
-        attribute.value = attribute.value.replaceAll(/\S+/g, (id) => `${USER_CONTENT_PREFIX}${id}`);
-      } else if (
-        ['href', 'xlink:href', 'usemap'].includes(attribute.name) &&
-        attribute.value.startsWith('#') &&
-        attribute.value.length > 1
-      ) {
-        attribute.value = `#${USER_CONTENT_PREFIX}${attribute.value.slice(1)}`;
+  if (strict) {
+    dompurify.addHook('afterSanitizeAttributes', (node) => {
+      if (node.hasAttribute('class')) {
+        // These classes suppress math interpretation without activating UI behavior.
+        const classes = [...node.classList].filter(
+          (name) => name === 'mathjax_ignore' || name === 'tex2jax_ignore',
+        );
+        if (classes.length > 0) node.setAttribute('class', classes.join(' '));
+        else node.removeAttribute('class');
       }
-    }
 
-    if (node.localName !== 'a' || node.getAttribute('target')?.toLowerCase() !== '_blank') return;
+      for (const attribute of node.attributes) {
+        if (ID_REFERENCE_ATTRIBUTES.has(attribute.name)) {
+          attribute.value = attribute.value.replaceAll(
+            /\S+/g,
+            (id) => `${USER_CONTENT_PREFIX}${id}`,
+          );
+        } else if (
+          ['href', 'xlink:href', 'usemap'].includes(attribute.name) &&
+          attribute.value.startsWith('#') &&
+          attribute.value.length > 1
+        ) {
+          attribute.value = `#${USER_CONTENT_PREFIX}${attribute.value.slice(1)}`;
+        }
+      }
 
-    const rel = new Set(node.getAttribute('rel')?.split(/\s+/).filter(Boolean));
-    rel.add('noopener');
-    rel.add('noreferrer');
-    node.setAttribute('rel', [...rel].join(' '));
-  });
+      if (node.localName !== 'a' || node.getAttribute('target')?.toLowerCase() !== '_blank') return;
+
+      const rel = new Set(node.getAttribute('rel')?.split(/\s+/).filter(Boolean));
+      rel.add('noopener');
+      rel.add('noreferrer');
+      node.setAttribute('rel', [...rel].join(' '));
+    });
+  }
 
   // Sanity check: make sure that DOMPurify is fully supported.
   assert(dompurify.isSupported);
 
   instance = { jsdom, dompurify, uses: 1 };
+  instances[mode] = instance;
   return instance;
 }
 
-export function sanitizeHtml(html: string): string {
-  const instance = getOrCreateInstance();
+export function sanitizeHtml(html: string, { strict = false }: { strict?: boolean } = {}): string {
+  const instance = getOrCreateInstance(strict);
+  if (!strict) return instance.dompurify.sanitize(html);
+
   return instance.dompurify.sanitize(html, {
     ALLOW_DATA_ATTR: false,
     FORBID_ATTR: ['style'],

@@ -448,12 +448,7 @@ export const AssessmentJsonSchema = z
       .array(AccessControlJsonSchema)
       .describe('Access control settings for the assessment.')
       .optional(),
-    text: z
-      .string()
-      .describe(
-        'Text shown on the assessment overview page. Supports Markdown and HTML. JavaScript and unsafe HTML are removed.',
-      )
-      .optional(),
+    text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()
       .gte(0)

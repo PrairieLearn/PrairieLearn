@@ -26,7 +26,7 @@ In addition to those properties, the following properties can be used to further
 | [`accessControl`](../assessment/accessControl.md)              | array   | Modern access control rules. (default: no student access)                                                                   |
 | [`allowAccess`](../assessment/accessControlLegacy.md)          | array   | Legacy access rules. Prefer `accessControl` for new assessments. (default: no student access)                               |
 | [`zones`](#question-specification)                             | array   | Specification of zones and questions. (default: none)                                                                       |
-| `text`                                                         | string  | Text on the assessment overview page. Supports Markdown and HTML. JavaScript and unsafe HTML are removed. (default: none)   |
+| `text`                                                         | string  | HTML text shown on the assessment overview page. (default: none)                                                            |
 | `multipleInstance`                                             | boolean | Whether to allow students to create whole new attempts at the entire assessment. (default: `false`)                         |
 | `maxPoints`                                                    | number  | The maximum points that can be earned. (default: sum of zone max points)                                                    |
 | [`maxBonusPoints`](#assessment-points)                         | number  | The maximum number of additional points that can be earned beyond `maxPoints`. (default: 0)                                 |
@@ -921,19 +921,7 @@ Access control options can also be used to control the open/close dates of asses
 
 ## Adding text and links to assessments
 
-You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. The text supports Markdown formatting and HTML. JavaScript and unsafe HTML are removed before display. Embedded iframes and interactive Bootstrap components are not supported. Use links to external content instead.
-
-Custom CSS styles and classes are removed. Use Markdown or HTML elements such as headings, lists, and tables for formatting. HTML IDs and names receive a `user-content-` prefix, and local links and accessibility references are updated to match.
-
-```json title="infoAssessment.json"
-{
-  "text": "## Instructions\n\nAnswer **all questions**.\n\n- Show your work.\n- Check your answers."
-}
-```
-
-Use backticks for literal expressions such as `5*4^2*2!`, so Markdown does not interpret the asterisks as emphasis. HTML can be included directly; do not wrap it in Markdown code fences or indent it by four spaces, which displays it as code. Markdown is generally not interpreted inside HTML blocks, but blank lines can end those blocks. Quote HTML attribute values and separate attributes with spaces.
-
-The following mustache template variables are available:
+You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. The following mustache template variables are available:
 
 | Variable                       | Description                                    |
 | ------------------------------ | ---------------------------------------------- |
@@ -943,15 +931,7 @@ The following mustache template variables are available:
 
 ```json title="infoAssessment.json"
 {
-  "text": "[Formula sheet]({{ client_files_assessment }}/formulas.pdf)"
-}
-```
-
-To open a link in a new tab, use HTML:
-
-```json title="infoAssessment.json"
-{
-  "text": "<a href=\"{{ client_files_assessment }}/formulas.pdf\" target=\"_blank\">Formula sheet</a>"
+  "text": "<a href=\"{{ client_files_assessment }}/formulas.pdf\">Formula sheet</a>"
 }
 ```
 

@@ -25,12 +25,12 @@ const noHtml = markdownToHtml('Some text <em>with HTML</em>', { allowHtml: false
 
 ### Options
 
-- `sanitize` (default: `true`): If true, sanitizes the HTML output using DOMPurify to prevent XSS attacks.
+- `sanitize` (default: `true`): Uses DOMPurify's default sanitization. Set to `'strict'` to apply the additional restrictions below, or `false` to disable sanitization.
 - `inline` (default: `false`): If true, parses the markdown as inline content (without wrapping block elements).
 - `allowHtml` (default: `true`): If true, allows HTML tags in the markdown. If false, HTML tags will be removed from the output.
 - `interpretMath` (default: `true`): If true, prepares and escapes LaTeX strings to be parsed by MathJax (assumes MathJax is available client-side).
 
-Sanitization removes data attributes, inline styles, `<style>` elements, and classes other than `mathjax_ignore` and `tex2jax_ignore`. IDs and names receive a `user-content-` prefix; local fragment links and ID references are updated to match.
+Strict sanitization removes data attributes, inline styles, `<style>` elements, and classes other than `mathjax_ignore` and `tex2jax_ignore`. IDs and names receive a `user-content-` prefix; local fragment links and ID references are updated to match. New-tab links retain their targets and receive `noopener noreferrer`.
 
 ### Advanced usage with custom extensions
 

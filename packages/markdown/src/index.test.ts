@@ -5,7 +5,12 @@ import { markdownToHtml } from './index.js';
 function testMarkdown(
   original: string,
   expected: string,
-  options: { inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
+  options: {
+    sanitize?: boolean | 'strict';
+    inline?: boolean;
+    allowHtml?: boolean;
+    interpretMath?: boolean;
+  } = {},
 ) {
   const actual = markdownToHtml(original, options);
   assert.equal(actual.toString().trim(), expected);
@@ -125,7 +130,9 @@ describe('Markdown processing', () => {
 
   it('removes data attributes from rendered Markdown', () => {
     const markdown = '**Instructions** <span data-bs-toggle="popover">Help</span>';
-    testMarkdown(markdown, '<p><strong>Instructions</strong> <span>Help</span></p>');
+    testMarkdown(markdown, '<p><strong>Instructions</strong> <span>Help</span></p>', {
+      sanitize: 'strict',
+    });
   });
 
   it('sanitizes HTML javascript event tags', () => {

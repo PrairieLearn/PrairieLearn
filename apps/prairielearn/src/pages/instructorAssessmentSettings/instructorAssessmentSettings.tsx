@@ -20,6 +20,7 @@ import {
 import { config } from '../../lib/config.js';
 import { computeScopedJsonHash, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { type AssessmentToolsConfig } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
@@ -46,11 +47,18 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const { assessment, assessment_set, course, course_instance, authz_data, urlPrefix } =
-      extractPageContext(res.locals, {
-        pageType: 'assessment',
-        accessType: 'instructor',
-      });
+    const {
+      assessment,
+      assessment_set,
+      course,
+      course_instance,
+      institution,
+      authz_data,
+      urlPrefix,
+    } = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
 
     const tids = await sqldb.queryScalars(
       sql.tids,
@@ -80,11 +88,16 @@ router.get(
       (await computeScopedJsonHash<AssessmentJsonInput>(fullInfoAssessmentPath, settingsScope)) ??
       '';
 
-    const [toolDefaultRows, zonePointsRange, hasInstances] = await Promise.all([
-      selectAssessmentToolDefaults({ assessment_id: assessment.id }),
-      selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
-      selectAssessmentHasInstances(assessment.id),
-    ]);
+    const [toolDefaultRows, zonePointsRange, hasInstances, assessmentOverviewMarkdownEnabled] =
+      await Promise.all([
+        selectAssessmentToolDefaults({ assessment_id: assessment.id }),
+        selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
+        selectAssessmentHasInstances(assessment.id),
+        features.enabled('assessment-overview-markdown', {
+          institution_id: institution.id,
+          course_id: course.id,
+        }),
+      ]);
     const toolDefaults = new Map(toolDefaultRows.map((row) => [row.tool, row]));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
       name: tool,
@@ -157,6 +170,7 @@ router.get(
               nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
               questionSharingEnabled={questionSharingEnabled}
               hasInstances={hasInstances}
+              assessmentOverviewMarkdownEnabled={assessmentOverviewMarkdownEnabled}
             />
           </Hydrate>
         ),
