@@ -1,5 +1,6 @@
 from dataclasses import dataclass, fields, is_dataclass
-from typing import Any, Literal
+from tokenize import TokenError
+from typing import Any, Literal, cast
 
 import prairielearn.sympy_utils as psu
 import pytest
@@ -179,6 +180,94 @@ def _evaluation_context(
     )
 
 
+def _legacy_evaluate_for_oracle(
+    source: sympy_source.SourceText,
+    locals_for_eval: psu.LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+) -> psu.SympyValue:
+    """Evaluate through the retired pipeline only for differential testing."""
+    local_dict = {
+        key: value
+        for inner_dict in locals_for_eval.values()
+        for key, value in cast(psu.SympyMapT, inner_dict).items()
+    }
+    if allow_extra_symbols and not allow_sets:
+        for domain_name in psu._SET_DOMAIN_NAMES:
+            local_dict.setdefault(domain_name, sympy.Symbol(domain_name))
+
+    global_dict = dict(psu._SYMPY_GLOBALS)
+    transformations = (
+        *psu.sympy_parser.standard_transformations,
+        psu.sympy_parser.implicit_multiplication_application,
+    )
+    if allow_sets:
+        transformations = (
+            psu._unmangle_infix_binops_transformation(
+                psu._Constants.set_operators.keys()
+            ),
+            psu._set_literal_transformation,
+            psu._set_operation_transformation,
+            psu._interval_transformation,
+            *transformations,
+        )
+    else:
+        transformations = (
+            psu._err_on_transform(
+                psu._interval_transformation, psu.HasSetNotationError
+            ),
+            *transformations,
+        )
+
+    try:
+        code = psu.sympy_parser.stringify_expr(
+            source.text, local_dict, global_dict, transformations
+        )
+    except (TokenError, IndexError) as exc:
+        raise psu.HasParseError(-1) from exc
+
+    parsed_locals: psu.LocalsForEval = {
+        "functions": locals_for_eval["functions"].copy(),
+        "variables": locals_for_eval["variables"].copy(),
+        "helpers": locals_for_eval["helpers"].copy(),
+    }
+    parsed_locals["functions"].update(
+        Integer=sympy.Integer,
+        Symbol=sympy.Symbol,
+        Float=sympy.Float,
+        Interval=sympy.Interval,
+        Union=sympy.Union,
+        Intersection=sympy.Intersection,
+    )
+    parsed_locals["variables"].update(I=sympy.I, oo=sympy.oo)
+    psu.ast_check_str(code, parsed_locals, allow_sets=allow_sets)
+
+    if not simplify_expression:
+        try:
+            code = compile(psu.sympy_parser.evaluateFalse(code), "<string>", "eval")
+        except SyntaxError as exc:
+            raise psu.HasParseError(exc.offset or -1) from exc
+
+    try:
+        result = psu.sympy_parser.eval_expr(code, local_dict, global_dict)
+    except (TypeError, AttributeError) as exc:
+        raise psu.BaseSympyError from exc
+    except Exception as exc:
+        raise psu.BaseSympyError from exc
+
+    psu.sympy_check(
+        result,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+    return result
+
+
 def _capture_oracle_outcome(
     case: _OracleCase, *, grammar: bool, simplify_expression: bool
 ) -> _OracleOutcome:
@@ -216,14 +305,14 @@ def _capture_oracle_outcome(
                 allow_extra_symbols=case.allow_extra_symbols,
             )
         else:
-            result = psu._evaluate_normalized_source(
+            result = _legacy_evaluate_for_oracle(
                 source,
                 locals_for_eval,
                 allow_complex=case.allow_complex,
                 allow_sets=case.allow_sets,
                 simplify_expression=simplify_expression,
                 allow_extra_symbols=case.allow_extra_symbols,
-            )[0]
+            )
     except sympy_evaluation.ExpressionEvaluationError as exc:
         return _OracleOutcome(
             accepted=False, exception=_diagnostic_signature(exc.diagnostic)

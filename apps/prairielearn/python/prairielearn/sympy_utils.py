@@ -380,7 +380,7 @@ class _TokenEvidence:
     token: str
 
 
-type _ErrorEvidence = _IndexEvidence | _TokenEvidence | None
+type _ErrorEvidence = sympy_source.SourceSpan | _IndexEvidence | _TokenEvidence | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -895,12 +895,22 @@ def evaluate(
     Returns:
         A SymPy expression.
     """
-    return evaluate_with_source(
+    source = _normalize_source(
         expr,
-        locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
-    )[0]
+    )
+    try:
+        return _evaluate_normalized_source(
+            source,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=True,
+            allow_extra_symbols=False,
+        )
+    except _LocalizedSympyError as exc:
+        _raise_unwrapped(exc)
 
 
 def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") -> str:
@@ -1022,6 +1032,8 @@ def _validate_and_rewrite_source(
         raise HasCommentError(source.tokens[ind].raw_offset)
     if stars := re.search(r"\*{3,}", source.text):
         raise HasInvalidExpressionError(source.tokens[stars.start()].raw_offset)
+    if comparison := re.search(r"(?:==|!=|<=|>=|<|>|(?<!\*)=(?!=))", source.text):
+        raise HasInvalidExpressionError(source.tokens[comparison.start()].raw_offset)
     if not allow_sets and any(
         token in source.text
         for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # ruff:ignore[ambiguous-unicode-character-string]
@@ -1150,7 +1162,7 @@ def _evaluate_with_source(
         allow_sets=allow_sets,
     )
     try:
-        return _evaluate_normalized_source(
+        return _evaluate_legacy_normalized_source(
             source,
             locals_for_eval,
             allow_complex=allow_complex,
@@ -1171,8 +1183,45 @@ def _evaluate_normalized_source(
     allow_sets: bool,
     simplify_expression: bool,
     allow_extra_symbols: bool,
+) -> SympyValue:
+    from prairielearn.internal.sympy_expression import parse_and_evaluate
+
+    result = parse_and_evaluate(
+        source,
+        locals_for_eval,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+    try:
+        sympy_check(
+            result,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+    except BaseSympyError as exc:
+        raise _LocalizedSympyError(
+            exc,
+            source,
+            _default_error_evidence(exc),
+            cause=exc.__cause__,
+        ) from None
+    return result
+
+
+def _evaluate_legacy_normalized_source(
+    source: sympy_source.SourceText,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
     resolved_name_overrides: Mapping[str, Any] | None = None,
 ) -> tuple[SympyValue, str | CodeType]:
+    """Evaluate persisted legacy expressions with the historical Python pipeline."""
     normalized_expr = source.text
 
     local_dict: DICT = {
@@ -1328,6 +1377,70 @@ def _evaluate_normalized_source(
     return res, evaluation_code
 
 
+def _legacy_source_for_compatibility(
+    source: sympy_source.SourceText,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+) -> str | CodeType:
+    """Generate the historical Python artifact without evaluating it."""
+    local_dict: DICT = {
+        k: v
+        for inner_dict in locals_for_eval.values()
+        for k, v in cast(SympyMapT, inner_dict).items()
+    }
+    if allow_extra_symbols and not allow_sets:
+        for domain_name in _SET_DOMAIN_NAMES:
+            local_dict.setdefault(domain_name, sympy.Symbol(domain_name))
+
+    global_dict = dict(_SYMPY_GLOBALS)
+    transformations = (
+        *sympy_parser.standard_transformations,
+        sympy_parser.implicit_multiplication_application,
+    )
+    if allow_sets:
+        transformations = (
+            _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
+            _set_literal_transformation,
+            _set_operation_transformation,
+            _interval_transformation,
+            *transformations,
+        )
+    else:
+        transformations = (
+            _err_on_transform(_interval_transformation, HasSetNotationError),
+            *transformations,
+        )
+
+    try:
+        code = sympy_parser.stringify_expr(
+            source.text, local_dict, global_dict, transformations
+        )
+    except (TokenError, IndexError) as exc:
+        raise HasParseError(-1) from exc
+
+    if not simplify_expression:
+        try:
+            code = compile(sympy_parser.evaluateFalse(code), "<string>", "eval")
+        except SyntaxError as exc:
+            parse_error = HasParseError(exc.offset if exc.offset is not None else -1)
+            evidence = None
+            if exc.text is not None and exc.offset is not None:
+                token = _token_at_offset(exc.text, exc.offset - 1)
+                if token is not None:
+                    evidence = _TokenEvidence(token)
+            raise _LocalizedSympyError(
+                parse_error,
+                source,
+                evidence,
+                cause=exc,
+            ) from None
+
+    return code
+
+
 @overload
 def evaluate_with_source(
     expr: str,
@@ -1362,14 +1475,30 @@ def evaluate_with_source(
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]:
     """Evaluate a SymPy expression string and return its value and source code."""
-    return _evaluate_with_source(
+    source = _normalize_source(
         expr,
-        locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
-        simplify_expression=simplify_expression,
-        allow_extra_symbols=allow_extra_symbols,
     )
+    try:
+        result = _evaluate_normalized_source(
+            source,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+        legacy_source = _legacy_source_for_compatibility(
+            source,
+            locals_for_eval,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+        return result, legacy_source
+    except _LocalizedSympyError as exc:
+        _raise_unwrapped(exc)
 
 
 @overload
@@ -1444,18 +1573,22 @@ def convert_string_to_sympy(
     Returns:
         A sympy expression.
     """
-    return convert_string_to_sympy_with_source(
-        expr,
-        variables=variables,
-        allow_hidden=allow_hidden,
-        allow_sets=allow_sets,
-        allow_complex=allow_complex,
-        allow_trig_functions=allow_trig_functions,
-        simplify_expression=simplify_expression,
-        custom_functions=custom_functions,
-        assumptions=assumptions,
-        allow_extra_symbols=allow_extra_symbols,
-    )[0]
+    try:
+        return _convert_source_to_sympy(
+            None,
+            expr,
+            variables,
+            allow_hidden=allow_hidden,
+            allow_sets=allow_sets,
+            allow_complex=allow_complex,
+            allow_trig_functions=allow_trig_functions,
+            simplify_expression=simplify_expression,
+            custom_functions=custom_functions,
+            assumptions=assumptions,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+    except _LocalizedSympyError as exc:
+        _raise_unwrapped(exc)
 
 
 def _convert_string_to_sympy_with_source(
@@ -1473,17 +1606,48 @@ def _convert_string_to_sympy_with_source(
     resolved_name_overrides: Mapping[str, Any] | None = None,
 ) -> tuple[SympyValue, str | CodeType]:
     """Convert a string to a SymPy expression and return its generated source."""
-    return _convert_source_to_sympy_with_source(
-        None,
-        expr,
+    locals_for_eval = _prepare_locals_for_eval(
         variables,
         allow_hidden=allow_hidden,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
-        simplify_expression=simplify_expression,
         custom_functions=custom_functions,
         assumptions=assumptions,
+    )
+    if allow_sets:
+        locals_for_eval["functions"].setdefault("Set", sympy.Set)
+    source = _normalize_source(
+        expr,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+    try:
+        result = _evaluate_normalized_source(
+            source,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+        legacy_source = _legacy_source_for_compatibility(
+            source,
+            locals_for_eval,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+        return result, legacy_source
+    except _LocalizedSympyError as exc:
+        if resolved_name_overrides is None:
+            _raise_unwrapped(exc)
+    return _evaluate_with_source(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
         resolved_name_overrides=resolved_name_overrides,
     )
@@ -1564,7 +1728,7 @@ def _prepare_locals_for_eval(
     return locals_for_eval
 
 
-def _convert_source_to_sympy_with_source(
+def _convert_source_to_sympy(
     source: sympy_source.SourceText | None,
     expr: str,
     variables: Iterable[str] | None = None,
@@ -1577,16 +1741,15 @@ def _convert_source_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
-    resolved_name_overrides: Mapping[str, Any] | None = None,
     normalize_input: bool = False,
-) -> tuple[SympyValue, str | CodeType]:
+) -> SympyValue:
     """
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
     raise an exception with a message that can be displayed to the user.
 
     Returns:
-        A tuple of the sympy expression and the source code that was used to generate it.
+        The parsed SymPy value.
 
     """
     locals_for_eval = _prepare_locals_for_eval(
@@ -1599,18 +1762,7 @@ def _convert_source_to_sympy_with_source(
         assumptions=assumptions,
     )
 
-    # Do the conversion
-    if source is None:
-        return _evaluate_with_source(
-            expr,
-            locals_for_eval,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
-            allow_extra_symbols=allow_extra_symbols,
-            resolved_name_overrides=resolved_name_overrides,
-        )
-    if normalize_input:
+    if source is None or normalize_input:
         source = _normalize_source(
             expr,
             allow_complex=allow_complex,
@@ -1623,7 +1775,6 @@ def _convert_source_to_sympy_with_source(
         allow_sets=allow_sets,
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
-        resolved_name_overrides=resolved_name_overrides,
     )
 
 
@@ -1673,18 +1824,39 @@ def convert_string_to_sympy_with_source(
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]:
     """Convert a string to a SymPy expression and return its source code."""
-    return _convert_string_to_sympy_with_source(
-        expr,
+    locals_for_eval = _prepare_locals_for_eval(
         variables,
         allow_hidden=allow_hidden,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
-        simplify_expression=simplify_expression,
         custom_functions=custom_functions,
         assumptions=assumptions,
-        allow_extra_symbols=allow_extra_symbols,
     )
+    source = _normalize_source(
+        expr,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+    try:
+        result = _evaluate_normalized_source(
+            source,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+        legacy_source = _legacy_source_for_compatibility(
+            source,
+            locals_for_eval,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+        return result, legacy_source
+    except _LocalizedSympyError as exc:
+        _raise_unwrapped(exc)
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
@@ -1713,16 +1885,6 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
     if ind != -1:
         return ind
     return expr.rfind(symbol)
-
-
-def _token_candidates(token: str) -> list[str]:
-    candidates = [token]
-    candidates.extend(
-        alias
-        for alias, transformed_operator in sympy_constants.set_operator_desugars.items()
-        if transformed_operator == token
-    )
-    return candidates
 
 
 def _source_span(
@@ -1759,9 +1921,9 @@ def _find_token_span(
     return _source_span(source, best_match.start(), best_match.end())
 
 
-def _locate_error(
-    error: _LocalizedSympyError,
-) -> sympy_source.SourceSpan | None:
+def _locate_error(error: _LocalizedSympyError) -> sympy_source.SourceSpan | None:
+    if isinstance(error.evidence, sympy_source.SourceSpan):
+        return error.evidence
     if isinstance(error.evidence, _IndexEvidence):
         return _source_span(
             error.source,
@@ -1822,7 +1984,9 @@ def _format_parse_failure(
         )
     if isinstance(error, HasInvalidSymbolError):
         symbol = error.symbol
-        if span is not None and isinstance(localized_error.evidence, _TokenEvidence):
+        if span is not None and isinstance(
+            localized_error.evidence, (sympy_source.SourceSpan, _TokenEvidence)
+        ):
             symbol = source.raw_text[span.start : span.end]
         return with_location(f'Your answer refers to an invalid symbol "{symbol}".')
     if isinstance(error, HasArgumentTypeError):
@@ -2089,7 +2253,7 @@ def try_parse_string_as_sympy(
 
     return _try_parse_as_sympy(
         source,
-        lambda: _convert_source_to_sympy_with_source(
+        lambda: _convert_source_to_sympy(
             source,
             expr,
             variables,
@@ -2101,7 +2265,7 @@ def try_parse_string_as_sympy(
             simplify_expression=simplify_expression,
             assumptions=assumptions,
             normalize_input=True,
-        )[0],
+        ),
         allow_complex=allow_complex,
         allowed_types=allowed_types,
     )
@@ -2671,7 +2835,7 @@ def _try_parse_normalized_source_as_sympy(
     """Parse text that has already passed through symbolic-input normalization."""
     return _try_parse_as_sympy(
         source,
-        lambda: _convert_source_to_sympy_with_source(
+        lambda: _convert_source_to_sympy(
             source,
             source.raw_text,
             variables,
@@ -2682,7 +2846,7 @@ def _try_parse_normalized_source_as_sympy(
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
-        )[0],
+        ),
         allow_complex=allow_complex,
         allowed_types=allowed_types,
     )

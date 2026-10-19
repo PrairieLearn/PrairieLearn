@@ -708,7 +708,18 @@ class Evaluator:
             self._set_call_type(name, arguments, span)
             result_type = sympy_evaluation.SympyType.SET
         else:
-            if (
+            arities = sympy_evaluation.builtin_function_arities(name)
+            if arities is not None:
+                self._require_signature(
+                    name,
+                    arguments,
+                    span,
+                    tuple(
+                        arity * (sympy_evaluation.SympyType.SCALAR,)
+                        for arity in arities
+                    ),
+                )
+            elif (
                 name in sympy_constants.functions
                 or name in sympy_constants.trig_functions
             ):

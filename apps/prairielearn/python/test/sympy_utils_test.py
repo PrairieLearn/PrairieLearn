@@ -7,7 +7,7 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-from prairielearn.internal import sympy_constants
+from prairielearn.internal import sympy_constants, sympy_expression
 
 
 def test_constants_compatibility_alias() -> None:
@@ -1595,6 +1595,20 @@ class TestExceptions:
     def test_builtin_function_valid_arity(self, expr: str) -> None:
         assert psu.validate_string_as_sympy(expr, self.VARIABLES) is None
 
+    def test_disabled_trig_call_is_an_invalid_function(self) -> None:
+        error_msg = psu.validate_string_as_sympy(
+            "sin(n)",
+            self.VARIABLES,
+            allow_trig_functions=False,
+        )
+        assert error_msg is not None
+        assert 'invalid function "sin"' in error_msg
+        assert psu.point_to_error("sin(n)", 0) in error_msg
+
+    def test_unknown_multi_argument_call_is_an_invalid_expression(self) -> None:
+        with pytest.raises(psu.HasInvalidExpressionError):
+            psu.convert_string_to_sympy("g(n, 1)", self.VARIABLES)
+
 
 @pytest.mark.parametrize("error_type", [TypeError, AttributeError])
 def test_evaluation_errors_have_student_fallback(
@@ -1604,7 +1618,7 @@ def test_evaluation_errors_have_student_fallback(
     def fail_evaluation(*_args: Any, **_kwargs: Any) -> Any:
         raise error_type("evaluation failed")
 
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_evaluation)
+    monkeypatch.setattr(sympy_expression.Evaluator, "evaluate", fail_evaluation)
     result = psu.try_parse_string_as_sympy("x", ["x"])
     assert isinstance(result, psu.SympyParseFailure)
     assert result.error == (
@@ -1619,11 +1633,99 @@ def test_unexpected_evaluation_errors_remain_staff_facing(
     def fail_evaluation(*_args: Any, **_kwargs: Any) -> Any:
         raise RuntimeError("internal failure")
 
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_evaluation)
+    monkeypatch.setattr(sympy_expression.Evaluator, "evaluate", fail_evaluation)
     result = psu.try_parse_string_as_sympy("x", ["x"])
     assert isinstance(result, psu.SympyParseFailure)
     assert result.error.startswith("Unexpected error:")
     assert result.error.endswith("Please contact the course staff.")
+
+
+def test_ordinary_parsing_does_not_use_generated_python(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_legacy_pipeline(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("ordinary parsing must not use the legacy pipeline")
+
+    monkeypatch.setattr(psu.sympy_parser, "stringify_expr", fail_legacy_pipeline)
+    monkeypatch.setattr(psu.ast, "parse", fail_legacy_pipeline)
+    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_legacy_pipeline)
+
+    assert psu.convert_string_to_sympy("2x + 1", ["x"]) == 2 * sympy.Symbol("x") + 1
+
+
+def test_source_compatibility_wrapper_does_not_evaluate_generated_python(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_legacy_evaluation(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("generated Python must not be evaluated")
+
+    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_legacy_evaluation)
+
+    result, source = psu.convert_string_to_sympy_with_source("2x + 1", ["x"])
+    assert result == 2 * sympy.Symbol("x") + 1
+    assert isinstance(source, str)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "x.real",
+        "__import__('os')",
+        "'x'",
+        "lambda x: x",
+        "[x for x in y]",
+        "x[0]",
+        "x == 1",
+        "sin(x=1)",
+    ],
+)
+def test_python_constructs_outside_symbolic_grammar_are_rejected(text: str) -> None:
+    result = psu.try_parse_string_as_sympy(text, ["x", "y"])
+    assert isinstance(result, psu.SympyParseFailure)
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["sin(1, 2)", "sqrt(1, 2)", "atan2(1)", "atan2(1, 2, 3)"],
+)
+def test_builtin_function_arities_are_checked(text: str) -> None:
+    with pytest.raises(psu.HasFunctionArityError):
+        psu.convert_string_to_sympy(text)
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_custom_complement_is_not_treated_as_a_set_constructor(
+    *, simplify_expression: bool
+) -> None:
+    complement = sympy.Function("Complement")
+    x = sympy.Symbol("x")
+    locals_for_eval: psu.LocalsForEval = {
+        "functions": {"Complement": complement},
+        "variables": {"x": x},
+        "helpers": {},
+    }
+
+    assert psu.evaluate_with_source(
+        "Complement(x)",
+        locals_for_eval,
+        allow_sets=True,
+        simplify_expression=simplify_expression,
+    )[0] == complement(x)
+
+
+def test_digit_suffixed_custom_function() -> None:
+    f2 = sympy.Function("f2")
+    assert psu.convert_string_to_sympy("f2(3)", custom_functions=["f2"]) == f2(3)
+
+
+def test_unsimplified_set_complement_is_evaluated() -> None:
+    result = psu.convert_string_to_sympy(
+        "[0, 5] - {2}",
+        allow_sets=True,
+        simplify_expression=False,
+    )
+    assert result == sympy.Union(sympy.Interval.Ropen(0, 2), sympy.Interval.Lopen(2, 5))
+    assert not isinstance(result, sympy.Complement)
 
 
 @pytest.mark.parametrize(
