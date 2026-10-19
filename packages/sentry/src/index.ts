@@ -1,5 +1,5 @@
 import { httpRequestToRequestData, stripUrlQueryAndFragment } from '@sentry/core';
-import * as Sentry from '@sentry/node-core';
+import * as Sentry from '@sentry/node';
 import { execa } from 'execa';
 
 /**
@@ -20,6 +20,40 @@ export async function init(options: Sentry.NodeOptions) {
 
   Sentry.init({
     release,
+    // Dependencies load before configuration provides the DSN. Keep our OTel
+    // instrumentation and manual Express capture instead of Sentry's module hooks.
+    enableRuntimeChannelInjection: false,
+    // Preserve v10's HTTP data collection policy; v11 collects more by default.
+    // This controls automatic collection, not data explicitly
+    // attached by requestHandler() or application event processors.
+    // https://github.com/getsentry/sentry-javascript/blob/11.0.0/MIGRATION.md#senddefaultpii-is-replaced-by-datacollection
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      // Retain v10's IP/user-related filtering alongside Sentry's built-in
+      // secret filtering. Deny terms match case-insensitive key substrings.
+      httpHeaders: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+      httpBodies: [],
+      // The same deny terms preserve v10's query parameter filtering.
+      urlQueryParams: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+    },
+    // Keep the standard error handlers and diagnostic enrichment, while leaving
+    // performance instrumentation to our independently configured OTel provider.
+    defaultIntegrations: [
+      ...Sentry.getDefaultIntegrationsWithoutPerformance().filter(
+        // Framework capture would run before PL assigns error IDs and maps SQL
+        // errors to HTTP status codes. Replace HTTP/fetch below with tracing off.
+        (integration) =>
+          !['Express', 'Fastify', 'Hapi', 'Koa', 'Http', 'NodeFetch'].includes(integration.name),
+      ),
+      // Retain HTTP/fetch breadcrumbs without Sentry spans or outgoing Sentry
+      // trace headers; OTel owns span creation and W3C propagation.
+      Sentry.httpIntegration({ spans: false, tracePropagation: false }),
+      Sentry.nativeNodeFetchIntegration({ spans: false, tracePropagation: false }),
+      // Link errors to the active OTel trace/span without registering a provider
+      // or exporting OTel spans to Sentry.
+      Sentry.openTelemetryIntegration(),
+    ],
     ...options,
   });
 }
@@ -47,17 +81,9 @@ function extractTransaction(req: any) {
 }
 
 /**
- * Sentry v8 switched from simple, manual instrumentation to "automatic"
- * instrumentation based on OpenTelemetry. However, this interferes with
- * the way that our applications asynchronously load their configuration,
- * specifically the Sentry DSN. Sentry's automatic request isolation and
- * request data extraction requires that `Sentry.init` be called before
- * any other code is loaded, but our application startup structure is such
- * that we import most of our own code before we can load the Sentry DSN.
- *
- * Rather than jumping through hoops to restructure our application to
- * support this, this small function can be added as Express middleware to
- * isolate requests and set request data for Sentry.
+ * Applications load Express before their asynchronously loaded configuration
+ * provides the Sentry DSN. Isolate requests explicitly instead of relying on
+ * Sentry's framework instrumentation, and extract the Express request data.
  */
 export function requestHandler() {
   return (req: any, _res: any, next: any) => {
@@ -100,7 +126,7 @@ export type {
   Stacktrace,
   Thread,
   User,
-} from '@sentry/node-core';
+} from '@sentry/node';
 
 export {
   addBreadcrumb,
@@ -118,7 +144,6 @@ export {
   NodeClient,
   Scope,
   SDK_VERSION,
-  SentryContextManager,
   setContext,
   setExtra,
   setExtras,
@@ -130,6 +155,6 @@ export {
   startSpanManual,
   withIsolationScope,
   withScope,
-} from '@sentry/node-core';
+} from '@sentry/node';
 
 export { expressErrorHandler, setupExpressErrorHandler } from './express.js';

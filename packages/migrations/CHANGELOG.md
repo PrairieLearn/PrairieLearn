@@ -1,5 +1,11 @@
 # @prairielearn/migrations
 
+## 5.2.5
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
 ## 5.2.4
 
 ### Patch Changes

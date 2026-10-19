@@ -5,10 +5,12 @@ import { handleTrpcError } from '../../lib/trpc.js';
 import { createContext, t } from './init.js';
 import { instanceAdminSettingsRouter } from './instance-admin-settings.js';
 import { studentLabelsRouter } from './student-labels.js';
+import { studentSyncRouter } from './student-sync.js';
 
 const courseInstanceRouter = t.router({
   instanceAdminSettings: instanceAdminSettingsRouter,
   studentLabels: studentLabelsRouter,
+  studentSync: studentSyncRouter,
 });
 
 export type CourseInstanceRouter = typeof courseInstanceRouter;

@@ -1,10 +1,8 @@
 import { ok as assert } from 'node:assert';
 import { promises as fsPromises } from 'node:fs';
-import { pipeline } from 'node:stream/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
-import { ZipArchive } from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
 import fs from 'fs-extra';
@@ -216,8 +214,13 @@ async function controlContainer(
 
     debug(`controlContainer: saving ${zipPath}`);
 
-    await fsPromises.writeFile(zipPath, body);
-    return zipPath;
+    try {
+      await fsPromises.writeFile(zipPath, body);
+      return zipPath;
+    } catch (error) {
+      await fs.remove(zipPath);
+      throw error;
+    }
   }
 
   if (res.ok) return;
@@ -703,6 +706,13 @@ export async function getGradedFiles(workspace_id: string): Promise<string | nul
     return null;
   }
 
+  if (workspace.state === 'launching') {
+    // Startup scripts may replace graded files while the container is launching.
+    throw new SubmissionFormatError(
+      'The workspace is still launching. Please try saving again once it is running.',
+    );
+  }
+
   if (workspace.state === 'running') {
     // Attempt to get the files directly from the host.
     try {
@@ -742,16 +752,16 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
       throw new SubmissionFormatError(err.message);
     });
 
-  const archive = new ZipArchive();
-  const archiveCompleted = pipeline(archive, fs.createWriteStream(zipPath));
-
-  for (const file of gradedFiles) {
-    debug(`Zipping graded file ${path.join(remoteDir, file.path)} into ${zipPath}`);
-    archive.append(file.createReadStream(), { name: file.path });
+  try {
+    await workspaceUtils.writeWorkspaceGradedFilesArchive(
+      gradedFiles,
+      fs.createWriteStream(zipPath),
+    );
+  } catch (error) {
+    await fs.remove(zipPath);
+    throw error;
   }
-
-  await Promise.all([archive.finalize(), archiveCompleted]);
-  debug(`Zipped graded files as ${zipPath} (${archive.pointer()} total bytes)`);
+  debug(`Zipped graded files as ${zipPath}`);
   return zipPath;
 }
 

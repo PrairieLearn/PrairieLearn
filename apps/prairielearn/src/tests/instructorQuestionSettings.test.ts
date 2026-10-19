@@ -303,6 +303,29 @@ describe('Editing question settings', { concurrent: false }, () => {
     assert.equal(response.status, 400);
   });
 
+  test.each(['workspace_image', 'external_grading_image'])(
+    'rejects an unsupported registry in %s',
+    async (field) => {
+      const settingsUrl = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
+      const { $ } = await fetchCheerio(settingsUrl);
+      const originalInfo = await fs.readFile(questionLiveInfoPath, 'utf8');
+      const response = await fetch(settingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'update_question',
+          __csrf_token: $('input[name=__csrf_token]').val() as string,
+          orig_hash: $('input[name=orig_hash]').val() as string,
+          title: 'Test title',
+          qid: 'question2',
+          [field]: 'internal-host:5000/team/image:tag',
+        }),
+      });
+
+      assert.equal(response.status, 400);
+      assert.equal(await fs.readFile(questionLiveInfoPath, 'utf8'), originalInfo);
+    },
+  );
+
   test('verify workspace settings changes with minimal configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
@@ -319,7 +342,7 @@ describe('Editing question settings', { concurrent: false }, () => {
         qid: 'question2',
         topic: 'Test',
         grading_method: 'Internal',
-        workspace_image: 'test_image',
+        workspace_image: 'ghcr.io/org/workspace:tag',
         workspace_port: '',
         workspace_home: '',
         workspace_graded_files: 'test_file.txt',
@@ -332,7 +355,7 @@ describe('Editing question settings', { concurrent: false }, () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
 
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
-    assert.equal(questionInfo.workspaceOptions.image, 'test_image');
+    assert.equal(questionInfo.workspaceOptions.image, 'ghcr.io/org/workspace:tag');
     assert.notExists(questionInfo.workspaceOptions.port);
     assert.notExists(questionInfo.workspaceOptions.home);
     assert.equal(questionInfo.workspaceOptions.gradedFiles, 'test_file.txt');

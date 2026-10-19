@@ -572,12 +572,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    allow_complex = pl.get_boolean_attrib(
-        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
-    )
-    allow_fractions = pl.get_boolean_attrib(
-        element, "allow-fractions", ALLOW_FRACTIONS_DEFAULT
-    )
     show_correct = pl.get_boolean_attrib(
         element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
     )
@@ -620,15 +614,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         )
         feedback = None
 
-        def formatted_answer(answer: float) -> str:
-            return str(
-                pl.string_fraction_to_number(
-                    str(answer),
-                    allow_fractions=allow_fractions,
-                    allow_complex=allow_complex,
-                )
-            )
-
         # If the empty answer is correct, use 0 as an arbitrary starting point for incorrect answers
         if correct_answer_converted == "blank":
             answer = random.choice([-1.1, 1.1])
@@ -639,7 +624,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             eps = np.absolute(correct_answer_converted) * rtol + atol
             # eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1.1, 1.1])
-            submitted_answer_precision = get_string_precision(formatted_answer(answer))
+            submitted_answer_precision = get_string_precision(str(answer))
             feedback = (
                 ANSWER_INSUFFICIENT_PRECISION_WARNING
                 if submitted_answer_precision > rtol
@@ -657,9 +642,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             eps = 0.51 * (10**-n)
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])
-            submitted_answer_precision = get_string_significant_digits(
-                formatted_answer(answer)
-            )
+            submitted_answer_precision = get_string_significant_digits(str(answer))
 
             feedback = (
                 ANSWER_INSUFFICIENT_PRECISION_WARNING
@@ -672,9 +655,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             eps = 0.51 * (10**-digits)
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])
-            submitted_answer_precision = get_string_decimal_digits(
-                formatted_answer(answer)
-            )
+            submitted_answer_precision = get_string_decimal_digits(str(answer))
             feedback = (
                 ANSWER_INSUFFICIENT_PRECISION_WARNING
                 if submitted_answer_precision < digits

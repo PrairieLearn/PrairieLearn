@@ -16,6 +16,7 @@ from sketchresponse.types import (
     SketchDrawing,
     SketchGradeableData,
     SketchGrader,
+    SketchItem,
     SketchTool,
 )
 from sketchresponse.utils import format_drawing, parse_function_string
@@ -1255,29 +1256,33 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     canvas_width = params["config"]["width"]
     canvas_height = params["config"]["height"]
 
+    submission_state = copy.deepcopy(params["initial_state"])
+    submitted_solution_state = solution_state
+    if result == "incorrect":
+        submitted_solution_state = _corrupted_drawing_state(solution_state, tool_data)
+
+    for tool_id, drawings in submitted_solution_state.items():
+        if not tool_data[tool_id]["readonly"]:
+            submission_state[tool_id] = drawings
+
     gradeable = _solution_to_gradeable(
-        solution_state, tool_data, canvas_width, canvas_height
+        submission_state, tool_data, canvas_width, canvas_height
     )
 
-    if result == "incorrect":
-        # Try to produce a submission based on the solution that is incorrect
-        gradeable = _mutate_gradeable(gradeable)
-
     data["raw_submitted_answers"][key] = base64.b64encode(
-        json.dumps({"gradeable": gradeable}).encode("utf-8")
+        json.dumps({"data": submission_state, "gradeable": gradeable}).encode("utf-8")
     ).decode("utf-8")
 
-    # Setting submitted_answers because it is needed for invoking grading below
-    submitted_answers = data.setdefault("submitted_answers", {})
-    submitted_answers[key] = data["raw_submitted_answers"][key]
+    # submitted_answers is not valid test-phase data, so provide it only to the grader.
+    grading_data: pl.QuestionData = copy.copy(data)
+    grading_data["submitted_answers"] = {
+        key: data["raw_submitted_answers"][key],
+    }
 
     # Determine expected grading result by actually running the grading logic
     # Note that depending on the grading criteria and provided solution, it is both possible that the incorrect
     # submission gets some (or all) points, and that the supposedly correct solution gets less than full points
-    data["partial_scores"][name] = _grade_with_staging(name, data, weight)
-
-    # Remove only the key we added, since we are not allowed to set submitted_answers in test()
-    submitted_answers.pop(key, None)
+    data["partial_scores"][name] = _grade_with_staging(name, grading_data, weight)
 
 
 def _solution_to_gradeable(
@@ -1292,58 +1297,73 @@ def _solution_to_gradeable(
     for tool_id, drawings in solution_state.items():
         tool_name = tool_data[tool_id]["name"]
 
-        if tool_name == "point":
-            # Easy case: just need to convert from {"x": x, "y": y} dict to [x, y] list
-            gradeable[tool_id] = [{"point": [pt["x"], pt["y"]]} for pt in drawings]
+        values: list[SketchItem]
+        match tool_name:
+            case "point":
+                # Easy case: just need to convert from {"x": x, "y": y} dict to [x, y] list
+                values = [{"point": [pt["x"], pt["y"]]} for pt in drawings]
 
-        elif tool_name in ("spline", "freeform", "polyline", "line-segment"):
-            # To convert points into the spline format, we need to add control points in-between each point pair.
-            # Note that line-segment is a special case where len(curve) is exactly 2, but the logic works the same
-            gradeable[tool_id] = []
-            for curve in drawings:
-                pts = []
-                for i in range(len(curve) - 1):
-                    p1 = [curve[i]["x"], curve[i]["y"]]
-                    p2 = [curve[i + 1]["x"], curve[i + 1]["y"]]
-                    ctrl1 = [
-                        p1[0] + (p2[0] - p1[0]) / 3,
-                        p1[1] + (p2[1] - p1[1]) / 3,
-                    ]
-                    ctrl2 = [
-                        p1[0] + 2 * (p2[0] - p1[0]) / 3,
-                        p1[1] + 2 * (p2[1] - p1[1]) / 3,
-                    ]
-                    pts += [p1, ctrl1, ctrl2]
-                pts.append([curve[-1]["x"], curve[-1]["y"]])
-                gradeable[tool_id].append({"spline": pts})
+            case "freeform":
+                # format_drawing() already fits freeform curves to cubic Bézier segments,
+                # so preserve their existing control points.
+                values = [
+                    {"spline": [[point["x"], point["y"]] for point in curve]}
+                    for curve in drawings
+                ]
 
-        elif tool_name == "horizontal-line":
-            # For horizontal lines, we replace the arbitrary y-value with a spline that spans the canvas
-            gradeable[tool_id] = [
-                {
-                    "spline": [
-                        [0, d["y"]],
-                        [canvas_width / 3, d["y"]],
-                        [2 * canvas_width / 3, d["y"]],
-                        [canvas_width, d["y"]],
-                    ]
-                }
-                for d in drawings
-            ]
+            case "spline" | "polyline" | "line-segment":
+                # To convert points into the spline format, we need to add control points in-between each point pair.
+                # Note that line-segment is a special case where len(curve) is exactly 2, but the logic works the same
+                values = []
+                for curve in drawings:
+                    pts = []
+                    for i in range(len(curve) - 1):
+                        p1 = [curve[i]["x"], curve[i]["y"]]
+                        p2 = [curve[i + 1]["x"], curve[i + 1]["y"]]
+                        ctrl1 = [
+                            p1[0] + (p2[0] - p1[0]) / 3,
+                            p1[1] + (p2[1] - p1[1]) / 3,
+                        ]
+                        ctrl2 = [
+                            p1[0] + 2 * (p2[0] - p1[0]) / 3,
+                            p1[1] + 2 * (p2[1] - p1[1]) / 3,
+                        ]
+                        pts += [p1, ctrl1, ctrl2]
+                    pts.append([curve[-1]["x"], curve[-1]["y"]])
+                    values.append({"spline": pts})
 
-        elif tool_name == "vertical-line":
-            # For vertical lines, we replace the arbitrary x-value with a spline that spans the canvas
-            gradeable[tool_id] = [
-                {
-                    "spline": [
-                        [d["x"], 0],
-                        [d["x"], canvas_height / 3],
-                        [d["x"], 2 * canvas_height / 3],
-                        [d["x"], canvas_height],
-                    ]
-                }
-                for d in drawings
-            ]
+            case "horizontal-line":
+                # For horizontal lines, we replace the arbitrary y-value with a spline that spans the canvas
+                values = [
+                    {
+                        "spline": [
+                            [0, d["y"]],
+                            [canvas_width / 3, d["y"]],
+                            [2 * canvas_width / 3, d["y"]],
+                            [canvas_width, d["y"]],
+                        ]
+                    }
+                    for d in drawings
+                ]
+
+            case "vertical-line":
+                # For vertical lines, we replace the arbitrary x-value with a spline that spans the canvas
+                values = [
+                    {
+                        "spline": [
+                            [d["x"], 0],
+                            [d["x"], canvas_height / 3],
+                            [d["x"], 2 * canvas_height / 3],
+                            [d["x"], canvas_height],
+                        ]
+                    }
+                    for d in drawings
+                ]
+
+            case _:
+                continue
+
+        gradeable[tool_id] = values
 
     # Fill empty lists for tools not in solution
     for tid in tool_data:
@@ -1353,24 +1373,33 @@ def _solution_to_gradeable(
     return gradeable
 
 
-def _mutate_gradeable(
-    gradeable: SketchGradeableData, offset: float = 200
-) -> SketchGradeableData:
-    """Mutate gradeable data to produce an incorrect submission.
+def _corrupted_drawing_state(
+    drawing_state: dict[str, DrawingData],
+    tool_data: dict[str, SketchTool],
+    offset: float = 200,
+) -> dict[str, DrawingData]:
+    """Mutate client drawing state to produce an incorrect submission.
 
     Applies two transformations to break as many grader types as possible:
-    1. Reverses point order within each spline (breaks monotonicity, concavity)
-    2. Shifts all y-coordinates (breaks absolute position checks like match,
-       match-function, greater-than, less-than)
+    1. Reverses point order within each curve (breaks monotonicity, concavity)
+    2. Shifts y-coordinates, or x-coordinates for vertical lines (breaks absolute
+       position checks like match, match-function, greater-than, less-than)
 
     Returns:
-        A mutated copy of the gradeable data.
+        A mutated copy of the client drawing state.
     """
-    mutated = copy.deepcopy(gradeable)
-    for items in mutated.values():
-        for item in items:
-            if "spline" in item:
-                item["spline"] = [[x, y + offset] for x, y in reversed(item["spline"])]
-            if "point" in item:
-                item["point"] = [item["point"][0], item["point"][1] + offset]
+    mutated = copy.deepcopy(drawing_state)
+    for tool_id, drawings in mutated.items():
+        if tool_data[tool_id]["name"] == "vertical-line":
+            for drawing in drawings:
+                drawing["x"] += offset
+            continue
+
+        for drawing in drawings:
+            if isinstance(drawing, list):
+                drawing.reverse()
+                for point in drawing:
+                    point["y"] += offset
+            else:
+                drawing["y"] += offset
     return mutated

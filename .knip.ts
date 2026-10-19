@@ -112,7 +112,9 @@ const infoJsonDependencies = infoJsonContents.flatMap((infoJson) => [
 // TS / TSX source. Example match: `nodeModulesAssetPath('highlight.js/styles/default.css')`.
 const assetPathRegex = /nodeModulesAssetPath\(\s*'([^']*)'\s*\)/g;
 
-const sourceFiles = await globby('apps/prairielearn/**/*.{ts,tsx}');
+// Restrict the scan to first-party source; traversing dependency symlinks can
+// exhaust file descriptors when the matched files are read concurrently.
+const sourceFiles = await globby('apps/prairielearn/{src,assets}/**/*.{ts,tsx}');
 const sourceFileDependencies = (
   await Promise.all(
     sourceFiles.map(async (path) => {

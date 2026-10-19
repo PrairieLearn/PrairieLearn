@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Alert, Modal } from 'react-bootstrap';
+import { Alert } from 'react-bootstrap';
 
 import {
   type ColumnFilterEntry,
@@ -51,7 +51,7 @@ import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.typ
 
 import { type HelpModalId, HelpModals } from './HelpModals.js';
 import { InstanceSelectionToolbar } from './InstanceSelectionToolbar.js';
-import { TimeLimitEditForm } from './TimeLimitEditForm.js';
+import { TimeLimitModal } from './TimeLimitModal.js';
 
 type ColumnFilter = (props: { header: TanstackTableHeader<AssessmentInstanceRow> }) => ReactNode;
 
@@ -613,7 +613,7 @@ export function AssessmentInstancesTable({
       timezone={courseInstance.display_timezone}
       groupWork={assessment.team_work}
       isDevMode={isDevMode}
-      onActionSuccess={setSuccessMessage}
+      onActionSuccess={({ message }) => setSuccessMessage(message)}
     />
   ) : null;
 
@@ -721,8 +721,9 @@ export function AssessmentInstancesTable({
 
       {timeLimitRow ? (
         <TimeLimitModal
-          row={timeLimitRow}
+          target={{ kind: 'single', instance: timeLimitRow }}
           timezone={courseInstance.display_timezone}
+          show
           onHide={() => setTimeLimitRow(null)}
           onSuccess={() => {
             setSuccessMessage('Updated the time limit.');
@@ -731,50 +732,6 @@ export function AssessmentInstancesTable({
         />
       ) : null}
     </>
-  );
-}
-
-function TimeLimitModal({
-  row,
-  timezone,
-  onHide,
-  onSuccess,
-}: {
-  row: AssessmentInstanceRow;
-  timezone: string;
-  onHide: () => void;
-  onSuccess: () => void;
-}) {
-  const open = row.assessment_instance.open === true;
-  return (
-    <Modal show onHide={onHide}>
-      <Modal.Header closeButton>
-        <Modal.Title>{open ? 'Change time limit' : 'Re-open instance'}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <TimeLimitEditForm
-          mode="single"
-          assessmentInstanceIds={[row.assessment_instance.id]}
-          hasOpenInstance={open && row.time_remaining_sec == null}
-          hasClosedInstance={!open}
-          hasTimeLimitInstance={open && row.time_remaining_sec != null}
-          singleRow={{
-            open,
-            total_time: row.total_time,
-            total_time_sec: row.total_time_sec,
-            time_remaining: row.time_remaining,
-            time_remaining_sec: row.time_remaining_sec,
-            date:
-              row.assessment_instance.date != null
-                ? new Date(row.assessment_instance.date).toISOString()
-                : '',
-          }}
-          timezone={timezone}
-          onCancel={onHide}
-          onSuccess={onSuccess}
-        />
-      </Modal.Body>
-    </Modal>
   );
 }
 

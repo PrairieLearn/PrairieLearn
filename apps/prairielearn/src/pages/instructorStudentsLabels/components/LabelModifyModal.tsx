@@ -96,9 +96,7 @@ export function LabelModifyModal({
 
     if (uids.length > 0) {
       try {
-        const result = await queryClient.fetchQuery(
-          trpc.studentLabels.checkUids.queryOptions({ uids }),
-        );
+        const result = await queryClient.query(trpc.studentLabels.checkUids.queryOptions({ uids }));
         if (result.unenrolledUids.length > 0) {
           setStage({ type: 'confirming', unknownUids: result.unenrolledUids });
           return;
@@ -231,6 +229,7 @@ export function LabelModifyModal({
                 validate: (value) => {
                   const trimmed = value.trim();
                   if (trimmed.length === 0) return 'Label name is required';
+                  if (trimmed.includes(';')) return 'Student label names cannot contain semicolons';
                   if (trimmed.length > MAX_STUDENT_LABEL_NAME_LENGTH) {
                     return `Label name must be at most ${MAX_STUDENT_LABEL_NAME_LENGTH} characters.`;
                   }

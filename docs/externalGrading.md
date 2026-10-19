@@ -33,7 +33,7 @@ The timestamps for each individual phase of the grading process are recorded and
 
 External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. A minimal configuration for an externally-graded question includes the following option:
 
-- `image`: The Docker image that should be used for the question. This can be any image hosted publicly on Docker Hub. This property is required when external grading is enabled.
+- `image`: The public Docker image that should be used for the question. Supported registries are Docker Hub (`docker.io`), GHCR (`ghcr.io`), Quay (`quay.io`), GitLab (`registry.gitlab.com`), and Amazon ECR Public (`public.ecr.aws`). For example, `docker.io/org/image:tag` for Docker Hub or `ghcr.io/org/image:tag` for GHCR. The Docker Hub shorthand `org/image:tag` is also supported. Custom registry domains and explicit ports are not supported. See [Supported registries](dockerImages.md#supported-registries) for details. This property is required when external grading is enabled.
 
 Additional options are available for further customization:
 
@@ -142,6 +142,7 @@ In particular, the file system structure of the grader looks like:
 Your grading process must write its results to `/grade/results/results.json`.
 
 - If the submission is gradable, the result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating-point number in the range [0.0, 1.0]. The field `gradable` may be optionally included and set to `true` to indicate that the submission was gradable, though this is not required, as the omission of this field is equivalent to assuming that the input was gradable.
+  - If the question has [partial credit disabled](./question/overview.md#partial-credit), the final score will be set to 100% only if the `score` is 1. If the score is less than 1, it will be set to zero, overriding any partial scores set by the autograder.
 - If the submission is not gradable, the field `gradable` is required, and must be set to `false`. In this case, the `score` field is not needed. This indicates that the submission could not be graded, for example due to a syntax error, or if the input was missing, invalid, or formatted incorrectly. In this case, the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question.
 
 Other than `score` and `gradable`, you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on. Note, though, that this file should be limited to 1 MB, so you must ensure any extensive use of data takes this limit into account.

@@ -139,7 +139,10 @@ function DefaultRuleSummaryContent({
             )}
 
             {afterCompleteTableRows.length > 0 && (
-              <AfterCompleteTableView rows={afterCompleteTableRows} />
+              <AfterCompleteTableView
+                rows={afterCompleteTableRows}
+                hasPrairieTest={rule.prairieTestExams.length > 0}
+              />
             )}
           </div>
         </div>

@@ -1,5 +1,12 @@
 # @prairielearn/postgres-tools
 
+## 3.0.16
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- 83590cf: Upgrade Chalk to version 6 for terminal output styling.
+
 ## 3.0.15
 
 ### Patch Changes

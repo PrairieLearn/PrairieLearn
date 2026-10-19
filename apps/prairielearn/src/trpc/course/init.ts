@@ -38,6 +38,24 @@ export const requireCoursePermissionOwn = t.middleware(async (opts) => {
   return opts.next();
 });
 
+export const requireCoursePermissionPreviewOrCourseInstancePermissionView = t.middleware(
+  async (opts) => {
+    if (
+      !opts.ctx.authz_data.has_course_permission_preview &&
+      !(
+        'has_course_instance_permission_view' in opts.ctx.authz_data &&
+        opts.ctx.authz_data.has_course_instance_permission_view
+      )
+    ) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (must be a member of the course staff)',
+      });
+    }
+    return opts.next();
+  },
+);
+
 export const requireCoursePermissionPreview = t.middleware(async (opts) => {
   if (!opts.ctx.authz_data.has_course_permission_preview) {
     throw new TRPCError({
