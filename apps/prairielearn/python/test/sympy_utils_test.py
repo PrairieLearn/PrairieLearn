@@ -1686,11 +1686,19 @@ def test_python_constructs_outside_symbolic_grammar_are_rejected(text: str) -> N
 
 @pytest.mark.parametrize(
     "text",
-    ["sin(1, 2)", "sqrt(1, 2)", "atan2(1)", "atan2(1, 2, 3)"],
+    ["sin(1, 2)", "atan2(1)", "atan2(1, 2, 3)"],
 )
-def test_builtin_function_arities_are_checked(text: str) -> None:
-    with pytest.raises(psu.HasFunctionArityError):
+def test_invalid_builtin_function_arities_match_legacy_failure(text: str) -> None:
+    with pytest.raises(psu.BaseSympyError) as exc_info:
         psu.convert_string_to_sympy(text)
+    assert type(exc_info.value) is psu.BaseSympyError
+
+
+def test_sqrt_second_argument_matches_legacy_behavior() -> None:
+    assert psu.convert_string_to_sympy("sqrt(1, 2)") == 1
+    with pytest.raises(psu.BaseSympyError) as exc_info:
+        psu.convert_string_to_sympy("sqrt(1, 2)", simplify_expression=False)
+    assert type(exc_info.value) is psu.BaseSympyError
 
 
 @pytest.mark.parametrize("simplify_expression", [True, False])
