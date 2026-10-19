@@ -1097,8 +1097,8 @@ function InstructorAssessmentSettingsInner({
                   {...register('text')}
                 />
                 <small id="text-help" className="form-text text-muted">
-                  Text shown on the assessment overview page. Supports Markdown and sanitized HTML;
-                  JavaScript is not supported.
+                  Text shown on the assessment overview page. Supports Markdown and HTML. JavaScript
+                  and unsafe HTML are removed.
                 </small>
               </div>
 
