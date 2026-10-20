@@ -1,5 +1,8 @@
 -- BLOCK select_copied_from_questions
--- Historical provenance includes soft-deleted courses and questions.
+-- Resolve declared historical provenance independently of current sharing access.
+-- Include soft-deleted courses/questions and questions that were never shared,
+-- are no longer shared, or are not shared with the consuming course. Resolving
+-- the relationship does not grant access to the source content.
 SELECT
   reference.qid,
   source.id AS copied_from_question_id
