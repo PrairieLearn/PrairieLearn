@@ -6,12 +6,12 @@ import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
+import { AssessmentScoreHtml } from '../../components/AssessmentScore.js';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
-import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
   StudentAccessRulesPopover,
   StudentAccessTimelinePopover,
@@ -289,7 +289,10 @@ export function StudentAssessmentInstance({
                           : ''
                       }
                     </div>
-                    <div class="col-md-9 col-sm-12">
+                    <div class="col-md-3 col-sm-12">
+                      ${AssessmentScoreHtml({ score: null, gradingPending: resLocals.assessment_instance.grading_pending })}
+                    </div>
+                    <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({
                         assessment: resLocals.assessment,
                         assessment_instance: resLocals.assessment_instance,
@@ -316,7 +319,7 @@ export function StudentAssessmentInstance({
                       }
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
+                      ${AssessmentScoreHtml({ score: resLocals.assessment_instance.score_perc, gradingPending: resLocals.assessment_instance.grading_pending })}
                     </div>
                     <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({
@@ -360,6 +363,7 @@ export function StudentAssessmentInstance({
                 `
               : ''
           }
+          ${resLocals.assessment_instance.grading_pending ? html`<p class="text-muted mb-0 mt-3">Some submitted answers still need grading. Your score may change as they are graded.</p>` : ''}
           ${
             resLocals.assessment_text_templated
               ? html`

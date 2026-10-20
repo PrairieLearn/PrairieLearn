@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
 
-import { ScorebarHtml } from './Scorebar.js';
+import { AssessmentScoreHtml } from './AssessmentScore.js';
 
 export function AssessmentScorePanel({
   assessment_instance,
@@ -47,7 +47,9 @@ export function AssessmentScorePanel({
           </tr>
           <tr>
             <td>Score:</td>
-            <td class="align-middle">${ScorebarHtml(assessment_instance.score_perc)}</td>
+            <td class="align-middle">
+              ${AssessmentScoreHtml({ score: assessment_instance.score_perc, gradingPending: assessment_instance.grading_pending })}
+            </td>
           </tr>
         </tbody>
       </table>
