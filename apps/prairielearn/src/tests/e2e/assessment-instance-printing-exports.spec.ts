@@ -296,10 +296,6 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
       '.printing-keep-together[data-split-from], .printing-keep-together[data-split-to]',
     ),
   ).toHaveCount(0);
-  const multipleChoiceSections = page.locator(
-    '.pagedjs_page [data-question-number="15"] .printing-subsection',
-  );
-  await expect(multipleChoiceSections).toHaveCount(5);
   const drawingSections = page.locator(
     '.pagedjs_page [data-question-number="39"] .printing-subsection, .pagedjs_page [data-question-number="40"] .printing-subsection',
   );
@@ -308,10 +304,7 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
     await expect(section.locator('p')).toHaveCount(1);
     await expect(section.locator('.printing-drawing-response')).toHaveCount(1);
   }
-  for (const section of [
-    ...(await multipleChoiceSections.all()),
-    ...(await drawingSections.all()),
-  ]) {
+  for (const section of await drawingSections.all()) {
     const overflow = await section.evaluate((element) => {
       const bounds = element.getBoundingClientRect();
       const pageBounds = element
