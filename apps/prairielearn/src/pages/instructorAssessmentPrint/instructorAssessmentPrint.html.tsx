@@ -999,9 +999,9 @@ function PrintPreparation({
                   {includedOmittedCount > 0 && (
                     <Alert variant="danger" className="m-3">
                       {includedOmittedCount}{' '}
-                      {includedOmittedCount === 1 ? 'question was' : 'questions were'} omitted
-                      because of rendering errors. Fix or deselect{' '}
-                      {includedOmittedCount === 1 ? 'it' : 'them'} before printing the assessment.
+                      {includedOmittedCount === 1 ? 'question cannot' : 'questions cannot'} be
+                      printed. Fix or deselect {includedOmittedCount === 1 ? 'it' : 'them'} before
+                      printing the assessment.
                     </Alert>
                   )}
                   {questions.data
@@ -1015,13 +1015,14 @@ function PrintPreparation({
                     .map((question) => {
                       const excluded = excludedQuestionNumbers.has(question.number);
                       const error = excluded ? undefined : omitted.get(question.number);
+                      const unsupported = !excluded && !question.supported;
                       return (
                         <div
                           key={question.number}
                           role="group"
                           aria-label={`Question ${question.number}: ${question.title}`}
                           className={clsx('print-preparation-question', {
-                            'bg-danger-subtle': error,
+                            'bg-danger-subtle': error || unsupported,
                             'bg-body-tertiary': excluded,
                             'print-preparation-question-selected':
                               selectedQuestion?.number === question.number,
@@ -1056,7 +1057,7 @@ function PrintPreparation({
                               type="button"
                               variant="link"
                               className="p-0 text-start fw-semibold text-decoration-none"
-                              disabled={!!error || excluded}
+                              disabled={!!error || excluded || unsupported}
                               onClick={() => {
                                 setSelectedQuestion({ number: question.number });
                                 window.document
@@ -1068,14 +1069,14 @@ function PrintPreparation({
                             </Button>
                             <div className="text-muted small mt-1">{question.points} points</div>
                           </div>
-                          {(error || question.concerns.length > 0) && (
+                          {(error || unsupported || question.concerns.length > 0) && (
                             <div className="print-preparation-question-review small">
-                              {error ? (
+                              {error || unsupported ? (
                                 <>
                                   <Badge bg="danger" className="mb-1">
-                                    Omitted
+                                    {error ? 'Omitted' : 'Unsupported'}
                                   </Badge>
-                                  <div>{error}</div>
+                                  <div>{error ?? question.concerns.join(' ')}</div>
                                 </>
                               ) : (
                                 <>

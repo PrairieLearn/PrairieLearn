@@ -55,7 +55,7 @@ describe('print asset access', () => {
     });
     expect(
       classifyPrintAssetPath('/localscripts/calculationQuestion/underscore.js', null, '/assets'),
-    ).toEqual({ type: 'public' });
+    ).toBeNull();
     expect(
       classifyPrintAssetPath(
         `${base}/assessment/20/clientFilesAssessment/diagram.png`,
@@ -87,6 +87,7 @@ describe('print asset access', () => {
     for (const path of [
       `${base}/assessment/21/clientFilesAssessment/diagram.png`,
       `${base}/instance_question/41/clientFilesQuestion/image.png`,
+      `${base}/instance_question/40/file/legacy.png`,
       `${base}/assessment/20/questions`,
       '/pl/course_instance/11/instructor/instance_question/40/clientFilesQuestion/image.png',
     ]) {

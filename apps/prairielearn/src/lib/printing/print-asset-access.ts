@@ -51,7 +51,7 @@ export type PrintAssetRoute =
   | { type: 'course'; kind: 'clientFilesCourse' | 'clientFilesCourseInstance' }
   | {
       type: 'question';
-      kind: 'clientFilesCourse' | 'clientFilesQuestion' | 'generatedFilesQuestion' | 'file';
+      kind: 'clientFilesCourse' | 'clientFilesQuestion' | 'generatedFilesQuestion';
       instanceQuestionId: string;
     }
   | { type: 'elements' };
@@ -62,11 +62,7 @@ export function classifyPrintAssetPath(
   assetsPrefix: string,
 ): PrintAssetRoute | null {
   const assetRoot = assetsPrefix.replace(/\/$/, '');
-  if (
-    pathname.startsWith(`${assetRoot}/`) ||
-    pathname.startsWith('/pl/static/elements/') ||
-    pathname.startsWith('/localscripts/calculationQuestion/')
-  ) {
+  if (pathname.startsWith(`${assetRoot}/`) || pathname.startsWith('/pl/static/elements/')) {
     return { type: 'public' };
   }
   if (!scope) return null;
@@ -92,7 +88,7 @@ export function classifyPrintAssetPath(
     };
   }
   const questionMatch =
-    /^instance_question\/(\d+)\/(clientFilesCourse|clientFilesQuestion|generatedFilesQuestion|file)\/(.+)$/.exec(
+    /^instance_question\/(\d+)\/(clientFilesCourse|clientFilesQuestion|generatedFilesQuestion)\/(.+)$/.exec(
       relativePath,
     );
   if (questionMatch && scope.instanceQuestionIds.includes(questionMatch[1])) {
@@ -106,7 +102,7 @@ export function classifyPrintAssetPath(
       type: 'question',
       instanceQuestionId: questionMatch[1],
       kind: questionMatch[2] as
-        'clientFilesCourse' | 'clientFilesQuestion' | 'generatedFilesQuestion' | 'file',
+        'clientFilesCourse' | 'clientFilesQuestion' | 'generatedFilesQuestion',
     };
   }
   if (

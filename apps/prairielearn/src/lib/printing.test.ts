@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   describeOmittedQuestions,
+  getPrintableInstanceQuestionIds,
   renderAssessmentInstanceQuestionsForPrinting,
   validateQuestionsForPrinting,
 } from './printing.js';
@@ -59,7 +60,7 @@ const questions = [
   {
     instance_question: { id: '102' },
     assessment_question: { id: '302', max_points: 5 },
-    question: { id: '202', qid: 'broken-generation', type: 'Calculation' },
+    question: { id: '202', qid: 'broken-generation', type: 'Freeform' },
     question_number: '2',
     question_access_mode: 'normal',
   },
@@ -251,7 +252,7 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
         qid: 'broken-generation',
         assessmentQuestionId: '302',
         instanceQuestionId: '102',
-        questionType: 'Calculation',
+        questionType: 'Freeform',
         code: 'broken_variant',
         stage: 'variant_creation',
         message: 'Question could not be rendered due to an error in question code.',
@@ -281,7 +282,6 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     expect(result.extraHeadersHtml).toContain('data-question-id="203"');
     expect(result.extraHeadersHtml).toContain('data-question-id="204"');
     expect(result.extraHeadersHtml).not.toContain('data-question-id="202"');
-    expect(result.hasLegacyQuestions).toBe(false);
     expect(result.maxPoints).toBe(5);
     expect(mocks.getAndRenderVariant).toHaveBeenCalledTimes(4);
     for (const invocation of mocks.getAndRenderVariant.mock.calls) {
@@ -293,6 +293,36 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
       });
     }
   });
+
+  it.each(['exam', 'answer_key'] as const)(
+    'omits legacy questions from the %s before rendering them',
+    async (document) => {
+      mocks.queryRows.mockResolvedValue([
+        questions[0],
+        { ...questions[1], question: { ...questions[1].question, type: 'Calculation' } },
+      ]);
+
+      const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals, { document });
+
+      expect(result.questionHtmls).toHaveLength(1);
+      expect(result.questionResults.map((question) => question.status)).toEqual([
+        'rendered',
+        'unsupported',
+      ]);
+      expect(result.extraHeadersHtml).not.toContain('data-question-id="202"');
+      expect(mocks.getAndRenderVariant).toHaveBeenCalledTimes(1);
+      expect(describeOmittedQuestions(result.questionResults)).toEqual([
+        {
+          code: 'unsupported_question_type',
+          question_number: '2',
+          qid: 'broken-generation',
+          message:
+            'Question 2 (broken-generation) uses a legacy question format that cannot be printed. Exclude it or replace it with a Freeform question.',
+        },
+      ]);
+      expect(await getPrintableInstanceQuestionIds('4', new Set())).toEqual(['101']);
+    },
+  );
 
   it('renders an answer key from the same assessment-instance variants without submissions', async () => {
     const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals, {

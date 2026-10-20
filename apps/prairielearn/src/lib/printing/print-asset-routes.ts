@@ -15,7 +15,6 @@ import clientFilesCourseInstance from '../../pages/clientFilesCourseInstance/cli
 import clientFilesQuestion from '../../pages/clientFilesQuestion/clientFilesQuestion.js';
 import elementExtensionFiles from '../../pages/elementExtensionFiles/elementExtensionFiles.js';
 import elementFiles from '../../pages/elementFiles/elementFiles.js';
-import legacyQuestionFile from '../../pages/legacyQuestionFile/legacyQuestionFile.js';
 import { config } from '../config.js';
 import { InstanceQuestionSchema, QuestionSchema, VariantSchema } from '../db-types.js';
 import { idsEqual } from '../id.js';
@@ -95,7 +94,6 @@ export function applyPrintAssetRoutes(app: Express): void {
   router.use(`${instructor}/clientFilesCourseInstance`, clientFilesCourseInstance);
   router.use(`${question}/clientFilesCourse`, clientFilesCourse);
   router.use(`${question}/clientFilesQuestion`, clientFilesQuestion());
-  router.use(`${question}/file`, legacyQuestionFile);
 
   const generatedFiles = Router({ mergeParams: true });
   generatedFiles.get(

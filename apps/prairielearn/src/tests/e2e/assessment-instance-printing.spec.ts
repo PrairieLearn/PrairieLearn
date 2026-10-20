@@ -237,47 +237,13 @@ test('renders readable answer keys for every student question', async ({
   }
 });
 
-test('renders legacy v2 questions for paper', async ({ page, courseInstance }) => {
+test('rejects a print preview with only legacy v2 questions', async ({ page, courseInstance }) => {
   const assessmentInstanceId = await createPrintableAssessmentInstance(
     courseInstance.id,
     'exam24-printingLegacyQuestions',
   );
 
-  await page.goto(paperUrl(courseInstance, assessmentInstanceId));
-  const layout = await readPaginatedQuestionLayout(page);
-  expect(Object.keys(layout.questionPages)).toEqual(['1', '2', '3']);
-
-  const legacyRenderStatuses = await page
-    .locator('.pagedjs_page .printing-question')
-    .evaluateAll((questions) =>
-      Object.fromEntries(
-        questions.map((question) => [
-          (question as HTMLElement).dataset.questionNumber,
-          question.querySelector<HTMLElement>('.question-container')?.dataset
-            .legacyQuestionRenderStatus,
-        ]),
-      ),
-    );
-  expect(legacyRenderStatuses).toEqual({ '1': 'complete', '2': 'complete', '3': 'complete' });
-
-  // The Calculation question is rendered in the browser from its client-side template, so its
-  // prompt text only exists if that render succeeded.
-  const pages = page.locator('.pagedjs_page');
-  await expect(pages.getByText('Define the vector')).toBeVisible();
-  await expect(pages.getByText('Check the TRUE statements.')).toBeVisible();
-});
-
-test('fails the document when a legacy question cannot render in the browser', async ({
-  page,
-  courseInstance,
-}) => {
-  const assessmentInstanceId = await createPrintableAssessmentInstance(
-    courseInstance.id,
-    'exam25-printingBrokenClientRender',
-  );
-  const endpoint = paperUrl(courseInstance, assessmentInstanceId);
-
-  const response = await page.goto(endpoint);
-  expect(response?.status()).toBe(500);
+  const response = await page.goto(paperUrl(courseInstance, assessmentInstanceId));
+  expect(response?.status()).toBe(422);
   await expect(page.locator('.pagedjs_page')).toHaveCount(0);
 });
