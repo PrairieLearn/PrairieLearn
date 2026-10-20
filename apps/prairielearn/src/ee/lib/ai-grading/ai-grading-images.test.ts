@@ -173,6 +173,7 @@ describe('loadQuestionImage', () => {
       new URL('https://example.com/image'),
       {
         signal: expect.any(AbortSignal),
+        redirect: 'error',
       },
     );
   });

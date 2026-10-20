@@ -129,7 +129,10 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
       if (url.origin === base.origin) {
         throw new Error('Unrecognized PrairieLearn question image URL');
       }
-      const response = await publicFetch(url, { signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS) });
+      const response = await publicFetch(url, {
+        signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+        redirect: 'error',
+      });
       if (!response.ok || !response.body) {
         await response.body?.cancel();
         throw new Error(`Failed to load question image: ${response.status}`);
