@@ -323,11 +323,22 @@ def _parse_spec(raw: Any) -> tuple[OperatorName | None, Indexing | None, str | N
                 return operator, _binder_indexing(value), _binder_index(value)
             return operator, None, None
 
-        case dict() if pbo.is_big_operator_json(raw):
-            if (index_symbol := _as_sympy(raw["index"])) is not None and (
+        case {
+            "_type": "big_operator",
+            "operator": str(operator),
+            "indexing": str(indexing),
+            "index": raw_index,
+        } if (
+            operator == "Custom" or operator in OP_METADATA
+        ) and indexing in COMPONENTS_MAP:
+            if (index_symbol := _as_sympy(raw_index)) is not None and (
                 index_name := _symbol_name(index_symbol)
             ):
-                return raw["operator"], raw["indexing"], index_name
+                return (
+                    cast(OperatorName, operator),
+                    cast("Indexing", indexing),
+                    index_name,
+                )
             return None, None, None
 
         case {"_type": "sympy", "_value": str(source)}:
@@ -397,7 +408,7 @@ def _config(html: str, data: QuestionData | None = None) -> RenderConfig:
     if operator is None or indexing is None or index is None:
         raise ValueError(
             f'Correct answer "{answer}" must be a supported complete answer from '
-            "which the operator, index variable, and indexing can be derivered."
+            "which the operator, index variable, and indexing can be derived."
         )
     if operator == "Custom":
         if custom_latex is None or not custom_latex.strip():
