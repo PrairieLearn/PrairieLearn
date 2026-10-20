@@ -11,12 +11,10 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { parseRequestBody } from '@prairielearn/zod';
 
-import {
-  AI_GRADING_MODEL_IDS,
-  type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL,
-} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { DEFAULT_AI_GRADING_MODEL } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { AiGradingSelectionSchema } from '../../../ee/lib/ai-grading/ai-grading-selection.shared.js';
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
@@ -27,6 +25,11 @@ import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
+
+const AiGradeAllPostBodySchema = z.preprocess((value) => {
+  const body = z.looseObject({ model_id: z.string().optional() }).parse(value);
+  return { ...body, model_id: body.model_id ?? DEFAULT_AI_GRADING_MODEL };
+}, AiGradingSelectionSchema);
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -125,16 +128,11 @@ router.post(
         throw new HttpStatusError(403, 'Access denied');
       }
 
+      const selection = parseRequestBody(req, AiGradeAllPostBodySchema);
+
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
       if (!aiGradingEnabled) {
         throw new HttpStatusError(403, 'Access denied (feature not available)');
-      }
-
-      const model_id =
-        (req.body.model_id as AiGradingModelId | undefined) ?? DEFAULT_AI_GRADING_MODEL;
-
-      if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
-        throw new HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
       const assessment = res.locals.assessment;
@@ -164,7 +162,9 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.id,
           user_id: res.locals.user.id,
-          model_id,
+          model_id: selection.model_id,
+          provider: selection.provider,
+          credential_id: selection.credential_id,
           mode: 'all',
         });
       }

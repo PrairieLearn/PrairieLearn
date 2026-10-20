@@ -41,6 +41,7 @@ import {
   AiGradingJobSchema,
   AssessmentQuestionSchema,
   type CourseInstance,
+  type EnumAiGradingProvider,
   GradingJobSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -57,7 +58,7 @@ import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import { type QuestionImageContext, loadQuestionImage } from './ai-grading-images.js';
-import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import { AI_GRADING_MODEL_IDS, AI_GRADING_MODEL_PROVIDERS } from './ai-grading-models.shared.js';
 import {
   type CounterClockwiseRotationDegrees,
   type InstanceQuestionAIGradingInfo,
@@ -601,6 +602,8 @@ export async function insertAiGradingJob({
   grading_job_id,
   job_sequence_id,
   model_id,
+  provider = AI_GRADING_MODEL_PROVIDERS[z.enum(AI_GRADING_MODEL_IDS).parse(model_id)],
+  base_url = null,
   prompt,
   response,
   course_id,
@@ -608,7 +611,9 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  model_id: AiGradingModelId;
+  model_id: string;
+  provider?: EnumAiGradingProvider;
+  base_url?: string | null;
   prompt: ModelMessage[];
   response: GenerateTextResult<any, any, any>;
   course_id: string;
@@ -623,9 +628,17 @@ export async function insertAiGradingJob({
       completion: sanitizeObject(response),
       rotation_correction_degrees: null,
       model: model_id,
+      provider,
+      base_url,
       prompt_tokens: response.usage.inputTokens ?? 0,
       completion_tokens: response.usage.outputTokens ?? 0,
-      cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+      cost:
+        provider === 'openai-compatible'
+          ? null
+          : calculateResponseCost({
+              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+              usage: response.usage,
+            }),
       course_id,
       course_instance_id,
     },
@@ -642,6 +655,8 @@ export async function insertAiGradingJob({
  * @param params.grading_job_id
  * @param params.job_sequence_id
  * @param params.model_id
+ * @param params.provider
+ * @param params.base_url
  * @param params.prompt
  * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected non-upright images.
  * @param params.rotationCorrections - For each image, the amount of degrees counterclockwise it was rotated and the response of the rotation correction LLM call.
@@ -653,6 +668,8 @@ export async function insertAiGradingJobWithRotationCorrection({
   grading_job_id,
   job_sequence_id,
   model_id,
+  provider = AI_GRADING_MODEL_PROVIDERS[z.enum(AI_GRADING_MODEL_IDS).parse(model_id)],
+  base_url = null,
   prompt,
   gradingResponseWithRotationIssue,
   rotationCorrections,
@@ -662,7 +679,9 @@ export async function insertAiGradingJobWithRotationCorrection({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  model_id: AiGradingModelId;
+  model_id: string;
+  provider?: EnumAiGradingProvider;
+  base_url?: string | null;
   prompt: ModelMessage[];
   gradingResponseWithRotationIssue: GenerateTextResult<any, any, any>;
   rotationCorrections: Record<
@@ -683,20 +702,27 @@ export async function insertAiGradingJobWithRotationCorrection({
     (gradingResponseWithRotationIssue.usage.outputTokens ?? 0) +
     (gradingResponseWithRotationCorrection.usage.outputTokens ?? 0);
   let cost =
-    calculateResponseCost({
-      model: model_id,
-      usage: gradingResponseWithRotationIssue.usage,
-    }) +
-    calculateResponseCost({
-      model: model_id,
-      usage: gradingResponseWithRotationCorrection.usage,
-    });
+    provider === 'openai-compatible'
+      ? null
+      : calculateResponseCost({
+          model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+          usage: gradingResponseWithRotationIssue.usage,
+        }) +
+        calculateResponseCost({
+          model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+          usage: gradingResponseWithRotationCorrection.usage,
+        });
 
   const rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> = {};
   for (const [filename, { degreesRotated, response }] of Object.entries(rotationCorrections)) {
     prompt_tokens += response.usage.inputTokens ?? 0;
     completion_tokens += response.usage.outputTokens ?? 0;
-    cost += calculateResponseCost({ model: model_id, usage: response.usage });
+    if (cost !== null) {
+      cost += calculateResponseCost({
+        model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+        usage: response.usage,
+      });
+    }
     rotationCorrectionDegrees[filename] = degreesRotated;
   }
 
@@ -709,6 +735,8 @@ export async function insertAiGradingJobWithRotationCorrection({
       completion: sanitizeObject(gradingResponseWithRotationCorrection),
       rotation_correction_degrees: rotationCorrectionDegrees,
       model: model_id,
+      provider,
+      base_url,
       prompt_tokens,
       completion_tokens,
       cost,
@@ -809,9 +837,14 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
 
 export async function setAiGradingLastSelectedModel(
   assessment_question_id: string,
-  model_id: AiGradingModelId,
+  model_id: string,
+  credential_id: string | null = null,
 ) {
-  await execute(sql.set_ai_grading_last_selected_model, { assessment_question_id, model_id });
+  await execute(sql.set_ai_grading_last_selected_model, {
+    assessment_question_id,
+    model_id,
+    credential_id,
+  });
 }
 
 const rateLimiter = new RedisRateLimiter({
