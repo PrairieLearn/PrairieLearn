@@ -28,6 +28,7 @@ from typing import (
     TypedDict,
     TypeGuard,
     cast,
+    overload,
 )
 
 import sympy
@@ -42,6 +43,17 @@ SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
 SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
     "Your answer has a syntax error. "
     "This issue might be caused by mismatched parentheses or some other misplaced symbol."
+)
+_SET_DOMAIN_NAMES = frozenset({
+    "Complexes",
+    "Integers",
+    "Naturals",
+    "Naturals0",
+    "Rationals",
+    "Reals",
+})
+_SET_DOMAINS: frozenset[sympy.Set] = frozenset(
+    getattr(sympy.S, name) for name in _SET_DOMAIN_NAMES
 )
 
 SympyMapT = dict[str, sympy.Basic | complex]
@@ -80,9 +92,12 @@ class SympyJson(TypedDict):
     _custom_functions: NotRequired[list[str]]
 
 
+type SympyValue = sympy.Expr | sympy.Set
+
+
 @dataclass(frozen=True, slots=True)
-class SympyParseSuccess:
-    expr: sympy.Expr
+class SympyParseSuccess[T: SympyValue = SympyValue]:
+    expr: T
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,7 +105,70 @@ class SympyParseFailure:
     error: str
 
 
-type SympyParseResult = SympyParseSuccess | SympyParseFailure
+type SympyParseResult[T: SympyValue = SympyValue] = (
+    SympyParseSuccess[T] | SympyParseFailure
+)
+type _SympyValueType = Literal["expression", "set", "finite-set", "interval"]
+type _UsedSympyType = _SympyValueType | Literal["empty-set"]
+type AllowedSympyType = Literal["all"] | _SympyValueType
+
+
+def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
+    if expr is sympy.EmptySet:
+        return {"empty-set"}
+    # Reals compares equal to Interval(-oo, oo), but only the domain object is a named set.
+    if any(expr is domain for domain in _SET_DOMAINS):
+        return {"set"}
+    if isinstance(expr, sympy.Interval):
+        return {"interval"}
+    if isinstance(expr, sympy.Set) and expr.is_finite_set:
+        required_types: set[_UsedSympyType] = {"finite-set"}
+        for arg in expr.args:
+            if isinstance(arg, sympy.Set):
+                required_types.update(_used_sympy_types(arg))
+        return required_types
+    if isinstance(expr, (sympy.Union, sympy.Intersection, sympy.Complement)):
+        required_types: set[_UsedSympyType] = set()
+        for arg in expr.args:
+            arg_types = _used_sympy_types(arg)
+            required_types.update(arg_types)
+        return required_types
+    if isinstance(expr, sympy.Set):
+        return {"set"}
+    return {"expression"}
+
+
+def check_sympy_types(
+    expr: sympy.Basic, allowed_types: set[AllowedSympyType]
+) -> SympyParseFailure | None:
+    """Return a parse failure if the expression uses a disallowed SymPy type."""
+    used_types = _used_sympy_types(expr)
+    matches_allowed_type = (
+        "all" in allowed_types
+        or (isinstance(expr, sympy.Set) and "set" in allowed_types)
+        or all(
+            not {"set", "finite-set", "interval"}.isdisjoint(allowed_types)
+            if used_type == "empty-set"
+            else used_type in allowed_types
+            for used_type in used_types
+        )
+    )
+    if matches_allowed_type:
+        return None
+
+    disallowed_types = {
+        "set" if used_type == "empty-set" else used_type
+        for used_type in used_types
+        if (
+            {"set", "finite-set", "interval"}.isdisjoint(allowed_types)
+            if used_type == "empty-set"
+            else used_type not in allowed_types
+        )
+    }
+    return SympyParseFailure(
+        f"Your answer uses {', '.join(sorted(disallowed_types))}, which this input "
+        f"does not accept. Allowed types: {', '.join(sorted(allowed_types))}."
+    )
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -249,8 +327,8 @@ class _SympyJsonStrPrinter(StrPrinter):
     def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
         return "{}"
 
-    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff:ignore[invalid-function-name]
-        start, end = self._print(i.start), self._print(i.end)
+    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff: ignore[invalid-function-name]
+        start, end = self.doprint(i.start), self.doprint(i.end)
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
         return f"{left}{start}, {end}{right}"
@@ -843,7 +921,7 @@ class _SetOperationTransformer(ast.NodeTransformer):
 
 
 def sympy_check(
-    expr: sympy.Expr,
+    expr: SympyValue,
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool,
@@ -928,13 +1006,33 @@ def _is_disallowed_complex(item: sympy.Basic) -> bool:
         return False
 
 
+@overload
+def evaluate(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_sets: Literal[False] = False,
+) -> sympy.Expr: ...
+
+
+@overload
+def evaluate(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_sets: bool,
+) -> SympyValue: ...
+
+
 def evaluate(
     expr: str,
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool = False,
     allow_sets: bool = False,
-) -> sympy.Expr:
+) -> SympyValue:
     """Evaluate a SymPy expression string with a given set of locals, and return only the result.
 
     Returns:
@@ -1077,7 +1175,7 @@ def _evaluate_with_source(
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
-) -> tuple[sympy.Expr, str | CodeType]:
+) -> tuple[SympyValue, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
 
     Returns:
@@ -1158,6 +1256,9 @@ def _evaluate_with_source(
         for inner_dict in locals_for_eval.values()
         for k, v in cast(SympyMapT, inner_dict).items()
     }
+    if allow_extra_symbols and not allow_sets:
+        for domain_name in _SET_DOMAIN_NAMES:
+            local_dict.setdefault(domain_name, sympy.Symbol(domain_name))
 
     # Keep mutations made during one parse from affecting later parses.
     global_dict = dict(_SYMPY_GLOBALS)
@@ -1285,6 +1386,30 @@ def _evaluate_with_source(
     return res, evaluation_code
 
 
+@overload
+def evaluate_with_source(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_sets: Literal[False] = False,
+    simplify_expression: bool = True,
+    allow_extra_symbols: bool = False,
+) -> tuple[sympy.Expr, str | CodeType]: ...
+
+
+@overload
+def evaluate_with_source(
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_sets: bool,
+    simplify_expression: bool = True,
+    allow_extra_symbols: bool = False,
+) -> tuple[SympyValue, str | CodeType]: ...
+
+
 def evaluate_with_source(
     expr: str,
     locals_for_eval: LocalsForEval,
@@ -1293,7 +1418,7 @@ def evaluate_with_source(
     allow_sets: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
-) -> tuple[sympy.Expr, str | CodeType]:
+) -> tuple[SympyValue, str | CodeType]:
     """Evaluate a SymPy expression string and return its value and source code."""
     return _evaluate_with_source(
         expr,
@@ -1303,6 +1428,38 @@ def evaluate_with_source(
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
     )
+
+
+@overload
+def convert_string_to_sympy(
+    expr: str,
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: Literal[False] = False,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
+) -> sympy.Expr: ...
+
+
+@overload
+def convert_string_to_sympy(
+    expr: str,
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: bool,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
+) -> SympyValue: ...
 
 
 def convert_string_to_sympy(
@@ -1317,7 +1474,7 @@ def convert_string_to_sympy(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
-) -> sympy.Expr:
+) -> SympyValue:
     """
     Convert a string to a SymPy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
@@ -1372,7 +1529,7 @@ def _convert_string_to_sympy_with_source(
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
-) -> tuple[sympy.Expr, str | CodeType]:
+) -> tuple[SympyValue, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
@@ -1457,6 +1614,38 @@ def _convert_string_to_sympy_with_source(
     )
 
 
+@overload
+def convert_string_to_sympy_with_source(
+    expr: str,
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: Literal[False] = False,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
+) -> tuple[sympy.Expr, str | CodeType]: ...
+
+
+@overload
+def convert_string_to_sympy_with_source(
+    expr: str,
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: bool,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
+) -> tuple[SympyValue, str | CodeType]: ...
+
+
 def convert_string_to_sympy_with_source(
     expr: str,
     variables: Iterable[str] | None = None,
@@ -1469,7 +1658,7 @@ def convert_string_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
-) -> tuple[sympy.Expr, str | CodeType]:
+) -> tuple[SympyValue, str | CodeType]:
     """Convert a string to a SymPy expression and return its source code."""
     return _convert_string_to_sympy_with_source(
         expr,
@@ -1598,6 +1787,28 @@ def sympy_to_json(
     }
 
 
+@overload
+def json_to_sympy(
+    sympy_expr_dict: SympyJson,
+    *,
+    allow_sets: Literal[False] = False,
+    allow_complex: bool = True,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+) -> sympy.Expr: ...
+
+
+@overload
+def json_to_sympy(
+    sympy_expr_dict: SympyJson,
+    *,
+    allow_sets: bool,
+    allow_complex: bool = True,
+    allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
+) -> SympyValue: ...
+
+
 def json_to_sympy(
     sympy_expr_dict: SympyJson,
     *,
@@ -1605,7 +1816,7 @@ def json_to_sympy(
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
-) -> sympy.Expr:
+) -> SympyValue:
     """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a SymPy expression.
 
     Returns:
@@ -1644,6 +1855,40 @@ def json_to_sympy(
     return result
 
 
+@overload
+def try_parse_string_as_sympy(
+    expr: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_complex: bool = False,
+    allow_hidden: bool = False,
+    allow_sets: Literal[False] = False,
+    allow_trig_functions: bool = True,
+    custom_functions: list[str] | None = None,
+    imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
+    assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
+) -> SympyParseResult[sympy.Expr]: ...
+
+
+@overload
+def try_parse_string_as_sympy(
+    expr: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_complex: bool = False,
+    allow_hidden: bool = False,
+    allow_sets: bool,
+    allow_trig_functions: bool = True,
+    custom_functions: list[str] | None = None,
+    imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
+    assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
+) -> SympyParseResult[SympyValue]: ...
+
+
 def try_parse_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
@@ -1657,7 +1902,8 @@ def try_parse_string_as_sympy(
     imaginary_unit: str | None = None,  # ruff:ignore[unused-function-argument]
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
-) -> SympyParseResult:
+    allowed_types: set[AllowedSympyType] | None = None,
+) -> SympyParseResult[sympy.Expr] | SympyParseResult[SympyValue]:
     """Try to parse expr as a SymPy expression.
 
     Returns:
@@ -1671,6 +1917,9 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
+    if allowed_types is None:
+        allowed_types = {"all"} if allow_sets else {"expression"}
+
     try:
         expr_parsed = convert_string_to_sympy(
             expr,
@@ -1793,6 +2042,10 @@ def try_parse_string_as_sympy(
             f"Unexpected error: {exc}. Please contact the course staff."
         )
 
+    type_failure = check_sympy_types(expr_parsed, allowed_types)
+    if type_failure is not None:
+        return type_failure
+
     return SympyParseSuccess(expr_parsed)
 
 
@@ -1808,6 +2061,7 @@ def validate_string_as_sympy(
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
 ) -> str | None:
     """Try to parse expr as a SymPy expression.
 
@@ -1825,6 +2079,7 @@ def validate_string_as_sympy(
         imaginary_unit=imaginary_unit,
         simplify_expression=simplify_expression,
         assumptions=assumptions,
+        allowed_types=allowed_types,
     )
 
     if isinstance(result, SympyParseFailure):
