@@ -2681,10 +2681,8 @@ if (shouldStartServer) {
 
     // These should be the last things to start before we actually start taking
     // requests, as they may actually end up executing course code.
-    if (config.externalGradingEnableResults) {
-      await externalGraderResults.init();
-      await externalGraderDeadLetters.init();
-    }
+    await externalGraderResults.init();
+    await externalGraderDeadLetters.init();
 
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
