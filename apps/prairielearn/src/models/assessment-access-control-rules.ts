@@ -293,6 +293,7 @@ const PrairieTestExamMetadataSchema = z.object({
   pt_exam_name: z.string().nullable(),
   pt_course_id: z.string().nullable(),
   pt_course_name: z.string().nullable(),
+  pt_course_archived: z.boolean().nullable(),
 });
 export type PrairieTestExamMetadata = z.infer<typeof PrairieTestExamMetadataSchema>;
 

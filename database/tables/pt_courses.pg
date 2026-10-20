@@ -1,5 +1,6 @@
 columns
     cheating_reports_enabled: boolean not null default false
+    end_date: timestamp with time zone
     id: bigint not null default nextval('pt_courses_id_seq'::regclass)
     name: text
 

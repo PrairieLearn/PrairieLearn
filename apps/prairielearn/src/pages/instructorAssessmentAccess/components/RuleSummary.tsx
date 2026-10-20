@@ -6,6 +6,7 @@ import { Button, Card } from 'react-bootstrap';
 import { type FieldErrors, get } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
@@ -1197,9 +1198,28 @@ export function PrairieTestExamsTable({
                     {uuidError}
                   </span>
                 ) : examName && examLink ? (
-                  <a href={examLink} target="_blank" rel="noopener noreferrer">
-                    {examName}
-                  </a>
+                  <>
+                    {meta?.pt_course_archived && (
+                      <OverlayTrigger
+                        tooltip={{
+                          body: 'This exam belongs to an archived course in PrairieTest. Check that this assessment links to the intended exam.',
+                          props: { id: `prairietest-archived-${index}` },
+                        }}
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="btn-xs p-0 border-0 lh-1 align-middle me-1 text-warning-emphasis"
+                          aria-label={`Archived PrairieTest course: ${examName}`}
+                        >
+                          <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
+                        </Button>
+                      </OverlayTrigger>
+                    )}
+                    <a href={examLink} target="_blank" rel="noopener noreferrer">
+                      {examName}
+                    </a>
+                  </>
                 ) : (
                   <span className="text-body-secondary">Unknown exam</span>
                 )}

@@ -128,7 +128,8 @@ SELECT DISTINCT
   pt_x.id::text AS pt_exam_id,
   pt_x.name AS pt_exam_name,
   pt_c.id::text AS pt_course_id,
-  pt_c.name AS pt_course_name
+  pt_c.name AS pt_course_name,
+  pt_c.end_date < CURRENT_TIMESTAMP AS pt_course_archived
 FROM
   unnest($exam_uuids::uuid[]) AS u
   LEFT JOIN pt_exams AS pt_x ON (pt_x.uuid = u)
