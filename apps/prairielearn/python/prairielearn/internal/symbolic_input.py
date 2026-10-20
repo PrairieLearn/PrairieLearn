@@ -492,7 +492,6 @@ def try_normalize_symbolic_input(
             text,
             raise_normalization_error,
             allow_complex=allow_complex,
-            imaginary_unit=None,
         )
         assert isinstance(result, psu.SympyParseFailure)
         return result
@@ -508,7 +507,6 @@ def _try_parse_normalized_source_as_sympy(
     allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
-    imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: psu.AssumptionsDictT | None = None,
 ) -> psu.SympyParseResult:
@@ -528,7 +526,6 @@ def _try_parse_normalized_source_as_sympy(
             assumptions=assumptions,
         )[0],
         allow_complex=allow_complex,
-        imaginary_unit=imaginary_unit,
     )
 
 
@@ -593,7 +590,6 @@ def try_parse_symbolic_submission(
             allow_complex=allow_complex,
             allow_sets=allow_sets,
             allow_trig_functions=allow_trig_functions,
-            imaginary_unit=imaginary_unit,
             custom_functions=custom_function_list,
             simplify_expression=simplify_expression,
             assumptions=assumptions,

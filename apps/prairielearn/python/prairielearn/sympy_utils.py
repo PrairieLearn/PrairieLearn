@@ -1716,7 +1716,6 @@ def try_parse_string_as_sympy(
             assumptions=assumptions,
         ),
         allow_complex=allow_complex,
-        imaginary_unit=imaginary_unit,
     )
 
 
@@ -1725,7 +1724,6 @@ def _try_parse_as_sympy(
     parse: Callable[[], sympy.Expr],
     *,
     allow_complex: bool,
-    imaginary_unit: str | None,
 ) -> SympyParseResult:
     try:
         expr_parsed = parse()
