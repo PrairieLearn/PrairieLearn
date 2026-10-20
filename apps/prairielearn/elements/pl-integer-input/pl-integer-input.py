@@ -192,7 +192,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if submitted_raw_answer is not None:
             html_params["raw_input_popover"] = render_raw_input_popover(
-                submitted_raw_answer, aria_label or name
+                submitted_raw_answer,
+                aria_label or name,
+                show_if_ascii_only=False,
             )
 
         if show_score and score is not None:
