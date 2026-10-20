@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import keyword
 import unicodedata
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -359,6 +360,7 @@ def _make_implicit_product(items: Sequence[_Expression]) -> _Expression:
 
 
 _LEGACY_GLOBAL_VARIABLES: psu.SympyMapT = {
+    "EmptySet": sympy.EmptySet,
     "nan": sympy.nan,
     "oo": sympy.oo,
     "zoo": sympy.zoo,
@@ -385,9 +387,12 @@ class _Lowerer:
                 self.variables.setdefault(name, sympy.Symbol(name))
 
     def _expand_name(self, name: _Name) -> _Expression:
-        if name.text in self.functions or name.text in self.variables:
-            return name
         if name.text in {"True", "False"}:
+            return name
+        if keyword.iskeyword(name.text):
+            error = psu.HasParseError(name.span.start)
+            raise psu._LocalizedSympyError(error, self.source, name.span)
+        if name.text in self.functions or name.text in self.variables:
             return name
         if _is_splittable(name.text):
             return _make_implicit_product(_split_name(name))
@@ -510,6 +515,11 @@ class _Lowerer:
                 expression.span,
             )
         if isinstance(expression, _Call):
+            if keyword.iskeyword(expression.function.text):
+                error = psu.HasParseError(expression.function.span.start)
+                raise psu._LocalizedSympyError(
+                    error, self.source, expression.function.span
+                )
             arguments = tuple(map(self.lower, expression.arguments))
             if (
                 expression.function.text in self.functions
@@ -852,6 +862,8 @@ class Evaluator:
                     self.unknown_names.append(expression)
                 resolved_value = sympy.Symbol(expression.text)
             name_value = sympy.sympify(resolved_value)
+            if isinstance(name_value, sympy.Set) and not self.allow_sets:
+                self._raise(psu.HasSetNotationError(), expression.span)
             value_type = (
                 psu.ASTSympyType.SET
                 if isinstance(name_value, sympy.Set)
