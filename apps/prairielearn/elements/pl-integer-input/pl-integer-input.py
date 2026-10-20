@@ -7,6 +7,7 @@ import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
+from prairielearn.internal.raw_input import render_raw_input_popover
 
 
 class DisplayType(Enum):
@@ -141,6 +142,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
+        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "label": label,
@@ -183,9 +185,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        elif raw_submitted_answer is not None:
+        elif submitted_raw_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                raw_submitted_answer
+                submitted_raw_answer
+            )
+
+        if submitted_raw_answer is not None:
+            html_params["raw_input_popover"] = render_raw_input_popover(
+                submitted_raw_answer
             )
 
         if show_score and score is not None:
