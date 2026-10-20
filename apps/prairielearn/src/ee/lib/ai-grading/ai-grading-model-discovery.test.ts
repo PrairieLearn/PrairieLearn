@@ -88,9 +88,8 @@ describe('AI grading model discovery', () => {
   it.each([
     [400, 'request_rejected'],
     [401, 'authentication'],
-    [403, 'authentication'],
+    [403, 'access_denied'],
     [404, 'not_found'],
-    [422, 'request_rejected'],
     [429, 'rate_limit'],
     [500, 'provider_error'],
   ])('classifies HTTP %s without exposing the response', async (status, code) => {
@@ -110,20 +109,53 @@ describe('AI grading model discovery', () => {
     );
   });
 
+  it.each(['not json', '{}', '{"data":[{"id":""}]}', '{"data":[{"id":"   "}]}'])(
+    'rejects an invalid catalog %#',
+    async (body) => {
+      await withServer(
+        (_request, response) => response.end(body),
+        async (baseUrl, options) => {
+          await expect(
+            discoverAiGradingModels(
+              { baseUrl, apiKey: 'test-key', courseInstanceId: '1' },
+              options,
+            ),
+          ).rejects.toMatchObject({ code: 'invalid_response' });
+        },
+      );
+    },
+  );
+
+  it('rejects large HTML pages before applying the response size limit', async () => {
+    await withServer(
+      (_request, response) => {
+        response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        response.end('<html>' + 'x'.repeat(1024 * 1024));
+      },
+      async (baseUrl, options) => {
+        await expect(
+          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
+        ).rejects.toMatchObject({
+          code: 'invalid_response',
+          message: expect.stringContaining('web page'),
+        });
+      },
+    );
+  });
+
   it.each([
-    'not json',
-    '{}',
-    '{"data":[{"id":""}]}',
-    '{"data":[{"id":"   "}]}',
-    JSON.stringify({ data: [{ id: 'x'.repeat(257) }] }),
-    JSON.stringify({ data: Array.from({ length: 1001 }, () => ({ id: 'model' })) }),
-  ])('rejects an invalid catalog %#', async (body) => {
+    [JSON.stringify({ data: [{ id: 'x'.repeat(257) }] }), 'catalog_limit'],
+    [
+      JSON.stringify({ data: Array.from({ length: 1001 }, () => ({ id: 'model' })) }),
+      'catalog_limit',
+    ],
+  ])('distinguishes supported limits from invalid catalogs %#', async (body, code) => {
     await withServer(
       (_request, response) => response.end(body),
       async (baseUrl, options) => {
         await expect(
           discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
-        ).rejects.toMatchObject({ code: 'invalid_response' });
+        ).rejects.toMatchObject({ code });
       },
     );
   });

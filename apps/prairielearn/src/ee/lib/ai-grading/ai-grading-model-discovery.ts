@@ -20,24 +20,23 @@ const MAX_MODEL_ID_LENGTH = 256;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const modelListSchema = z.object({
-  data: z
-    .array(
-      z.object({
-        id: z
-          .string()
-          .min(1)
-          .max(MAX_MODEL_ID_LENGTH)
-          .refine((id) => id.trim().length > 0),
-      }),
-    )
-    .max(MAX_MODEL_COUNT),
+  data: z.array(
+    z.object({
+      id: z
+        .string()
+        .min(1)
+        .refine((id) => id.trim().length > 0),
+    }),
+  ),
 });
 
-class AiGradingModelDiscoveryError extends Error {
+export class AiGradingModelDiscoveryError extends Error {
   constructor(
     public readonly code:
       | 'invalid_endpoint'
       | 'authentication'
+      | 'access_denied'
+      | 'catalog_limit'
       | 'not_found'
       | 'rate_limit'
       | 'request_rejected'
@@ -108,10 +107,14 @@ export async function discoverAiGradingModels(
       await response.body?.cancel();
       switch (response.status) {
         case 401:
-        case 403:
           throw new AiGradingModelDiscoveryError(
             'authentication',
             'The provider rejected the API key. Check the key and try again.',
+          );
+        case 403:
+          throw new AiGradingModelDiscoveryError(
+            'access_denied',
+            'Access to the models endpoint was denied. Check the API key permissions and provider access restrictions.',
           );
         case 404:
           throw new AiGradingModelDiscoveryError(
@@ -121,7 +124,7 @@ export async function discoverAiGradingModels(
         case 429:
           throw new AiGradingModelDiscoveryError(
             'rate_limit',
-            'The provider is rate limiting requests. Try again later.',
+            'The provider reported a request limit or quota error. Check your provider limits and quota before trying again.',
           );
         default:
           if (response.status >= 400 && response.status < 500) {
@@ -132,9 +135,17 @@ export async function discoverAiGradingModels(
           }
           throw new AiGradingModelDiscoveryError(
             'provider_error',
-            'The provider could not return its models. Check the endpoint or try again later.',
+            'The provider could not return its models. Try again later.',
           );
       }
+    }
+    const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+    if (contentType === 'text/html' || contentType === 'application/xhtml+xml') {
+      await response.body?.cancel();
+      throw new AiGradingModelDiscoveryError(
+        'invalid_response',
+        'This URL returned a web page instead of an OpenAI-compatible model list. Check your provider API base URL, including /v1 if required.',
+      );
     }
     const body = await readResponseWithLimit(response, MAX_RESPONSE_BYTES);
     let parsed: unknown;
@@ -143,14 +154,26 @@ export async function discoverAiGradingModels(
     } catch {
       throw new AiGradingModelDiscoveryError(
         'invalid_response',
-        'The provider returned an invalid model list. Expected JSON with a data array of model IDs.',
+        'The models endpoint did not return valid JSON. Check your provider API base URL.',
       );
     }
     const result = modelListSchema.safeParse(parsed);
     if (!result.success) {
       throw new AiGradingModelDiscoveryError(
         'invalid_response',
-        'The provider returned an invalid model list. Expected up to 1,000 models with nonempty IDs of at most 256 characters.',
+        'The models endpoint did not return an OpenAI-compatible model list. Check your provider API base URL.',
+      );
+    }
+    if (result.data.data.length > MAX_MODEL_COUNT) {
+      throw new AiGradingModelDiscoveryError(
+        'catalog_limit',
+        'The model list exceeds the supported limit of 1,000 models.',
+      );
+    }
+    if (result.data.data.some((model) => model.id.length > MAX_MODEL_ID_LENGTH)) {
+      throw new AiGradingModelDiscoveryError(
+        'catalog_limit',
+        'The model list contains an ID longer than the supported limit of 256 characters.',
       );
     }
     const models = [...new Set(result.data.data.map((model) => model.id))].sort();
@@ -160,7 +183,7 @@ export async function discoverAiGradingModels(
     if (error instanceof ResponseTooLargeError) {
       throw new AiGradingModelDiscoveryError(
         'response_too_large',
-        'The provider returned a model list that is too large.',
+        'The models endpoint response exceeds the supported size limit of 1 MB.',
       );
     }
     if (error instanceof AiGradingModelDiscoveryError) throw error;

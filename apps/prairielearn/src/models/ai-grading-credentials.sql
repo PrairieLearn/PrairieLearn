@@ -47,3 +47,50 @@ WHERE
   id = $course_instance_id
 RETURNING
   *;
+
+-- BLOCK lock_course_instance
+SELECT
+  id
+FROM
+  course_instances
+WHERE
+  id = $course_instance_id
+FOR UPDATE;
+
+-- BLOCK select_optional_custom_credential
+SELECT
+  *
+FROM
+  course_instance_ai_grading_credentials
+WHERE
+  course_instance_id = $course_instance_id
+  AND provider = 'openai-compatible';
+
+-- BLOCK select_optional_credential
+SELECT
+  *
+FROM
+  course_instance_ai_grading_credentials
+WHERE
+  course_instance_id = $course_instance_id
+  AND id = $credential_id;
+
+-- BLOCK insert_custom_credential
+INSERT INTO
+  course_instance_ai_grading_credentials (
+    course_instance_id,
+    provider,
+    base_url,
+    encrypted_secret_key,
+    created_by
+  )
+VALUES
+  (
+    $course_instance_id,
+    'openai-compatible',
+    $base_url,
+    $encrypted_secret_key,
+    $created_by
+  )
+RETURNING
+  *;
