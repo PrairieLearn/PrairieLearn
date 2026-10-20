@@ -75,7 +75,10 @@ export async function insertGroupAssessmentInstance({
   );
 }
 
-/** Lock parents before changing question grading state, in the same order as grading. */
+/**
+ * Lock parents before changing question grading state, in the same order as grading.
+ * Bound subsequent bulk writes to this snapshot so newly created attempts cannot miss the refresh.
+ */
 export async function selectAndLockAssessmentInstanceIdsForAssessmentQuestion({
   assessment_id,
   assessment_question_id,

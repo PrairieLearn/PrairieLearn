@@ -64,7 +64,8 @@ WHERE
   AND v.open = TRUE
   AND v.broken_at IS NULL
   AND aq.id = $unsafe_assessment_question_id
-  AND aq.assessment_id = $assessment_id;
+  AND aq.assessment_id = $assessment_id
+  AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[]);
 
 -- BLOCK reset_variants_for_instance_question
 UPDATE variants AS v

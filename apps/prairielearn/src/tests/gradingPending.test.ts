@@ -15,7 +15,10 @@ import {
   QuestionSchema,
 } from '../lib/db-types.js';
 import { saveSubmission } from '../lib/grading.js';
-import { updateInstanceQuestionScore } from '../lib/manualGrading.js';
+import {
+  updateAssessmentQuestionRubric,
+  updateInstanceQuestionScore,
+} from '../lib/manualGrading.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -132,7 +135,19 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
         { assessment_instance_id: fixture.id },
         z.number(),
       );
-      await tag(saved, true);
+      await updateAssessmentQuestionRubric({
+        assessment: fixture.assessment,
+        assessment_question_id: saved.assessment_question.id,
+        use_rubric: false,
+        replace_auto_points: false,
+        starting_points: 0,
+        min_points: 0,
+        max_extra_points: 0,
+        rubric_items: [],
+        tag_for_manual_grading: true,
+        grader_guidelines: null,
+        authn_user_id: fixture.user.id,
+      });
       const { grading_pending, ...after } = await selectAssessmentInstanceById(fixture.id);
       expect(grading_pending).toBe(true);
       expect(after).toEqual(before);
