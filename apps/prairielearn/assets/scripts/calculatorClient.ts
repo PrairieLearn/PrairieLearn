@@ -1,6 +1,7 @@
 import {
   CancellationError,
   ComputeEngine,
+  type DisplayDigits,
   type Expression,
   LatexSyntax,
   type MathJsonExpression,
@@ -343,7 +344,7 @@ export function initCalculator(
     input: string,
     angleMode: AngleMode = 'rad',
     displayMode: DisplayMode = 'numeric',
-    latexOptions: { notation: string; fractionalDigits?: number } = { notation: 'auto' },
+    latexOptions: { notation: string; digits?: DisplayDigits } = { notation: 'auto' },
   ) {
     if (!input || input.length === 0) return null;
 
@@ -423,7 +424,7 @@ export function initCalculator(
     // exact fractions and avoiding display-only number formatting.
     const options = {
       repeatingDecimal: 'none',
-      fractionalDigits: 'max',
+      digits: 'max',
       avoidExponentsInRange: [-Infinity, Infinity],
       digitGroupSeparator: '',
     } as const;
@@ -511,7 +512,7 @@ export function initCalculator(
     const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
     const result = evaluateExpression(input, angleMode, displayMode, {
       notation: 'adaptiveScientific',
-      fractionalDigits: ce.precision,
+      digits: 'auto',
     });
 
     if (!result) {

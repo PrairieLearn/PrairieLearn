@@ -83,7 +83,9 @@ async function expectLatex(field: Locator, latex: string) {
 }
 
 async function checkPinyinComposition(page: Page) {
-  const input = page.getByLabel('Calculator input', { exact: true });
+  const input = page
+    .getByLabel('Calculator input', { exact: true })
+    .and(page.locator('math-field'));
   const prior = await input.evaluate(
     (element) => (element as HTMLElement & { value: string }).value,
   );
@@ -150,7 +152,9 @@ test.describe('Assessment tools', () => {
         animations: element.getAnimations().length,
       })),
     ).toEqual({ transform: 'none', animations: 0 });
-    const input = preview.getByLabel('Calculator input', { exact: true });
+    const input = preview
+      .getByLabel('Calculator input', { exact: true })
+      .and(preview.locator('math-field'));
     await input.click();
     await input.pressSequentially('12+34');
     await checkPinyinComposition(page);
@@ -322,8 +326,12 @@ test.describe('Calculator', () => {
       await page.getByRole('link', { name: 'Add two numbers' }).click();
       await page.getByRole('button', { name: 'Calculator', exact: true }).click();
 
-      const input = page.getByLabel('Calculator input', { exact: true });
-      const output = page.getByLabel('Calculator output', { exact: true });
+      const input = page
+        .getByLabel('Calculator input', { exact: true })
+        .and(page.locator('math-field'));
+      const output = page
+        .getByLabel('Calculator output', { exact: true })
+        .and(page.locator('math-field'));
       await expect(input).toBeVisible();
       await expect(input).toHaveJSProperty('popoverPolicy', 'off');
       await input.pressSequentially('12+34');
@@ -338,8 +346,8 @@ test.describe('Calculator', () => {
       for (const [denominator, displayed] of [
         [3, String.raw`=0.\overline{3}`],
         [6, String.raw`=0.1\overline{6}`],
-        [19, String.raw`=0.052\,631\,578\,947\,368\,421\,052\ldots`],
-        [100000000, String.raw`=1\cdot10^{-8}`],
+        [19, String.raw`=0.052\,631\,578\,947\,368\,421\,052\,6`],
+        [100000000, String.raw`=1.0\cdot10^{-8}`],
       ] as const) {
         await page.locator('[name="clear"]:visible').click();
         await input.pressSequentially(`1/${denominator}`);
@@ -360,7 +368,7 @@ test.describe('Calculator', () => {
       await input.pressSequentially('0.33333333333333333');
       await expectLatex(output, String.raw`=0.333\,333\,333\,333\,333\,33`);
       await input.pressSequentially('*3-1');
-      await expectLatex(output, String.raw`=-1\cdot10^{-17}`);
+      await expectLatex(output, String.raw`=-1.0\cdot10^{-17}`);
 
       await input.evaluate((element) => {
         (element as HTMLElement & { value: string }).value = '1/0';
@@ -535,8 +543,12 @@ test.describe('Calculator', () => {
     await page.getByRole('link', { name: 'Homework for automatic test suite' }).click();
     await page.getByRole('link', { name: 'Add two numbers' }).click();
     await page.getByRole('button', { name: 'Calculator', exact: true }).click();
-    const input = page.getByLabel('Calculator input', { exact: true });
-    const output = page.getByLabel('Calculator output', { exact: true });
+    const input = page
+      .getByLabel('Calculator input', { exact: true })
+      .and(page.locator('math-field'));
+    const output = page
+      .getByLabel('Calculator output', { exact: true })
+      .and(page.locator('math-field'));
     for (const latex of [String.raw`a\coloneqq 7`, String.raw`f(x)\coloneqq x^2+1`]) {
       await input.evaluate((element, value) => {
         (element as HTMLElement & { value: string }).value = value;
@@ -575,7 +587,9 @@ test.describe('Calculator', () => {
       await tabs.getByText(panel, { exact: true }).click();
       await expect(tabs.getByRole('radio', { name: panel, exact: true })).toBeChecked();
     }
-    const input = page.getByLabel('Calculator input', { exact: true });
+    const input = page
+      .getByLabel('Calculator input', { exact: true })
+      .and(page.locator('math-field'));
     await input.evaluate((element) => {
       (element as HTMLElement & { value: string }).value = String.raw`\int_0^1 x^2 dx`;
     });
