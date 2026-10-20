@@ -2187,14 +2187,6 @@ def _validate_symbolic_submission_json_value(expr: SympyValue) -> None:
         ):
             pending.extend(node.args)
             continue
-        if (
-            type(node) is sympy.Set
-            and len(node.args) == 1
-            and isinstance(node.args[0], sympy.Symbol)
-            and node.args[0].name in sympy_constants.set_domain_names
-        ):
-            continue
-
         raise _UnsupportedSympyJsonNodeError(type(node))
 
 

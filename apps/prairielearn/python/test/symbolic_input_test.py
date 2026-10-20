@@ -423,7 +423,12 @@ def test_parse_symbolic_submission_does_not_reparse_json(
             None,
         ),
         (sympy.S.Reals, False, True, None),
-        (sympy.Set(sympy.Symbol("Reals")), False, True, None),
+        (
+            sympy.Set(sympy.Symbol("Reals")),
+            False,
+            True,
+            psu.HasInvalidFunctionError,
+        ),
         (sympy.Float("1.25"), False, False, psu.HasFloatError),
         (
             sympy.AccumBounds(-1, 1),
