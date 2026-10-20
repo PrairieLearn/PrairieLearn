@@ -6,7 +6,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
-import type { PaperSize } from '../../lib/printing/pdf-output.js';
+import { PAPER_DIMENSIONS, type PaperSize } from '../../lib/printing/paper-size.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 import {
@@ -57,13 +57,13 @@ export function InstructorAssessmentInstancePrint({
     formId: resLocals.assessment_instance.id,
     formLabel,
   });
+  const { width: paperWidth, height: paperHeight } = PAPER_DIMENSIONS[paperSize];
 
   return html`<!doctype html>
     <html
       lang="en"
       data-print-document="${document}"
       data-print-form-label="${formLabel ?? ''}"
-      data-print-paper-size="${paperSize}"
       data-print-include-cover="${includeCoverPage}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
@@ -93,8 +93,13 @@ export function InstructorAssessmentInstancePrint({
         ${compiledScriptTag('exam-printing-client.ts')}
         <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>
         <style>
+          :root {
+            --exam-print-page-width: ${paperWidth};
+            --exam-print-page-height: ${paperHeight};
+          }
+
           @page {
-            size: ${paperSize};
+            size: ${paperWidth} ${paperHeight};
           }
         </style>
         <style data-pagedjs-ignore>
@@ -175,7 +180,7 @@ export function InstructorAssessmentInstancePrint({
 
           @media print {
             @page {
-              size: ${paperSize};
+              size: ${paperWidth} ${paperHeight};
               margin: 0;
             }
 

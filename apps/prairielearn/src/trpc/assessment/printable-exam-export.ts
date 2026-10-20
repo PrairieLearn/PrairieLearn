@@ -243,7 +243,6 @@ export const printableExamExportRouter = t.router({
             }
             snapshots.push({
               formLabel: instance.formLabel,
-              paperSize: instance.settings.paperSize,
               printDocument,
               previewUrl: previewUrl.href,
               html,

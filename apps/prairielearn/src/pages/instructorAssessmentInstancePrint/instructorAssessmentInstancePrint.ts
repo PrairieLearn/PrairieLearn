@@ -18,7 +18,7 @@ import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js
 import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
-import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import {
   checkPrintSnapshotId,
@@ -359,13 +359,8 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
           const identity = await page.evaluate(() => ({
             document: globalThis.document.documentElement.dataset.printDocument,
             formLabel: globalThis.document.documentElement.dataset.printFormLabel,
-            paperSize: globalThis.document.documentElement.dataset.printPaperSize,
           }));
-          if (
-            identity.document !== document ||
-            identity.formLabel !== (layout.formLabel ?? '') ||
-            identity.paperSize !== layout.paperSize
-          ) {
+          if (identity.document !== document || identity.formLabel !== (layout.formLabel ?? '')) {
             throw new HttpStatusError(400, 'The printable pages do not match this document.');
           }
           await validatePrintDocument(page);

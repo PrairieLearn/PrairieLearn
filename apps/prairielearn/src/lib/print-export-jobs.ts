@@ -20,7 +20,6 @@ import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
-import { PAPER_SIZES } from './printing/pdf-output.js';
 import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -35,7 +34,6 @@ const PersistedWorkSchema = z.object({
   snapshots: z.array(
     z.object({
       formLabel: z.string(),
-      paperSize: z.enum(PAPER_SIZES),
       printDocument: z.enum(['exam', 'answer_key']),
       previewUrl: z.url(),
       html: z.string(),

@@ -316,7 +316,15 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   await expect(page.getByLabel('Additional student information')).toHaveValue(
     'Section\nStudent ID',
   );
-  await expect(frame.locator(':root')).toHaveAttribute('data-print-paper-size', 'A4');
+  const pageSize = await frame
+    .locator('.pagedjs_page')
+    .first()
+    .evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { width: Number.parseFloat(style.width), height: Number.parseFloat(style.height) };
+    });
+  expect(pageSize.width).toBeCloseTo((210 / 25.4) * 96, 0);
+  expect(pageSize.height).toBeCloseTo((297 / 25.4) * 96, 0);
   expect(new URL(page.url()).searchParams.get('instance')).toBe(form);
   await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
   await page.getByRole('button', { name: 'Update preview', exact: true }).last().click();

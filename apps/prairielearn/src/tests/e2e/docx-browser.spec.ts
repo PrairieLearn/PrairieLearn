@@ -9,6 +9,7 @@ import type { AssetsManifest } from '@prairielearn/compiled-assets';
 
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxDocument } from '../../lib/printing/docx-document.js';
+import { PAPER_DIMENSIONS } from '../../lib/printing/paper-size.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -23,9 +24,11 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   const manifest: AssetsManifest = JSON.parse(
     await fs.readFile(path.join(buildDirectory, 'manifest.json'), 'utf8'),
   );
+  const { width: paperWidth, height: paperHeight } = PAPER_DIMENSIONS.Letter;
   await page.goto('about:blank');
   await page.setContent(`
-    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="exam" data-print-paper-size="Letter"><body>
+    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="exam">
+    <head><style>:root { --exam-print-page-width: ${paperWidth}; --exam-print-page-height: ${paperHeight}; }</style></head><body>
       <main id="exam-print-source" class="exam-print-document">
         <div class="exam-questions">
           <section class="printing-question printing-question-freeform" data-question-number="1">
@@ -60,7 +63,7 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   await page.addStyleTag({
     path: path.join(buildDirectory, manifest['stylesheets/exam-printing.css'].assetPath),
   });
-  await page.addStyleTag({ content: '@page { size: Letter; }' });
+  await page.addStyleTag({ content: `@page { size: ${paperWidth} ${paperHeight}; }` });
   await page.addScriptTag({
     path: fileURLToPath(new URL('../dist/paged.polyfill.min.js', import.meta.resolve('pagedjs'))),
   });
