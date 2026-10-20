@@ -337,7 +337,6 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
 .printing-question figure,
 .printing-question .form-check,
 .printing-question .checkbox,
-.printing-question .trueFalse,
 .printing-question .input-group,
 .printing-question .pl-matching-statement,
 .printing-question .pl-order-blocks-pairing {
@@ -521,10 +520,6 @@ html[data-print-document='answer_key'] .printing-answer-key-content pre {
   padding: 0.08in;
   tab-size: 2;
   white-space: pre-wrap;
-}
-
-.printing-question-multiple-true-false .question-body .trueFalse > div > div:last-child {
-  white-space: nowrap;
 }
 
 .printing-canvas-image {
