@@ -1182,10 +1182,26 @@ export function PrairieTestExamsTable({
             meta?.pt_course_id && meta.pt_exam_id
               ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
               : null;
-          const examName =
-            meta?.pt_course_name && meta.pt_exam_name
-              ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
-              : null;
+          const examName = meta?.pt_exam_name;
+          const courseAndCenters = [
+            ...(meta?.pt_course_name
+              ? [
+                  {
+                    name: meta.pt_course_name,
+                    term: meta.pt_course_term,
+                    archived: meta.pt_course_archived,
+                  },
+                ]
+              : []),
+            ...(meta?.pt_centers ?? []),
+          ].map(({ name, term, archived }) => ({
+            label: term ? `${name} (${term})` : name,
+            archived,
+          }));
+          const archiveWarning = courseAndCenters
+            .filter(({ archived }) => archived)
+            .map(({ label }) => `${label} is archived in PrairieTest`)
+            .join('; ');
 
           return (
             // We don't use UUID as they might be duplicated in the list.
@@ -1199,10 +1215,10 @@ export function PrairieTestExamsTable({
                   </span>
                 ) : examName && examLink ? (
                   <>
-                    {meta?.pt_course_archived && (
+                    {archiveWarning && (
                       <OverlayTrigger
                         tooltip={{
-                          body: 'This exam belongs to an archived course in PrairieTest. Check that this assessment links to the intended exam.',
+                          body: archiveWarning,
                           props: { id: `prairietest-archived-${index}` },
                         }}
                       >
@@ -1210,7 +1226,7 @@ export function PrairieTestExamsTable({
                           type="button"
                           variant="ghost"
                           className="btn-xs p-0 border-0 lh-1 align-middle me-1 text-warning-emphasis"
-                          aria-label={`Archived PrairieTest course: ${examName}`}
+                          aria-label={`Archive warning for ${examName}`}
                         >
                           <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
                         </Button>
@@ -1219,6 +1235,9 @@ export function PrairieTestExamsTable({
                     <a href={examLink} target="_blank" rel="noopener noreferrer">
                       {examName}
                     </a>
+                    <div className="small text-body-secondary">
+                      {courseAndCenters.map(({ label }) => label).join(', ')}
+                    </div>
                   </>
                 ) : (
                   <span className="text-body-secondary">Unknown exam</span>

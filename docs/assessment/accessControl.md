@@ -111,8 +111,6 @@ Enable **Password** to require a password to start or continue working on the as
 
 Enable **PrairieTest** to let an active PrairieTest reservation grant access to the assessment. Add the PrairieTest exam UUID from the PrairieTest exam settings.
 
-A warning icon beside an exam indicates that its course is archived in PrairieTest. Hover over or focus the icon for details, and check that the assessment links to the intended exam, especially after copying an assessment from a previous term.
-
 PrairieLearn shows an **Exam** badge in the navigation bar when a student is in **Exam mode**, which means the student has a checked-in PrairieTest reservation. While a matching reservation is active and the student is in Exam mode, PrairieTest controls the scheduled access window and time limit. Outside Exam mode, the top-level date control, before-release behavior, and after-completion visibility apply normally.
 
 For each PrairieTest exam, configure what students see after they finish **while the reservation is still active**:
