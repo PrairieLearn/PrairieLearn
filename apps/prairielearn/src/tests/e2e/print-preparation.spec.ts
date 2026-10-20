@@ -398,6 +398,12 @@ test('prepares an exam and key with consistent variants and downloads', async ({
       expect(file.suggestedFilename()).toBe('assessment-form-A.docx');
     }
     expect(await file.failure()).toBeNull();
+    if (extension === 'pdf') {
+      const pdf = await PDFDocument.load(await fs.readFile(await file.path()));
+      const { width, height } = pdf.getPage(0).getSize();
+      expect(width).toBeCloseTo((210 / 25.4) * 72, 0);
+      expect(height).toBeCloseTo((297 / 25.4) * 72, 0);
+    }
     await expect(downloadMenu(page)).toBeEnabled();
   }
   await page.getByRole('checkbox', { name: 'Include question 1', exact: true }).check();
