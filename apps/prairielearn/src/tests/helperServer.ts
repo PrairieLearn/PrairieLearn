@@ -104,7 +104,7 @@ export async function after(): Promise<void> {
   debug('after()');
   try {
     debug('after(): stop server');
-    await server.stopServer({ force: true });
+    await server.stopServer();
 
     debug('after(): stop cron');
     await cron.stop();
