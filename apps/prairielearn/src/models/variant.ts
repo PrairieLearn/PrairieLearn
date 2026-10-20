@@ -63,6 +63,7 @@ export async function resetVariantsForAssessmentQuestion({
     });
     await execute(sql.reset_variants_for_assessment_question, {
       assessment_id,
+      assessment_instance_ids: ids,
       unsafe_assessment_question_id,
       authn_user_id,
     });

@@ -403,7 +403,10 @@ export async function updateAssessmentQuestionRubric({
     }
 
     if (tag_for_manual_grading) {
-      await sqldb.execute(sql.tag_for_manual_grading, { assessment_question_id });
+      await sqldb.execute(sql.tag_for_manual_grading, {
+        assessment_question_id,
+        assessment_instance_ids: assessmentInstanceIds,
+      });
       await updateAssessmentInstancesGradingPending(assessmentInstanceIds);
     }
   });
