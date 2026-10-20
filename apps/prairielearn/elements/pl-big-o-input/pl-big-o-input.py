@@ -9,6 +9,7 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from prairielearn.internal.raw_input import render_raw_input_popover
 
 
 class BigOType(Enum):
@@ -248,8 +249,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
-        # No need to escape the raw_submitted_answer,
-        # this gets done automatically by mustache
+        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "type": bigo_type,
@@ -258,9 +258,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "error": parse_error or missing_input,
             "a_sub": a_sub,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": (
+                pl.escape_unicode_string(submitted_raw_answer)
+                if parse_error is not None and submitted_raw_answer is not None
+                else None
+            ),
             "missing_input": missing_input,
         }
+
+        if submitted_raw_answer is not None:
+            html_params["raw_input_popover"] = render_raw_input_popover(
+                submitted_raw_answer
+            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)

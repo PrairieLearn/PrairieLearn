@@ -119,14 +119,6 @@
     <div class="form-check d-flex align-items-center py-1">
     ${{type}}({{a_sub}})$
 
-    {{! Show submitted answer submission was parsed from }}
-    <button type="button" class="ms-1 btn btn-sm btn-secondary small border"
-        data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
-        title="Original Input"
-        data-bs-content="Parsed from <samp class=&#34;user-output&#34;>{{raw_submitted_answer}}</samp>">
-        <i class="fas fa-question-circle" aria-hidden="true"></i>
-    </button>
-
     {{#feedback}}
         <div class="big-o-input-feedback">
             {{{feedback}}}
@@ -137,6 +129,7 @@
     {{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
     </div>
     {{/error}}
+    {{{raw_input_popover}}}
     {{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
 

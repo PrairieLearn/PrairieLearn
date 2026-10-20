@@ -8,6 +8,7 @@ import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
+from prairielearn.internal.raw_input import render_raw_input_grid_popover
 from sympy import Expr
 
 
@@ -283,6 +284,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 data=data,
                 format_type="output-invalid",
             )
+
+        raw_submitted_answers = data["raw_submitted_answers"]
+        entry_names = [name + str(i + 1) for i in range(m * n)]
+        if any(entry_name in raw_submitted_answers for entry_name in entry_names):
+            raw_input = [
+                [
+                    raw_submitted_answers.get(name + str(n * i + j + 1), "")
+                    for j in range(n)
+                ]
+                for i in range(m)
+            ]
+            html_params["raw_input_popover"] = render_raw_input_grid_popover(raw_input)
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
@@ -659,7 +672,7 @@ def create_table_for_html_display(
                 each_entry_name, ""
             )
             display_array += '<td class="allborder">'
-            display_array += escape(raw_submitted_answer)
+            display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
             if feedback_each_entry is not None and isinstance(
                 feedback_each_entry, dict
             ):
@@ -694,7 +707,7 @@ def create_table_for_html_display(
                 display_array += (
                     f' <td class="allborder" aria-label="Row {i + 1}, Column {j + 1}"> '
                 )
-                display_array += escape(raw_submitted_answer)
+                display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
                 if feedback_each_entry is not None and isinstance(
                     feedback_each_entry, dict
                 ):

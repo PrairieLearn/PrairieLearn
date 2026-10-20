@@ -4,6 +4,7 @@ import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
+from prairielearn.internal.raw_input import render_raw_input_popover
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
@@ -128,14 +129,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params[score_type] = score_value
 
         if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                raw_submitted_answer
-            )
+            html_params["raw_submitted_answer"] = raw_submitted_answer
         with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
+        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "label": label,
@@ -162,12 +162,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        else:
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+        elif submitted_raw_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                submitted_raw_answer
+            )
+
+        if submitted_raw_answer is not None:
+            html_params["raw_input_popover"] = render_raw_input_popover(
+                submitted_raw_answer
+            )
 
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)

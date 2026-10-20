@@ -11,6 +11,10 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from prairielearn.internal.raw_input import (
+    render_raw_input_popover,
+    render_raw_input_popover_content,
+)
 
 
 class DisplayType(Enum):
@@ -315,7 +319,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
-    raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+    submitted_raw_answer = data["raw_submitted_answers"].get(name, None)
+    raw_submitted_answer = submitted_raw_answer
     if raw_submitted_answer is None:
         raw_submitted_answer = initial_value
     if (
@@ -384,7 +389,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
             "a_sub": a_sub_converted,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": (
+                pl.escape_unicode_string(submitted_raw_answer)
+                if parse_error is not None and submitted_raw_answer is not None
+                else submitted_raw_answer
+            ),
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
@@ -396,6 +405,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "error": parse_error or missing_input,
             "missing_input": missing_input,
         }
+
+        if submitted_raw_answer is not None:
+            html_params["raw_input_popover"] = render_raw_input_popover(
+                submitted_raw_answer
+            )
+            html_params["raw_input_popover_content"] = render_raw_input_popover_content(
+                submitted_raw_answer
+            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)

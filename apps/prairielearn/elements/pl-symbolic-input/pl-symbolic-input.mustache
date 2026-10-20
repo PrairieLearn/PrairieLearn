@@ -177,6 +177,7 @@
 {{/missing_input}}
 
 </span>
+{{#parse_error}}{{{raw_input_popover}}}{{/parse_error}}
 
 {{/error}}
 {{^error}}
@@ -189,15 +190,15 @@ ${{a_sub}}$
         });
     </script>
 {{/raw_submitted_answer_latex}}
-{{! Show submitted answer submission was parsed from }}
+{{^raw_submitted_answer_latex}}
+{{{raw_input_popover}}}
+{{/raw_submitted_answer_latex}}
+{{#raw_submitted_answer_latex}}
 <button type="button" id="pl-symbolic-input-{{uuid}}-button" class="ms-1 btn btn-sm btn-secondary small border"
     data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
-    title="Original Input"
-    {{^raw_submitted_answer_latex}}
-    data-bs-content="Parsed from <samp class=&#34;user-output&#34;>{{raw_submitted_answer}}</samp>"
-    {{/raw_submitted_answer_latex}}
-    {{#raw_submitted_answer_latex}}
-    data-bs-content='Parsed from
+    data-bs-custom-class="popover-wide popover-scrollable"
+    data-bs-title="Original input" aria-label="Original input"
+    data-bs-content='<p class="mb-1">Formula editor input:</p>
         <math-field
             read-only
             id="symbolic-input-popover-{{uuid}}"
@@ -207,11 +208,13 @@ ${{a_sub}}$
             class="read-only"
         >
             {{raw_submitted_answer_latex}}
-        </math-field>'
-    {{/raw_submitted_answer_latex}}
+        </math-field>
+        <hr>
+        {{raw_input_popover_content}}'
 >
     <i class="fas fa-question-circle" aria-hidden="true"></i>
 </button>
+{{/raw_submitted_answer_latex}}
 
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 
