@@ -24,7 +24,7 @@ export function createMarkedInstance({
   interpretMath = true,
   extensions,
 }: {
-  sanitize?: boolean | 'strict';
+  sanitize?: boolean;
   /**
    * If allowHtml is false, this will remove the tags themselves for inline HTML but will remove the full block for block HTML.
    * See https://spec.commonmark.org/0.31.2/#raw-html for more details on inline vs block HTML in Markdown.
@@ -50,9 +50,7 @@ export function createMarkedInstance({
   }
 
   if (sanitize) {
-    marked.use({
-      hooks: { postprocess: (html) => sanitizeHtml(html, { strict: sanitize === 'strict' }) },
-    });
+    marked.use({ hooks: { postprocess: (html) => sanitizeHtml(html) } });
   }
 
   return marked;
@@ -66,7 +64,7 @@ const markedInstanceCache = new Map<string, Marked>();
  * caching.
  */
 function getMarkedInstance(options: {
-  sanitize: boolean | 'strict';
+  sanitize: boolean;
   allowHtml: boolean;
   interpretMath: boolean;
 }): Marked {
@@ -88,8 +86,7 @@ function getMarkedInstance(options: {
  *
  * @param original The markdown string to convert.
  * @param options Options for the conversion.
- * @param options.sanitize If true, sanitizes the HTML output with DOMPurify's defaults.
- * Use 'strict' to also restrict styling and prefix IDs and names.
+ * @param options.sanitize If true, sanitizes the HTML output.
  * @param options.inline If true, parses the markdown as inline content,
  * otherwise as block content.
  * @param options.allowHtml If true, allows HTML tags in the markdown. If false,
@@ -106,7 +103,7 @@ export function markdownToHtml(
     allowHtml = true,
     interpretMath = true,
   }: {
-    sanitize?: boolean | 'strict';
+    sanitize?: boolean;
     inline?: boolean;
     allowHtml?: boolean;
     interpretMath?: boolean;

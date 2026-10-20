@@ -268,11 +268,12 @@ router.get(
       ({ instance_question: iq, assessment_question: aq }) =>
         aq.max_auto_points || iq.auto_points || !aq.max_points,
     );
-    const markdownEnabled = await features.enabled('assessment-overview-markdown', {
-      institution_id: res.locals.institution.id,
-      course_id: res.locals.course.id,
-    });
-    const assessment_text_templated = renderText(res.locals.assessment, res.locals.urlPrefix, {
+    const markdownEnabled = await features.enabledFromLocals(
+      'assessment-text-markdown',
+      res.locals,
+    );
+    const assessment_text_templated = renderText(res.locals.assessment, {
+      urlPrefix: res.locals.urlPrefix,
       markdownEnabled,
     });
     res.locals.assessment_text_templated = assessment_text_templated;

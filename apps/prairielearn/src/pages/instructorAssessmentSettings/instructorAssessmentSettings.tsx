@@ -47,18 +47,11 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const {
-      assessment,
-      assessment_set,
-      course,
-      course_instance,
-      institution,
-      authz_data,
-      urlPrefix,
-    } = extractPageContext(res.locals, {
-      pageType: 'assessment',
-      accessType: 'instructor',
-    });
+    const { assessment, assessment_set, course, course_instance, authz_data, urlPrefix } =
+      extractPageContext(res.locals, {
+        pageType: 'assessment',
+        accessType: 'instructor',
+      });
 
     const tids = await sqldb.queryScalars(
       sql.tids,
@@ -88,15 +81,12 @@ router.get(
       (await computeScopedJsonHash<AssessmentJsonInput>(fullInfoAssessmentPath, settingsScope)) ??
       '';
 
-    const [toolDefaultRows, zonePointsRange, hasInstances, assessmentOverviewMarkdownEnabled] =
+    const [toolDefaultRows, zonePointsRange, hasInstances, assessmentTextMarkdownEnabled] =
       await Promise.all([
         selectAssessmentToolDefaults({ assessment_id: assessment.id }),
         selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
         selectAssessmentHasInstances(assessment.id),
-        features.enabled('assessment-overview-markdown', {
-          institution_id: institution.id,
-          course_id: course.id,
-        }),
+        features.enabledFromLocals('assessment-text-markdown', res.locals),
       ]);
     const toolDefaults = new Map(toolDefaultRows.map((row) => [row.tool, row]));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
@@ -170,7 +160,7 @@ router.get(
               nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
               questionSharingEnabled={questionSharingEnabled}
               hasInstances={hasInstances}
-              assessmentOverviewMarkdownEnabled={assessmentOverviewMarkdownEnabled}
+              assessmentTextMarkdownEnabled={assessmentTextMarkdownEnabled}
             />
           </Hydrate>
         ),

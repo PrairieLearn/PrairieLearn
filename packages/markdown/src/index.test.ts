@@ -6,7 +6,7 @@ function testMarkdown(
   original: string,
   expected: string,
   options: {
-    sanitize?: boolean | 'strict';
+    sanitize?: boolean;
     inline?: boolean;
     allowHtml?: boolean;
     interpretMath?: boolean;
@@ -130,9 +130,7 @@ describe('Markdown processing', () => {
 
   it('removes data attributes from rendered Markdown', () => {
     const markdown = '**Instructions** <span data-bs-toggle="popover">Help</span>';
-    testMarkdown(markdown, '<p><strong>Instructions</strong> <span>Help</span></p>', {
-      sanitize: 'strict',
-    });
+    testMarkdown(markdown, '<p><strong>Instructions</strong> <span>Help</span></p>');
   });
 
   it('sanitizes HTML javascript event tags', () => {

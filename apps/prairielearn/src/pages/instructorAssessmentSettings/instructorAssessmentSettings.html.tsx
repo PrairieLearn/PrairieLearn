@@ -162,7 +162,7 @@ interface InstructorAssessmentSettingsProps {
   nonPublicQuestionsInAssessment: { id: string; qid: string }[];
   questionSharingEnabled: boolean;
   hasInstances: boolean;
-  assessmentOverviewMarkdownEnabled: boolean;
+  assessmentTextMarkdownEnabled: boolean;
 }
 
 export function InstructorAssessmentSettings({
@@ -185,7 +185,7 @@ export function InstructorAssessmentSettings({
   nonPublicQuestionsInAssessment,
   questionSharingEnabled,
   hasInstances,
-  assessmentOverviewMarkdownEnabled,
+  assessmentTextMarkdownEnabled,
 }: InstructorAssessmentSettingsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -226,7 +226,7 @@ export function InstructorAssessmentSettings({
           courseInstanceSharedPublicly={courseInstance.share_source_publicly}
           questionSharingEnabled={questionSharingEnabled}
           hasInstances={hasInstances}
-          assessmentOverviewMarkdownEnabled={assessmentOverviewMarkdownEnabled}
+          assessmentTextMarkdownEnabled={assessmentTextMarkdownEnabled}
           typeChangeMessage={typeChangeMessage}
           setTypeChangeMessage={setTypeChangeMessage}
         />
@@ -679,7 +679,7 @@ function InstructorAssessmentSettingsInner({
   courseInstanceSharedPublicly,
   questionSharingEnabled,
   hasInstances,
-  assessmentOverviewMarkdownEnabled,
+  assessmentTextMarkdownEnabled,
   typeChangeMessage,
   setTypeChangeMessage,
 }: Omit<InstructorAssessmentSettingsProps, 'trpcCsrfToken' | 'courseInstance'> & {
@@ -1102,7 +1102,7 @@ function InstructorAssessmentSettingsInner({
                 />
                 <small id="text-help" className="form-text text-muted">
                   Text shown on the assessment overview page.{' '}
-                  {assessmentOverviewMarkdownEnabled
+                  {assessmentTextMarkdownEnabled
                     ? 'Supports Markdown and HTML. JavaScript and unsafe HTML are removed.'
                     : 'Supports HTML.'}
                 </small>

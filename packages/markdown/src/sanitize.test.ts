@@ -19,8 +19,10 @@ describe('sanitizeHtml', () => {
       '<a href="javascript:alert(1)" target="_blank" onclick="alert(1)">Link</a>',
       '<a href="java&#x73;cript:alert(1)">Encoded link</a>',
       '<a name="legacy"></a><a href="#instructions">Jump</a><a href="#legacy">Legacy</a>',
-      '<p aria-labelledby="instructions legacy">Details</p>',
-      '<label for="answer">Answer</label><input id="answer" name="answer">',
+      '<p aria-controls="testing" aria-labelledby="instructions legacy" role="dialog">Details</p>',
+      '<form action="/submit"><label for="answer">Answer</label><input id="answer" name="answer"></form>',
+      '<dialog open>Dialog</dialog><select><option>Choice</option></select>',
+      '<table><caption>Points</caption><thead><tr><th scope="col">Question</th></tr></thead><tbody><tr><td colspan="2">10</td></tr></tbody></table>',
       '<a href="https://example.com/#instructions">External</a>',
       '</div>',
     ].join('');
@@ -28,21 +30,22 @@ describe('sanitizeHtml', () => {
       '<div>',
       '<h2 id="user-content-instructions"><strong>Instructions</strong></h2>',
       '<p class="mathjax_ignore tex2jax_ignore">$5</p>',
-      '<button type="button" aria-label="Help">Help</button>',
+      'Help',
       '<img src="/image.png">',
-      '<svg></svg>',
       '<a href="/formulas.pdf" target="_blank" rel="noopener noreferrer">Formula sheet</a>',
       '<a href="/formulas.pdf" target="_BLANK" rel="nofollow noreferrer noopener">Formula sheet</a>',
       '<a href="/first">First</a><a href="/second" target="_self">Second</a>',
       '<a target="_blank" rel="noopener noreferrer">Link</a>',
       '<a>Encoded link</a>',
       '<a name="user-content-legacy"></a><a href="#user-content-instructions">Jump</a><a href="#user-content-legacy">Legacy</a>',
-      '<p aria-labelledby="user-content-instructions user-content-legacy">Details</p>',
-      '<label for="user-content-answer">Answer</label><input name="user-content-answer" id="user-content-answer">',
+      '<p>Details</p>',
+      'Answer',
+      'DialogChoice',
+      '<table><caption>Points</caption><thead><tr><th scope="col">Question</th></tr></thead><tbody><tr><td colspan="2">10</td></tr></tbody></table>',
       '<a href="https://example.com/#instructions">External</a>',
       '</div>',
     ].join('');
 
-    assert.equal(sanitizeHtml(html, { strict: true }), expected);
+    assert.equal(sanitizeHtml(html), expected);
   });
 });

@@ -65,15 +65,14 @@ export type InstanceLogEntry = Omit<
  * @param assessment - The assessment to render the text for.
  * @param assessment.id - The assessment ID.
  * @param assessment.text - The assessment text.
- * @param urlPrefix - The current server urlPrefix.
  * @param options - Rendering options.
+ * @param options.urlPrefix - The current server urlPrefix.
  * @param options.markdownEnabled - Whether to render sanitized Markdown instead of HTML.
  * @returns The rendered text.
  */
 export function renderText(
   assessment: { id: string; text: string | null },
-  urlPrefix: string,
-  { markdownEnabled = false }: { markdownEnabled?: boolean } = {},
+  { urlPrefix, markdownEnabled = false }: { urlPrefix: string; markdownEnabled?: boolean },
 ): string | null {
   if (!assessment.text) return null;
 
@@ -92,9 +91,7 @@ export function renderText(
     .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
 
   const rendered = mustache.render(text, context);
-  return markdownEnabled
-    ? markdownToHtml(rendered, { interpretMath: false, sanitize: 'strict' })
-    : rendered;
+  return markdownEnabled ? markdownToHtml(rendered, { interpretMath: false }) : rendered;
 }
 
 /**
