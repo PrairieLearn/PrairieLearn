@@ -154,6 +154,21 @@ test.describe('pl-symbolic-input formula editor', () => {
   });
 });
 
+test('keeps nested formula editor highlights light with a dark system theme', async ({
+  page,
+  courseInstance,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await openSymbolicInputEditorQuestion(page, courseInstance);
+
+  const formulaEditor = page.getByLabel('Symbolic expression for x');
+  await formulaEditor.pressSequentially('1/2');
+
+  const containsHighlight = formulaEditor.locator('.ML__contains-highlight').first();
+  await expect(containsHighlight).toBeVisible();
+  await expect(containsHighlight).toHaveCSS('background-color', 'rgb(237, 242, 247)');
+});
+
 test.describe('pl-symbolic-input unicode multiplication keys', () => {
   test.beforeEach(async ({ page, courseInstance }) => {
     await openSymbolicInputEditorQuestion(page, courseInstance);
