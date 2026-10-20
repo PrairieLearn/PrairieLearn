@@ -137,7 +137,6 @@ export function JobSequenceResults({
 }: JobSequenceResultsProps) {
   const [jobs, setJobs] = useState(initialJobs);
 
-  // Refresh job snapshots when reconnecting so changes made while offline are reflected.
   useEffect(() => {
     const socket = io();
 
@@ -152,6 +151,7 @@ export function JobSequenceResults({
       );
     });
 
+    // Refresh job snapshots when reconnecting so changes made while offline are reflected.
     socket.on('connect', () => {
       socket.emit(
         'joinJobSequence',
