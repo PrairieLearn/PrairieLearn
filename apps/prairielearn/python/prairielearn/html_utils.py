@@ -7,7 +7,7 @@ from prairielearn import ...
 
 import html
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import Enum
 from typing import Any, overload
 
@@ -504,8 +504,56 @@ def _render_raw_input_value(value: str, formatter: Callable[[str], str]) -> str:
     )
 
 
+def _render_raw_input_grid(
+    values: Sequence[Sequence[str]], formatter: Callable[[str], str]
+) -> str:
+    rows = "".join(
+        "<tr>"
+        + "".join(
+            '<td><code style="white-space: pre-wrap; overflow-wrap: anywhere">'
+            f"{html.escape(formatter(value))}</code></td>"
+            for value in row
+        )
+        + "</tr>"
+        for row in values
+    )
+    return (
+        '<div class="table-responsive">'
+        '<table class="table table-sm table-bordered mb-0"><tbody>'
+        f"{rows}</tbody></table></div>"
+    )
+
+
+def _render_raw_input_diagnostics(
+    readable: str, ascii_only: str, raw_values: Sequence[str]
+) -> str:
+    sections = []
+
+    if any(escape_unicode_string(value) != value for value in raw_values):
+        sections.append(
+            '<p class="mb-1">Invisible characters appear like '
+            "<code>&lt;U+200b&gt;</code>.</p>"
+        )
+
+    sections.append(readable)
+
+    if any(
+        _escape_non_ascii_string(value) != escape_unicode_string(value)
+        for value in raw_values
+    ):
+        sections.extend((
+            '<p class="mb-1 mt-2">With all special characters shown as codes:</p>',
+            ascii_only,
+        ))
+
+    return "".join(sections)
+
+
 def render_raw_input_popover(
-    raw_input: str, input_label: str, *, show_if_ascii_only: bool = True
+    raw_input: str | Sequence[Sequence[str]],
+    input_label: str,
+    *,
+    show_if_ascii_only: bool = True,
 ) -> str:
     """Render raw input as an accessible popover button.
 
@@ -513,17 +561,27 @@ def render_raw_input_popover(
     insert into a template without additional escaping.
 
     Args:
-        raw_input: The scalar value to describe.
+        raw_input: A scalar value or a two-dimensional grid of values.
         input_label: The accessible name of the input associated with the value.
         show_if_ascii_only: Whether to render the button for ASCII-only input.
 
     Returns:
         The rendered HTML, or an empty string when ASCII-only input is hidden.
     """
-    if not show_if_ascii_only and raw_input.isascii():
+    if isinstance(raw_input, str):
+        raw_values = (raw_input,)
+        content = render_raw_input_popover_content(raw_input)
+    else:
+        raw_values = tuple(value for row in raw_input for value in row)
+        content = _render_raw_input_diagnostics(
+            _render_raw_input_grid(raw_input, escape_unicode_string),
+            _render_raw_input_grid(raw_input, _escape_non_ascii_string),
+            raw_values,
+        )
+
+    if not show_if_ascii_only and all(value.isascii() for value in raw_values):
         return ""
 
-    content = render_raw_input_popover_content(raw_input)
     title = html.escape(f"Answer as entered for {input_label}", quote=True)
     return (
         '<button type="button" '
@@ -550,22 +608,8 @@ def render_raw_input_popover_content(raw_input: str) -> str:
     Returns:
         The rendered diagnostic HTML.
     """
-    readable = escape_unicode_string(raw_input)
-    ascii_only = _escape_non_ascii_string(raw_input)
-    sections = []
-
-    if readable != raw_input:
-        sections.append(
-            '<p class="mb-1">Invisible characters appear like '
-            "<code>&lt;U+200b&gt;</code>.</p>"
-        )
-
-    sections.append(_render_raw_input_value(raw_input, escape_unicode_string))
-
-    if ascii_only != readable:
-        sections.extend((
-            '<p class="mb-1 mt-2">With all special characters shown as codes:</p>',
-            _render_raw_input_value(raw_input, _escape_non_ascii_string),
-        ))
-
-    return "".join(sections)
+    return _render_raw_input_diagnostics(
+        _render_raw_input_value(raw_input, escape_unicode_string),
+        _render_raw_input_value(raw_input, _escape_non_ascii_string),
+        (raw_input,),
+    )
