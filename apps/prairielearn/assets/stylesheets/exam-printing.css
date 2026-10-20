@@ -237,14 +237,12 @@ body {
   break-inside: avoid;
 }
 
-.printing-question .question-container.card,
 .printing-question .question-block.card {
   border: 0 !important;
   box-shadow: none !important;
   margin: 0;
 }
 
-.printing-question .question-container > .card-header,
 .printing-question .question-block > .card-header {
   background: #fff !important;
   border-bottom: 0.5pt solid #aaa !important;
@@ -252,7 +250,6 @@ body {
   padding: 0 0 0.04in;
 }
 
-.printing-question .question-container > .card-header h1,
 .printing-question .question-block > .card-header h1 {
   color: #555;
   font-size: 9pt;
@@ -262,7 +259,6 @@ body {
   text-transform: uppercase;
 }
 
-.printing-question .question-container > .card-body,
 .printing-question .question-block > .card-body,
 .printing-question .question-body {
   padding-left: 0;
