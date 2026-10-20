@@ -255,7 +255,10 @@ def _is_assumptions_dict(value: Any) -> TypeGuard[AssumptionsDictT]:
     return isinstance(value, dict) and all(
         isinstance(variable, str)
         and isinstance(assumptions, dict)
-        and all(a in _assume_defined for a in assumptions)
+        and all(
+            assumption in _assume_defined and isinstance(enabled, bool)
+            for assumption, enabled in assumptions.items()
+        )
         for variable, assumptions in value.items()
     )
 
