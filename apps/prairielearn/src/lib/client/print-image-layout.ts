@@ -1,4 +1,6 @@
-import { getPrintBlockHeight, parsePrintBlockSize } from './print-question-layout.js';
+import { parseQuestionBlockSize } from '../printing/question-block-size.js';
+
+import { getPrintBlockHeight } from './print-question-layout.js';
 
 const MIN_CHOICE_IMAGE_SCALE = 0.5;
 
@@ -67,7 +69,7 @@ export function fitPrintChoiceImages(questions: Iterable<HTMLElement>, pageHeigh
   for (const question of questions) {
     // Leave room for rounding when Paged.js reconstructs the measured content.
     const availableHeight =
-      getPrintBlockHeight(parsePrintBlockSize(question.dataset.printBlockSize), pageHeight) - 2;
+      getPrintBlockHeight(parseQuestionBlockSize(question.dataset.printBlockSize), pageHeight) - 2;
     if (question.getBoundingClientRect().height <= availableHeight) continue;
 
     const images = [

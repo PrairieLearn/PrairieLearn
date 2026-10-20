@@ -4,16 +4,14 @@ import {
   waitForExcalidrawCanvases,
   waitForPrintImages,
 } from '../../src/lib/client/print-image-layout.js';
-import {
-  parsePrintBlockSize,
-  planPrintQuestionPages,
-} from '../../src/lib/client/print-question-layout.js';
+import { planPrintQuestionPages } from '../../src/lib/client/print-question-layout.js';
 import {
   normalizeAnswerPresentation,
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
 } from '../../src/lib/client/print-response-controls.js';
 import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docx-browser.js';
+import { parseQuestionBlockSize } from '../../src/lib/printing/question-block-size.js';
 
 interface PagedFlow {
   total: number;
@@ -335,7 +333,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
   const measurements = questions.map((question, index) => {
     const id = String(index);
     const label = question.getAttribute('aria-label') ?? `Question ${index + 1}`;
-    const blockSize = parsePrintBlockSize(question.dataset.printBlockSize);
+    const blockSize = parseQuestionBlockSize(question.dataset.printBlockSize);
     const naturalHeight = Number(
       question.dataset.printStudentHeight ?? question.getBoundingClientRect().height,
     );
