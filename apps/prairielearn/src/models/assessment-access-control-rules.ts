@@ -15,6 +15,9 @@ import {
   type Assessment,
   AssessmentAccessControlPrairietestExamSchema,
   AssessmentAccessControlRuleSchema,
+  PtCenterSchema,
+  PtCourseSchema,
+  PtExamSchema,
 } from '../lib/db-types.js';
 import { lockEnrollments } from '../lib/enrollment/lock.js';
 import { parseLocalDateTime } from '../lib/timezones.js';
@@ -289,10 +292,10 @@ async function selectEnrollmentAccessControlTargetIds(assessment: Assessment): P
 
 const PrairieTestExamMetadataSchema = z.object({
   uuid: z.string(),
-  pt_exam_id: z.string().nullable(),
-  pt_exam_name: z.string().nullable(),
-  pt_course_id: z.string().nullable(),
-  pt_course_name: z.string().nullable(),
+  pt_exam: PtExamSchema.nullable(),
+  pt_course: PtCourseSchema.nullable(),
+  pt_course_archived: z.boolean(),
+  pt_centers: z.array(z.object({ center: PtCenterSchema, archived: z.boolean() })),
 });
 export type PrairieTestExamMetadata = z.infer<typeof PrairieTestExamMetadataSchema>;
 

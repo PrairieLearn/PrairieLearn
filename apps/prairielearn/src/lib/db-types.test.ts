@@ -71,9 +71,12 @@ describe('Database Schema Sync Test', () => {
     const data = await describeDatabase(dbName);
     const tables = Object.keys(data.tables);
     const usedSchemas = new Set<string>();
-    // Skip PrairieTest tables
-    const nonPtTables = tables.filter((tableName) => !tableName.startsWith('pt_'));
-    for (const tableName of nonPtTables) {
+    const tableNames = new Set<string>(TableNames);
+    // PrairieTest owns tables without a local schema.
+    const schemaTables = tables.filter(
+      (tableName) => !tableName.startsWith('pt_') || tableNames.has(tableName),
+    );
+    for (const tableName of schemaTables) {
       const schemaName = tableNameToSchemaName(tableName);
       // A null schema name means that the schema should be ignored.
       if (schemaName === null) {
@@ -128,8 +131,8 @@ describe('Database Schema Sync Test', () => {
       throw new Error(`Unused schemas: ${remainingSchemas.join(', ')}`);
     }
 
-    const remainingTableNames = difference(nonPtTables, TableNames);
-    const remainingSchemaNames = difference(TableNames, nonPtTables);
+    const remainingTableNames = difference(schemaTables, TableNames);
+    const remainingSchemaNames = difference(TableNames, schemaTables);
     if (remainingTableNames.length > 0) {
       throw new Error(
         `table definitions missing from TableNames: ${remainingTableNames.join(', ')}`,

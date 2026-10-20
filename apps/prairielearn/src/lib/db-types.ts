@@ -1383,6 +1383,46 @@ export const PlanGrantSchema = z.object({
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
 
+export const PtCenterCourseSchema = z.object({
+  center_id: IdSchema,
+  course_id: IdSchema,
+  id: IdSchema,
+});
+export type PtCenterCourse = z.infer<typeof PtCenterCourseSchema>;
+
+export const PtCenterExamSchema = z.object({
+  center_course_id: IdSchema,
+  exam_id: IdSchema,
+  id: IdSchema,
+});
+export type PtCenterExam = z.infer<typeof PtCenterExamSchema>;
+
+export const PtCenterSchema = z.object({
+  cheating_reports_enabled: z.boolean(),
+  end_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  name: z.string(),
+  term: z.string(),
+});
+export type PtCenter = z.infer<typeof PtCenterSchema>;
+
+export const PtCourseSchema = z.object({
+  cheating_reports_enabled: z.boolean(),
+  end_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  term: z.string(),
+});
+export type PtCourse = z.infer<typeof PtCourseSchema>;
+
+export const PtExamSchema = z.object({
+  course_id: IdSchema.nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  uuid: z.string().nullable(),
+});
+export type PtExam = z.infer<typeof PtExamSchema>;
+
 export const QueryRunSchema = z.object({
   authn_user_id: IdSchema,
   date: DateFromISOString,
@@ -1852,6 +1892,11 @@ export const TableNames = [
   'page_view_logs',
   'courses',
   'plan_grants',
+  'pt_center_courses',
+  'pt_center_exams',
+  'pt_centers',
+  'pt_courses',
+  'pt_exams',
   'query_runs',
   'question_authors',
   'question_generation_context_embeddings',

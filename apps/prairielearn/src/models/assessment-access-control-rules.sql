@@ -125,10 +125,35 @@ ORDER BY
 -- BLOCK select_prairietest_exam_metadata_by_uuids
 SELECT DISTINCT
   u::text AS uuid,
-  pt_x.id::text AS pt_exam_id,
-  pt_x.name AS pt_exam_name,
-  pt_c.id::text AS pt_course_id,
-  pt_c.name AS pt_course_name
+  to_jsonb(pt_x.*) AS pt_exam,
+  to_jsonb(pt_c.*) AS pt_course,
+  COALESCE(pt_c.end_date < CURRENT_TIMESTAMP, FALSE) AS pt_course_archived,
+  (
+    SELECT
+      COALESCE(
+        jsonb_agg(
+          jsonb_build_object(
+            'center',
+            to_jsonb(pt_centers.*),
+            'archived',
+            COALESCE(pt_centers.end_date < CURRENT_TIMESTAMP, FALSE)
+          )
+          ORDER BY
+            pt_centers.name,
+            pt_centers.term,
+            pt_centers.id
+        ),
+        '[]'::jsonb
+      )
+    FROM
+      pt_center_exams
+      JOIN pt_center_courses ON (
+        pt_center_courses.id = pt_center_exams.center_course_id
+      )
+      JOIN pt_centers ON (pt_centers.id = pt_center_courses.center_id)
+    WHERE
+      pt_center_exams.exam_id = pt_x.id
+  ) AS pt_centers
 FROM
   unnest($exam_uuids::uuid[]) AS u
   LEFT JOIN pt_exams AS pt_x ON (pt_x.uuid = u)

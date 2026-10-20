@@ -6,6 +6,7 @@ import { Button, Card } from 'react-bootstrap';
 import { type FieldErrors, get } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
@@ -1178,13 +1179,24 @@ export function PrairieTestExamsTable({
           const meta = metadataByUuid.get(exam.examUuid.toLowerCase());
           const uuidError = formErrors?.prairieTestExams?.[index]?.examUuid?.message;
           const examLink =
-            meta?.pt_course_id && meta.pt_exam_id
-              ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
+            meta?.pt_course && meta.pt_exam
+              ? `${ptHost}/pt/course/${meta.pt_course.id}/staff/exam/${meta.pt_exam.id}`
               : null;
-          const examName =
-            meta?.pt_course_name && meta.pt_exam_name
-              ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
-              : null;
+          const courseName = meta?.pt_course?.name
+            ? `${meta.pt_course.name} (${meta.pt_course.term})`
+            : null;
+          const centerNames = meta?.pt_centers.map(
+            ({ center }) => `${center.name} (${center.term})`,
+          );
+          const archiveWarnings = [
+            ...(meta?.pt_centers
+              .filter(({ archived }) => archived)
+              .map(({ center }) => `Testing center ${center.name} (${center.term}) is archived.`) ??
+              []),
+            ...(meta?.pt_course_archived && courseName
+              ? [`Course ${courseName} is archived.`]
+              : []),
+          ];
 
           return (
             // We don't use UUID as they might be duplicated in the list.
@@ -1196,10 +1208,43 @@ export function PrairieTestExamsTable({
                     <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
                     {uuidError}
                   </span>
-                ) : examName && examLink ? (
-                  <a href={examLink} target="_blank" rel="noopener noreferrer">
-                    {examName}
-                  </a>
+                ) : meta?.pt_exam?.name && examLink ? (
+                  <div>
+                    <div className="d-flex align-items-center gap-2">
+                      <a href={examLink} target="_blank" rel="noopener noreferrer">
+                        {meta.pt_exam.name}
+                      </a>
+                      {archiveWarnings.length > 0 && (
+                        <OverlayTrigger
+                          trigger="click"
+                          placement="auto"
+                          popover={{
+                            header: 'Archived PrairieTest link',
+                            body: (
+                              <ul className="mb-0 ps-3">
+                                {archiveWarnings.map((warning) => (
+                                  <li key={warning}>{warning}</li>
+                                ))}
+                              </ul>
+                            ),
+                          }}
+                          rootClose
+                        >
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="p-0 text-warning-emphasis"
+                            aria-label="Archived PrairieTest link"
+                          >
+                            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
+                          </Button>
+                        </OverlayTrigger>
+                      )}
+                    </div>
+                    <small className="text-body-secondary">
+                      {[courseName, ...(centerNames ?? [])].filter(Boolean).join(', ')}
+                    </small>
+                  </div>
                 ) : (
                   <span className="text-body-secondary">Unknown exam</span>
                 )}
