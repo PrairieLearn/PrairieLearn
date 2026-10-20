@@ -1,6 +1,7 @@
 import { layoutPrintGradingTable } from '../../src/lib/client/print-cover-layout.js';
 import {
   fitPrintChoiceImages,
+  waitForExcalidrawCanvases,
   waitForPrintImages,
 } from '../../src/lib/client/print-image-layout.js';
 import {
@@ -46,60 +47,6 @@ function waitForDocumentReady(): Promise<void> {
 
 function waitForAnimationFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
-}
-
-async function waitForLegacyQuestions(source: HTMLElement): Promise<void> {
-  const containers = [
-    ...source.querySelectorAll<HTMLElement>(
-      '.printing-question:not(.printing-question-freeform) .question-container',
-    ),
-  ];
-  if (containers.length === 0) return;
-
-  const getRenderError = () =>
-    containers.find((container) => container.dataset.legacyQuestionRenderStatus === 'error');
-  const isReady = () =>
-    containers.every((container) => container.dataset.legacyQuestionRenderStatus === 'complete');
-  const describeRenderError = (container: HTMLElement) => {
-    const questionLabel =
-      container.closest('.printing-question')?.getAttribute('aria-label') ?? 'A legacy question';
-    const detail = container.dataset.legacyQuestionRenderError;
-    return new Error(
-      detail
-        ? `${questionLabel} could not be rendered for paper: ${detail}`
-        : `${questionLabel} could not be rendered for paper`,
-    );
-  };
-  const initialRenderError = getRenderError();
-  if (initialRenderError) throw describeRenderError(initialRenderError);
-
-  if (!isReady()) {
-    await new Promise<void>((resolve, reject) => {
-      const observer = new MutationObserver(() => {
-        const renderError = getRenderError();
-        if (renderError) {
-          window.clearTimeout(timeout);
-          observer.disconnect();
-          reject(describeRenderError(renderError));
-          return;
-        }
-        if (!isReady()) return;
-        window.clearTimeout(timeout);
-        observer.disconnect();
-        resolve();
-      });
-      const timeout = window.setTimeout(() => {
-        observer.disconnect();
-        reject(new Error('Timed out waiting for legacy questions to render'));
-      }, 60_000);
-      for (const container of containers) {
-        observer.observe(container, {
-          attributes: true,
-          attributeFilter: ['data-legacy-question-render-status'],
-        });
-      }
-    });
-  }
 }
 
 function getLowestCommonAncestor(elements: HTMLElement[], limit: HTMLElement): HTMLElement | null {
@@ -514,7 +461,8 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   const output = document.querySelector<HTMLElement>('#exam-print-pages');
   if (!source || !output) throw new Error('Printable exam containers are missing');
 
-  await Promise.all([waitForLegacyQuestions(source), ...extraReadinessPromises]);
+  await Promise.all(extraReadinessPromises);
+  await waitForExcalidrawCanvases(source);
   materializePrintableDetails(source);
   await waitForAnimationFrame();
   await waitForAnimationFrame();

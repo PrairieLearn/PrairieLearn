@@ -478,9 +478,7 @@ function normalizeQuestionBodyResponseControls(questionBody: HTMLElement): void 
     'input[type="checkbox"], input[type="radio"]',
   )) {
     control.closest('fieldset, [role="group"]')?.classList.add('printing-selection-group');
-    control
-      .closest('.form-check, .checkbox, .radio, .trueFalse')
-      ?.classList.add('printing-selection-option');
+    control.closest('.form-check, .checkbox, .radio')?.classList.add('printing-selection-option');
   }
   replaceFileEditors(questionBody);
   moveResponseControlPlaceholders(questionBody);
