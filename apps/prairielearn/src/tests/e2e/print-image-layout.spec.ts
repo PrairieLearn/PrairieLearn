@@ -123,9 +123,8 @@ test('fits image choices uniformly within the paper and requested question block
       expect(image.height).toBeCloseTo(measurements[0].height, 1);
       expect(image.width / image.height).toBeCloseTo(1, 2);
       expect(image.overflow).toBeLessThanOrEqual(1);
-      expect(image.questionHeight).toBeLessThanOrEqual(
-        image.pageHeight * (blockSize === 'half' ? 0.5 : 1) + 1,
-      );
+      expect(image.width).toBeGreaterThanOrEqual(125);
+      expect(image.questionHeight).toBeLessThanOrEqual(image.pageHeight + 1);
     }
   }
   for (const blockSize of ['auto', 'half']) {
@@ -141,6 +140,48 @@ test('fits image choices uniformly within the paper and requested question block
       }),
     ).toHaveCount(1);
     await expect(page.getByRole('img', { name: /^Image choice / })).toHaveCount(5);
+  }
+});
+
+test('lets image choices flow across pages before shrinking them below legible size', async ({
+  page,
+  imageQuestion,
+}) => {
+  const preview = await imageQuestion(
+    imageChoices({
+      element: 'pl-multiple-choice',
+      dimensions: Array.from({ length: 10 }, () => ({ width: 250, height: 250 })),
+    }),
+  );
+  for (const paperSize of ['Letter', 'A4']) {
+    await page.goto(`${preview}?exclude_question=2&paper_size=${paperSize}`);
+    await waitForPrintablePage(page);
+    const images = page.getByRole('img', { name: /^Image choice / });
+    await expect(images).toHaveCount(10);
+    const measurements = await images.evaluateAll((elements) =>
+      elements.map((element) => {
+        const bounds = element.getBoundingClientRect();
+        const page = element.closest('.pagedjs_page')!;
+        const area = page.querySelector('.pagedjs_area')!.getBoundingClientRect();
+        return {
+          width: bounds.width,
+          height: bounds.height,
+          page: page.getAttribute('data-page-number'),
+          overflow: Math.max(
+            area.left - bounds.left,
+            bounds.right - area.right,
+            area.top - bounds.top,
+            bounds.bottom - area.bottom,
+          ),
+        };
+      }),
+    );
+    expect(new Set(measurements.map(({ page }) => page)).size).toBeGreaterThan(1);
+    for (const image of measurements) {
+      expect(image.width).toBeGreaterThanOrEqual(125);
+      expect(image.height).toBeGreaterThanOrEqual(125);
+      expect(image.overflow).toBeLessThanOrEqual(1);
+    }
   }
 });
 
