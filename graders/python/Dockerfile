@@ -25,7 +25,8 @@ RUN dnf -y update \
     && uv venv --python-preference managed --python 3.13 /venv
 
 COPY requirements.txt /
-RUN uv pip install -r /requirements.txt
+# Use system Graphviz to avoid bundled font and rendering regressions.
+RUN uv pip install --no-binary pygraphviz -r /requirements.txt
 
 # Copy the source files last to speed up local dev
 COPY python_autograder /python_autograder
