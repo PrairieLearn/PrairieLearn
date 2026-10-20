@@ -12,6 +12,7 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { type Duplex } from 'node:stream';
 import * as url from 'node:url';
 import * as util from 'node:util';
 
@@ -2103,6 +2104,7 @@ export async function initExpress(): Promise<Express> {
 // Server startup ////////////////////////////////////////////////////
 let server: http.Server | https.Server | undefined;
 let app: express.Express | undefined;
+const upgradedSockets = new Set<Duplex>();
 
 export async function startServer(app: express.Express) {
   switch (config.serverType) {
@@ -2162,6 +2164,19 @@ export async function startServer(app: express.Express) {
   server.on('connection', (socket) => serverSocketActivity.addSocket(socket));
   serverSocketActivity.start();
 
+  server.on('request', (_req, res) => {
+    res.once('finish', () => {
+      // server.close() only closes connections that were already idle.
+      if (!server!.listening) server!.closeIdleConnections();
+    });
+  });
+
+  server.on('upgrade', (_req, socket) => {
+    upgradedSockets.add(socket);
+    socket.once('close', () => upgradedSockets.delete(socket));
+    if (!server!.listening) socket.destroy();
+  });
+
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
@@ -2195,21 +2210,17 @@ export async function startServer(app: express.Express) {
   return server;
 }
 
-export async function stopServer() {
+export async function stopServer({ force = false }: { force?: boolean } = {}) {
   if (!server) throw new Error('cannot stop an undefined server');
   if (!server.listening) return;
 
-  // This exists mostly for tests, where we might have dangling connections
-  // from `fetch()` requests whose bodies we never read. `server.close()` won't
-  // actually stop the server until all connections are closed, so we need to
-  // manually close said connections.
-  //
-  // In production environments, PrairieLearn should always be deployed behind
-  // a load balancer that will drain and close any open connections before
-  // PrairieLearn is stopped.
-  server.closeAllConnections();
-
-  await util.promisify(server.close.bind(server))();
+  const closed = util.promisify(server.close.bind(server))();
+  // Workspace proxy WebSockets have no HTTP response to finish, and Node's
+  // HTTP close methods don't close upgraded connections.
+  for (const socket of upgradedSockets) socket.destroy();
+  // Tests may leave fetch response bodies unread; those connections cannot drain.
+  if (force) server.closeAllConnections();
+  await closed;
 }
 
 export async function insertDevUser() {
@@ -2719,33 +2730,10 @@ if (shouldStartServer) {
       });
     }
 
-    // By this point, we should no longer be attached to the load balancer,
-    // so there's no point shutting down the HTTP server or the socket.io
-    // server.
-    //
-    // We use `allSettled()` here to ensure that all tasks can gracefully
-    // shut down, even if some of them fail.
     if (process.env.NODE_ENV !== 'test') {
       logger.info('Shutting down async processing');
     }
-    // First, stop all services that use the database.
-    const serviceResults = await Promise.allSettled([
-      externalGraderDeadLetters.stop(),
-      externalGraderResults.stop(),
-      cron.stop(),
-      serverJobs.stop(),
-      socketServer.close(),
-      cache.close(),
-      assets.close(),
-      codeCaller.finish(),
-      stopBatchedMigrations(),
-    ]);
-    serviceResults.forEach((r) => {
-      if (r.status === 'rejected') {
-        logger.error('Error shutting down async processing', r.reason);
-        Sentry.captureException(r.reason);
-      }
-    });
+    await stopAsyncProcessing();
 
     // Then close the database connections now that nothing is using them.
     const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
@@ -2804,17 +2792,51 @@ if (shouldStartServer) {
  * cleaned up here.
  */
 export async function close() {
-  // These are run in the opposite order in which they're initialized/started.
-  await cron.stop();
-  await serverJobs.stop();
-  await socketServer.close();
-  await cache.close();
-  await assets.close();
-  await codeCaller.finish();
-  load.close();
-  await stopBatchedMigrations();
+  await stopAsyncProcessing();
   await namedLocks.close();
   await sqldb.closeAsync();
+}
+
+async function stopAsyncProcessing() {
+  const httpStopped = stopServer();
+  // Close transports so clients reconnect elsewhere, but retain Redis broadcasts
+  // for background jobs that are still running on this server.
+  socketServer.io?.engine.close();
+
+  // Stop producers before draining server jobs: an in-flight producer may
+  // still create a job, and both need the resources closed below.
+  await settleShutdownTasks([
+    httpStopped,
+    externalGraderDeadLetters.stop(),
+    externalGraderResults.stop(),
+    cron.stop(),
+    workspace.stop(),
+    stopBatchedMigrations(),
+  ]);
+
+  await settleShutdownTasks([serverJobs.stop()]);
+
+  // Jobs may render questions and publish progress between awaited operations.
+  // Keep their workers, caches, assets, and socket broadcasts alive until done.
+  await settleShutdownTasks([
+    serverJobProgressSocket.close(),
+    socketServer.close(),
+    cache.close(),
+    assets.close(),
+    codeCaller.finish(),
+  ]);
+  load.close();
+  nodeMetrics.stop();
+}
+
+async function settleShutdownTasks(tasks: Promise<unknown>[]) {
+  const results = await Promise.allSettled(tasks);
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      logger.error('Error shutting down async processing', result.reason);
+      Sentry.captureException(result.reason);
+    }
+  }
 }
 
 export const viteExpressApp = app;

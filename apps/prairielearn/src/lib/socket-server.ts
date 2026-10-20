@@ -93,12 +93,9 @@ export async function close() {
   //
   // The following sequence is based on what `io.close()` would do internally.
   //
-  // Note the use of `io.local`, which prevents the server from attempting to
-  // broadcast the disconnect to other servers via Redis.
-  //
-  // Note that we pass `true` to `disconnectSockets()`. This should ensure that
-  // clients try to reconnect, and that will be routed to a different server.
-  io.local.disconnectSockets(true);
+  // Closing transports lets clients reconnect. A namespace disconnect instead
+  // disables automatic reconnection on the client.
+  io.engine.close();
 
   // Collect all namespace adapters. We do this before replacing the adapter
   // because we can't get references to the original adapters after that.
@@ -113,9 +110,6 @@ export async function close() {
   // The type signature of `close()` is `Promise<void> | void`, so we need to disable the rule about the unneeded `Promise.all`.
   // eslint-disable-next-line @typescript-eslint/await-thenable
   await Promise.all(adapters.map((adapter) => adapter.close()));
-
-  // Close any remaining client connections.
-  io.engine.close();
 
   // Shut down the Redis clients. If this fails, ignore it and proceed.
   await pub?.quit().catch(() => {});

@@ -28,6 +28,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const abortController = new AbortController();
 const processingFinished = withResolvers();
+let enabled = false;
 
 export async function init() {
   // If we're not configured to use AWS, don't try to do anything here
@@ -35,6 +36,7 @@ export async function init() {
 
   const sqs = new SQSClient(makeAwsClientConfig());
   const queueUrl = await getQueueUrl(sqs, config.externalGradingResultsQueueName);
+  enabled = true;
 
   // Start work in an IIFE so we can keep going asynchronously
   // after we return to the caller.
@@ -104,7 +106,7 @@ export async function init() {
 }
 
 export async function stop() {
-  if (!config.externalGradingUseAws) return;
+  if (!enabled) return;
 
   if (abortController.signal.aborted) {
     throw new Error('Already stopped');

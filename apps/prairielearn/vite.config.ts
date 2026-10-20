@@ -27,9 +27,13 @@ export default defineConfig({
         // This doesn't include things like `@prairielearn/postgres` and
         // `@prairielearn/named-locks`. Changes to dependencies aren't picked up
         // by Vite, so they'll always require a manual restart of the Vite process itself.
-        './src/lib/cron.ts',
+        './src/cron/index.ts',
+        './src/lib/externalGraderDeadLetters.ts',
+        './src/lib/externalGraderResults.ts',
         './src/lib/server-jobs.ts',
+        './src/lib/serverJobProgressSocket.ts',
         './src/lib/socket-server.ts',
+        './src/lib/workspace.ts',
         './src/lib/assets.ts',
         './src/lib/code-caller/index.ts',
         './src/lib/load.ts',
