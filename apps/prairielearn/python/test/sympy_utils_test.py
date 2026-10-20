@@ -796,8 +796,13 @@ class TestSympy:
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
     @pytest.mark.parametrize("operator", ["|", "&"])
+    @pytest.mark.parametrize("allow_booleans", [True, False])
     def test_legacy_scalar_set_operator_json_conversion(
-        self, operator: str, *, simplify_expression: bool
+        self,
+        operator: str,
+        *,
+        simplify_expression: bool,
+        allow_booleans: bool,
     ) -> None:
         legacy_json: psu.SympyJson = {
             "_type": "sympy",
@@ -811,6 +816,7 @@ class TestSympy:
             psu.json_to_sympy(
                 legacy_json,
                 allow_sets=True,
+                allow_booleans=allow_booleans,
                 simplify_expression=simplify_expression,
             )
             == expected
@@ -836,6 +842,61 @@ class TestSympy:
     def test_sets_json_conversion_requires_sets_enabled(self) -> None:
         with pytest.raises(psu.HasSetNotationError):
             psu.sympy_to_json(sympy.Interval(0, 1))
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_boolean_expression_parsing_and_json_round_trip(
+        self, *, simplify_expression: bool
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "Valid(i + 5) & Valid(j + 2) & (a == b)",
+            ["i", "j", "a", "b"],
+            boolean_functions=["Valid"],
+            allowed_types={"boolean"},
+            simplify_expression=simplify_expression,
+        )
+
+        assert isinstance(result, psu.SympyParseSuccess)
+        encoded = psu.sympy_to_json(
+            result.expr,
+            allow_complex=False,
+            allow_booleans=True,
+        )
+
+        assert encoded.get("_boolean_variables") == []
+        assert encoded.get("_boolean_functions") == ["Valid"]
+        assert (
+            psu.json_to_sympy(
+                encoded,
+                allow_complex=False,
+                simplify_expression=simplify_expression,
+            )
+            == result.expr
+        )
+
+    def test_boolean_variables_are_distinct_from_scalar_variables(self) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "a & x",
+            ["x"],
+            boolean_variables=["a"],
+            allowed_types={"boolean"},
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "expecting a true/false, but got a number" in result.error
+
+    def test_boolean_value_is_rejected_as_expression(self) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "a | b",
+            None,
+            boolean_variables=["a", "b"],
+            allow_booleans=True,
+            allowed_types={"expression"},
+        )
+
+        assert result == psu.SympyParseFailure(
+            "Your answer uses boolean, which this input does not accept. "
+            "Allowed types: expression."
+        )
 
     @pytest.mark.parametrize(
         ("fn_name", "fn_args"),

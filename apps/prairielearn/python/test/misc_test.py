@@ -293,6 +293,19 @@ def test_to_json_sympy_set(sympy_set: sympy.Set) -> None:
     assert psu.json_to_sympy(encoded, allow_sets=True) == sympy_set
 
 
+def test_to_json_sympy_boolean() -> None:
+    a, x, y = sympy.symbols("a x y")
+    expression = sympy.And(
+        cast(sympy.logic.boolalg.Boolean, a),
+        cast(sympy.logic.boolalg.Boolean, sympy.Eq(x, y)),
+    )
+
+    encoded = cast(psu.SympyJson, pl.to_json(expression))
+
+    assert encoded.get("_boolean_variables") == ["a"]
+    assert psu.json_to_sympy(encoded) == expression
+
+
 class DummyEnum(Enum):
     DEFAULT = 0
     DUMMY_CHOICE_1 = 1

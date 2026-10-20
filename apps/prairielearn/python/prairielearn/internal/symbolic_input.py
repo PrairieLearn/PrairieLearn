@@ -38,8 +38,14 @@ def allowed_sympy_types_include_sets(
     return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
 
 
+def allowed_sympy_types_include_booleans(
+    allowed_types: set[psu.AllowedSympyType],
+) -> bool:
+    return not allowed_types.isdisjoint({"all", "boolean"})
+
+
 def _format_submission_for_sympy(
-    submission: str, *, allow_sets: bool = False
+    submission: str, *, allow_sets: bool = False, allow_booleans: bool = False
 ) -> tuple[str | None, str | None]:
     """Replace absolute-value bars with syntax understood by the SymPy parser."""
     original_submission = submission
@@ -71,7 +77,7 @@ def _format_submission_for_sympy(
         )
         search_from = preceding_bars.pop() if preceding_bars else match.start()
 
-    if not allow_sets and "|" in submission:
+    if not allow_sets and not allow_booleans and "|" in submission:
         error = f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_submission}</code>."
         return (
             None,
@@ -308,6 +314,8 @@ def try_parse_symbolic_submission(
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: Sequence[str] = (),
+    boolean_variables: Sequence[str] = (),
+    boolean_functions: Sequence[str] = (),
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: psu.AssumptionsDictT | None = None,
@@ -317,6 +325,7 @@ def try_parse_symbolic_submission(
     if allowed_types is None:
         allowed_types = {"all"}
     allow_sets = allowed_sympy_types_include_sets(allowed_types)
+    allow_booleans = allowed_sympy_types_include_booleans(allowed_types)
     variable_list = list(variables or ())
     custom_function_list = list(custom_functions)
     if formula_editor and submission is not None:
@@ -334,7 +343,7 @@ def try_parse_symbolic_submission(
     if submission is None:
         return psu.SympyParseFailure("No submitted answer.")
     formatted_submission, error = _format_submission_for_sympy(
-        submission, allow_sets=allow_sets
+        submission, allow_sets=allow_sets, allow_booleans=allow_booleans
     )
     if error is not None:
         return psu.SympyParseFailure(error)
@@ -349,12 +358,15 @@ def try_parse_symbolic_submission(
     result = psu.try_parse_string_as_sympy(
         formatted_submission,
         variable_list,
+        boolean_variables=boolean_variables,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         allow_trig_functions=allow_trig_functions,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_function_list,
+        boolean_functions=list(boolean_functions),
         simplify_expression=simplify_expression,
         assumptions=assumptions,
         allowed_types=allowed_types,
@@ -367,11 +379,14 @@ def try_parse_symbolic_submission(
             result.expr,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_booleans=allow_booleans,
+            boolean_variables=boolean_variables,
         )
         psu.json_to_sympy(
             submission_json,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_booleans=allow_booleans,
             simplify_expression=simplify_expression,
         )
     except Exception:
@@ -404,11 +419,18 @@ class RenderConfig:
     show_info: bool
     formula_editor: bool
     initial_value: str | None
+    boolean_variables: Sequence[str] = ()
+    initial_value_boolean_variables: Sequence[str] = ()
+    boolean_functions: Sequence[str] = ()
     show_score_percent: bool = True
 
     @property
     def allow_sets(self) -> bool:
         return allowed_sympy_types_include_sets(self.allowed_types)
+
+    @property
+    def allow_booleans(self) -> bool:
+        return allowed_sympy_types_include_booleans(self.allowed_types)
 
 
 def replace_imaginary_for_display(
@@ -426,6 +448,9 @@ def render_with_config(
     operators: list[str] = list(psu.STANDARD_OPERATORS)
     if config.allow_sets:
         operators.extend(psu.SET_NOTATION_OPERATORS)
+    if config.allow_booleans:
+        operators.extend(psu.BOOLEAN_OPERATORS)
+        operators.extend(config.boolean_functions)
     operators.extend(config.custom_functions)
     operators.extend(psu._Constants.functions.keys())
     if config.allow_trig:
@@ -437,11 +462,12 @@ def render_with_config(
 
     info_params = {
         "format": True,
-        "variables": config.variables,
+        "variables": list(config.variables) + list(config.boolean_variables),
         "operators": operators,
         "constants": constants,
         "allow_complex": config.allow_complex,
         "allow_sets": config.allow_sets,
+        "allow_booleans": config.allow_booleans,
     }
 
     info = chevron.render(template, info_params).strip()
@@ -468,9 +494,12 @@ def render_with_config(
                 psu.convert_string_to_sympy(
                     a_sub,
                     config.variables,
+                    boolean_variables=config.boolean_variables,
                     allow_complex=config.allow_complex,
                     allow_sets=config.allow_sets,
+                    allow_booleans=config.allow_booleans,
                     custom_functions=config.custom_functions,
+                    boolean_functions=config.boolean_functions,
                     allow_trig_functions=config.allow_trig,
                     simplify_expression=config.simplify_expression,
                 ),
@@ -482,6 +511,7 @@ def render_with_config(
                     a_sub,
                     allow_complex=config.allow_complex,
                     allow_sets=config.allow_sets,
+                    allow_booleans=config.allow_booleans,
                     allow_trig_functions=config.allow_trig,
                     simplify_expression=config.simplify_expression,
                 ),
@@ -508,9 +538,12 @@ def render_with_config(
             psu.convert_string_to_sympy(
                 config.initial_value,
                 config.initial_value_variables,
+                boolean_variables=config.initial_value_boolean_variables,
                 allow_complex=config.allow_complex,
                 allow_sets=config.allow_sets,
+                allow_booleans=config.allow_booleans,
                 custom_functions=config.custom_functions,
+                boolean_functions=config.boolean_functions,
                 allow_trig_functions=config.allow_trig,
                 simplify_expression=config.simplify_expression,
             ),
@@ -596,10 +629,13 @@ def render_with_config(
                     psu.convert_string_to_sympy(
                         a_tru,
                         config.variables,
+                        boolean_variables=config.boolean_variables,
                         allow_complex=config.allow_complex,
                         allow_sets=config.allow_sets,
+                        allow_booleans=config.allow_booleans,
                         allow_trig_functions=config.allow_trig,
                         custom_functions=config.custom_functions,
+                        boolean_functions=config.boolean_functions,
                         simplify_expression=config.simplify_expression,
                     ),
                     config.imaginary_unit,
@@ -610,6 +646,7 @@ def render_with_config(
                     a_tru,
                     allow_complex=config.allow_complex,
                     allow_sets=config.allow_sets,
+                    allow_booleans=config.allow_booleans,
                     allow_trig_functions=config.allow_trig,
                     simplify_expression=config.simplify_expression,
                 ),

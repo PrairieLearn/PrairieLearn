@@ -6,7 +6,7 @@ import type { ElementSchemaModule } from '../types.js';
 const additionalSimplificationsPattern =
   /^\s*(expand|powsimp|trigsimp|expand_log)(\s*,\s*(expand|powsimp|trigsimp|expand_log))*\s*$/;
 const allowedTypesPattern =
-  /^\s*(all|set|finite-set|interval|expression)(\s*,\s*(all|set|finite-set|interval|expression))*\s*$/;
+  /^\s*(all|boolean|set|finite-set|interval|expression)(\s*,\s*(all|boolean|set|finite-set|interval|expression))*\s*$/;
 
 const plSymbolicInputAttributesSchema = z
   .object({
@@ -21,6 +21,8 @@ const plSymbolicInputAttributesSchema = z
     'answers-name': z.string(),
     'aria-label': z.string().optional(),
     'blank-value': z.string().optional(),
+    'boolean-functions': z.string().optional(),
+    'boolean-variables': z.string().optional(),
     'correct-answer': z.string().optional(),
     'custom-functions': z.string().optional(),
     display: z.enum(['block', 'inline']).optional(),

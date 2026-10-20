@@ -119,6 +119,13 @@
     <pl-symbolic-input aria-label="Function expression" answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
 </pl-card>
 
+<pl-card header="An example with Boolean expressions">
+    <pl-question-panel>
+        <p>Write a condition that is true when both <code>a</code> and <code>b</code> are true, or when <code>x</code> and <code>y</code> are equal.</p>
+    </pl-question-panel>
+    <pl-symbolic-input aria-label="Boolean expression" answers-name="boolean_expression" allowed-types="boolean" variables="x,y" boolean-variables="a,b" correct-answer="(a &amp; b) | (x == y)"></pl-symbolic-input>
+</pl-card>
+
 <pl-card header="An example with nested absolute value expressions">
     <pl-question-panel>
         <p>This example demonstrates handling of nested absolute value expressions. Submit the expression $|x+|-x+1+2+3+4||$.</p>

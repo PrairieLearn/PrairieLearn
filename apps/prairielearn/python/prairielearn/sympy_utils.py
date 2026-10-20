@@ -15,7 +15,7 @@ from collections import deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from functools import wraps
+from functools import lru_cache, wraps
 from io import StringIO
 from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
 from types import CodeType
@@ -40,6 +40,7 @@ from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+BOOLEAN_OPERATORS = ("&", "|", "~", "==", "And", "Or", "Not", "Eq")
 SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
     "Your answer has a syntax error. "
     "This issue might be caused by mismatched parentheses or some other misplaced symbol."
@@ -90,9 +91,11 @@ class SympyJson(TypedDict):
     _variables: list[str]
     _assumptions: NotRequired[AssumptionsDictT]
     _custom_functions: NotRequired[list[str]]
+    _boolean_variables: NotRequired[list[str]]
+    _boolean_functions: NotRequired[list[str]]
 
 
-type SympyValue = sympy.Expr | sympy.Set
+type SympyValue = sympy.Expr | sympy.Set | sympy.logic.boolalg.Boolean
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,12 +111,18 @@ class SympyParseFailure:
 type SympyParseResult[T: SympyValue = SympyValue] = (
     SympyParseSuccess[T] | SympyParseFailure
 )
-type _SympyValueType = Literal["expression", "set", "finite-set", "interval"]
+type _SympyValueType = Literal["boolean", "expression", "set", "finite-set", "interval"]
 type _UsedSympyType = _SympyValueType | Literal["empty-set"]
 type AllowedSympyType = Literal["all"] | _SympyValueType
 
 
-def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
+def _used_sympy_types(
+    expr: sympy.Basic, boolean_variables: Iterable[str] = ()
+) -> set[_UsedSympyType]:
+    if is_sympy_boolean(expr) or (
+        isinstance(expr, sympy.Symbol) and str(expr) in boolean_variables
+    ):
+        return {"boolean"}
     if expr is sympy.EmptySet:
         return {"empty-set"}
     # Reals compares equal to Interval(-oo, oo), but only the domain object is a named set.
@@ -139,10 +148,13 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
 
 
 def check_sympy_types(
-    expr: sympy.Basic, allowed_types: set[AllowedSympyType]
+    expr: sympy.Basic,
+    allowed_types: set[AllowedSympyType],
+    *,
+    boolean_variables: Iterable[str] = (),
 ) -> SympyParseFailure | None:
     """Return a parse failure if the expression uses a disallowed SymPy type."""
-    used_types = _used_sympy_types(expr)
+    used_types = _used_sympy_types(expr, boolean_variables)
     matches_allowed_type = (
         "all" in allowed_types
         or (isinstance(expr, sympy.Set) and "set" in allowed_types)
@@ -184,6 +196,8 @@ def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
         and isinstance(json.get("_variables"), list)
         and isinstance(json.get("_assumptions", {}), dict)
         and isinstance(json.get("_custom_functions", []), list)
+        and isinstance(json.get("_boolean_variables", []), list)
+        and isinstance(json.get("_boolean_functions", []), list)
     )
 
 
@@ -193,6 +207,23 @@ class LocalsForEval(TypedDict):
     functions: SympyFunctionMapT
     variables: SympyMapT
     helpers: SympyFunctionMapT
+
+
+class _CustomBooleanFunction(sympy.logic.boolalg.BooleanFunction):
+    """Base class used to identify configured Boolean functions."""
+
+
+@lru_cache(maxsize=128)
+def _get_custom_boolean_function(name: str) -> type[_CustomBooleanFunction]:
+    return type(name, (_CustomBooleanFunction,), {"__module__": __name__})
+
+
+def is_sympy_boolean(value: sympy.Basic) -> bool:
+    """Return whether a value represents an explicitly Boolean expression."""
+    try:
+        return value.kind == sympy.logic.boolalg.BooleanKind
+    except (AttributeError, IndexError):
+        return False
 
 
 class _Constants:
@@ -274,6 +305,13 @@ class _Constants:
         "∪": operator.or_,  # ruff:ignore[ambiguous-unicode-character-string]
         "cap": operator.and_,
         "∩": operator.and_,
+    })
+
+    boolean_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "And": sympy.And,
+        "Or": sympy.Or,
+        "Not": sympy.Not,
+        "Eq": sympy.Eq,
     })
 
     # Unicode operators that the formula editor or common pastes produce. They must
@@ -532,6 +570,7 @@ class CheckAST(ast.NodeVisitor):
     resolved_names: Mapping[str, Any]
     __parents: dict[int, ast.AST]
     __set_operations: set[ast.BinOp]
+    __boolean_comparisons: set[ast.Compare]
     __type_cache: dict[int, ASTSympyType | None]
 
     __unparsed_opstr: FrozenDict[type[ast.AST], str] = FrozenDict({
@@ -552,6 +591,8 @@ class CheckAST(ast.NodeVisitor):
         functions: SympyFunctionMapT,
         *,
         allow_sets: bool = False,
+        allow_booleans: bool = False,
+        boolean_variables: frozenset[str] = frozenset(),
         resolved_names: Mapping[str, Any] | None = None,
     ) -> None:
         self.whitelist = whitelist
@@ -560,8 +601,11 @@ class CheckAST(ast.NodeVisitor):
         self.resolved_names = variables if resolved_names is None else resolved_names
         self.__parents = {}
         self.__set_operations = set()
+        self.__boolean_comparisons = set()
         self.__type_cache = {}
         self.allow_sets = allow_sets
+        self.allow_booleans = allow_booleans
+        self.boolean_variables = boolean_variables
 
     def visit(self, node: ast.AST) -> ASTSympyType | None:
         if not isinstance(node, self.whitelist):
@@ -595,7 +639,7 @@ class CheckAST(ast.NodeVisitor):
 
     def _check_expression(
         self, expr: str
-    ) -> tuple[ast.Expression, frozenset[ast.BinOp]]:
+    ) -> tuple[ast.Expression, frozenset[ast.BinOp], frozenset[ast.Compare]]:
         # Parse (convert string to AST)
         try:
             root = ast.parse(expr, mode="eval")
@@ -611,10 +655,15 @@ class CheckAST(ast.NodeVisitor):
         }
         try:
             self.visit(root)
-            return root, frozenset(self.__set_operations)
+            return (
+                root,
+                frozenset(self.__set_operations),
+                frozenset(self.__boolean_comparisons),
+            )
         finally:
             self.__parents = {}
             self.__set_operations = set()
+            self.__boolean_comparisons = set()
             self.__type_cache = {}
 
     def _set_type(
@@ -651,6 +700,10 @@ class CheckAST(ast.NodeVisitor):
             value = self.resolved_names.get(node.id, self.variables.get(node.id))
             if self.allow_sets and isinstance(value, sympy.Set):
                 return self._set_type(node, ASTSympyType.SET)
+            if self.allow_booleans and (
+                node.id in self.boolean_variables or is_sympy_boolean(value)
+            ):
+                return self._set_type(node, ASTSympyType.BOOL)
             if isinstance(value, (sympy.Expr, complex)):
                 return self._set_type(node, ASTSympyType.SCALAR)
 
@@ -681,6 +734,21 @@ class CheckAST(ast.NodeVisitor):
                 and resolved_function == _Constants.set_functions[fn]
             ):
                 return self._set_type(node, self._infer_set_function_type(name, args))
+            case fn if (
+                self.allow_booleans
+                and fn in _Constants.boolean_functions
+                and resolved_function == _Constants.boolean_functions[fn]
+            ):
+                return self._set_type(
+                    node, self._infer_boolean_function_type(name, args)
+                )
+            case _ if (
+                self.allow_booleans
+                and isinstance(resolved_function, type)
+                and issubclass(resolved_function, _CustomBooleanFunction)
+            ):
+                self._enforce_signature(name, args, len(args) * [ASTSympyType.SCALAR])
+                return self._set_type(node, ASTSympyType.BOOL)
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
                 arities = _builtin_function_arities(fn) or (len(args),)
                 self._enforce_signature(
@@ -692,10 +760,30 @@ class CheckAST(ast.NodeVisitor):
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> ASTSympyType | None:
         operand_type = self._get_type(node.operand)
-        if operand_type == ASTSympyType.SET:
+        if isinstance(node.op, ast.Invert):
+            self._enforce_signature("~", (node.operand,), (ASTSympyType.BOOL,))
+            return self._set_type(node, ASTSympyType.BOOL)
+        if operand_type in {ASTSympyType.SET, ASTSympyType.BOOL}:
             err_node = self.get_parent_with_location(node)
             raise HasInvalidExpressionError(err_node.col_offset)
         return self._set_type(node, operand_type)
+
+    def visit_Compare(self, node: ast.Compare) -> ASTSympyType | None:
+        if (
+            len(node.ops) != 1
+            or not isinstance(node.ops[0], ast.Eq)
+            or len(node.comparators) != 1
+        ):
+            err_node = self.get_parent_with_location(node)
+            raise HasInvalidExpressionError(err_node.col_offset)
+        self._enforce_signature(
+            "==",
+            (node.left, node.comparators[0]),
+            2 * [ASTSympyType.SCALAR],
+            2 * [ASTSympyType.BOOL],
+        )
+        self.__boolean_comparisons.add(node)
+        return self._set_type(node, ASTSympyType.BOOL)
 
     def visit_BinOp(self, node: ast.BinOp) -> ASTSympyType | None:
         op_str = self.__unparsed_opstr.get(type(node.op))
@@ -760,19 +848,48 @@ class CheckAST(ast.NodeVisitor):
             case _:
                 return None
 
+    def _infer_boolean_function_type(
+        self, name: str, args: list[ast.expr]
+    ) -> ASTSympyType:
+        match name:
+            case "And" | "Or":
+                if not args:
+                    raise HasFunctionArityError(name, 0, "1+")
+                self._enforce_signature(name, args, len(args) * [ASTSympyType.BOOL])
+            case "Not":
+                self._enforce_signature(name, args, (ASTSympyType.BOOL,))
+            case "Eq":
+                self._enforce_signature(
+                    name,
+                    args,
+                    2 * [ASTSympyType.SCALAR],
+                    2 * [ASTSympyType.BOOL],
+                )
+            case _:
+                raise AssertionError(f"Unexpected Boolean function: {name}")
+        return ASTSympyType.BOOL
+
     def _infer_bin_op_type(
         self, op: str, left: ast.expr, right: ast.expr
     ) -> ASTSympyType | None:
         match op:
             case "|" | "&":
+                overloads: list[list[ASTSympyType]] = []
+                if self.allow_sets:
+                    overloads.append(2 * [ASTSympyType.SET])
+                if self.allow_booleans:
+                    overloads.append(2 * [ASTSympyType.BOOL])
                 left_type, right_type = self._enforce_signature(
-                    op, (left, right), 2 * [ASTSympyType.SET]
+                    op, (left, right), *overloads
                 )
                 return left_type or right_type
             case "-" | "+":
-                overloads = (2 * [ASTSympyType.SET]), (2 * [ASTSympyType.SCALAR])
+                scalar_overloads = (
+                    2 * [ASTSympyType.SET],
+                    2 * [ASTSympyType.SCALAR],
+                )
                 left_type, right_type = self._enforce_signature(
-                    op, (left, right), *overloads
+                    op, (left, right), *scalar_overloads
                 )
                 return left_type or right_type
             case "**" | "*" | "/" | "%":
@@ -790,8 +907,10 @@ def _ast_check_str(
     locals_for_eval: LocalsForEval,
     *,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
+    boolean_variables: frozenset[str] = frozenset(),
     resolved_names: Mapping[str, Any] | None = None,
-) -> tuple[ast.Expression, frozenset[ast.BinOp]]:
+) -> tuple[ast.Expression, frozenset[ast.BinOp], frozenset[ast.Compare]]:
     """Check an expression and return its parsed AST and validated set operations."""
     # Disallow AST nodes that are not in whitelist
     #
@@ -823,6 +942,8 @@ def _ast_check_str(
         ast.BitAnd,
         ast.BitOr,
     )
+    if allow_booleans:
+        whitelist += (ast.Invert, ast.Compare, ast.Eq)
 
     if resolved_names is None:
         local_names = {
@@ -837,18 +958,29 @@ def _ast_check_str(
         locals_for_eval["variables"],
         locals_for_eval["helpers"] | locals_for_eval["functions"],
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
+        boolean_variables=boolean_variables,
         resolved_names=resolved_names,
     )._check_expression(expr)
 
 
 def ast_check_str(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_sets: bool = False
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_sets: bool = False,
+    allow_booleans: bool = False,
 ) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
     This prevents the user from executing arbitrary code through `eval_expr`.
     """
-    _ast_check_str(expr, locals_for_eval, allow_sets=allow_sets)
+    _ast_check_str(
+        expr,
+        locals_for_eval,
+        allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
+    )
 
 
 class _SetOperationTransformer(ast.NodeTransformer):
@@ -889,6 +1021,34 @@ class _SetOperationTransformer(ast.NodeTransformer):
             ast.Call(
                 func=ast.Name(id=function_name, ctx=ast.Load()),
                 args=[node.left, node.right],
+                keywords=[],
+            ),
+            node,
+        )
+
+
+class _BooleanComparisonTransformer(ast.NodeTransformer):
+    """Rewrite validated ``==`` expressions as symbolic equalities."""
+
+    def __init__(
+        self,
+        comparisons: frozenset[ast.Compare],
+        occupied_names: Iterable[str],
+    ) -> None:
+        self._comparisons = comparisons
+        self.function_name = "_pl_boolean_Eq"
+        used_names = set(occupied_names)
+        while self.function_name in used_names:
+            self.function_name += "_"
+
+    def visit_Compare(self, node: ast.Compare) -> ast.AST:
+        node = cast(ast.Compare, self.generic_visit(node))
+        if node not in self._comparisons:
+            return node
+        return ast.copy_location(
+            ast.Call(
+                func=ast.Name(id=self.function_name, ctx=ast.Load()),
+                args=[node.left, node.comparators[0]],
                 keywords=[],
             ),
             node,
@@ -976,6 +1136,7 @@ def evaluate(
     *,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
+    allow_booleans: bool = False,
 ) -> sympy.Expr: ...
 
 
@@ -986,6 +1147,7 @@ def evaluate(
     *,
     allow_complex: bool = False,
     allow_sets: bool,
+    allow_booleans: bool = False,
 ) -> SympyValue: ...
 
 
@@ -995,6 +1157,7 @@ def evaluate(
     *,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
 ) -> SympyValue:
     """Evaluate a SymPy expression string with a given set of locals, and return only the result.
 
@@ -1006,6 +1169,7 @@ def evaluate(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
     )[0]
 
 
@@ -1135,6 +1299,8 @@ def _evaluate_with_source(
     *,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
+    boolean_variables: frozenset[str] = frozenset(),
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
@@ -1177,7 +1343,13 @@ def _evaluate_with_source(
     # the only thing this can't catch is open intervals `(-, -)`, checked later
     if not allow_sets and any(
         token in normalized_expr
-        for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # ruff:ignore[ambiguous-unicode-character-string]
+        for token in ("[", "]", "{", "}", "∪", "∩")  # ruff:ignore[ambiguous-unicode-character-string]
+    ):
+        raise HasSetNotationError
+    if (
+        not allow_sets
+        and not allow_booleans
+        and any(token in normalized_expr for token in ("&", "|"))
     ):
         raise HasSetNotationError
 
@@ -1283,10 +1455,12 @@ def _evaluate_with_source(
         resolved_names = global_dict | local_dict
         if resolved_name_overrides is not None:
             resolved_names.update(resolved_name_overrides)
-        expression_ast, set_operations = _ast_check_str(
+        expression_ast, set_operations, boolean_comparisons = _ast_check_str(
             code,
             parsed_locals_to_eval,
             allow_sets=allow_sets,
+            allow_booleans=allow_booleans,
+            boolean_variables=boolean_variables,
             resolved_names=resolved_names,
         )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
@@ -1299,6 +1473,16 @@ def _evaluate_with_source(
         raise
 
     evaluation_code: str | CodeType = code
+    if boolean_comparisons:
+        comparison_transformer = _BooleanComparisonTransformer(
+            boolean_comparisons,
+            local_dict.keys() | global_dict.keys(),
+        )
+        expression_ast = cast(
+            ast.Expression,
+            comparison_transformer.visit(expression_ast),
+        )
+        local_dict[comparison_transformer.function_name] = sympy.Eq
     if not simplify_expression:
         if allow_sets:
             set_operation_transformer = _SetOperationTransformer(
@@ -1316,6 +1500,7 @@ def _evaluate_with_source(
             ast.Expression,
             sympy_parser.EvaluateFalseTransformer().visit(expression_ast),
         )
+    if boolean_comparisons or not simplify_expression:
         evaluation_code = compile(
             ast.fix_missing_locations(expression_ast), "<string>", "eval"
         )
@@ -1335,6 +1520,9 @@ def _evaluate_with_source(
         raise BaseSympyError from exc
     except Exception as exc:
         raise BaseSympyError from exc
+
+    if res is True or res is False:
+        res = sympy.sympify(res)
 
     # Finally, validate the result.
     sympy_check(
@@ -1356,6 +1544,7 @@ def evaluate_with_source(
     *,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
+    allow_booleans: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]: ...
@@ -1368,6 +1557,7 @@ def evaluate_with_source(
     *,
     allow_complex: bool = False,
     allow_sets: bool,
+    allow_booleans: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]: ...
@@ -1379,6 +1569,7 @@ def evaluate_with_source(
     *,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]:
@@ -1388,6 +1579,7 @@ def evaluate_with_source(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
     )
@@ -1398,12 +1590,15 @@ def convert_string_to_sympy(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
+    boolean_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> sympy.Expr: ...
@@ -1414,12 +1609,15 @@ def convert_string_to_sympy(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: bool,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
+    boolean_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> SympyValue: ...
@@ -1429,12 +1627,15 @@ def convert_string_to_sympy(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
+    boolean_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> SympyValue:
@@ -1468,12 +1669,15 @@ def convert_string_to_sympy(
     return convert_string_to_sympy_with_source(
         expr,
         variables=variables,
+        boolean_variables=boolean_variables,
         allow_hidden=allow_hidden,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
         custom_functions=custom_functions,
+        boolean_functions=boolean_functions,
         assumptions=assumptions,
         allow_extra_symbols=allow_extra_symbols,
     )[0]
@@ -1483,12 +1687,15 @@ def _convert_string_to_sympy_with_source(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
+    boolean_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
@@ -1506,11 +1713,14 @@ def _convert_string_to_sympy_with_source(
         HasConflictingVariableError: If the variable names conflict with existing names.
         HasConflictingFunctionError: If the function names conflict with existing names.
     """
+    scalar_variables = list(variables or ())
+    boolean_variable_list = list(boolean_variables or ())
+    scalar_functions = list(custom_functions or ())
+    boolean_function_list = list(boolean_functions or ())
+
     # Check assumptions are all made about valid variables only
     if assumptions is not None:
-        unbound_variables = assumptions.keys() - set(
-            variables if variables is not None else []
-        )
+        unbound_variables = assumptions.keys() - set(scalar_variables)
         if unbound_variables:
             raise HasInvalidAssumptionError(
                 f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
@@ -1518,11 +1728,12 @@ def _convert_string_to_sympy_with_source(
 
     # Check user-defined names are valid
     conflict_vars, conflict_fns, valid_names = _build_name_conflict_data(
-        variables if variables is not None else [],
-        custom_functions if custom_functions is not None else [],
+        scalar_variables + boolean_variable_list,
+        scalar_functions + boolean_function_list,
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         allow_trig_functions=allow_trig_functions,
     )
 
@@ -1557,11 +1768,18 @@ def _convert_string_to_sympy_with_source(
 
     if allow_sets:
         locals_for_eval["functions"].update(const.set_functions)
+    if allow_booleans:
+        locals_for_eval["functions"].update(const.boolean_functions)
 
     for name, (is_var, raw_name) in valid_names.items():
         if is_var:
-            var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
+            if raw_name not in boolean_variable_list:
+                var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
+            else:
+                var_assumptions = {}
             locals_for_eval["variables"][name] = sympy.Symbol(name, **var_assumptions)
+        elif raw_name in boolean_function_list:
+            locals_for_eval["functions"][name] = _get_custom_boolean_function(name)
         else:
             locals_for_eval["functions"][name] = sympy.Function(name)
 
@@ -1571,6 +1789,10 @@ def _convert_string_to_sympy_with_source(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
+        boolean_variables=frozenset(
+            greek_unicode_transform(name) for name in boolean_variable_list
+        ),
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
         resolved_name_overrides=resolved_name_overrides,
@@ -1582,12 +1804,15 @@ def convert_string_to_sympy_with_source(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
+    boolean_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]: ...
@@ -1598,12 +1823,15 @@ def convert_string_to_sympy_with_source(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: bool,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
+    boolean_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]: ...
@@ -1613,12 +1841,15 @@ def convert_string_to_sympy_with_source(
     expr: str,
     variables: Iterable[str] | None = None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
+    boolean_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]:
@@ -1626,12 +1857,15 @@ def convert_string_to_sympy_with_source(
     return _convert_string_to_sympy_with_source(
         expr,
         variables,
+        boolean_variables=boolean_variables,
         allow_hidden=allow_hidden,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
         custom_functions=custom_functions,
+        boolean_functions=boolean_functions,
         assumptions=assumptions,
         allow_extra_symbols=allow_extra_symbols,
     )
@@ -1695,12 +1929,31 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
     return -1
 
 
+def _infer_boolean_variables(expr: sympy.Basic) -> set[sympy.Symbol]:
+    boolean_variables: set[sympy.Symbol] = set()
+    stack = [expr]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (sympy.core.relational.Relational, _CustomBooleanFunction)):
+            continue
+        if not is_sympy_boolean(node):
+            continue
+        for arg in node.args:
+            if isinstance(arg, sympy.Symbol):
+                boolean_variables.add(arg)
+            elif isinstance(arg, sympy.Basic):
+                stack.append(arg)
+    return boolean_variables
+
+
 def sympy_to_json(
-    a: sympy.Expr | sympy.Set,
+    a: SympyValue,
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
+    boolean_variables: Iterable[str] = (),
 ) -> SympyJson:
     """Convert a SymPy expression to a JSON-seralizable dictionary.
 
@@ -1717,12 +1970,31 @@ def sympy_to_json(
 
     # Get list of variables in the sympy expression
     variables = list(map(str, a.free_symbols))
+    boolean_variable_symbols = _infer_boolean_variables(a)
+    configured_boolean_variables = set(boolean_variables) & set(variables)
+    boolean_variable_names = list(
+        configured_boolean_variables | set(map(str, boolean_variable_symbols))
+    )
+    scalar_variables = [
+        variable
+        for variable in a.free_symbols
+        if str(variable) not in boolean_variable_names
+    ]
+    boolean_function_atoms = a.atoms(_CustomBooleanFunction)
+    boolean_functions = list({
+        str(function.func) for function in boolean_function_atoms
+    })
+    contains_booleans = is_sympy_boolean(a) or (
+        isinstance(a, sympy.Symbol) and str(a) in configured_boolean_variables
+    )
+    allow_booleans = allow_booleans or contains_booleans
 
     # Get reserved variables for custom function parsing
     reserved = get_builtin_constants(
         allow_complex=allow_complex, allow_hidden=True
     ) | get_builtin_functions(
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         allow_trig_functions=allow_trig_functions,
     )
 
@@ -1737,7 +2009,7 @@ def sympy_to_json(
         ])
 
     assumptions_dict = {
-        str(variable): variable.assumptions0 for variable in a.free_symbols
+        str(variable): variable.assumptions0 for variable in scalar_variables
     }
 
     # Don't check for conflicts here, that happens in parsing.
@@ -1753,13 +2025,17 @@ def sympy_to_json(
         (functions_set - reserved) | legacy_custom_function_overrides
     )
 
-    return {
+    result: SympyJson = {
         "_type": "sympy",
         "_value": _SympyJsonStrPrinter().doprint(a_sub),
         "_variables": variables,
         "_assumptions": assumptions_dict,
         "_custom_functions": custom_functions,
     }
+    if contains_booleans:
+        result["_boolean_variables"] = boolean_variable_names
+        result["_boolean_functions"] = boolean_functions
+    return result
 
 
 @overload
@@ -1767,6 +2043,7 @@ def json_to_sympy(
     sympy_expr_dict: SympyJson,
     *,
     allow_sets: Literal[False] = False,
+    allow_booleans: bool = False,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
@@ -1778,6 +2055,7 @@ def json_to_sympy(
     sympy_expr_dict: SympyJson,
     *,
     allow_sets: bool,
+    allow_booleans: bool = False,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
@@ -1788,6 +2066,7 @@ def json_to_sympy(
     sympy_expr_dict: SympyJson,
     *,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
@@ -1810,21 +2089,38 @@ def json_to_sympy(
         sympy_expr_dict["_variables"] = None
 
     variables = sympy_expr_dict["_variables"]
+    boolean_variables = sympy_expr_dict.get("_boolean_variables", [])
+    boolean_functions = sympy_expr_dict.get("_boolean_functions", [])
+    has_boolean_metadata = (
+        "_boolean_variables" in sympy_expr_dict
+        or "_boolean_functions" in sympy_expr_dict
+    )
+    allow_booleans = allow_booleans or has_boolean_metadata
+    scalar_variables = (
+        None
+        if variables is None
+        else [name for name in variables if name not in boolean_variables]
+    )
     # Older set-enabled submissions could contain scalar `x | y` or `x & y`.
     # Keep their variables untyped during validation so stored answers remain
     # renderable and gradable, while new text submissions use strict scalar types.
     result, _ = _convert_string_to_sympy_with_source(
         sympy_expr_dict["_value"],
-        variables,
+        scalar_variables,
+        boolean_variables=boolean_variables,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
+        boolean_functions=boolean_functions,
         assumptions=sympy_expr_dict.get("_assumptions"),
         resolved_name_overrides=(
-            dict.fromkeys(variables) if allow_sets and variables is not None else None
+            dict.fromkeys(variables)
+            if allow_sets and variables is not None and not has_boolean_metadata
+            else None
         ),
     )
     return result
@@ -1835,11 +2131,14 @@ def try_parse_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_complex: bool = False,
     allow_hidden: bool = False,
     allow_sets: Literal[False] = False,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
+    boolean_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
@@ -1852,11 +2151,14 @@ def try_parse_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_complex: bool = False,
     allow_hidden: bool = False,
     allow_sets: bool,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
+    boolean_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
@@ -1868,11 +2170,14 @@ def try_parse_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_complex: bool = False,
     allow_hidden: bool = False,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
+    boolean_functions: list[str] | None = None,
     # Retained for backwards compatibility with existing callers.
     imaginary_unit: str | None = None,  # ruff:ignore[unused-function-argument]
     simplify_expression: bool = True,
@@ -1892,18 +2197,25 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
+    allowed_types_were_provided = allowed_types is not None
     if allowed_types is None:
         allowed_types = {"all"} if allow_sets else {"expression"}
+    allow_booleans = allow_booleans or (
+        allowed_types_were_provided and not allowed_types.isdisjoint({"all", "boolean"})
+    )
 
     try:
         expr_parsed = convert_string_to_sympy(
             expr,
             variables,
+            boolean_variables=boolean_variables,
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_booleans=allow_booleans,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
+            boolean_functions=boolean_functions,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
         )
@@ -2017,7 +2329,11 @@ def try_parse_string_as_sympy(
             f"Unexpected error: {exc}. Please contact the course staff."
         )
 
-    type_failure = check_sympy_types(expr_parsed, allowed_types)
+    type_failure = check_sympy_types(
+        expr_parsed,
+        allowed_types,
+        boolean_variables=boolean_variables or (),
+    )
     if type_failure is not None:
         return type_failure
 
@@ -2028,11 +2344,14 @@ def validate_string_as_sympy(
     expr: str,
     variables: Iterable[str] | None,
     *,
+    boolean_variables: Iterable[str] | None = None,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
+    boolean_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
@@ -2046,11 +2365,14 @@ def validate_string_as_sympy(
     result = try_parse_string_as_sympy(
         expr,
         variables,
+        boolean_variables=boolean_variables,
         allow_hidden=allow_hidden,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         custom_functions=custom_functions,
+        boolean_functions=boolean_functions,
         imaginary_unit=imaginary_unit,
         simplify_expression=simplify_expression,
         assumptions=assumptions,
@@ -2277,7 +2599,10 @@ def get_builtin_constants(
 
 
 def get_builtin_callable_functions(
-    *, allow_trig_functions: bool = True, allow_sets: bool = False
+    *,
+    allow_trig_functions: bool = True,
+    allow_sets: bool = False,
+    allow_booleans: bool = False,
 ) -> set[str]:
     """Return the set of built-in callable function names.
 
@@ -2294,11 +2619,16 @@ def get_builtin_callable_functions(
         names |= const.trig_functions.keys()
     if allow_sets:
         names |= const.set_functions.keys()
+    if allow_booleans:
+        names |= const.boolean_functions.keys()
     return names
 
 
 def get_builtin_functions(
-    *, allow_trig_functions: bool = True, allow_sets: bool = False
+    *,
+    allow_trig_functions: bool = True,
+    allow_sets: bool = False,
+    allow_booleans: bool = False,
 ) -> set[str]:
     """Return the set of built-in function and operator names.
 
@@ -2313,6 +2643,7 @@ def get_builtin_functions(
     names = get_builtin_callable_functions(
         allow_trig_functions=allow_trig_functions,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
     )
     if allow_sets:
         names |= const.set_operators.keys()
@@ -2327,6 +2658,7 @@ def _build_name_conflict_data(
     allow_hidden: bool,
     allow_trig_functions: bool,
     allow_sets: bool,
+    allow_booleans: bool,
 ) -> tuple[list[str], list[str], dict[str, tuple[bool, str]]]:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
@@ -2347,6 +2679,7 @@ def _build_name_conflict_data(
     builtins = get_builtin_functions(
         allow_trig_functions=allow_trig_functions,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
     ) | get_builtin_constants(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
@@ -2387,10 +2720,13 @@ def validate_names_for_conflicts(
     variables: list[str],
     custom_functions: list[str],
     *,
+    boolean_variables: list[str] | None = None,
+    boolean_functions: list[str] | None = None,
     allow_complex: bool = False,
     allow_hidden_variables: bool = True,
     allow_trig_functions: bool = True,
     allow_sets: bool = False,
+    allow_booleans: bool = False,
 ) -> None:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
@@ -2407,11 +2743,12 @@ def validate_names_for_conflicts(
         ValueError: If any names conflict with built-ins.
     """
     v_conflicts, f_conflicts, _valid = _build_name_conflict_data(
-        variables,
-        custom_functions,
+        variables + (boolean_variables or []),
+        custom_functions + (boolean_functions or []),
         allow_complex=allow_complex,
         allow_hidden=allow_hidden_variables,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
         allow_trig_functions=allow_trig_functions,
     )
     conflicts = v_conflicts + f_conflicts
