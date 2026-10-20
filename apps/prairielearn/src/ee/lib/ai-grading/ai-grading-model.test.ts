@@ -177,7 +177,7 @@ describe('custom AI grading model', () => {
         expect(discover).toHaveBeenCalledWith({
           baseUrl: base_url,
           apiKey: secret,
-          credentialIdentity: { courseInstanceId: courseInstance.id, credentialId },
+          courseInstanceId: courseInstance.id,
         });
         const [url, init] = fetch.mock.calls[0];
         expect(url).toBe(`${base_url}/chat/completions`);
