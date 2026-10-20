@@ -283,7 +283,7 @@ function placeQuestionGroupBreaks(source: HTMLElement, pageHeight: number): void
       (group) => !group.parentElement?.closest('.printing-keep-together'),
     );
     // Paged.js can split nested cards and SVGs despite break-inside: avoid. Give it explicit
-    // boundaries for complete subparts, measured at the same width as the generated pages.
+    // boundaries for contiguous spreads, measured at the same width as the generated pages.
     for (const group of groups) {
       const bounds = group.getBoundingClientRect();
       const offset = (bounds.top - pageTop + addedSpace) % pageHeight;

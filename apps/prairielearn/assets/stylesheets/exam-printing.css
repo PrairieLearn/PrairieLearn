@@ -7,8 +7,6 @@
 }
 
 :root {
-  --exam-print-page-width: 8.5in;
-  --exam-print-page-height: 11in;
   --exam-print-margin-top: 0.55in;
   --exam-print-margin-right: 0.55in;
   --exam-print-margin-bottom: 0.55in;
@@ -21,11 +19,6 @@
     var(--exam-print-page-height) - var(--exam-print-margin-top) - var(--exam-print-margin-bottom)
   );
   color-scheme: light;
-}
-
-:root[data-print-paper-size='A4'] {
-  --exam-print-page-width: 210mm;
-  --exam-print-page-height: 297mm;
 }
 
 body {
@@ -48,6 +41,8 @@ body {
   visibility: hidden;
 }
 
+/* Avoid comma-containing :is() selectors on break-before/after rules; Paged.js splits them.
+   Related upstream issue: https://github.com/pagedjs/pagedjs/issues/317 */
 .exam-cover {
   break-after: page;
   display: flex;
