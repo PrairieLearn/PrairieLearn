@@ -48,6 +48,8 @@ body {
   visibility: hidden;
 }
 
+/* Avoid comma-containing :is() selectors on break-before/after rules; Paged.js splits them.
+   Related upstream issue: https://github.com/pagedjs/pagedjs/issues/317 */
 .exam-cover {
   break-after: page;
   display: flex;
