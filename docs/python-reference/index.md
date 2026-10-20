@@ -25,7 +25,7 @@ import prairielearn.sympy_utils as psu
     These modules must be imported directly:
 
     ```python
-    from prairielearn.big_operator_utils import W
+    from prairielearn.big_operator_utils import big_operator_to_json
     from prairielearn.colors import Y
     from prairielearn.to_precision import Z
     from prairielearn.sympy_utils import Z
