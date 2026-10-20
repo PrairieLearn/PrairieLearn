@@ -34,6 +34,7 @@ WORKDIR "/home/coder"
 RUN uv venv --python-preference managed --python 3.13 /home/coder/.venv
 
 COPY requirements.txt /home/coder/requirements.txt
+ENV UV_NO_BINARY=pygraphviz
 RUN uv pip install -r /home/coder/requirements.txt
 
 # After installing Python we install some VS Code extensions.
