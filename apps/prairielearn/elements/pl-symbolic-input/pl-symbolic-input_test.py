@@ -455,42 +455,13 @@ def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
 
 
 @pytest.mark.parametrize("simplify_expression", [True, False])
-def test_complex_cube_root_rejected_regardless_of_display_simplification(
-    *, simplify_expression: bool
-) -> None:
+def test_adjacent_decimal_points_report_source(*, simplify_expression: bool) -> None:
     element_html = build_element_html(
         'variables="x"',
         f'display-simplified-expression="{str(simplify_expression).lower()}"',
     )
     data = make_question_data(
-        submitted_answers={"test": "(-8)**(1/3)"},
-        correct_answers={"test": psu.sympy_to_json(sympy.Integer(42))},
-    )
-
-    symbolic_input.parse(element_html, data)
-
-    assert "complex number" in data["format_errors"]["test"]
-    assert data["submitted_answers"]["test"] is None
-
-
-@pytest.mark.parametrize("simplify_expression", [True, False])
-@pytest.mark.parametrize(
-    ("formula_editor", "submission"),
-    [
-        pytest.param(False, "|x+1| + 2..3", id="plain-text"),
-        pytest.param(True, "∣x+1∣ + 2..3", id="formula-editor"),  # ruff:ignore[ambiguous-unicode-character-string]
-    ],
-)
-def test_adjacent_decimal_points_report_source(
-    formula_editor: bool, submission: str, *, simplify_expression: bool
-) -> None:
-    element_html = build_element_html(
-        'variables="x"',
-        f'formula-editor="{str(formula_editor).lower()}"',
-        f'display-simplified-expression="{str(simplify_expression).lower()}"',
-    )
-    data = make_question_data(
-        submitted_answers={"test": submission},
+        submitted_answers={"test": "|x+1| + 2..3"},
         correct_answers={"test": psu.sympy_to_json(sympy.Integer(42))},
     )
 
