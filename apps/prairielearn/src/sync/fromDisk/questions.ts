@@ -4,6 +4,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { config } from '../../lib/config.js';
 import { isDraftQid } from '../../lib/draft-question.js';
 import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
@@ -113,10 +114,10 @@ export async function sync(
 
   const provenance = validQuestions.map(({ qid, question, copiedFrom }) => {
     const sourceId = sourceIds.get(qid) ?? null;
-    if (copiedFrom && sourceId === null) {
+    if (config.checkSharingOnSync && copiedFrom && sourceId === null) {
       infofile.addWarning(
         question,
-        `The source question in copiedFrom "${copiedFrom}" could not be found. It will be looked up again on the next sync.`,
+        `The source question in copiedFrom "${copiedFrom}" could not be found.`,
       );
     }
     return {
