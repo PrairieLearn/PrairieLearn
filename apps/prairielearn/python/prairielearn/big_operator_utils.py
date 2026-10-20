@@ -1,0 +1,579 @@
+"""Utilities for working with pl-big-operator-input answers.
+
+```python
+from prairielearn.big_operator_utils import ...
+```
+"""
+
+from collections.abc import Set as AbstractSet
+from typing import Any, Literal, TypedDict, TypeGuard, cast, overload
+
+import sympy
+
+import prairielearn.sympy_utils as psu
+
+type BigOperatorSympyName = Literal[
+    "Sum",
+    "Product",
+    "Integral",
+    "Limit",
+    "Union",
+    "Intersection",
+    "DisjointUnion",
+    "Min",
+    "Max",
+]
+"""A SymPy function name supported by a big-operator answer."""
+
+type BigOperatorName = BigOperatorSympyName | Literal["Custom"]
+"""An operator name supported by a big-operator answer."""
+
+type BigOperatorIndexing = Literal["bounds", "domain", "approaches"]
+"""How a big-operator answer indexes its body."""
+
+type BigOperatorDirection = Literal["two-sided", "from-left", "from-right"]
+"""The direction of an approaches big-operator answer."""
+
+type BigOperatorValue = (
+    sympy.Expr | sympy.Set | str | int | AbstractSet[BigOperatorValue]
+)
+"""A mathematical value or coercible Python value stored in a big-operator answer."""
+
+
+class _BigOperatorJsonBase(TypedDict):
+    _type: Literal["big_operator"]
+    _version: Literal[1]
+    operator: BigOperatorName
+    index: psu.SympyJson
+    body: psu.SympyJson
+
+
+class BigBoundsOperatorJson(_BigOperatorJsonBase):
+    """JSON representation of a big operator with lower and upper bounds."""
+
+    indexing: Literal["bounds"]
+    lower: psu.SympyJson
+    upper: psu.SympyJson
+
+
+class BigDomainOperatorJson(_BigOperatorJsonBase):
+    """JSON representation of a big operator over a domain."""
+
+    indexing: Literal["domain"]
+    domain: psu.SympyJson
+
+
+class BigApproachesOperatorJson(_BigOperatorJsonBase):
+    """JSON representation of a big operator approaches a target."""
+
+    indexing: Literal["approaches"]
+    target: psu.SympyJson
+    direction: BigOperatorDirection
+
+
+type BigOperatorJson = (
+    BigBoundsOperatorJson | BigDomainOperatorJson | BigApproachesOperatorJson
+)
+"""The persisted JSON representation of a big-operator answer."""
+
+
+class _BigOperatorBase(TypedDict):
+    _type: Literal["big_operator"]
+    _version: Literal[1]
+    operator: BigOperatorName
+    index: sympy.Symbol
+    body: sympy.Basic
+
+
+class BigBoundsOperator(_BigOperatorBase):
+    """A decoded big operator with lower and upper bounds."""
+
+    indexing: Literal["bounds"]
+    lower: sympy.Basic
+    upper: sympy.Basic
+
+
+class BigDomainOperator(_BigOperatorBase):
+    """A decoded big operator over a domain."""
+
+    indexing: Literal["domain"]
+    domain: sympy.Basic
+
+
+class BigApproachesOperator(_BigOperatorBase):
+    """A decoded big operator approaching a target."""
+
+    indexing: Literal["approaches"]
+    target: sympy.Basic
+    direction: BigOperatorDirection
+
+
+type BigOperator = BigBoundsOperator | BigDomainOperator | BigApproachesOperator
+"""A decoded big operator answer whose mathematical fields are SymPy values."""
+
+
+_BOUNDS_DOMAIN: frozenset[BigOperatorIndexing] = frozenset(("bounds", "domain"))
+_DOMAIN: frozenset[BigOperatorIndexing] = frozenset(("domain",))
+_VALID_INDEXING_BY_OPERATOR: dict[BigOperatorName, frozenset[BigOperatorIndexing]] = {
+    "Sum": _BOUNDS_DOMAIN,
+    "Product": _BOUNDS_DOMAIN,
+    "Integral": _BOUNDS_DOMAIN,
+    "Limit": frozenset(("approaches",)),
+    "Union": _BOUNDS_DOMAIN,
+    "Intersection": _BOUNDS_DOMAIN,
+    "DisjointUnion": _BOUNDS_DOMAIN,
+    "Min": _DOMAIN,
+    "Max": _DOMAIN,
+    "Custom": frozenset(("bounds", "domain", "approaches")),
+}
+_INDEXING_MODES: frozenset[str] = frozenset(("bounds", "domain", "approaches"))
+_DIRECTIONS: frozenset[str] = frozenset({
+    "two-sided",
+    "from-left",
+    "from-right",
+})
+
+
+def is_big_operator_json(value: Any) -> TypeGuard[BigOperatorJson]:
+    """Check if a value has the structure of a big-operator JSON answer."""
+    if (
+        not isinstance(value, dict)
+        or value.get("_type") != "big_operator"
+        or value.get("_version") != 1
+        or value.get("operator") not in _VALID_INDEXING_BY_OPERATOR
+        or value.get("indexing") not in _INDEXING_MODES
+        or not psu.is_sympy_json(value.get("index"))
+        or not psu.is_sympy_json(value.get("body"))
+    ):
+        return False
+
+    match value["indexing"]:
+        case "bounds":
+            return psu.is_sympy_json(value.get("lower")) and psu.is_sympy_json(
+                value.get("upper")
+            )
+        case "domain":
+            return psu.is_sympy_json(value.get("domain"))
+        case "approaches":
+            return psu.is_sympy_json(value.get("target")) and isinstance(
+                value.get("direction"), str
+            )
+        case _:
+            return False
+
+
+def get_valid_big_operator_indexing(
+    operator: BigOperatorName,
+) -> frozenset[BigOperatorIndexing]:
+    """Return the indexing modes supported by a big operator."""
+    return _VALID_INDEXING_BY_OPERATOR[operator]
+
+
+def _validate_operator_indexing(
+    operator: object, indexing: object
+) -> tuple[BigOperatorName, BigOperatorIndexing]:
+    if not isinstance(operator, str) or operator not in _VALID_INDEXING_BY_OPERATOR:
+        raise ValueError("Big operator has an unsupported operator.")
+    if not isinstance(indexing, str) or indexing not in _INDEXING_MODES:
+        raise ValueError("Big operator has unsupported indexing.")
+    typed_operator: BigOperatorName = operator
+    typed_indexing = cast(BigOperatorIndexing, indexing)
+    if typed_indexing not in get_valid_big_operator_indexing(typed_operator):
+        raise ValueError(
+            f'Operator "{typed_operator}" does not support indexing="{typed_indexing}".'
+        )
+    return typed_operator, typed_indexing
+
+
+def _decode_sympy_field(value: Any, field: str) -> sympy.Basic:
+    if not psu.is_sympy_json(value) or not all(
+        isinstance(name, str) for name in value.get("_variables", [])
+    ):
+        raise ValueError(
+            f'Big-operator field "{field}" must be PrairieLearn SymPy JSON.'
+        )
+    allow_complex = not any(name in {"i", "j"} for name in value["_variables"])
+    try:
+        decoded = psu.json_to_sympy(
+            value,
+            allow_sets=True,
+            allow_complex=allow_complex,
+        )
+    except (TypeError, ValueError, psu.BaseSympyError) as exc:
+        raise ValueError(
+            f'Big-operator field "{field}" contains invalid SymPy JSON.'
+        ) from exc
+    if not isinstance(decoded, sympy.Basic):
+        raise TypeError(f'Big-operator field "{field}" must decode to a SymPy value.')
+    return decoded
+
+
+def _coerce_sympy_field(value: BigOperatorValue, field: str) -> sympy.Expr | sympy.Set:
+    if isinstance(value, str):
+        try:
+            value = psu.convert_string_to_sympy(
+                value,
+                allow_sets=True,
+                allow_extra_symbols=True,
+            )
+        except psu.BaseSympyError as exc:
+            raise ValueError(
+                f'Big-operator field "{field}" must be a valid SymPy string.'
+            ) from exc
+    elif isinstance(value, int) and not isinstance(value, bool):
+        value = sympy.Integer(value)
+    elif isinstance(value, AbstractSet):
+        value = sympy.FiniteSet(*(_coerce_sympy_field(item, field) for item in value))
+    if not isinstance(value, (sympy.Expr, sympy.Set)):
+        raise TypeError(
+            f'Big-operator field "{field}" must be a SymPy expression, set, string, or integer.'
+        )
+    return value
+
+
+def _encode_sympy_field(value: BigOperatorValue, field: str) -> psu.SympyJson:
+    value = _coerce_sympy_field(value, field)
+    return psu.sympy_to_json(value, allow_sets=True)
+
+
+@overload
+def big_operator_to_json(
+    expression: BigOperator,
+) -> BigOperatorJson: ...
+
+
+@overload
+def big_operator_to_json(
+    *,
+    operator: Literal[
+        "Sum",
+        "Product",
+        "Integral",
+        "Union",
+        "Intersection",
+        "DisjointUnion",
+        "Custom",
+    ],
+    indexing: Literal["bounds"],
+    index: sympy.Symbol | str,
+    lower: BigOperatorValue,
+    upper: BigOperatorValue,
+    body: BigOperatorValue,
+    version: Literal[1] | None = None,
+) -> BigBoundsOperatorJson: ...
+
+
+@overload
+def big_operator_to_json(
+    *,
+    operator: Literal[
+        "Sum",
+        "Product",
+        "Integral",
+        "Union",
+        "Intersection",
+        "DisjointUnion",
+        "Min",
+        "Max",
+        "Custom",
+    ],
+    indexing: Literal["domain"],
+    index: sympy.Symbol | str,
+    domain: BigOperatorValue,
+    body: BigOperatorValue,
+    version: Literal[1] | None = None,
+) -> BigDomainOperatorJson: ...
+
+
+@overload
+def big_operator_to_json(
+    *,
+    operator: Literal["Limit", "Custom"],
+    indexing: Literal["approaches"],
+    index: sympy.Symbol | str,
+    target: BigOperatorValue,
+    direction: BigOperatorDirection,
+    body: BigOperatorValue,
+    version: Literal[1] | None = None,
+) -> BigApproachesOperatorJson: ...
+
+
+def big_operator_to_json(
+    expression: BigOperator | None = None,
+    *,
+    operator: BigOperatorName | None = None,
+    indexing: BigOperatorIndexing | None = None,
+    index: sympy.Symbol | str | None = None,
+    body: BigOperatorValue | None = None,
+    lower: BigOperatorValue | None = None,
+    upper: BigOperatorValue | None = None,
+    domain: BigOperatorValue | None = None,
+    target: BigOperatorValue | None = None,
+    direction: BigOperatorDirection | None = None,
+    version: Literal[1] | None = None,
+) -> BigOperatorJson:
+    """Encode a big operator as a version 1 JSON answer.
+
+    Pass a decoded ``expression`` to serialize it, or use labelled fields to set
+    a structured correct answer in ``server.py``. For labelled fields, ``indexing``
+    selects ``lower`` and ``upper`` for ``"bounds"``, ``domain`` for ``"domain"``,
+    or ``target`` and ``direction`` for ``"approaches"``.
+
+    Args:
+        expression: A decoded big operator to serialize.
+        operator: The operator represented by the answer.
+        indexing: How the answer indexes its body: with bounds, a domain, or an
+            approach target.
+        index: The bound index symbol.
+        body: The operator body. Mathematical fields accept SymPy expressions or
+            sets, parseable strings, Python integers, and Python sets.
+        lower: The lower bound for bounds indexing.
+        upper: The upper bound for bounds indexing.
+        domain: The domain for domain indexing.
+        target: The target for approaches indexing.
+        direction: The direction for approaches indexing.
+        version: The big-operator format version.
+
+    Returns:
+        A JSON-serializable, canonical big-operator dictionary.
+
+    Raises:
+        TypeError: If a mathematical field has the wrong SymPy type.
+        ValueError: If the operator, indexing, or labelled fields are inconsistent.
+    """
+    if expression is not None:
+        if (
+            operator is not None
+            or indexing is not None
+            or index is not None
+            or body is not None
+            or lower is not None
+            or upper is not None
+            or domain is not None
+            or target is not None
+            or direction is not None
+            or version is not None
+        ):
+            raise TypeError("Pass either a big operator or labelled fields, not both.")
+        match expression["indexing"]:
+            case "bounds":
+                return big_operator_to_json(
+                    operator=expression["operator"],  # type: ignore
+                    indexing="bounds",
+                    index=expression["index"],
+                    lower=cast(BigOperatorValue, expression["lower"]),
+                    upper=cast(BigOperatorValue, expression["upper"]),
+                    body=cast(BigOperatorValue, expression["body"]),
+                )
+            case "domain":
+                return big_operator_to_json(
+                    operator=expression["operator"],  # type: ignore
+                    indexing="domain",
+                    index=expression["index"],
+                    domain=cast(BigOperatorValue, expression["domain"]),
+                    body=cast(BigOperatorValue, expression["body"]),
+                )
+            case "approaches":
+                return big_operator_to_json(
+                    operator=expression["operator"],  # type: ignore
+                    indexing="approaches",
+                    index=expression["index"],
+                    target=cast(BigOperatorValue, expression["target"]),
+                    direction=expression["direction"],
+                    body=cast(BigOperatorValue, expression["body"]),
+                )
+
+    if operator is None or indexing is None or index is None or body is None:
+        raise TypeError(
+            "Labelled big operators require operator, indexing, index, and body."
+        )
+
+    match version:
+        case None:
+            version = 1
+        case 1:
+            pass
+        case _:
+            raise ValueError(f"Big operator has an unsupported {version=}")
+
+    operator, indexing = _validate_operator_indexing(operator, indexing)
+    index_value = _coerce_sympy_field(index, "index")
+    if not isinstance(index_value, sympy.Symbol):
+        raise TypeError('Big-operator field "index" must be a SymPy symbol.')
+
+    match indexing:
+        case "bounds":
+            if lower is None or upper is None:
+                raise ValueError('Bounds big operators require "lower" and "upper".')
+            if domain is not None or target is not None or direction is not None:
+                raise ValueError(
+                    'Bounds big operators only accept "lower" and "upper".'
+                )
+            return {
+                "_type": "big_operator",
+                "_version": version,
+                "operator": operator,
+                "indexing": indexing,
+                "index": psu.sympy_to_json(index_value, allow_sets=True),
+                "body": _encode_sympy_field(body, "body"),
+                "lower": _encode_sympy_field(lower, "lower"),
+                "upper": _encode_sympy_field(upper, "upper"),
+            }
+
+        case "domain":
+            if domain is None:
+                raise ValueError('Domain big operators require "domain".')
+            if (
+                lower is not None
+                or upper is not None
+                or target is not None
+                or direction is not None
+            ):
+                raise ValueError('Domain big operators only accept "domain".')
+            return {
+                "_type": "big_operator",
+                "_version": version,
+                "operator": operator,
+                "indexing": indexing,
+                "index": psu.sympy_to_json(index_value, allow_sets=True),
+                "body": _encode_sympy_field(body, "body"),
+                "domain": _encode_sympy_field(domain, "domain"),
+            }
+
+        case "approaches":
+            if target is None or direction is None:
+                raise ValueError(
+                    'approaches big operators require "target" and "direction".'
+                )
+            if lower is not None or upper is not None or domain is not None:
+                raise ValueError(
+                    'approaches big operators only accept "target" and "direction".'
+                )
+            if direction not in _DIRECTIONS:
+                raise ValueError("Big operator has an unsupported direction.")
+            return {
+                "_type": "big_operator",
+                "_version": version,
+                "operator": operator,
+                "indexing": indexing,
+                "index": psu.sympy_to_json(index_value, allow_sets=True),
+                "body": _encode_sympy_field(body, "body"),
+                "target": _encode_sympy_field(target, "target"),
+                "direction": direction,
+            }
+
+        case _:
+            raise ValueError(f"Big operator has unsupported {indexing=}")
+
+
+def json_to_big_operator(value: BigOperatorJson | object) -> BigOperator:
+    """Validate and decode a version 1 big-operator answer.
+
+    Mathematical fields in the returned dictionary are SymPy values. The
+    ``indexing`` field discriminates between bounds, domain, and approaches answers,
+    so type checkers can narrow the result before indexing-specific fields are read.
+
+    Args:
+        value: A value from ``data["correct_answers"]`` or
+            ``data["submitted_answers"]`` after element processing.
+
+    Returns:
+        A decoded bounds, domain, or approaches big operator.
+
+    Raises:
+        TypeError: If ``value`` is not a dictionary.
+        ValueError: If ``value`` is not a valid version 1 big operator.
+    """
+    if not isinstance(value, dict):
+        raise TypeError("Big operator must be a dictionary.")
+    if value.get("_type") != "big_operator":
+        raise ValueError('Big operator must have _type "big_operator".')
+    if value.get("_version") != 1:
+        raise ValueError("Big operator must have _version 1.")
+
+    operator, indexing = _validate_operator_indexing(
+        value.get("operator"), value.get("indexing")
+    )
+
+    expected_keys = {"_type", "_version", "operator", "indexing", "index", "body"}
+    match indexing:
+        case "bounds":
+            expected_keys.update(("lower", "upper"))
+        case "domain":
+            expected_keys.add("domain")
+        case "approaches":
+            expected_keys.update(("target", "direction"))
+
+    if set(value) != expected_keys:
+        raise ValueError(
+            "Big operator does not contain exactly the fields required "
+            f"for operator={operator!r} and indexing={indexing!r}."
+        )
+
+    index = _decode_sympy_field(value.get("index"), "index")
+    if not isinstance(index, sympy.Symbol):
+        raise TypeError('Big-operator field "index" must be a SymPy symbol.')
+    body = _decode_sympy_field(value.get("body"), "body")
+
+    match indexing:
+        case "bounds":
+            return {
+                "_type": "big_operator",
+                "_version": 1,
+                "operator": operator,
+                "indexing": indexing,
+                "index": index,
+                "body": body,
+                "lower": _decode_sympy_field(value.get("lower"), "lower"),
+                "upper": _decode_sympy_field(value.get("upper"), "upper"),
+            }
+
+        case "domain":
+            return {
+                "_type": "big_operator",
+                "_version": 1,
+                "operator": operator,
+                "indexing": indexing,
+                "index": index,
+                "body": body,
+                "domain": _decode_sympy_field(value.get("domain"), "domain"),
+            }
+
+        case "approaches":
+            direction = value.get("direction")
+            if not isinstance(direction, str) or direction not in _DIRECTIONS:
+                raise ValueError("Big operator has an unsupported direction.")
+            return {
+                "_type": "big_operator",
+                "_version": 1,
+                "operator": operator,
+                "indexing": indexing,
+                "index": index,
+                "body": body,
+                "target": _decode_sympy_field(value.get("target"), "target"),
+                "direction": cast(BigOperatorDirection, direction),
+            }
+
+        case _:
+            raise ValueError(f"Big operator has unsupported {indexing=}")
+
+
+__all__ = [
+    "BigApproachesOperator",
+    "BigApproachesOperatorJson",
+    "BigBoundsOperator",
+    "BigBoundsOperatorJson",
+    "BigDomainOperator",
+    "BigDomainOperatorJson",
+    "BigOperator",
+    "BigOperatorDirection",
+    "BigOperatorIndexing",
+    "BigOperatorJson",
+    "BigOperatorName",
+    "BigOperatorSympyName",
+    "BigOperatorValue",
+    "big_operator_to_json",
+    "get_valid_big_operator_indexing",
+    "is_big_operator_json",
+    "json_to_big_operator",
+]
