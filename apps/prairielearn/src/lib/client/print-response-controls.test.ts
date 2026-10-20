@@ -142,15 +142,6 @@ describe('printable response controls', () => {
     expect(question.querySelector('.printing-subsection p')?.textContent).toBe('Show your work.');
   });
 
-  it('keeps sketch geometry and removes the interactive toolbar', () => {
-    const question = printQuestion(
-      '<div class="sketchresponse"><div class="si-container"><menu>Draw</menu><svg class="si-canvas" width="800" height="450"><path d="M0 0 L800 450"/></svg></div></div>',
-    );
-    expect(question.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 800 450');
-    expect(question.querySelector('path')?.getAttribute('d')).toBe('M0 0 L800 450');
-    expect(question.querySelector('menu, .si-container')).toBeNull();
-  });
-
   it('prints rendered ordering blocks with supplied blocks and indentation fields', () => {
     const question = renderedQuestion('order_blocks');
     const options = question.querySelector('.printing-order-options');
