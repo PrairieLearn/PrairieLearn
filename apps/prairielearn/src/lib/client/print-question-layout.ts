@@ -9,15 +9,13 @@ export interface MeasuredPrintQuestion {
 
 interface PlannedPrintQuestion extends MeasuredPrintQuestion {
   reservedHeight: number;
-  /** Whether this question can continue onto another printed page. */
-  allowsFlow: boolean;
+  canSpanPages: boolean;
 }
 
 export interface PlannedPrintQuestionPage {
   questions: PlannedPrintQuestion[];
   reservedHeight: number;
-  /** Whether this page contains a question that can continue onto another printed page. */
-  allowsFlow: boolean;
+  canSpanPages: boolean;
 }
 
 const FIT_TOLERANCE_PX = 0.5;
@@ -47,7 +45,7 @@ export function planPrintQuestionPages({
   let currentPage: PlannedPrintQuestionPage | undefined;
 
   function startPage(): PlannedPrintQuestionPage {
-    const page = { questions: [], reservedHeight: 0, allowsFlow: false };
+    const page = { questions: [], reservedHeight: 0, canSpanPages: false };
     pages.push(page);
     return page;
   }
@@ -64,20 +62,20 @@ export function planPrintQuestionPages({
         ? question.naturalHeight
         : requestedHeight;
 
-    const needsMultiplePages = reservedHeight - pageHeight > FIT_TOLERANCE_PX;
-    const plannedQuestion = { ...question, reservedHeight, allowsFlow: needsMultiplePages };
+    const canSpanPages = reservedHeight - pageHeight > FIT_TOLERANCE_PX;
+    const plannedQuestion = { ...question, reservedHeight, canSpanPages };
     if (
       currentPage == null ||
-      needsMultiplePages ||
+      canSpanPages ||
       currentPage.reservedHeight + reservedHeight - pageHeight > FIT_TOLERANCE_PX
     ) {
       currentPage = startPage();
     }
     currentPage.questions.push(plannedQuestion);
     currentPage.reservedHeight += reservedHeight;
-    currentPage.allowsFlow ||= needsMultiplePages;
+    currentPage.canSpanPages ||= canSpanPages;
 
-    if (needsMultiplePages || pageHeight - currentPage.reservedHeight <= FIT_TOLERANCE_PX) {
+    if (canSpanPages || pageHeight - currentPage.reservedHeight <= FIT_TOLERANCE_PX) {
       currentPage = undefined;
     }
   }

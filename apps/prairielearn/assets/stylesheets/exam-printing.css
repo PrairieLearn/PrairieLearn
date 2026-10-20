@@ -204,12 +204,12 @@ body {
   break-before: page;
 }
 
-.printing-question-page:not([data-print-allows-flow='true']) {
+.printing-question-page:not([data-print-can-span-pages='true']) {
   break-inside: avoid;
 }
 
-.printing-question-page[data-print-allows-flow='true']
-  > .printing-question[data-print-allows-flow='true'] {
+.printing-question-page[data-print-can-span-pages='true']
+  > .printing-question[data-print-can-span-pages='true'] {
   break-inside: auto !important;
 }
 
@@ -225,9 +225,9 @@ body {
   padding-block-end: var(--exam-print-question-spacing);
 }
 
-.printing-question[data-print-block-size='third'][data-print-allows-flow='false'],
-.printing-question[data-print-block-size='half'][data-print-allows-flow='false'],
-.printing-question[data-print-block-size='full'][data-print-allows-flow='false'] {
+.printing-question[data-print-block-size='third'][data-print-can-span-pages='false'],
+.printing-question[data-print-block-size='half'][data-print-can-span-pages='false'],
+.printing-question[data-print-block-size='full'][data-print-can-span-pages='false'] {
   block-size: var(--printing-question-block-height);
   break-inside: avoid;
 }

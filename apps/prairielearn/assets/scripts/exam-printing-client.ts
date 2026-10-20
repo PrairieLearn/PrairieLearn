@@ -270,7 +270,7 @@ function keepPrintableGroupsTogether(source: HTMLElement, pageHeight: number): v
 
 function placeQuestionGroupBreaks(source: HTMLElement, pageHeight: number): void {
   for (const page of source.querySelectorAll<HTMLElement>(
-    '.printing-question-page[data-print-allows-flow="true"]',
+    '.printing-question-page[data-print-can-span-pages="true"]',
   )) {
     const pageTop = page.getBoundingClientRect().top;
     let addedSpace = 0;
@@ -310,7 +310,7 @@ function formatMeasurement(value: number): string {
 interface PrintLayout {
   contentWidth: number;
   pageHeight: number;
-  plannedPageAllowsFlow: boolean[];
+  plannedPageCanSpanPages: boolean[];
 }
 
 function layoutQuestions(source: HTMLElement): PrintLayout {
@@ -346,7 +346,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
     page.dataset.printPlannedPage = String(pageIndex + 1);
     page.dataset.printQuestionCount = String(pagePlan.questions.length);
     page.dataset.printReservedHeight = formatMeasurement(pagePlan.reservedHeight);
-    page.dataset.printAllowsFlow = String(pagePlan.allowsFlow);
+    page.dataset.printCanSpanPages = String(pagePlan.canSpanPages);
 
     for (const [slotIndex, plannedQuestion] of pagePlan.questions.entries()) {
       const question = questionElements.get(plannedQuestion.id);
@@ -356,8 +356,8 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
       question.dataset.printReservedHeight = formatMeasurement(plannedQuestion.reservedHeight);
       question.dataset.printPlannedPage = String(pageIndex + 1);
       question.dataset.printPlannedSlot = String(slotIndex + 1);
-      question.dataset.printAllowsFlow = String(plannedQuestion.allowsFlow);
-      if (plannedQuestion.blockSize !== 'auto' && !plannedQuestion.allowsFlow) {
+      question.dataset.printCanSpanPages = String(plannedQuestion.canSpanPages);
+      if (plannedQuestion.blockSize !== 'auto' && !plannedQuestion.canSpanPages) {
         question.style.setProperty(
           '--printing-question-block-height',
           `${plannedQuestion.reservedHeight}px`,
@@ -376,7 +376,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
   return {
     contentWidth,
     pageHeight,
-    plannedPageAllowsFlow: pages.map((page) => page.allowsFlow),
+    plannedPageCanSpanPages: pages.map((page) => page.canSpanPages),
   };
 }
 
@@ -414,7 +414,7 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
   }
 
   let previousLastPageIndex = coverPageIndexes.at(-1) ?? -1;
-  for (const [plannedPageIndex, allowsFlow] of layout.plannedPageAllowsFlow.entries()) {
+  for (const [plannedPageIndex, canSpanPages] of layout.plannedPageCanSpanPages.entries()) {
     const plannedPage = String(plannedPageIndex + 1);
     const containingPageIndexes = generatedPages.flatMap((generatedPage, pageIndex) =>
       generatedPage.querySelector(
@@ -426,7 +426,7 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
     if (containingPageIndexes.length === 0) {
       throw new Error(`Planned question page ${plannedPage} is missing from the paginated exam`);
     }
-    if (!allowsFlow && containingPageIndexes.length !== 1) {
+    if (!canSpanPages && containingPageIndexes.length !== 1) {
       throw new Error(
         `Planned question page ${plannedPage} unexpectedly spans ${containingPageIndexes.length} paginated pages`,
       );
