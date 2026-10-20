@@ -8,7 +8,6 @@ import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { useModalState } from '@prairielearn/ui';
 
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
-import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
 import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
@@ -30,7 +29,7 @@ function AddApiKeyModal({
   onSuccess,
 }: {
   show: boolean;
-  providerOptions: readonly { value: string; label: string }[];
+  providerOptions: readonly (typeof AI_GRADING_PROVIDER_OPTIONS)[number][];
   credentials: AiGradingApiKeyCredential[];
   onHide: () => void;
   onExited: () => void;
@@ -51,7 +50,10 @@ function AddApiKeyModal({
     watch,
     reset,
     formState: { errors },
-  } = useForm<{ provider: string; apiKey: string }>({
+  } = useForm<{
+    provider: (typeof AI_GRADING_PROVIDER_OPTIONS)[number]['value'];
+    apiKey: string;
+  }>({
     defaultValues: {
       provider: providerOptions[0].value,
       apiKey: '',
@@ -78,7 +80,7 @@ function AddApiKeyModal({
       <form
         onSubmit={handleSubmit((data) =>
           addMutation.mutate({
-            provider: data.provider as EnumAiGradingProvider,
+            provider: data.provider,
             secret_key: data.apiKey.trim(),
           }),
         )}
