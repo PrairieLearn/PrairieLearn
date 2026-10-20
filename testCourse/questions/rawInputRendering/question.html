@@ -12,14 +12,61 @@
 </pl-question-panel>
 
 <pl-card header="Scalar inputs">
-  <pl-string-input
-    answers-name="string_value"
-    aria-label="String value"
-    label="String:"
-    initial-value="caf&#233;"
-    correct-answer="cafe"
-    display="block"
-  ></pl-string-input>
+  <div class="vstack gap-3">
+    <pl-string-input
+      answers-name="string_value"
+      aria-label="String value"
+      label="String:"
+      initial-value="caf&#233;"
+      correct-answer="cafe"
+      display="block"
+    ></pl-string-input>
+
+    <pl-big-o-input
+      answers-name="big_o_value"
+      aria-label="Big O value"
+      variables="n"
+      initial-value="n&#8203;"
+      correct-answer="n"
+      display="block"
+    ></pl-big-o-input>
+
+    <pl-integer-input
+      answers-name="integer_value"
+      aria-label="Integer value"
+      label="Integer:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-integer-input>
+
+    <pl-number-input
+      answers-name="number_value"
+      aria-label="Number value"
+      label="Number:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-number-input>
+
+    <pl-units-input
+      answers-name="units_value"
+      aria-label="Units value"
+      label="Units:"
+      initial-value="1 m&#8203;"
+      correct-answer="1 m"
+      display="block"
+    ></pl-units-input>
+  </div>
+</pl-card>
+
+<pl-card header="Matrix inputs">
+  <pl-matrix-input
+    answers-name="matrix_value"
+    aria-label="Matrix value"
+    label="Literal matrix:"
+    initial-value="[1,&#8203; 2]"
+  ></pl-matrix-input>
 </pl-card>
 
 <pl-card header="Matrix inputs">
