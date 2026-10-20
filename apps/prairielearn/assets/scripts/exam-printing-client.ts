@@ -492,24 +492,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   placeQuestionGroupBreaks(source, layout.pageHeight);
   await waitForAnimationFrame();
 
-  // All asynchronous content is settled above, so Paged.js can use a fixed layout. Its resize
-  // observers otherwise race with page construction and can attempt to reflow incomplete pages.
-  const resizeObserver = window.ResizeObserver;
-  Reflect.set(
-    window,
-    'ResizeObserver',
-    class {
-      disconnect() {}
-      observe() {}
-      unobserve() {}
-    },
-  );
-  let flow: PagedFlow;
-  try {
-    flow = await window.PagedPolyfill.preview(source, undefined, output);
-  } finally {
-    Reflect.set(window, 'ResizeObserver', resizeObserver);
-  }
+  const flow = await window.PagedPolyfill.preview(source, undefined, output);
   validatePagedLayout(output, layout);
   source.remove();
   document.documentElement.dataset.printStatus = 'ready';
