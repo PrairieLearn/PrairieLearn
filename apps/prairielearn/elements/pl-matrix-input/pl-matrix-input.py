@@ -169,7 +169,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if submitted_raw_answer is not None:
             html_params["raw_input_popover"] = render_raw_input_popover(
-                submitted_raw_answer
+                submitted_raw_answer, aria_label or name
             )
 
         partial_score = data["partial_scores"].get(name, {"score": None})
