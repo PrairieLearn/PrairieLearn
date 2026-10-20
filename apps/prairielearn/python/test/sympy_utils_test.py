@@ -803,17 +803,49 @@ class TestSympy:
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
-    @pytest.mark.parametrize("operator", ["|", "&"])
+    @pytest.mark.parametrize(
+        ("expression", "custom_functions", "expected"),
+        [
+            ("x | y", None, sympy.Or(sympy.Symbol("x"), sympy.Symbol("y"))),
+            ("x & y", None, sympy.And(sympy.Symbol("x"), sympy.Symbol("y"))),
+            (
+                "x | (y & z)",
+                None,
+                sympy.Or(
+                    sympy.Symbol("x"),
+                    sympy.And(sympy.Symbol("y"), sympy.Symbol("z")),
+                ),
+            ),
+            (
+                "(x | y) & z",
+                None,
+                sympy.And(
+                    sympy.Or(sympy.Symbol("x"), sympy.Symbol("y")),
+                    sympy.Symbol("z"),
+                ),
+            ),
+            (
+                "f(x | y)",
+                ["f"],
+                sympy.Function("f")(sympy.Or(sympy.Symbol("x"), sympy.Symbol("y"))),
+            ),
+        ],
+    )
     def test_legacy_scalar_set_operator_json_conversion(
-        self, operator: str, *, simplify_expression: bool
+        self,
+        expression: str,
+        custom_functions: list[str] | None,
+        expected: sympy.Basic,
+        *,
+        simplify_expression: bool,
     ) -> None:
         legacy_json: psu.SympyJson = {
             "_type": "sympy",
-            "_value": f"x {operator} y",
-            "_variables": ["x", "y"],
+            "_value": expression,
+            "_variables": ["x", "y", "z"],
         }
-        x, y = sympy.symbols("x y")
-        expected = x | y if operator == "|" else x & y
+        if custom_functions is not None:
+            legacy_json["_custom_functions"] = custom_functions
 
         assert (
             psu.json_to_sympy(
@@ -823,6 +855,26 @@ class TestSympy:
             )
             == expected
         )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_legacy_custom_function_set_operator_failure(
+        self, *, simplify_expression: bool
+    ) -> None:
+        legacy_json: psu.SympyJson = {
+            "_type": "sympy",
+            "_value": "f(x) | y",
+            "_variables": ["x", "y"],
+            "_custom_functions": ["f"],
+        }
+
+        with pytest.raises(psu.BaseSympyError) as exc_info:
+            psu.json_to_sympy(
+                legacy_json,
+                allow_sets=True,
+                simplify_expression=simplify_expression,
+            )
+
+        assert type(exc_info.value) is psu.BaseSympyError
 
     @pytest.mark.parametrize(
         "sympy_expr",
@@ -1647,9 +1699,24 @@ def test_unexpected_evaluation_errors_remain_staff_facing(
         ("n*log(n)**2", "n log^2 n"),
     ],
 )
-def test_source_wrapper_returns_lowered_structure(left: str, right: str) -> None:
-    _, left_source = psu.convert_string_to_sympy_with_source(left, ["n"])
-    _, right_source = psu.convert_string_to_sympy_with_source(right, ["n"])
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_source_wrapper_returns_lowered_structure(
+    left: str, right: str, *, simplify_expression: bool
+) -> None:
+    _, left_source = psu.convert_string_to_sympy_with_source(
+        left, ["n"], simplify_expression=simplify_expression
+    )
+    _, right_source = psu.convert_string_to_sympy_with_source(
+        right, ["n"], simplify_expression=simplify_expression
+    )
+    locals_for_eval = psu._prepare_locals_for_eval(["n"])
+    _, evaluated_source = psu.evaluate_with_source(
+        left, locals_for_eval, simplify_expression=simplify_expression
+    )
+
+    assert isinstance(left_source, str)
+    assert isinstance(right_source, str)
+    assert isinstance(evaluated_source, str)
     assert left_source == right_source
 
 
@@ -1711,6 +1778,13 @@ def test_custom_complement_is_not_treated_as_a_set_constructor(
 def test_digit_suffixed_custom_function() -> None:
     f2 = sympy.Function("f2")
     assert psu.convert_string_to_sympy("f2(3)", custom_functions=["f2"]) == f2(3)
+
+
+def test_sympy_function_name_configured_as_variable_uses_implicit_multiplication() -> (
+    None
+):
+    gamma, x = sympy.symbols("gamma x")
+    assert psu.convert_string_to_sympy("gamma(x)", ["gamma", "x"]) == gamma * x
 
 
 def test_unsimplified_set_complement_is_evaluated() -> None:

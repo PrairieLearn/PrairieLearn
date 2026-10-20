@@ -434,8 +434,8 @@ def test_python_only_constructs_are_outside_the_grammar(expression: str) -> None
         "expected_end",
     ),
     [
-        ("x + theta + theta", False, False, 12, 17),
-        ("x + λ + λ", False, False, 8, 9),
+        ("x + theta + theta", False, False, 4, 9),
+        ("x + λ + λ", False, False, 4, 5),
         ("{} cup bad", False, True, 3, 6),
         ("{:x:} + bad_name", True, False, 8, 16),
         ("s i n x + bad_name", True, False, 10, 18),

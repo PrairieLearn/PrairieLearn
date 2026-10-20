@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Never, Protocol, cast
 import sympy
 from lark import Lark, Token, Transformer
 from lark.exceptions import UnexpectedInput, UnexpectedToken
+from sympy.logic.boolalg import Boolean
 
 from prairielearn.internal import sympy_constants, sympy_evaluation, sympy_source
 
@@ -36,7 +37,7 @@ class _Number:
     text: str
     span: sympy_source.SourceSpan
 
-    def to_source(self) -> str:
+    def to_structure(self) -> str:
         return self.text
 
 
@@ -46,7 +47,7 @@ class _Name:
     span: sympy_source.SourceSpan
     character_spans: tuple[sympy_source.SourceSpan, ...]
 
-    def to_source(self) -> str:
+    def to_structure(self) -> str:
         return self.text
 
 
@@ -56,8 +57,8 @@ class _Call:
     arguments: tuple[_Expression, ...]
     span: sympy_source.SourceSpan
 
-    def to_source(self) -> str:
-        arguments = ",".join(argument.to_source() for argument in self.arguments)
+    def to_structure(self) -> str:
+        arguments = ",".join(argument.to_structure() for argument in self.arguments)
         return f"{self.function.text}({arguments})"
 
 
@@ -67,8 +68,8 @@ class _Unary:
     operand: _Expression
     span: sympy_source.SourceSpan
 
-    def to_source(self) -> str:
-        return f"({self.operator.text}{self.operand.to_source()})"
+    def to_structure(self) -> str:
+        return f"({self.operator.text}{self.operand.to_structure()})"
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,7 +79,7 @@ class _Binary:
     right: _Expression
     span: sympy_source.SourceSpan
 
-    def to_source(self) -> str:
+    def to_structure(self) -> str:
         operator = {
             "juxtapose": "*",
             "cup": "|",
@@ -87,7 +88,7 @@ class _Binary:
             "cap": "&",
             "∩": "&",
         }.get(self.operator.text, self.operator.text)
-        return f"({self.left.to_source()}{operator}{self.right.to_source()})"
+        return f"({self.left.to_structure()}{operator}{self.right.to_structure()})"
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,8 +97,8 @@ class _Factorial:
     operator: _Operator
     span: sympy_source.SourceSpan
 
-    def to_source(self) -> str:
-        return f"factorial({self.operand.to_source()})"
+    def to_structure(self) -> str:
+        return f"factorial({self.operand.to_structure()})"
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,8 +106,8 @@ class _FiniteSet:
     items: tuple[_Expression, ...]
     span: sympy_source.SourceSpan
 
-    def to_source(self) -> str:
-        items = ",".join(item.to_source() for item in self.items)
+    def to_structure(self) -> str:
+        items = ",".join(item.to_structure() for item in self.items)
         return f"FiniteSet({items})"
 
 
@@ -118,11 +119,11 @@ class _Interval:
     right_bracket: _Operator
     span: sympy_source.SourceSpan
 
-    def to_source(self) -> str:
+    def to_structure(self) -> str:
         left_open = self.left_bracket.text == "("
         right_open = self.right_bracket.text == ")"
         return (
-            f"Interval({self.left.to_source()},{self.right.to_source()},"
+            f"Interval({self.left.to_structure()},{self.right.to_structure()},"
             f"{left_open},{right_open})"
         )
 
@@ -132,8 +133,8 @@ class _Group:
     value: _Expression
     span: sympy_source.SourceSpan
 
-    def to_source(self) -> str:
-        return f"group({self.value.to_source()})"
+    def to_structure(self) -> str:
+        return f"group({self.value.to_structure()})"
 
 
 type _Expression = (
@@ -639,8 +640,8 @@ class _Lowerer:
 
 @dataclass(frozen=True, slots=True)
 class _Evaluated:
-    value: sympy_evaluation.SympyValue | bool
-    type: sympy_evaluation.SympyType
+    value: sympy.Basic | bool
+    type: sympy_evaluation.SympyType | None
 
 
 class Evaluator:
@@ -657,6 +658,8 @@ class Evaluator:
         self.allow_sets = context.allow_sets
         self.simplify_expression = context.simplify_expression
         self.allow_extra_symbols = context.allow_extra_symbols
+        self.legacy_untyped_names = context.legacy_untyped_names
+        self.legacy_untyped_functions = context.legacy_untyped_functions
         self.unknown_names: list[_Name] = []
 
     def _raise(
@@ -694,7 +697,11 @@ class Evaluator:
             for index, (expected, argument) in enumerate(
                 zip(signature, arguments, strict=True)
             ):
-                if expected is not None and argument.type != expected:
+                if (
+                    expected is not None
+                    and argument.type is not None
+                    and argument.type != expected
+                ):
                     failures.append((index, expected, argument.type))
                     break
             else:
@@ -748,7 +755,9 @@ class Evaluator:
     ) -> _Evaluated:
         if self.allow_sets and function is sympy_constants.set_functions.get(name):
             self._set_call_type(name, arguments, span)
-            result_type = sympy_evaluation.SympyType.SET
+            result_type: sympy_evaluation.SympyType | None = (
+                sympy_evaluation.SympyType.SET
+            )
         else:
             arities = sympy_evaluation.builtin_function_arities(name)
             if arities is not None:
@@ -777,7 +786,11 @@ class Evaluator:
                         for arity in arities
                     ),
                 )
-            result_type = sympy_evaluation.SympyType.SCALAR
+            result_type = (
+                None
+                if name in self.legacy_untyped_functions
+                else sympy_evaluation.SympyType.SCALAR
+            )
 
         values = [argument.value for argument in arguments]
         kwargs: dict[str, bool] = {}
@@ -804,12 +817,12 @@ class Evaluator:
         scalar = sympy_evaluation.SympyType.SCALAR
         set_type = sympy_evaluation.SympyType.SET
 
-        if operator in sympy_constants.set_operator_names:
+        if operator in {"cup", "U", "∪", "|", "cap", "∩", "&"}:  # ruff: ignore[ambiguous-unicode-character-string]
             signatures = ((set_type, set_type),)
-            result_type = set_type
+            result_type = left.type or right.type
         elif operator in {"+", "-"}:
             signatures = ((set_type, set_type), (scalar, scalar))
-            result_type = left.type
+            result_type = left.type or right.type
         else:
             signatures = ((scalar, scalar),)
             result_type = scalar
@@ -825,15 +838,15 @@ class Evaluator:
             if is_set_operation:
                 left_set = cast(sympy.Set, left.value)
                 right_set = cast(sympy.Set, right.value)
-                if operator in sympy_constants.union_operators | {"+"}:
+                if operator in {"cup", "U", "∪", "|", "+"}:  # ruff: ignore[ambiguous-unicode-character-string]
                     value = sympy.Union(left_set, right_set)
-                elif operator in sympy_constants.intersection_operators:
+                elif operator in {"cap", "∩", "&"}:
                     value = sympy.Intersection(left_set, right_set)
                 else:
                     value = sympy.Complement(left_set, right_set)
             else:
-                left_value = cast(sympy.Expr, left.value)
-                right_value = cast(sympy.Expr, right.value)
+                left_value = cast(sympy.Basic, left.value)
+                right_value = cast(sympy.Basic, right.value)
                 value = self._scalar_binary(
                     operator,
                     left_value,
@@ -851,18 +864,25 @@ class Evaluator:
     def _scalar_binary(
         self,
         operator: str,
-        left_value: sympy.Expr,
-        right_value: sympy.Expr,
-    ) -> sympy.Expr:
+        left_value: sympy.Basic,
+        right_value: sympy.Basic,
+    ) -> sympy.Basic:
+        if operator in {"cup", "U", "∪", "|"}:  # ruff: ignore[ambiguous-unicode-character-string]
+            return sympy.Or(cast(Boolean, left_value), cast(Boolean, right_value))
+        if operator in {"cap", "∩", "&"}:
+            return sympy.And(cast(Boolean, left_value), cast(Boolean, right_value))
+
+        left_expr = cast(sympy.Expr, left_value)
+        right_expr = cast(sympy.Expr, right_value)
         if self.simplify_expression:
             return {
-                "+": lambda: left_value + right_value,
-                "-": lambda: left_value - right_value,
-                "*": lambda: left_value * right_value,
-                "juxtapose": lambda: left_value * right_value,
-                "/": lambda: left_value / right_value,
-                "%": lambda: left_value % right_value,
-                "**": lambda: left_value**right_value,
+                "+": lambda: left_expr + right_expr,
+                "-": lambda: left_expr - right_expr,
+                "*": lambda: left_expr * right_expr,
+                "juxtapose": lambda: left_expr * right_expr,
+                "/": lambda: left_expr / right_expr,
+                "%": lambda: left_expr % right_expr,
+                "**": lambda: left_expr**right_expr,
             }[operator]()
 
         def flatten(
@@ -872,33 +892,33 @@ class Evaluator:
 
         if operator == "+":
             return sympy.Add(
-                *flatten(left_value, sympy.Add),
-                *flatten(right_value, sympy.Add),
+                *flatten(left_expr, sympy.Add),
+                *flatten(right_expr, sympy.Add),
                 evaluate=False,
             )
         if operator == "-":
-            negative = sympy.Mul(-1, right_value, evaluate=False)
+            negative = sympy.Mul(-1, right_expr, evaluate=False)
             return sympy.Add(
-                *flatten(left_value, sympy.Add),
+                *flatten(left_expr, sympy.Add),
                 *flatten(negative, sympy.Add),
                 evaluate=False,
             )
         if operator in {"*", "juxtapose"}:
             return sympy.Mul(
-                *flatten(left_value, sympy.Mul),
-                *flatten(right_value, sympy.Mul),
+                *flatten(left_expr, sympy.Mul),
+                *flatten(right_expr, sympy.Mul),
                 evaluate=False,
             )
         if operator == "/":
-            reciprocal = sympy.Pow(right_value, -1, evaluate=False)
+            reciprocal = sympy.Pow(right_expr, -1, evaluate=False)
             return sympy.Mul(
-                *flatten(left_value, sympy.Mul),
+                *flatten(left_expr, sympy.Mul),
                 *flatten(reciprocal, sympy.Mul),
                 evaluate=False,
             )
         if operator == "%":
-            return sympy.Mod(left_value, right_value, evaluate=False)
-        return sympy.Pow(left_value, right_value, evaluate=False)
+            return sympy.Mod(left_expr, right_expr, evaluate=False)
+        return sympy.Pow(left_expr, right_expr, evaluate=False)
 
     def evaluate(self, expression: _Expression) -> _Evaluated:
         if isinstance(expression, _Number):
@@ -940,7 +960,9 @@ class Evaluator:
             name_value = sympy.sympify(resolved_value)
             if isinstance(name_value, sympy.Set) and not self.allow_sets:
                 self._raise(sympy_evaluation.SetNotationDiagnostic(), expression.span)
-            if isinstance(name_value, sympy.Set):
+            if expression.text in self.legacy_untyped_names:
+                value_type = None
+            elif isinstance(name_value, sympy.Set):
                 value_type = sympy_evaluation.SympyType.SET
             elif name_value is sympy.true or name_value is sympy.false:
                 value_type = sympy_evaluation.SympyType.BOOL
@@ -1094,7 +1116,7 @@ def _parse_and_evaluate(
         if invalid_name is not None:
             name = next(
                 candidate
-                for candidate in reversed(evaluator.unknown_names)
+                for candidate in evaluator.unknown_names
                 if candidate.text == invalid_name
             )
             raise sympy_evaluation.ExpressionEvaluationError(
@@ -1114,10 +1136,10 @@ def parse_and_evaluate(
     return result
 
 
-def parse_and_evaluate_with_source(
+def parse_and_evaluate_with_structure(
     source: sympy_source.SourceText,
     context: sympy_evaluation.EvaluationContext,
 ) -> tuple[sympy_evaluation.SympyValue, str]:
     """Parse and evaluate normalized source, returning its lowered structure."""
     result, lowered = _parse_and_evaluate(source, context)
-    return result, lowered.to_source()
+    return result, lowered.to_structure()
