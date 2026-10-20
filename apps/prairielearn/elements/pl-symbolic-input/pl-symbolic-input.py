@@ -397,6 +397,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else submitted_raw_answer
             ),
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
+            "raw_input_popover_label": f"Original input for {aria_label or name}",
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
@@ -410,7 +411,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if submitted_raw_answer is not None:
             html_params["raw_input_popover"] = render_raw_input_popover(
-                submitted_raw_answer
+                submitted_raw_answer, aria_label or name
             )
             html_params["raw_input_popover_content"] = render_raw_input_popover_content(
                 submitted_raw_answer
