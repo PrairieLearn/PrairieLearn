@@ -91,11 +91,20 @@ export async function sync(
     z.record(z.string(), IdSchema),
   );
 
+  await syncQuestionCopyProvenance(courseId, courseData, result);
+  return result;
+}
+
+async function syncQuestionCopyProvenance(
+  courseId: string,
+  courseData: CourseData,
+  questionIds: Record<string, string>,
+): Promise<void> {
   const validQuestions = Object.entries(courseData.questions).flatMap(([qid, question]) => {
     if (!question.data || infofile.hasErrors(question)) return [];
     return [{ qid, question, copiedFrom: question.data.copiedFrom ?? null }];
   });
-  if (validQuestions.length === 0) return result;
+  if (validQuestions.length === 0) return;
 
   const references = validQuestions.flatMap(({ qid, copiedFrom }) => {
     if (!copiedFrom) return [];
@@ -121,7 +130,7 @@ export async function sync(
       );
     }
     return {
-      question_id: result[qid],
+      question_id: questionIds[qid],
       copied_from: copiedFrom,
       copied_from_question_id: sourceId,
       sync_warnings: infofile.stringifyWarnings(question),
@@ -131,6 +140,4 @@ export async function sync(
     course_id: courseId,
     provenance: JSON.stringify(provenance),
   });
-
-  return result;
 }
