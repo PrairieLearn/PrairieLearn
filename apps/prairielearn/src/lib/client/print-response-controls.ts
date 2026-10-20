@@ -448,7 +448,7 @@ function groupQuestionSections(source: HTMLElement): void {
     section.append(prompt, response);
   }
   for (const heading of source.querySelectorAll<HTMLElement>(
-    ':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6, :scope > hr',
+    ':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6',
   )) {
     const section = document.createElement('div');
     section.className = 'printing-subsection';
