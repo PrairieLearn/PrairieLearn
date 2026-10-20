@@ -181,7 +181,12 @@ jobs:
       - name: Install OS packages
         run: |-
           sudo apt-get update
-          sudo apt-get install -y graphviz libgraphviz-dev
+          sudo apt-get install -y \
+            graphviz \
+            libgraphviz-dev \
+            libgvplugin-gd-dev \
+            libgvplugin-neato-layout-dev \
+            libgvplugin-pango-dev
 
       - name: Install additional dependencies
         run: |-
@@ -259,7 +264,13 @@ jobs:
       - name: Install OS packages
         run: |-
           sudo apt-get update
-          sudo apt-get install -y graphviz libgraphviz-dev shellcheck
+          sudo apt-get install -y \
+            graphviz \
+            libgraphviz-dev \
+            libgvplugin-gd-dev \
+            libgvplugin-neato-layout-dev \
+            libgvplugin-pango-dev \
+            shellcheck
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
