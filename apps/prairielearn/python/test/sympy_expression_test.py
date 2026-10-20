@@ -8,6 +8,8 @@ from prairielearn.internal.symbolic_input import normalize_symbolic_input
 from prairielearn.internal.sympy_expression import parse_and_evaluate
 
 
+# This differential-oracle suite is temporary. PR #16069 removes it when the grammar
+# evaluator replaces the legacy evaluation path.
 @dataclass(frozen=True, slots=True)
 class _OracleCase:
     expression: str
