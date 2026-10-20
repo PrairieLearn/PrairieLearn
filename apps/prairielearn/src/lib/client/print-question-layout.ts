@@ -9,12 +9,14 @@ export interface MeasuredPrintQuestion {
 
 interface PlannedPrintQuestion extends MeasuredPrintQuestion {
   reservedHeight: number;
+  /** Whether this question can continue onto another printed page. */
   allowsFlow: boolean;
 }
 
 export interface PlannedPrintQuestionPage {
   questions: PlannedPrintQuestion[];
   reservedHeight: number;
+  /** Whether this page contains a question that can continue onto another printed page. */
   allowsFlow: boolean;
 }
 
