@@ -12,6 +12,10 @@ import { IdSchema } from '@prairielearn/zod';
 
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import {
+  selectAndLockAssessmentInstanceIdsForAssessmentQuestion,
+  updateAssessmentInstancesGradingPending,
+} from '../models/assessment-instance.js';
 
 import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import {
@@ -305,6 +309,13 @@ export async function updateAssessmentQuestionRubric({
   }
 
   await sqldb.runInTransactionAsync(async () => {
+    const assessmentInstanceIds =
+      use_rubric || tag_for_manual_grading
+        ? await selectAndLockAssessmentInstanceIdsForAssessmentQuestion({
+            assessment_id: assessment.id,
+            assessment_question_id,
+          })
+        : [];
     const assessment_question = await sqldb.queryRow(
       sql.select_assessment_question_for_update,
       { assessment_question_id },
@@ -393,6 +404,7 @@ export async function updateAssessmentQuestionRubric({
 
     if (tag_for_manual_grading) {
       await sqldb.execute(sql.tag_for_manual_grading, { assessment_question_id });
+      await updateAssessmentInstancesGradingPending(assessmentInstanceIds);
     }
   });
 }
@@ -747,6 +759,8 @@ export async function updateInstanceQuestionScore({
 
       // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
+    } else if (!current_submission.modified_at_conflict) {
+      await updateAssessmentInstancesGradingPending([current_submission.assessment_instance_id]);
     }
 
     return {

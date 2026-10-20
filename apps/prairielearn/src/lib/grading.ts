@@ -7,6 +7,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
+import { updateAssessmentInstancesGradingPending } from '../models/assessment-instance.js';
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
@@ -168,6 +169,7 @@ async function insertSubmission({
         InstanceQuestionSchema,
       );
       await updateInstanceQuestionStats({ instanceQuestion });
+      await updateAssessmentInstancesGradingPending([instanceQuestion.assessment_instance_id]);
     }
 
     return { submission_id, variant };

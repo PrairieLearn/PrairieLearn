@@ -472,6 +472,7 @@ WITH
       open = FALSE,
       closed_at = NOW(),
       grading_needed = TRUE,
+      grading_pending = TRUE,
       modified_at = NOW()
     FROM
       deleted_group AS dg
@@ -553,6 +554,7 @@ WITH
       open = FALSE,
       closed_at = NOW(),
       grading_needed = TRUE,
+      grading_pending = TRUE,
       modified_at = NOW()
     FROM
       deleted_groups AS dg

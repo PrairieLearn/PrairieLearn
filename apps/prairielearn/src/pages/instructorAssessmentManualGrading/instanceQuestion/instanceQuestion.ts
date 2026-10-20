@@ -39,6 +39,7 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 import { selectUserSettings } from '../../../models/user-settings.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
+import { updateInstanceQuestions } from '../assessmentQuestion/queries.js';
 
 import {
   type GradingJobData,
@@ -714,10 +715,13 @@ router.post(
           );
         }
       }
-      await sqldb.execute(sql.update_assigned_grader, {
-        instance_question_id: res.locals.instance_question.id,
-        assigned_grader,
+      await updateInstanceQuestions({
+        assessment_question: res.locals.assessment_question,
+        instance_question_ids: [res.locals.instance_question.id],
+        update_requires_manual_grading: true,
         requires_manual_grading: actionPrompt !== 'graded',
+        update_assigned_grader: actionPrompt !== 'graded',
+        assigned_grader,
       });
 
       const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);

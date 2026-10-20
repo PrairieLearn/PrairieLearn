@@ -8,6 +8,7 @@ import { formatDate, formatInterval } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
+import { updateAssessmentInstancesGradingPending } from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import {
@@ -281,6 +282,7 @@ export async function gradeAssessmentInstance({
           authn_user_id,
           client_fingerprint_id,
         });
+        await updateAssessmentInstancesGradingPending([assessment_instance_id]);
       }
     });
   }
@@ -325,7 +327,10 @@ export async function gradeAssessmentInstance({
   // `gradeVariant` is resilient to being run multiple times concurrently. The
   // only bad thing that will happen is that we'll have wasted some work, but
   // that's acceptable.
-  await sqldb.execute(sql.unset_grading_needed, { assessment_instance_id });
+  await sqldb.runInTransactionAsync(async () => {
+    await sqldb.execute(sql.unset_grading_needed, { assessment_instance_id });
+    await updateAssessmentInstancesGradingPending([assessment_instance_id]);
+  });
 }
 
 export async function crossLockpoint({

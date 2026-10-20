@@ -18,6 +18,7 @@ import {
 } from '../lib/db-types.js';
 import { updateInstanceQuestionGrade } from '../lib/question-points.js';
 
+import { updateAssessmentInstancesGradingPending } from './assessment-instance.js';
 import { lockSubmission } from './submission.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -213,6 +214,8 @@ export async function updateGradingJobAfterGrading({
         authn_user_id: gradingJob.auth_user_id,
         credit,
       });
+    } else if (assessment_instance_id != null) {
+      await updateAssessmentInstancesGradingPending([assessment_instance_id]);
     }
 
     return gradingJob;

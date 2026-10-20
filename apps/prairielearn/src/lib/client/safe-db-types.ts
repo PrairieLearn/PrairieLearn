@@ -132,6 +132,7 @@ export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInst
   date_limit: true,
   duration: true,
   grading_needed: true,
+  grading_pending: true, // potentially sensitive
   id: true,
   max_bonus_points: true,
   max_points: true,

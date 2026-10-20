@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryScalar, queryScalars } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
 
@@ -72,4 +73,34 @@ export async function insertGroupAssessmentInstance({
     { assessment_id, team_id, authn_user_id },
     AssessmentInstanceSchema,
   );
+}
+
+/** Lock parents before changing question grading state, in the same order as grading. */
+export async function selectAndLockAssessmentInstanceIdsForAssessmentQuestion({
+  assessment_id,
+  assessment_question_id,
+  instance_question_ids = null,
+}: {
+  assessment_id: string;
+  assessment_question_id: string;
+  instance_question_ids?: string[] | null;
+}): Promise<string[]> {
+  return await queryScalars(
+    sql.select_and_lock_assessment_instance_ids_for_assessment_question,
+    { assessment_id, assessment_question_id, instance_question_ids },
+    IdSchema,
+  );
+}
+
+/** The caller must hold these assessment-instance locks until its transaction commits. */
+export async function updateAssessmentInstancesGradingPending(
+  assessment_instance_ids: string[],
+): Promise<void> {
+  if (assessment_instance_ids.length === 0) return;
+  await execute(sql.update_assessment_instances_grading_pending, { assessment_instance_ids });
+}
+
+/** The caller must be in a transaction and lock parents before their questions or variants. */
+export async function lockAssessmentInstances(assessment_instance_ids: string[]): Promise<void> {
+  await execute(sql.lock_assessment_instances, { assessment_instance_ids });
 }

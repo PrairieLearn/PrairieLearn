@@ -81,3 +81,127 @@ INSERT INTO
     FROM
       results
   );
+
+-- BLOCK select_and_lock_assessment_instance_ids_for_assessment_question
+SELECT
+  ai.id
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.assessment_id = $assessment_id
+  AND EXISTS (
+    SELECT
+      1
+    FROM
+      instance_questions AS iq
+    WHERE
+      iq.assessment_instance_id = ai.id
+      AND iq.assessment_question_id = $assessment_question_id
+      AND (
+        $instance_question_ids::bigint[] IS NULL
+        OR iq.id = ANY ($instance_question_ids::bigint[])
+      )
+  )
+ORDER BY
+  ai.id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK update_assessment_instances_grading_pending
+WITH
+  pending AS (
+    SELECT
+      ai.id,
+      ai.grading_needed
+      OR EXISTS (
+        SELECT
+          1
+        FROM
+          instance_questions AS iq
+          JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
+          JOIN assessments AS a ON a.id = aq.assessment_id
+        WHERE
+          iq.assessment_instance_id = ai.id
+          -- Match the questions retained in the assessment's existing grading table.
+          AND (
+            aq.deleted_at IS NULL
+            OR a.type = 'Exam'
+          )
+          AND (
+            (
+              iq.requires_manual_grading
+              AND iq.status != 'unanswered'
+            )
+            OR (
+              aq.max_auto_points > 0
+              AND EXISTS (
+                SELECT
+                  1
+                FROM
+                  (
+                    SELECT
+                      s.id,
+                      s.score,
+                      s.gradable,
+                      s.broken,
+                      v.broken_at
+                    FROM
+                      variants AS v
+                      JOIN submissions AS s ON s.variant_id = v.id
+                    WHERE
+                      v.instance_question_id = iq.id
+                    ORDER BY
+                      s.date DESC,
+                      s.id DESC
+                    LIMIT
+                      1
+                  ) AS latest
+                WHERE
+                  (
+                    latest.score IS NULL
+                    AND latest.gradable
+                    AND NOT latest.broken
+                    AND latest.broken_at IS NULL
+                    AND NOT aq.allow_real_time_grading
+                  )
+                  OR EXISTS (
+                    SELECT
+                      1
+                    FROM
+                      grading_jobs AS gj
+                    WHERE
+                      gj.submission_id = latest.id
+                      AND gj.grading_method IN ('Internal', 'External')
+                      AND gj.graded_at IS NULL
+                      AND gj.grading_request_canceled_at IS NULL
+                      AND gj.deleted_at IS NULL
+                  )
+              )
+            )
+          )
+      ) AS grading_pending
+    FROM
+      assessment_instances AS ai
+    WHERE
+      ai.id = ANY ($assessment_instance_ids::bigint[])
+  )
+UPDATE assessment_instances AS ai
+SET
+  grading_pending = pending.grading_pending
+FROM
+  pending
+WHERE
+  ai.id = pending.id
+  AND ai.grading_pending IS DISTINCT FROM pending.grading_pending;
+
+-- BLOCK lock_assessment_instances
+SELECT
+  ai.id
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.id = ANY ($assessment_instance_ids::bigint[])
+ORDER BY
+  ai.id
+FOR NO KEY UPDATE OF
+  ai;
