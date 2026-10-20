@@ -23,8 +23,10 @@ set_literal: LBRACE [arguments] RBRACE
 
 interval: (LPAR | LBRACKET) union _COMMA union (RPAR | RBRACKET)
 
+// .3 sets the precedence higher than NAME so it captures alphanumeric ops reliably
 UNION.3: "cup" | "U" | "∪" | "|"
 INTERSECTION.3: "cap" | "∩" | "&"
+
 ADD: "+" | "-"
 PRODUCT: "*" | "/" | "%"
 POWER: "**"
