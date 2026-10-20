@@ -2119,7 +2119,7 @@ class _SymbolicInputNormalizationError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class _SymbolicSubmissionParseSuccess:
-    expr: sympy.Expr | Literal[""]
+    expr: SympyValue | Literal[""]
     json: SympyJson | Literal[""]
 
 
@@ -2127,6 +2127,12 @@ type _SymbolicInputNormalizationResult = sympy_source.SourceText | SympyParseFai
 type _SymbolicSubmissionParseResult = (
     _SymbolicSubmissionParseSuccess | SympyParseFailure
 )
+
+
+def _allowed_sympy_types_include_sets(
+    allowed_types: set[AllowedSympyType],
+) -> bool:
+    return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
 
 
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
@@ -2511,7 +2517,7 @@ def _normalize_symbolic_input(
     return _validate_and_rewrite_source(
         source,
         allow_complex=allow_complex,
-        allow_sets=allow_sets,
+        allow_sets=True,
     )
 
 
@@ -2562,11 +2568,11 @@ def _try_parse_normalized_source_as_sympy(
     *,
     allow_complex: bool = False,
     allow_hidden: bool = False,
-    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
 ) -> SympyParseResult:
     """Parse text that has already passed through symbolic-input normalization."""
     return _try_parse_as_sympy(
@@ -2577,13 +2583,14 @@ def _try_parse_normalized_source_as_sympy(
             variables,
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
-            allow_sets=allow_sets,
+            allow_sets=True,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
         )[0],
         allow_complex=allow_complex,
+        allowed_types=allowed_types,
     )
 
 
@@ -2596,14 +2603,18 @@ def try_parse_symbolic_submission(
     allow_blank: bool = False,
     blank_value: str = "0",
     allow_complex: bool = False,
-    allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: Sequence[str] = (),
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
+    allowed_types: set[AllowedSympyType] | None = None,
 ) -> _SymbolicSubmissionParseResult:
     """Normalize, parse, and serialize a symbolic element submission."""
+    if allowed_types is None:
+        allowed_types = {"expression"}
+    supports_set_syntax = _allowed_sympy_types_include_sets(allowed_types)
+
     if submission is None:
         return SympyParseFailure("No submitted answer.")
 
@@ -2617,7 +2628,7 @@ def try_parse_symbolic_submission(
         latex=formula_editor_latex,
         allow_trig_functions=allow_trig_functions,
         allow_complex=allow_complex,
-        allow_sets=allow_sets,
+        allow_sets=supports_set_syntax,
     )
     if isinstance(normalized, SympyParseFailure):
         return normalized
@@ -2632,12 +2643,13 @@ def try_parse_symbolic_submission(
             variable_list,
             allow_hidden=True,
             allow_complex=allow_complex,
-            allow_sets=allow_sets,
+            allow_sets=True,
             allow_trig_functions=allow_trig_functions,
             imaginary_unit=imaginary_unit,
             custom_functions=custom_function_list,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
+            allowed_types=allowed_types,
         )
     else:
         result = _try_parse_normalized_source_as_sympy(
@@ -2645,11 +2657,11 @@ def try_parse_symbolic_submission(
             variable_list,
             allow_hidden=True,
             allow_complex=allow_complex,
-            allow_sets=allow_sets,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_function_list,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
+            allowed_types=allowed_types,
         )
     if isinstance(result, SympyParseFailure):
         return result
@@ -2658,12 +2670,12 @@ def try_parse_symbolic_submission(
         submission_json = sympy_to_json(
             result.expr,
             allow_complex=allow_complex,
-            allow_sets=allow_sets,
+            allow_sets=supports_set_syntax,
         )
         json_to_sympy(
             submission_json,
             allow_complex=allow_complex,
-            allow_sets=allow_sets,
+            allow_sets=supports_set_syntax,
             simplify_expression=simplify_expression,
         )
     except Exception:
