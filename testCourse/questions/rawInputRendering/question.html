@@ -1,10 +1,26 @@
 <pl-question-panel>
   <p>
-    This input exercises literal restoration of original input after grading. Select
-    <strong>Save &amp; Grade</strong>, then confirm that the invisible character remains in the
-    matrix input.
+    These inputs exercise the original-input rendering used by elements in this question. Some
+    values use characters whose rendered form needs additional explanation.
+  </p>
+  <p>
+    Select <strong>Save &amp; Grade</strong>, then open each question-mark popover in the submitted
+    answer panel. The popovers show the readable value and add the control-and-formatting
+    explanation or an ASCII-only representation only when relevant. Select
+    <strong>Try Again</strong> to confirm that the literal values are restored to the input fields.
   </p>
 </pl-question-panel>
+
+<pl-card header="Scalar inputs">
+  <pl-string-input
+    answers-name="string_value"
+    aria-label="String value"
+    label="String:"
+    initial-value="caf&#233;"
+    correct-answer="cafe"
+    display="block"
+  ></pl-string-input>
+</pl-card>
 
 <pl-card header="Matrix inputs">
   <pl-matrix-input
