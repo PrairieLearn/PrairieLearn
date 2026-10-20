@@ -14,6 +14,9 @@ import sympy
     [
         ({}, True),
         ({"x": {"positive": True}}, True),
+        ({"x": {"positive": False}}, True),
+        ({"x": {"positive": "false"}}, False),
+        ({"x": {"positive": 1}}, False),
         ({"x": []}, False),
         ({"x": {"unknown_assumption": True}}, False),
         ({1: {"positive": True}}, False),
