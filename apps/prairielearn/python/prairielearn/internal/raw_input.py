@@ -1,9 +1,18 @@
 """Utilities for displaying raw text submissions."""
 
-import html
 from collections.abc import Callable
+from pathlib import Path
+
+import chevron
 
 from prairielearn.misc_utils import escape_unicode_string
+
+_TEMPLATE_DIRECTORY = Path(__file__).parent
+
+
+def _render_template(template_name: str, data: dict[str, object]) -> str:
+    with (_TEMPLATE_DIRECTORY / template_name).open() as template:
+        return chevron.render(template, data, partials_path=_TEMPLATE_DIRECTORY).strip()
 
 
 def _escape_non_ascii_string(string: str) -> str:
@@ -13,48 +22,34 @@ def _escape_non_ascii_string(string: str) -> str:
     )
 
 
-def _render_value(value: str, formatter: Callable[[str], str]) -> str:
-    if value == "":
-        return '<span class="text-body-secondary">(empty string)</span>'
-
-    return (
-        '<pre class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere">'
-        f"{html.escape(formatter(value))}</pre>"
-    )
+def _value_context(value: str, formatter: Callable[[str], str]) -> dict[str, object]:
+    return {
+        "empty": value == "",
+        "value": formatter(value),
+    }
 
 
-def _render_popover_content(readable_value: str, ascii_value: str) -> str:
-    return (
-        '<p class="mb-1">Control and formatting characters are shown as '
-        "<code>&lt;U+xxxx&gt;</code>.</p>"
-        f"{readable_value}"
-        '<details class="mt-2">'
-        "<summary>Show all non-ASCII characters</summary>"
-        '<p class="mb-1 mt-2">Characters outside U+0020 through U+007E are escaped.</p>'
-        f"{ascii_value}"
-        "</details>"
+def _render_popover_content(
+    readable: dict[str, object], ascii_only: dict[str, object]
+) -> str:
+    return _render_template(
+        "raw_input_popover_content.mustache",
+        {"readable": readable, "ascii_only": ascii_only},
     )
 
 
 def render_raw_input_popover_content(raw_input: str) -> str:
     """Render safe HTML describing a raw text submission."""
     return _render_popover_content(
-        _render_value(raw_input, escape_unicode_string),
-        _render_value(raw_input, _escape_non_ascii_string),
+        _value_context(raw_input, escape_unicode_string),
+        _value_context(raw_input, _escape_non_ascii_string),
     )
 
 
 def _render_popover_button(content: str, input_label: str) -> str:
-    return (
-        '<button type="button" '
-        'class="ms-1 btn btn-sm btn-secondary small border" '
-        'data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" '
-        'data-bs-custom-class="popover-wide popover-scrollable" '
-        'data-bs-title="Original input" '
-        f'aria-label="Original input for {html.escape(input_label, quote=True)}" '
-        f'data-bs-content="{html.escape(content, quote=True)}">'
-        '<i class="fas fa-question-circle" aria-hidden="true"></i>'
-        "</button>"
+    return _render_template(
+        "raw_input_popover.mustache",
+        {"content": content, "title": f"Original input for {input_label}"},
     )
 
 
