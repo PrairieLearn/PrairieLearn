@@ -21,8 +21,8 @@ export default defineConfig({
         '**/*.sql',
 
         // These modules maintain state that can't be hot-reloaded. This should
-        // generally match the list of modules that need to be explicitly closed
-        // in the `close` function of `src/server.ts`.
+        // generally match the application modules cleaned up during shutdown
+        // in `src/server.ts`.
         //
         // This doesn't include things like `@prairielearn/postgres` and
         // `@prairielearn/named-locks`. Changes to dependencies aren't picked up

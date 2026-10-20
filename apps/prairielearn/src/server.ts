@@ -2725,16 +2725,7 @@ if (shouldStartServer) {
     if (process.env.NODE_ENV !== 'test') {
       logger.info('Shutting down async processing');
     }
-    await stopAsyncProcessing();
-
-    // Then close the database connections now that nothing is using them.
-    const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
-    dbResults.forEach((r) => {
-      if (r.status === 'rejected') {
-        logger.error('Error closing database connections', r.reason);
-        Sentry.captureException(r.reason);
-      }
-    });
+    await close();
 
     try {
       await lifecycleHooks.completeInstanceTermination();
@@ -2778,24 +2769,17 @@ if (shouldStartServer) {
 }
 
 /**
- * Vite (and specifically our `@prairielearn/vite-plugin-express`) will call this
- * function when it wants to perform a full restart of the server. Anything that
- * creates long-lived resources (e.g. connection or worker pools) should be
- * cleaned up here.
+ * Stops background work before closing its dependencies and database pools.
+ * Used by the SIGTERM handler and by `@prairielearn/vite-plugin-express` for
+ * full server restarts.
  */
 export async function close() {
-  await stopAsyncProcessing();
-  await namedLocks.close();
-  await sqldb.closeAsync();
-}
-
-async function stopAsyncProcessing() {
-  // Close transports so clients reconnect elsewhere, but retain Redis broadcasts
-  // for background jobs that are still running on this server.
+  // Disconnect clients before draining workspace startups, but keep Redis
+  // adapters available for progress broadcasts from running jobs.
   socketServer.io?.engine.close();
 
-  // Stop producers before draining server jobs: an in-flight producer may
-  // still create a job, and both need the resources closed below.
+  // Stop polling and scheduled work and finish pending workspace startups while
+  // their shared dependencies are still available.
   await settleShutdownTasks([
     externalGraderDeadLetters.stop(),
     externalGraderResults.stop(),
@@ -2804,10 +2788,10 @@ async function stopAsyncProcessing() {
     stopBatchedMigrations(),
   ]);
 
+  // Server jobs may render questions or publish progress after an await. Wait
+  // for their final status writes and notifications before closing dependencies.
   await settleShutdownTasks([serverJobs.stop()]);
 
-  // Jobs may render questions and publish progress between awaited operations.
-  // Keep their workers, caches, assets, and socket broadcasts alive until done.
   await settleShutdownTasks([
     serverJobProgressSocket.close(),
     socketServer.close(),
@@ -2817,13 +2801,19 @@ async function stopAsyncProcessing() {
   ]);
   load.close();
   nodeMetrics.stop();
+
+  // Close the database pools only after background work and its resources have
+  // finished shutting down.
+  await settleShutdownTasks([namedLocks.close(), sqldb.closeAsync()]);
 }
 
 async function settleShutdownTasks(tasks: Promise<unknown>[]) {
+  // A failed cleanup must not prevent the other tasks in this phase or later
+  // phases from shutting down.
   const results = await Promise.allSettled(tasks);
   for (const result of results) {
     if (result.status === 'rejected') {
-      logger.error('Error shutting down async processing', result.reason);
+      logger.error('Error shutting down PrairieLearn', result.reason);
       Sentry.captureException(result.reason);
     }
   }

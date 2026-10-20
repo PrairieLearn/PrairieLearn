@@ -85,24 +85,17 @@ export async function init(server: http.Server) {
 
 export async function close() {
   assert(io, 'io is required');
-  // Note that we don't use `io.close()` here, as that actually tries to close
-  // the underlying HTTP server. In our desired shutdown sequence, we first
-  // close the HTTP server and then later disconnect all sockets. There's some
-  // discussion about this behavior here:
-  // https://github.com/socketio/socket.io/discussions/4002#discussioncomment-4080748
-  //
-  // The following sequence is based on what `io.close()` would do internally.
-  //
-  // Closing transports lets clients reconnect. A namespace disconnect instead
-  // disables automatic reconnection on the client.
+  // Leave the HTTP server's lifecycle to its owner; `io.close()` would close it
+  // too. Closing transports lets clients reconnect, whereas a namespace
+  // disconnect disables automatic reconnection on the client.
   io.engine.close();
 
   // Collect all namespace adapters. We do this before replacing the adapter
   // because we can't get references to the original adapters after that.
   const adapters = Array.from(io._nsps.values(), (nsp) => nsp.adapter);
 
-  // Replace the adapter with an in-memory adapter to prevent further broadcasts
-  // in case anything is still producing events.
+  // Switch to in-memory adapters so late emits cannot use the Redis clients
+  // while they are being closed.
   io.adapter(Adapter);
 
   // Close the adapters. This will remove the pub/sub subscriptions to ensure we
