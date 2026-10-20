@@ -88,6 +88,38 @@ FROM
 WHERE
   course_id = $course_id;
 
+-- BLOCK lock_course_for_staff_deletion
+SELECT
+  id
+FROM
+  courses
+WHERE
+  id = $course_id
+FOR NO KEY UPDATE;
+
+-- BLOCK deletion_removes_last_owner
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_permissions
+    WHERE
+      course_id = $course_id
+      AND course_role = 'Owner'
+      AND user_id = ANY ($user_ids::bigint[])
+  )
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      course_permissions
+    WHERE
+      course_id = $course_id
+      AND course_role = 'Owner'
+      AND NOT (user_id = ANY ($user_ids::bigint[]))
+  );
+
 -- BLOCK delete_course_permissions
 WITH
   deleted_course_permissions AS (

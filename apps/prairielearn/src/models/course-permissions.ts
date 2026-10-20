@@ -7,6 +7,7 @@ import {
   queryOptionalRow,
   queryOptionalScalar,
   queryRows,
+  queryScalar,
   queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -148,6 +149,19 @@ export async function deleteCoursePermissions({
   authn_user_id: string;
 }): Promise<void> {
   await runInTransactionAsync(async () => {
+    const userIds = Array.isArray(user_id) ? user_id : [user_id];
+    // Serialize removals before checking owners so concurrent deletions cannot
+    // both rely on an owner that the other transaction is about to remove.
+    await execute(sql.lock_course_for_staff_deletion, { course_id });
+    const removesLastOwner = await queryScalar(
+      sql.deletion_removes_last_owner,
+      { course_id, user_ids: userIds },
+      z.boolean(),
+    );
+    if (removesLastOwner) {
+      throw new error.HttpStatusError(400, 'Cannot remove the last course owner');
+    }
+
     const courseInstanceIds = await queryScalars(
       sql.select_course_instance_ids_for_course,
       { course_id },
@@ -162,7 +176,7 @@ export async function deleteCoursePermissions({
     await runWithSharedEnrollmentBarrier(courseInstanceIds, async () => {
       await execute(sql.delete_course_permissions, {
         course_id,
-        user_ids: Array.isArray(user_id) ? user_id : [user_id],
+        user_ids: userIds,
         authn_user_id,
       });
     });
