@@ -12,6 +12,8 @@ import sympy
 WEIGHT_DEFAULT = 1
 VARIABLES_DEFAULT = None
 CUSTOM_FUNCTIONS_DEFAULT = None
+BOOLEAN_VARIABLES_DEFAULT = None
+BOOLEAN_FUNCTIONS_DEFAULT = None
 LABEL_DEFAULT = None
 ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
@@ -51,8 +53,28 @@ def _get_variables_with_fallback(
     if not pl.has_attrib(element, "variables"):
         a_tru = data["correct_answers"].get(name, {})
         if isinstance(a_tru, dict) and "_variables" in a_tru:
-            variables = a_tru["_variables"]
+            boolean_variables = a_tru.get("_boolean_variables", [])
+            variables = [
+                variable
+                for variable in a_tru["_variables"]
+                if variable not in boolean_variables
+            ]
     return variables
+
+
+def _get_boolean_variables_with_fallback(
+    element: lxml.html.HtmlElement,
+    data: pl.QuestionData,
+    name: str,
+) -> list[str]:
+    boolean_variables = psu.get_items_list(
+        pl.get_string_attrib(element, "boolean-variables", BOOLEAN_VARIABLES_DEFAULT)
+    )
+    if not pl.has_attrib(element, "boolean-variables"):
+        a_tru = data["correct_answers"].get(name, {})
+        if isinstance(a_tru, dict):
+            boolean_variables = a_tru.get("_boolean_variables", [])
+    return boolean_variables
 
 
 # Additional simplifications supported by SymPy
@@ -78,7 +100,7 @@ def _get_allowed_types(element: lxml.html.HtmlElement) -> set[psu.AllowedSympyTy
         )
 
     if pl.get_boolean_attrib(element, "allow-sets", False):
-        return {"all"}
+        return {"expression", "set"}
 
     return {ALLOWED_TYPES_DEFAULT}
 
@@ -95,6 +117,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
+    boolean_variables = psu.get_items_list(
+        pl.get_string_attrib(element, "boolean-variables", BOOLEAN_VARIABLES_DEFAULT)
+    )
+    boolean_functions = psu.get_items_list(
+        pl.get_string_attrib(element, "boolean-functions", BOOLEAN_FUNCTIONS_DEFAULT)
+    )
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
@@ -103,6 +131,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = psi.allowed_sympy_types_include_sets(allowed_types)
+    allow_booleans = psi.allowed_sympy_types_include_booleans(allowed_types)
+    if not allow_booleans and (boolean_variables or boolean_functions):
+        raise ValueError(
+            "The 'boolean-variables' and 'boolean-functions' attributes require "
+            "'allowed-types' to permit Boolean expressions."
+        )
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -112,9 +146,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         name,
         variables,
         custom_functions,
+        boolean_variables=boolean_variables,
+        boolean_functions=boolean_functions,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
         allow_sets=allow_sets,
+        allow_booleans=allow_booleans,
     )
 
     pl.check_answers_names(data, name)
@@ -137,6 +174,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         data["correct_answers"][name] = a_true
 
     variables = _get_variables_with_fallback(element, data, name)
+    boolean_variables = _get_boolean_variables_with_fallback(element, data, name)
 
     a_true = data["correct_answers"].get(name)
     if a_true is not None and a_true != "":
@@ -145,10 +183,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 parsed_answer = psu.convert_string_to_sympy(
                     a_true,
                     variables,
+                    boolean_variables=boolean_variables,
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
+                    allow_booleans=allow_booleans,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
+                    boolean_functions=boolean_functions,
                     simplify_expression=simplify_expression,
                 )
             else:
@@ -156,6 +197,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     a_true,
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
+                    allow_booleans=allow_booleans,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
                 )
@@ -164,7 +206,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f"Parsing correct answer {a_true!r} for {name!r} failed."
             ) from exc
 
-        type_failure = psu.check_sympy_types(parsed_answer, allowed_types)
+        type_failure = psu.check_sympy_types(
+            parsed_answer,
+            allowed_types,
+            boolean_variables=boolean_variables,
+        )
         if type_failure is not None:
             raise ValueError(
                 f"Parsing correct answer {a_true!r} for {name!r} failed: "
@@ -174,6 +220,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
+    if formula_editor and allow_booleans:
+        raise ValueError(
+            "The 'formula-editor' attribute cannot be used when 'allowed-types' "
+            "permits Boolean expressions."
+        )
     initial_value = pl.get_string_attrib(
         element, "initial-value", INITIAL_VALUE_DEFAULT
     )
@@ -184,10 +235,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             psu.convert_string_to_sympy(
                 initial_value,
                 variables,
+                boolean_variables=boolean_variables,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_booleans=allow_booleans,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                boolean_functions=boolean_functions,
                 simplify_expression=simplify_expression,
             )
         except psu.BaseSympyError as exc:
@@ -206,10 +260,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             element, "additional-simplifications", ADDITIONAL_SIMPLIFICATIONS_DEFAULT
         )
     )
-    if allow_sets and additional_simplifications:
+    if (allow_sets or allow_booleans) and additional_simplifications:
         raise ValueError(
             "The 'additional-simplifications' attribute cannot be used when "
-            "'allowed-types' permits sets or intervals."
+            "'allowed-types' permits sets, intervals, or Boolean expressions."
         )
     # Note: it is an intentional decision to allow repeats in the list, as this might be (rarely) an
     # intended way to work around SymPy limitations
@@ -270,6 +324,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         initial_value=pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         ),
+        boolean_variables=psu.get_items_list(
+            pl.get_string_attrib(
+                element, "boolean-variables", BOOLEAN_VARIABLES_DEFAULT
+            )
+        ),
+        initial_value_boolean_variables=_get_boolean_variables_with_fallback(
+            element, data, name
+        ),
+        boolean_functions=psu.get_items_list(
+            pl.get_string_attrib(
+                element, "boolean-functions", BOOLEAN_FUNCTIONS_DEFAULT
+            )
+        ),
     )
     return psi.render_with_config(
         config,
@@ -286,9 +353,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
     variables = _get_variables_with_fallback(element, data, name)
+    boolean_variables = _get_boolean_variables_with_fallback(element, data, name)
 
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
+    )
+    boolean_functions = psu.get_items_list(
+        pl.get_string_attrib(element, "boolean-functions", BOOLEAN_FUNCTIONS_DEFAULT)
     )
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
@@ -325,6 +396,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
+        boolean_variables=boolean_variables,
+        boolean_functions=boolean_functions,
         simplify_expression=simplify_expression,
         assumptions=assumptions_dict,
         allowed_types=allowed_types,
@@ -374,9 +447,9 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
                 compare(left_arg, right_arg)
                 for left_arg, right_arg in zip(left.args, right.args, strict=True)
             )
-        elif isinstance(left, (sympy.Expr, sympy.logic.boolalg.Boolean)) and isinstance(
-            right, (sympy.Expr, sympy.logic.boolalg.Boolean)
-        ):
+        elif psu.is_sympy_boolean(left) and psu.is_sympy_boolean(right):
+            result = sympy.simplify_logic(sympy.Xor(left, right)) is sympy.false
+        elif isinstance(left, sympy.Expr) and isinstance(right, sympy.Expr):
             result = left.equals(right) is True
         else:
             result = False
@@ -397,11 +470,18 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
+    boolean_variables = psu.get_items_list(
+        pl.get_string_attrib(element, "boolean-variables", BOOLEAN_VARIABLES_DEFAULT)
+    )
+    boolean_functions = psu.get_items_list(
+        pl.get_string_attrib(element, "boolean-functions", BOOLEAN_FUNCTIONS_DEFAULT)
+    )
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = psi.allowed_sympy_types_include_sets(allowed_types)
+    allow_booleans = psi.allowed_sympy_types_include_booleans(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -437,10 +517,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_tru_sympy = psu.convert_string_to_sympy(
                 a_tru,
                 variables,
+                boolean_variables=boolean_variables,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_booleans=allow_booleans,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                boolean_functions=boolean_functions,
                 simplify_expression=simplify_expression,
             )
         else:
@@ -448,6 +531,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_tru,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_booleans=allow_booleans,
                 simplify_expression=simplify_expression,
             )
 
@@ -457,10 +541,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_sub_sympy = psu.convert_string_to_sympy(
                 a_sub,
                 variables,
+                boolean_variables=boolean_variables,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_booleans=allow_booleans,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                boolean_functions=boolean_functions,
                 assumptions=a_tru_sympy.assumptions0,
                 simplify_expression=simplify_expression,
             )
@@ -469,6 +556,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_booleans=allow_booleans,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
             )
@@ -518,6 +606,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
+    boolean_variables = psu.get_items_list(
+        pl.get_string_attrib(element, "boolean-variables", BOOLEAN_VARIABLES_DEFAULT)
+    )
+    boolean_functions = psu.get_items_list(
+        pl.get_string_attrib(element, "boolean-functions", BOOLEAN_FUNCTIONS_DEFAULT)
+    )
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
@@ -527,6 +621,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = psi.allowed_sympy_types_include_sets(allowed_types)
+    allow_booleans = psi.allowed_sympy_types_include_booleans(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -551,10 +646,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 a_tru = psu.convert_string_to_sympy(
                     a_tru,
                     variables,
+                    boolean_variables=boolean_variables,
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
+                    allow_booleans=allow_booleans,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
+                    boolean_functions=boolean_functions,
                     simplify_expression=simplify_expression,
                 )
         else:
@@ -562,12 +660,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 a_tru,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_booleans=allow_booleans,
                 allow_trig_functions=allow_trig,
             )
 
         if a_tru != "":
             # Substitute in imaginary unit symbol
             a_tru_str = str(psi.replace_imaginary_for_display(a_tru, imaginary_unit))
+
+    a_tru_sympy = a_tru if isinstance(a_tru, sympy.Basic) else None
+    a_tru_is_boolean = a_tru_sympy is not None and psu.is_sympy_boolean(a_tru_sympy)
 
     match result:
         case "correct":
@@ -576,7 +678,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             else:
                 correct_answers = [a_tru_str]
                 # Arithmetic-style variants below don't apply to sets/intervals.
-                if not allow_sets:
+                if not allow_sets and not a_tru_is_boolean:
                     correct_answers.append(f"{a_tru_str} + 0")
                     if allow_complex:
                         correct_answers.append(f"2j + {a_tru_str} - 3j + j")
@@ -589,12 +691,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         case "incorrect":
             offset = random.randint(1, 100)
             for _ in range(2):
-                if not allow_sets and a_tru_str != "":
+                if not allow_sets and not a_tru_is_boolean and a_tru_str != "":
+                    assert a_tru_sympy is not None
                     candidate = f"{a_tru_str} + {offset:d}"
-                    candidate_sympy = a_tru + sympy.Integer(offset)
-                    if candidate_sympy == a_tru:
+                    candidate_sympy = a_tru_sympy + sympy.Integer(offset)
+                    if candidate_sympy == a_tru_sympy:
                         candidate = f"{offset:d}"
                         candidate_sympy = sympy.Integer(offset)
+                elif a_tru_is_boolean:
+                    assert a_tru_sympy is not None
+                    candidate = f"~({a_tru_str})"
+                    candidate_sympy = sympy.Not(a_tru_sympy)
+                elif "boolean" in allowed_types:
+                    candidate = "True"
+                    candidate_sympy = sympy.true
                 elif "all" in allowed_types or "expression" in allowed_types:
                     candidate = f"{offset:d}"
                     candidate_sympy = sympy.Integer(offset)

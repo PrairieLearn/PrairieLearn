@@ -74,6 +74,66 @@ def test_set_notation_is_rejected_by_default() -> None:
 
 
 @pytest.mark.parametrize(
+    ("attributes", "correct_answer", "submitted_answer"),
+    [
+        (
+            ('variables="c,d"', 'boolean-variables="a,b"'),
+            "a & b | (c == d)",
+            "Or(And(b, a), Eq(d, c))",
+        ),
+        (
+            ('variables="i,j,a,b"', 'boolean-functions="Valid"'),
+            "Valid(i + 5) & Valid(j + 2) & (a == b)",
+            "Eq(b, a) & Valid(j + 2) & Valid(i + 5)",
+        ),
+    ],
+)
+def test_boolean_expressions_parse_and_grade_by_equivalence(
+    attributes: tuple[str, ...],
+    correct_answer: str,
+    submitted_answer: str,
+) -> None:
+    element_html = build_element_html(
+        'allowed-types="boolean"',
+        *attributes,
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submitted_answer})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert data["partial_scores"]["test"]["score"] == 1
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert "_boolean_variables" in data["submitted_answers"]["test"]
+    assert "_boolean_functions" in data["submitted_answers"]["test"]
+
+
+def test_formula_editor_cannot_be_used_with_boolean_expressions() -> None:
+    element_html = build_element_html(
+        'allowed-types="boolean"',
+        'boolean-variables="a,b"',
+        'formula-editor="true"',
+        'correct-answer="a & b"',
+    )
+
+    with pytest.raises(ValueError, match=r"'formula-editor'.*Boolean"):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+def test_boolean_names_require_boolean_answer_type() -> None:
+    element_html = build_element_html(
+        'boolean-variables="a,b"',
+        'correct-answer="a & b"',
+    )
+
+    with pytest.raises(ValueError, match=r"'boolean-variables'.*'allowed-types'"):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+@pytest.mark.parametrize(
     ("allowed_types", "submission"),
     [
         ("finite-set, expression", "{1, 2}"),

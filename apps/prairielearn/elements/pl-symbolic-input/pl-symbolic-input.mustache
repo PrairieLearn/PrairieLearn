@@ -295,6 +295,10 @@
       <code>{ 0, pi/2, 3pi/2, 2pi }</code>. Sets and intervals have unions (<code>U</code>) and
       intersections (<code>&amp;</code>), e.g. <code>({1, 3} U (2, 4]) &amp; {0, 2, 4}</code>.
     {{/allow_sets}}
+    {{#allow_booleans}}
+      Boolean expressions may use <code>&amp;</code>, <code>|</code>, <code>~</code>, and
+      <code>==</code>, or <code>And</code>, <code>Or</code>, <code>Not</code>, and <code>Eq</code>.
+    {{/allow_booleans}}
   </p>
   {{! From https://stackoverflow.com/a/14417521/2923069 }}
   {{#variables.0}}

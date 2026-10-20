@@ -20,7 +20,9 @@ import sympy
 from prairielearn.html_utils import escape_invalid_string
 from prairielearn.misc_utils import full_unidecode
 from prairielearn.sympy_utils import (
+    SympyValue,
     convert_string_to_sympy,
+    is_sympy_boolean,
     is_sympy_json,
     json_to_sympy,
     sympy_to_json,
@@ -78,6 +80,8 @@ _JSONPythonType = (
     | np.number[Any]
     | npt.NDArray[Any]
     | sympy.Expr
+    | sympy.Set
+    | sympy.logic.boolalg.Boolean
     | sympy.Matrix
     | sympy.ImmutableMatrix
     | pd.DataFrame
@@ -193,6 +197,8 @@ def to_json(
                 "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
+    elif isinstance(v, sympy.Basic) and is_sympy_boolean(v):
+        return sympy_to_json(cast(SympyValue, v), allow_booleans=True)
     elif isinstance(v, sympy.Set):
         return sympy_to_json(v, allow_sets=True)
     elif isinstance(v, sympy.Expr):

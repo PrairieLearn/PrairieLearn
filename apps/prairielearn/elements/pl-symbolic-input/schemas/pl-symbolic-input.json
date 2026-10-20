@@ -27,7 +27,7 @@
     "allowed-types": {
       "default": "expression",
       "type": "string",
-      "pattern": "^\\s*(all|set|finite-set|interval|expression)(\\s*,\\s*(all|set|finite-set|interval|expression))*\\s*$"
+      "pattern": "^\\s*(all|boolean|set|finite-set|interval|expression)(\\s*,\\s*(all|boolean|set|finite-set|interval|expression))*\\s*$"
     },
     "answers-name": {
       "type": "string"
@@ -36,6 +36,12 @@
       "type": "string"
     },
     "blank-value": {
+      "type": "string"
+    },
+    "boolean-functions": {
+      "type": "string"
+    },
+    "boolean-variables": {
       "type": "string"
     },
     "correct-answer": {
