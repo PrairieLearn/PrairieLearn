@@ -34,23 +34,30 @@ onDocumentReady(() => {
     changeState('connection-failed');
     socket.disconnect();
   }, SOCKET_TIMEOUT_MS);
+  let initialized = false;
 
-  socket.emit(
-    'joinExternalImageCapture',
-    {
-      variant_id: externalImageCaptureForm.dataset.variantId,
-      variant_token: externalImageCaptureForm.dataset.variantToken,
-      file_name: externalImageCaptureForm.dataset.fileName,
-    },
-    (msg: StatusMessage | null) => {
-      if (!msg) {
-        changeState('connection-failed');
-        throw new Error('Failed to join external image capture room');
-      }
-      clearTimeout(timeout);
-      changeState('form');
-    },
-  );
+  socket.on('connect', () => {
+    socket.emit(
+      'joinExternalImageCapture',
+      {
+        variant_id: externalImageCaptureForm.dataset.variantId,
+        variant_token: externalImageCaptureForm.dataset.variantToken,
+        file_name: externalImageCaptureForm.dataset.fileName,
+      },
+      (msg: StatusMessage | null) => {
+        if (!msg) {
+          changeState('connection-failed');
+          throw new Error('Failed to join external image capture room');
+        }
+        clearTimeout(timeout);
+        // Rejoining must preserve any pending upload or successful capture.
+        if (!initialized) {
+          initialized = true;
+          changeState('form');
+        }
+      },
+    );
+  });
 
   function changeState(
     state: 'loading' | 'form' | 'uploading' | 'success' | 'connection-failed' | 'upload-failed',

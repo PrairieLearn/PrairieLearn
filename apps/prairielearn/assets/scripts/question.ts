@@ -150,12 +150,14 @@ function initializeExternalGrading({ container }: { container: HTMLElement }) {
   if (!gradingPending) return;
 
   const socket = io('/external-grading');
-  socket.emit(
-    'init',
-    { variant_id: variantId, variant_token: variantToken },
-    (msg: StatusMessage) =>
-      handleStatusChange({ container, socket, msg, signal: abortController.signal }),
-  );
+  socket.on('connect', () => {
+    socket.emit(
+      'init',
+      { variant_id: variantId, variant_token: variantToken },
+      (msg: StatusMessage) =>
+        handleStatusChange({ container, socket, msg, signal: abortController.signal }),
+    );
+  });
   socket.on('change:status', (msg: StatusMessage) =>
     handleStatusChange({ container, socket, msg, signal: abortController.signal }),
   );
