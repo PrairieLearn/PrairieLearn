@@ -412,8 +412,8 @@ test('exports the broad answer key with correct answers before distractors', asy
   const orderAnswerGroups = page.locator('.pagedjs_page .printing-order-answer-group');
   await expect(orderAnswerGroups).toHaveCount(5);
   for (const group of await orderAnswerGroups.all()) {
-    const correct = group.locator('.pl-order-blocks-answer-container:has(> .bg-success-subtle)');
-    const incorrect = group.locator('.pl-order-blocks-answer-container:has(> .bg-danger-subtle)');
+    const correct = group.locator('.pl-order-blocks-correct-answer');
+    const incorrect = group.locator('.pl-order-blocks-distractors');
     await expect(correct).toHaveCount(1);
     await expect(incorrect).toHaveCount(1);
     const correctBounds = await correct.boundingBox();
