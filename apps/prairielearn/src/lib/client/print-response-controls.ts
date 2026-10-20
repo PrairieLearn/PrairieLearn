@@ -412,9 +412,7 @@ function normalizeVariableOutputs(source: HTMLElement): void {
 export function normalizeAnswerPresentation(source: HTMLElement): void {
   normalizeVariableOutputs(source);
   for (const control of source.querySelectorAll('button, .modal, .popover')) control.remove();
-  for (const answer of source.querySelectorAll(
-    '.pl-order-blocks-answer-container:has(> .bg-success-subtle)',
-  )) {
+  for (const answer of source.querySelectorAll('.pl-order-blocks-correct-answer')) {
     if (answer.closest('.printing-order-answer-group')) continue;
     let distractors = answer.nextElementSibling;
     const breaks: Element[] = [];
@@ -422,7 +420,7 @@ export function normalizeAnswerPresentation(source: HTMLElement): void {
       breaks.push(distractors);
       distractors = distractors.nextElementSibling;
     }
-    if (!distractors?.matches('.pl-order-blocks-answer-container:has(> .bg-danger-subtle)')) {
+    if (!distractors?.matches('.pl-order-blocks-distractors')) {
       continue;
     }
     // Keep distractors with their own solution so a page break cannot associate them with

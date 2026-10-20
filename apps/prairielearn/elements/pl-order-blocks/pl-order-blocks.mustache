@@ -230,7 +230,7 @@ $(function() {
 {{/submission}}
 
 {{#true_answer}}
-    <div class="pl-order-blocks-answer-container {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
+    <div class="pl-order-blocks-answer-container pl-order-blocks-correct-answer {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
         <div class="card-header bg-success-subtle">Correct answer ({{ordering_message}}{{indentation_message}}):</div>
         <ul class="card-body list-group">
         {{#question_solution}}
@@ -241,7 +241,7 @@ $(function() {
 
     {{#show_distractors}}
     <br><br>
-    <div class="pl-order-blocks-answer-container  {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
+    <div class="pl-order-blocks-answer-container pl-order-blocks-distractors {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
         <div class="card-header bg-danger-subtle">Incorrect Blocks (these blocks should not be included in your solution):</div>
         <ul class="card-body list-group list-unstyled">
         {{#distractors}}
