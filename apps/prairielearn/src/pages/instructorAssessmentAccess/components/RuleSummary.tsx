@@ -1225,10 +1225,13 @@ export function PrairieTestExamsTable({
                         <Button
                           type="button"
                           variant="ghost"
-                          className="btn-xs p-0 border-0 lh-1 align-middle me-1 text-warning-emphasis"
+                          className="btn-xs p-0 border-0 lh-1 align-middle me-1"
                           aria-label={`Archive warning for ${examName}`}
                         >
-                          <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
+                          <i
+                            className="bi bi-exclamation-triangle-fill text-warning"
+                            aria-hidden="true"
+                          />
                         </Button>
                       </OverlayTrigger>
                     )}
