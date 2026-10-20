@@ -44,9 +44,7 @@ def make_question_data(
         "preferences": {},
         "correct_answers": {},
         "submitted_answers": {"answer": None},
-        "format_errors": (
-            format_errors if format_errors is not None else {"answer": "Invalid input."}
-        ),
+        "format_errors": (format_errors if format_errors is not None else {}),
         "partial_scores": {},
         "score": 0.0,
         "feedback": {},
@@ -72,9 +70,7 @@ def test_matrix_input_question_restores_literal_raw_input(
     element_html = '<pl-matrix-input answers-name="answer"></pl-matrix-input>'
     raw_input = "[1,\u200b2]"
     data = make_question_data(
-        panel="question",
-        raw_submitted_answers={"answer": raw_input},
-        format_errors={},
+        panel="question", raw_submitted_answers={"answer": raw_input}
     )
 
     rendered = controller.render(element_html, data)
