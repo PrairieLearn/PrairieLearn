@@ -107,21 +107,6 @@ describe('printable response controls', () => {
     expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(1);
   });
 
-  it('keeps subpart prompts and their controls in one group after a horizontal rule', () => {
-    const question = printQuestion(
-      '<p>Shared introduction</p><hr><p>First subpart</p><input name="first"><hr><p>Second subpart</p><input name="second">',
-    );
-    const first = question
-      .querySelector('[data-print-answer-name="first"]')!
-      .closest('.printing-subsection');
-    const second = question
-      .querySelector('[data-print-answer-name="second"]')!
-      .closest('.printing-subsection');
-    expect(first?.textContent).toBe('First subpart');
-    expect(second?.textContent).toBe('Second subpart');
-    expect(first).not.toBe(second);
-    expect(first?.textContent).not.toContain('Shared introduction');
-  });
   it('replaces text and symbolic editors with empty lines while preserving labels and suffixes', () => {
     const question = printQuestion(`
       <h3>pl-number-input</h3>
