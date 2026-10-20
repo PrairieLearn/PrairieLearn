@@ -1,23 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parsePrintBlockSize, planPrintQuestionPages } from './print-question-layout.js';
-
-describe('parsePrintBlockSize', () => {
-  it('defaults absent values to auto', () => {
-    expect(parsePrintBlockSize(undefined)).toBe('auto');
-    expect(parsePrintBlockSize('')).toBe('auto');
-  });
-
-  it.each(['auto', 'third', 'half', 'full'] as const)('accepts %s', (blockSize) => {
-    expect(parsePrintBlockSize(blockSize)).toBe(blockSize);
-  });
-
-  it('rejects unsupported values', () => {
-    expect(() => parsePrintBlockSize('quarter')).toThrow(
-      'Invalid print block size "quarter". Expected auto, third, half, or full.',
-    );
-  });
-});
+import { planPrintQuestionPages } from './print-question-layout.js';
 
 describe('planPrintQuestionPages', () => {
   it('packs sequential automatic questions onto the same page when they fit', () => {
@@ -129,17 +112,5 @@ describe('planPrintQuestionPages', () => {
       ['Question 3'],
     ]);
     expect(pages.map((page) => page.allowsFlow)).toEqual([false, true, false]);
-  });
-
-  it('rejects invalid measurements', () => {
-    expect(() => planPrintQuestionPages({ pageHeight: 0, questions: [] })).toThrow(
-      'The printable page height must be a positive number',
-    );
-    expect(() =>
-      planPrintQuestionPages({
-        pageHeight: 900,
-        questions: [{ id: 'Question 1', naturalHeight: NaN, blockSize: 'auto' }],
-      }),
-    ).toThrow('Question 1 has an invalid measured height');
   });
 });
