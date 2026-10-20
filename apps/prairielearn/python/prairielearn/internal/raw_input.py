@@ -1,6 +1,6 @@
 """Utilities for displaying raw text submissions."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import chevron
@@ -30,11 +30,23 @@ def _value_context(value: str, formatter: Callable[[str], str]) -> dict[str, obj
 
 
 def _render_popover_content(
-    readable: dict[str, object], ascii_only: dict[str, object]
+    readable: dict[str, object],
+    ascii_only: dict[str, object],
+    raw_values: Sequence[str],
 ) -> str:
     return _render_template(
         "raw_input_popover_content.mustache",
-        {"readable": readable, "ascii_only": ascii_only},
+        {
+            "readable": readable,
+            "ascii_only": ascii_only,
+            "show_control_and_formatting_message": any(
+                escape_unicode_string(value) != value for value in raw_values
+            ),
+            "show_non_ascii_details": any(
+                _escape_non_ascii_string(value) != escape_unicode_string(value)
+                for value in raw_values
+            ),
+        },
     )
 
 
@@ -43,6 +55,7 @@ def render_raw_input_popover_content(raw_input: str) -> str:
     return _render_popover_content(
         _value_context(raw_input, escape_unicode_string),
         _value_context(raw_input, _escape_non_ascii_string),
+        (raw_input,),
     )
 
 

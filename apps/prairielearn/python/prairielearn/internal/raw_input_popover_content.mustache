@@ -1,9 +1,12 @@
-<p class="mb-1">
-    Control and formatting characters are shown as <code>&lt;U+xxxx&gt;</code>.
-</p>
 {{#readable}}
 {{> raw_input_value}}
 {{/readable}}
+{{#show_control_and_formatting_message}}
+<p class="mb-1 mt-2">
+    <em>Control and formatting characters are shown as <code>&lt;U+xxxx&gt;</code>.</em>
+</p>
+{{/show_control_and_formatting_message}}
+{{#show_non_ascii_details}}
 <details class="mt-2">
     <summary>Show all non-ASCII characters</summary>
     <p class="mb-1 mt-2">Characters outside U+0020 through U+007E are escaped.</p>
@@ -11,3 +14,4 @@
     {{> raw_input_value}}
     {{/ascii_only}}
 </details>
+{{/show_non_ascii_details}}
