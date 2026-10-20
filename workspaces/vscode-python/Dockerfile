@@ -34,8 +34,11 @@ WORKDIR "/home/coder"
 RUN uv venv --python-preference managed --python 3.13 /home/coder/.venv
 
 COPY requirements.txt /home/coder/requirements.txt
-ENV UV_NO_BINARY=pygraphviz
-RUN uv pip install -r /home/coder/requirements.txt
+# Use system Graphviz to avoid bundled font and rendering regressions.
+# PyGraphviz omits Ubuntu's ARM plugin path; set it for linking and runtime.
+RUN graphviz_libdir="/usr/lib/$(gcc -print-multiarch)/graphviz" \
+    && LDFLAGS="-L${graphviz_libdir} -Wl,-rpath,${graphviz_libdir}" \
+    uv pip install --no-binary pygraphviz -r /home/coder/requirements.txt
 
 # After installing Python we install some VS Code extensions.
 USER coder
