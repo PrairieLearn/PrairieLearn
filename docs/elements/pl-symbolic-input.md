@@ -105,14 +105,14 @@ even when `allow-sets="true"`; sets must be constructed with set notation.
 
 The `allowed-types` attribute restricts submitted and correct answers based on their type after SymPy simplification:
 
-| Type         | Accepted values                                                              | Examples                                       |
-| ------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
-| `expression` | Scalar symbolic expressions.                                                 | `x + 1`, `sin(x)`, `2/3`                       |
-| `boolean`    | Boolean expressions.                                                         | `a & b`, `x == y`, `Valid(x)                   | ~a` |
-| `set`        | Any set, including finite sets, intervals, and set operations.               | `{1, 2}`, `[1, 2]`, `[1, 2] - {2}`             |
-| `finite-set` | Finite sets and set operations that simplify to a finite set.                | `{1, 2}`, `{1, 2} U {3, 4}`, `{0, 2} & [2, 4]` |
-| `interval`   | Intervals and unions or intersections whose nested values are all intervals. | `[1, 2]`, `[1, 2] U [3, 4]`, `[0, 2] & [1, 4]` |
-| `all`        | Every supported value type.                                                  | `x + 1`, `a & b`, `{1, 2}`, `[1, 2]`           |
+| Type         | Accepted values                                                              | Examples                                           |
+| ------------ | ---------------------------------------------------------------------------- | -------------------------------------------------- |
+| `expression` | Scalar symbolic expressions.                                                 | `x + 1`, `sin(x)`, `2/3`                           |
+| `boolean`    | Boolean expressions.                                                         | `a & b`, `x == y`, <code>Valid(x) &vert; ~a</code> |
+| `set`        | Any set, including finite sets, intervals, and set operations.               | `{1, 2}`, `[1, 2]`, `[1, 2] - {2}`                 |
+| `finite-set` | Finite sets and set operations that simplify to a finite set.                | `{1, 2}`, `{1, 2} U {3, 4}`, `{0, 2} & [2, 4]`     |
+| `interval`   | Intervals and unions or intersections whose nested values are all intervals. | `[1, 2]`, `[1, 2] U [3, 4]`, `[0, 2] & [1, 4]`     |
+| `all`        | Every supported value type.                                                  | `x + 1`, `a & b`, `{1, 2}`, `[1, 2]`               |
 
 The empty set (`{}`) is accepted by `set`, `finite-set`, and `interval`. Multiple types can be combined as a comma-separated list. For example, `allowed-types="finite-set, interval"` accepts finite sets, intervals, and set operations such as unions, intersections, and differences containing both.
 
