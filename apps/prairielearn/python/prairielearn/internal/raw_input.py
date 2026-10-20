@@ -44,19 +44,22 @@ def render_raw_input_popover_content(raw_input: str) -> str:
     )
 
 
-def _render_popover_button(content: str) -> str:
+def _render_popover_button(content: str, input_label: str) -> str:
     return (
         '<button type="button" '
         'class="ms-1 btn btn-sm btn-secondary small border" '
         'data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" '
         'data-bs-custom-class="popover-wide popover-scrollable" '
-        'data-bs-title="Original input" aria-label="Original input" '
+        'data-bs-title="Original input" '
+        f'aria-label="Original input for {html.escape(input_label, quote=True)}" '
         f'data-bs-content="{html.escape(content, quote=True)}">'
         '<i class="fas fa-question-circle" aria-hidden="true"></i>'
         "</button>"
     )
 
 
-def render_raw_input_popover(raw_input: str) -> str:
+def render_raw_input_popover(raw_input: str, input_label: str) -> str:
     """Render a popover button describing a raw text submission."""
-    return _render_popover_button(render_raw_input_popover_content(raw_input))
+    return _render_popover_button(
+        render_raw_input_popover_content(raw_input), input_label
+    )

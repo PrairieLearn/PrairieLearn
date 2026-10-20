@@ -40,9 +40,9 @@ def test_render_raw_input_popover_handles_empty_strings() -> None:
 
 
 def test_render_raw_input_popover_escapes_content_for_html_attribute() -> None:
-    popover = render_raw_input_popover('<img src=x onerror="alert(1)">')
+    popover = render_raw_input_popover('<img src=x onerror="alert(1)">', 'answer "one"')
     content = render_raw_input_popover_content('<img src=x onerror="alert(1)">')
 
     assert html.escape(content, quote=True) in popover
     assert '<img src=x onerror="alert(1)">' not in popover
-    assert 'aria-label="Original input"' in popover
+    assert 'aria-label="Original input for answer &quot;one&quot;"' in popover

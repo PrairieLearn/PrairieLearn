@@ -28,7 +28,7 @@ test('shows safe raw input diagnostics for scalar inputs', async ({
     fs.writeFile(
       path.join(questionDir, 'question.html'),
       `
-        <pl-string-input answers-name="text" correct-answer="expected" label="Text:"></pl-string-input>
+        <pl-string-input answers-name="text" correct-answer="expected" label="Text:" aria-label="Text answer"></pl-string-input>
       `,
     ),
   ]);
@@ -45,7 +45,7 @@ test('shows safe raw input diagnostics for scalar inputs', async ({
   await page.locator('input[name="text"]').fill('café\u200b<img src=x>');
   await page.getByRole('button', { name: /Save & Grade/ }).click();
 
-  const button = page.getByRole('button', { name: 'Original input' });
+  const button = page.getByRole('button', { name: 'Original input for Text answer' });
   await button.click();
   const popover = page.getByRole('tooltip').filter({ hasText: 'café<U+200b>' });
   await expect(popover).toHaveClass(/popover-wide/);
