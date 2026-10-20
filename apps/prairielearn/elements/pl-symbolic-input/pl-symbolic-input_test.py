@@ -60,6 +60,9 @@ def make_question_data(
         ("|x + |y||", "abs(x + abs(y))"),
         ("|x+|-x+1+2+3+4||", "abs(x+abs(-x+1+2+3+4))"),
         ("|x+|x+1+2+3+4 ||", "abs(x+abs(x+1+2+3+4 ))"),
+        ("|a|+||b|+c|", "abs(a)+abs(abs(b)+c)"),
+        ("y*|x| + |(|z|+1)|", "y*abs(x) + abs((abs(z)+1))"),
+        ("|x|||y||", "abs(x)abs(abs(y))"),
         ("", ""),
         # The formula editor writes \lvert and \rvert as U+2223
         ("2\u2223x\u2223", "2abs(x)"),
@@ -68,6 +71,14 @@ def make_question_data(
 def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
     out, error_msg = symbolic_input.format_submission_for_sympy(sub)
     assert (out, error_msg) == (expected, None)
+
+
+def test_format_submission_for_sympy_long_input() -> None:
+    out, error_msg = symbolic_input.format_submission_for_sympy(
+        "|x|" * 5000 + "|x+" * 2000 + "y" + "|" * 2000
+    )
+    assert error_msg is None
+    assert out == "abs(x)" * 5000 + "abs(x+" * 2000 + "y" + ")" * 2000
 
 
 @pytest.mark.parametrize(
@@ -80,6 +91,8 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
         ("[0,1] | (2,3) | [4,5]", "[0,1] | (2,3) | [4,5]"),
         ("(0,1) | (2,3)", "(0,1) | (2,3)"),
         ("{1} | (2,3) | [4,5]", "{1} | (2,3) | [4,5]"),
+        ("(0,|x|) | |y,z|", "(0,abs(x)) | |y,z|"),
+        ("|1,|x||", "|1,abs(x)|"),
     ],
 )
 def test_format_submission_for_sympy_preserves_set_union(
@@ -170,6 +183,17 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("l n 4 * c o t (9x)", True, ["x"], [], "ln (4) * cot (9x)"),
         ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
         ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
+        # Bare function arguments ended by a "(" that multiplies them
+        ("l n x (x+1)", False, ["x"], [], "ln (x) (x+1)"),
+        ("l n 2x(x+1)", False, ["x"], [], "ln (2x)(x+1)"),
+        ("l n 2(l n 3(x))", False, ["x"], [], "ln (2)(ln (3)(x))"),
+        # A "(" that groups an exponent or calls a function stays in the argument
+        ("l n x^(2)", False, ["x"], [], "ln x^(2)"),
+        ("l n f(x)", False, ["x"], ["f"], "ln f(x)"),
+        ("l n f2(x)", False, ["x"], ["f2"], "ln f2(x)"),
+        ("l n a t a n 2(y,x)", True, ["x", "y"], [], "ln atan2(y,x)"),
+        ("l n a b s (x)(x+1)", False, ["x"], [], "ln (abs (x))(x+1)"),
+        ("l n Α(x)", False, ["x"], ["Α"], "ln  Alpha (x)"),  # ruff:ignore[ambiguous-unicode-character-string]
         # Operators the editor writes in AsciiMath form (\div and \ast)
         ("2 -: x", False, ["x"], [], "2 / x"),
         ("2 ** x", False, ["x"], [], "2 * x"),
@@ -189,6 +213,26 @@ def test_format_formula_editor_submission_for_sympy(
 ) -> None:
     out = symbolic_input.format_formula_editor_submission_for_sympy(
         sub, allow_trig, variables, custom_functions
+    )
+    assert out == expected
+
+
+@pytest.mark.parametrize(
+    ("sub", "expected"),
+    [
+        ("C o m p l e m e n t ({1},{2})", "Complement ({1},{2})"),
+        ("{1} c u p {2} * {3}", "{1} cup {2} * {3}"),
+    ],
+)
+def test_format_formula_editor_submission_with_set_names(
+    sub: str, expected: str
+) -> None:
+    out = symbolic_input.format_formula_editor_submission_for_sympy(
+        sub,
+        False,
+        [],
+        [],
+        allow_sets=True,
     )
     assert out == expected
 
@@ -254,6 +298,68 @@ def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -
     assert symbolic_input._restore_plus_minus(submission, latex) == expected
 
 
+def test_formula_editor_bare_argument_before_implicit_multiplication() -> None:
+    r"""The editor displays `\ln 8\left(...\right)` as ln(8)·(...)."""
+    x = sympy.Symbol("x")
+    element_html = build_element_html('variables="x"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": "l n 8(x+1)"})
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.log(8) * (
+        x + 1
+    )
+
+
+def test_formula_editor_bare_argument_with_unsimplified_set_grading() -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        'formula-editor="true"',
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'correct-answer="{ln(8)*(x+1)}"',
+    )
+    data = make_question_data(submitted_answers={"test": "{l n 8(x+1)}"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_formula_editor_set_constructor_is_recognized() -> None:
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'correct-answer="{1} - {2}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "C o m p l e m e n t ({1},{2})"}
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_formula_editor_function_ending_in_digit_stays_in_bare_argument() -> None:
+    x, y = sympy.symbols("x y")
+    element_html = build_element_html('variables="x,y"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": "ln atan2(y,x)"})
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.log(
+        sympy.atan2(y, x)
+    )
+
+
 def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> None:
     element_html = build_element_html('variables="a"', 'formula-editor="true"')
     data = make_question_data(
@@ -274,16 +380,18 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
 
 def test_formula_editor_deeply_nested_bare_arguments() -> None:
     depth = 1200
-    submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"
-    expected = "sin (2(" * depth + "x" + " * y))" * depth + " * z"
+    submission = "s i n f(" * depth + "x" + ")(y)" * depth
+    expected = "sin (f(" * depth + "x" + "))(y)" * depth
     assert (
         symbolic_input.format_formula_editor_submission_for_sympy(
-            submission, True, ["x", "y", "z"], []
+            submission, True, ["x", "y"], ["f"]
         )
         == expected
     )
 
-    element_html = build_element_html('variables="x,y,z"', 'formula-editor="true"')
+    element_html = build_element_html(
+        'variables="x,y"', 'custom-functions="f"', 'formula-editor="true"'
+    )
     data = make_question_data(submitted_answers={"test": submission})
     symbolic_input.parse(element_html, data)
     assert "syntax error" in data["format_errors"]["test"]
@@ -497,6 +605,151 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     )
 
     symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "variables", "expected_score"),
+    [
+        ("{x + 1, x - 1}", "{x + 1, x - 1}", "x", 1),
+        ("{x}", "{x + 0, x - 0}", "x", 1),
+        ("{x, 1}", "{x + 0, x - 0}", "x", 0),
+        (
+            "[0, (x + 1)^2] U {y}",
+            "[0, x^2 + 2*x + 1] U {y}",
+            "x,y",
+            1,
+        ),
+        ("[0, x] U {y}", "(0, x + 0] U {y}", "x,y", 0),
+        ("{x} - {y}", "{x} - {y}", "x,y", 1),
+    ],
+)
+def test_unsimplified_set_grading(
+    correct_answer: str,
+    submission: str,
+    variables: str,
+    expected_score: int,
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        f'variables="{variables}"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == expected_score
+
+
+def test_custom_complement_function_round_trips_with_set_notation() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'custom-functions="Complement"',
+        'correct-answer="Complement(x)"',
+    )
+    data = make_question_data(submitted_answers={"test": "Complement(x)"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert data["submitted_answers"]["test"]["_custom_functions"] == ["Complement"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_legacy_custom_complement_submission_remains_readable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    legacy_json: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "Complement(x)",
+        "_variables": ["x"],
+        "_custom_functions": ["Complement"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'variables="x"',
+        'custom-functions="Complement"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": legacy_json},
+        raw_submitted_answers={"test": "Complement(x)"},
+        correct_answers={"test": legacy_json},
+        panel="submission",
+        editable=False,
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.render(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize("operator", ["|", "&"])
+def test_legacy_scalar_set_operator_submission_remains_readable(
+    monkeypatch: pytest.MonkeyPatch, operator: str
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    legacy_json: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": f"x {operator} y",
+        "_variables": ["x", "y"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'variables="x,y"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": legacy_json},
+        raw_submitted_answers={"test": f"x {operator} y"},
+        correct_answers={"test": legacy_json},
+        panel="submission",
+        editable=False,
+    )
+
+    symbolic_input.render(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_legacy_boolean_expressions_are_graded_by_symbolic_equivalence() -> None:
+    correct_answer: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "x | (y & z)",
+        "_variables": ["x", "y", "z"],
+    }
+    submitted_answer: psu.SympyJson = {
+        "_type": "sympy",
+        "_value": "(x | y) & (x | z)",
+        "_variables": ["x", "y", "z"],
+    }
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'variables="x,y,z"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": submitted_answer},
+        correct_answers={"test": correct_answer},
+    )
+
+    symbolic_input.grade(element_html, data)
+
     assert data["partial_scores"]["test"]["score"] == 1
 
 

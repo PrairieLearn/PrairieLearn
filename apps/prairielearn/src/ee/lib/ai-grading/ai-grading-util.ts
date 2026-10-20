@@ -282,19 +282,6 @@ function getAiGradingFileName($: cheerio.CheerioAPI, el: AnyNode): string | unde
   return options?.submitted_file_name;
 }
 
-export function containsSubmissionAttachment({
-  submission_text,
-  submitted_answer,
-}: {
-  submission_text: string;
-  submitted_answer: Record<string, any> | null;
-}): boolean {
-  return (
-    (submitted_answer?._files?.length ?? 0) > 0 ||
-    cheerio.load(submission_text)(AI_GRADING_FILE_SELECTOR).length > 0
-  );
-}
-
 function containsSubmissionImage(submission_text: string): boolean {
   const $ = cheerio.load(submission_text);
   for (const el of $(AI_GRADING_FILE_SELECTOR)) {
@@ -316,7 +303,7 @@ function getAiGradingFileMediaType(fileName: string): string | null {
   return null;
 }
 
-function decodeAiGradingTextFile(fileName: string, fileData: string): string {
+function decodeAiGradingTextFile(fileName: string, fileData: string): string | null {
   const bytes = Buffer.from(fileData, 'base64');
   if (bytes.toString('base64') !== fileData) {
     throw new Error(`Submitted file "${fileName}" has invalid base64 data.`);
@@ -333,19 +320,14 @@ function decodeAiGradingTextFile(fileName: string, fileData: string): string {
   let text: string;
   try {
     text = new TextDecoder(encoding, { fatal: true }).decode(bytes);
-  } catch (cause) {
-    throw new Error(
-      `AI grading could not read "${fileName}" as text. Use UTF-8 or UTF-16 with a byte-order mark, or submit a PDF, JPEG, PNG, or WebP file.`,
-      { cause },
-    );
+  } catch {
+    return null;
   }
 
   // Binary files can contain valid Unicode but still include non-text control characters.
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/u.test(text)) {
-    throw new Error(
-      `AI grading cannot read binary file "${fileName}". Submit its contents as text, PDF, JPEG, PNG, or WebP instead.`,
-    );
+    return null;
   }
   return text;
 }
@@ -385,10 +367,11 @@ export function generateSubmissionContent({
 
         const mediaType = getAiGradingFileMediaType(segment.fileName);
         if (!mediaType) {
+          const text = decodeAiGradingTextFile(segment.fileName, segment.fileData);
           return [
             {
               type: 'text',
-              text: `Submitted file: ${segment.fileName}\n\n${decodeAiGradingTextFile(segment.fileName, segment.fileData)}`,
+              text: `Submitted file: ${segment.fileName}\n\n${text ?? 'File contents unavailable: unsupported file format or text encoding.'}`,
             },
           ];
         }
@@ -1064,10 +1047,6 @@ const AiGradingJobDataForSubmissionSchema = z.object({
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
 });
 
-const AiGradingExplanationSchema = z.object({
-  explanation: z.string(),
-});
-
 /**
  * The persisted completion is a schemaless JSON blob whose shape depends on
  * which API/library produced it. We've used several over the lifetime of AI
@@ -1090,18 +1069,23 @@ const AiGradingCompletionSchema = z.object({
   _output: z.unknown().optional(),
 });
 
-export function extractAiGradingExplanationFromCompletion(completion: unknown): string | null {
+export function extractAiGradingTextFromCompletion(
+  completion: unknown,
+  field: 'explanation' | 'feedback' = 'explanation',
+): string | null {
   const parsed = AiGradingCompletionSchema.safeParse(completion);
   if (!parsed.success) return null;
 
   const { choices, output_parsed, object, _output } = parsed.data;
-  const explanation = AiGradingExplanationSchema.safeParse(
+  const output = z.record(z.string(), z.unknown()).safeParse(
     // The 4 different formats
     choices?.[0]?.message?.parsed ?? output_parsed ?? object ?? _output,
   );
-  if (!explanation.success) return null;
+  if (!output.success) return null;
 
-  return explanation.data.explanation.trim() || null;
+  const text = output.data[field];
+  if (typeof text !== 'string') return null;
+  return field === 'explanation' ? text.trim() || null : text;
 }
 
 /**
@@ -1142,7 +1126,7 @@ export async function buildAiGradingInfo({
           .trimStart()
       : '';
 
-  const explanation = extractAiGradingExplanationFromCompletion(aiGradingJobData.completion);
+  const explanation = extractAiGradingTextFromCompletion(aiGradingJobData.completion);
 
   const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
   const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
