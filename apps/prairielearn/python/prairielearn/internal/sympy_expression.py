@@ -386,10 +386,15 @@ class _Lowerer:
             for name in psu._SET_DOMAIN_NAMES:
                 self.variables.setdefault(name, sympy.Symbol(name))
 
+    @staticmethod
+    def _is_python_keyword(name: _Name) -> bool:
+        # A single Greek character such as `λ` may normalize to a keyword.
+        return keyword.iskeyword(name.text) and len(set(name.character_spans)) > 1
+
     def _expand_name(self, name: _Name) -> _Expression:
         if name.text in {"True", "False"}:
             return name
-        if keyword.iskeyword(name.text):
+        if self._is_python_keyword(name):
             error = psu.HasParseError(name.span.start)
             raise psu._LocalizedSympyError(error, self.source, name.span)
         if name.text in self.functions or name.text in self.variables:
@@ -515,7 +520,7 @@ class _Lowerer:
                 expression.span,
             )
         if isinstance(expression, _Call):
-            if keyword.iskeyword(expression.function.text):
+            if self._is_python_keyword(expression.function):
                 error = psu.HasParseError(expression.function.span.start)
                 raise psu._LocalizedSympyError(
                     error, self.source, expression.function.span
@@ -708,11 +713,12 @@ class Evaluator:
                 name in psu._Constants.functions
                 or name in psu._Constants.trig_functions
             ):
+                arities = psu._builtin_function_arities(name) or (len(arguments),)
                 self._require_signature(
                     name,
                     arguments,
                     span,
-                    (len(arguments) * (psu.ASTSympyType.SCALAR,),),
+                    tuple(arity * (psu.ASTSympyType.SCALAR,) for arity in arities),
                 )
             result_type = psu.ASTSympyType.SCALAR
 
