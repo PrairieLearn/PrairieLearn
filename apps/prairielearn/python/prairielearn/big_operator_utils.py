@@ -140,26 +140,37 @@ def is_big_operator_json(value: Any) -> TypeGuard[BigOperatorJson]:
         not isinstance(value, dict)
         or value.get("_type") != "big_operator"
         or value.get("_version") != 1
-        or value.get("operator") not in _VALID_INDEXING_BY_OPERATOR
-        or value.get("indexing") not in _INDEXING_MODES
-        or not psu.is_sympy_json(value.get("index"))
-        or not psu.is_sympy_json(value.get("body"))
     ):
         return False
+    operator_indexing = _get_valid_operator_indexing_pair(
+        value.get("operator"), value.get("indexing")
+    )
+    if operator_indexing is None:
+        return False
+    _, indexing = operator_indexing
 
-    match value["indexing"]:
+    math_fields = {"index", "body"}
+    match indexing:
         case "bounds":
-            return psu.is_sympy_json(value.get("lower")) and psu.is_sympy_json(
-                value.get("upper")
-            )
+            math_fields.update(("lower", "upper"))
         case "domain":
-            return psu.is_sympy_json(value.get("domain"))
+            math_fields.add("domain")
         case "approaches":
-            return psu.is_sympy_json(value.get("target")) and isinstance(
-                value.get("direction"), str
-            )
-        case _:
-            return False
+            math_fields.add("target")
+            direction = value.get("direction")
+            if not isinstance(direction, str) or direction not in _DIRECTIONS:
+                return False
+
+    expected_keys = {"_type", "_version", "operator", "indexing"} | math_fields
+    if indexing == "approaches":
+        expected_keys.add("direction")
+    if set(value) != expected_keys:
+        return False
+    return all(
+        psu.is_sympy_json(value[field])
+        and all(isinstance(name, str) for name in value[field]["_variables"])
+        for field in math_fields
+    )
 
 
 def get_valid_big_operator_indexing(
@@ -169,20 +180,34 @@ def get_valid_big_operator_indexing(
     return _VALID_INDEXING_BY_OPERATOR[operator]
 
 
+def _get_valid_operator_indexing_pair(
+    operator: object, indexing: object
+) -> tuple[BigOperatorName, BigOperatorIndexing] | None:
+    if not isinstance(operator, str) or not isinstance(indexing, str):
+        return None
+    if operator not in _VALID_INDEXING_BY_OPERATOR:
+        return None
+    typed_operator = operator
+    if indexing not in get_valid_big_operator_indexing(typed_operator):
+        return None
+    return typed_operator, indexing
+
+
 def _validate_operator_indexing(
     operator: object, indexing: object
 ) -> tuple[BigOperatorName, BigOperatorIndexing]:
+    valid_pair = _get_valid_operator_indexing_pair(operator, indexing)
+    if valid_pair is not None:
+        return valid_pair
     if not isinstance(operator, str) or operator not in _VALID_INDEXING_BY_OPERATOR:
         raise ValueError("Big operator has an unsupported operator.")
     if not isinstance(indexing, str) or indexing not in _INDEXING_MODES:
         raise ValueError("Big operator has unsupported indexing.")
     typed_operator: BigOperatorName = operator
     typed_indexing = cast(BigOperatorIndexing, indexing)
-    if typed_indexing not in get_valid_big_operator_indexing(typed_operator):
-        raise ValueError(
-            f'Operator "{typed_operator}" does not support indexing="{typed_indexing}".'
-        )
-    return typed_operator, typed_indexing
+    raise ValueError(
+        f'Operator "{typed_operator}" does not support indexing="{typed_indexing}".'
+    )
 
 
 def _decode_sympy_field(value: Any, field: str) -> sympy.Basic:
