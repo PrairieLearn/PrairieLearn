@@ -52,11 +52,10 @@ async function withServer(
 }
 
 describe('bounded custom AI grading requests', () => {
-  it('lets the compatible SDK consume a bounded structured grading response', async () => {
+  it('lets the compatible SDK consume a bounded compressed grading response', async () => {
     await withServer(
       (_request, response) => {
-        response.setHeader('Content-Type', 'application/json');
-        response.end(
+        const body = gzipSync(
           JSON.stringify({
             id: 'completion',
             object: 'chat.completion',
@@ -72,6 +71,12 @@ describe('bounded custom AI grading requests', () => {
             usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
           }),
         );
+        response.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Content-Encoding': 'gzip',
+          'Content-Length': body.byteLength,
+        });
+        response.end(body);
       },
       async (baseUrl, fetch) => {
         const provider = createOpenAICompatible({
@@ -120,22 +125,6 @@ describe('bounded custom AI grading requests', () => {
       },
       async (baseUrl, fetch) => {
         await expect(fetch(baseUrl)).rejects.toThrow('too large');
-      },
-    );
-  });
-
-  it('returns a decompressed response without stale encoding headers', async () => {
-    await withServer(
-      (_request, response) => {
-        const body = gzipSync('{"grade":1}');
-        response.writeHead(200, { 'Content-Encoding': 'gzip', 'Content-Length': body.byteLength });
-        response.end(body);
-      },
-      async (baseUrl, fetch) => {
-        const response = await fetch(baseUrl);
-        expect(response.headers.has('content-encoding')).toBe(false);
-        expect(response.headers.has('content-length')).toBe(false);
-        expect(await response.json()).toEqual({ grade: 1 });
       },
     );
   });

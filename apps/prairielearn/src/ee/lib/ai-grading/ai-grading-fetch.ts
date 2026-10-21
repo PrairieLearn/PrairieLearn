@@ -19,14 +19,10 @@ export function createAiGradingFetch({
     try {
       const response = await safeFetch(input, init);
       const body = await readResponseWithLimit(response, MAX_RESPONSE_BYTES);
-      const headers = new Headers([...response.headers.entries()]);
-      // public-fetch already decoded the body; the reconstructed response describes those bytes.
-      headers.delete('content-encoding');
-      headers.delete('content-length');
       return new Response(response.body === null ? null : new Uint8Array(body), {
         status: response.status,
         statusText: response.statusText,
-        headers: [...headers.entries()],
+        headers: [...response.headers.entries()],
       });
     } catch (error) {
       if (error instanceof ResponseTooLargeError) {
