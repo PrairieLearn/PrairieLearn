@@ -336,6 +336,9 @@
      * previews of files as appropriate.
      */
     renderFileList() {
+      // Existing-file downloads can finish after the question panel is replaced.
+      if (!this.element[0].isConnected) return;
+
       const $fileList = this.element.find('.file-upload-status .card ul.list-group');
 
       // Save which cards are currently expanded
@@ -467,30 +470,21 @@
             // unicode text if needed.
             const binaryData = Uint8Array.from(atob(fileData), (c) => c.charCodeAt(0));
             const isPdf = this.isPdf(binaryData);
+            const url = URL.createObjectURL(
+              new Blob([binaryData], isPdf ? { type: 'application/pdf' } : undefined),
+            );
+
             if (isPdf) {
               const $objectPreview = $(
                 `<div class="mt-2 ratio ratio-4x3">
-                   <iframe title="PDF preview">
-                     PDF file cannot be displayed.
-                   </iframe>
+                   <object class="js-file-preview-pdf" type="application/pdf" data="${url}" aria-label="PDF file preview">
+                     This PDF cannot be displayed. Use the Download button to open it.
+                   </object>
                  </div>`,
               );
-              // The viewer installs its message listener before its load
-              // event, so it is ready to receive the PDF bytes here.
-              $objectPreview
-                .find('iframe')
-                .one('load', function () {
-                  this.contentWindow.postMessage(
-                    { type: 'pdf-preview', bytes: binaryData.buffer },
-                    window.location.origin,
-                    [binaryData.buffer],
-                  );
-                })
-                .attr('src', '/pl/pdf_viewer');
               $preview.append($objectPreview);
               this.expandPreviewForFile($file, $preview);
             } else {
-              const url = URL.createObjectURL(new Blob([binaryData]));
               // First try to display the file as an image. If that fails,
               // try to display it as text.
               $imgPreview
