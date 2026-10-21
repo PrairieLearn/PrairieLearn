@@ -8,7 +8,6 @@ import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-from prairielearn.internal.raw_input import render_raw_input_popover
 from prairielearn.to_precision import to_precision
 
 
@@ -359,7 +358,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
 
         if submitted_raw_answer is not None:
-            html_params["raw_input_popover"] = render_raw_input_popover(
+            html_params["raw_input_popover"] = pl.render_raw_input_popover(
                 submitted_raw_answer, aria_label or name
             )
         # Add true answer to be able to display it in the submitted answer panel

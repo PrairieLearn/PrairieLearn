@@ -56,10 +56,10 @@ def test_render_raw_input_popover_handles_empty_strings() -> None:
 
 def test_render_raw_input_popover_can_hide_ascii_only_input() -> None:
     assert (
-        render_raw_input_popover("plain ASCII", "answer", show_if_ascii_only=False)
+        pl.render_raw_input_popover("plain ASCII", "answer", show_if_ascii_only=False)
         == ""
     )
-    assert 'aria-label="Original input for answer"' in render_raw_input_popover(
+    assert 'aria-label="Original input for answer"' in pl.render_raw_input_popover(
         "café", "answer", show_if_ascii_only=False
     )
 

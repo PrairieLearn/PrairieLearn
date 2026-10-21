@@ -9,7 +9,6 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from prairielearn.internal.raw_input import render_raw_input_popover
 
 
 class BigOType(Enum):
@@ -272,7 +271,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
 
         if submitted_raw_answer is not None:
-            html_params["raw_input_popover"] = render_raw_input_popover(
+            html_params["raw_input_popover"] = pl.render_raw_input_popover(
                 submitted_raw_answer, aria_label or name
             )
 
