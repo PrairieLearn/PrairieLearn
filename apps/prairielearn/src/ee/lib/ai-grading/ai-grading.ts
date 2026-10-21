@@ -76,6 +76,9 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
+// Each custom-provider generation gets one deadline, including SDK retries.
+const CUSTOM_PROVIDER_GRADING_TIMEOUT_MS = 2 * 60 * 1000;
+
 type AiGradingResponsesForPersistence = {
   model_id: string;
   finalGradingResponse: GenerateTextResult<any, any, any>;
@@ -772,6 +775,10 @@ export async function aiGrade({
             return {
               finalGradingResponse: await generateText({
                 model,
+                abortSignal:
+                  provider === 'openai-compatible'
+                    ? AbortSignal.timeout(CUSTOM_PROVIDER_GRADING_TIMEOUT_MS)
+                    : undefined,
                 output: Output.object({ schema: RubricGradingResultSchema }),
                 ...gradingPrompt,
                 providerOptions: {
@@ -1013,6 +1020,10 @@ export async function aiGrade({
             return {
               finalGradingResponse: await generateText({
                 model,
+                abortSignal:
+                  provider === 'openai-compatible'
+                    ? AbortSignal.timeout(CUSTOM_PROVIDER_GRADING_TIMEOUT_MS)
+                    : undefined,
                 output: Output.object({ schema: GradingResultSchema }),
                 ...gradingPrompt,
                 providerOptions: {

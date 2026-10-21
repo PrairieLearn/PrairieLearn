@@ -103,7 +103,7 @@ describe('custom AI grading provider API', { concurrent: false }, () => {
     });
   });
 
-  it('reports a provider discovery timeout as an HTTP gateway timeout', async () => {
+  it('reports a custom provider timeout without a server error response', async () => {
     const api = await client();
     discover.mockRejectedValueOnce(
       new discovery.AiGradingModelDiscoveryError('timeout', 'Provider discovery timed out'),
@@ -112,7 +112,7 @@ describe('custom AI grading provider API', { concurrent: false }, () => {
       api.aiGradingProviders.discover.mutate({ base_url, secret_key }),
     ).rejects.toMatchObject({
       message: 'Provider discovery timed out',
-      data: { code: 'GATEWAY_TIMEOUT', httpStatus: 504 },
+      data: { code: 'BAD_REQUEST', httpStatus: 400 },
     });
   });
 

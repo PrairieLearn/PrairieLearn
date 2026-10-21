@@ -11,6 +11,7 @@ import {
   readResponseWithLimit,
   validatePublicHttpsUrl,
 } from '@prairielearn/public-fetch';
+import { run } from '@prairielearn/run';
 
 // The timeout follows remote-image-copier.ts. The byte limit follows the JSON result limit in
 // externalGraderLocal.ts; count and ID limits additionally bound the catalog retained by the UI.
@@ -49,15 +50,11 @@ export class AiGradingModelDiscoveryError extends HttpStatusError {
     message: string,
   ) {
     super(
-      code === 'timeout'
-        ? 504
-        : code === 'rate_limit'
-          ? 429
-          : ['provider_error', 'request_failed', 'invalid_response', 'response_too_large'].includes(
-                code,
-              )
-            ? 502
-            : 400,
+      run(() => {
+        if (code === 'rate_limit') return 429;
+        // Failures of a user-configured provider must not count as application 5xx errors.
+        return 400;
+      }),
       message,
     );
     this.name = 'AiGradingModelDiscoveryError';
