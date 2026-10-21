@@ -19,7 +19,7 @@ import { TimeLimitModal } from './TimeLimitModal.js';
 import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
 type JobAction = 'grade' | 'gradeAndClose';
-type OpenModal = JobAction | 'regrade' | 'delete' | 'timeLimit' | null;
+type OpenModal = JobAction | 'regrade' | 'delete' | 'timeLimit' | 'clearGradingPending' | null;
 
 function getTargetRows(target: AssessmentInstanceActionTarget): AssessmentInstanceActionRow[] {
   switch (target.kind) {
@@ -110,7 +110,10 @@ export function AssessmentInstanceActions({
   courseInstanceId: string;
   assessmentId: string;
   timezone: string;
-  onActionSuccess: (result: { message: string; action: 'delete' | 'timeLimit' }) => void;
+  onActionSuccess: (result: {
+    message: string;
+    action: 'delete' | 'timeLimit' | 'clearGradingPending';
+  }) => void;
   showLogsLink?: boolean;
 }) {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
@@ -137,6 +140,10 @@ export function AssessmentInstanceActions({
           <Dropdown.Item onClick={() => setOpenModal('regrade')}>
             <i className="bi bi-arrow-repeat me-2" aria-hidden="true" />
             Regrade
+          </Dropdown.Item>
+          <Dropdown.Item onClick={() => setOpenModal('clearGradingPending')}>
+            <i className="bi bi-check2-circle me-2" aria-hidden="true" />
+            Clear grading pending
           </Dropdown.Item>
           <Dropdown.Divider />
           <Dropdown.Item onClick={() => setOpenModal('timeLimit')}>
@@ -179,6 +186,19 @@ export function AssessmentInstanceActions({
         target={target}
         courseInstanceId={courseInstanceId}
         onHide={() => setOpenModal(null)}
+      />
+
+      <ClearGradingPendingModal
+        show={openModal === 'clearGradingPending'}
+        target={target}
+        onHide={() => setOpenModal(null)}
+        onSuccess={() => {
+          onActionSuccess({
+            message: `Cleared grading pending for ${describeTargetInstances(target)}.`,
+            action: 'clearGradingPending',
+          });
+          setOpenModal(null);
+        }}
       />
 
       <DeleteInstancesModal
@@ -353,6 +373,66 @@ function RegradeInstancesModal({
           onClick={() => mutation.mutate({ assessmentInstanceIds })}
         >
           {mutation.isPending ? 'Working...' : 'Regrade'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+function ClearGradingPendingModal({
+  target,
+  show,
+  onHide,
+  onSuccess,
+}: {
+  target: AssessmentInstanceActionTarget;
+  show: boolean;
+  onHide: () => void;
+  onSuccess: () => void;
+}) {
+  const trpc = useTRPC();
+  const invalidateList = useInvalidateAssessmentInstancesList();
+  const mutation = useMutation({
+    ...trpc.assessmentInstances.clearGradingPending.mutationOptions(),
+    onSuccess: async () => {
+      await invalidateList();
+      onSuccess();
+    },
+  });
+  const appError = getAppError<AssessmentInstancesError['clearGradingPending']>(mutation.error);
+
+  return (
+    <Modal show={show} onHide={onHide} onExited={() => mutation.reset()}>
+      <Modal.Header closeButton>
+        <Modal.Title>Clear grading pending</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>
+          Remove the grading pending indicator for{' '}
+          <strong>{describeTargetAssessmentInstances(target)}</strong>?
+        </p>
+        <p>
+          Scores and the manual grading queue will stay the same. New submissions may make the
+          indicator appear again.
+        </p>
+        <AppErrorAlert
+          error={appError}
+          render={{ UNKNOWN: ({ message }) => message }}
+          onDismiss={() => mutation.reset()}
+        />
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={mutation.isPending}
+          onClick={() =>
+            mutation.mutate({ assessmentInstanceIds: getTargetAssessmentInstanceIds(target) })
+          }
+        >
+          {mutation.isPending ? 'Clearing...' : 'Clear grading pending'}
         </Button>
       </Modal.Footer>
     </Modal>
