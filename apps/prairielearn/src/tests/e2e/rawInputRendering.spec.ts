@@ -66,3 +66,27 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
     page.getByRole('button', { name: 'Answer as entered for Integer value' }),
   ).toHaveCount(0);
 });
+
+test('shows text and formula editor diagnostics for symbolic input', async ({ page }) => {
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
+    timeout: 15_000,
+  });
+
+  const textButton = page.getByRole('button', { name: 'Original input for Symbolic value' });
+  await expect(textButton).toBeVisible();
+  await textButton.click();
+  await expect(page.getByRole('tooltip').filter({ hasText: 'x<U+200b>' })).toBeVisible();
+  await textButton.click();
+
+  const formulaButton = page.getByRole('button', {
+    name: 'Original input for Symbolic formula value',
+  });
+  await expect(formulaButton).toBeVisible();
+  await formulaButton.click();
+
+  const formulaPopover = page.getByRole('tooltip').filter({ hasText: 'Formula editor input:' });
+  await expect(formulaPopover).toBeVisible();
+  await expect(formulaPopover.locator('math-field')).toHaveCount(1);
+  await expect(formulaPopover).toContainText('x');
+});
