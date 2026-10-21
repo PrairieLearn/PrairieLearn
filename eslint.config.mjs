@@ -30,11 +30,20 @@ const NO_RESTRICTED_SYNTAX = [
   },
 ];
 
-const ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTION = {
-  message:
-    'Element code must not import from outside its own directory. Use a public API or copy the implementation locally.',
-  selector: 'ImportExpression[source.value=/(^|\\/)\\.\\.(\\/|$)/]',
-};
+const ELEMENT_PARENT_IMPORT_MESSAGE =
+  'Element code must not import from outside its own directory. Use a public API or copy the implementation locally.';
+
+const ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTIONS = [
+  {
+    message: ELEMENT_PARENT_IMPORT_MESSAGE,
+    selector: 'ImportExpression[source.value=/(^|\\/)\\.\\.(\\/|$)/]',
+  },
+  {
+    message: ELEMENT_PARENT_IMPORT_MESSAGE,
+    selector:
+      'ImportExpression[source.type="TemplateLiteral"] TemplateElement[value.raw=/(^|\\/)\\.\\.(\\/|$)/]',
+  },
+];
 
 const RESTRICTED_REACT_BOOTSTRAP_IMPORT = {
   importNames: ['OverlayTrigger'],
@@ -175,7 +184,7 @@ export default [
       'no-restricted-syntax': [
         'error',
         ...NO_RESTRICTED_SYNTAX,
-        ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTION,
+        ...ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTIONS,
       ],
     },
   },
@@ -187,7 +196,7 @@ export default [
         'error',
         ...NO_RESTRICTED_SYNTAX,
         ...TYPESCRIPT_RESTRICTED_SYNTAX,
-        ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTION,
+        ...ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTIONS,
       ],
     },
   },
