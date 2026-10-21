@@ -15,7 +15,10 @@ import { renderHtmlElement, renderParagraph } from './docx-content-elements.js';
 import { renderGuidedInputGroup, renderResponse } from './docx-content-responses.js';
 import { renderDetails, renderHtmlTable } from './docx-content-tables.js';
 
-/** Maps normalized question HTML to editable Word content; only figures become images. */
+/**
+ * Converts question HTML captured before pagination into editable Word content.
+ * The captured HTML leaves out hidden content, and figures become images.
+ */
 export function buildDocxContent(
   html: string,
   figures: DocxFigure[],
