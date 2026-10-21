@@ -528,6 +528,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   annotateDocxMath(source);
   normalizeResponseControls(source);
   await mathJax?.typesetPromise?.([source]);
+  // The first pass preserves copied math; this one catches newly rendered math.
   annotateDocxMath(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
