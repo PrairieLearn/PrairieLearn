@@ -18,6 +18,11 @@ import {
   getPrintFooterLabel,
 } from './print-cover.js';
 
+const PAPER_DIMENSIONS = {
+  Letter: { width: '8.5in', height: '11in' },
+  A4: { width: '210mm', height: '297mm' },
+} satisfies Record<PaperSize, { width: string; height: string }>;
+
 export function InstructorAssessmentInstancePrint({
   resLocals,
   document,
@@ -60,6 +65,7 @@ export function InstructorAssessmentInstancePrint({
     formId: resLocals.assessment_instance.id,
     formLabel,
   });
+  const { width: paperWidth, height: paperHeight } = PAPER_DIMENSIONS[paperSize];
 
   return html`<!doctype html>
     <html
@@ -96,8 +102,13 @@ export function InstructorAssessmentInstancePrint({
         ${compiledScriptTag('exam-printing-client.ts')}
         <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>
         <style>
+          :root {
+            --exam-print-page-width: ${paperWidth};
+            --exam-print-page-height: ${paperHeight};
+          }
+
           @page {
-            size: ${paperSize};
+            size: ${paperWidth} ${paperHeight};
           }
         </style>
         <style data-pagedjs-ignore>
