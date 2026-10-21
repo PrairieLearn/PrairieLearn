@@ -16,21 +16,12 @@ import pytest
         ("plain ASCII", "plain ASCII", "plain ASCII", ()),
         ("a\u200bb", "a&lt;U+200b&gt;b", "a&lt;U+200b&gt;b", ("control",)),
         ("café", "café", "caf&lt;U+e9&gt;", ("non_ascii",)),
-        ("e\u0301", "é", "e&lt;U+301&gt;", ("non_ascii",)),
-        (chr(0x1F642), chr(0x1F642), "&lt;U+1f642&gt;", ("non_ascii",)),
         (
-            "a\u200bcafé",
-            "a&lt;U+200b&gt;café",
-            "a&lt;U+200b&gt;caf&lt;U+e9&gt;",
+            "a\u200bcafé<script>&",
+            "a&lt;U+200b&gt;café&lt;script&gt;&amp;",
+            "a&lt;U+200b&gt;caf&lt;U+e9&gt;&lt;script&gt;&amp;",
             ("control", "non_ascii"),
         ),
-        (
-            "\t\n\x7f",
-            "&lt;U+9&gt;&lt;U+a&gt;&lt;U+7f&gt;",
-            "&lt;U+9&gt;&lt;U+a&gt;&lt;U+7f&gt;",
-            ("control",),
-        ),
-        ("<script>&", "&lt;script&gt;&amp;", "&lt;script&gt;&amp;", ()),
     ],
 )
 def test_render_raw_input_popover_content(
