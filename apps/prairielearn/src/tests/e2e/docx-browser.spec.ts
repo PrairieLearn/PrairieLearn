@@ -15,6 +15,50 @@ import { expect, test } from './fixtures.js';
 // These browser-only tests do not need the application server.
 test.use({ baseURL: '' });
 
+test('builds a Word file from base64 figure data in the browser', async ({ page }) => {
+  const buildDirectory = path.resolve(import.meta.dirname, '../../../public/build');
+  const manifest: AssetsManifest = JSON.parse(
+    await fs.readFile(path.join(buildDirectory, 'manifest.json'), 'utf8'),
+  );
+  await page.setContent('<div style="width: 24px; height: 24px; background: purple"></div>');
+  const png = await page.locator('div').screenshot();
+  await page.addScriptTag({
+    path: path.join(buildDirectory, manifest['scripts/print-docx-client.ts'].assetPath),
+  });
+
+  const encoded = await page.evaluate(async (figurePng) => {
+    const buildWord = Reflect.get(window, '__PL_BUILD_PRINT_DOCX__') as (
+      options: Record<string, unknown>,
+    ) => Promise<string>;
+    return buildWord({
+      geometry: {
+        pageWidth: 816,
+        pageHeight: 1056,
+        marginTop: 52,
+        marginRight: 52,
+        marginBottom: 65,
+        marginLeft: 52,
+      },
+      footerLabel: 'Browser export',
+      source: {
+        html: '<article class="printing-question" data-question-number="1"><div class="question-body"><p>Browser Word export</p><img data-docx-figure="1"></div></article>',
+        figures: [{ id: '1', width: 24, height: 24, alt: 'Purple square' }],
+      },
+      figures: [{ id: '1', width: 24, height: 24, alt: 'Purple square', png: figurePng }],
+    });
+  }, png.toString('base64'));
+
+  const zip = await unzipper.Open.buffer(Buffer.from(encoded, 'base64'));
+  const documentXml = (
+    await zip.files.find((file) => file.path === 'word/document.xml')!.buffer()
+  ).toString('utf8');
+  expect(documentXml).toContain('Browser Word export');
+  const image = zip.files.find(
+    (file) => file.path.startsWith('word/media/') && file.path.endsWith('.png'),
+  )!;
+  expect(await image.buffer()).toEqual(png);
+});
+
 test('exports shadow-root figures and visible slotted text from a paginated page', async ({
   page,
 }) => {

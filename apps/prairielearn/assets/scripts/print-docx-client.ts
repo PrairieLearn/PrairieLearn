@@ -13,9 +13,12 @@ window.__PL_BUILD_PRINT_DOCX__ = async ({ geometry, cover, footerLabel, source, 
     cover: await captureDocxCoverFigures(cover),
     footerLabel,
     source,
-    figures: figures.map((figure) => ({ ...figure, png: new Uint8Array(figure.png) })),
+    figures: figures.map((figure) => ({
+      ...figure,
+      png: Uint8Array.from(atob(figure.png), (character) => character.charCodeAt(0)),
+    })),
   });
-  return Array.from(new Uint8Array(await (await Packer.toBlob(document)).arrayBuffer()));
+  return Packer.toBase64String(document);
 };
 
 declare global {
@@ -25,7 +28,7 @@ declare global {
       cover?: PrintableCover;
       footerLabel: string;
       source: DocxSource;
-      figures: (DocxSource['figures'][number] & { png: number[] })[];
-    }) => Promise<number[]>;
+      figures: (DocxSource['figures'][number] & { png: string })[];
+    }) => Promise<string>;
   }
 }
