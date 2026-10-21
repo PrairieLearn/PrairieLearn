@@ -9,10 +9,6 @@ import {
 
 import { t, workspaceProcedure } from './init.js';
 
-export interface WorkspaceAuthorizationError {
-  Issue: never;
-}
-
 const requireWorkspaceSpecificHosts = t.middleware(async ({ ctx, next }) => {
   if (!(await areWorkspaceSpecificHostsEnabled(ctx.locals))) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Workspace-specific hosts are not enabled' });
