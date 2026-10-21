@@ -9,6 +9,7 @@ from typing import Literal
 import sympy
 
 import prairielearn.sympy_utils as psu
+from prairielearn.internal import sympy_constants
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,7 +153,7 @@ def _build_formula_editor_tokens(
     allow_sets: bool,
 ) -> list[str]:
     tokens = (
-        list(psu.STANDARD_OPERATORS)
+        list(sympy_constants.standard_operators)
         + list(
             psu.get_builtin_functions(
                 allow_trig_functions=allow_trig_functions,
