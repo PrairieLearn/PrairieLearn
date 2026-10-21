@@ -24,7 +24,7 @@ export function annotateDocxMath(source: HTMLElement): void {
   }
 }
 
-/** Runs before pagination, while the complete questions and their geometry exist. */
+/** Save question content and formatting for the docx before pagination & mark figures for image capture. */
 export function captureDocxSource(source: HTMLElement): DocxSource {
   const figures: DocxSource['figures'] = [];
   const result = document.createElement('div');
