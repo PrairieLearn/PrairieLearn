@@ -17,11 +17,6 @@ import {
   getPrintFooterLabel,
 } from './print-cover.js';
 
-const PAPER_DIMENSIONS = {
-  Letter: { width: '8.5in', height: '11in' },
-  A4: { width: '210mm', height: '297mm' },
-} satisfies Record<PaperSize, { width: string; height: string }>;
-
 export function InstructorAssessmentInstancePrint({
   resLocals,
   document,
