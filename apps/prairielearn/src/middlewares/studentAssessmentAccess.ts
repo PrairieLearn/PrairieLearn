@@ -10,6 +10,7 @@ import { deleteAssessmentInstance } from '../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../lib/assessment.shared.js';
 import { config } from '../lib/config.js';
 import { setCookie } from '../lib/cookie.js';
+import { selectGradingPendingAssessmentInstanceIds } from '../models/assessment-instance.js';
 
 import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
@@ -90,6 +91,18 @@ export default asyncHandler(async (req, res, next) => {
     flash('success', 'Your previous assessment instance was deleted.');
     res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     return;
+  }
+
+  if (
+    req.method === 'GET' &&
+    req.path === '/' &&
+    (req.params.assessment_instance_id || req.params.instance_question_id) &&
+    res.locals.assessment_instance
+  ) {
+    const pendingIds = await selectGradingPendingAssessmentInstanceIds([
+      res.locals.assessment_instance.id,
+    ]);
+    res.locals.assessment_instance_grading_pending = pendingIds.length > 0;
   }
 
   const hasAccess = checkStudentAssessmentAccess(req, res);

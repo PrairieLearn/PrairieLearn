@@ -19,6 +19,7 @@ const StudentGradebookRowSchema = z
     show_closed_assessment_score: z.boolean(),
     modern_access_control: z.boolean(),
     assessment_id: IdSchema,
+    assessment_instance_grading_pending: z.boolean().default(false),
   })
   .transform((data) => {
     // TODO: Instead of doing a single parse from the database,

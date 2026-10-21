@@ -213,6 +213,7 @@ export function StudentInstanceQuestion({
                   assessment: resLocals.assessment,
                   assessment_set: resLocals.assessment_set,
                   assessment_instance: resLocals.assessment_instance,
+                  gradingPending: resLocals.assessment_instance_grading_pending ?? false,
                 })
           }
           ${QuestionScorePanel({

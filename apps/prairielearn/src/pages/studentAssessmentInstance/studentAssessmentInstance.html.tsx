@@ -290,7 +290,7 @@ export function StudentAssessmentInstance({
                       }
                     </div>
                     <div class="col-md-3 col-sm-12">
-                      ${AssessmentScoreHtml({ score: null, gradingPending: resLocals.assessment_instance.grading_pending })}
+                      ${AssessmentScoreHtml({ score: null, gradingPending: resLocals.assessment_instance_grading_pending ?? false })}
                     </div>
                     <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({
@@ -319,7 +319,7 @@ export function StudentAssessmentInstance({
                       }
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${AssessmentScoreHtml({ score: resLocals.assessment_instance.score_perc, gradingPending: resLocals.assessment_instance.grading_pending })}
+                      ${AssessmentScoreHtml({ score: resLocals.assessment_instance.score_perc, gradingPending: resLocals.assessment_instance_grading_pending ?? false })}
                     </div>
                     <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({

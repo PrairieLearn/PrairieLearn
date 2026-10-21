@@ -21,6 +21,7 @@ import {
   type SubmissionForRender,
   SubmissionPanel,
 } from '../components/SubmissionPanel.js';
+import { selectGradingPendingAssessmentInstanceIds } from '../models/assessment-instance.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -922,6 +923,8 @@ export async function renderPanelsForSubmission({
         assessment,
         assessment_set,
         assessment_instance,
+        gradingPending:
+          (await selectGradingPendingAssessmentInstanceIds([assessment_instance.id])).length > 0,
       }).toString();
     },
     async () => {

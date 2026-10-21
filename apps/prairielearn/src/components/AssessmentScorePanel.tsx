@@ -7,11 +7,13 @@ import { AssessmentScoreHtml } from './AssessmentScore.js';
 
 export function AssessmentScorePanel({
   assessment_instance,
+  gradingPending,
   assessment_set,
   assessment,
   urlPrefix,
 }: {
   assessment_instance: AssessmentInstance;
+  gradingPending: boolean;
   assessment_set: AssessmentSet;
   assessment: Assessment;
   urlPrefix: string;
@@ -48,7 +50,7 @@ export function AssessmentScorePanel({
           <tr>
             <td>Score:</td>
             <td class="align-middle">
-              ${AssessmentScoreHtml({ score: assessment_instance.score_perc, gradingPending: assessment_instance.grading_pending })}
+              ${AssessmentScoreHtml({ score: assessment_instance.score_perc, gradingPending })}
             </td>
           </tr>
         </tbody>
