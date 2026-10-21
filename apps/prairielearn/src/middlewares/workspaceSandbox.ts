@@ -242,6 +242,12 @@ export function makeWorkspaceSandboxMiddleware({
       next();
     },
     makeWorkspaceProxyMiddleware(CONTAINER_PATH_REGEX, {
+      matchesRequestHost: (req, workspaceId) => {
+        const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
+        return (
+          workspaceHost.type === 'workspace' && idsEqual(workspaceHost.workspaceId, workspaceId)
+        );
+      },
       authorizeWebSocketRequest: (req, workspaceId) =>
         validateWorkspaceSandboxWebSocketAccess(req, workspaceId).authorized,
       cookieDomainRewrite: '',

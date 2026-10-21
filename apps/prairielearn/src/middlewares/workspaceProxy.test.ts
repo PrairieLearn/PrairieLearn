@@ -47,11 +47,22 @@ describe('workspace proxy', () => {
     assert.isNull(rewriteWorkspaceContainerCookie('__Host-pl_workspace_session=overwrite; Path=/'));
   });
 
-  it('authorizes websocket upgrades before routing them', async () => {
+  it('scopes websocket upgrades to the matching host before authorizing them', async () => {
+    let mismatchedHostWasAuthorized = false;
     let authorizedWorkspaceId: string | undefined;
     const app = express();
     app.use(
       makeWorkspaceProxyMiddleware(CONTAINER_PATH_REGEX, {
+        matchesRequestHost: () => false,
+        authorizeWebSocketRequest: () => {
+          mismatchedHostWasAuthorized = true;
+          return false;
+        },
+      }),
+    );
+    app.use(
+      makeWorkspaceProxyMiddleware(CONTAINER_PATH_REGEX, {
+        matchesRequestHost: () => true,
         authorizeWebSocketRequest: (_req, workspaceId) => {
           authorizedWorkspaceId = workspaceId;
           return false;
@@ -67,6 +78,7 @@ describe('workspace proxy', () => {
       await expectWebSocketRejection(`${url.replace(/^http/, 'ws')}/pl/workspace/123/container/`);
     });
 
+    assert.isFalse(mismatchedHostWasAuthorized);
     assert.equal(authorizedWorkspaceId, '123');
   });
 });

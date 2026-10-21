@@ -370,7 +370,10 @@ export async function initExpress(): Promise<Express> {
         workspaceProxySocketActivityMetrics.addSocket(req.socket);
         next();
       },
-      makeWorkspaceProxyMiddleware(containerPathRegex),
+      makeWorkspaceProxyMiddleware(containerPathRegex, {
+        matchesRequestHost: (req) =>
+          classifyWorkspaceSandboxRequestHost(req).type === 'not-sandbox',
+      }),
     ]);
   }
   if (config.workspaceHostMode === 'cross-origin') {

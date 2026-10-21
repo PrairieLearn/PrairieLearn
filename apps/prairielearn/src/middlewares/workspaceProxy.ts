@@ -126,6 +126,10 @@ function getRequestPath(req: Request): string {
 export function makeWorkspaceProxyMiddleware(
   containerPathRegex: RegExp,
   options: {
+    matchesRequestHost: (
+      req: Pick<http.IncomingMessage, 'headers'>,
+      workspaceId: string,
+    ) => boolean;
     authorizeWebSocketRequest?: (
       req: Pick<http.IncomingMessage, 'headers'>,
       workspaceId: string,
@@ -134,7 +138,7 @@ export function makeWorkspaceProxyMiddleware(
     removeResponseHeaders?: string[];
     cookieDomainRewrite?: string;
     rewriteContainerCookiesForCrossOrigin?: boolean;
-  } = {},
+  },
 ) {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   return createProxyMiddleware<Request, Response>({
@@ -151,16 +155,20 @@ export function makeWorkspaceProxyMiddleware(
       const match = path.match(containerPathRegex);
       if (!match) return false;
 
-      if (req.headers.upgrade?.toLowerCase() === 'websocket') {
-        const workspaceId = IdSchema.safeParse(match[1]);
-        if (
-          !workspaceId.success ||
-          (options.authorizeWebSocketRequest != null &&
-            !options.authorizeWebSocketRequest(req, workspaceId.data))
-        ) {
-          req.socket.destroy();
-          return false;
-        }
+      const workspaceId = IdSchema.safeParse(match[1]);
+      if (!workspaceId.success) return false;
+
+      // Each proxy installs a server-level WebSocket upgrade listener, so the
+      // host must be checked before one proxy can reject another proxy's request.
+      if (!options.matchesRequestHost(req, workspaceId.data)) return false;
+
+      if (
+        req.headers.upgrade?.toLowerCase() === 'websocket' &&
+        options.authorizeWebSocketRequest != null &&
+        !options.authorizeWebSocketRequest(req, workspaceId.data)
+      ) {
+        req.socket.destroy();
+        return false;
       }
 
       return true;
