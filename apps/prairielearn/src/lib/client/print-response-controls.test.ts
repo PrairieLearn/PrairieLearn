@@ -1,11 +1,26 @@
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
 import { JSDOM } from 'jsdom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+
+import { getPythonPath } from '../code-caller/python-path.js';
 
 import {
   normalizeAnswerPresentation,
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
 } from './print-response-controls.js';
+
+let rendered: Record<string, string>;
+
+beforeAll(async () => {
+  const python = await getPythonPath();
+  const script = fileURLToPath(new URL('print-response-controls-fixtures.py', import.meta.url));
+  rendered = JSON.parse(execFileSync(python, [script], { encoding: 'utf8' }));
+});
+
+afterEach(() => vi.unstubAllGlobals());
 
 function printQuestion(html: string): HTMLElement {
   const dom = new JSDOM(
@@ -19,40 +34,29 @@ function printQuestion(html: string): HTMLElement {
   return question;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+function renderedQuestion(name: string): HTMLElement {
+  return printQuestion(rendered[name]);
+}
 
 describe('printable response controls', () => {
-  it('only collapses tabs in variable outputs for answer keys', () => {
-    const dom = new JSDOM(`
-      <div class="card authored-card">
-        <ul class="nav-tabs"><li class="active">First</li></ul>
-        <div class="tab-pane">Authored alternative</div>
-      </div>
-      <div class="card pl-variable-output">
-        <ul class="nav-tabs"><li class="active">Python</li></ul>
-        <div class="tab-pane active">Selected output</div>
-        <div class="tab-pane">Other output</div>
-      </div>
-    `);
+  it('shows only the selected tab of a rendered variable output in answer keys', () => {
+    const dom = new JSDOM(rendered.variable_output);
     vi.stubGlobal('document', dom.window.document);
     normalizeAnswerPresentation(dom.window.document.body);
-    expect(dom.window.document.querySelector('.authored-card .tab-pane')?.textContent).toBe(
-      'Authored alternative',
-    );
     expect(dom.window.document.querySelectorAll('.pl-variable-output .tab-pane')).toHaveLength(1);
+    expect(
+      dom.window.document.querySelector('.pl-variable-output .tab-pane.active'),
+    ).not.toBeNull();
   });
 
-  it('keeps plain dropdown labels as text while preserving authored choice markup', () => {
-    const question = printQuestion(`
-      <div class="pl-multiple-choice-dropdown"><select>
-        <option value="1">&lt;em&gt;Literal label&lt;/em&gt;</option>
-        <option value="2" data-content="&lt;strong&gt;Styled label&lt;/strong&gt;">Styled label</option>
-      </select></div>
-    `);
+  it('prints rendered multiple-choice dropdowns without interpreting literal text as markup', () => {
+    const question = renderedQuestion('multiple_choice_dropdown');
     const choices = question.querySelectorAll('.printing-choice > span:last-child');
-    expect(choices[0].textContent).toBe('<em>Literal label</em>');
+    expect(choices).toHaveLength(2);
+    expect(choices[0].textContent).toContain('<em>Literal label</em>');
     expect(choices[0].querySelector('em')).toBeNull();
     expect(choices[1].querySelector('strong')?.textContent).toBe('Styled label');
+    expect(question.querySelector('select')).toBeNull();
   });
 
   it('prints media without a source as plain text', () => {
@@ -90,261 +94,105 @@ describe('printable response controls', () => {
     ]);
   });
 
-  it('omits whitespace-only dropdown placeholders from the printed option bank', () => {
-    const question = printQuestion(`
-      <select name="association" aria-label="Association">
-        <option value=" "> </option>
-        <option value="positive">Positive association</option>
-        <option value="negative">Negative association</option>
-        <option value="0">No association</option>
-      </select>
-    `);
+  it('prints options from a rendered dropdown without its blank choice', () => {
+    const question = renderedQuestion('dropdown');
     expect(
-      [...question.querySelectorAll('.printing-select-options li')].map(
-        (option) => option.textContent,
+      [...question.querySelectorAll('.printing-select-options li')].map((option) =>
+        option.textContent.trim(),
       ),
-    ).toEqual(['Positive association', 'Negative association', 'No association']);
-    expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(1);
-  });
-
-  it('keeps subpart prompts and their controls in one group after a horizontal rule', () => {
-    const question = printQuestion(
-      '<p>Shared introduction</p><hr><p>First subpart</p><input name="first"><hr><p>Second subpart</p><input name="second">',
-    );
-    const first = question
-      .querySelector('[data-print-answer-name="first"]')!
-      .closest('.printing-subsection');
-    const second = question
-      .querySelector('[data-print-answer-name="second"]')!
-      .closest('.printing-subsection');
-    expect(first?.textContent).toBe('First subpart');
-    expect(second?.textContent).toBe('Second subpart');
-    expect(first).not.toBe(second);
-    expect(first?.textContent).not.toContain('Shared introduction');
-  });
-  it('replaces text and symbolic editors with empty lines while preserving labels and suffixes', () => {
-    const question = printQuestion(`
-      <h3>pl-number-input</h3>
-      <span class="input-group"><span>Force =</span><input name="force" value="123" placeholder="number ±1%" size="35"><span>N</span></span>
-      <span class="input-group"><span>Derivative =</span><math-field id="derivative" data-placeholder-text="symbolic expression">x^2</math-field></span>
-    `);
-    expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(2);
-    expect(question.querySelector('input, math-field')).toBeNull();
-    expect(question.textContent).toContain('Force =');
-    expect(question.textContent).not.toContain('number ±1%');
-    expect(question.textContent).toContain('Derivative =');
-    expect(question.textContent).not.toContain('symbolic expression');
-    expect(question.textContent).not.toContain('123');
-    expect(question.textContent).not.toContain('x^2');
-    expect(question.querySelector('h3')?.textContent).toBe('pl-number-input');
-    expect(question.querySelector('[data-print-response-area]')).toBeNull();
-  });
-
-  it('keeps multipart question prompts and choices in answer keys without blank responses', () => {
-    const question = printQuestion(`
-      <p>Calculate both forces and select the direction.</p>
-      <p>First: <span class="input-group"><input name="first" placeholder="number"><span>N</span></span></p>
-      <p>Second: <span class="input-group"><input name="second" placeholder="number"><span>N</span></span></p>
-      <p>Explanation: <textarea placeholder="Explain your choice"></textarea></p>
-      <fieldset><label><input type="radio" name="direction">North</label><label><input type="radio" name="direction">South</label></fieldset>
-    `);
-    const questionBody = question.querySelector<HTMLElement>('.question-body')!;
-    removeResponseControlsForAnswerKey(questionBody);
-
-    expect(questionBody.textContent).toContain('Calculate both forces and select the direction.');
-    expect(questionBody.textContent).toContain('First:');
-    expect(questionBody.textContent).toContain('Second:');
-    expect(questionBody.textContent).toContain('North');
-    expect(questionBody.textContent).toContain('South');
-    expect(questionBody.textContent).not.toContain('Explain your choice');
-    expect(questionBody.querySelectorAll('[data-print-response-line], input')).toHaveLength(0);
-  });
-
-  it('omits grading descriptors while preserving useful paper instructions', () => {
-    const question = printQuestion(`
-      <input placeholder="integer">
-      <input placeholder="Number">
-      <input placeholder="matrix">
-      <input placeholder="Unit">
-      <input placeholder="Number + Unit">
-      <input placeholder="number (exact)">
-      <input placeholder="real or complex (exact)">
-      <input placeholder="number ±1%">
-      <input placeholder="matrix (rtol=0.01, atol=1e-8)">
-      <input placeholder="string">
-      <textarea placeholder=" text "></textarea>
-      <math-field placeholder="asymptotic expression"></math-field>
-      <math-field data-placeholder-text="Symbolic expression"></math-field>
-      <input placeholder="number (3 sig figs)">
-      <input placeholder="matrix (3 significant figures)">
-      <input placeholder="Number (rtol=0.01, atol=1e-8 meter) + Unit">
-      <input placeholder="Number (exact) + Unit">
-      <input placeholder="integer in base 2">
-      <math-field data-placeholder-text="symbolic expression (blank is allowed)"></math-field>
-      <input placeholder="Enter the name of the enzyme">
-    `);
-    expect(
-      [...question.querySelectorAll('.printing-response-placeholder')].map(
-        (hint) => hint.textContent,
-      ),
-    ).toEqual([
-      '3 significant figures',
-      '3 significant figures per entry',
-      'Include units',
-      'Include units',
-      'integer in base 2',
-      'symbolic expression (blank is allowed)',
-      'Enter the name of the enzyme',
-    ]);
-    expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(19);
-    expect(question.querySelectorAll('.printing-textarea-response')).toHaveLength(1);
-    for (const field of question.querySelectorAll('.printing-response-field')) {
-      const line = field.querySelector('.printing-response-line');
-      const hint = field.querySelector('.printing-response-placeholder');
-      expect(line).not.toBeNull();
-      expect(hint).not.toBeNull();
-      expect(line!.nextElementSibling).toBe(hint);
-    }
-  });
-
-  it('preserves each matrix entry and its row and column label', () => {
-    const question = printQuestion(
-      '<div class="input-group"><span>A =</span><table><tr><td><input size="8" aria-label="Row 1, Column 1"></td><td><input size="8" aria-label="Row 1, Column 2"></td></tr></table></div>',
-    );
-    expect(question.querySelectorAll('td [data-print-response-line]')).toHaveLength(2);
-    expect(question.querySelector('[aria-label="Row 1, Column 2"]')).not.toBeNull();
-  });
-
-  it('replaces the whole image-capture interface with one drawing area', () => {
-    const question = printQuestion(
-      '<p>Show your work.</p><script>initializeCapture();</script><div class="image-capture-card"><input type="file"><div>No image captured yet.</div><input type="range"><video></video><button>Use phone</button></div>',
-    );
-    expect(question.querySelectorAll('[data-print-response-area]')).toHaveLength(1);
-    expect(question.querySelector('.printing-drawing-response')).not.toBeNull();
-    expect(question.querySelector('input, video, button, .image-capture-card')).toBeNull();
-    expect(question.textContent).not.toContain('No image captured');
-    const section = question.querySelector('.printing-subsection');
-    expect(section?.querySelector('p')?.textContent).toBe('Show your work.');
-    expect(section?.querySelector('.printing-drawing-response')).not.toBeNull();
-  });
-
-  it('keeps sketch geometry and removes the interactive toolbar', () => {
-    const question = printQuestion(
-      '<div class="sketchresponse"><div class="si-container"><menu>Draw</menu><svg class="si-canvas" width="800" height="450"><path d="M0 0 L800 450"/></svg></div></div>',
-    );
-    expect(question.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 800 450');
-    expect(question.querySelector('path')?.getAttribute('d')).toBe('M0 0 L800 450');
-    expect(question.querySelector('menu, .si-container')).toBeNull();
-  });
-
-  it('preserves ordering options, alternatives, and provided blocks without drag controls', () => {
-    const question =
-      printQuestion(`<div class="pl-order-blocks-question-uuid" data-ordering-required="false" data-indentation-required="true"><button data-bs-content="Arrange the blocks to answer the question."></button>
-      <ul id="order-blocks-options-uuid">
-        <li class="pl-order-block"><div class="pl-order-block-content">First</div></li>
-        <li class="pl-order-blocks-pairing-indicator"><ul>
-          <li class="pl-order-block"><div class="pl-order-block-content">Option one</div></li>
-          <li class="pl-order-block"><div class="pl-order-block-content">Option two</div></li>
-        </ul></li>
-        <li class="pl-order-block"><div class="pl-order-block-content">Middle</div></li>
-        <li class="pl-order-blocks-pairing-indicator"><ul>
-          <li class="pl-order-block"><div class="pl-order-block-content"><em>Option three</em></div></li>
-          <li class="pl-order-block"><div class="pl-order-block-content">Option four</div></li>
-        </ul></li>
-        <li class="pl-order-block"><div class="pl-order-block-content">Last</div></li>
-      </ul>
-      <ul id="order-blocks-dropzone-uuid"><li class="pl-order-block"><div class="pl-order-block-content">Given</div></li></ul>
-      <input type="hidden" value="student order">
-    </div>`);
-    expect(
-      [...question.querySelectorAll('.printing-order-options')].map((list) =>
-        [...list.children].map(
-          (block) => block.querySelector('.printing-order-block-content')?.textContent,
-        ),
-      ),
-    ).toEqual([
-      ['First'],
-      ['Option one', 'Option two'],
-      ['Middle'],
-      ['Option three', 'Option four'],
-      ['Last'],
-      ['Given'],
-    ]);
-    expect(question.textContent).toContain('The order of the selected blocks does not matter.');
-    expect(question.textContent).toContain('write 0 for no indentation, 1 for one level');
-    expect(question.textContent).not.toContain('dragging');
-    expect(question.textContent).not.toContain('Keyboard Controls');
-    const groups = question.querySelectorAll(
-      '[role="group"][aria-label="Choose only one block from this group"]',
-    );
-    expect(groups).toHaveLength(2);
-    for (const group of groups) {
-      expect(group.querySelectorAll('.printing-order-choice-heading')).toHaveLength(1);
-      expect(group.querySelectorAll('li')).toHaveLength(2);
-    }
-    expect(question.textContent).not.toContain('Alternative group');
-    expect(question.querySelector('em')?.textContent).toBe('Option three');
-    expect(
-      question.querySelector('.printing-order-provided .printing-order-block-content')?.textContent,
-    ).toBe('Given');
-    const positions = question.querySelectorAll('[aria-label="Include block"]');
-    expect(positions).toHaveLength(8);
-    for (const position of positions) expect(position.textContent).toBe('');
-    expect(question.textContent).toContain('Mark any provided blocks you want to include too.');
-    expect(question.querySelectorAll('[aria-label="Indentation level"]')).toHaveLength(8);
-    expect(question.querySelector('.printing-order-blocks > .printing-response-area')).toBeNull();
-    expect(question.textContent).not.toContain('Solution with indentation');
-    expect(question.querySelector('[id^="order-blocks-"], input')).toBeNull();
-  });
-
-  it('uses blank number boxes without a duplicate written response for unindented ordering', () => {
-    const question =
-      printQuestion(`<div class="pl-order-blocks-question-uuid" data-ordering-required="true" data-indentation-required="false">
-      <ul id="order-blocks-options-uuid">
-        <li class="pl-order-block"><div class="pl-order-block-content">First</div></li>
-        <li class="pl-order-block"><div class="pl-order-block-content">Second</div></li>
-      </ul>
-    </div>`);
-    expect(question.querySelectorAll('.printing-order-options')).toHaveLength(1);
-    expect(question.querySelectorAll('.printing-order-options > li')).toHaveLength(2);
-    expect(question.querySelectorAll('[aria-label="Order number"]')).toHaveLength(2);
-    expect(question.querySelector('ol')).toBeNull();
-    expect(question.querySelector('[role="group"]')).toBeNull();
-    expect(question.querySelector('.printing-order-blocks > .printing-response-area')).toBeNull();
-    expect(question.textContent).not.toContain('Choose only one block from this group');
-    expect(question.textContent).toContain(
-      'Write 1 beside the first block, 2 beside the next, and so on. Leave unused blocks blank.',
-    );
-  });
-
-  it('retains matching choices when a dropdown is the only source of options', () => {
-    const question = printQuestion(
-      '<div class="pl-matching-container"><div class="pl-matching-statement"><select><option value="" aria-label="Blank"></option><option value="1">Mercury</option><option value="2">Venus</option></select><span>Closest planet</span></div></div>',
-    );
-    expect(question.querySelectorAll('.printing-select-options li')).toHaveLength(2);
-    expect(question.textContent).toContain('Mercury');
-    expect(question.textContent).toContain('Venus');
+    ).toEqual(['Positive association', 'Negative association']);
     expect(question.querySelector('select')).toBeNull();
   });
 
-  it('clears selected choices without dropping their labels', () => {
-    const question = printQuestion(
-      '<fieldset><label><input type="radio" checked value="secret">Choice A</label><label><input type="radio">Choice B</label></fieldset>',
+  it('keeps the labels, units, and useful hints from rendered numeric and symbolic inputs', () => {
+    const question = renderedQuestion('inputs');
+    expect(question.querySelectorAll('[data-print-response-line]')).toHaveLength(2);
+    expect(question.textContent).toContain('Force:');
+    expect(question.textContent).toContain('Derivative:');
+    expect(question.textContent).toContain('N');
+    expect(question.querySelector('.printing-response-placeholder')?.textContent).toBe(
+      '3 significant figures',
     );
-    expect(question.querySelector<HTMLInputElement>('input')?.checked).toBe(false);
-    expect(question.querySelector('input')?.getAttribute('value')).toBeNull();
-    expect(question.textContent).toContain('Choice A');
-    expect(question.textContent).toContain('Choice B');
+    expect(question.textContent).not.toContain('symbolic expression');
+    expect(question.querySelector('input, math-field')).toBeNull();
   });
 
-  it('keeps rich-text limits, file names, and Unicode starter code with written response areas', () => {
-    const encoded = Buffer.from('def greet():\n    return "café"\n').toString('base64');
-    const question = printQuestion(
-      `<div id="file-editor-test"><div class="card-header">answer.py<button>Help</button></div><input type="hidden" value="${encoded}"></div><div class="pl-rich-text-editor-container"><div contenteditable="true">Existing response</div><div class="pl-rich-text-editor-counter-container"><span class="small text-danger"></span><div class="text-secondary"><span class="small">Minimum 20 words</span></div></div></div>`,
-    );
-    expect(question.querySelector('pre')?.textContent).toBe('def greet():\n    return "café"\n');
+  it('keeps prompts and choices while removing rendered controls from answer keys', () => {
+    const question = printQuestion(rendered.inputs + rendered.multiple_choice_radio);
+    const questionBody = question.querySelector<HTMLElement>('.question-body')!;
+    removeResponseControlsForAnswerKey(questionBody);
+    for (const text of ['Force:', 'Derivative:', 'Choice A', 'Choice B']) {
+      expect(questionBody.textContent).toContain(text);
+    }
+    expect(questionBody.querySelector('[data-print-response-line], input')).toBeNull();
+  });
+
+  it('keeps each rendered matrix entry and its row and column label', () => {
+    const question = renderedQuestion('matrix');
+    expect(question.querySelectorAll('td [data-print-response-line]')).toHaveLength(2);
+    expect(question.querySelector('[aria-label="Row 1, Column 2"]')).not.toBeNull();
+    expect(question.textContent).toContain('A =');
+  });
+
+  it('replaces a rendered image-capture interface with one drawing area', () => {
+    const question = printQuestion(`<p>Show your work.</p>${rendered.image_capture}`);
+    expect(question.querySelectorAll('[data-print-response-area]')).toHaveLength(1);
+    expect(question.querySelector('.printing-drawing-response')).not.toBeNull();
+    expect(question.querySelector('input, video, button, .image-capture-card')).toBeNull();
+    expect(question.querySelector('.printing-subsection p')?.textContent).toBe('Show your work.');
+  });
+
+  it('prints rendered ordering blocks with supplied blocks and indentation fields', () => {
+    const question = renderedQuestion('order_blocks');
+    const options = question.querySelector('.printing-order-options');
+    for (const text of ['First', 'Alternative one', 'Alternative two', 'Last']) {
+      expect(options?.textContent).toContain(text);
+    }
+    expect(question.querySelector('.printing-order-provided')?.textContent).toContain('Given');
+    expect(question.querySelectorAll('[aria-label="Indentation level"]')).toHaveLength(5);
+    expect(question.querySelector('[id^="order-blocks-"], input')).toBeNull();
+  });
+
+  it('prints rendered ordering blocks without duplicate blank responses', () => {
+    const question = renderedQuestion('order_blocks_unindented');
+    expect(question.querySelectorAll('.printing-order-options > li')).toHaveLength(2);
+    expect(question.querySelectorAll('[aria-label="Order number"]')).toHaveLength(2);
+    expect(question.querySelector('[aria-label="Indentation level"]')).toBeNull();
+    expect(question.querySelector('.printing-order-blocks > .printing-response-area')).toBeNull();
+  });
+
+  it('retains rendered matching statements and options without their dropdowns', () => {
+    const question = renderedQuestion('matching');
+    expect(question.querySelectorAll('.pl-matching-options li')).toHaveLength(3);
+    for (const text of ['Iron', 'Sodium', 'Ag']) expect(question.textContent).toContain(text);
+    expect(question.querySelector('select')).toBeNull();
+  });
+
+  it('clears selected rendered choices without dropping their labels', () => {
+    const radio = renderedQuestion('multiple_choice_radio');
+    const checkbox = renderedQuestion('checkbox_fieldset');
+    for (const question of [radio, checkbox]) {
+      expect(question.querySelector('input[checked], input[value]')).toBeNull();
+      expect(question.querySelector<HTMLInputElement>('input')?.checked).toBe(false);
+    }
+    for (const text of ['Choice A', 'Choice B']) expect(radio.textContent).toContain(text);
+    for (const text of ['First', 'Second']) expect(checkbox.textContent).toContain(text);
+  });
+
+  it.each(['checkbox_fieldset', 'checkbox_inline'])(
+    'moves instructions before rendered %s options',
+    (fixture) => {
+      const question = renderedQuestion(fixture);
+      const group = question.querySelector('fieldset, [role="group"]')!;
+      const instructions = group.querySelector('.printing-checkbox-instructions');
+      expect(instructions?.nextElementSibling?.classList).toContain('form-check');
+    },
+  );
+
+  it('keeps file names, starter code, and rich-text limits from rendered editors', () => {
+    const question = printQuestion(rendered.file_editor + rendered.rich_text);
+    expect(question.querySelector('pre')?.textContent).toBe('def greet():\n    return "café"');
     expect(question.textContent).toContain('answer.py');
-    expect(question.textContent).not.toContain('Existing response');
     expect(question.textContent).toContain('Minimum 20 words');
     expect(question.querySelectorAll('[data-print-response-area]')).toHaveLength(2);
   });

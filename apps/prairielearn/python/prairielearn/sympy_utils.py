@@ -16,7 +16,8 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
-from tokenize import NAME, NUMBER, OP, TokenError
+from io import StringIO
+from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
 from types import CodeType
 from types import MappingProxyType as FrozenDict
 from typing import (
@@ -823,51 +824,83 @@ def sympy_check(
     allow_complex: bool,
     allow_sets: bool,
     allow_extra_symbols: bool = False,
+    # True would ensure semantic checks by default but break compatibility.
+    check_evaluated_complex: bool = False,
 ) -> None:
     """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
 
-    work_stack: deque[sympy.Basic] = deque([expr])
+    def check_nodes(
+        root: sympy.Basic, *, check_structure: bool, check_complex: bool
+    ) -> None:
+        checked_nodes: set[sympy.Basic] | None = (
+            set() if check_evaluated_complex else None
+        )
+        work_stack: deque[sympy.Basic] = deque([root])
 
-    while work_stack:
-        item = work_stack.pop()
+        while work_stack:
+            item = work_stack.pop()
+            if checked_nodes is not None:
+                if item in checked_nodes:
+                    continue
+                checked_nodes.add(item)
 
-        # Avoid str(item) on every node: printing each subtree is quadratic in
-        # the size of the expression and dominates parse time.
-        if (
-            not allow_extra_symbols
-            and isinstance(item, sympy.Symbol)
-            and (str_item := str(item)) not in valid_symbols
-        ):
-            raise HasInvalidSymbolError(str_item)
-        if isinstance(item, sympy.Float):
-            raise HasFloatError(float(str(item)))
-        if not allow_sets and isinstance(item, sympy.Set):
-            raise HasSetNotationError
-        # Detect complex numbers both in simplified form (sympy.I) and in
-        # unevaluated form (e.g. sqrt(-2) kept as Pow(-2, 1/2) by evaluateFalse).
-        # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
-        # non-finite values, which aren't complex in the student-input sense.
-        #
-        # The is_extended_real query can trigger internal sympy bugs on certain
-        # unevaluated expressions (e.g. sec(0) with evaluateFalse), so we catch
-        # AttributeError and skip the check for those items.
-        if not allow_complex:
-            if item is sympy.I:
-                raise HasComplexError("complex values not allowed")
-            try:
-                is_complex = (
-                    item.is_extended_real is False
-                    and getattr(item, "is_finite", None) is not False
-                )
-            except AttributeError:
-                is_complex = False
-            if is_complex:
+            if check_structure:
+                # Avoid str(item) on every node: printing each subtree is quadratic in
+                # the size of the expression and dominates parse time.
+                if (
+                    not allow_extra_symbols
+                    and isinstance(item, sympy.Symbol)
+                    and (str_item := str(item)) not in valid_symbols
+                ):
+                    raise HasInvalidSymbolError(str_item)
+                if isinstance(item, sympy.Float):
+                    raise HasFloatError(float(str(item)))
+                if not allow_sets and isinstance(item, sympy.Set):
+                    raise HasSetNotationError
+            if check_complex and not allow_complex and _is_disallowed_complex(item):
                 raise HasComplexError("complex values not allowed")
 
-        work_stack.extend(item.args)
+            work_stack.extend(item.args)
+
+    # SymPy's assumptions can be inconsistent for unevaluated arithmetic trees.
+    # When checking an evaluated copy, only use the original tree for structural
+    # validation so that it remains available for display without determining
+    # whether the expression is complex.
+    check_nodes(
+        expr,
+        check_structure=True,
+        check_complex=not check_evaluated_complex,
+    )
+
+    if check_evaluated_complex:
+        # Reevaluate the existing tree without reparsing, while preserving the
+        # unevaluated result returned for display.
+        try:
+            evaluated_expr = expr.doit(deep=True)
+        except Exception as exc:
+            raise BaseSympyError from exc
+        check_nodes(evaluated_expr, check_structure=False, check_complex=True)
+
+
+def _is_disallowed_complex(item: sympy.Basic) -> bool:
+    """Return whether an expression is a finite complex value."""
+    if item is sympy.I:
+        return True
+
+    # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
+    # non-finite values, which aren't complex in the student-input sense.
+    # is_extended_real can trigger internal SymPy bugs on certain unevaluated
+    # expressions (e.g. sec(0) with evaluateFalse).
+    try:
+        return (
+            item.is_extended_real is False
+            and getattr(item, "is_finite", None) is not False
+        )
+    except AttributeError:
+        return False
 
 
 def evaluate(
@@ -949,6 +982,30 @@ def _validate_multiplication(
             raise HasInvalidExpressionError(left_offset)
         if match.start("right") > match.end("left"):
             raise HasInvalidExpressionError(left_offset)
+
+
+def _validate_adjacent_numbers(expr: str, char_offsets: list[int]) -> None:
+    """Reject numeric tokens that implicit multiplication would silently combine."""
+    line_offsets = [0]
+    for line in expr.splitlines(keepends=True):
+        line_offsets.append(line_offsets[-1] + len(line))
+
+    previous_number_end: tuple[int, int] | None = None
+    try:
+        for token in generate_tokens(StringIO(expr).readline):
+            if token.type != NUMBER:
+                previous_number_end = None
+                continue
+
+            if token.start == previous_number_end:
+                row, column = token.start
+                offset = line_offsets[row - 1] + column
+                raise HasInvalidExpressionError(char_offsets[offset])
+
+            previous_number_end = token.end
+    except TokenError:
+        # The normal parsing path will report incomplete token streams.
+        return
 
 
 def _regex_sub_expr_and_map_offsets(
@@ -1069,6 +1126,8 @@ def _evaluate_with_source(
             r"\1*\2",
         )
 
+    _validate_adjacent_numbers(normalized_expr, char_offsets)
+
     local_dict: DICT = {
         k: v
         for inner_dict in locals_for_eval.values()
@@ -1188,13 +1247,14 @@ def _evaluate_with_source(
     except Exception as exc:
         raise BaseSympyError from exc
 
-    # Finally, check for invalid symbols
+    # Finally, validate the result.
     sympy_check(
         res,
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         allow_extra_symbols=allow_extra_symbols,
+        check_evaluated_complex=not simplify_expression and not allow_complex,
     )
 
     return res, evaluation_code
@@ -1580,7 +1640,8 @@ def try_parse_string_as_sympy(
     allow_sets: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
-    imaginary_unit: str | None = None,
+    # Retained for backwards compatibility with existing callers.
+    imaginary_unit: str | None = None,  # ruff:ignore[unused-function-argument]
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
 ) -> SympyParseResult:
@@ -1717,18 +1778,6 @@ def try_parse_string_as_sympy(
     except Exception as exc:
         return SympyParseFailure(
             f"Unexpected error: {exc}. Please contact the course staff."
-        )
-
-    # If complex numbers are not allowed, raise error if expression has the imaginary unit
-    if (
-        (not allow_complex)
-        and (imaginary_unit is not None)
-        and (expr_parsed.has(sympy.I))
-    ):
-        expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        return SympyParseFailure(
-            "Your answer was simplified to this, which contains a complex number "
-            f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
         )
 
     return SympyParseSuccess(expr_parsed)

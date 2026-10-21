@@ -1,12 +1,5 @@
 import type { QuestionBlockSize } from '../printing/question-block-size.js';
 
-const QUESTION_BLOCK_SIZE_LOOKUP = {
-  auto: true,
-  third: true,
-  half: true,
-  full: true,
-} satisfies Record<QuestionBlockSize, true>;
-
 export interface MeasuredPrintQuestion {
   id: string;
   label?: string;
@@ -16,13 +9,13 @@ export interface MeasuredPrintQuestion {
 
 interface PlannedPrintQuestion extends MeasuredPrintQuestion {
   reservedHeight: number;
-  allowsFlow: boolean;
+  canSpanPages: boolean;
 }
 
 export interface PlannedPrintQuestionPage {
   questions: PlannedPrintQuestion[];
   reservedHeight: number;
-  allowsFlow: boolean;
+  canSpanPages: boolean;
 }
 
 const FIT_TOLERANCE_PX = 0.5;
@@ -35,18 +28,6 @@ const BLOCK_SIZE_FRACTIONS: Record<Exclude<QuestionBlockSize, 'auto'>, number> =
 
 export function getPrintBlockHeight(blockSize: QuestionBlockSize, pageHeight: number): number {
   return blockSize === 'auto' ? pageHeight : pageHeight * BLOCK_SIZE_FRACTIONS[blockSize];
-}
-
-function isQuestionBlockSize(value: string): value is QuestionBlockSize {
-  return Object.hasOwn(QUESTION_BLOCK_SIZE_LOOKUP, value);
-}
-
-export function parsePrintBlockSize(value: string | undefined): QuestionBlockSize {
-  if (value == null || value === '') return 'auto';
-  if (isQuestionBlockSize(value)) return value;
-  throw new Error(
-    `Invalid print block size ${JSON.stringify(value)}. Expected auto, third, half, or full.`,
-  );
 }
 
 export function planPrintQuestionPages({
@@ -64,7 +45,7 @@ export function planPrintQuestionPages({
   let currentPage: PlannedPrintQuestionPage | undefined;
 
   function startPage(): PlannedPrintQuestionPage {
-    const page = { questions: [], reservedHeight: 0, allowsFlow: false };
+    const page = { questions: [], reservedHeight: 0, canSpanPages: false };
     pages.push(page);
     return page;
   }
@@ -81,20 +62,20 @@ export function planPrintQuestionPages({
         ? question.naturalHeight
         : requestedHeight;
 
-    const needsMultiplePages = reservedHeight - pageHeight > FIT_TOLERANCE_PX;
-    const plannedQuestion = { ...question, reservedHeight, allowsFlow: needsMultiplePages };
+    const canSpanPages = reservedHeight - pageHeight > FIT_TOLERANCE_PX;
+    const plannedQuestion = { ...question, reservedHeight, canSpanPages };
     if (
       currentPage == null ||
-      needsMultiplePages ||
+      canSpanPages ||
       currentPage.reservedHeight + reservedHeight - pageHeight > FIT_TOLERANCE_PX
     ) {
       currentPage = startPage();
     }
     currentPage.questions.push(plannedQuestion);
     currentPage.reservedHeight += reservedHeight;
-    currentPage.allowsFlow ||= needsMultiplePages;
+    currentPage.canSpanPages ||= canSpanPages;
 
-    if (needsMultiplePages || pageHeight - currentPage.reservedHeight <= FIT_TOLERANCE_PX) {
+    if (canSpanPages || pageHeight - currentPage.reservedHeight <= FIT_TOLERANCE_PX) {
       currentPage = undefined;
     }
   }
