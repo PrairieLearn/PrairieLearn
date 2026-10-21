@@ -82,48 +82,16 @@ export async function insertGroupAssessmentInstance({
   );
 }
 
-/**
- * Lock parents before changing question grading state, in the same order as grading.
- * Bound subsequent bulk writes to this snapshot so newly created attempts cannot miss the refresh.
- */
-export async function selectAndLockAssessmentInstanceIdsForAssessmentQuestion({
-  assessment_id,
-  assessment_question_id,
-  instance_question_ids = null,
-}: {
-  assessment_id: string;
-  assessment_question_id: string;
-  instance_question_ids?: string[] | null;
-}): Promise<string[]> {
+/** Returns the visible attempts with pending questions, without reading submission history. */
+export async function selectGradingPendingAssessmentInstanceIds(
+  assessment_instance_ids: string[],
+): Promise<string[]> {
+  if (assessment_instance_ids.length === 0) return [];
   return await queryScalars(
-    sql.select_and_lock_assessment_instance_ids_for_assessment_question,
-    { assessment_id, assessment_question_id, instance_question_ids },
+    sql.select_grading_pending_assessment_instance_ids,
+    { assessment_instance_ids },
     IdSchema,
   );
-}
-
-/** The caller must hold these assessment-instance locks until its transaction commits. */
-export async function updateAssessmentInstancesGradingPending(
-  assessment_instance_ids: string[],
-): Promise<void> {
-  if (assessment_instance_ids.length === 0) return;
-  await execute(sql.update_assessment_instances_grading_pending, { assessment_instance_ids });
-}
-
-/** Reconciles question removals when an existing attempt is viewed, without recomputing scores. */
-export async function refreshAssessmentInstanceGradingPending(
-  assessment_instance_id: string,
-): Promise<boolean> {
-  return await runInTransactionAsync(async () => {
-    await lockAssessmentInstances([assessment_instance_id]);
-    await updateAssessmentInstancesGradingPending([assessment_instance_id]);
-    return (await selectAssessmentInstanceById(assessment_instance_id)).grading_pending;
-  });
-}
-
-/** The caller must be in a transaction and lock parents before their questions or variants. */
-export async function lockAssessmentInstances(assessment_instance_ids: string[]): Promise<void> {
-  await execute(sql.lock_assessment_instances, { assessment_instance_ids });
 }
 
 /** Acknowledges existing pending work without changing scores or the manual grading queue. */

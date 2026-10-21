@@ -1,12 +1,8 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import type { Assessment, AssessmentQuestion } from '../../../lib/db-types.js';
-import {
-  selectAndLockAssessmentInstanceIdsForAssessmentQuestion,
-  updateAssessmentInstancesGradingPending,
-} from '../../../models/assessment-instance.js';
 
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 
@@ -84,22 +80,12 @@ export async function updateInstanceQuestions({
   update_assigned_grader: boolean;
   assigned_grader: string | null;
 }) {
-  await runInTransactionAsync(async () => {
-    const assessmentInstanceIds = update_requires_manual_grading
-      ? await selectAndLockAssessmentInstanceIdsForAssessmentQuestion({
-          assessment_id: assessment_question.assessment_id,
-          assessment_question_id: assessment_question.id,
-          instance_question_ids,
-        })
-      : [];
-    await execute(sql.update_instance_questions, {
-      assessment_question_id: assessment_question.id,
-      instance_question_ids,
-      update_requires_manual_grading,
-      requires_manual_grading,
-      update_assigned_grader,
-      assigned_grader,
-    });
-    await updateAssessmentInstancesGradingPending(assessmentInstanceIds);
+  await execute(sql.update_instance_questions, {
+    assessment_question_id: assessment_question.id,
+    instance_question_ids,
+    update_requires_manual_grading,
+    requires_manual_grading,
+    update_assigned_grader,
+    assigned_grader,
   });
 }
