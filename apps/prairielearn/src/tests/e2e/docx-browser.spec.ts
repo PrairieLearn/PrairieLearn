@@ -10,6 +10,7 @@ import type { AssetsManifest } from '@prairielearn/compiled-assets';
 
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxDocument } from '../../lib/printing/docx-document.js';
+import { PAPER_DIMENSIONS } from '../../lib/printing/paper-size.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -25,7 +26,10 @@ async function loadPrintClient(page: Page) {
   await page.addStyleTag({
     path: path.join(buildDirectory, manifest['stylesheets/exam-printing.css'].assetPath),
   });
-  await page.addStyleTag({ content: '@page { size: Letter; }' });
+  const { width, height } = PAPER_DIMENSIONS.Letter;
+  await page.addStyleTag({
+    content: `:root { --exam-print-page-width: ${width}; --exam-print-page-height: ${height}; } @page { size: ${width} ${height}; }`,
+  });
   await page.addScriptTag({
     path: fileURLToPath(new URL('../dist/paged.polyfill.min.js', import.meta.resolve('pagedjs'))),
   });
