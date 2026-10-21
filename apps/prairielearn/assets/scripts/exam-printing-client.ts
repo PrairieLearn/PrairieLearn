@@ -465,7 +465,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);
-  const mathJax = Reflect.get(window, 'MathJax') as
+  const mathJax = window.MathJax as
     | {
         startup?: { promise?: Promise<unknown> };
         typesetPromise?: (elements?: Element[]) => Promise<unknown>;
@@ -475,6 +475,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   annotateDocxMath(source);
   normalizeResponseControls(source);
   await mathJax?.typesetPromise?.([source]);
+  // The first pass preserves copied math; this one catches newly rendered math.
   annotateDocxMath(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);

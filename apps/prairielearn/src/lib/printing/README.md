@@ -1,10 +1,10 @@
 # Printing
 
-Utilities for rendering printable HTML as PDFs and editable Word documents, and namespacing question HTML so separately rendered fragments can share a page.
+Tools for creating printable PDFs and editable Word documents, plus a helper that keeps question IDs unique when separate questions share a page.
 
 ## Rendering PDFs and Word documents
 
-The rendering browser lays out and paginates question HTML. PDF exports use its completed page snapshot. Word exports use the editable source captured before pagination and screenshots of figures. Create one renderer per application process:
+The browser lays out questions and splits them into pages. PDFs use the finished pages. Word documents use question content saved before page breaks are added, along with images of figures. Create one renderer per application process:
 
 The preview response carries a signed snapshot ID covering its HTML, editable Word source, assessment instance, generating user, layout query, and selected question identities and order. PDF and Word exports verify the ID and current question list before rendering. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
 
@@ -34,7 +34,7 @@ The renderer connects to one Cloudflare browser on first use and runs up to four
 
 Set both `printingCloudflareAccountId` and `printingCloudflareApiToken` on every server that handles print requests to use Cloudflare Browser Run. If both are unset, the renderer uses local Chromium. A missing or empty value in either setting is a configuration error. The token needs Browser Run Edit permission. In production, when `browserOrigin` is provided, the Cloudflare browser loads public files under `config.assetsPrefix` directly from that origin. Development proxies those assets so a Cloudflare browser does not need to reach a local server. Protected assets are fetched from the application server's local listener and fulfilled through Playwright. Without Cloudflare credentials, a Playwright-compatible Chromium executable must be installed locally for development and tests.
 
-Set `runScripts: true` when preparing a fresh preview from server-generated question HTML. PDF exports use the completed, script-free page snapshot with scripts disabled. Word exports enable scripts for their browser-side document builder after validating the static snapshot.
+Set `runScripts: true` when preparing a fresh preview from server-generated question HTML. PDF exports use the completed, script-free page snapshot with scripts disabled. Keep scripts enabled when collecting Word content from a fresh preview so the page can save it before pagination.
 
 The print endpoints give each render a five-minute, job-specific asset credential. The renderer permits only public assets and protected asset paths for that assessment instance and its selected instance questions. It sends the credential to the local asset routes, never to the rendering browser. Other same-origin routes, proxied redirects, mutating requests, cross-origin requests, service workers, WebSockets, and socket.io polling are blocked. Direct public asset requests may follow redirects using the browser's normal behavior, without a credential. Cross-origin question assets must be served through PrairieLearn to appear in the output.
 
@@ -44,11 +44,15 @@ For outputs that also need metadata from the paginated page, use `renderer.rende
 
 ### Word output
 
-The Word document contains native paragraphs, lists, tables, answer spaces, hyperlinks, and Office Math equations. Only actual figures (images, SVG diagrams, and canvases) are captured as images. Question content is captured before pagination, so Word can reflow edited text and its page count can differ from the PDF. The sheet size and margins follow the printable page's CSS. Printable details boxes retain their heading and content. Response guidance appears below its answer line, with surrounding labels and units kept in separate table cells.
+Word documents keep text, lists, tables, answer spaces, links, and equations editable when possible. Images, SVG diagrams, and canvases appear as pictures. Some equations also appear as pictures when no editable version is available.
 
-The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docx-content.ts` maps the source to native Word objects, and `print-docx-client.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
+Word can rearrange pages after edits, so its page count may differ from the PDF. Paper size and margins match the printable page. Details boxes keep their headings and content. Response guidance appears below the answer line, while labels and units stay beside it.
 
-`cover` may be a function; it receives the page's root `data-*` attributes so that values which are only known after rendering, such as the number of questions that rendered successfully, can be placed on the cover. `htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
+The browser saves question text and equations before it splits them into pages, then captures figures once the page layout is complete. `createDocxDocument` turns that content into an editable Word document. The cover and footer stay editable; callers supply them through `PrintableCover` and `footerLabel`.
+
+`cover` may also be a function. It receives the page's root `data-*` attributes, so values known only after rendering, such as the number of questions that rendered successfully, can appear on the cover.
+
+`htmlToTextBlocks` turns HTML content, such as assessment instructions, into headings, paragraphs, and simple lists for the cover.
 
 Omit the `cover` option to start with questions on the first page.
 

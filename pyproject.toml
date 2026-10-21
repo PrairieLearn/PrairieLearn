@@ -20,7 +20,7 @@ dependencies = [
   "numpy==2.4.6",
   "openpyxl==3.1.5",
   "pandas==2.3.3",
-  "pillow==12.3.0",
+  "pillow==13.0.0",
   "pint==0.26.1",
   "psutil==7.2.2",
   "pulp==3.3.2",
@@ -28,7 +28,7 @@ dependencies = [
   "pycryptodome==3.23.0",
   "pygments==2.21.0",
   "pygments-ansi-color==0.3.0",
-  "pygraphviz==1.14",
+  "pygraphviz==2.0.3",
   "pyquaternion==0.9.9",
   "regex==2026.9.10",
   "requests==2.34.2",
@@ -312,3 +312,6 @@ testpaths = [
 required-version = ">=0.9.0"
 # Ensures that all dependencies are installed whenever we use `uv run`.
 default-groups = "all"
+# PyGraphviz wheels bundle Graphviz and its font stack, which changes graph
+# rendering and emits Fontconfig warnings that surface as question issues.
+no-binary-package = ["pygraphviz"]
