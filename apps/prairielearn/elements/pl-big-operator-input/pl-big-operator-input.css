@@ -27,8 +27,39 @@
   align-items: center;
 }
 
-.pl-big-operator-input input {
+.pl-big-operator-input input,
+.pl-big-operator-input math-field {
   font-family: KaTeX_Main;
+}
+
+.pl-big-operator-input__symbolic-field {
+  height: auto;
+  padding-right: 0.1rem;
+}
+
+.pl-big-operator-input math-field::part(placeholder) {
+  color: var(--bs-secondary-color);
+  background: var(--bs-body-bg);
+}
+
+.pl-big-operator-input math-field::part(content) {
+  min-width: 5ch;
+  font-size: 1.2rem;
+}
+
+.pl-big-operator-input math-field::part(virtual-keyboard-toggle) {
+  z-index: 3;
+}
+
+.pl-big-operator-input .form-control.is-invalid.no-validation-icon {
+  padding-right: 0.1rem;
+  background-image: none;
+}
+
+@media (pointer: coarse) {
+  .pl-big-operator-input math-field::part(virtual-keyboard-toggle) {
+    display: none;
+  }
 }
 
 .pl-big-operator-input__operator-stack {
@@ -108,7 +139,7 @@
   text-align: center;
 }
 
-/* Layout overrides for delegated pl-symbolic-input fields. */
+/* Layout overrides for the component input fields. */
 .pl-big-operator-input .d-inline-block {
   margin: 0 !important;
 }
