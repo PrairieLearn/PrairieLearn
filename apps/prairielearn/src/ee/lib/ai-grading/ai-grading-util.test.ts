@@ -1,13 +1,14 @@
 import { type FilePart, Output, generateText } from 'ai';
 import { MockLanguageModelV3 } from 'ai/test';
 import sharp from 'sharp';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { sanitizeObject } from '@prairielearn/sanitize';
 
 import { type RubricItem } from '../../../lib/db-types.js';
 
+import * as questionImages from './ai-grading-images.js';
 import {
   correctImagesOrientation,
   extractAiGradingTextFromCompletion,
@@ -16,6 +17,7 @@ import {
   generateSubmissionContent,
   parseAiRubricItems,
   parseSubmission,
+  prepareQuestionPrompt,
 } from './ai-grading-util.js';
 
 function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>): RubricItem {
@@ -664,6 +666,60 @@ describe('extractAiGradingTextFromCompletion', () => {
   });
 });
 
+describe('prepareQuestionPrompt', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each(['question', 'answer'] as const)(
+    'limits the combined image size in the %s section',
+    async (section) => {
+      const data = Buffer.alloc(6 * 1024 * 1024).toString('base64');
+      const loadImage = vi
+        .spyOn(questionImages, 'loadQuestionImage')
+        .mockResolvedValue({ data, mediaType: 'image/png' });
+
+      await expect(
+        prepareQuestionPrompt(
+          '<img src="first.png"><img src="second.png">',
+          {} as questionImages.QuestionImageContext,
+          section,
+        ),
+      ).rejects.toThrow(`AI grading ${section} files exceed the size limit of 10 MiB`);
+      expect(loadImage).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it.each(['question', 'answer'] as const)(
+    'includes repeated images only once in the %s section and its size budget',
+    async (section) => {
+      const data = Buffer.alloc(4 * 1024 * 1024).toString('base64');
+      const loadImage = vi
+        .spyOn(questionImages, 'loadQuestionImage')
+        .mockResolvedValue({ data, mediaType: 'image/png' });
+      const parts = await prepareQuestionPrompt(
+        '<p><img src="first.png" alt="Original caption"></p>' +
+          '<p><img src="first.png" alt="Repeated caption"></p>' +
+          '<p><img src="second.png"></p>',
+        {} as questionImages.QuestionImageContext,
+        section,
+      );
+      const prefix = section === 'question' ? 'Question' : 'Answer';
+      const title = section === 'question' ? 'Question' : 'Instructor reference answer';
+
+      expect(loadImage).toHaveBeenCalledTimes(2);
+      expect(parts.filter((part) => part.type === 'file').map((part) => part.filename)).toEqual([
+        `${section}-image-1.png`,
+        `${section}-image-2.png`,
+      ]);
+      expect(parts[0]).toEqual({
+        type: 'text',
+        text: `## ${title}\n\n<p>[${prefix} image 1]</p><p>[${prefix} image 1]</p><p>[${prefix} image 2]</p>`,
+      });
+      expect(parts).toContainEqual({ type: 'text', text: `${prefix} image 1: Original caption` });
+      expect(parts).toContainEqual({ type: 'text', text: `${prefix} image 1: Repeated caption` });
+    },
+  );
+});
+
 describe('generatePrompt', () => {
   const baseArgs = {
     questionPrompt: [{ type: 'text', text: '## Question\n\nWhat is 2+2?' }],
@@ -675,6 +731,36 @@ describe('generatePrompt', () => {
     params: {},
     true_answer: {},
   } satisfies Parameters<typeof generatePrompt>[0];
+
+  it('allows each section to use its own file size budget', async () => {
+    const data = Buffer.alloc(8 * 1024 * 1024).toString('base64');
+    const image: FilePart = { type: 'file', data, mediaType: 'image/png' };
+
+    await expect(
+      generatePrompt({
+        ...baseArgs,
+        questionPrompt: [...baseArgs.questionPrompt, image],
+        questionAnswer: [...baseArgs.questionAnswer, image],
+        submitted_answer: { _files: [{ name: 'submission.png', contents: data }] },
+      }),
+    ).resolves.toHaveProperty('messages');
+  });
+
+  it('rejects submitted files exceeding their combined size limit', async () => {
+    const data = Buffer.alloc(6 * 1024 * 1024).toString('base64');
+
+    await expect(
+      generatePrompt({
+        ...baseArgs,
+        submitted_answer: {
+          _files: [
+            { name: 'first.png', contents: data },
+            { name: 'second.png', contents: data },
+          ],
+        },
+      }),
+    ).rejects.toThrow('AI grading submission files exceed the size limit of 10 MiB');
+  });
 
   it('renders valid grader_guidelines mustache with substituted variables', async () => {
     const prompt = await generatePrompt({
