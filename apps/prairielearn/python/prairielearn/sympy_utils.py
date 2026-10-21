@@ -295,12 +295,6 @@ class HasFunctionArityError(BaseSympyError):
 
 
 @dataclass(frozen=True, slots=True)
-class _SourceSpan:
-    start: int
-    end: int
-
-
-@dataclass(frozen=True, slots=True)
 class _IndexEvidence:
     index: int
 
@@ -1524,16 +1518,16 @@ def _token_candidates(token: str) -> list[str]:
 
 def _source_span(
     source: sympy_source.SourceText, start: int, end: int
-) -> _SourceSpan | None:
+) -> sympy_source.SourceSpan | None:
     tokens = source.tokens[start:end]
     if not tokens:
         return None
-    return _SourceSpan(tokens[0].raw_offset, tokens[-1].raw_offset + 1)
+    return sympy_source.SourceSpan(tokens[0].raw_offset, tokens[-1].raw_offset + 1)
 
 
 def _find_token_span(
     source: sympy_source.SourceText, token: str
-) -> _SourceSpan | None:
+) -> sympy_source.SourceSpan | None:
     best_match: re.Match[str] | None = None
     candidates = _token_candidates(token)
     for candidate in candidates:
@@ -1556,7 +1550,7 @@ def _find_token_span(
     return _source_span(source, best_match.start(), best_match.end())
 
 
-def _locate_error(error: _LocalizedSympyError) -> _SourceSpan | None:
+def _locate_error(error: _LocalizedSympyError) -> sympy_source.SourceSpan | None:
     if isinstance(error.evidence, _IndexEvidence):
         return _source_span(
             error.source,
