@@ -23,7 +23,11 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import { getAiGradingSettingsUrl, getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
+import {
+  getAiGradingSettingsUrl,
+  getAssessmentQuestionTrpcUrl,
+  getCourseInstanceTrpcUrl,
+} from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
@@ -224,6 +228,15 @@ router.get(
           assessmentQuestionId: res.locals.assessment_question.id,
           instanceQuestionId: res.locals.instance_question.id,
           trpcCsrfToken,
+          courseInstanceTrpcCsrfToken: generatePrefixCsrfToken(
+            {
+              url: getCourseInstanceTrpcUrl(res.locals.course_instance.id),
+              authn_user_id: res.locals.authn_user.id,
+            },
+            config.secretKey,
+          ),
+          aiGradingLastSelectedCredentialId:
+            res.locals.assessment_question.ai_grading_last_selected_credential_id,
           hasRubric: res.locals.assessment_question.manual_rubric_id != null,
           useCustomApiKeys: res.locals.course_instance.ai_grading_use_custom_api_keys,
           aiGradingSettingsUrl: getAiGradingSettingsUrl(res.locals.course_instance.id),

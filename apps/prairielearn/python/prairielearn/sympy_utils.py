@@ -831,9 +831,13 @@ def sympy_check(
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
-    checked_nodes: set[sympy.Basic] | None = set() if check_evaluated_complex else None
 
-    def check_nodes(root: sympy.Basic, *, check_structure: bool) -> None:
+    def check_nodes(
+        root: sympy.Basic, *, check_structure: bool, check_complex: bool
+    ) -> None:
+        checked_nodes: set[sympy.Basic] | None = (
+            set() if check_evaluated_complex else None
+        )
         work_stack: deque[sympy.Basic] = deque([root])
 
         while work_stack:
@@ -856,12 +860,20 @@ def sympy_check(
                     raise HasFloatError(float(str(item)))
                 if not allow_sets and isinstance(item, sympy.Set):
                     raise HasSetNotationError
-            if not allow_complex and _is_disallowed_complex(item):
+            if check_complex and not allow_complex and _is_disallowed_complex(item):
                 raise HasComplexError("complex values not allowed")
 
             work_stack.extend(item.args)
 
-    check_nodes(expr, check_structure=True)
+    # SymPy's assumptions can be inconsistent for unevaluated arithmetic trees.
+    # When checking an evaluated copy, only use the original tree for structural
+    # validation so that it remains available for display without determining
+    # whether the expression is complex.
+    check_nodes(
+        expr,
+        check_structure=True,
+        check_complex=not check_evaluated_complex,
+    )
 
     if check_evaluated_complex:
         # Reevaluate the existing tree without reparsing, while preserving the
@@ -870,7 +882,7 @@ def sympy_check(
             evaluated_expr = expr.doit(deep=True)
         except Exception as exc:
             raise BaseSympyError from exc
-        check_nodes(evaluated_expr, check_structure=False)
+        check_nodes(evaluated_expr, check_structure=False, check_complex=True)
 
 
 def _is_disallowed_complex(item: sympy.Basic) -> bool:
