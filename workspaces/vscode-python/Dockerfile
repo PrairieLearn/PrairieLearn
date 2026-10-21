@@ -1,5 +1,5 @@
 FROM prairielearn/workspace-vscode-base:latest
-ARG CACHEBUST=2026-08-15-14-04-29
+ARG CACHEBUST=2026-09-15-14-09-16
 
 # Run the rest of the build commands in a bash shell in login mode so that
 # conda/mamba shell hooks will work. This also allows images derived from
@@ -34,7 +34,11 @@ WORKDIR "/home/coder"
 RUN uv venv --python-preference managed --python 3.13 /home/coder/.venv
 
 COPY requirements.txt /home/coder/requirements.txt
-RUN uv pip install -r /home/coder/requirements.txt
+# Use system Graphviz to avoid bundled font and rendering regressions.
+# PyGraphviz omits Ubuntu's ARM plugin path; set it for linking and runtime.
+RUN graphviz_libdir="/usr/lib/$(gcc -print-multiarch)/graphviz" \
+    && LDFLAGS="-L${graphviz_libdir} -Wl,-rpath,${graphviz_libdir}" \
+    uv pip install --no-binary pygraphviz -r /home/coder/requirements.txt
 
 # After installing Python we install some VS Code extensions.
 USER coder

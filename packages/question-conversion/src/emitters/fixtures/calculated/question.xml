@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="calculated" title="Calculated answer">
+    <section ident="root_section">
+      <item ident="calculated" title="Variable sum">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>calculated_question</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>points_possible</fieldlabel>
+              <fieldentry>1.0</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        <presentation>
+          <material>
+            <mattext texttype="text/html">&lt;div&gt;&lt;p&gt;What is [a] + [b]?&lt;/p&gt;&lt;/div&gt;</mattext>
+          </material>
+        </presentation>
+        <itemproc_extension>
+          <calculated>
+            <answer_tolerance>0.01</answer_tolerance>
+            <formula decimal_places="2">[a] + [b]</formula>
+            <vars>
+              <var name="a" scale="2">
+                <min>1.0</min>
+                <max>10.0</max>
+              </var>
+              <var name="b" scale="2">
+                <min>2.0</min>
+                <max>5.0</max>
+              </var>
+            </vars>
+          </calculated>
+        </itemproc_extension>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>

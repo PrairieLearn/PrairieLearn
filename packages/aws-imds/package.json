@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/aws-imds",
-  "version": "3.1.1",
+  "version": "3.1.3",
   "type": "module",
   "repository": {
     "type": "git",
@@ -12,18 +12,18 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
-    "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.10",
-    "vitest": "^4.1.10"
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.2",
+    "vitest": "^5.0.2"
   }
 }

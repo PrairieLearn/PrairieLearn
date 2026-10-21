@@ -49,11 +49,17 @@ import {
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
+import { TRPCProvider } from '../../trpc/courseInstance/context.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
-import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
+import {
+  STATUS_VALUES,
+  type StudentRow,
+  StudentRowSchema,
+  type SyncCsv,
+} from './instructorStudents.shared.js';
 
 function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<StudentRow> }) {
   const allSelected = table.getIsAllPageRowsSelected();
@@ -290,6 +296,7 @@ function StudentsCard({
     toInvite: string[],
     toCancelInvitation: string[],
     toRemove: string[],
+    csv?: SyncCsv,
   ): Promise<void> => {
     const body = {
       __action: 'sync_students',
@@ -297,6 +304,7 @@ function StudentsCard({
       toInvite,
       toCancelInvitation,
       toRemove,
+      csv,
     };
     const res = await fetch(window.location.href, {
       method: 'POST',
@@ -316,11 +324,12 @@ function StudentsCard({
     window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
-  const inviteStudents = async (uids: string[]): Promise<void> => {
+  const inviteStudents = async (uids: string[], labelIds: string[]): Promise<void> => {
     const body = {
       __action: 'invite_uids',
       __csrf_token: csrfToken,
       uids: uids.join(','),
+      labelIds,
     };
     const res = await fetch(window.location.href, {
       method: 'POST',
@@ -441,16 +450,7 @@ function StudentsCard({
             if (info.row.original.user) {
               return info.getValue() || '—';
             }
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Student information is not yet available.',
-                  props: { id: 'students-name-tooltip' },
-                }}
-              >
-                <i className="bi bi-question-circle" />
-              </OverlayTrigger>
-            );
+            return <span className="text-muted">Not available</span>;
           },
         }),
         columnHelper.accessor((row) => row.enrollment.status, {
@@ -469,16 +469,7 @@ function StudentsCard({
             if (info.row.original.user) {
               return info.getValue() || '—';
             }
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Student information is not yet available.',
-                  props: { id: 'students-uin-tooltip' },
-                }}
-              >
-                <i className="bi bi-question-circle" />
-              </OverlayTrigger>
-            );
+            return <span className="text-muted">Not available</span>;
           },
         }),
         columnHelper.accessor((row) => row.user?.email, {
@@ -488,16 +479,7 @@ function StudentsCard({
             if (info.row.original.user) {
               return info.getValue() || '—';
             }
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Student information is not yet available.',
-                  props: { id: 'students-email-tooltip' },
-                }}
-              >
-                <i className="bi bi-question-circle" />
-              </OverlayTrigger>
-            );
+            return <span className="text-muted">Not available</span>;
           },
         }),
 
@@ -535,14 +517,7 @@ function StudentsCard({
           cell: (info) => {
             const date = info.getValue();
             if (date == null) return '—';
-            return (
-              <FriendlyDate
-                date={date}
-                timezone={timezone}
-                options={{ includeTz: false }}
-                tooltip
-              />
-            );
+            return <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} />;
           },
         }),
       ]),
@@ -873,18 +848,21 @@ function StudentsCard({
       <InviteStudentsModal
         show={showInvite}
         courseInstance={courseInstance}
+        studentLabels={studentLabels}
         selfEnrollLink={selfEnrollLink}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
       />
-      <SyncStudentsModal
-        show={showSync}
-        courseInstance={courseInstance}
-        selfEnrollLink={selfEnrollLink}
-        students={students}
-        onHide={() => setShowSync(false)}
-        onSubmit={syncStudents}
-      />
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <SyncStudentsModal
+          show={showSync}
+          courseInstance={courseInstance}
+          selfEnrollLink={selfEnrollLink}
+          students={students}
+          onHide={() => setShowSync(false)}
+          onSubmit={syncStudents}
+        />
+      </TRPCProvider>
     </>
   );
 }

@@ -3,13 +3,14 @@ CREATE FUNCTION
         IN assessment_instance_id bigint,
         IN authz_data jsonb,
         IN req_date timestamptz,
-        IN display_timezone text,
         IN group_work boolean,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
-        OUT credit_date_string text, -- For display to the user.
+        OUT credit_end_date timestamptz,
+        OUT next_active_date timestamptz,
+        OUT next_active_credit integer,
         OUT time_limit_min integer,  -- Time limit (if any) for this assessment.
         OUT time_limit_expired boolean, -- Is the time limit expired?
         OUT password text,           -- Password (if any) for this assessment.
@@ -17,10 +18,10 @@ CREATE FUNCTION
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is active
-        OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules jsonb,      -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules jsonb,      -- Raw access rule data. The currently active rule is marked by 'active' = TRUE.
         OUT show_before_release boolean, -- Always false for the legacy path; the modern path overrides this.
-        OUT access_timeline jsonb    -- Always empty for the legacy path; the modern path populates this.
+        OUT access_timeline jsonb,   -- Always empty for the legacy path; the modern path populates this.
+        OUT staff_override boolean
     )
 AS $$
 DECLARE
@@ -34,12 +35,14 @@ BEGIN
 
     SELECT *
     INTO assessment_result
-    FROM authz_assessment(assessment_instance.assessment_id, authz_data, req_date, display_timezone);
+    FROM authz_assessment(assessment_instance.assessment_id, authz_data, req_date);
 
     -- take most data directly from the assessment_result
     exam_access_end := assessment_result.exam_access_end;
     credit := assessment_result.credit;
-    credit_date_string := assessment_result.credit_date_string;
+    credit_end_date := assessment_result.credit_end_date;
+    next_active_date := assessment_result.next_active_date;
+    next_active_credit := assessment_result.next_active_credit;
     time_limit_min := assessment_result.time_limit_min;
     password := assessment_result.password;
     access_rules := assessment_result.access_rules;
@@ -47,7 +50,7 @@ BEGIN
     show_closed_assessment := assessment_result.show_closed_assessment;
     show_closed_assessment_score := assessment_result.show_closed_assessment_score;
     active := assessment_result.active;
-    next_active_time := assessment_result.next_active_time;
+    staff_override := assessment_result.staff_override;
     show_before_release := assessment_result.show_before_release;
     access_timeline := assessment_result.access_timeline;
 

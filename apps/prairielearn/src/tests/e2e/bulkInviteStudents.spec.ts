@@ -14,6 +14,29 @@ async function openInviteModal(page: Page) {
 }
 
 test.describe('Bulk invite students', () => {
+  test('resets labels and UIDs after cancelling an invitation on mobile', async ({
+    page,
+    courseInstance,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
+    await openInviteModal(page);
+
+    await page.getByRole('textbox', { name: 'UIDs' }).fill('cancelled-invite@example.com');
+    const selectLabels = page.getByRole('button', { name: 'Select labels' });
+    await selectLabels.press('Enter');
+    const sectionLabel = page.getByRole('checkbox', { name: 'Section A', exact: true });
+    await sectionLabel.press('Space');
+    await expect(sectionLabel).toBeChecked();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+
+    await openInviteModal(page);
+    await expect(page.getByRole('textbox', { name: 'UIDs' })).toHaveValue('');
+    await page.getByRole('button', { name: 'Select labels' }).click();
+    await expect(page.getByRole('checkbox', { name: 'Section A', exact: true })).not.toBeChecked();
+  });
+
   test('can invite a single valid student', async ({ page, courseInstance }) => {
     const student: AuthUser = { uid: 'bulk_single@test.com', uin: null, name: 'Bulk Single' };
     await getOrCreateUser(student);
@@ -35,7 +58,7 @@ test.describe('Bulk invite students', () => {
     await waitForJobAndCheckOutput(page, [`${student.uid}: Invited`, 'Successfully invited: 1']);
   });
 
-  test('can invite multiple valid students', async ({ page, courseInstance }) => {
+  test('can invite multiple valid students with labels', async ({ page, courseInstance }) => {
     const student2: AuthUser = {
       uid: 'bulk_multi_2@test.com',
       uin: null,
@@ -56,6 +79,11 @@ test.describe('Bulk invite students', () => {
 
     await page.getByRole('textbox', { name: 'UIDs' }).fill(`${student2.uid}\n${student3.uid}`);
 
+    await page.getByRole('button', { name: 'Select labels' }).click();
+    await page.getByRole('checkbox', { name: 'Section A', exact: true }).check();
+    await page.getByRole('checkbox', { name: 'Extra time', exact: true }).check();
+    await page.getByRole('button', { name: 'Select labels' }).click();
+
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
     await waitForJobAndCheckOutput(page, [
@@ -63,6 +91,15 @@ test.describe('Bulk invite students', () => {
       `${student3.uid}: Invited`,
       'Successfully invited: 2',
     ]);
+
+    await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
+    for (const uid of [student2.uid, student3.uid]) {
+      const row = page
+        .getByRole('row')
+        .filter({ has: page.getByRole('link', { name: uid, exact: true }) });
+      await expect(row.getByText('Section A', { exact: true })).toBeVisible();
+      await expect(row.getByText('Extra time', { exact: true })).toBeVisible();
+    }
   });
 
   test('invites valid students and shows skip info for invalid ones', async ({

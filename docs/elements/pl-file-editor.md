@@ -56,6 +56,10 @@ Alternatively, instructors may define a custom mode, which can be an alternative
 
 This element supports additional preview options through [element extensions](../elementExtensions.md). To provide this functionality, the extension must assign, to `window.PLFileEditor.prototype.preview.PREVIEW_TYPE` (where `PREVIEW_TYPE` is the value of the `preview` attribute), a function that converts a string representing the editor's content into suitable HTML content.
 
+## AI grading
+
+Submitted code is included in [AI grading](../aiGrading/index.md) as text labeled with its filename, preserving indentation and line breaks. Unicode is preserved when `normalize-to-ascii` is disabled (the default); enabling it normalizes non-ASCII characters before submission. A [`pl-file-preview`](pl-file-preview.md) element is not required for AI grading, but is recommended so students can check their submitted files. Questions can combine the editor with file uploads and image capture; each distinct submitted file is sent once.
+
 ## Example implementations
 
 - [element/fileEditor]

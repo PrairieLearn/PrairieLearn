@@ -8,18 +8,20 @@ import type { CourseRouter } from './trpc.js';
 export function createCourseTrpcClient({
   csrfToken,
   courseId,
+  courseInstanceId,
   urlBase = '',
   extraHeaders,
 }: {
   csrfToken: string;
   courseId: string;
+  courseInstanceId?: string;
   urlBase?: string;
   extraHeaders?: Record<string, string>;
 }) {
   return createTRPCClient<CourseRouter>({
     links: [
       httpLink({
-        url: `${urlBase}${getCourseTrpcUrl(courseId)}`,
+        url: `${urlBase}${getCourseTrpcUrl(courseId, courseInstanceId)}`,
         headers: {
           'X-TRPC': 'true',
           'X-CSRF-Token': csrfToken,

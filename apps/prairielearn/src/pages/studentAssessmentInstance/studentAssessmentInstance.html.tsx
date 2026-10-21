@@ -17,13 +17,9 @@ import {
   StudentAccessTimelinePopover,
 } from '../../components/StudentAccessPopovers.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
+import type { AssessmentInstanceAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  type Assessment,
-  type AssessmentInstance,
-  type GroupConfig,
-  type SprocAuthzAssessmentInstance,
-} from '../../lib/db-types.js';
+import { type Assessment, type AssessmentInstance, type GroupConfig } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -171,29 +167,33 @@ export function StudentAssessmentInstance({
       page: 'assessment_instance',
     },
     headContent: html`
-      ${resLocals.assessment.type === 'Exam'
-        ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
-          ${EncodedData(
-            {
-              serverRemainingMS: resLocals.assessment_instance_remaining_ms,
-              serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
-              serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
-              canTriggerFinish: resLocals.authz_result.authorized_edit,
-              showsTimeoutWarning: true,
-              reloadOnFail: true,
-              csrfToken: resLocals.__csrf_token,
-            },
-            'time-limit-data',
-          )}`
-        : ''}
+      ${
+        resLocals.assessment.type === 'Exam'
+          ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
+            ${EncodedData(
+              {
+                serverRemainingMS: resLocals.assessment_instance_remaining_ms,
+                serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
+                serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
+                canTriggerFinish: resLocals.authz_result.authorized_edit,
+                showsTimeoutWarning: true,
+                reloadOnFail: true,
+                csrfToken: resLocals.__csrf_token,
+              },
+              'time-limit-data',
+            )}`
+          : ''
+      }
     `,
     preContent: html`
-      ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
-        ? ConfirmFinishModal({
-            instance_question_rows,
-            csrfToken: resLocals.__csrf_token,
-          })
-        : ''}
+      ${
+        resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
+          ? ConfirmFinishModal({
+              instance_question_rows,
+              csrfToken: resLocals.__csrf_token,
+            })
+          : ''
+      }
       ${crossableLockpointRows.map((row) =>
         Modal({
           id: `crossLockpointModal-${row.zone.id}`,
@@ -203,21 +203,24 @@ export function StudentAssessmentInstance({
               After proceeding, you will not be able to submit answers to previous questions. You
               can still review your previous submissions.
             </p>
-            ${groupConfig != null
-              ? html`
-                  <p class="fw-bold">
-                    This will affect all group members. No one in your group will be able to submit
-                    answers to previous questions.
-                  </p>
-                `
-              : ''}
+            ${
+              groupConfig != null
+                ? html`
+                    <p class="fw-bold">
+                      This will affect all group members. No one in your group will be able to
+                      submit answers to previous questions.
+                    </p>
+                  `
+                : ''
+            }
             <div class="form-check">
               <input
                 class="form-check-input"
                 type="checkbox"
                 id="lockpoint-confirm-${row.zone.id}"
-                onchange="document.getElementById('lockpoint-submit-${row.zone
-                  .id}').disabled = !this.checked"
+                onchange="document.getElementById('lockpoint-submit-${
+                  row.zone.id
+                }').disabled = !this.checked"
               />
               <label class="form-check-label" for="lockpoint-confirm-${row.zone.id}">
                 I understand that I will not be able to submit answers to previous questions
@@ -242,9 +245,11 @@ export function StudentAssessmentInstance({
         }),
       )}
       ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
-      ${userCanDeleteAssessmentInstance
-        ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
-        : ''}
+      ${
+        userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''
+      }
     `,
     content: html`
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
@@ -263,95 +268,107 @@ export function StudentAssessmentInstance({
             assessment_instance: resLocals.assessment_instance,
           })}
           <div class="row align-items-center">
-            ${run(() => {
-              const allQuestionsDisabled = instance_question_rows.every(
-                (row) => !row.assessment_question.allow_real_time_grading,
-              );
-              return allQuestionsDisabled && resLocals.assessment_instance.open;
-            })
-              ? html`
-                  <div class="col-md-3 col-sm-12">
-                    Total points: ${formatPoints(resLocals.assessment_instance.max_points)}
-                    ${resLocals.assessment_instance.max_bonus_points
-                      ? html`
-                          <br />
-                          (${resLocals.assessment_instance.max_bonus_points} bonus
-                          ${resLocals.assessment_instance.max_bonus_points > 1 ? 'points' : 'point'}
-                          possible)
-                        `
-                      : ''}
-                  </div>
-                  <div class="col-md-9 col-sm-12">
-                    ${AssessmentStatus({
-                      assessment: resLocals.assessment,
-                      assessment_instance: resLocals.assessment_instance,
-                      displayTimezone: resLocals.course_instance.display_timezone,
-                      authz_result: resLocals.authz_result,
-                    })}
-                  </div>
-                `
-              : html`
-                  <div class="col-md-3 col-sm-6">
-                    Total points:
-                    ${formatPoints(resLocals.assessment_instance.points)}/${formatPoints(
-                      resLocals.assessment_instance.max_points,
-                    )}
-                    ${resLocals.assessment_instance.max_bonus_points
-                      ? html`
-                          <br />
-                          (${resLocals.assessment_instance.max_bonus_points} bonus
-                          ${resLocals.assessment_instance.max_bonus_points > 1 ? 'points' : 'point'}
-                          possible)
-                        `
-                      : ''}
-                  </div>
-                  <div class="col-md-3 col-sm-6">
-                    ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
-                  </div>
-                  <div class="col-md-6 col-sm-12">
-                    ${AssessmentStatus({
-                      assessment: resLocals.assessment,
-                      assessment_instance: resLocals.assessment_instance,
-                      displayTimezone: resLocals.course_instance.display_timezone,
-                      authz_result: resLocals.authz_result,
-                    })}
-                  </div>
-                `}
-            ${groupConfig != null
-              ? html`
-                  <div class="col-lg-12">
-                    ${GroupWorkInfoContainer({
-                      groupConfig,
-                      groupInfo,
-                      userCanAssignRoles,
-                      csrfToken: resLocals.__csrf_token,
-                    })}
-                  </div>
-                `
-              : ''}
+            ${
+              run(() => {
+                const allQuestionsDisabled = instance_question_rows.every(
+                  (row) => !row.assessment_question.allow_real_time_grading,
+                );
+                return allQuestionsDisabled && resLocals.assessment_instance.open;
+              })
+                ? html`
+                    <div class="col-md-3 col-sm-12">
+                      Total points: ${formatPoints(resLocals.assessment_instance.max_points)}
+                      ${
+                        resLocals.assessment_instance.max_bonus_points
+                          ? html`
+                              <br />
+                              (${resLocals.assessment_instance.max_bonus_points} bonus
+                              ${resLocals.assessment_instance.max_bonus_points > 1 ? 'points' : 'point'}
+                              possible)
+                            `
+                          : ''
+                      }
+                    </div>
+                    <div class="col-md-9 col-sm-12">
+                      ${AssessmentStatus({
+                        assessment: resLocals.assessment,
+                        assessment_instance: resLocals.assessment_instance,
+                        displayTimezone: resLocals.course_instance.display_timezone,
+                        authz_result: resLocals.authz_result,
+                      })}
+                    </div>
+                  `
+                : html`
+                    <div class="col-md-3 col-sm-6">
+                      Total points:
+                      ${formatPoints(resLocals.assessment_instance.points)}/${formatPoints(
+                        resLocals.assessment_instance.max_points,
+                      )}
+                      ${
+                        resLocals.assessment_instance.max_bonus_points
+                          ? html`
+                              <br />
+                              (${resLocals.assessment_instance.max_bonus_points} bonus
+                              ${resLocals.assessment_instance.max_bonus_points > 1 ? 'points' : 'point'}
+                              possible)
+                            `
+                          : ''
+                      }
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                      ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
+                    </div>
+                    <div class="col-md-6 col-sm-12">
+                      ${AssessmentStatus({
+                        assessment: resLocals.assessment,
+                        assessment_instance: resLocals.assessment_instance,
+                        displayTimezone: resLocals.course_instance.display_timezone,
+                        authz_result: resLocals.authz_result,
+                      })}
+                    </div>
+                  `
+            }
+            ${
+              groupConfig != null
+                ? html`
+                    <div class="col-lg-12">
+                      ${GroupWorkInfoContainer({
+                        groupConfig,
+                        groupInfo,
+                        userCanAssignRoles,
+                        csrfToken: resLocals.__csrf_token,
+                      })}
+                    </div>
+                  `
+                : ''
+            }
           </div>
 
-          ${resLocals.assessment_instance.open && resLocals.assessment_instance_remaining_ms
-            ? html`
-                <div class="alert alert-secondary mt-4" role="alert">
-                  <div class="row">
-                    <div class="col-md-2 col-sm-12 col-xs-12">
-                      <div id="countdownProgress"></div>
-                    </div>
-                    <div class="col-md-10 col-sm-12 col-xs-12">
-                      Time remaining: <span id="countdownDisplay"></span>
+          ${
+            resLocals.assessment_instance.open && resLocals.assessment_instance_remaining_ms
+              ? html`
+                  <div class="alert alert-secondary mt-4" role="alert">
+                    <div class="row">
+                      <div class="col-md-2 col-sm-12 col-xs-12">
+                        <div id="countdownProgress"></div>
+                      </div>
+                      <div class="col-md-10 col-sm-12 col-xs-12">
+                        Time remaining: <span id="countdownDisplay"></span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              `
-            : ''}
-          ${resLocals.assessment_text_templated
-            ? html`
-                <div class="card bg-light mb-0 mt-4">
-                  <div class="card-body">${unsafeHtml(resLocals.assessment_text_templated)}</div>
-                </div>
-              `
-            : ''}
+                `
+              : ''
+          }
+          ${
+            resLocals.assessment_text_templated
+              ? html`
+                  <div class="card bg-light mb-0 mt-4">
+                    <div class="card-body">${unsafeHtml(resLocals.assessment_text_templated)}</div>
+                  </div>
+                `
+              : ''
+          }
         </div>
 
         <div class="table-responsive">
@@ -386,45 +403,54 @@ export function StudentAssessmentInstance({
           </table>
         </div>
 
-        ${showCardFooter
-          ? html`
-              <div class="card-footer d-flex flex-column gap-3">
-                ${showExamFooterContent
-                  ? ExamFooterContent({
-                      someQuestionsAllowRealTimeGrading,
-                      someQuestionsForbidRealTimeGrading,
-                      savedAnswers,
-                      suspendedSavedAnswers,
-                      authorizedEdit: resLocals.authz_result.authorized_edit,
-                      hasPassword: resLocals.authz_result.password != null,
-                      showClosedAssessment: resLocals.authz_result.show_closed_assessment,
-                      csrfToken: resLocals.__csrf_token,
-                    })
-                  : ''}
-                ${showUnauthorizedEditWarning
-                  ? html`
-                      <div class="alert alert-warning mb-0" role="alert">
-                        You are viewing the assessment of a different user and so are not authorized
-                        to submit questions for grading or to mark the assessment as complete.
-                      </div>
-                    `
-                  : ''}
-              </div>
-            `
-          : ''}
+        ${
+          showCardFooter
+            ? html`
+                <div class="card-footer d-flex flex-column gap-3">
+                  ${
+                    showExamFooterContent
+                      ? ExamFooterContent({
+                          someQuestionsAllowRealTimeGrading,
+                          someQuestionsForbidRealTimeGrading,
+                          savedAnswers,
+                          suspendedSavedAnswers,
+                          authorizedEdit: resLocals.authz_result.authorized_edit,
+                          hasPassword: resLocals.authz_result.password != null,
+                          showClosedAssessment: resLocals.authz_result.show_closed_assessment,
+                          csrfToken: resLocals.__csrf_token,
+                        })
+                      : ''
+                  }
+                  ${
+                    showUnauthorizedEditWarning
+                      ? html`
+                          <div class="alert alert-warning mb-0" role="alert">
+                            You are viewing the assessment of a different user and so are not
+                            authorized to submit questions for grading or to mark the assessment as
+                            complete.
+                          </div>
+                        `
+                      : ''
+                  }
+                </div>
+              `
+            : ''
+        }
       </div>
 
-      ${resLocals.assessment.allow_personal_notes
-        ? PersonalNotesPanel({
-            fileList: resLocals.file_list,
-            context: 'assessment',
-            courseInstanceId: resLocals.course_instance.id,
-            assessment_instance: resLocals.assessment_instance,
-            csrfToken: resLocals.__csrf_token,
-            authz_result: resLocals.authz_result,
-            lockdownBrowser: resLocals.lockdown_browser,
-          })
-        : ''}
+      ${
+        resLocals.assessment.allow_personal_notes
+          ? PersonalNotesPanel({
+              fileList: resLocals.file_list,
+              context: 'assessment',
+              courseInstanceId: resLocals.course_instance.id,
+              assessment_instance: resLocals.assessment_instance,
+              csrfToken: resLocals.__csrf_token,
+              authz_result: resLocals.authz_result,
+              lockdownBrowser: resLocals.lockdown_browser,
+            })
+          : ''
+      }
       ${InstructorInfoPanel({
         course: resLocals.course,
         course_instance: resLocals.course_instance,
@@ -450,21 +476,23 @@ function AssessmentStatus({
   assessment: Assessment;
   assessment_instance: AssessmentInstance;
   displayTimezone: string;
-  authz_result: SprocAuthzAssessmentInstance;
+  authz_result: AssessmentInstanceAuthzResult;
 }) {
   if (assessment_instance.open && authz_result.active) {
     return html`
       Assessment is <strong>open</strong> and you can answer questions.
       <br />
       Available credit: ${authz_result.credit_date_string}
-      ${assessment.modern_access_control
-        ? StudentAccessTimelinePopover({
-            accessTimeline: authz_result.access_timeline,
-            displayTimezone,
-          })
-        : StudentAccessRulesPopover({
-            accessRules: authz_result.access_rules,
-          })}
+      ${
+        assessment.modern_access_control
+          ? StudentAccessTimelinePopover({
+              accessTimeline: authz_result.access_timeline,
+              displayTimezone,
+            })
+          : StudentAccessRulesPopover({
+              accessRules: authz_result.access_rules,
+            })
+      }
     `;
   }
 
@@ -521,75 +549,85 @@ function InstanceQuestionTableHeader({
   const trailingColumns =
     resLocals.assessment.type === 'Exam'
       ? html`
-          ${resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading
-            ? html`
-                <th class="text-center">Available points ${ExamQuestionHelpAvailablePoints()}</th>
-                <th class="text-center">Awarded points ${ExamQuestionHelpAwardedPoints()}</th>
-              `
-            : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
+          ${
+            resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading
               ? html`
-                  <th class="text-center">Auto-grading points</th>
-                  <th class="text-center">Manual grading points</th>
-                  <th class="text-center">Total points</th>
+                  <th class="text-center">Available points ${ExamQuestionHelpAvailablePoints()}</th>
+                  <th class="text-center">Awarded points ${ExamQuestionHelpAwardedPoints()}</th>
                 `
-              : html`<th class="text-center">Points</th>`}
+              : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
+                ? html`
+                    <th class="text-center">Auto-grading points</th>
+                    <th class="text-center">Manual grading points</th>
+                    <th class="text-center">Total points</th>
+                  `
+                : html`<th class="text-center">Points</th>`
+          }
         `
       : html`
-          ${resLocals.has_auto_grading_question
-            ? html`
-                <th class="text-center">Value</th>
-                <th class="text-center">Variant history</th>
-              `
-            : ''}
+          ${
+            resLocals.has_auto_grading_question
+              ? html`
+                  <th class="text-center">Value</th>
+                  <th class="text-center">Variant history</th>
+                `
+              : ''
+          }
           <th class="text-center">Awarded points</th>
         `;
 
   return html`
-    ${resLocals.assessment.type === 'Exam'
-      ? html`
-          ${resLocals.has_auto_grading_question &&
-          resLocals.has_manual_grading_question &&
-          someQuestionsAllowRealTimeGrading
-            ? html`
-                <tr>
-                  <th rowspan="2">Question</th>
-                  <th rowspan="2">Status</th>
-                  <th class="text-center" colspan="2" scope="colgroup">Auto-grading</th>
-                  <th class="text-center" rowspan="2">Manual grading points</th>
-                  <th class="text-center" rowspan="2">Total points</th>
-                </tr>
-                <tr>
-                  ${trailingColumns}
-                </tr>
-              `
-            : html`
-                <tr>
-                  <th>Question</th>
-                  <th>Status</th>
-                  ${trailingColumns}
-                </tr>
-              `}
-        `
-      : html`
-          ${resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
-            ? html`
-                <tr>
-                  <th rowspan="2">Question</th>
-                  <th class="text-center" colspan="3" scope="colgroup">Auto-grading</th>
-                  <th class="text-center" rowspan="2">Manual grading points</th>
-                  <th class="text-center" rowspan="2">Total points</th>
-                </tr>
-                <tr>
-                  ${trailingColumns}
-                </tr>
-              `
-            : html`
-                <tr>
-                  <th>Question</th>
-                  ${trailingColumns}
-                </tr>
-              `}
-        `}
+    ${
+      resLocals.assessment.type === 'Exam'
+        ? html`
+            ${
+              resLocals.has_auto_grading_question &&
+              resLocals.has_manual_grading_question &&
+              someQuestionsAllowRealTimeGrading
+                ? html`
+                    <tr>
+                      <th rowspan="2">Question</th>
+                      <th rowspan="2">Status</th>
+                      <th class="text-center" colspan="2" scope="colgroup">Auto-grading</th>
+                      <th class="text-center" rowspan="2">Manual grading points</th>
+                      <th class="text-center" rowspan="2">Total points</th>
+                    </tr>
+                    <tr>
+                      ${trailingColumns}
+                    </tr>
+                  `
+                : html`
+                    <tr>
+                      <th>Question</th>
+                      <th>Status</th>
+                      ${trailingColumns}
+                    </tr>
+                  `
+            }
+          `
+        : html`
+            ${
+              resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
+                ? html`
+                    <tr>
+                      <th rowspan="2">Question</th>
+                      <th class="text-center" colspan="3" scope="colgroup">Auto-grading</th>
+                      <th class="text-center" rowspan="2">Manual grading points</th>
+                      <th class="text-center" rowspan="2">Total points</th>
+                    </tr>
+                    <tr>
+                      ${trailingColumns}
+                    </tr>
+                  `
+                : html`
+                    <tr>
+                      <th>Question</th>
+                      ${trailingColumns}
+                    </tr>
+                  `
+            }
+          `
+    }
   `;
 }
 
@@ -642,9 +680,11 @@ function ConfirmFinishModal({
     id: 'confirmFinishModal',
     title: 'All done?',
     body: html`
-      ${!all_questions_answered
-        ? html`<div class="alert alert-warning">There are still unanswered questions.</div>`
-        : ''}
+      ${
+        !all_questions_answered
+          ? html`<div class="alert alert-warning">There are still unanswered questions.</div>`
+          : ''
+      }
       <p class="text-danger">
         <strong>Warning</strong>: You will not be able to answer any more questions after finishing
         the assessment.

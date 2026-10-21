@@ -1,0 +1,20 @@
+<pl-question-panel>
+<p>Select every place where this diagram appears. <pl-figure file-name="remote-431ced6916a2a21a.png" directory="clientFilesQuestion" alt="Prompt diagram" width="240" display="inline"></pl-figure> <pl-figure file-name="remote-431ced6916a2a21a.png" directory="clientFilesQuestion" alt="Duplicate diagram" display="inline"></pl-figure></p>
+</pl-question-panel>
+
+<pl-checkbox answers-name="answer" partial-credit="net-correct">
+  <pl-answer correct="true" feedback="<p>&#123;&#123;imported_per_answer_value&#125;&#125; <span>&amp;#x7b;&amp;#000123;imported_entity_value&amp;rcub;&amp;#x7d;</span> <code>&#123;&#123; options.client_files_question_url &#125;&#125;</code> <img src=&quot;{{ options.client_files_question_url }}/remote-431ced6916a2a21a.png&quot; class=&quot;answer-feedback&quot; alt=&quot;&#123;&#123;imported_per_answer_value&#125;&#125; &amp;#x7b;&amp;#000123;imported_entity_value&amp;rcub;&amp;#x7d; &#123;&#123; options.client_files_question_url &#125;&#125; &amp;amp; literal&quot;></p>">In copied feedback</pl-answer>
+  <pl-answer correct="false" feedback="<p>Remote references are replaced during import.</p>">At a remote URL</pl-answer>
+</pl-checkbox>
+
+<pl-answer-panel>
+<p>The shared diagram is copied once. <pl-figure file-name="remote-431ced6916a2a21a.png" directory="clientFilesQuestion" alt="General feedback diagram" display="inline"></pl-figure></p>
+  {{#feedback.overall}}
+    {{#is_correct}}
+<p>Correct. <pl-figure file-name="remote-431ced6916a2a21a.png" directory="clientFilesQuestion" alt="Correct feedback diagram" display="inline"></pl-figure></p>
+    {{/is_correct}}
+    {{^is_correct}}
+<p>Try again. <pl-figure file-name="remote-431ced6916a2a21a.png" directory="clientFilesQuestion" alt="Incorrect feedback diagram" display="inline"></pl-figure></p>
+    {{/is_correct}}
+  {{/feedback.overall}}
+</pl-answer-panel>

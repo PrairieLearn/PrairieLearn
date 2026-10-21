@@ -36,6 +36,8 @@ const RawCoursePageAuthzDataSchema = z.object({
 
   user: RawStaffUserSchema,
   is_administrator: z.boolean(),
+  /** Whether both authenticated and effective users administer this course's institution. */
+  is_institution_administrator: z.boolean(),
   has_course_permission_preview: z.boolean(),
   has_course_permission_view: z.boolean(),
   has_course_permission_edit: z.boolean(),
@@ -98,6 +100,9 @@ export interface DangerousSystemAuthzData {
 interface RawPlainAuthzData {
   user: User;
 
+  /** Whether the user administers this course's institution. */
+  is_institution_administrator: boolean;
+
   course_role: EnumCourseRole;
   has_course_permission_preview: boolean;
   has_course_permission_view: boolean;
@@ -133,9 +138,7 @@ export type ConstructedCourseOrInstanceContext =
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 
 export type AuthzDataWithEffectiveUser =
-  | RawPageAuthzData
-  | PageAuthzData
-  | DangerousSystemAuthzData;
+  RawPageAuthzData | PageAuthzData | DangerousSystemAuthzData;
 
 export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
@@ -150,10 +153,7 @@ type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor
 type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
 
 export type Role =
-  | SystemRole
-  | StudentCourseInstanceRole
-  | InstructorCourseInstanceRole
-  | CourseRole;
+  SystemRole | StudentCourseInstanceRole | InstructorCourseInstanceRole | CourseRole;
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {

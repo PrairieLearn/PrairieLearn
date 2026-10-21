@@ -132,10 +132,12 @@ function EditQuestionPointsScoreFormHtml({
         <small>
           This will also recalculate the total points and total score at 100% credit. This change
           will be overwritten if the question is answered again by the student.
-          ${instance_question.status !== 'unanswered'
-            ? html`You may also update the score
-                <a href="${manualGradingUrl}">via the manual grading page</a>.`
-            : ''}
+          ${
+            instance_question.status !== 'unanswered'
+              ? html`You may also update the score
+                  <a href="${manualGradingUrl}">via the manual grading page</a>.`
+              : ''
+          }
         </small>
       </p>
       <div class="text-end">

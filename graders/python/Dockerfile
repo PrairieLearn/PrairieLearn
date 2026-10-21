@@ -1,5 +1,5 @@
-FROM amazonlinux:2023.12.20260727.0
-ARG CACHEBUST=2026-08-15-14-04-29
+FROM amazonlinux:2023.12.20260930.0
+ARG CACHEBUST=2026-09-15-14-09-16
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -25,7 +25,8 @@ RUN dnf -y update \
     && uv venv --python-preference managed --python 3.13 /venv
 
 COPY requirements.txt /
-RUN uv pip install -r /requirements.txt
+# Use system Graphviz to avoid bundled font and rendering regressions.
+RUN uv pip install --no-binary pygraphviz -r /requirements.txt
 
 # Copy the source files last to speed up local dev
 COPY python_autograder /python_autograder

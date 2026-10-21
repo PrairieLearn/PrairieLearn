@@ -35,6 +35,7 @@ describe('authzData', () => {
         authn_has_course_instance_permission_view: false,
         authn_has_course_instance_permission_edit: false,
         is_administrator: false,
+        is_institution_administrator: false,
         has_course_permission_preview: false,
         has_course_permission_view: false,
         has_course_permission_edit: false,

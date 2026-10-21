@@ -15,8 +15,7 @@ type ResolveClientAppError<T> = T extends { code: string }
 
 /** The resolved, non-null return type of {@link getAppError}. */
 export type AppError<T> =
-  | (ResolveClientAppError<T> & { message: string })
-  | { code: 'UNKNOWN'; message: string };
+  (ResolveClientAppError<T> & { message: string }) | { code: 'UNKNOWN'; message: string };
 
 /** An exhaustive renderer map for every statically known application-error code. */
 export type AppErrorRenderers<E extends { code: string; message: string }> = {

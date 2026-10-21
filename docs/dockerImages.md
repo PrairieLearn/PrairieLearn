@@ -9,6 +9,22 @@ Docker containers are created from [container images](https://docs.docker.com/ge
 
 Instructors are encouraged to use one of the maintained images, to ensure all security updates and new functionality can be accessed in your questions. Questions may use their own images, though, provided these images allow the question configuration to provide the appropriate functionality needed for external grading and workspaces.
 
+## Supported registries
+
+Custom images must be publicly accessible without authentication and hosted on one of these registries:
+
+| Registry                                          | Image example                                 |
+| ------------------------------------------------- | --------------------------------------------- |
+| Docker Hub (`docker.io`)                          | `docker.io/org/image:tag`                     |
+| GitHub Container Registry (`ghcr.io`)             | `ghcr.io/org/image:tag`                       |
+| Quay (`quay.io`)                                  | `quay.io/org/image:tag`                       |
+| GitLab Container Registry (`registry.gitlab.com`) | `registry.gitlab.com/group/project/image:tag` |
+| Amazon ECR Public (`public.ecr.aws`)              | `public.ecr.aws/alias/image:tag`              |
+
+Docker Hub also supports the shorthand `org/image:tag`, which is equivalent to `docker.io/org/image:tag`, and the hostnames `index.docker.io` and `registry-1.docker.io`. For other registries, include the hostname, as in `ghcr.io/org/image:tag`.
+
+Custom registry domains, subdomains of the listed hosts, and explicit registry ports are not supported.
+
 ## Custom variations of maintained images
 
 Some questions may require additional customization of existing images, such as the installation of OS dependencies, Python packages, or configuration of OS-level settings. In such cases, instructors may create custom images based on the existing images. This may be done by following these steps:
@@ -75,6 +91,6 @@ docker run -it --rm -p 3000:3000 \
 
 !!! note "Testing natively on macOS"
 
-    The configuration reference has a section on [running workspaces / external graders natively on macOS](./dev-guide/configJson.md#running-workspaces-external-graders-natively-on-macos). You will run into permissions errors if you don't do this. This does not apply to users running PrairieLearn via Docker.
+    The configuration reference has a section on [running natively on macOS](./dev-guide/configJson.md#running-natively-on-macos). You will run into permissions errors if you don't do this. This does not apply to users running PrairieLearn via Docker.
 
 Once the configuration above is set, you can modify the `Dockerfile` and related files, then run step 5 from the list above. You can then test the questions that use your custom image to ensure they work as expected. Once you are satisfied that the questions work as expected, proceed with steps 6-8 above. If you made any changes in your questions to account for the changes in the image, make sure your questions are properly synchronized with the production environment as well.

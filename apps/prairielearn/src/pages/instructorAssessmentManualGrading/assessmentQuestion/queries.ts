@@ -32,6 +32,7 @@ export async function selectInstanceQuestionsForManualGrading({
     {
       assessment_id: assessment.id,
       assessment_question_id: assessment_question.id,
+      course_instance_id: assessment.course_instance_id,
     },
     InstanceQuestionRowSchema,
   );

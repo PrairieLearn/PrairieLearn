@@ -33,12 +33,14 @@ import type { PageContext } from '../lib/client/page-context.js';
 import {
   type Course,
   type CourseInstance,
+  CourseInstanceSchema,
   type Enrollment,
   EnrollmentSchema,
   type EnumEnrollmentStatus,
   type Institution,
   UserSchema,
 } from '../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../lib/enrollment/barrier.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 
@@ -46,13 +48,27 @@ import { invalidateAssessmentStatisticsForCourseInstance } from './assessment.js
 import { insertAuditEvent } from './audit-event.js';
 import type { SupportedActionsForTable } from './audit-event.types.js';
 import { selectCourseInstanceById } from './course-instances.js';
-import { generateUsers, selectAndLockUser } from './user.js';
+import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/** Includes deleted instances to match the enrollments removed by deleteCoursePermissions. */
+export async function selectEnrollmentsForUsersInCourse({
+  courseId,
+  userIds,
+}: {
+  courseId: string;
+  userIds: string[];
+}) {
+  return await queryRows(
+    sql.select_enrollments_for_users_in_course,
+    { course_id: courseId, user_ids: userIds },
+    z.object({ enrollment: EnrollmentSchema, course_instance: CourseInstanceSchema }),
+  );
+}
+
 type CourseInstanceContext =
-  | CourseInstance
-  | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
+  CourseInstance | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
 
 function assertEnrollmentStatus(
   enrollment: Enrollment,
@@ -165,8 +181,8 @@ export async function ensureUncheckedEnrollment({
   actionDetail: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment | null> {
   assertHasRole(authzData, requiredRole);
-  const result = await runInTransactionAsync(async () => {
-    const user = await selectAndLockUser(userId);
+  const result = await runWithSharedEnrollmentBarrier(courseInstance.id, async () => {
+    const user = await selectUserById(userId);
     let enrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
       requiredRole,
@@ -228,8 +244,8 @@ export async function ensureUncheckedEnrollment({
 }
 
 /**
- * Ensures that the user is enrolled in the given course instance. If the
- * enrollment already exists, this is a no-op.
+ * Ensures enrollment without reconciling multiple identity candidates. Callers
+ * must establish any required enrollment authority before using this path.
  *
  * For enterprise installations, this will also check if the user is eligible
  * for an enrollment. They are considered eligible if they have all required
@@ -237,7 +253,7 @@ export async function ensureUncheckedEnrollment({
  * instance enrollment limit to be exceeded.
  *
  */
-export async function ensureEnrollment({
+export async function ensureEnrollmentWithoutReconciliation({
   institution,
   course,
   courseInstance,
@@ -592,7 +608,7 @@ export async function inviteStudentByUid({
   courseInstance: CourseInstanceContext;
   actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<Enrollment> {
-  return await runInTransactionAsync(async () => {
+  return await runWithSharedEnrollmentBarrier(courseInstance.id, async () => {
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       uid,
       requiredRole,
@@ -601,9 +617,6 @@ export async function inviteStudentByUid({
     });
 
     if (existingEnrollment) {
-      if (existingEnrollment.user_id) {
-        await selectAndLockUser(existingEnrollment.user_id);
-      }
       const lockedEnrollment = await _selectAndLockEnrollment(existingEnrollment.id);
       return await _inviteExistingEnrollment({
         lockedEnrollment,
@@ -656,11 +669,8 @@ export async function setEnrollmentStatus({
   authzData: AuthzData;
   requiredRole: Role[];
 }): Promise<Enrollment> {
-  return await runInTransactionAsync(async () => {
+  return await runWithSharedEnrollmentBarrier(enrollment.course_instance_id, async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
-    }
 
     interface EnrollmentStatusTransitionInformation {
       equivalentStatuses?: EnumEnrollmentStatus[];
@@ -772,11 +782,8 @@ export async function removeEnrollmentFromSync({
   authzData: AuthzDataWithEffectiveUser;
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
-  return await runInTransactionAsync(async () => {
+  return await runWithSharedEnrollmentBarrier(enrollment.course_instance_id, async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
-    }
 
     // Already removed - nothing to do.
     if (lockedEnrollment.status === 'removed') {
@@ -833,11 +840,8 @@ export async function reenrollEnrollmentFromSync({
   authzData: AuthzDataWithEffectiveUser;
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
-  return await runInTransactionAsync(async () => {
+  return await runWithSharedEnrollmentBarrier(enrollment.course_instance_id, async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
-    }
 
     // Already joined - nothing to do.
     if (lockedEnrollment.status === 'joined') {
@@ -899,7 +903,7 @@ export async function deleteEnrollment({
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
 
-  return await runInTransactionAsync(async () => {
+  return await runWithSharedEnrollmentBarrier(enrollment.course_instance_id, async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     assertEnrollmentStatus(lockedEnrollment, ['invited', 'rejected']);
@@ -941,11 +945,8 @@ export async function inviteEnrollment({
   authzData: AuthzDataWithEffectiveUser;
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
-  return await runInTransactionAsync(async () => {
+  return await runWithSharedEnrollmentBarrier(enrollment.course_instance_id, async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
-    }
 
     return await _inviteExistingEnrollment({
       lockedEnrollment,

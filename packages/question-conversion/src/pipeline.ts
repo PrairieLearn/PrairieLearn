@@ -1,11 +1,18 @@
-import type { ConversionResult, EmitOptions, OutputEmitter } from './emitters/emitter.js';
+import type {
+  ConversionProcessor,
+  ConversionResult,
+  EmitOptions,
+  OutputEmitter,
+} from './emitters/emitter.js';
 import { PLEmitter } from './emitters/pl-emitter.js';
 import type { InputParser, ParseOptions } from './parsers/parser.js';
 import { QTI12ItemContainerParser } from './parsers/qti12/index.js';
 import type { IRItemContainer } from './types/ir.js';
 
 /** Options for the conversion pipeline. */
-export interface ConvertOptions extends ParseOptions, EmitOptions {}
+export interface ConvertOptions extends ParseOptions, EmitOptions {
+  processors?: readonly ConversionProcessor[];
+}
 
 const DEFAULT_PARSERS: InputParser[] = [new QTI12ItemContainerParser()];
 
@@ -50,5 +57,5 @@ export async function convertWith(
   options?: ConvertOptions,
 ): Promise<ConversionResult> {
   const ir = await parseAssessment(xmlContent, parsers, options);
-  return emitter.emit(ir, options);
+  return emitter.emitProcessed(ir, options);
 }

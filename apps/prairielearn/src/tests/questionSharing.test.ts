@@ -348,9 +348,26 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
 
     test('Fail if trying to set an invalid sharing name', async () => {
-      await expect(setSharingName(sharingCourse.id, 'invalid@sharingname')).rejects.toThrow();
-      await expect(setSharingName(sharingCourse.id, 'invalid / sharingname')).rejects.toThrow();
-      await expect(setSharingName(sharingCourse.id, '')).rejects.toThrow();
+      for (const name of [
+        'invalid@sharingname',
+        'invalid/sharingname',
+        'Nothing shared yet',
+        'café',
+      ]) {
+        await expect(setSharingName(sharingCourse.id, name)).rejects.toThrow('only letters');
+      }
+      await expect(setSharingName(sharingCourse.id, '   ')).rejects.toThrow(
+        'Course sharing name is required.',
+      );
+    });
+
+    test('Enforce the sharing name length limit after trimming', async () => {
+      const name = 'A'.repeat(64);
+      await setSharingName(sharingCourse.id, `  ${name}  `);
+      assert.equal((await selectCourseById(sharingCourse.id)).sharing_name, name);
+      await expect(setSharingName(sharingCourse.id, 'A'.repeat(65))).rejects.toThrow(
+        'Course sharing name must be 64 characters or fewer.',
+      );
     });
 
     test('Set consuming course sharing name', async () => {
@@ -374,7 +391,10 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
 
     test('Successfully change the sharing name when no questions have been shared', async () => {
-      await setSharingName(sharingCourse.id, 'Nothing shared yet');
+      await setSharingName(sharingCourse.id, '  Nothing_shared-yet  ');
+      assert.equal((await selectCourseById(sharingCourse.id)).sharing_name, 'Nothing_shared-yet');
+      await setSharingName(sharingCourse.id, '7');
+      assert.equal((await selectCourseById(sharingCourse.id)).sharing_name, '7');
       await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
     });
 
@@ -460,7 +480,9 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
 
     test('Fail to change the sharing name when a question has been shared', async () => {
-      await expect(setSharingName(sharingCourse.id, 'Question shared')).rejects.toThrow();
+      await expect(setSharingName(sharingCourse.id, 'Question-shared')).rejects.toThrow(
+        'At least one question has been shared.',
+      );
     });
   });
 

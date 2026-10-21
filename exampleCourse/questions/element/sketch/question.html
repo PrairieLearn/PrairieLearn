@@ -35,8 +35,8 @@
   <pl-question-panel>
     <p>The element supports a variety of drawing tool types that can be added as needed for specific questions. 
       See the element documentation for more details on the how each tool type can be used an graded.</p>
-    <p>Due to space limitations, a maximum of 7 tools (in addition to default buttons) can be placed in the 
-      element's toolbar. To organize elements or add more than 7 for the same question, dropdown groups can be used.</p>
+    <p>The element supports up to 7 tool icons in addition to the default buttons. Dropdown groups can be used to
+      organize related tools or include more tools. When space is limited, tools move into a More dropdown.</p>
     <p>This question has no grading criteria, so any non-empty submission is considered correct.</p>
   </pl-question-panel>
   <pl-sketch answers-name="sketch-tools">
@@ -63,6 +63,25 @@
   </pl-question-panel>
   <pl-sketch answers-name="sketch-size" x-range="-5,50" y-range="-100,100" width="500" height="200" allow-blank="true" enforce-bounds="true">
   </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>
+      A canvas can be set up as read-only, for example to serve as a reference where students use a different question element to submit their answer. Read-only graphs contain only the initial drawings and have no toolbar.
+    </p>
+    <pl-sketch
+      answers-name="sketch-readonly"
+      read-only="true"
+      width="600"
+      height="300"
+      x-range="-3,3"
+      y-range="-1,5"
+    >
+      <pl-sketch-tool id="curve" type="spline"></pl-sketch-tool>
+      <pl-sketch-initial tool-id="curve" function="x**2" x-range="-2,2"></pl-sketch-initial>
+    </pl-sketch>
+  </pl-question-panel>
 </pl-card>
 
 <pl-card>

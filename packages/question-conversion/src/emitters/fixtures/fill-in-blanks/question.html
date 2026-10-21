@@ -1,0 +1,15 @@
+<pl-question-panel>
+<p>Complete both capital cities.</p>
+</pl-question-panel>
+
+<p>Colombia: <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>. Estonia: <pl-string-input answers-name="capital2" correct-answer="tallinn" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>
+
+
+<pl-submission-panel>
+  {{#feedback.answer_0}}
+<strong>bogota</strong>: <p>Bogotá is Colombia's capital.</p>
+  {{/feedback.answer_0}}
+  {{#feedback.answer_1}}
+<strong>tallinn</strong>: <p>Tallinn is Estonia's capital.</p>
+  {{/feedback.answer_1}}
+</pl-submission-panel>

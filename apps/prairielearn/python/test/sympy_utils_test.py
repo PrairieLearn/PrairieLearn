@@ -56,6 +56,44 @@ def test_evaluate() -> None:
         psu.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
 
 
+def test_evaluate_does_not_mutate_locals() -> None:
+    z = sympy.Symbol("z")
+    f = sympy.Function("f")
+    locals_for_eval: psu.LocalsForEval = {
+        "functions": {"f": f},
+        "variables": {"z": z},
+        "helpers": {},
+    }
+
+    assert psu.evaluate("f(z)", locals_for_eval=locals_for_eval) == f(z)
+    assert locals_for_eval == {
+        "functions": {"f": f},
+        "variables": {"z": z},
+        "helpers": {},
+    }
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_evaluate_with_set_variables(*, simplify_expression: bool) -> None:
+    locals_for_eval: psu.LocalsForEval = {
+        "functions": {},
+        "variables": {
+            "A": sympy.FiniteSet(1, 2),
+            "B": sympy.FiniteSet(2, 3),
+        },
+        "helpers": {},
+    }
+
+    result, _ = psu.evaluate_with_source(
+        "A - B",
+        locals_for_eval,
+        allow_sets=True,
+        simplify_expression=simplify_expression,
+    )
+
+    assert result == sympy.FiniteSet(1)
+
+
 class TestSympy:
     SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
@@ -194,6 +232,11 @@ class TestSympy:
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
         ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
         ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
+        ("{m} - {n}", sympy.Complement(sympy.FiniteSet(M), sympy.FiniteSet(N))),
+        (
+            "[0, 1] - {m}",
+            sympy.Complement(sympy.Interval(0, 1), sympy.FiniteSet(M)),
+        ),
         (
             "({m, 3} U (m + 1, 4])",
             sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
@@ -293,6 +336,61 @@ class TestSympy:
             custom_functions=self.FUNCTION_NAMES,
         )
 
+    @pytest.mark.parametrize(
+        ("a_sub", "sympy_ref"),
+        [
+            ("{1} U {2}", sympy.FiniteSet(1, 2)),
+            ("{1} cup {2}", sympy.FiniteSet(1, 2)),
+            ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("{1} | {2}", sympy.FiniteSet(1, 2)),
+            ("{1, 2} cap {2}", sympy.FiniteSet(2)),
+            ("{1, 2} ∩ {2}", sympy.FiniteSet(2)),
+            ("{1, 2} & {2}", sympy.FiniteSet(2)),
+            ("{1} + {2}", sympy.FiniteSet(1, 2)),
+            ("{1, 2} - {2}", sympy.FiniteSet(1)),
+            (
+                "({1} U {2}) - ({2} & {2, 3})",
+                sympy.FiniteSet(1),
+            ),
+        ],
+    )
+    def test_set_operations_without_simplification(
+        self, a_sub: str, sympy_ref: sympy.Set
+    ) -> None:
+        assert sympy_ref == psu.convert_string_to_sympy(
+            a_sub,
+            simplify_expression=False,
+            allow_sets=True,
+        )
+
+    def test_set_subtraction_ignores_custom_complement(self) -> None:
+        assert sympy.FiniteSet(1) == psu.convert_string_to_sympy(
+            "{1, 2} - {2}",
+            simplify_expression=False,
+            allow_sets=True,
+            custom_functions=["Complement"],
+        )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize(
+        ("a_sub", "sympy_ref"),
+        [
+            (
+                "Reals - {0}",
+                sympy.Complement(sympy.S.Reals, sympy.FiniteSet(0)),
+            ),
+            ("Integers & [0, 2]", sympy.Range(0, 3)),
+        ],
+    )
+    def test_named_set_domains(
+        self, a_sub: str, sympy_ref: sympy.Set, *, simplify_expression: bool
+    ) -> None:
+        assert sympy_ref == psu.convert_string_to_sympy(
+            a_sub,
+            simplify_expression=simplify_expression,
+            allow_sets=True,
+        )
+
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
@@ -343,6 +441,52 @@ class TestSympy:
             allow_sets=True,
             custom_functions=list(self.FUNCTION_NAMES),
         )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize(
+        "operator",
+        [
+            "U",
+            "cup",
+            "∪",  # ruff:ignore[ambiguous-unicode-character-string]
+            "|",
+            "cap",
+            "∩",
+            "&",
+        ],
+    )
+    def test_set_operators_reject_scalar_variables(
+        self, operator: str, *, simplify_expression: bool
+    ) -> None:
+        text = f"x {operator} y"
+        result = psu.try_parse_string_as_sympy(
+            text,
+            ["x", "y"],
+            allow_sets=True,
+            simplify_expression=simplify_expression,
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "expecting a set, but got a number" in result.error
+        assert (
+            f"<pre>{psu.point_to_error(text, text.index(operator))}</pre>"
+            in result.error
+        )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_set_operators_accept_sets_containing_scalar_variables(
+        self, *, simplify_expression: bool
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "{x} U {y}",
+            ["x", "y"],
+            allow_sets=True,
+            simplify_expression=simplify_expression,
+        )
+
+        x, y = sympy.symbols("x y")
+        assert isinstance(result, psu.SympyParseSuccess)
+        assert result.expr == sympy.FiniteSet(x, y)
 
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
         result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)
@@ -459,6 +603,28 @@ class TestSympy:
             psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
         )
 
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize("operator", ["|", "&"])
+    def test_legacy_scalar_set_operator_json_conversion(
+        self, operator: str, *, simplify_expression: bool
+    ) -> None:
+        legacy_json: psu.SympyJson = {
+            "_type": "sympy",
+            "_value": f"x {operator} y",
+            "_variables": ["x", "y"],
+        }
+        x, y = sympy.symbols("x y")
+        expected = x | y if operator == "|" else x & y
+
+        assert (
+            psu.json_to_sympy(
+                legacy_json,
+                allow_sets=True,
+                simplify_expression=simplify_expression,
+            )
+            == expected
+        )
+
     def test_sets_json_conversion_requires_sets_enabled(self) -> None:
         with pytest.raises(psu.HasSetNotationError):
             psu.sympy_to_json(sympy.Interval(0, 1))
@@ -486,6 +652,33 @@ class TestSympy:
         assert without_sets["_custom_functions"] == [fn_name]  # type: ignore
         assert with_sets["_custom_functions"] == []  # type: ignore
 
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_custom_complement_round_trips_with_sets(
+        self, *, simplify_expression: bool
+    ) -> None:
+        x = sympy.Symbol("x")
+        expected = sympy.Function("Complement")(x)
+
+        parsed = psu.convert_string_to_sympy(
+            "Complement(x)",
+            ["x"],
+            allow_sets=True,
+            custom_functions=["Complement"],
+            simplify_expression=simplify_expression,
+        )
+        encoded = psu.sympy_to_json(parsed, allow_sets=True)
+
+        assert parsed == expected
+        assert encoded.get("_custom_functions") == ["Complement"]
+        assert (
+            psu.json_to_sympy(
+                encoded,
+                allow_sets=True,
+                simplify_expression=simplify_expression,
+            )
+            == expected
+        )
+
     def test_sets_reserveds_are_custom_functions_by_default(self) -> None:
         x = sympy.Symbol("x")
         union = sympy.Function("Union")
@@ -501,6 +694,7 @@ class TestSympy:
             sympy.symbols("Interval"),
             sympy.symbols("Union"),
             sympy.symbols("Intersection"),
+            sympy.symbols("Complement"),
         ],
     )
     def test_sets_disabled_reserveds_pass_json_conversion(
@@ -649,7 +843,15 @@ class TestExceptions:
     # where evaluateFalse keeps expressions like sqrt(-2) unevaluated.
     IMPLICIT_COMPLEX_CASES = ("sqrt(-2)", "sqrt(-1)", "(-2)^(1/2)", "sqrt(-2) + 3")
     NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
-    INVALID_EXPRESSION_CASES = ("5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5")
+    INVALID_EXPRESSION_CASES = (
+        "5==5",
+        "5!=5",
+        "5>5",
+        "5<5",
+        "5>=5",
+        "5<=5",
+        "n***",
+    )
     INVALID_FUNCTION_CASES = ("eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))")
     INVALID_VARIABLE_CASES = ("x", "exp(y)", "z*n")
     FUNCTION_NOT_CALLED_CASES = ("2+exp", "cos*n")
@@ -679,6 +881,23 @@ class TestExceptions:
                 a_sub, self.VARIABLES, allow_complex=False, simplify_expression=True
             )
 
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_complex_cube_root(self, *, simplify_expression: bool) -> None:
+        with pytest.raises(psu.HasComplexError):
+            psu.convert_string_to_sympy(
+                "(-8)**(1/3)",
+                self.VARIABLES,
+                allow_complex=False,
+                simplify_expression=simplify_expression,
+            )
+
+        psu.convert_string_to_sympy(
+            "(-8)**(1/3)",
+            self.VARIABLES,
+            allow_complex=True,
+            simplify_expression=simplify_expression,
+        )
+
     @pytest.mark.parametrize(
         "text",
         [
@@ -704,6 +923,36 @@ class TestExceptions:
         with pytest.raises(psu.HasSetNotationError):
             psu.convert_string_to_sympy(text, allow_sets=False)
 
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            # unidecode: "[?]", which was reported as set notation
+            ("2∙n", "2*n"),
+            # unidecode: the letter "x"
+            ("2×n", "2*n"),  # ruff:ignore[ambiguous-unicode-character-string]
+            # unidecode: "--", i.e. 2+n
+            ("2—n", "2-n"),
+            # function application, which has no ASCII equivalent
+            ("ln\u2061(n)", "log(n)"),
+        ],
+    )
+    def test_unicode_operators(self, text: str, expected: str) -> None:
+        assert psu.convert_string_to_sympy(
+            text, self.VARIABLES
+        ) == psu.convert_string_to_sympy(expected, self.VARIABLES)
+
+    # Unknown to unidecode, plus-minus, superscript, and subscript characters
+    @pytest.mark.parametrize("text", ["2⋆n", "2±n", "n²", "n₁"])
+    def test_unsupported_characters(self, text: str) -> None:
+        with pytest.raises(psu.HasInvalidSymbolError) as exc_info:
+            psu.convert_string_to_sympy(text, self.VARIABLES)
+        assert exc_info.value.symbol == text[1]
+
+        result = psu.try_parse_string_as_sympy(text, self.VARIABLES)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert f'invalid symbol "{text[1]}"' in result.error
+        assert f"<pre>{text}\n ^" in result.error
+
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
         with pytest.raises(psu.HasConflictingVariableError):
@@ -722,6 +971,44 @@ class TestExceptions:
     def test_invalid_expression(self, a_sub: str) -> None:
         with pytest.raises(psu.HasInvalidExpressionError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
+
+    @pytest.mark.parametrize("allow_sets", [False, True])
+    def test_triple_asterisk_points_at_input(self, *, allow_sets: bool) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "2 *** n", self.VARIABLES, allow_sets=allow_sets
+        )
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "invalid expression" in result.error
+        assert "set" not in result.error
+        assert "<pre>2 *** n\n  ^" in result.error
+
+    # Normalization must not turn unicode or whitespace-separated signs into "**".
+    @pytest.mark.parametrize(
+        ("text", "offset"),
+        [
+            ("2×*n", 1),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2*×n", 2),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2××n", 2),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("2·•n", 2),
+            ("2∙ *n", 1),
+            ("2* ∙n", 3),
+            ("2∙ ∙n", 3),
+            ("2* *n", 1),
+        ],
+    )
+    def test_ambiguous_multiplication(self, text: str, offset: int) -> None:
+        with pytest.raises(psu.HasInvalidExpressionError) as exc_info:
+            psu.convert_string_to_sympy(text, self.VARIABLES)
+        assert exc_info.value.offset == offset
+
+        result = psu.try_parse_string_as_sympy(text, self.VARIABLES)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "invalid expression" in result.error
+        assert "set" not in result.error
+
+    def test_ascii_power_is_still_valid(self) -> None:
+        n = sympy.Symbol("n")
+        assert psu.convert_string_to_sympy("2**n", self.VARIABLES) == 2**n
 
     @pytest.mark.parametrize("a_sub", INVALID_FUNCTION_CASES)
     def test_invalid_function(self, a_sub: str) -> None:
@@ -922,6 +1209,9 @@ class TestExceptions:
         "!Intersection(1, 2)",
         "!Intersection({}, 2)",
         "!Intersection( )",
+        "!Complement(1, 2)",
+        "!Complement({1})",
+        "!Complement({1}, {2}, {3})",
         "1 !U 2",
         "1 !| 2",
         "1 !cup 2",
@@ -983,6 +1273,41 @@ class TestExceptions:
             assert match is not None, f"error message has no caret: {error_msg}"
             assert expected_caret == match.group(1)
 
+    @pytest.mark.parametrize(
+        "caret_spec",
+        [
+            "x !+ Reals",
+            "x !- Reals",
+            "x !* Reals",
+            "Reals !/ x",
+            "Reals !^ 2",
+            "!sin(Reals)",
+            "!abs(Reals)",
+            "!-Reals",
+        ],
+    )
+    def test_mixed_scalar_set_errors_are_independent_of_simplification(
+        self, caret_spec: str
+    ) -> None:
+        expr, expected_caret = _caret_template(caret_spec)
+        simplified_error = psu.validate_string_as_sympy(
+            expr,
+            ["x"],
+            allow_sets=True,
+        )
+        unsimplified_error = psu.validate_string_as_sympy(
+            expr,
+            ["x"],
+            allow_sets=True,
+            simplify_expression=False,
+        )
+
+        assert unsimplified_error == simplified_error
+        assert simplified_error is not None
+        match = re.search(r"<pre>(.*?)</pre>", simplified_error, re.DOTALL)
+        assert match is not None
+        assert match.group(1) == expected_caret
+
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.
 
@@ -997,6 +1322,36 @@ class TestExceptions:
         )
         assert error_msg is not None
         assert 'invalid symbol "m"' in error_msg
+
+    @pytest.mark.parametrize(
+        ("caret_spec", "expected"),
+        [
+            ("!sin(n, n)", "to 'sin', expected 1."),
+            ("2 + 3*!cos(n, 1)", "to 'cos', expected 1."),
+            ("!exp()", "to 'exp', expected 1."),
+            # sympy.sqrt's second parameter is `evaluate`, so this was accepted as sqrt(n)
+            ("!sqrt(n, n)", "to 'sqrt', expected 1."),
+            ("!log(n, 2, 3)", "to 'log', expected 1 or 2."),
+            ("!atan2(n)", "to 'atan2', expected 2."),
+        ],
+    )
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_builtin_function_arity_error(
+        self, caret_spec: str, expected: str, *, simplify_expression: bool
+    ) -> None:
+        expr, expected_caret = _caret_template(caret_spec)
+        error_msg = psu.validate_string_as_sympy(
+            expr, self.VARIABLES, simplify_expression=simplify_expression
+        )
+        assert error_msg is not None
+        assert f"wrong number of arguments {expected}" in error_msg
+        match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+        assert match is not None
+        assert match.group(1) == expected_caret
+
+    @pytest.mark.parametrize("expr", ["log(n, 2)", "atan2(n, 1)", "max(n, 1, 2)"])
+    def test_builtin_function_valid_arity(self, expr: str) -> None:
+        assert psu.validate_string_as_sympy(expr, self.VARIABLES) is None
 
 
 @pytest.mark.parametrize(
@@ -1018,6 +1373,15 @@ def test_get_items_list(items_string: str | None, expected_output: list[str]) ->
     assert psu.get_items_list(items_string) == expected_output
 
 
+def test_builtin_callable_functions_exclude_set_operators() -> None:
+    callable_functions = psu.get_builtin_callable_functions(allow_sets=True)
+
+    assert {"Interval", "FiniteSet", "Union", "Intersection", "Complement"} <= (
+        callable_functions
+    )
+    assert callable_functions.isdisjoint({"U", "cup", "cap", "∪", "∩"})  # ruff:ignore[ambiguous-unicode-character-string]
+
+
 class TestValidateNamesForConflicts:
     """Tests for validate_names_for_conflicts()."""
 
@@ -1037,6 +1401,14 @@ class TestValidateNamesForConflicts:
     def test_custom_function_conflicts_with_builtin(self) -> None:
         with pytest.raises(ValueError, match="cos"):
             psu.validate_names_for_conflicts("test", [], ["cos"])
+
+    def test_custom_complement_override_only_applies_to_functions(self) -> None:
+        psu.validate_names_for_conflicts("test", [], ["Complement"], allow_sets=True)
+
+        with pytest.raises(ValueError, match="Complement"):
+            psu.validate_names_for_conflicts(
+                "test", ["Complement"], [], allow_sets=True
+            )
 
     @pytest.mark.parametrize("conflicting_name", ["i", "j"])
     def test_complex_constants_only_conflict_when_enabled(

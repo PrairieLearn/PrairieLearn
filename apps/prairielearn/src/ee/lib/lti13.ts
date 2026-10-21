@@ -7,7 +7,7 @@ import * as jose from 'jose';
 import * as client from 'openid-client';
 import { z } from 'zod';
 
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError, formatErrorStack } from '@prairielearn/error';
 import {
   execute,
   loadSqlEquiv,
@@ -27,6 +27,7 @@ import {
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import { ltiFetch } from '../../lib/lti-fetch.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectOptionalUserByUin } from '../../models/user.js';
@@ -228,6 +229,8 @@ export async function getOpenidClientConfig(
     ),
   );
 
+  openidClientConfig[client.customFetch] = ltiFetch as client.CustomFetch;
+
   // Only for testing
   if (config.devMode) {
     // eslint-disable-next-line @typescript-eslint/no-deprecated
@@ -278,6 +281,11 @@ export class Lti13Claim {
   get target_link_uri() {
     this.assertValid();
     return this.claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'];
+  }
+
+  get sub() {
+    this.assertValid();
+    return this.claims.sub;
   }
 
   get lineitems() {
@@ -631,20 +639,20 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  * @returns Node fetch response object
  */
 export async function fetchRetry(
-  input: RequestInfo | URL,
+  input: string | URL,
   opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
   },
-): Promise<Response> {
+): ReturnType<typeof ltiFetch> {
   const fetchRetryOpts = {
     retryLeft: 5,
     sleepMs: 1000,
     ...incomingfetchRetryOpts,
   };
   try {
-    const response = await fetch(input, opts);
+    const response = await ltiFetch(input, opts);
 
     if (response.ok) {
       return response;
@@ -736,7 +744,7 @@ export async function fetchRetry(
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetryPaginated(
-  input: RequestInfo | URL,
+  input: string | URL,
   opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
@@ -744,9 +752,7 @@ export async function fetchRetryPaginated(
   },
 ): Promise<unknown[]> {
   const output: unknown[] = [];
-  const origin = new URL(
-    typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
-  ).origin;
+  const origin = new URL(input).origin;
 
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
@@ -958,7 +964,7 @@ export async function updateLti13Scores({
       counts.success++;
     } catch (error: any) {
       counts.error++;
-      job.warn(`\t${error.message}`);
+      job.warn(formatErrorStack(error));
       if (error instanceof AugmentedError && error.data.body) {
         job.verbose(error.data.body);
       }

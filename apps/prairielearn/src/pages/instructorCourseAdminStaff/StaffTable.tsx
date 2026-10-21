@@ -4,6 +4,7 @@ import {
   type RowSelectionState,
   type SortingState,
 } from '@tanstack/react-table';
+import type { inferRouterOutputs } from '@trpc/server';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -11,7 +12,7 @@ import { Button, ButtonGroup, Dropdown, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
-import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import {
   type ColumnFilterEntry,
   IndeterminateCheckbox,
@@ -19,6 +20,7 @@ import {
   type MultiSelectFilterValue,
   NuqsAdapter,
   OverlayTrigger,
+  type OverlayTriggerProps,
   TanstackTableCard,
   type TanstackTableCoreInstance,
   type TanstackTableHeader,
@@ -34,11 +36,14 @@ import {
 } from '@prairielearn/ui';
 
 import type { CourseInstanceAuthz } from '../../models/course-instances.js';
-import type { CourseUsersRow } from '../../models/course-permissions.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
 import type { CourseStaffError } from '../../trpc/course/course-staff.js';
+import type { CourseRouter } from '../../trpc/course/trpc.js';
 
+import { StaffCsvImportModal } from './StaffCsvImportModal.js';
+
+type CourseUsersRow = inferRouterOutputs<CourseRouter>['courseStaff']['list'][number];
 type ColumnFilter = (props: { header: TanstackTableHeader<CourseUsersRow> }) => ReactNode;
 
 function useInvalidateStaffList() {
@@ -87,6 +92,22 @@ const INSTANCE_ROLE_DESCRIPTIONS: Record<InstanceRole, string> = {
     'Can see all assessments, questions, and issues. Can view and edit student data, including grading.',
 };
 
+const PERMISSION_POPOVER_CONFIG: OverlayTriggerProps['popperConfig'] = {
+  modifiers: [
+    {
+      name: 'resize',
+      enabled: true,
+      phase: 'write',
+      // Role descriptions and error messages can change the popover's size while it's open.
+      effect: ({ state, instance }) => {
+        const observer = new ResizeObserver(() => void instance.update());
+        observer.observe(state.elements.popper);
+        return () => observer.disconnect();
+      },
+    },
+  ],
+};
+
 function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<CourseUsersRow> }) {
   const allSelected = table.getIsAllPageRowsSelected();
   return (
@@ -122,6 +143,7 @@ interface StaffTableInnerProps {
   authnUserId: string;
   userId: string;
   isAdministrator: boolean;
+  canEdit: boolean;
   uidsLimit: number;
 }
 
@@ -176,7 +198,7 @@ function CoursePermissionCell({
     return (
       <span
         className={clsx(
-          'btn btn-sm disabled',
+          'd-inline-block rounded px-2 py-1 small',
           `bg-${courseRoleColor(currentRole)}-subtle`,
           `text-${courseRoleColor(currentRole)}-emphasis`,
         )}
@@ -191,7 +213,8 @@ function CoursePermissionCell({
     <OverlayTrigger
       show={show}
       trigger="click"
-      placement="right"
+      placement="auto"
+      popperConfig={PERMISSION_POPOVER_CONFIG}
       popover={{
         props: {
           id: `course-permission-popover-${courseUser.user.id}`,
@@ -266,13 +289,14 @@ function CoursePermissionCell({
   );
 }
 
-/** Only course owners can access this page, so instance roles are always editable. */
 function CourseInstanceAccessCell({
   courseUser,
   courseInstance,
+  canEdit,
 }: {
   courseUser: CourseUsersRow;
   courseInstance: CourseInstanceAuthz;
+  canEdit: boolean;
 }) {
   const existingRole = courseUser.course_instance_roles?.find(
     (cir) => cir.id === courseInstance.id,
@@ -292,11 +316,27 @@ function CourseInstanceAccessCell({
   });
   const appError = getAppError<CourseStaffError['UpdateInstanceRole']>(mutation.error);
 
+  if (!canEdit) {
+    return (
+      <span
+        className={clsx(
+          'd-inline-block rounded px-2 py-1 small',
+          `bg-${instanceRoleColor(currentRole)}-subtle`,
+          `text-${instanceRoleColor(currentRole)}-emphasis`,
+        )}
+        style={{ width: 90 }}
+      >
+        {INSTANCE_ROLE_LABELS[currentRole]}
+      </span>
+    );
+  }
+
   return (
     <OverlayTrigger
       show={show}
       trigger="click"
-      placement="bottom"
+      placement="auto"
+      popperConfig={PERMISSION_POPOVER_CONFIG}
       popover={{
         props: {
           id: `ci-permission-popover-${courseUser.user.id}-${courseInstance.id}`,
@@ -793,10 +833,6 @@ function SelectionToolbar({
     (u) => (u.user.id !== authnUserId && u.user.id !== userId) || isAdministrator,
   );
 
-  const deletableUsers = modifiableUsers.filter(
-    (u) => isAdministrator || u.course_permission.course_role !== 'Owner',
-  );
-
   return (
     <>
       <div className="d-flex align-items-center gap-2">
@@ -813,7 +849,7 @@ function SelectionToolbar({
           variant="light"
           size="sm"
           className="text-danger"
-          disabled={deletableUsers.length === 0}
+          disabled={modifiableUsers.length === 0}
           onClick={() => setShowDeleteModal(true)}
         >
           <i className="fa fa-trash-alt me-1" />
@@ -823,7 +859,7 @@ function SelectionToolbar({
 
       <BulkDeleteModal
         show={showDeleteModal}
-        selectedUsers={deletableUsers}
+        selectedUsers={modifiableUsers}
         onHide={() => setShowDeleteModal(false)}
       />
       <BulkEditAccessModal
@@ -842,14 +878,36 @@ function StaffTableInner({
   authnUserId,
   userId,
   isAdministrator,
+  canEdit,
   uidsLimit,
 }: StaffTableInnerProps) {
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const trpc = useTRPC();
   const { data: liveUsers } = useQuery({
     ...trpc.courseStaff.list.queryOptions(),
     initialData: courseUsers,
     staleTime: Infinity,
   });
+  const exportQuery = useQuery({
+    ...trpc.courseStaff.export.queryOptions(),
+    enabled: false,
+  });
+
+  async function exportCsv() {
+    const result = await exportQuery.refetch();
+    if (!result.isSuccess) return;
+
+    const url = URL.createObjectURL(
+      new Blob([result.data.text], { type: 'text/csv;charset=utf-8' }),
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = result.data.filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -906,13 +964,13 @@ function StaffTableInner({
 
   const allColumnIds = useMemo(
     () => [
-      'select',
+      ...(canEdit ? ['select'] : []),
       'uid',
       'user_name',
       'course_role',
       ...courseInstances.map((ci) => `ci_${ci.id}`),
     ],
-    [courseInstances],
+    [courseInstances, canEdit],
   );
   const { columnVisibility, setColumnVisibility, defaultColumnVisibility } =
     useColumnVisibilityQueryState(allColumnIds);
@@ -922,27 +980,31 @@ function StaffTableInner({
   const columns = useMemo(
     () =>
       columnHelper.columns([
-        columnHelper.display({
-          id: 'select',
-          header: ({ table }) => <SelectAllCheckbox table={table} />,
-          cell: ({ row }) => {
-            const uid = row.original.user.uid;
-            return (
-              <input
-                type="checkbox"
-                aria-label={`Select ${uid}`}
-                checked={row.getIsSelected()}
-                disabled={!row.getCanSelect()}
-                onChange={row.getToggleSelectedHandler()}
-              />
-            );
-          },
-          size: 40,
-          minSize: 40,
-          maxSize: 40,
-          enableSorting: false,
-          enableHiding: false,
-        }),
+        ...(canEdit
+          ? [
+              columnHelper.display({
+                id: 'select',
+                header: ({ table }) => <SelectAllCheckbox table={table} />,
+                cell: ({ row }) => {
+                  const uid = row.original.user.uid;
+                  return (
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${uid}`}
+                      checked={row.getIsSelected()}
+                      disabled={!row.getCanSelect()}
+                      onChange={row.getToggleSelectedHandler()}
+                    />
+                  );
+                },
+                size: 40,
+                minSize: 40,
+                maxSize: 40,
+                enableSorting: false,
+                enableHiding: false,
+              }),
+            ]
+          : []),
         columnHelper.accessor((row) => row.user.uid, {
           id: 'uid',
           header: 'UID',
@@ -998,9 +1060,10 @@ function StaffTableInner({
               <CoursePermissionCell
                 courseUser={info.row.original}
                 canChangeCourseRole={
-                  (info.row.original.user.id !== authnUserId &&
+                  canEdit &&
+                  ((info.row.original.user.id !== authnUserId &&
                     info.row.original.user.id !== userId) ||
-                  isAdministrator
+                    isAdministrator)
                 }
               />
             </div>
@@ -1025,21 +1088,25 @@ function StaffTableInner({
               },
               cell: (info) => (
                 <div className="text-center">
-                  <CourseInstanceAccessCell courseUser={info.row.original} courseInstance={ci} />
+                  <CourseInstanceAccessCell
+                    courseUser={info.row.original}
+                    courseInstance={ci}
+                    canEdit={canEdit}
+                  />
                 </div>
               ),
             },
           ),
         ),
       ]),
-    [authnUserId, userId, isAdministrator, courseInstances],
+    [authnUserId, userId, isAdministrator, courseInstances, canEdit],
   );
 
   const table = useTanstackTable({
     data: liveUsers,
     columns,
     columnResizeMode: 'onChange',
-    enableRowSelection: true,
+    enableRowSelection: canEdit,
     getRowId: (row) => row.user.id,
     state: {
       sorting,
@@ -1115,7 +1182,17 @@ function StaffTableInner({
 
   const headerButtons = (
     <>
-      {selectedUsers.length > 0 && (
+      <Button
+        type="button"
+        variant="light"
+        size="sm"
+        disabled={exportQuery.isFetching}
+        onClick={exportCsv}
+      >
+        <i className="bi bi-download me-2" aria-hidden="true" />
+        {exportQuery.isFetching ? 'Exporting…' : 'Export CSV'}
+      </Button>
+      {canEdit && selectedUsers.length > 0 && (
         <SelectionToolbar
           selectedUsers={selectedUsers}
           courseInstances={courseInstances}
@@ -1124,7 +1201,13 @@ function StaffTableInner({
           userId={userId}
         />
       )}
-      <AddUsersButton uidsLimit={uidsLimit} courseInstances={courseInstances} />
+      {canEdit && (
+        <Button type="button" variant="light" size="sm" onClick={() => setShowCsvImport(true)}>
+          <i className="bi bi-upload me-2" aria-hidden="true" />
+          Import CSV
+        </Button>
+      )}
+      {canEdit && <AddUsersButton uidsLimit={uidsLimit} courseInstances={courseInstances} />}
     </>
   );
 
@@ -1196,6 +1279,11 @@ function StaffTableInner({
 
   return (
     <div className="d-flex flex-column h-100">
+      {showCsvImport && <StaffCsvImportModal onHide={() => setShowCsvImport(false)} />}
+      <AppErrorAlert
+        error={getAppError<CourseStaffError['Export']>(exportQuery.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+      />
       <div className="staff-table flex-grow-1" style={{ minHeight: 0 }}>
         <TanstackTableCard
           table={table}
@@ -1219,12 +1307,19 @@ interface StaffTableProps extends StaffTableInnerProps {
   search: string;
   trpcCsrfToken: string;
   courseId: string;
+  courseInstanceId?: string;
 }
 
-export function StaffTable({ search, trpcCsrfToken, courseId, ...props }: StaffTableProps) {
+export function StaffTable({
+  search,
+  trpcCsrfToken,
+  courseId,
+  courseInstanceId,
+  ...props
+}: StaffTableProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
-    createCourseTrpcClient({ csrfToken: trpcCsrfToken, courseId }),
+    createCourseTrpcClient({ csrfToken: trpcCsrfToken, courseId, courseInstanceId }),
   );
 
   return (

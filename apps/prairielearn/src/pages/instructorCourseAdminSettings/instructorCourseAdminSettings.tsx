@@ -6,23 +6,29 @@ import fs from 'fs-extra';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getCanonicalTimezones } from '@prairielearn/utils/timezone';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { CourseInfoCreateEditor, prepareJsonFileEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { parseGithubRepository } from '../../lib/github-utils.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { computeStableHash } from '../../lib/json.js';
+import { isEnterprise } from '../../lib/license.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { getCanonicalTimezones } from '../../lib/timezones.js';
 import {
   updateCourseQuestionsReceiveUserData,
   updateCourseShowGettingStarted,
 } from '../../models/course.js';
 import type { CourseJsonInput } from '../../schemas/infoCourse.js';
 
+import { GithubRepositoryAccess } from './GithubRepositoryAccess.js';
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
 const router = Router();
@@ -34,14 +40,17 @@ router.get(
     const courseInfoExists = await fs.pathExists(
       path.join(res.locals.course.path, 'infoCourse.json'),
     );
-    const availableTimezones = await getCanonicalTimezones([res.locals.course.display_timezone]);
+    const availableTimezones = getCanonicalTimezones({
+      alwaysInclude: [res.locals.course.display_timezone],
+    });
 
-    const { authz_data } = extractPageContext(res.locals, {
+    const { authz_data, course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
     });
 
     const courseGHLink = courseRepoContentUrl(res.locals.course);
+    const githubRepository = parseGithubRepository(course.repository ?? '');
 
     const origHash = courseInfoExists
       ? computeStableHash(
@@ -88,6 +97,30 @@ router.get(
             institution={res.locals.institution}
             origHash={origHash}
             urlPrefix={res.locals.urlPrefix}
+            githubAccess={
+              isEnterprise() &&
+              config.githubClientToken !== null &&
+              course.repository &&
+              !course.example_course ? (
+                <Hydrate>
+                  <GithubRepositoryAccess
+                    courseId={course.id}
+                    repositoryUrl={
+                      githubRepository
+                        ? `https://github.com/${githubRepository.owner}/${githubRepository.repo}`
+                        : null
+                    }
+                    isSupportedRepository={githubRepository?.owner.toLowerCase() === 'prairielearn'}
+                    isOwner={authz_data.has_course_permission_own}
+                    staffUrl={`${res.locals.urlPrefix}/course_admin/staff`}
+                    trpcCsrfToken={generatePrefixCsrfToken(
+                      { url: getCourseTrpcUrl(course.id), authn_user_id: res.locals.authn_user.id },
+                      config.secretKey,
+                    )}
+                  />
+                </Hydrate>
+              ) : null
+            }
           />
         ),
       }),

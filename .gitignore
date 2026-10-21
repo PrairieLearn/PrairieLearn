@@ -103,6 +103,7 @@ packages/*/coverage
 coverage.xml
 
 ## Vitest
+.vitest
 .vitest-reports
 
 ## Playwright

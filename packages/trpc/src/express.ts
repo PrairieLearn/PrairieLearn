@@ -1,4 +1,8 @@
-import { TRPC_ERROR_CODES_BY_KEY, type TRPC_ERROR_CODE_KEY } from '@trpc/server/rpc';
+import {
+  TRPC_ERROR_CODES_BY_KEY,
+  type TRPC_ERROR_CODE_KEY,
+  type TRPC_ERROR_CODE_NUMBER,
+} from '@trpc/server/rpc';
 
 export interface TrpcRequestLike {
   header(name: string): string | undefined;
@@ -63,7 +67,7 @@ export interface TrpcErrorResponse {
   error: {
     json: {
       message: string;
-      code: number;
+      code: TRPC_ERROR_CODE_NUMBER;
       data: {
         code: TRPC_ERROR_CODE_KEY;
         httpStatus: number;

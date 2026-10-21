@@ -12,6 +12,7 @@ import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
+  QuestionSchema,
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';
@@ -38,6 +39,7 @@ const VariantForGradingJobUpdateSchema = z.object({
   instance_question_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema.nullable(),
   has_newer_submission: z.boolean(),
+  partial_credit: QuestionSchema.shape.partial_credit,
 });
 
 /**
@@ -102,6 +104,7 @@ export async function updateGradingJobAfterGrading({
   partial_scores,
   score,
   v2_score,
+  overridePartialCreditScore = false,
 }: {
   grading_job_id: string;
   /** null => no change */
@@ -123,10 +126,14 @@ export async function updateGradingJobAfterGrading({
   partial_scores?: Submission['partial_scores'];
   score?: Submission['score'];
   v2_score?: Submission['v2_score'];
+  overridePartialCreditScore?: boolean;
 }): Promise<GradingJob> {
   return await runInTransactionAsync(async () => {
+    const { submission_id } = await selectGradingJobById(grading_job_id);
+    await lockSubmission({ submission_id });
+
+    // The job may have been completed or canceled while we waited for the lock.
     const originalGradingJob = await selectGradingJobById(grading_job_id);
-    await lockSubmission({ submission_id: originalGradingJob.submission_id });
 
     // Bail out if we don't need this grading result
     if (originalGradingJob.grading_request_canceled_at != null) return originalGradingJob;
@@ -143,24 +150,32 @@ export async function updateGradingJobAfterGrading({
       assessment_instance_id,
       variant_id,
       credit,
+      partial_credit,
     } = await queryRow(
       sql.select_variant_for_grading_job_update,
       { submission_id: originalGradingJob.submission_id },
       VariantForGradingJobUpdateSchema,
     );
 
-    // Bail out if there's a newer submission, regardless of grading status.
-    // This only applies to student questions - that is, where there's an
-    // associated instance question. This prevents a race condition where we
-    // grade submissions in a different order than how they were saved.
-    // This does not impact instructors since there's no notion of an assessment
-    // to grade.
-    if (has_newer_submission) return originalGradingJob;
+    // A newer submission for the same instance question makes this result obsolete,
+    // even if the newer submission has not been graded yet. Cancel the job so it
+    // no longer appears in flight, without changing the question's grade. Preview
+    // variants have no instance question, so this check does not suppress their results.
+    if (has_newer_submission) {
+      return await queryRow(sql.cancel_grading_job, { grading_job_id }, GradingJobSchema);
+    }
 
     if (!gradable) {
       score = null;
       partial_scores = null;
     }
+
+    // If partial credit is not allowed, then any score less than 1 is treated
+    // as 0. This is only done for externally graded questions. For internally
+    // graded questions, the grade() function may override the partial credit
+    // setting, so we don't want to override it here. The partial_credit is
+    // considered before the grade() function is applied in that case.
+    if (overridePartialCreditScore && !partial_credit && score != null && score < 1) score = 0;
 
     const gradingJob = await queryRow(
       sql.update_grading_job_after_grading,

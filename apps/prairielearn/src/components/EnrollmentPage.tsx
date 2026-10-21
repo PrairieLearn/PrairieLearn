@@ -1,14 +1,11 @@
+import type { EnrollmentIneligibilityReason } from '../lib/enrollment/eligibility.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { PageLayout } from './PageLayout.js';
 
 interface EnrollmentPageProps {
+  reason: EnrollmentIneligibilityReason;
   resLocals: UntypedResLocals;
-  type:
-    | 'blocked'
-    | 'self-enrollment-disabled'
-    | 'self-enrollment-expired'
-    | 'institution-restriction';
 }
 
 function BlockedEnrollment() {
@@ -111,22 +108,22 @@ function InstitutionRestriction() {
   );
 }
 
-export function EnrollmentPage({ resLocals, type }: EnrollmentPageProps) {
+export function EnrollmentPage({ reason, resLocals }: EnrollmentPageProps) {
   const pageTitle =
-    type === 'blocked'
+    reason === 'blocked'
       ? 'Enrollment blocked'
-      : type === 'self-enrollment-expired'
+      : reason === 'self-enrollment-expired'
         ? 'Self-enrollment expired'
-        : type === 'institution-restriction'
+        : reason === 'institution-restriction'
           ? 'Institution restriction'
           : 'Self-enrollment not available';
 
   const content =
-    type === 'blocked' ? (
+    reason === 'blocked' ? (
       <BlockedEnrollment />
-    ) : type === 'self-enrollment-expired' ? (
+    ) : reason === 'self-enrollment-expired' ? (
       <SelfEnrollmentExpired />
-    ) : type === 'institution-restriction' ? (
+    ) : reason === 'institution-restriction' ? (
       <InstitutionRestriction />
     ) : (
       <SelfEnrollmentDisabled />

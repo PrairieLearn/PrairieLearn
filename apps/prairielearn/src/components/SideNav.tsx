@@ -83,7 +83,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/staff',
       iconClasses: 'fas fa-users',
       tabLabel: 'Staff',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
     },
     {
       activePages: ['course_admin'],
@@ -317,15 +316,18 @@ function CourseInstanceNav({
             aria-expanded="false"
             data-bs-toggle="dropdown"
             data-bs-boundary="window"
-            hx-get="/pl/navbar/course/${resLocals.course.id}/course_instance_switcher/${resLocals
-              .course_instance?.id ?? ''}"
+            hx-get="/pl/navbar/course/${resLocals.course.id}/course_instance_switcher/${
+              resLocals.course_instance?.id ?? ''
+            }"
             hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
             <span title="${resLocals.course_instance?.short_name ?? ''}">
-              ${resLocals.course_instance
-                ? truncateMiddle(resLocals.course_instance.short_name, 22)
-                : 'Select...'}
+              ${
+                resLocals.course_instance
+                  ? truncateMiddle(resLocals.course_instance.short_name, 22)
+                  : 'Select...'
+              }
             </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">
@@ -342,18 +344,20 @@ function CourseInstanceNav({
             </div>
           </div>
         </div>
-        ${resLocals.course_instance
-          ? courseInstanceSideNavPageTabs.map((tabInfo) =>
-              SideNavLink({
-                resLocals,
-                navPage: page,
-                navSubPage: subPage,
-                tabInfo,
-                urlPrefix,
-                sideNavExpanded,
-              }),
-            )
-          : ''}
+        ${
+          resLocals.course_instance
+            ? courseInstanceSideNavPageTabs.map((tabInfo) =>
+                SideNavLink({
+                  resLocals,
+                  navPage: page,
+                  navSubPage: subPage,
+                  tabInfo,
+                  urlPrefix,
+                  sideNavExpanded,
+                }),
+              )
+            : ''
+        }
       </div>
     </div>
   `;

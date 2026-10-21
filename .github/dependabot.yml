@@ -102,11 +102,6 @@ updates:
       - dependency-name: 'quill'
         versions: ['>2.0.2']
 
-      # prettier 3.9 is not idempotent in some cases that apply to our codebase:
-      # https://github.com/prettier/prettier/issues/19518
-      - dependency-name: 'prettier'
-        versions: ['>=3.9']
-
     cooldown:
       # Dependabot does not understand the minimumReleaseAge setting in
       # pnpm-workspace.yaml, so we set a cooldown here to obtain the same
@@ -156,6 +151,7 @@ updates:
     patterns: ['*']
     directories:
       - '/'
+      - '/apps/prairielearn/python'
       - '/docs'
       - '/graders/c'
       - '/graders/python'
@@ -177,12 +173,6 @@ updates:
         versions: ['>=3.0']
       - dependency-name: 'pandas-stubs'
         versions: ['>=3.0']
-      # pygraphviz 2.0 ships binary wheels that bundle their own Graphviz and
-      # font stack, which changes graph rendering and emits Fontconfig warnings
-      # that surface as question issues. Upgrade deliberately in a dedicated PR.
-      # https://github.com/PrairieLearn/PrairieLearn/pull/15373
-      - dependency-name: 'pygraphviz'
-        versions: ['>=2']
       # numpy 2.5 removes some deprecated functionality that may be in use by
       # instructors. Retaining for now out of an abundance of caution.
       - dependency-name: 'numpy'
@@ -199,9 +189,6 @@ updates:
         versions: ['>=3.0']
       - dependency-name: 'pandas-stubs'
         versions: ['>=3.0']
-      # See the note on the pip entry above.
-      - dependency-name: 'pygraphviz'
-        versions: ['>=2']
       # numpy 2.5 removes some deprecated functionality that may be in use by
       # instructors. Retaining for now out of an abundance of caution.
       - dependency-name: 'numpy'

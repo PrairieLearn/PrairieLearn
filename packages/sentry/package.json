@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/sentry",
-  "version": "5.0.9",
+  "version": "6.0.0",
   "type": "module",
   "repository": {
     "type": "git",
@@ -12,17 +12,21 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@sentry/core": "^10.69.0",
-    "@sentry/node-core": "^10.69.0",
-    "execa": "^9.6.1"
+    "@sentry/core": "^11.0.0",
+    "@sentry/node": "^11.0.0",
+    "execa": "^10.0.1"
   },
   "devDependencies": {
+    "@prairielearn/opentelemetry": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
-    "@typescript/native-preview": "beta"
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.2",
+    "vitest": "^5.0.2"
   }
 }

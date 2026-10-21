@@ -13,7 +13,12 @@ import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
-export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
+export const EnumAiGradingProviderSchema = z.enum([
+  'openai',
+  'google',
+  'anthropic',
+  'openai-compatible',
+]);
 export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
 export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
@@ -122,11 +127,11 @@ export const QuestionPreferenceValuesSchema = z.record(
 // Result of check_assessment_access sproc
 const SprocCheckAssessmentAccessSchema = z.object({
   active: z.boolean().nullable(),
-  credit: z.union([z.string(), z.literal('None')]),
-  end_date: z.union([z.string(), z.literal('—')]),
+  credit: z.number().nullable(),
+  end_date: DateFromISOString.nullable(),
   mode: EnumModeSchema.nullable(),
-  start_date: z.union([z.string(), z.literal('—')]),
-  time_limit_min: z.union([z.string(), z.literal('—')]),
+  start_date: DateFromISOString.nullable(),
+  time_limit_min: z.number().nullable(),
 });
 
 // Result of users_get_displayed_role sproc
@@ -140,36 +145,24 @@ export const SprocAuthzAssessmentSchema = z.object({
   active: z.boolean(),
   authorized: z.boolean(),
   credit: z.number().nullable(),
-  credit_date_string: z.string().nullable(),
+  credit_end_date: DateFromISOString.nullable(),
   exam_access_end: DateFromISOString.nullable(),
   mode: EnumModeSchema.nullable(),
-  next_active_time: z.string().nullable(),
+  next_active_credit: z.number().nullable(),
+  next_active_date: DateFromISOString.nullable(),
   password: z.string().nullable(),
   show_before_release: z.boolean(),
   show_closed_assessment: z.boolean(),
   show_closed_assessment_score: z.boolean(),
+  staff_override: z.boolean(),
   time_limit_min: z.number().nullable(),
 });
 export type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 
 // Result of authz_assessment_instance sproc
-export const SprocAuthzAssessmentInstanceSchema = z.object({
-  access_rules: z.array(SprocCheckAssessmentAccessSchema),
-  access_timeline: z.array(AccessTimelineEntrySchema).readonly(),
-  active: z.boolean(),
-  authorized: z.boolean(),
+export const SprocAuthzAssessmentInstanceSchema = SprocAuthzAssessmentSchema.extend({
   authorized_edit: z.boolean(),
-  credit: z.number().nullable(),
-  credit_date_string: z.string().nullable(),
-  exam_access_end: DateFromISOString.nullable(),
-  mode: EnumModeSchema.nullable(),
-  next_active_time: z.string().nullable(),
-  password: z.string().nullable(),
-  show_before_release: z.boolean(),
-  show_closed_assessment: z.boolean(),
-  show_closed_assessment_score: z.boolean(),
   time_limit_expired: z.boolean(),
-  time_limit_min: z.number().nullable(),
 });
 export type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
@@ -340,9 +333,10 @@ export const AiGradingCreditPoolChangeSchema = z.object({
 export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
 
 export const AiGradingJobSchema = z.object({
+  base_url: z.string().nullable(),
   completion: z.any(),
   completion_tokens: z.number(),
-  cost: z.number(),
+  cost: z.number().nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema,
   grading_job_id: IdSchema,
@@ -351,6 +345,7 @@ export const AiGradingJobSchema = z.object({
   model: z.string(),
   prompt: z.unknown(),
   prompt_tokens: z.number(),
+  provider: EnumAiGradingProviderSchema.nullable(),
   rotation_correction_degrees: z.record(z.string(), z.number()).nullable(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
@@ -514,7 +509,7 @@ export const AssessmentInstanceSchema = z.object({
   mode: EnumModeSchema.nullable(),
   modified_at: DateFromISOString,
   number: z.number(),
-  open: z.boolean().nullable(),
+  open: z.boolean(),
   points: z.number().nullable(),
   score_perc: z.number().nullable(),
   score_perc_pending: z.number(),
@@ -535,6 +530,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_last_selected_credential_id: IdSchema.nullable(),
   ai_grading_last_selected_model: z.string().nullable(),
   ai_grading_mode: z.boolean(),
   allow_real_time_grading: z.boolean(),
@@ -743,6 +739,7 @@ export const CourseSchema = z.object({
   sync_warnings: z.string().nullable(),
   template_course: z.boolean(),
   title: z.string().nullable(),
+  uuid: z.string(),
   yearly_enrollment_limit: z.number().nullable(),
 });
 export type Course = z.infer<typeof CourseSchema>;
@@ -789,6 +786,7 @@ export const CourseInstanceAccessRuleSchema = z.object({
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
 export const CourseInstanceAiGradingCredentialSchema = z.object({
+  base_url: z.string().nullable(),
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   created_by: IdSchema,
@@ -1521,6 +1519,7 @@ export const RubricItemSchema = z.object({
 export type RubricItem = z.infer<typeof RubricItemSchema>;
 
 export const SamlProviderSchema = z.object({
+  allow_missing_name: z.boolean(),
   certificate: z.string(),
   email_attribute: z.string().nullable(),
   family_name_attribute: z.string().nullable(),

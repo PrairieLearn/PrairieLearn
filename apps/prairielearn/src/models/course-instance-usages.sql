@@ -107,7 +107,7 @@ SELECT
   c.id AS course_id,
   NULL,
   $cost_ai_question_generation,
-  date_trunc('day', now() AT TIME ZONE 'UTC'),
+  date_trunc('day', now(), 'UTC'),
   $authn_user_id,
   FALSE
 FROM
@@ -143,7 +143,7 @@ SELECT
   c.id AS course_id,
   ci.id AS course_instance_id,
   $cost_ai_grading,
-  date_trunc('day', now() AT TIME ZONE 'UTC'),
+  date_trunc('day', now(), 'UTC'),
   $authn_user_id,
   FALSE
 FROM

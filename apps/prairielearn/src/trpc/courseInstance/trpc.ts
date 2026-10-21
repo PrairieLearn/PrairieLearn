@@ -2,15 +2,17 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 
 import { handleTrpcError } from '../../lib/trpc.js';
 
+import { aiGradingProvidersRouter } from './ai-grading-providers.js';
 import { createContext, t } from './init.js';
 import { instanceAdminSettingsRouter } from './instance-admin-settings.js';
-import { qtiImportRouter } from './qti-import.js';
 import { studentLabelsRouter } from './student-labels.js';
+import { studentSyncRouter } from './student-sync.js';
 
 const courseInstanceRouter = t.router({
-  qtiImport: qtiImportRouter,
+  aiGradingProviders: aiGradingProvidersRouter,
   instanceAdminSettings: instanceAdminSettingsRouter,
   studentLabels: studentLabelsRouter,
+  studentSync: studentSyncRouter,
 });
 
 export type CourseInstanceRouter = typeof courseInstanceRouter;

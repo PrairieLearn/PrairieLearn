@@ -21,9 +21,10 @@ import {
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffInstanceQuestionGroupSchema,
+  StaffStudentLabelSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
-import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
+import { getAssessmentQuestionTrpcUrl, getCourseInstanceTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
@@ -34,6 +35,7 @@ import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectStudentLabelsInCourseInstance } from '../../../models/student-label.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import {
@@ -55,6 +57,11 @@ router.get(
         courseInstance: res.locals.course_instance,
       }),
     );
+    const studentLabels = res.locals.assessment.team_work
+      ? []
+      : z
+          .array(StaffStudentLabelSchema)
+          .parse(await selectStudentLabelsInCourseInstance(res.locals.course_instance));
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
       'ai-submission-grouping',
@@ -138,6 +145,13 @@ router.get(
       config.secretKey,
     );
 
+    const courseInstanceTrpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: getCourseInstanceTrpcUrl(course_instance.id),
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
     const availableAiGradingProviders = aiGradingEnabled
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
@@ -177,6 +191,7 @@ router.get(
                 urlPrefix={urlPrefix}
                 csrfToken={__csrf_token}
                 trpcCsrfToken={trpcCsrfToken}
+                courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
                 assessment={assessment}
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
@@ -190,6 +205,7 @@ router.get(
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
                 courseStaff={courseStaff}
+                studentLabels={studentLabels}
                 aiGradingStats={
                   aiGradingEnabled && assessment_question.ai_grading_mode
                     ? await calculateAiGradingStats(assessment_question)

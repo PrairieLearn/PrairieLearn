@@ -1,5 +1,24 @@
 # @prairielearn/utils
 
+## 3.3.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- ca2bd16: Upgrade yauzl to v3 for ZIP archive entry-count validation.
+
+## 3.3.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.3.0
+
+### Minor Changes
+
+- 9b99f72: Add shared timezone interpretation, formatting, local-calendar, and timezone-catalog utilities under `@prairielearn/utils/timezone`.
+
 ## 3.2.3
 
 ### Patch Changes

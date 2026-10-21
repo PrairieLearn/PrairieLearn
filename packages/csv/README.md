@@ -38,8 +38,11 @@ const stringifier = stringifyStream<Workspace>({
   },
 });
 
+// Fetch one row at a time with cursor.stream(1) for large records.
 await pipeline(cursor.stream(100), stringifier, output);
 ```
+
+`stringifyStream` respects backpressure and processes asynchronous transformations one at a time. For large records, also limit buffering in the source stream.
 
 Note that this works best when the source stream is producing data asynchronously, such as though an async iterator. If you use a synchronous data source like `Readable.from([...])`, the conversion will still occur synchronously. If you have a large array of data in memory and want to convert it to a CSV, you can use `stringifyNonblocking`:
 
@@ -49,7 +52,7 @@ import { createWriteStream } from 'node:fs';
 
 const data = Array.from(new Array(100_000), (_, i) => ({ id: i }));
 const output = createWriteStream('numbers.csv');
-stringifyNonblocking<{ id: number }>(data, {
+stringifyNonblocking(data, {
   header: true,
   columns: [{ key: 'id', header: 'ID' }],
 }).pipe(output);

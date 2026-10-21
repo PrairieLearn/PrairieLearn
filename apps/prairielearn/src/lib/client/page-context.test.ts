@@ -52,6 +52,7 @@ const createInstructorAuthzData = (overrides: Record<string, any> = {}) => ({
   authn_has_course_instance_permission_view: true,
   authn_has_course_instance_permission_edit: true,
   is_administrator: false,
+  is_institution_administrator: false,
   has_course_permission_preview: true,
   has_course_permission_view: true,
   has_course_permission_edit: true,
@@ -82,6 +83,7 @@ const createStudentAuthzData = (overrides: Record<string, any> = {}) => ({
   authn_has_course_instance_permission_view: false,
   authn_has_course_instance_permission_edit: false,
   is_administrator: false,
+  is_institution_administrator: false,
   has_course_permission_preview: false,
   has_course_permission_view: false,
   has_course_permission_edit: false,
@@ -165,6 +167,7 @@ const mockInstructorData = {
     repository: 'https://github.com/example/example.git',
     sharing_name: 'example',
     show_getting_started: false,
+    uuid: '00000000-0000-4000-8000-000000000001',
   },
   institution: TEST_INSTITUTION,
 };
@@ -248,6 +251,7 @@ const mockAssessmentData = {
 
 const STAFF_ASSESSMENT_QUESTION = {
   advance_score_perc: null,
+  ai_grading_last_selected_credential_id: null,
   ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
@@ -436,6 +440,7 @@ const createCourseOnlyAuthzData = (overrides: Record<string, any> = {}) => ({
   authn_course_role: 'Owner',
   authn_mode: 'Public',
   is_administrator: false,
+  is_institution_administrator: false,
   has_course_permission_preview: true,
   has_course_permission_view: true,
   has_course_permission_edit: true,

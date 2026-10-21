@@ -21,7 +21,7 @@ li.pl-order-blocks-code {
   /* The following color is hardcoded to match the default background of pl-code blocks.
      If pl-code changes its default background color, this will need to be updated to stay
      in sync. */
-  background-color: #f0f0f0;
+  background-color: #ffffff;
 }
 
 .pl-order-blocks-code .pl-code > div {

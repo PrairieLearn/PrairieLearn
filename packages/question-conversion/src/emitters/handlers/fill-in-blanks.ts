@@ -1,8 +1,7 @@
 import he from 'he';
 
-import type { IRFeedback, IRQuestionBody } from '../../types/ir.js';
+import type { IRQuestionBody } from '../../types/ir.js';
 import type { BodyEmitHandler } from '../body-emit-handler.js';
-import { appendGlobalFeedback } from '../pl-emit-utils.js';
 
 type FIBBody = Extract<IRQuestionBody, { type: 'fill-in-blanks' }>;
 
@@ -25,30 +24,20 @@ export const fillInBlanksHandler: BodyEmitHandler = {
     return '';
   },
 
-  renderGradePy(body: IRQuestionBody, feedback: IRFeedback | undefined) {
+  renderFeedback(body, perAnswer) {
     const fib = body as FIBBody;
-    const { correct, incorrect, perAnswer } = feedback ?? {};
-    // Per-blank feedback checks partial_scores; global feedback appended after.
-    const blanksWithFeedback = fib.blanks.filter(
-      (b) => b.correctText && perAnswer?.[b.correctText] != null,
-    );
-    if (blanksWithFeedback.length === 0 && !correct && !incorrect) return '';
+    if (!perAnswer) return [];
 
-    const lines = ['def grade(data):', '    _messages = []'];
-    for (const blank of blanksWithFeedback) {
-      const fb = perAnswer![blank.correctText];
-      const prefix = `<strong>${he.escape(blank.correctText)}</strong>: `;
-      lines.push(
-        `    if data["partial_scores"].get(${JSON.stringify(blank.id)}, {}).get("score", 0) >= 1:`,
-        `        _messages.append(${JSON.stringify(prefix + fb)})`,
-      );
-    }
-    appendGlobalFeedback(lines, correct, incorrect);
-    lines.push(
-      '    if _messages:',
-      '        data["feedback"]["general"] = "<br>".join(_messages)',
-      '',
-    );
-    return lines.join('\n');
+    return fib.blanks.flatMap((blank) => {
+      const feedback = perAnswer[blank.correctText];
+      if (!blank.correctText || feedback == null) return [];
+
+      return [
+        {
+          html: `<strong>${he.escape(blank.correctText)}</strong>: ${feedback}`,
+          trigger: { type: 'fill-in-the-blank-correct' as const, answerName: blank.id },
+        },
+      ];
+    });
   },
 };

@@ -23,6 +23,7 @@ WITH
         name_attribute,
         given_name_attribute,
         family_name_attribute,
+        allow_missing_name,
         email_attribute,
         public_key,
         private_key
@@ -41,6 +42,7 @@ WITH
         $name_attribute,
         $given_name_attribute,
         $family_name_attribute,
+        $allow_missing_name,
         $email_attribute,
         COALESCE($public_key, ''),
         COALESCE($private_key, '')
@@ -58,6 +60,7 @@ WITH
       name_attribute = EXCLUDED.name_attribute,
       given_name_attribute = EXCLUDED.given_name_attribute,
       family_name_attribute = EXCLUDED.family_name_attribute,
+      allow_missing_name = EXCLUDED.allow_missing_name,
       email_attribute = EXCLUDED.email_attribute,
       public_key = COALESCE($public_key, saml_providers.public_key),
       private_key = COALESCE($private_key, saml_providers.private_key)

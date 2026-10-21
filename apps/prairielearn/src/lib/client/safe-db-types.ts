@@ -17,6 +17,7 @@
 
 import { z } from 'zod';
 
+import { AssessmentInstanceAuthzResultSchema as RawAssessmentInstanceAuthzResultSchema } from '../assessment-access-control/authz-result.js';
 import {
   AccessTokenSchema as RawAccessTokenSchema,
   AlternativePoolSchema as RawAlternativePoolSchema,
@@ -28,6 +29,7 @@ import {
   AssessmentSetSchema as RawAssessmentSetSchema,
   AuditEventSchema as RawAuditEventSchema,
   AuthnProviderSchema as RawAuthnProviderSchema,
+  CourseInstanceAiGradingCredentialSchema as RawCourseInstanceAiGradingCredentialSchema,
   CourseInstancePublishingExtensionSchema as RawCourseInstancePublishingExtensionSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
@@ -43,7 +45,6 @@ import {
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
   SharingSetSchema as RawSharingSetSchema,
-  SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
   GroupSchema as RawTeamSchema,
@@ -154,7 +155,7 @@ export type StudentAssessmentInstance__UNSAFE = z.infer<
 
 /** Assessment Instance Authz Results */
 export const RawStudentAssessmentInstanceAuthzResultSchema =
-  RawSprocAuthzAssessmentInstanceSchema.pick({
+  RawAssessmentInstanceAuthzResultSchema.pick({
     active: true,
     authorized_edit: true,
     credit_date_string: true,
@@ -271,6 +272,7 @@ export const RawStaffCourseSchema = RawAdminCourseSchema.pick({
   sync_warnings: true,
   template_course: true,
   title: true,
+  uuid: true,
 });
 export const StaffCourseSchema = RawStaffCourseSchema.brand<'StaffCourse'>();
 export type StaffCourse = z.infer<typeof StaffCourseSchema>;
@@ -599,3 +601,13 @@ export const RawStaffStudentLabelSchema = RawStudentLabelSchema.pick({
 });
 export const StaffStudentLabelSchema = RawStaffStudentLabelSchema.brand<'StaffStudentLabel'>();
 export type StaffStudentLabel = z.infer<typeof StaffStudentLabelSchema>;
+
+/** AI grading provider configuration metadata; keys are never exposed. */
+export const StaffAiGradingCredentialSchema = RawCourseInstanceAiGradingCredentialSchema.pick({
+  base_url: true,
+  created_at: true,
+  id: true,
+  provider: true,
+})
+  .extend({ apiKeyMasked: z.string(), dateAdded: z.string() })
+  .brand<'StaffAiGradingCredential'>();

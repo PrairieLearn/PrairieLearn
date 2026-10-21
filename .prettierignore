@@ -63,6 +63,9 @@ apps/prairielearn/src/sprocs/*.sql
 exampleCourse/**/*.html
 testCourse/**/*.html
 
+# Preserve generated formatting in exact-output fixtures.
+packages/question-conversion/src/emitters/fixtures/**/question.html
+
 # JSON files in tests are formatted explicitly to check for loading behaviour, so should not be formatted automatically
 apps/prairielearn/src/tests/*/**/*.json
 

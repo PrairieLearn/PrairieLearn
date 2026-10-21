@@ -46,7 +46,7 @@ On a macOS native installation, you should set the following in your `config.jso
 }
 ```
 
-More information can be found in the [config.json](configJson.md#running-workspaces-external-graders-natively-on-macos) documentation.
+More information can be found in the [config.json](configJson.md#running-natively-on-macos) documentation.
 
 ??? note "Troubleshooting workspaces"
 

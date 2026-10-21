@@ -64,37 +64,39 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
         </button>
       </div>
 
-      ${rows.length === 0
-        ? html`
-            <div class="card-body">
-              <div class="text-center text-muted">No institution administrators</div>
-            </div>
-          `
-        : html`
-            <ul class="list-group list-group-flush">
-              ${rows.map(
-                (row) => html`
-                  <li class="list-group-item d-flex flex-row align-items-center">
-                    <div class="d-flex flex-column">
-                      <span>${row.user.name}</span>
-                      <span class="text-muted">${row.user.uid}</span>
-                    </div>
+      ${
+        rows.length === 0
+          ? html`
+              <div class="card-body">
+                <div class="text-center text-muted">No institution administrators</div>
+              </div>
+            `
+          : html`
+              <ul class="list-group list-group-flush">
+                ${rows.map(
+                  (row) => html`
+                    <li class="list-group-item d-flex flex-row align-items-center">
+                      <div class="d-flex flex-column">
+                        <span>${row.user.name}</span>
+                        <span class="text-muted">${row.user.uid}</span>
+                      </div>
 
-                    <button
-                      class="btn btn-sm btn-outline-danger ms-auto js-remove-admin"
-                      data-bs-toggle="modal"
-                      data-bs-target="#removeAdminModal"
-                      type="button"
-                      data-name-and-uid="${row.user.name} (${row.user.uid})"
-                      data-institution-administrator-id="${row.institution_administrator.id}"
-                    >
-                      Remove
-                    </button>
-                  </li>
-                `,
-              )}
-            </ul>
-          `}
+                      <button
+                        class="btn btn-sm btn-outline-danger ms-auto js-remove-admin"
+                        data-bs-toggle="modal"
+                        data-bs-target="#removeAdminModal"
+                        type="button"
+                        data-name-and-uid="${row.user.name} (${row.user.uid})"
+                        data-institution-administrator-id="${row.institution_administrator.id}"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  `,
+                )}
+              </ul>
+            `
+      }
     </div>
   `;
 }
