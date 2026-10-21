@@ -232,6 +232,9 @@ onDocumentReady(() => {
   });
 
   tryAgainButton.addEventListener('click', () => {
-    changeState('form');
+    // Wait for the room join before allowing another upload.
+    initialized = false;
+    changeState('loading');
+    socket.connect();
   });
 });
