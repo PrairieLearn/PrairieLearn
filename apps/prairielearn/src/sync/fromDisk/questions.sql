@@ -16,24 +16,20 @@ FROM
 UPDATE questions AS question
 SET
   copied_from = provenance.copied_from,
-  copied_from_question_id = provenance.copied_from_question_id,
-  sync_warnings = provenance.sync_warnings
+  copied_from_question_id = provenance.copied_from_question_id
 FROM
   jsonb_to_recordset($provenance::jsonb) AS provenance (
     question_id bigint,
     copied_from text,
-    copied_from_question_id bigint,
-    sync_warnings text
+    copied_from_question_id bigint
   )
 WHERE
   question.id = provenance.question_id
   AND question.course_id = $course_id
   AND (
     question.copied_from,
-    question.copied_from_question_id,
-    question.sync_warnings
+    question.copied_from_question_id
   ) IS DISTINCT FROM (
     provenance.copied_from,
-    provenance.copied_from_question_id,
-    provenance.sync_warnings
+    provenance.copied_from_question_id
   );

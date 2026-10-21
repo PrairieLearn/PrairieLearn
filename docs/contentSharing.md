@@ -37,7 +37,7 @@ A question's `info.json` can record its source in the optional `copiedFrom` fiel
 
 The first UUID identifies the source course, using the UUID assigned by the PrairieLearn database. It is separate from the course's sharing name and the deprecated UUID in `infoCourse.json`. The second UUID is the source question's `uuid` from its `info.json`. A reference containing just these two UUIDs is also valid. Everything after the second UUID is optional, human-readable text; PrairieLearn ignores it when looking up the source, so renaming the source QID does not break the reference. Source courses do not need a sharing name.
 
-The field can be edited or removed. During each sync, PrairieLearn looks up the declared source, including soft-deleted source questions. If the source is not available on this PrairieLearn installation, sync preserves the reference and reports a warning only when sharing checks are enabled (`checkSharingOnSync`). These checks are disabled by default in local development; source lookup and provenance storage still run. PrairieLearn retries the lookup the next time the consuming course syncs.
+The field can be edited or removed. During each sync, PrairieLearn looks up the declared source. If the source is not available on this PrairieLearn installation, the reference is preserved without a warning. PrairieLearn looks for the source again the next time the consuming course syncs.
 
 This field records a declared relationship; it does not verify authorship or grant access to the source. It does not change the sharing-name syntax used to reference shared questions in assessments. Copy operations do not yet populate this field automatically.
 

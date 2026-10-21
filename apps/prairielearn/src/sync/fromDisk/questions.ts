@@ -4,7 +4,6 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { config } from '../../lib/config.js';
 import { isDraftQid } from '../../lib/draft-question.js';
 import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
@@ -102,7 +101,7 @@ async function syncQuestionCopyProvenance(
 ): Promise<void> {
   const validQuestions = Object.entries(courseData.questions).flatMap(([qid, question]) => {
     if (!question.data || infofile.hasErrors(question)) return [];
-    return [{ qid, question, copiedFrom: question.data.copiedFrom ?? null }];
+    return [{ qid, copiedFrom: question.data.copiedFrom ?? null }];
   });
   if (validQuestions.length === 0) return;
 
@@ -121,21 +120,11 @@ async function syncQuestionCopyProvenance(
       : [];
   const sourceIds = new Map(sources.map((source) => [source.qid, source.copied_from_question_id]));
 
-  const provenance = validQuestions.map(({ qid, question, copiedFrom }) => {
-    const sourceId = sourceIds.get(qid) ?? null;
-    if (config.checkSharingOnSync && copiedFrom && sourceId === null) {
-      infofile.addWarning(
-        question,
-        `The source question in copiedFrom "${copiedFrom}" could not be found.`,
-      );
-    }
-    return {
-      question_id: questionIds[qid],
-      copied_from: copiedFrom,
-      copied_from_question_id: sourceId,
-      sync_warnings: infofile.stringifyWarnings(question),
-    };
-  });
+  const provenance = validQuestions.map(({ qid, copiedFrom }) => ({
+    question_id: questionIds[qid],
+    copied_from: copiedFrom,
+    copied_from_question_id: sourceIds.get(qid) ?? null,
+  }));
   await sqldb.execute(sql.update_copied_from, {
     course_id: courseId,
     provenance: JSON.stringify(provenance),
