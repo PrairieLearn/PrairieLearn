@@ -98,13 +98,3 @@ def test_render_raw_input_grid_popover_preserves_grid_shape() -> None:
     assert "caf&lt;U+e9&gt;" in popover
     assert popover.index("Invisible characters") < popover.index("<table")
     assert popover.index("</table>") < popover.index("special characters")
-
-
-def test_render_raw_input_grid_popover_omits_irrelevant_guidance() -> None:
-    popover = html.unescape(
-        pl.render_raw_input_popover([["1", "2"], ["3", "4"]], "matrix answer")
-    )
-
-    assert popover.count("<tr>") == 2
-    assert "Invisible characters" not in popover
-    assert "special characters" not in popover

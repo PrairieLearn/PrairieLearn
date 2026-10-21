@@ -4,8 +4,5 @@
   "topic": "Test",
   "tags": ["v3"],
   "showCorrectAnswer": false,
-  "type": "v3",
-  "dependencies": {
-    "clientFilesQuestionScripts": ["populate-inputs.js"]
-  }
+  "type": "v3"
 }
