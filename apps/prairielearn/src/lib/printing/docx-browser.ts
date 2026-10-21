@@ -3,7 +3,7 @@ export interface DocxSource {
   figures: { id: string; width: number; height: number; alt: string }[];
 }
 
-/** Preserve MathML before print transforms clone or replace already-typeset elements. */
+/** To keep each equation editable in the docx, we save its MathML before printing copies or replaces it. */
 export function annotateDocxMath(source: HTMLElement): void {
   const mathJax = window.MathJax as
     | {
