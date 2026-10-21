@@ -7,7 +7,6 @@ import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-from prairielearn.internal.raw_input import render_raw_input_popover
 
 
 class DisplayType(Enum):
@@ -191,7 +190,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
 
         if submitted_raw_answer is not None:
-            html_params["raw_input_popover"] = render_raw_input_popover(
+            html_params["raw_input_popover"] = pl.render_raw_input_popover(
                 submitted_raw_answer,
                 aria_label or name,
                 show_if_ascii_only=False,

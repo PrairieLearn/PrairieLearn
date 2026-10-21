@@ -502,8 +502,6 @@ def _render_raw_input_value(value: str, formatter: Callable[[str], str]) -> str:
         '<pre class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere">'
         f"{html.escape(formatter(value))}</pre>"
     )
-
-
 def render_raw_input_popover(
     raw_input: str, input_label: str, *, show_if_ascii_only: bool = True
 ) -> str:
