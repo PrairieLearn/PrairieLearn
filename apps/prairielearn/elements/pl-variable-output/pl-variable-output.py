@@ -1,7 +1,6 @@
 from enum import Enum
 
 import chevron
-import lxml.etree
 import lxml.html
 import numpy as np
 import prairielearn as pl
@@ -209,10 +208,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             r_data += f"{var_name_disp} = {var_r_data}{var_r_comment}\n"
             sympy_data += f"{var_name_disp} = {var_sympy_data}{var_sympy_comment}\n"
 
-        elif isinstance(
-            child,
-            lxml.etree._Comment,  # noqa: SLF001 -- lxml exposes comments only through this private type.
-        ):
+        elif isinstance(child, lxml.html.HtmlComment):
             continue
 
         else:

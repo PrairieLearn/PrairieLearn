@@ -1,7 +1,6 @@
 import math
 
 import chevron
-import lxml.etree
 import lxml.html
 import prairielearn as pl
 
@@ -31,10 +30,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             hints.append((priority, position, hint_name, pl.inner_html(child)))
 
-        elif isinstance(
-            child,
-            lxml.etree._Comment,  # noqa: SLF001 -- lxml exposes comments only through this private type.
-        ):
+        elif isinstance(child, lxml.html.HtmlComment):
             continue
 
         else:

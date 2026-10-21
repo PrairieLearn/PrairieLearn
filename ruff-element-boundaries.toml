@@ -1,10 +1,10 @@
-target-version = "py313"
-preview = true
+extend = "pyproject.toml"
 force-exclude = true
-exclude = ["**/*_test.py", "**/tests/**"]
+extend-exclude = ["**/*_test.py", "**/test_*.py", "**/tests/**"]
 
 [lint]
 select = ["PLC2701", "SLF001", "TID251"]
+ignore = []
 
 [lint.flake8-tidy-imports.banned-api]
 "prairielearn.internal" = { msg = "Core elements must use public PrairieLearn APIs." }
