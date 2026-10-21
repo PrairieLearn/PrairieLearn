@@ -1,12 +1,11 @@
 import { TRPCError } from '@trpc/server';
 
-import { config } from '../../lib/config.js';
 import {
   generateWorkspaceSandboxBootstrapJwt,
-  getWorkspaceSandboxCookieMaxAgeMilliseconds,
+  getWorkspaceSandboxAuthorizationCookies,
   getWorkspaceSandboxOrigin,
+  isWorkspaceIsolationEnabled,
 } from '../../lib/workspace-sandbox.js';
-import { selectOptionalWorkspace } from '../../models/workspace.js';
 
 import { t, workspaceProcedure } from './init.js';
 
@@ -14,26 +13,39 @@ export interface WorkspaceAuthorizationError {
   Issue: never;
 }
 
-const issueMutation = workspaceProcedure.mutation(async ({ ctx }) => {
-  if (config.workspaceIsolationMode !== 'cross-origin') {
+const requireWorkspaceIsolation = t.middleware(async ({ ctx, next }) => {
+  if (!(await isWorkspaceIsolationEnabled(ctx.locals))) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Workspace sandboxing is not enabled' });
   }
 
-  const workspace = await selectOptionalWorkspace(ctx.workspace_id);
-  if (workspace?.state !== 'running') {
-    throw new TRPCError({ code: 'CONFLICT', message: 'Workspace is not running' });
-  }
-
-  const sandboxOrigin = getWorkspaceSandboxOrigin({
-    workspaceId: workspace.id,
-  });
-  return {
-    authorizationMaxAgeMilliseconds: getWorkspaceSandboxCookieMaxAgeMilliseconds(),
-    bootstrapUrl: `${sandboxOrigin}/bootstrap`,
-    jwt: await generateWorkspaceSandboxBootstrapJwt({ workspaceId: workspace.id }),
-    sandboxOrigin,
-  };
+  return next();
 });
+
+const issueMutation = workspaceProcedure
+  .use(requireWorkspaceIsolation)
+  .mutation(async ({ ctx }) => {
+    if (!ctx.sessionId) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session is not available' });
+    }
+
+    if (ctx.locals.workspace_state !== 'running') {
+      throw new TRPCError({ code: 'CONFLICT', message: 'Workspace is not running' });
+    }
+
+    const sandboxOrigin = getWorkspaceSandboxOrigin({
+      workspaceId: ctx.workspace_id,
+    });
+    return {
+      bootstrapUrl: `${sandboxOrigin}/bootstrap`,
+      jwt: await generateWorkspaceSandboxBootstrapJwt({
+        authorizationCookies: getWorkspaceSandboxAuthorizationCookies(ctx.authorizationCookies),
+        publicQuestionEndpoint: ctx.publicQuestionEndpoint,
+        sessionId: ctx.sessionId,
+        workspaceId: ctx.workspace_id,
+      }),
+      sandboxOrigin,
+    };
+  });
 
 export const authorizationRouter = t.router({
   issue: issueMutation,

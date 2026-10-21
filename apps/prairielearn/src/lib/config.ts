@@ -422,9 +422,7 @@ export const ConfigSchema = z.object({
   /**
    * Whether workspace containers are served from PrairieLearn's origin or an isolated origin.
    */
-  workspaceIsolationMode: z
-    .enum(['same-origin', 'cross-origin'])
-    .default(DEV_MODE ? 'same-origin' : 'cross-origin'),
+  workspaceIsolationMode: z.enum(['same-origin', 'cross-origin']).default('same-origin'),
   /** Base domain used for workspace hostnames in cross-origin mode. */
   workspaceSandboxBaseDomain: z
     .string()

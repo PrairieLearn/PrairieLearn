@@ -24,31 +24,39 @@ export async function loadSession(
   store: SessionStore,
   maxAge: number,
 ): Promise<Session> {
+  const existingSession = await loadExistingSession(sessionId, req, store, maxAge);
+  if (existingSession != null) return existingSession;
+
+  const session = makeSession(sessionId, req, store, null, maxAge);
+
+  // Immediately persist the new session to the store so that it's assigned
+  // an ID and available to query later on in the same request.
+  await store.set(
+    sessionId,
+    session,
+    // Cookies only support second-level resolution. To ensure consistency
+    // between the cookie and the store, truncate the expiration date to
+    // the nearest second.
+    truncateExpirationDate(session.getExpirationDate()),
+  );
+
+  return session;
+}
+
+export async function loadExistingSession(
+  sessionId: string,
+  req: Request,
+  store: SessionStore,
+  maxAge: number,
+): Promise<Session | null> {
   const sessionStoreData = await store.get(sessionId);
-  const expiresAt = sessionStoreData?.expiresAt ?? null;
+  if (sessionStoreData == null) return null;
 
-  const session = makeSession(sessionId, req, store, expiresAt, maxAge);
+  const session = makeSession(sessionId, req, store, sessionStoreData.expiresAt, maxAge);
 
-  if (sessionStoreData == null) {
-    // Immediately persis the new session to the store so that it's assigned
-    // an ID and available to query later on in the same request.
-    await store.set(
-      sessionId,
-      session,
-      // Cookies only support second-level resolution. To ensure consistency
-      // between the cookie and the store, truncate the expiration date to
-      // the nearest second.
-      truncateExpirationDate(session.getExpirationDate()),
-    );
-  }
-
-  // Copy session data into the session object.
-  if (sessionStoreData != null) {
-    const { data } = sessionStoreData;
-    for (const prop in data) {
-      if (!(prop in session)) {
-        session[prop] = data[prop];
-      }
+  for (const prop in sessionStoreData.data) {
+    if (!(prop in session)) {
+      session[prop] = sessionStoreData.data[prop];
     }
   }
 

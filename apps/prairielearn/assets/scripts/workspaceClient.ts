@@ -7,13 +7,6 @@ import { createWorkspaceTrpcClient } from '../../src/trpc/workspace/client.js';
 const WORKSPACE_SANDBOX_AUTHORIZATION_EXPIRED_MESSAGE =
   'prairielearn:workspace-authorization-expired';
 
-interface WorkspaceSandboxAuthorizationResponse {
-  authorizationMaxAgeMilliseconds: number;
-  bootstrapUrl: string;
-  jwt: string;
-  sandboxOrigin: string;
-}
-
 function getNumericalAttribute(element: HTMLElement, name: string, defaultValue: number): number {
   const value = element.getAttribute(name);
   if (value === null) {
@@ -104,39 +97,9 @@ onDocumentReady(function () {
 
   let previousState: null | string = null;
   let sandboxOrigin: string | null = null;
-  let authorizationExpirationTimeout: number | undefined;
+  let workspaceFrameLoadId = 0;
 
-  function parseWorkspaceSandboxAuthorizationResponse(
-    value: unknown,
-  ): WorkspaceSandboxAuthorizationResponse {
-    if (value == null || typeof value !== 'object') {
-      throw new Error('Invalid workspace authorization response');
-    }
-    const response = value as Record<string, unknown>;
-    if (
-      typeof response.authorizationMaxAgeMilliseconds !== 'number' ||
-      typeof response.bootstrapUrl !== 'string' ||
-      typeof response.jwt !== 'string' ||
-      typeof response.sandboxOrigin !== 'string'
-    ) {
-      throw new Error('Invalid workspace authorization response');
-    }
-    return {
-      authorizationMaxAgeMilliseconds: response.authorizationMaxAgeMilliseconds,
-      bootstrapUrl: response.bootstrapUrl,
-      jwt: response.jwt,
-      sandboxOrigin: response.sandboxOrigin,
-    };
-  }
-
-  function scheduleAuthorizationExpiration(maxAgeMilliseconds: number) {
-    window.clearTimeout(authorizationExpirationTimeout);
-    authorizationExpirationTimeout = window.setTimeout(() => {
-      if (previousState === 'running') showAuthorizationExpiredFrame();
-    }, maxAgeMilliseconds);
-  }
-
-  async function loadWorkspaceFrame() {
+  async function loadWorkspaceFrame(loadId: number) {
     showLoadingFrame();
 
     if (workspaceIsolationMode !== 'cross-origin') {
@@ -155,16 +118,14 @@ onDocumentReady(function () {
       publicQuestionEndpoint,
       workspaceId,
     });
-    const authorizationResponse = parseWorkspaceSandboxAuthorizationResponse(
-      await trpcClient.authorization.issue.mutate(),
-    );
+    const authorizationResponse = await trpcClient.authorization.issue.mutate();
+    if (loadId !== workspaceFrameLoadId || previousState !== 'running') return;
+
     const bootstrapUrl = new URL(authorizationResponse.bootstrapUrl);
     sandboxOrigin = new URL(authorizationResponse.sandboxOrigin).origin;
     if (bootstrapUrl.origin !== sandboxOrigin) {
       throw new Error('Invalid workspace bootstrap URL');
     }
-
-    scheduleAuthorizationExpiration(authorizationResponse.authorizationMaxAgeMilliseconds);
 
     const form = document.createElement('form');
     form.action = bootstrapUrl.href;
@@ -185,7 +146,10 @@ onDocumentReady(function () {
   }
 
   function loadWorkspaceFrameOrShowError() {
-    void loadWorkspaceFrame().catch((error: unknown) => {
+    const loadId = ++workspaceFrameLoadId;
+    void loadWorkspaceFrame(loadId).catch((error: unknown) => {
+      if (loadId !== workspaceFrameLoadId || previousState !== 'running') return;
+
       setMessage(error instanceof Error ? error.message : 'Unable to load workspace');
       showFailedFrame();
     });
@@ -195,11 +159,12 @@ onDocumentReady(function () {
     // Simplify the state machine by ignoring duplicate states.
     if (state === previousState) return;
 
+    if (state !== 'running') workspaceFrameLoadId++;
+
     if (state === 'running') {
       loadWorkspaceFrameOrShowError();
     }
     if (state === 'stopped') {
-      window.clearTimeout(authorizationExpirationTimeout);
       sandboxOrigin = null;
       workspaceFrame.src = 'about:blank';
       if (previousState === 'running') {

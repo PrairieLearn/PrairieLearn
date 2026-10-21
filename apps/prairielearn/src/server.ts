@@ -81,10 +81,14 @@ import { isServerInitialized, isServerPending, setServerState } from './lib/serv
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
+import { extendSessionExpirationIfNeeded } from './lib/session.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
 import { getSearchParams } from './lib/url.js';
-import { classifyWorkspaceSandboxRequestHost } from './lib/workspace-sandbox.js';
+import {
+  classifyWorkspaceSandboxRequestHost,
+  isWorkspaceIsolationEnabled,
+} from './lib/workspace-sandbox.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
@@ -189,15 +193,7 @@ export async function initExpress(): Promise<Express> {
     // long as users are somewhat frequently active. See the documentation for
     // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
     //
-    // Compute the number of milliseconds until the session expires.
-    const sessionTtl = req.session.getExpirationDate().getTime() - Date.now();
-
-    if (
-      sessionTtl <
-      (config.sessionStoreExpireSeconds - config.sessionStoreAutoExtendThrottleSeconds) * 1000
-    ) {
-      req.session.setExpiration(config.sessionStoreExpireSeconds * 1000);
-    }
+    extendSessionExpirationIfNeeded(req.session);
 
     next();
   });
@@ -353,6 +349,13 @@ export async function initExpress(): Promise<Express> {
       (await import('./middlewares/date.js')).default,
       (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
       (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint }), // jumps to error handler if authz fails
+      asyncHandler(async (_req, res, next) => {
+        if (await isWorkspaceIsolationEnabled(res.locals)) {
+          res.status(404).send('Not Found');
+          return;
+        }
+        next();
+      }),
       (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
     ]);
     app.use(url, [
@@ -381,17 +384,17 @@ export async function initExpress(): Promise<Express> {
       if (classifyWorkspaceSandboxRequestHost(req).type === 'not-sandbox') return next();
       res.status(404).send('Not Found');
     });
-    await makeWorkspaceContainerRoutes({
-      url: '/pl/workspace/:workspace_id(\\d+)/container',
-      containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
-      publicQuestionEndpoint: false,
-    });
-    await makeWorkspaceContainerRoutes({
-      url: '/pl/public/workspace/:workspace_id(\\d+)/container',
-      containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
-      publicQuestionEndpoint: true,
-    });
   }
+  await makeWorkspaceContainerRoutes({
+    url: '/pl/workspace/:workspace_id(\\d+)/container',
+    containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
+    publicQuestionEndpoint: false,
+  });
+  await makeWorkspaceContainerRoutes({
+    url: '/pl/public/workspace/:workspace_id(\\d+)/container',
+    containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
+    publicQuestionEndpoint: true,
+  });
 
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid

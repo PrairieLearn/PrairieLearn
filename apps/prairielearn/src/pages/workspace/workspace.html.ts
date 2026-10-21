@@ -211,11 +211,13 @@ export function Workspace({
         <p>Your files remain saved. Reconnect when you are ready to continue.</p>
         <button id="reconnect" class="btn btn-primary">Reconnect workspace</button>
       </div>
+      <!-- Workspace IDEs use the browser clipboard APIs for their copy and paste commands. -->
       <iframe
         id="workspace"
         name="workspace-frame"
         class="d-none flex-grow h-100 w-100 border-0"
         title="Workspace"
+        allow="clipboard-read; clipboard-write"
       ></iframe>
     `,
   });

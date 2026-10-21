@@ -1,39 +1,111 @@
-import { createHmac, createSecretKey, timingSafeEqual } from 'node:crypto';
+import { createSecretKey } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 
 import cookie from 'cookie';
 import * as jose from 'jose';
 import { z } from 'zod';
 
+import {
+  checkSignedToken,
+  generateSignedToken,
+  getCheckedSignedTokenData,
+} from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from './config.js';
+import { features } from './features/index.js';
+import { idsEqual } from './id.js';
 import { jwtVerifyWithKeyRing } from './jwt.js';
 import { getActiveKey } from './key-ring.js';
 
-const COOKIE_DOMAIN = 'prairielearn:workspace-sandbox-cookie:v1';
-const COOKIE_GRACE_PERIOD_SEC = 5 * 60;
+const WORKSPACE_SANDBOX_AUTHORIZATION_COOKIE_PURPOSE = 'workspace-sandbox-authorization';
 const WORKSPACE_SANDBOX_BOOTSTRAP_JWT_AUDIENCE = 'workspace-sandbox';
 const WORKSPACE_SANDBOX_BOOTSTRAP_JWT_ISSUER = 'PrairieLearn';
 const WORKSPACE_SANDBOX_BOOTSTRAP_JWT_LIFETIME = '1m';
 const WORKSPACE_SANDBOX_BOOTSTRAP_JWT_PURPOSE = 'workspace-bootstrap';
+const WORKSPACE_SANDBOX_SESSION_COOKIE_PURPOSE = 'workspace-sandbox-session';
 
-const WorkspaceSandboxCookieSchema = z.object({
-  version: z.literal(1),
-  workspace_id: IdSchema,
-  issued_at_ms: z.number().int(),
-});
+const WORKSPACE_AUTHORIZATION_COOKIE_NAMES = [
+  'load_test_token',
+  'pl2_access_as_administrator',
+  'pl2_assessmentpw',
+  'pl2_disable_auto_authn',
+  'pl2_requested_course_instance_role',
+  'pl2_requested_course_role',
+  'pl2_requested_date',
+  'pl2_requested_uid',
+  'pl_test_date',
+  'pl_test_mode',
+  'pl_test_user',
+] as const;
+
+const WorkspaceAuthorizationCookiesSchema = z.record(z.string(), z.string());
+
 const WorkspaceSandboxBootstrapJwtSchema = z.object({
+  authorization_cookies: WorkspaceAuthorizationCookiesSchema,
+  public_question_endpoint: z.boolean(),
   purpose: z.literal(WORKSPACE_SANDBOX_BOOTSTRAP_JWT_PURPOSE),
+  session_id: z.string().min(1),
   workspace_id: IdSchema,
 });
 
 export const WORKSPACE_SANDBOX_COOKIE_NAME = '__Host-pl_workspace_authz';
+export const WORKSPACE_SANDBOX_SESSION_COOKIE_NAME = '__Host-pl_workspace_session';
+
+const WorkspaceSandboxSessionSchema = z.object({
+  authorization_cookies: WorkspaceAuthorizationCookiesSchema,
+  public_question_endpoint: z.boolean(),
+  purpose: z.literal(WORKSPACE_SANDBOX_SESSION_COOKIE_PURPOSE),
+  session_id: z.string().min(1),
+  version: z.literal(1),
+  workspace_id: IdSchema,
+});
+
+export type WorkspaceSandboxSession = z.infer<typeof WorkspaceSandboxSessionSchema>;
 
 export type WorkspaceSandboxHost =
   | { type: 'not-sandbox' }
   | { type: 'invalid-sandbox-host' }
   | { type: 'workspace'; workspaceId: string };
+
+export type WorkspaceSandboxAccessResult =
+  | {
+      authorized: true;
+      workspaceHost: Extract<WorkspaceSandboxHost, { type: 'workspace' }>;
+    }
+  | {
+      authorized: false;
+      reason: 'invalid-host' | 'invalid-origin' | 'workspace-mismatch' | 'unauthorized';
+    };
+
+function getWorkspaceSandboxCookieData(workspaceId: string) {
+  return {
+    purpose: WORKSPACE_SANDBOX_AUTHORIZATION_COOKIE_PURPOSE,
+    version: 1,
+    workspace_id: IdSchema.parse(workspaceId),
+  };
+}
+
+function getWorkspaceSandboxSessionData({
+  workspaceId,
+  sessionId,
+  publicQuestionEndpoint,
+  authorizationCookies,
+}: {
+  workspaceId: string;
+  sessionId: string;
+  publicQuestionEndpoint: boolean;
+  authorizationCookies: Record<string, string>;
+}): WorkspaceSandboxSession {
+  return WorkspaceSandboxSessionSchema.parse({
+    authorization_cookies: authorizationCookies,
+    public_question_endpoint: publicQuestionEndpoint,
+    purpose: WORKSPACE_SANDBOX_SESSION_COOKIE_PURPOSE,
+    session_id: sessionId,
+    version: 1,
+    workspace_id: workspaceId,
+  });
+}
 
 function getWorkspaceSandboxBaseDomain(): string {
   if (config.workspaceSandboxBaseDomain == null) {
@@ -81,19 +153,63 @@ export function classifyWorkspaceSandboxRequestHost(
   }
 }
 
-export function getAuthorizedWorkspaceSandboxHost(
+export function validateWorkspaceSandboxAccess(
   req: Pick<IncomingMessage, 'headers'>,
-): Extract<WorkspaceSandboxHost, { type: 'workspace' }> | null {
+  expectedWorkspaceId: string,
+): WorkspaceSandboxAccessResult {
+  const workspaceId = IdSchema.safeParse(expectedWorkspaceId);
+  if (!workspaceId.success) {
+    return { authorized: false, reason: 'workspace-mismatch' };
+  }
+
   const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
-  if (workspaceHost.type !== 'workspace') return null;
+  if (workspaceHost.type !== 'workspace') {
+    return { authorized: false, reason: 'invalid-host' };
+  }
+  if (!idsEqual(workspaceHost.workspaceId, workspaceId.data)) {
+    return { authorized: false, reason: 'workspace-mismatch' };
+  }
 
   const cookies = cookie.parse(req.headers.cookie ?? '');
-  if (!Object.hasOwn(cookies, WORKSPACE_SANDBOX_COOKIE_NAME)) return null;
+  if (!Object.hasOwn(cookies, WORKSPACE_SANDBOX_COOKIE_NAME)) {
+    return { authorized: false, reason: 'unauthorized' };
+  }
 
-  const cookieData = verifyWorkspaceSandboxCookie(cookies[WORKSPACE_SANDBOX_COOKIE_NAME]);
-  if (cookieData?.workspace_id !== workspaceHost.workspaceId) return null;
+  if (
+    !checkSignedToken(
+      cookies[WORKSPACE_SANDBOX_COOKIE_NAME],
+      getWorkspaceSandboxCookieData(workspaceHost.workspaceId),
+      config.secretKey,
+      { maxAge: getWorkspaceSandboxCookieMaxAgeMilliseconds() },
+    )
+  ) {
+    return { authorized: false, reason: 'unauthorized' };
+  }
 
-  return workspaceHost;
+  return { authorized: true, workspaceHost };
+}
+
+export function validateWorkspaceSandboxWebSocketAccess(
+  req: Pick<IncomingMessage, 'headers'>,
+  expectedWorkspaceId: string,
+): WorkspaceSandboxAccessResult {
+  const access = validateWorkspaceSandboxAccess(req, expectedWorkspaceId);
+  if (!access.authorized) return access;
+
+  const origin = req.headers.origin;
+  if (origin == null) {
+    return { authorized: false, reason: 'invalid-origin' };
+  }
+
+  try {
+    if (new URL(origin).origin !== getWorkspaceSandboxOrigin(access.workspaceHost)) {
+      return { authorized: false, reason: 'invalid-origin' };
+    }
+  } catch {
+    return { authorized: false, reason: 'invalid-origin' };
+  }
+
+  return access;
 }
 
 export function getWorkspaceSandboxHostname({ workspaceId }: { workspaceId: string }): string {
@@ -112,73 +228,110 @@ export function getTrustedPrairieLearnOrigin(): string {
   return new URL(config.serverCanonicalHost).origin;
 }
 
+export async function isWorkspaceIsolationEnabled(locals: {
+  institution?: { id: string };
+  course?: { id: string; institution_id?: string };
+  course_instance?: { id: string };
+  authn_user?: { id: string };
+}): Promise<boolean> {
+  const institution =
+    locals.institution ??
+    (locals.course?.institution_id == null ? undefined : { id: locals.course.institution_id });
+
+  // The config switch is an operational fallback; the feature flag controls rollout only in
+  // environments where the cross-origin infrastructure has been configured.
+  return (
+    config.workspaceIsolationMode === 'cross-origin' &&
+    (await features.enabledFromLocals('user-content-isolation', { ...locals, institution }))
+  );
+}
+
 export function getWorkspaceSandboxCookieMaxAgeMilliseconds(): number {
-  return (config.workspaceLaunchedTimeoutSec + COOKIE_GRACE_PERIOD_SEC) * 1000;
+  return config.workspaceAuthzCookieMaxAgeMilliseconds;
 }
 
-function signCookiePayload(payload: string, key: string): string {
-  return createHmac('sha256', key)
-    .update(COOKIE_DOMAIN)
-    .update('\0')
-    .update(payload)
-    .digest('base64url');
+export function getWorkspaceSandboxSessionCookieMaxAgeMilliseconds(): number {
+  return config.sessionStoreExpireSeconds * 1000;
 }
 
-export function generateWorkspaceSandboxCookie(
-  { workspaceId }: { workspaceId: string },
-  now = Date.now(),
-): string {
-  const payload = Buffer.from(
-    JSON.stringify(
-      WorkspaceSandboxCookieSchema.parse({
-        version: 1,
-        workspace_id: workspaceId,
-        issued_at_ms: now,
-      }),
-    ),
-  ).toString('base64url');
-  const signature = signCookiePayload(payload, getActiveKey(config.secretKey));
-  return `${payload}.${signature}`;
+export function generateWorkspaceSandboxCookie({ workspaceId }: { workspaceId: string }): string {
+  return generateSignedToken(getWorkspaceSandboxCookieData(workspaceId), config.secretKey);
 }
 
-export function verifyWorkspaceSandboxCookie(cookie: string, now = Date.now()) {
-  const parts = cookie.split('.');
-  if (parts.length !== 2) return null;
-  const [payload, signature] = parts;
-  if (!payload || !signature) return null;
+export function getWorkspaceSandboxAuthorizationCookies(
+  cookies: Record<string, unknown>,
+): Record<string, string> {
+  return Object.fromEntries(
+    WORKSPACE_AUTHORIZATION_COOKIE_NAMES.flatMap((name) => {
+      const value = cookies[name];
+      return typeof value === 'string' ? [[name, value]] : [];
+    }),
+  );
+}
 
-  const signatureBuffer = Buffer.from(signature);
-  const signatureMatches = config.secretKey.some((key) => {
-    const expectedSignatureBuffer = Buffer.from(signCookiePayload(payload, key));
-    return (
-      signatureBuffer.length === expectedSignatureBuffer.length &&
-      timingSafeEqual(signatureBuffer, expectedSignatureBuffer)
-    );
+export function generateWorkspaceSandboxSessionCookie({
+  workspaceId,
+  sessionId,
+  publicQuestionEndpoint,
+  authorizationCookies,
+}: {
+  workspaceId: string;
+  sessionId: string;
+  publicQuestionEndpoint: boolean;
+  authorizationCookies: Record<string, string>;
+}): string {
+  return generateSignedToken(
+    getWorkspaceSandboxSessionData({
+      workspaceId,
+      sessionId,
+      publicQuestionEndpoint,
+      authorizationCookies,
+    }),
+    config.secretKey,
+  );
+}
+
+export function getWorkspaceSandboxSession(
+  req: Pick<IncomingMessage, 'headers'>,
+  expectedWorkspaceId: string,
+): WorkspaceSandboxSession | null {
+  const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
+  if (workspaceHost.type !== 'workspace') return null;
+
+  const workspaceId = IdSchema.safeParse(expectedWorkspaceId);
+  if (!workspaceId.success || !idsEqual(workspaceHost.workspaceId, workspaceId.data)) return null;
+
+  const cookies = cookie.parse(req.headers.cookie ?? '');
+  if (!Object.hasOwn(cookies, WORKSPACE_SANDBOX_SESSION_COOKIE_NAME)) return null;
+  const token = cookies[WORKSPACE_SANDBOX_SESSION_COOKIE_NAME];
+
+  const data = getCheckedSignedTokenData(token, config.secretKey, {
+    maxAge: getWorkspaceSandboxSessionCookieMaxAgeMilliseconds(),
   });
-  if (!signatureMatches) return null;
-
-  let decodedPayload: unknown;
-  try {
-    decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
-  } catch {
+  const result = WorkspaceSandboxSessionSchema.safeParse(data);
+  if (!result.success || !idsEqual(result.data.workspace_id, workspaceHost.workspaceId)) {
     return null;
   }
-  const parsedPayload = WorkspaceSandboxCookieSchema.safeParse(decodedPayload);
-  if (!parsedPayload.success) return null;
 
-  const age = now - parsedPayload.data.issued_at_ms;
-  if (age < 0 || age > getWorkspaceSandboxCookieMaxAgeMilliseconds()) return null;
-
-  return parsedPayload.data;
+  return result.data;
 }
 
 export async function generateWorkspaceSandboxBootstrapJwt({
   workspaceId,
+  sessionId,
+  publicQuestionEndpoint,
+  authorizationCookies,
 }: {
   workspaceId: string;
+  sessionId: string;
+  publicQuestionEndpoint: boolean;
+  authorizationCookies: Record<string, string>;
 }): Promise<string> {
   const payload = WorkspaceSandboxBootstrapJwtSchema.parse({
+    authorization_cookies: authorizationCookies,
+    public_question_endpoint: publicQuestionEndpoint,
     purpose: WORKSPACE_SANDBOX_BOOTSTRAP_JWT_PURPOSE,
+    session_id: sessionId,
     workspace_id: workspaceId,
   });
   const key = createSecretKey(getActiveKey(config.secretKey), 'utf-8');

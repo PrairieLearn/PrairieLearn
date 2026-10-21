@@ -6,11 +6,14 @@ import { appErrorFormatter } from '@prairielearn/trpc/server';
 
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
+export function createContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'workspace'>;
   res.set('Cache-Control', 'no-store');
 
   return {
+    authorizationCookies: req.cookies,
+    publicQuestionEndpoint: req.baseUrl.startsWith('/pl/public/workspace/'),
+    sessionId: req.session.id,
     workspace_id: locals.workspace_id,
     locals,
   };

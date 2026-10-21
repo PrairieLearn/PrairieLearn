@@ -8,6 +8,7 @@ import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { getWorkspaceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { isWorkspaceIsolationEnabled } from '../../lib/workspace-sandbox.js';
 import { selectVariantIdForWorkspace } from '../../models/workspace.js';
 
 import { Workspace } from './workspace.html.js';
@@ -67,7 +68,9 @@ export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: b
             res.locals.authz_data?.has_course_permission_preview,
           heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
           visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
-          workspaceIsolationMode: config.workspaceIsolationMode,
+          workspaceIsolationMode: (await isWorkspaceIsolationEnabled(res.locals))
+            ? 'cross-origin'
+            : 'same-origin',
           publicQuestionEndpoint,
           trpcCsrfToken: generatePrefixCsrfToken(
             {
