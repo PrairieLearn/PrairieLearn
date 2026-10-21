@@ -1,51 +1,23 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-
 import { selectQuestionByQid } from '../../models/question.js';
-import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
-test('shows safe raw input diagnostics for scalar inputs', async ({
-  page,
-  courseInstance,
-  testCoursePath,
-}) => {
-  const qid = 'rawInputPopoverScalar';
-  const questionDir = path.join(testCoursePath, 'questions', qid);
-  await fs.mkdir(questionDir, { recursive: true });
-  await Promise.all([
-    fs.writeFile(
-      path.join(questionDir, 'info.json'),
-      JSON.stringify({
-        uuid: '6c4f677e-d32a-4533-b91a-cb348f143f4f',
-        title: 'Raw input popover',
-        topic: 'Test',
-        tags: ['v3'],
-        type: 'v3',
-      }),
-    ),
-    fs.writeFile(
-      path.join(questionDir, 'question.html'),
-      `
-        <pl-string-input answers-name="text" correct-answer="expected" label="Text:" aria-label="Text answer"></pl-string-input>
-      `,
-    ),
-  ]);
-  await syncCourse(testCoursePath);
-
+test('shows safe raw input diagnostics for scalar inputs', async ({ page, courseInstance }) => {
   const question = await selectQuestionByQid({
-    qid,
+    qid: 'rawInputRendering',
     course_id: courseInstance.course_id,
   });
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
   );
 
-  await page.locator('input[name="text"]').fill('café\u200b<img src=x>');
+  await page.getByRole('textbox', { name: 'String value' }).fill('café\u200b<img src=x>');
   await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
+    timeout: 15_000,
+  });
 
-  const button = page.getByRole('button', { name: 'Original input for Text answer' });
+  const button = page.getByRole('button', { name: 'Original input for String value' });
   await button.click();
   const popover = page.getByRole('tooltip').filter({ hasText: 'café<U+200b>' });
   await expect(popover).toHaveClass(/popover-wide/);
