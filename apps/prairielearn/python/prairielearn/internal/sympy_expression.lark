@@ -8,7 +8,7 @@ product: factor product_tail*
              | power          -> implicit_product_tail
 
 ?factor: unary | power
-unary: ADD factor
+unary: (ADD | INVERT) factor
 power: postfix [POWER factor]
 postfix: primary FACTORIAL*
 
@@ -28,6 +28,7 @@ UNION.3: "cup" | "U" | "∪" | "|"
 INTERSECTION.3: "cap" | "∩" | "&"
 
 ADD: "+" | "-"
+INVERT: "~"
 PRODUCT: "*" | "/" | "%"
 POWER: "**"
 FACTORIAL: "!"

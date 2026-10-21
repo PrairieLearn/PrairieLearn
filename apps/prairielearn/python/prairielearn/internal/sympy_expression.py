@@ -7,7 +7,7 @@ import unicodedata
 from contextvars import ContextVar
 from dataclasses import dataclass
 from importlib.resources import files
-from typing import TYPE_CHECKING, Never, cast
+from typing import TYPE_CHECKING, Never, Protocol, cast
 
 import sympy
 from lark import Lark, Token, Transformer
@@ -117,6 +117,11 @@ type _ProductTail = tuple[_Operator, _Expression]
 type _Arguments = tuple[_Expression, ...]
 type _TransformValue = _Expression | _Operator | _ProductTail | _Arguments
 
+
+class _SupportsInvert(Protocol):
+    def __invert__(self) -> object: ...
+
+
 _ACTIVE_SOURCE: ContextVar[SourceText] = ContextVar("sympy_expression_source")
 
 
@@ -161,6 +166,7 @@ class _IRTransformer(Transformer[Token, _TransformValue]):
     UNION = _operator_token
     INTERSECTION = _operator_token
     ADD = _operator_token
+    INVERT = _operator_token
     PRODUCT = _operator_token
     POWER = _operator_token
     FACTORIAL = _operator_token
@@ -360,11 +366,49 @@ def _make_implicit_product(items: Sequence[_Expression]) -> _Expression:
 
 
 _LEGACY_GLOBAL_VARIABLES: psu.SympyMapT = {
+    "Catalan": sympy.Catalan,
     "EmptySet": sympy.EmptySet,
+    "E": sympy.E,
+    "EulerGamma": sympy.EulerGamma,
+    "GoldenRatio": sympy.GoldenRatio,
+    "I": sympy.I,
+    "TribonacciConstant": sympy.TribonacciConstant,
+    "UniversalSet": sympy.UniversalSet,
+    "false": sympy.false,
     "nan": sympy.nan,
     "oo": sympy.oo,
+    "true": sympy.true,
     "zoo": sympy.zoo,
 }
+_SYMPY_GLOBAL_NAMES = frozenset(psu._SYMPY_GLOBALS)
+_SYMPY_GLOBAL_FUNCTIONS = frozenset(
+    name for name, value in psu._SYMPY_GLOBALS.items() if callable(value)
+)
+
+
+def _evaluation_variables(
+    locals_for_eval: psu.LocalsForEval,
+    *,
+    allow_sets: bool,
+    allow_extra_symbols: bool,
+) -> psu.SympyMapT:
+    variables = _LEGACY_GLOBAL_VARIABLES | locals_for_eval["variables"]
+    for name in psu._SET_DOMAIN_NAMES:
+        if allow_extra_symbols and not allow_sets:
+            variables.setdefault(name, sympy.Symbol(name))
+        else:
+            variables.setdefault(name, getattr(sympy.S, name))
+    return variables
+
+
+def _unsupported_globals(
+    functions: psu.SympyFunctionMapT, variables: psu.SympyMapT
+) -> tuple[frozenset[str], frozenset[str]]:
+    configured_names = functions.keys() | variables.keys()
+    return (
+        _SYMPY_GLOBAL_NAMES - configured_names,
+        _SYMPY_GLOBAL_FUNCTIONS - configured_names,
+    )
 
 
 class _Lowerer:
@@ -378,13 +422,14 @@ class _Lowerer:
     ) -> None:
         self.source = source
         self.functions = locals_for_eval["functions"] | locals_for_eval["helpers"]
-        self.variables = _LEGACY_GLOBAL_VARIABLES | locals_for_eval["variables"]
-        if allow_sets:
-            for name in psu._SET_DOMAIN_NAMES:
-                self.variables.setdefault(name, getattr(sympy.S, name))
-        elif allow_extra_symbols:
-            for name in psu._SET_DOMAIN_NAMES:
-                self.variables.setdefault(name, sympy.Symbol(name))
+        self.variables = _evaluation_variables(
+            locals_for_eval,
+            allow_sets=allow_sets,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+        self.unsupported_global_names, self.unsupported_global_functions = (
+            _unsupported_globals(self.functions, self.variables)
+        )
 
     @staticmethod
     def _is_python_keyword(name: _Name) -> bool:
@@ -400,17 +445,34 @@ class _Lowerer:
         if name.text in self.functions or name.text in self.variables:
             return name
         if _is_splittable(name.text):
-            return _make_implicit_product(_split_name(name))
+            parts = _split_name(name)
+            if all(
+                isinstance(part, _Number)
+                or (
+                    isinstance(part, _Name)
+                    and (part.text in self.functions or part.text in self.variables)
+                )
+                for part in parts
+            ):
+                return self._lower_implicit_segment(parts)
+            if name.text not in self.unsupported_global_names:
+                return self._lower_implicit_segment(parts)
         return name
 
     def _is_function_marker(self, value: _Expression) -> bool:
         if isinstance(value, _Name):
-            return value.text in self.functions
+            return (
+                value.text in self.functions
+                or value.text in self.unsupported_global_functions
+            )
         return (
             isinstance(value, _Binary)
             and value.operator.text == "**"
             and isinstance(value.left, _Name)
-            and value.left.text in self.functions
+            and (
+                value.left.text in self.functions
+                or value.left.text in self.unsupported_global_functions
+            )
         )
 
     def _apply_function_marker(
@@ -529,6 +591,7 @@ class _Lowerer:
             if (
                 expression.function.text in self.functions
                 or expression.function.text in psu._Constants.trig_functions
+                or expression.function.text in self.unsupported_global_functions
             ):
                 return _Call(expression.function, arguments, expression.span)
             if len(arguments) == 1:
@@ -621,13 +684,14 @@ class Evaluator:
     ) -> None:
         self.source = source
         self.functions = locals_for_eval["functions"] | locals_for_eval["helpers"]
-        self.variables = _LEGACY_GLOBAL_VARIABLES | locals_for_eval["variables"]
-        if allow_sets:
-            for name in psu._SET_DOMAIN_NAMES:
-                self.variables.setdefault(name, getattr(sympy.S, name))
-        elif allow_extra_symbols:
-            for name in psu._SET_DOMAIN_NAMES:
-                self.variables.setdefault(name, sympy.Symbol(name))
+        self.variables = _evaluation_variables(
+            locals_for_eval,
+            allow_sets=allow_sets,
+            allow_extra_symbols=allow_extra_symbols,
+        )
+        self.unsupported_global_names, self.unsupported_global_functions = (
+            _unsupported_globals(self.functions, self.variables)
+        )
         self.allow_sets = allow_sets
         self.simplify_expression = simplify_expression
         self.allow_extra_symbols = allow_extra_symbols
@@ -864,17 +928,30 @@ class Evaluator:
                 )
             resolved_value = self.variables.get(expression.text)
             if resolved_value is None:
+                if expression.text in self.unsupported_global_names:
+                    if expression.text in self.unsupported_global_functions:
+                        error: psu.BaseSympyError = (
+                            psu.FunctionNameWithoutArgumentsError(
+                                expression.span.start, expression.text
+                            )
+                        )
+                    else:
+                        error = psu.HasInvalidSymbolError(
+                            expression.text, expression.span.start
+                        )
+                    self._raise(error, expression.span)
                 if not self.allow_extra_symbols:
                     self.unknown_names.append(expression)
                 resolved_value = sympy.Symbol(expression.text)
             name_value = sympy.sympify(resolved_value)
             if isinstance(name_value, sympy.Set) and not self.allow_sets:
                 self._raise(psu.HasSetNotationError(), expression.span)
-            value_type = (
-                psu.ASTSympyType.SET
-                if isinstance(name_value, sympy.Set)
-                else psu.ASTSympyType.SCALAR
-            )
+            if isinstance(name_value, sympy.Set):
+                value_type = psu.ASTSympyType.SET
+            elif name_value is sympy.true or name_value is sympy.false:
+                value_type = psu.ASTSympyType.BOOL
+            else:
+                value_type = psu.ASTSympyType.SCALAR
             return _Evaluated(cast(psu.SympyValue, name_value), value_type)
         if isinstance(expression, _Group):
             return self.evaluate(expression.value)
@@ -887,8 +964,19 @@ class Evaluator:
                 )
             if expression.operator.text == "+":
                 return operand
-            value = cast(sympy.Expr, operand.value)
-            return _Evaluated(-value, operand.type)
+            if expression.operator.text == "-":
+                value = cast(sympy.Expr, operand.value)
+                return _Evaluated(-value, operand.type)
+            if isinstance(operand.value, bool):
+                inverted_value = sympy.Integer(-int(operand.value) - 1)
+            elif operand.value is sympy.true:
+                inverted_value = sympy.false
+            elif operand.value is sympy.false:
+                inverted_value = sympy.true
+            else:
+                value = cast(_SupportsInvert, operand.value)
+                inverted_value = sympy.sympify(~value)
+            return _Evaluated(cast(psu.SympyValue, inverted_value), operand.type)
         if isinstance(expression, _Binary):
             return self._binary(expression)
         if isinstance(expression, _Factorial):

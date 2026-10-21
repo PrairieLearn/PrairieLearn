@@ -43,12 +43,28 @@ _ORACLE_CASES = (
     _OracleCase("x^2", assumptions={"x": {"positive": True}}),
     _OracleCase("3jn + e^(pi*i)", allow_complex=True),
     _OracleCase("_Exp1 + _ImaginaryUnit", allow_hidden=True, allow_complex=True),
+    _OracleCase("E"),
+    _OracleCase("É"),
+    _OracleCase("I"),
+    _OracleCase("I", allow_complex=True),
+    _OracleCase("Î", allow_complex=True),
+    _OracleCase("Catalan"),
+    _OracleCase("EulerGamma"),
+    _OracleCase("GoldenRatio"),
+    _OracleCase("TribonacciConstant"),
+    _OracleCase("true"),
+    _OracleCase("false"),
     _OracleCase("{}", allow_sets=True),
     _OracleCase("[0, 5]", allow_sets=True),
     _OracleCase("{1, 2, 3}", allow_sets=True),
     _OracleCase("[0, 5] - {2}", allow_sets=True, simplification="enabled"),
     _OracleCase("{1, 2} cup [2, 4]", allow_sets=True, simplification="enabled"),
     _OracleCase("Reals", allow_sets=True),
+    _OracleCase("Naturals0"),
+    _OracleCase("Naturals0", allow_extra_symbols=True),
+    _OracleCase("UniversalSet"),
+    _OracleCase("UniversalSet", allow_sets=True),
+    _OracleCase("UniversalSet", allow_extra_symbols=True),
     _OracleCase("FiniteSet(EmptySet, {EmptySet})", allow_sets=True),
     _OracleCase("EmptySet"),
     _OracleCase("1 and 0"),
@@ -63,6 +79,18 @@ _ORACLE_CASES = (
     _OracleCase("sin"),
     _OracleCase("sin({1})", allow_sets=True),
     _OracleCase("[{1}, 2]", allow_sets=True),
+    _OracleCase("˜ + 1"),  # ruff: ignore[ambiguous-unicode-character-string]
+    _OracleCase("E + z", allow_extra_symbols=True),
+    _OracleCase("I", allow_extra_symbols=True),
+    _OracleCase("I", allow_complex=True, allow_extra_symbols=True),
+    _OracleCase(
+        "Catalan + EulerGamma + GoldenRatio + TribonacciConstant",
+        allow_extra_symbols=True,
+    ),
+    _OracleCase("pq", allow_extra_symbols=True),
+    _OracleCase("你", allow_extra_symbols=True),
+    _OracleCase("E + Chi", variables=("E", "Chi")),
+    _OracleCase("Chi(x)", variables=("x",), custom_functions=("Chi",)),
 )
 
 
@@ -147,6 +175,38 @@ def test_grammar_evaluator_matches_legacy(case: _OracleCase) -> None:
             simplify_expression=simplify_expression,
         )
         assert grammar == legacy
+
+
+@pytest.mark.parametrize(
+    ("expression", "expected_error"),
+    [
+        ("Chi", psu.FunctionNameWithoutArgumentsError),
+        ("叱", psu.FunctionNameWithoutArgumentsError),
+        ("Chi(x)", psu.HasInvalidFunctionError),
+        ("S", psu.FunctionNameWithoutArgumentsError),
+        ("Q", psu.HasInvalidSymbolError),
+        ("O", psu.FunctionNameWithoutArgumentsError),
+        ("EmptySequence", psu.HasInvalidSymbolError),
+        ("Id", psu.FunctionNameWithoutArgumentsError),
+        ("ord0", psu.HasInvalidSymbolError),
+    ],
+)
+def test_extra_symbols_reject_unsupported_sympy_globals(
+    expression: str, expected_error: type[psu.BaseSympyError]
+) -> None:
+    source = psu._normalize_source(expression, allow_complex=False, allow_sets=False)
+    locals_for_eval = psu._prepare_locals_for_eval(())
+
+    with pytest.raises(psu._LocalizedSympyError) as exc_info:
+        parse_and_evaluate(
+            source,
+            locals_for_eval,
+            allow_sets=False,
+            simplify_expression=True,
+            allow_extra_symbols=True,
+        )
+
+    assert isinstance(exc_info.value.error, expected_error)
 
 
 def test_unsimplified_set_complement_uses_current_evaluated_structure() -> None:
