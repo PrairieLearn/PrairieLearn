@@ -87,15 +87,14 @@ describe('AI grading model discovery', () => {
   });
 
   it.each([
-    [400, 'request_rejected'],
-    [422, 'request_rejected'],
-    [401, 'authentication'],
-    [403, 'access_denied'],
-    [404, 'not_found'],
-    [422, 'request_rejected'],
-    [429, 'rate_limit'],
-    [500, 'provider_error'],
-  ])('classifies HTTP %s without exposing the response', async (status, code) => {
+    [400, 'request_rejected', 400],
+    [401, 'authentication', 400],
+    [403, 'access_denied', 400],
+    [404, 'not_found', 400],
+    [422, 'request_rejected', 400],
+    [429, 'rate_limit', 429],
+    [500, 'provider_error', 502],
+  ])('classifies HTTP %s without exposing the response', async (status, code, httpStatus) => {
     await withServer(
       (_request, response) => {
         response.writeHead(Number(status));
@@ -106,6 +105,7 @@ describe('AI grading model discovery', () => {
           discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
         ).rejects.toMatchObject({
           code,
+          status: httpStatus,
           message: expect.not.stringContaining('secret provider diagnostics'),
         });
       },

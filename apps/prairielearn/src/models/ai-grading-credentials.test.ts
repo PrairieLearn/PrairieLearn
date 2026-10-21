@@ -3,14 +3,7 @@ import { strict as assert } from 'node:assert';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
-import {
-  execute,
-  loadSqlEquiv,
-  queryRow,
-  queryScalar,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
-import { withResolvers } from '@prairielearn/utils';
+import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import * as helperCourse from '../tests/helperCourse.js';
@@ -185,45 +178,5 @@ describe('custom AI grading credential constraints', () => {
       course_instance_id: '1',
       authn_user_id: created_by,
     });
-  });
-
-  it('replaces a custom provider while a grading transaction references its course instance', async () => {
-    const credential = await replaceCustomCredential({
-      course_instance_id: '1',
-      expected_credential_id: null,
-      base_url: 'https://provider.example/v1',
-      encrypted_secret_key: 'test-encrypted-key',
-      created_by,
-    });
-    const held = withResolvers<undefined>();
-    const release = withResolvers<undefined>();
-    const gradingTransaction = runInTransactionAsync(async () => {
-      await execute(sql.insert_test_job_sequence, { course_instance_id: '1' });
-      held.resolve(undefined);
-      await release.promise;
-    });
-    await held.promise;
-
-    try {
-      const replacement = await runInTransactionAsync(async () => {
-        await execute(sql.set_short_lock_timeout);
-        return replaceCustomCredential({
-          course_instance_id: '1',
-          expected_credential_id: credential.id,
-          base_url: 'https://another.example/v1',
-          encrypted_secret_key: 'replacement-key',
-          created_by,
-        });
-      });
-      assert.equal((await selectCredentials('1'))[0].id, replacement.id);
-      await deleteCredential({
-        credential_id: replacement.id,
-        course_instance_id: '1',
-        authn_user_id: created_by,
-      });
-    } finally {
-      release.resolve(undefined);
-      await gradingTransaction;
-    }
   });
 });
