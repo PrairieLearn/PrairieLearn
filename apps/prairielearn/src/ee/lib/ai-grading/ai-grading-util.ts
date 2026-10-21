@@ -26,6 +26,7 @@ import {
   queryRow,
   queryRows,
   queryScalar,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -700,17 +701,18 @@ export async function deleteAiGradingJobs({
   // TODO: revisit this before general availability of AI grading. This implementation
   // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
   // correctly in call cases; see the TODOs in the SQL query for more details.
-  //
-  // TODO: we should add locking here. Specifically, we should process each
-  // assessment instance + instance question one at a time in separate
-  // transactions so that we don't need to lock all relevant assessment instances
-  // and assessment questions at once.
   const iqs = await runInTransactionAsync(async () => {
+    const assessmentInstanceIds = await queryScalars(
+      sql.select_and_lock_assessment_instances_for_ai_grading_deletion,
+      { assessment_question_ids },
+      IdSchema,
+    );
     const iqs = await queryRows(
       sql.delete_ai_grading_jobs,
       {
         authn_user_id,
         assessment_question_ids,
+        assessment_instance_ids: assessmentInstanceIds,
       },
       z.object({
         id: IdSchema,

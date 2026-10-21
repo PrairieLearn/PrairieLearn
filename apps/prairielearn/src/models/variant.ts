@@ -10,6 +10,7 @@ import {
   queryOptionalScalar,
   queryRows,
   queryScalar,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -61,12 +62,17 @@ export async function resetVariantsForAssessmentQuestion({
       assessment_id,
       assessment_question_id: unsafe_assessment_question_id,
     });
-    await execute(sql.reset_variants_for_assessment_question, {
-      assessment_id,
-      assessment_instance_ids: ids,
-      unsafe_assessment_question_id,
-      authn_user_id,
-    });
+    const variantIds = await queryScalars(
+      sql.reset_variants_for_assessment_question,
+      {
+        assessment_id,
+        assessment_instance_ids: ids,
+        unsafe_assessment_question_id,
+        authn_user_id,
+      },
+      IdSchema,
+    );
+    await execute(sql.clear_grading_pending_for_reset_variants, { variant_ids: variantIds });
     await updateAssessmentInstancesGradingPending(ids);
   });
 }
@@ -82,11 +88,16 @@ export async function resetVariantsForInstanceQuestion({
 }) {
   await runInTransactionAsync(async () => {
     await lockAssessmentInstances([assessment_instance_id]);
-    await execute(sql.reset_variants_for_instance_question, {
-      assessment_instance_id,
-      unsafe_instance_question_id,
-      authn_user_id,
-    });
+    const variantIds = await queryScalars(
+      sql.reset_variants_for_instance_question,
+      {
+        assessment_instance_id,
+        unsafe_instance_question_id,
+        authn_user_id,
+      },
+      IdSchema,
+    );
+    await execute(sql.clear_grading_pending_for_reset_variants, { variant_ids: variantIds });
     await updateAssessmentInstancesGradingPending([assessment_instance_id]);
   });
 }

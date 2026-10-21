@@ -165,6 +165,9 @@ async function insertSubmission({
           delta,
           status: gradable ? 'saved' : 'invalid',
           requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
+          gradable,
+          broken,
+          credit,
         },
         InstanceQuestionSchema,
       );
