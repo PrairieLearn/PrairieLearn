@@ -14,6 +14,7 @@ from lark import Lark, Token, Transformer
 from lark.exceptions import UnexpectedInput, UnexpectedToken
 
 import prairielearn.sympy_utils as psu
+from prairielearn.internal import sympy_constants
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -365,35 +366,14 @@ def _make_implicit_product(items: Sequence[_Expression]) -> _Expression:
     return value
 
 
-_LEGACY_GLOBAL_VARIABLES: psu.SympyMapT = {
-    "Catalan": sympy.Catalan,
-    "EmptySet": sympy.EmptySet,
-    "E": sympy.E,
-    "EulerGamma": sympy.EulerGamma,
-    "GoldenRatio": sympy.GoldenRatio,
-    "I": sympy.I,
-    "TribonacciConstant": sympy.TribonacciConstant,
-    "UniversalSet": sympy.UniversalSet,
-    "false": sympy.false,
-    "nan": sympy.nan,
-    "oo": sympy.oo,
-    "true": sympy.true,
-    "zoo": sympy.zoo,
-}
-_SYMPY_GLOBAL_NAMES = frozenset(psu._SYMPY_GLOBALS)
-_SYMPY_GLOBAL_FUNCTIONS = frozenset(
-    name for name, value in psu._SYMPY_GLOBALS.items() if callable(value)
-)
-
-
 def _evaluation_variables(
     locals_for_eval: psu.LocalsForEval,
     *,
     allow_sets: bool,
     allow_extra_symbols: bool,
 ) -> psu.SympyMapT:
-    variables = _LEGACY_GLOBAL_VARIABLES | locals_for_eval["variables"]
-    for name in psu._SET_DOMAIN_NAMES:
+    variables = sympy_constants.legacy_global_variables | locals_for_eval["variables"]
+    for name in sympy_constants.set_domain_names:
         if allow_extra_symbols and not allow_sets:
             variables.setdefault(name, sympy.Symbol(name))
         else:
@@ -406,8 +386,8 @@ def _unsupported_globals(
 ) -> tuple[frozenset[str], frozenset[str]]:
     configured_names = functions.keys() | variables.keys()
     return (
-        _SYMPY_GLOBAL_NAMES - configured_names,
-        _SYMPY_GLOBAL_FUNCTIONS - configured_names,
+        sympy_constants.sympy_global_names - configured_names,
+        sympy_constants.sympy_global_functions - configured_names,
     )
 
 
@@ -590,7 +570,7 @@ class _Lowerer:
             arguments = tuple(map(self.lower, expression.arguments))
             if (
                 expression.function.text in self.functions
-                or expression.function.text in psu._Constants.trig_functions
+                or expression.function.text in sympy_constants.trig_functions
                 or expression.function.text in self.unsupported_global_functions
             ):
                 return _Call(expression.function, arguments, expression.span)
@@ -638,38 +618,6 @@ class _Lowerer:
 class _Evaluated:
     value: psu.SympyValue | bool
     type: psu.ASTSympyType
-
-
-_EVALUATE_FALSE_FUNCTIONS = frozenset({
-    "Abs",
-    "abs",
-    "acos",
-    "acosh",
-    "arccos",
-    "arcsin",
-    "arctan",
-    "arctan2",
-    "asin",
-    "asinh",
-    "atan",
-    "atan2",
-    "atanh",
-    "cos",
-    "cosh",
-    "cot",
-    "csc",
-    "exp",
-    "ln",
-    "log",
-    "sec",
-    "sgn",
-    "sign",
-    "sin",
-    "sinh",
-    "sqrt",
-    "tan",
-    "tanh",
-})
 
 
 class Evaluator:
@@ -769,13 +717,13 @@ class Evaluator:
         arguments: Sequence[_Evaluated],
         span: psu._SourceSpan,
     ) -> _Evaluated:
-        if self.allow_sets and function is psu._Constants.set_functions.get(name):
+        if self.allow_sets and function is sympy_constants.set_functions.get(name):
             self._set_call_type(name, arguments, span)
             result_type = psu.ASTSympyType.SET
         else:
             if (
-                name in psu._Constants.functions
-                or name in psu._Constants.trig_functions
+                name in sympy_constants.functions
+                or name in sympy_constants.trig_functions
             ):
                 arities = psu._builtin_function_arities(name) or (len(arguments),)
                 self._require_signature(
@@ -788,7 +736,10 @@ class Evaluator:
 
         values = [argument.value for argument in arguments]
         kwargs: dict[str, bool] = {}
-        if not self.simplify_expression and name in _EVALUATE_FALSE_FUNCTIONS:
+        if (
+            not self.simplify_expression
+            and name in sympy_constants.evaluate_false_functions
+        ):
             kwargs["evaluate"] = False
         try:
             value = function(*values, **kwargs)
@@ -809,7 +760,7 @@ class Evaluator:
         scalar = psu.ASTSympyType.SCALAR
         set_type = psu.ASTSympyType.SET
 
-        if operator in {"cup", "U", "∪", "|", "cap", "∩", "&"}:  # ruff: ignore[ambiguous-unicode-character-string]
+        if operator in sympy_constants.set_operator_names:
             signatures = ((set_type, set_type),)
             result_type = set_type
         elif operator in {"+", "-"}:
@@ -830,9 +781,9 @@ class Evaluator:
             if is_set_operation:
                 left_set = cast(sympy.Set, left.value)
                 right_set = cast(sympy.Set, right.value)
-                if operator in {"cup", "U", "∪", "|", "+"}:  # ruff: ignore[ambiguous-unicode-character-string]
+                if operator in sympy_constants.union_operators | {"+"}:
                     value = sympy.Union(left_set, right_set)
-                elif operator in {"cap", "∩", "&"}:
+                elif operator in sympy_constants.intersection_operators:
                     value = sympy.Intersection(left_set, right_set)
                 else:
                     value = sympy.Complement(left_set, right_set)
@@ -997,8 +948,8 @@ class Evaluator:
             function = self.functions.get(expression.function.text)
             if function is None:
                 if (
-                    expression.function.text in psu._Constants.trig_functions
-                    or expression.function.text in psu._SYMPY_GLOBALS
+                    expression.function.text in sympy_constants.trig_functions
+                    or expression.function.text in sympy_constants.sympy_globals
                 ):
                     error: psu.BaseSympyError = psu.HasInvalidFunctionError(
                         expression.function.span.start, expression.function.text

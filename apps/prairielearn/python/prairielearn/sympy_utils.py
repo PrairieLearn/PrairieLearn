@@ -1537,7 +1537,7 @@ def _prepare_locals_for_eval(
             f"Conflicting function name(s): {', '.join(conflict_fns)}"
         )
 
-    const = _Constants
+    const = sympy_constants
     locals_for_eval: LocalsForEval = {
         "functions": dict(const.functions),
         "variables": dict(const.variables),
