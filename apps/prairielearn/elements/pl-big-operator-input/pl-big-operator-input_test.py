@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import importlib
 import importlib.util
 import json
@@ -2411,6 +2412,55 @@ def test_copied_element_is_self_contained(tmp_path: Path) -> None:
             assert copied_module.render(markup, data)
     finally:
         sys.modules.pop(module_name)
+
+
+def test_javascript_stays_synchronized_with_symbolic_input() -> None:
+    element_dir = Path(cast(str, big_operator_input.__file__)).parent
+    symbolic_path = element_dir.parent / "pl-symbolic-input" / "pl-symbolic-input.js"
+    big_operator_path = element_dir / "pl-big-operator-input.js"
+    symbolic_script = symbolic_path.read_text(encoding="utf-8")
+    big_operator_script = big_operator_path.read_text(encoding="utf-8")
+
+    symbolic_only_start = """  /**
+   * Initialize the <math-field> element used to represent parse errors.
+"""
+    symbolic_only_end = """  /**
+   * Initialize list of allowed function names for a <math-field> element."""
+    assert symbolic_script.count(symbolic_only_start) == 1
+    assert symbolic_script.count(symbolic_only_end) == 1
+    start = symbolic_script.index(symbolic_only_start)
+    end = symbolic_script.index(symbolic_only_end, start)
+    symbolic_script = symbolic_script[:start] + symbolic_script[end:]
+
+    normalizations = (
+        (
+            "window.PLSymbolicInput = function",
+            "window.PLBigOperatorInput = function",
+            1,
+        ),
+        ("symbolic-input-", "big-operator-input-", 4),
+        ("setUpSymbolicInputMacros", "setUpBigOperatorInputMacros", 2),
+        ("<pl-symbolic-input>", "<pl-big-operator-input>", 1),
+        ("`pl-symbolic-input.css`", "`pl-big-operator-input.css`", 1),
+        (
+            "inside the pl-symbolic-input box",
+            "inside the pl-big-operator-input field",
+            1,
+        ),
+    )
+    for source, replacement, expected_count in normalizations:
+        assert symbolic_script.count(source) == expected_count
+        symbolic_script = symbolic_script.replace(source, replacement)
+
+    diff = "".join(
+        difflib.unified_diff(
+            symbolic_script.splitlines(keepends=True),
+            big_operator_script.splitlines(keepends=True),
+            fromfile=str(symbolic_path),
+            tofile=str(big_operator_path),
+        )
+    )
+    assert symbolic_script == big_operator_script, diff
 
 
 class TestDocSmoke:
