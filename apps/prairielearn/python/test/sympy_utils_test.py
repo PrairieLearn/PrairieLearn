@@ -934,6 +934,7 @@ class TestSympy:
             custom_functions=["Complement"],
             simplify_expression=simplify_expression,
         )
+        assert isinstance(parsed, sympy.Expr | sympy.Set)
         encoded = psu.sympy_to_json(parsed, allow_sets=True)
 
         assert parsed == expected
@@ -996,6 +997,7 @@ class TestSympy:
             allow_complex=True,
             custom_functions=custom_functions,
         )
+        assert isinstance(sympy_expr, sympy.Expr | sympy.Set)
         # Check that json serialization works
         json_dict = psu.sympy_to_json(sympy_expr)
 
@@ -1034,6 +1036,7 @@ class TestSympy:
             allow_complex=True,
             assumptions=assumptions,
         )
+        assert isinstance(sympy_expr, sympy.Expr | sympy.Set)
 
         json_expr = json.dumps(psu.sympy_to_json(sympy_expr), allow_nan=False)
 
