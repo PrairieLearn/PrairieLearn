@@ -21,14 +21,14 @@ const sandboxConfig = {
   workspaceAuthzCookieMaxAgeMilliseconds: 60 * 1000,
   workspaceHostMode: 'cross-origin' as const,
   workspaceLaunchedTimeoutSec: 12 * 60 * 60,
-  workspaceSandboxBaseDomain: 'workspace-hosts.test',
+  workspaceSandboxBaseDomain: 'us.prairielearn-user-content.com',
 };
 
 describe('workspace sandbox', () => {
   it('maps workspace IDs to sandbox hosts independently of the configured host mode', async () => {
     await withConfig(sandboxConfig, () => {
       const hostname = getWorkspaceSandboxHostname({ workspaceId });
-      assert.equal(hostname, 'w123.workspace-hosts.test');
+      assert.equal(hostname, 'w123.us.prairielearn-user-content.com');
       assert.equal(getWorkspaceSandboxOrigin({ workspaceId }), `https://${hostname}`);
       assert.deepEqual(classifyWorkspaceSandboxHost(hostname), {
         type: 'workspace',
@@ -37,7 +37,7 @@ describe('workspace sandbox', () => {
     });
 
     await withConfig({ ...sandboxConfig, workspaceHostMode: 'same-origin' }, () => {
-      assert.deepEqual(classifyWorkspaceSandboxHost('w123.workspace-hosts.test'), {
+      assert.deepEqual(classifyWorkspaceSandboxHost('w123.us.prairielearn-user-content.com'), {
         type: 'workspace',
         workspaceId,
       });
@@ -164,7 +164,7 @@ describe('workspace sandbox', () => {
       );
       assert.deepEqual(
         validateWorkspaceSandboxWebSocketAccess(
-          { headers: { ...headers, origin: 'https://w999999.workspace-hosts.test' } },
+          { headers: { ...headers, origin: 'https://w999999.us.prairielearn-user-content.com' } },
           workspaceId,
         ),
         { authorized: false, reason: 'invalid-origin' },

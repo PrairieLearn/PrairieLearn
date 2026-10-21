@@ -18,7 +18,7 @@ const sandboxConfig = {
   secretKey: ['workspace-sandbox-test-secret'] as [string],
   serverCanonicalHost: 'https://us.prairielearn.test',
   workspaceHostMode: 'cross-origin' as const,
-  workspaceSandboxBaseDomain: 'workspace-hosts.test',
+  workspaceSandboxBaseDomain: 'us.prairielearn-user-content.test',
 };
 
 function createApp() {
