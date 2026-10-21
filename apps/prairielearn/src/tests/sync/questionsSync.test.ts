@@ -558,7 +558,7 @@ describe('Question syncing', () => {
 
   it('records a warning if same UUID is used in multiple questions', async () => {
     const courseData = util.getCourseData();
-    courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
+    courseData.questions[util.ALTERNATIVE_QUESTION_ID] = courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
@@ -569,13 +569,15 @@ describe('Question syncing', () => {
       firstSyncedQuestion.sync_warnings,
       /UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: test2/,
     );
-    const secondSyncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    const secondSyncedQuestion = syncedQuestions.find(
+      (q) => q.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
     assert.isDefined(secondSyncedQuestion);
     assert.isNotNull(secondSyncedQuestion.sync_warnings);
     assert.match(
       secondSyncedQuestion.sync_warnings,
       new RegExp(
-        `UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}`,
+        `UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}\\b`,
       ),
     );
   });
