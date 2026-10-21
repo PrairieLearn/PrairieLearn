@@ -201,7 +201,13 @@ WITH
         iq.requires_manual_grading
         OR $requires_manual_grading
       ),
-      grading_pending = iq.grading_pending
+      grading_pending = (
+        iq.grading_pending
+        AND (
+          iq.requires_manual_grading
+          OR $requires_manual_grading
+        )
+      )
       OR (
         $gradable IS TRUE
         AND $broken IS NOT TRUE

@@ -234,7 +234,6 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   date_limit: null,
   duration: null,
   grading_needed: false,
-  grading_pending: false,
   id: '3',
   include_in_statistics: false,
   last_client_fingerprint_id: null,
@@ -260,7 +259,6 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   date_limit: null,
   duration: null,
   grading_needed: false,
-  grading_pending: false,
   id: '3',
   max_bonus_points: null,
   max_points: null,
@@ -606,7 +604,6 @@ const minimalStudentZone: z.input<typeof StudentZoneSchema> = {
 const minimalStudentInstanceQuestion: z.input<typeof StudentInstanceQuestionSchema> = {
   auto_points: null,
   current_value: null,
-  grading_pending: false,
   highest_submission_score: null,
   id: '1',
   manual_points: null,

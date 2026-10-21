@@ -10,8 +10,6 @@ import {
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { updateAssessmentInstancesGradingPending } from '../models/assessment-instance.js';
-
 import { AssessmentInstanceSchema, SubmissionSchema } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -97,8 +95,6 @@ export async function updateAssessmentInstanceGrade({
       insert_log: updated || !onlyLogIfScoreUpdated,
       instance_questions_used_for_grade: instanceQuestionsUsedForGrade,
     });
-
-    await updateAssessmentInstancesGradingPending([assessment_instance_id]);
 
     return { updated, points, score_perc };
   });

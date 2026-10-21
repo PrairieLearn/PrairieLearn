@@ -373,15 +373,9 @@ FOR NO KEY UPDATE OF
 -- BLOCK tag_for_manual_grading
 UPDATE instance_questions iq
 SET
-  requires_manual_grading = TRUE,
-  grading_pending = coalesce(iq.status != 'unanswered', FALSE)
-  AND coalesce(iq.points, 0) < coalesce(aq.max_points, 0)
-FROM
-  assessment_questions AS aq
+  requires_manual_grading = TRUE
 WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND aq.id = iq.assessment_question_id
-  AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[]);
+  iq.assessment_question_id = $assessment_question_id;
 
 -- BLOCK insert_rubric_grading
 WITH

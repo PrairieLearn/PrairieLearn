@@ -20,14 +20,15 @@ import {
 import { ensureVariant } from '../lib/question-variant.js';
 import {
   clearAssessmentInstancesGradingPending,
-  refreshAssessmentInstanceGradingPending,
   selectAssessmentInstanceById,
+  selectGradingPendingAssessmentInstanceIds,
 } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { selectUserByUid } from '../models/user.js';
+import { resetVariantsForInstanceQuestion } from '../models/variant.js';
 import { updateInstanceQuestions } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/queries.js';
 
 import { runInTransactionAndRollback } from './helperDb.js';
@@ -63,6 +64,9 @@ async function createFixture(tid = 'hw9-internalExternalManual') {
     assessment,
     user,
     questions,
+    async pending() {
+      return (await selectGradingPendingAssessmentInstanceIds([id])).includes(id);
+    },
     async grade(
       saved: { instance_question: { id: string }; submission_id: string | null },
       score: InstanceQuestionScoreInput,
@@ -78,7 +82,7 @@ async function createFixture(tid = 'hw9-internalExternalManual') {
         is_ai_graded,
       });
     },
-    async save(qid: string, credit = 100) {
+    async save(qid: string, credit = 100, submittedAnswer?: Record<string, string>) {
       const row = questions.find((row) => row.question.qid === qid)!;
       const variant = await ensureVariant({
         question_id: row.question.id,
@@ -98,9 +102,11 @@ async function createFixture(tid = 'hw9-internalExternalManual') {
           credit,
           user_id: user.id,
           auth_user_id: user.id,
-          submitted_answer: Object.fromEntries(
-            Object.entries(variant.true_answer ?? {}).map(([key, value]) => [key, String(value)]),
-          ),
+          submitted_answer:
+            submittedAnswer ??
+            Object.fromEntries(
+              Object.entries(variant.true_answer ?? {}).map(([key, value]) => [key, String(value)]),
+            ),
         },
         variant,
         row.question,
@@ -115,7 +121,7 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
-  test('manual saves, grading, and review tagging maintain the cache independently of scores', async () => {
+  test('review tagging does not reactivate pending, and marking graded acknowledges saved work', async () => {
     await runInTransactionAndRollback(async () => {
       const fixture = await createFixture();
       const unanswered = fixture.questions.find(
@@ -131,16 +137,14 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
           assigned_grader: null,
         });
       await tag(unanswered, true);
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
       const saved = await fixture.save('internalGrade/addingNumbers2');
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+      expect(await fixture.pending()).toBe(true);
       await fixture.grade(saved, { manual_points: 1 });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
 
       await setAssessmentInstanceScore(fixture.id, 75, fixture.user.id);
-      const { grading_pending: _pending, ...before } = await selectAssessmentInstanceById(
-        fixture.id,
-      );
+      const before = await selectAssessmentInstanceById(fixture.id);
       const logCount = await queryScalar(
         sql.count_score_logs,
         { assessment_instance_id: fixture.id },
@@ -159,14 +163,16 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
         grader_guidelines: null,
         authn_user_id: fixture.user.id,
       });
-      const { grading_pending, ...after } = await selectAssessmentInstanceById(fixture.id);
-      expect(grading_pending).toBe(true);
+      const after = await selectAssessmentInstanceById(fixture.id);
+      expect(await fixture.pending()).toBe(false);
       expect(after).toEqual(before);
       expect(
         await queryScalar(sql.count_score_logs, { assessment_instance_id: fixture.id }, z.number()),
       ).toBe(logCount);
+      await fixture.save('internalGrade/addingNumbers2');
+      expect(await fixture.pending()).toBe(true);
       await tag(saved, false);
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
     });
   });
 
@@ -175,20 +181,74 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
       const fixture = await createFixture();
       for (const gradable of [false, true]) {
         const saved = await fixture.save('internalGrade/addingNumbers');
-        expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+        expect(await fixture.pending()).toBe(true);
         const job = await insertGradingJob({
           submission_id: saved.submission_id,
           authn_user_id: fixture.user.id,
         });
-        expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+        expect(await fixture.pending()).toBe(true);
         await updateGradingJobAfterGrading({
           grading_job_id: job.id,
           gradable,
           broken: false,
           score: gradable ? 1 : null,
         });
-        expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+        expect(await fixture.pending()).toBe(false);
       }
+    });
+  });
+
+  test('an invalid automatic save replaces older work without allowing a stale result to acknowledge new work', async () => {
+    await runInTransactionAndRollback(async () => {
+      const fixture = await createFixture();
+      const old = await fixture.save('internalGrade/addingNumbers');
+      const delayed = await insertGradingJob({
+        submission_id: old.submission_id,
+        authn_user_id: fixture.user.id,
+      });
+      await fixture.save('internalGrade/addingNumbers', 100, { c: 'not a number' });
+      expect(await fixture.pending()).toBe(false);
+
+      const current = await fixture.save('internalGrade/addingNumbers');
+      await updateGradingJobAfterGrading({
+        grading_job_id: delayed.id,
+        gradable: true,
+        broken: false,
+        score: 0.5,
+      });
+      expect(await fixture.pending()).toBe(true);
+      const job = await insertGradingJob({
+        submission_id: current.submission_id,
+        authn_user_id: fixture.user.id,
+      });
+      await updateGradingJobAfterGrading({
+        grading_job_id: job.id,
+        gradable: true,
+        broken: false,
+        score: 0.5,
+      });
+      expect(await fixture.pending()).toBe(false);
+    });
+  });
+
+  test('automatic grading finishes pending work even when the question has been closed', async () => {
+    await runInTransactionAndRollback(async () => {
+      const fixture = await createFixture();
+      const saved = await fixture.save('internalGrade/addingNumbers');
+      const job = await insertGradingJob({
+        submission_id: saved.submission_id,
+        authn_user_id: fixture.user.id,
+      });
+      await execute(sql.close_instance_question, {
+        instance_question_id: saved.instance_question.id,
+      });
+      await updateGradingJobAfterGrading({
+        grading_job_id: job.id,
+        gradable: true,
+        broken: false,
+        score: 0.5,
+      });
+      expect(await fixture.pending()).toBe(false);
     });
   });
 
@@ -197,7 +257,7 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
       const fixture = await createFixture();
       const manual = await fixture.save('internalGrade/addingNumbers2');
       await setAssessmentInstanceScore(fixture.id, 75, fixture.user.id);
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
       expect(
         await queryScalar(
           sql.requires_manual_grading,
@@ -207,7 +267,7 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
       ).toBe(true);
 
       const automatic = await fixture.save('internalGrade/addingNumbers');
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+      expect(await fixture.pending()).toBe(true);
       const job = await insertGradingJob({
         submission_id: automatic.submission_id,
         authn_user_id: fixture.user.id,
@@ -218,22 +278,20 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
         broken: false,
         score: 0.5,
       });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
 
       const current = await fixture.save('internalGrade/addingNumbers2');
       const delayed = await insertGradingJob({
         submission_id: current.submission_id,
         authn_user_id: fixture.user.id,
       });
-      const { grading_pending: _pending, ...before } = await selectAssessmentInstanceById(
-        fixture.id,
-      );
+      const before = await selectAssessmentInstanceById(fixture.id);
       await clearAssessmentInstancesGradingPending({
         assessment_id: fixture.assessment.id,
         assessment_instance_ids: [fixture.id],
       });
-      const { grading_pending, ...after } = await selectAssessmentInstanceById(fixture.id);
-      expect(grading_pending).toBe(false);
+      const after = await selectAssessmentInstanceById(fixture.id);
+      expect(await fixture.pending()).toBe(false);
       expect(after).toEqual(before);
       await updateGradingJobAfterGrading({
         grading_job_id: delayed.id,
@@ -241,7 +299,7 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
         broken: false,
         score: 0.5,
       });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
     });
   });
 
@@ -259,9 +317,9 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
         broken: false,
         score: 0.5,
       });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+      expect(await fixture.pending()).toBe(true);
       await fixture.grade(saved, { manual_points: 1 });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
     });
   });
 
@@ -270,12 +328,14 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
       const fixture = await createFixture();
       const saved = await fixture.save('internalGrade/addingNumbers2');
       await fixture.save('internalGrade/addingNumbers2', 0);
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+      expect(await fixture.pending()).toBe(true);
+      await fixture.save('internalGrade/addingNumbers2', 100, { c: 'not a number' });
+      expect(await fixture.pending()).toBe(true);
       await fixture.grade({ ...saved, submission_id: null }, { score_perc: 100 });
       await fixture.save('internalGrade/addingNumbers2');
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
       await fixture.save('internalGrade/addingNumbers', 0);
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
     });
   });
 
@@ -285,7 +345,7 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
       const old = await fixture.save('internalGrade/addingNumbers2');
       const current = await fixture.save('internalGrade/addingNumbers2');
       await fixture.grade(old, { manual_points: 0.5 }, true);
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+      expect(await fixture.pending()).toBe(true);
       const job = await insertGradingJob({
         submission_id: current.submission_id,
         authn_user_id: fixture.user.id,
@@ -296,12 +356,12 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
         broken: false,
         score: 0.5,
       });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+      expect(await fixture.pending()).toBe(true);
       await clearAssessmentInstancesGradingPending({
         assessment_id: fixture.assessment.id,
         assessment_instance_ids: [fixture.id],
       });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(false);
+      expect(await fixture.pending()).toBe(false);
     });
   });
   test('deleting AI grades preserves newer saved work when an older manual grade is restored', async () => {
@@ -316,7 +376,7 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
         assessment_question_ids: [current.assessment_question.id],
         authn_user_id: fixture.user.id,
       });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+      expect(await fixture.pending()).toBe(true);
       const job = await insertGradingJob({
         submission_id: current.submission_id,
         authn_user_id: fixture.user.id,
@@ -327,7 +387,27 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
         broken: false,
         score: 0.5,
       });
-      expect((await selectAssessmentInstanceById(fixture.id)).grading_pending).toBe(true);
+      expect(await fixture.pending()).toBe(true);
+    });
+  });
+
+  test('resetting a variant discards automatic work while preserving its pending manual work', async () => {
+    await runInTransactionAndRollback(async () => {
+      const fixture = await createFixture();
+      const automatic = await fixture.save('internalGrade/addingNumbers');
+      await resetVariantsForInstanceQuestion({
+        assessment_instance_id: fixture.id,
+        unsafe_instance_question_id: automatic.instance_question.id,
+        authn_user_id: fixture.user.id,
+      });
+      expect(await fixture.pending()).toBe(false);
+      const mixed = await fixture.save('internalGrade/addingNumbers2');
+      await resetVariantsForInstanceQuestion({
+        assessment_instance_id: fixture.id,
+        unsafe_instance_question_id: mixed.instance_question.id,
+        authn_user_id: fixture.user.id,
+      });
+      expect(await fixture.pending()).toBe(true);
     });
   });
 
@@ -335,7 +415,7 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
     ['Homework', 'hw9-internalExternalManual', 'internalGrade/addingNumbers'],
     ['Exam', 'exam17-mixedRealTimeGrading', 'addNumbers'],
   ])(
-    '%s question removal is reconciled on access and restoration does not revive cleared work',
+    '%s question removal and restoration affect visibility without rewriting pending state',
     async (type, tid, qid) => {
       await runInTransactionAndRollback(async () => {
         const fixture = await createFixture(tid);
@@ -345,7 +425,7 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
           deleted: true,
           alternative_group_id: saved.assessment_question.alternative_group_id,
         });
-        expect(await refreshAssessmentInstanceGradingPending(fixture.id)).toBe(type === 'Exam');
+        expect(await fixture.pending()).toBe(type === 'Exam');
         if (type === 'Exam') {
           await execute(sql.set_question_retention, {
             assessment_question_id: saved.assessment_question.id,
@@ -353,13 +433,18 @@ describe('Assessment grading status', { timeout: 60_000 }, () => {
             alternative_group_id: null,
           });
         }
-        expect(await refreshAssessmentInstanceGradingPending(fixture.id)).toBe(false);
+        expect(await fixture.pending()).toBe(false);
         await execute(sql.set_question_retention, {
           assessment_question_id: saved.assessment_question.id,
           deleted: false,
           alternative_group_id: saved.assessment_question.alternative_group_id,
         });
-        expect(await refreshAssessmentInstanceGradingPending(fixture.id)).toBe(false);
+        expect(await fixture.pending()).toBe(true);
+        await clearAssessmentInstancesGradingPending({
+          assessment_id: fixture.assessment.id,
+          assessment_instance_ids: [fixture.id],
+        });
+        expect(await fixture.pending()).toBe(false);
       });
     },
   );

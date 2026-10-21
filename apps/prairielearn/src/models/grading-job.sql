@@ -212,16 +212,11 @@ WITH
   updated_instance_question_status AS (
     UPDATE instance_questions AS iq
     SET
-      status = 'invalid'::enum_instance_question_status,
-      grading_pending = iq.grading_pending
-      AND iq.requires_manual_grading
-      AND coalesce(iq.points, 0) < coalesce(aq.max_points, 0)
+      status = 'invalid'::enum_instance_question_status
     FROM
-      updated_variant AS v,
-      assessment_questions AS aq
+      updated_variant AS v
     WHERE
       iq.id = v.instance_question_id
-      AND aq.id = iq.assessment_question_id
       -- This is only updated here if the question is not gradable, if it's
       -- gradable it is updated in a separate step
       AND NOT $gradable
@@ -245,3 +240,16 @@ WHERE
   id = $grading_job_id
 RETURNING
   *;
+
+-- BLOCK update_instance_question_grading_pending_after_grading
+UPDATE instance_questions AS iq
+SET
+  -- Completion must not reopen work acknowledged by an instructor.
+  grading_pending = iq.grading_pending
+  AND iq.requires_manual_grading
+  AND coalesce(iq.points, 0) < coalesce(aq.max_points, 0)
+FROM
+  assessment_questions AS aq
+WHERE
+  iq.id = $instance_question_id
+  AND aq.id = iq.assessment_question_id;

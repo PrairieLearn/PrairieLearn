@@ -132,7 +132,6 @@ export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInst
   date_limit: true,
   duration: true,
   grading_needed: true,
-  grading_pending: true, // potentially sensitive
   id: true,
   max_bonus_points: true,
   max_points: true,
@@ -402,7 +401,6 @@ export type StaffInstanceQuestion = z.infer<typeof StaffInstanceQuestionSchema>;
 export const RawStudentInstanceQuestionSchema = RawStaffInstanceQuestionSchema.pick({
   auto_points: true,
   current_value: true,
-  grading_pending: true, // potentially sensitive
   highest_submission_score: true,
   id: true,
   manual_points: true,
