@@ -4,7 +4,6 @@ import {
   Document,
   Footer,
   HeightRule,
-  ImageRun,
   ImportedXmlComponent,
   LevelFormat,
   PageNumber,
@@ -77,11 +76,7 @@ class ListNumbering {
   }
 }
 
-function buildTextBlocks(
-  blocks: PrintableTextBlock[],
-  numbering: ListNumbering,
-  contentWidthDxa: number,
-): Paragraph[] {
+function buildTextBlocks(blocks: PrintableTextBlock[], numbering: ListNumbering): Paragraph[] {
   return blocks.flatMap((block) => {
     switch (block.type) {
       case 'heading':
@@ -103,28 +98,6 @@ function buildTextBlocks(
               children: [text(item)],
             }),
         );
-      }
-      case 'figure': {
-        if (!block.png || !block.width || !block.height) {
-          throw new Error('A cover figure is missing from the Word export');
-        }
-        const scale = Math.min(1, contentWidthDxa / DXA_PER_PX / block.width, 740 / block.height);
-        return [
-          new Paragraph({
-            spacing: { after: 80 },
-            children: [
-              new ImageRun({
-                type: 'png',
-                data: Uint8Array.from(block.png),
-                altText: { name: block.alt, title: block.alt, description: block.alt },
-                transformation: {
-                  width: Math.max(1, Math.round(block.width * scale)),
-                  height: Math.max(1, Math.round(block.height * scale)),
-                },
-              }),
-            ],
-          }),
-        ];
       }
       default:
         return assertNever(block);
@@ -297,7 +270,7 @@ function buildCover(cover: PrintableCover, contentWidthDxa: number): (Paragraph 
       : []),
     ...cover.sections.flatMap((section) => [
       line(section.heading, { bold: true, size: 24 }, { before: 200, after: 80 }),
-      ...buildTextBlocks(section.blocks, numbering, contentWidthDxa),
+      ...buildTextBlocks(section.blocks, numbering),
       ...(section.signatureLabel
         ? [
             new Paragraph({ spacing: { before: 200, after: 0 }, children: [] }),

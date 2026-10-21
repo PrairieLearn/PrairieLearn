@@ -48,7 +48,7 @@ Word can rearrange pages after edits, so its page count may differ from the PDF.
 
 The browser saves question text and equations before it splits them into pages, then captures figures once the page layout is complete. `docx-content.ts` turns the saved content into editable Word content, and `print-docx-client.ts` builds the file in the browser. The cover and footer stay editable; callers supply them through `PrintableCover` and `footerLabel`.
 
-`htmlToTextBlocks` turns HTML content, such as assessment instructions, into headings, paragraphs, simple lists, and figures for the cover. The browser turns cover figures into images before building the Word file.
+`htmlToTextBlocks` turns HTML content, such as assessment instructions, into headings, paragraphs, and simple lists for the cover.
 
 Omit the `cover` option to start with questions on the first page.
 
