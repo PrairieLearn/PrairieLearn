@@ -363,7 +363,6 @@ export function StudentAssessmentInstance({
                 `
               : ''
           }
-          ${resLocals.assessment_instance.grading_pending ? html`<p class="text-muted mb-0 mt-3">Some submitted answers still need grading. Your score may change as they are graded.</p>` : ''}
           ${
             resLocals.assessment_text_templated
               ? html`

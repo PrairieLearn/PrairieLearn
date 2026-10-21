@@ -5,6 +5,7 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { selectAssessmentQuestionById } from '../../models/assessment-question.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -37,7 +38,7 @@ async function signInAsStudent(page: Page, baseURL: string, courseInstance: Cour
   return cookies;
 }
 
-test('students see overall pending status until manual grading is complete', async ({
+test('students see overall pending status for saved answers and manual grading', async ({
   page,
   baseURL,
   courseInstance,
@@ -52,6 +53,20 @@ test('students see overall pending status until manual grading is complete', asy
   await page.goto(`${courseUrl}/assessment/${assessment.id}/`);
   const overviewUrl = page.url();
   await expect(page.getByText('Grading pending', { exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: /Internal Grading: Adding two numbers$/ }).click();
+  await page.getByRole('textbox').fill('42');
+  await page.getByRole('button', { name: 'Save only', exact: true }).click();
+  const assessmentScore = page.getByRole('table', { name: 'Assessment score', exact: true });
+  await expect(assessmentScore.getByText('Grading pending', { exact: true })).toBeVisible();
+  await assessmentScore.getByRole('button', { name: 'Grading pending', exact: true }).click();
+  await expect(page.getByRole('tooltip')).toContainText(
+    'Your score may not reflect all submitted work.',
+  );
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await page.getByRole('button', { name: /^Save & Grade/ }).click();
+  await expect(assessmentScore.getByText('Grading pending', { exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Assessment overview', exact: true }).click();
   await page
     .getByRole('link', { name: 'Internal Grading: Adding two numbers (with manual points)' })
     .click();
@@ -65,7 +80,19 @@ test('students see overall pending status until manual grading is complete', asy
   ).toBeVisible();
   await page.getByRole('link', { name: 'Assessment overview', exact: true }).click();
   await expect(page.getByText('Grading pending', { exact: true })).toBeVisible();
-  await expect(page.getByText('Current score: 0%', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('scorebar')).toHaveText('0%');
+  const pendingButton = page.getByRole('button', { name: 'Grading pending', exact: true });
+  await pendingButton.focus();
+  await pendingButton.press('Enter');
+  await expect(page.getByRole('tooltip')).toContainText(
+    'Your score may not reflect all submitted work.',
+  );
+  await page.screenshot({
+    path: testInfo.outputPath('pending-popover-overview.png'),
+    fullPage: true,
+  });
+  await page.keyboard.press('Escape');
+  await expect(pendingButton).toBeFocused();
   await page.screenshot({
     path: testInfo.outputPath('manual-pending-overview.png'),
     fullPage: true,
@@ -82,6 +109,36 @@ test('students see overall pending status until manual grading is complete', asy
     fullPage: true,
   });
   await page.setViewportSize({ width: 1280, height: 720 });
+
+  await page.context().clearCookies();
+  await page.goto(overviewUrl);
+  const instanceId = new URL(overviewUrl).pathname.split('/').filter(Boolean).at(-1)!;
+  await page.goto(
+    getAssessmentInstanceUrl({
+      courseInstanceId: courseInstance.id,
+      assessmentInstanceId: instanceId,
+    }),
+  );
+  await page.getByRole('button', { name: 'Actions', exact: true }).click();
+  await page.getByRole('button', { name: 'Clear grading pending', exact: true }).click();
+  const clearDialog = page.getByRole('dialog');
+  await expect(clearDialog).toContainText('New submissions may make the indicator appear again.');
+  await page.screenshot({
+    path: testInfo.outputPath('clear-pending-modal.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  await clearDialog.getByRole('button', { name: 'Clear grading pending', exact: true }).click();
+  await expect(clearDialog).not.toBeVisible();
+  await page.context().addCookies(cookies);
+  await page.goto(overviewUrl);
+  await expect(page.getByText('Grading pending', { exact: true })).toHaveCount(0);
+  await page
+    .getByRole('link', { name: 'Internal Grading: Adding two numbers (with manual points)' })
+    .click();
+  await page.getByRole('textbox').fill('43');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Grading pending', { exact: true })).toBeVisible();
 
   await page.context().clearCookies();
   await page.goto(
@@ -125,7 +182,6 @@ test('saved work with real-time grading disabled shows pending without exposing 
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.goto(overviewUrl);
   await expect(page.getByText('Grading pending', { exact: true })).toBeVisible();
-  await expect(page.getByText(/Current score:/)).toHaveCount(0);
   await expect(page.getByTestId('scorebar')).toHaveCount(0);
   await page.screenshot({
     path: testInfo.outputPath('deferred-pending-overview.png'),

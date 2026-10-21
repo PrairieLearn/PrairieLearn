@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { Button } from 'react-bootstrap';
 
 import { renderHtml } from '@prairielearn/react';
 
@@ -14,8 +15,25 @@ export function AssessmentScore({ score, gradingPending, className }: Assessment
   if (!gradingPending) return <Scorebar score={score} className={className} />;
   return (
     <div className={clsx('text-center', className)} style={{ minWidth: '5em', maxWidth: '20em' }}>
-      <div className="fw-semibold">Grading pending</div>
-      {score != null && <div className="small text-muted">Current score: {Math.floor(score)}%</div>}
+      <Scorebar score={score} />
+      <Button
+        variant="link"
+        size="sm"
+        className="mt-1 p-0 text-info-emphasis"
+        style={{
+          textDecorationStyle: 'dashed',
+          textUnderlineOffset: '0.2em',
+          minHeight: '24px',
+        }}
+        data-bs-toggle="popover"
+        data-bs-animation="false"
+        data-bs-container="body"
+        data-bs-placement="auto"
+        data-bs-title="Grading pending"
+        data-bs-content="Some answers have not been graded. Your score may not reflect all submitted work."
+      >
+        Grading pending
+      </Button>
     </div>
   );
 }
