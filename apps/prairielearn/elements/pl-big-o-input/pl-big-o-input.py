@@ -171,12 +171,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     operators: list[str] = list(psu.STANDARD_OPERATORS)
     operators.extend(
-        psu.get_builtin_functions(
-            allow_trig_functions=False,
+        sorted(
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=False,
+                include_helpers=False,
+            )
         )
     )
 
-    constants = list(psu.get_builtin_constants(allow_hidden=False))
+    constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
     # Get the info string using these parameters
     info_params = {

@@ -235,13 +235,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         operators.extend(psu.SET_NOTATION_OPERATORS)
     operators.extend(custom_functions)
     operators.extend(
-        psu.get_builtin_functions(
-            allow_trig_functions=allow_trig,
-            allow_sets=allow_sets,
+        sorted(
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+                include_helpers=False,
+            )
         )
     )
 
-    constants = list(psu.get_builtin_constants(allow_hidden=False))
+    constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
     info_params = {
         "format": True,

@@ -3,6 +3,7 @@ import string
 from pathlib import Path
 from typing import Any
 
+import lxml.html
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -43,6 +44,41 @@ def make_question_data(
         "panel": panel,
         "editable": editable,
     }
+
+
+def get_help_values(rendered: str, label: str) -> list[str]:
+    rendered_html = lxml.html.fragment_fromstring(rendered, create_parent="div")
+    help_buttons = rendered_html.xpath(".//button[@data-bs-content]")
+    assert len(help_buttons) == 1
+    help_html = help_buttons[0].get("data-bs-content")
+    assert help_html is not None
+    help_fragment = lxml.html.fragment_fromstring(help_html, create_parent="div")
+    paragraphs = help_fragment.xpath(
+        f'.//p[strong[normalize-space()="Allowable {label}:"]]'
+    )
+    assert len(paragraphs) == 1
+    return paragraphs[0].xpath(".//code/text()")
+
+
+def test_rendered_help_uses_public_builtin_names_in_stable_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    rendered = symbolic_input.render(
+        build_element_html('allow-sets="true"'), make_question_data()
+    )
+
+    assert get_help_values(rendered, "constants") == ["e", "infty", "pi"]
+
+    operators = get_help_values(rendered, "operators")
+    fixed_operator_count = len(psu.STANDARD_OPERATORS) + len(psu.SET_NOTATION_OPERATORS)
+    assert operators[: len(psu.STANDARD_OPERATORS)] == list(psu.STANDARD_OPERATORS)
+    assert operators[len(psu.STANDARD_OPERATORS) : fixed_operator_count] == list(
+        psu.SET_NOTATION_OPERATORS
+    )
+    assert operators[fixed_operator_count:] == sorted(operators[fixed_operator_count:])
+    assert operators.count("U") == 1
+    assert set(operators).isdisjoint({"Number", "_Integer", "cup", "cap", "∪", "∩"})  # ruff:ignore[ambiguous-unicode-character-string]
 
 
 @pytest.mark.parametrize(

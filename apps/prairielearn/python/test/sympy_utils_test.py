@@ -1382,6 +1382,14 @@ def test_builtin_callable_functions_exclude_set_operators() -> None:
     assert callable_functions.isdisjoint({"U", "cup", "cap", "∪", "∩"})  # ruff:ignore[ambiguous-unicode-character-string]
 
 
+def test_builtin_callable_functions_can_exclude_helpers() -> None:
+    assert {"Number", "_Integer"} <= psu.get_builtin_callable_functions()
+    assert psu.get_builtin_callable_functions(include_helpers=False).isdisjoint({
+        "Number",
+        "_Integer",
+    })
+
+
 class TestValidateNamesForConflicts:
     """Tests for validate_names_for_conflicts()."""
 
