@@ -7,7 +7,6 @@ from prairielearn.sympy_utils import ...
 
 import ast
 import html
-import operator
 import re
 import string
 import unicodedata
@@ -36,21 +35,22 @@ from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
+from prairielearn.internal import sympy_constants
 from prairielearn.misc_utils import full_unidecode
 
 if TYPE_CHECKING:
     from prairielearn.internal.symbolic_input import SourceText, SourceToken
 
-STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
-SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+STANDARD_OPERATORS = sympy_constants.standard_operators
+SET_NOTATION_OPERATORS = sympy_constants.set_notation_operators
+# Compatibility alias for code that previously accessed the container class.
+_Constants = sympy_constants
 SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
     "Your answer has a syntax error. "
     "This issue might be caused by mismatched parentheses or some other misplaced symbol."
 )
 
 SympyMapT = dict[str, sympy.Basic | complex]
-_FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
-_FrozenSympyFunctionMapT = FrozenDict[str, Callable[..., Any]]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
 AssumptionsDictT = dict[str, dict[str, Any]]
 """
@@ -61,17 +61,6 @@ Examples:
 """
 
 ASTWhiteListT = tuple[type[ast.AST], ...]
-
-
-def _load_sympy_globals() -> FrozenDict[str, Any]:
-    # Based on code here:
-    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
-    sympy_globals: DICT = {}
-    exec("from sympy import *", sympy_globals)
-    return FrozenDict(sympy_globals)
-
-
-_SYMPY_GLOBALS: Final[FrozenDict[str, Any]] = _load_sympy_globals()
 
 
 class SympyJson(TypedDict):
@@ -119,118 +108,6 @@ class LocalsForEval(TypedDict):
     functions: SympyFunctionMapT
     variables: SympyMapT
     helpers: SympyFunctionMapT
-
-
-class _Constants:
-    helpers: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "Number": sympy.Number,
-        "_Integer": sympy.Integer,
-    })
-
-    variables: Final[_FrozenSympyMapT] = FrozenDict({
-        "pi": sympy.pi,
-        "e": sympy.E,
-        "infty": sympy.oo,
-    })
-
-    hidden_variables: Final[_FrozenSympyMapT] = FrozenDict({
-        "_Exp1": sympy.E,
-    })
-
-    complex_variables: Final[_FrozenSympyMapT] = FrozenDict({
-        "i": sympy.I,
-        "j": sympy.I,
-    })
-
-    hidden_complex_variables: Final[_FrozenSympyMapT] = FrozenDict({
-        "_ImaginaryUnit": sympy.I,
-    })
-
-    functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "exp": sympy.exp,
-        "log": sympy.log,
-        "ln": sympy.log,
-        "sqrt": sympy.sqrt,
-        "factorial": sympy.factorial,
-        "abs": sympy.Abs,
-        "sgn": sympy.sign,
-        "max": sympy.Max,
-        "min": sympy.Min,
-        # Extra aliases to make parsing works correctly
-        "sign": sympy.sign,
-        "Abs": sympy.Abs,
-        "Max": sympy.Max,
-        "Min": sympy.Min,
-    })
-
-    trig_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "cos": sympy.cos,
-        "sin": sympy.sin,
-        "tan": sympy.tan,
-        "sec": sympy.sec,
-        "cot": sympy.cot,
-        "csc": sympy.csc,
-        "cosh": sympy.cosh,
-        "sinh": sympy.sinh,
-        "tanh": sympy.tanh,
-        "arccos": sympy.acos,
-        "arcsin": sympy.asin,
-        "arctan": sympy.atan,
-        "acos": sympy.acos,
-        "asin": sympy.asin,
-        "atan": sympy.atan,
-        "arctan2": sympy.atan2,
-        "atan2": sympy.atan2,
-        "atanh": sympy.atanh,
-        "acosh": sympy.acosh,
-        "asinh": sympy.asinh,
-    })
-
-    set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "Interval": sympy.Interval,
-        "FiniteSet": sympy.FiniteSet,
-        "Union": sympy.Union,
-        "Intersection": sympy.Intersection,
-        "Complement": sympy.Complement,
-    })
-
-    set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "U": operator.or_,
-        "cup": operator.or_,
-        "∪": operator.or_,  # ruff:ignore[ambiguous-unicode-character-string]
-        "cap": operator.and_,
-        "∩": operator.and_,
-    })
-
-    # Unicode operators that the formula editor or common pastes produce. They must
-    # be mapped before unidecode, which would otherwise turn them into "[?]"
-    # (misreported as set notation), drop them, or change their meaning (e.g. the
-    # multiplication sign becomes the letter "x").
-    unicode_operators: Final[FrozenDict[str, str]] = FrozenDict({
-        "·": "*",  # middle dot
-        "×": "*",  # ruff:ignore[ambiguous-unicode-character-string]
-        "•": "*",  # bullet
-        "∗": "*",  # ruff:ignore[ambiguous-unicode-character-string]
-        "∙": "*",  # bullet operator
-        "⋅": "*",  # dot operator
-        "\u2062": "*",  # invisible times
-        "—": "-",  # em dash
-        "―": "-",  # horizontal bar
-        "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
-        "∣": "|",  # ruff:ignore[ambiguous-unicode-character-string]
-        "\u2061": "",  # function application
-    })
-
-    # Operators that give two values; unidecode would turn "±" into "+-".
-    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
-
-    set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
-        "U": "|",
-        "cup": "|",
-        "∪": "|",  # ruff:ignore[ambiguous-unicode-character-string]
-        "cap": "&",
-        "∩": "&",
-    })
 
 
 class _SympyJsonStrPrinter(StrPrinter):
@@ -389,12 +266,9 @@ _SET_OPERATION_FUNCTIONS: Final[FrozenDict[type[ast.operator], str]] = FrozenDic
     ast.BitOr: "Union",
 })
 
-# Complement was accepted as a custom function before it became a set builtin.
-_LEGACY_CUSTOM_FUNCTION_OVERRIDES: Final[frozenset[str]] = frozenset({"Complement"})
-
 
 def _allows_legacy_custom_function_override(name: str) -> bool:
-    return name in _LEGACY_CUSTOM_FUNCTION_OVERRIDES
+    return name in sympy_constants.legacy_custom_function_overrides
 
 
 @dataclass
@@ -433,20 +307,13 @@ class HasFunctionArityError(BaseSympyError):
         )
 
 
-# `sqrt` is a plain function whose second parameter is `evaluate`, so it has no
-# `nargs` and would silently accept a second argument.
-_BUILTIN_FUNCTION_ARITY_OVERRIDES: Final[FrozenDict[str, tuple[int, ...]]] = (
-    FrozenDict({
-        "sqrt": (1,),
-    })
-)
-
-
 def _builtin_function_arities(name: str) -> tuple[int, ...] | None:
     """Return the argument counts a built-in function accepts, or None if any count is allowed."""
-    if name in _BUILTIN_FUNCTION_ARITY_OVERRIDES:
-        return _BUILTIN_FUNCTION_ARITY_OVERRIDES[name]
-    function = _Constants.functions.get(name) or _Constants.trig_functions.get(name)
+    if name in sympy_constants.builtin_function_arity_overrides:
+        return sympy_constants.builtin_function_arity_overrides[name]
+    function = sympy_constants.functions.get(
+        name
+    ) or sympy_constants.trig_functions.get(name)
     nargs = getattr(function, "nargs", None)
     if isinstance(nargs, sympy.FiniteSet):
         return tuple(sorted(int(cast(sympy.Integer, arity)) for arity in nargs))
@@ -605,11 +472,13 @@ class CheckAST(ast.NodeVisitor):
                 return self._set_type(node, ASTSympyType.SCALAR)
             case fn if (
                 self.allow_sets
-                and fn in _Constants.set_functions
-                and resolved_function == _Constants.set_functions[fn]
+                and fn in sympy_constants.set_functions
+                and resolved_function == sympy_constants.set_functions[fn]
             ):
                 return self._set_type(node, self._infer_set_function_type(name, args))
-            case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
+            case fn if (
+                fn in sympy_constants.functions or fn in sympy_constants.trig_functions
+            ):
                 arities = _builtin_function_arities(fn) or (len(args),)
                 self._enforce_signature(
                     fn, args, *(arity * [ASTSympyType.SCALAR] for arity in arities)
@@ -758,7 +627,7 @@ def _ast_check_str(
             for values in locals_for_eval.values()
             for name, value in cast(Mapping[str, Any], values).items()
         }
-        resolved_names = _SYMPY_GLOBALS | local_names
+        resolved_names = sympy_constants.sympy_globals | local_names
 
     return CheckAST(
         whitelist,
@@ -802,7 +671,7 @@ class _SetOperationTransformer(ast.NodeTransformer):
                     protected_name += "_"
                 used_names.add(protected_name)
                 protected_names[function_name] = protected_name
-                self.evaluation_locals[protected_name] = _Constants.set_functions[
+                self.evaluation_locals[protected_name] = sympy_constants.set_functions[
                     function_name
                 ]
             self._function_names[operation_type] = protected_name
@@ -938,7 +807,7 @@ def _normalize_unicode_source(
     source: "SourceText", *, formula_editor: bool = False
 ) -> "SourceText":
     """Normalize Unicode while retaining the raw offset of every output character."""
-    const = _Constants
+    const = sympy_constants
     normalized_tokens: list[SourceToken] = []
     for token in source.tokens:
         char = token.text
@@ -1034,7 +903,7 @@ def _validate_and_rewrite_source(
 ) -> "SourceText":
     _validate_multiplication(source)
 
-    for symbol in _Constants.plus_minus_operators:
+    for symbol in sympy_constants.plus_minus_operators:
         ind = source.text.find(symbol)
         if ind != -1:
             raise HasInvalidSymbolError(symbol, source.tokens[ind].raw_offset)
@@ -1139,7 +1008,7 @@ def _evaluate_normalized_source(
     }
 
     # Keep mutations made during one parse from affecting later parses.
-    global_dict = dict(_SYMPY_GLOBALS)
+    global_dict = dict(sympy_constants.sympy_globals)
 
     transformations = (
         *sympy_parser.standard_transformations,
@@ -1147,7 +1016,7 @@ def _evaluate_normalized_source(
     )
     if allow_sets:
         transformations = (
-            _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
+            _unmangle_infix_binops_transformation(sympy_constants.set_operators.keys()),
             _set_literal_transformation,
             _set_operation_transformation,
             _interval_transformation,
@@ -1426,7 +1295,7 @@ def _convert_source_to_sympy_with_source(
 
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
-    const = _Constants
+    const = sympy_constants
 
     locals_for_eval: LocalsForEval = {
         "functions": dict(const.functions),
@@ -1550,7 +1419,7 @@ def _find_type_error_offset(source: "SourceText", exc: TypeError) -> int:
     # account for de-sugaring
     candidate_operators.extend(
         alias
-        for alias, transformed_operator in _Constants.set_operator_desugars.items()
+        for alias, transformed_operator in sympy_constants.set_operator_desugars.items()
         if transformed_operator in candidate_operators
     )
 
@@ -1580,7 +1449,7 @@ def sympy_to_json(
     if isinstance(a, sympy.Set) and not allow_sets:
         raise HasSetNotationError
 
-    const = _Constants
+    const = sympy_constants
 
     # Get list of variables in the sympy expression
     variables = list(map(str, a.free_symbols))
@@ -1947,7 +1816,7 @@ def _try_rewrite_interval_literal(
         raise TokenError("interval notation is incomplete")
 
     set_notation_only_tokens = {"[", "]", "{", "}", "|", "&"}
-    set_fn_names = _Constants.set_functions.keys() | set_notation_only_tokens
+    set_fn_names = sympy_constants.set_functions.keys() | set_notation_only_tokens
 
     def _contains_set_notation(tokens: list[TOKEN]) -> bool:
         return any((typ == NAME and text in set_fn_names) for typ, text in tokens)
@@ -2066,7 +1935,7 @@ def _set_operation_transformation(
     Returns:
         A transformed sequence of SymPy tokens.
     """
-    set_ops = _Constants.set_operator_desugars
+    set_ops = sympy_constants.set_operator_desugars
     return [
         (OP, set_ops[text]) if text in set_ops else (typ, text) for typ, text in tokens
     ]
@@ -2084,7 +1953,7 @@ def get_builtin_constants(
     Returns:
         A set of built-in constant names.
     """
-    const = _Constants
+    const = sympy_constants
     names = set(const.variables.keys())
     if allow_complex:
         names |= const.complex_variables.keys()
@@ -2111,7 +1980,7 @@ def get_builtin_callable_functions(
     Returns:
         A set of built-in callable function names.
     """
-    const = _Constants
+    const = sympy_constants
     names = set(const.functions)
     if include_helpers:
         names.update(const.helpers)
@@ -2134,7 +2003,7 @@ def get_builtin_functions(
     Returns:
         A set of built-in function and operator names.
     """
-    const = _Constants
+    const = sympy_constants
     names = get_builtin_callable_functions(
         allow_trig_functions=allow_trig_functions,
         allow_sets=allow_sets,
@@ -2176,7 +2045,7 @@ def _build_name_conflict_data(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
     )
-    set_ops = tuple(_Constants.set_operators.keys())
+    set_ops = tuple(sympy_constants.set_operators.keys())
 
     def _conflicts(name: str) -> bool:
         if name in builtins:
@@ -2247,59 +2116,6 @@ def validate_names_for_conflicts(
         )
 
 
-# From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
-_GREEK_ALPHABET = {
-    0x0391: "Alpha",
-    0x0392: "Beta",
-    0x0393: "Gamma",
-    0x0394: "Delta",
-    0x0395: "Epsilon",
-    0x0396: "Zeta",
-    0x0397: "Eta",
-    0x0398: "Theta",
-    0x0399: "Iota",
-    0x039A: "Kappa",
-    0x039B: "Lambda",
-    0x039C: "Mu",
-    0x039D: "Nu",
-    0x039E: "Xi",
-    0x039F: "Omicron",
-    0x03A0: "Pi",
-    0x03A1: "Rho",
-    0x03A3: "Sigma",
-    0x03A4: "Tau",
-    0x03A5: "Upsilon",
-    0x03A6: "Phi",
-    0x03A7: "Chi",
-    0x03A8: "Psi",
-    0x03A9: "Omega",
-    0x03B1: "alpha",
-    0x03B2: "beta",
-    0x03B3: "gamma",
-    0x03B4: "delta",
-    0x03B5: "epsilon",
-    0x03B6: "zeta",
-    0x03B7: "eta",
-    0x03B8: "theta",
-    0x03B9: "iota",
-    0x03BA: "kappa",
-    0x03BB: "lambda",
-    0x03BC: "mu",
-    0x03BD: "nu",
-    0x03BE: "xi",
-    0x03BF: "omicron",
-    0x03C0: "pi",
-    0x03C1: "rho",
-    0x03C3: "sigma",
-    0x03C4: "tau",
-    0x03C5: "upsilon",
-    0x03C6: "phi",
-    0x03C7: "chi",
-    0x03C8: "psi",
-    0x03C9: "omega",
-}
-
-
 def greek_unicode_transform(input_str: str) -> str:
     """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
-    return input_str.translate(_GREEK_ALPHABET)
+    return input_str.translate(sympy_constants.greek_alphabet)
