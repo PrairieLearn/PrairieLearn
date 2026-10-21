@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectQuestionByQid } from '../../models/question.js';
 import { syncCourse } from '../helperCourse.js';
 
@@ -47,6 +47,15 @@ test.beforeEach(async ({ page, courseInstance, testCoursePath }) => {
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
   );
+});
+
+test.afterEach(async ({ testCoursePath }) => {
+  const questionPath = 'questions/manualGrade/codeUpload/question.html';
+  await fs.copyFile(
+    path.join(TEST_COURSE_PATH, questionPath),
+    path.join(testCoursePath, questionPath),
+  );
+  await syncCourse(testCoursePath);
 });
 
 test('keeps upload PDF URLs usable until replacement or deletion', async ({ page }) => {
