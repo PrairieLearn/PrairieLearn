@@ -30,6 +30,12 @@ const NO_RESTRICTED_SYNTAX = [
   },
 ];
 
+const RESTRICTED_REACT_BOOTSTRAP_IMPORT = {
+  importNames: ['OverlayTrigger'],
+  message: 'Use OverlayTrigger from @prairielearn/ui.',
+  name: 'react-bootstrap',
+};
+
 export default [
   // Use the shared PrairieLearn ESLint config
   ...prairielearn({
@@ -132,11 +138,24 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [
+          paths: [RESTRICTED_REACT_BOOTSTRAP_IMPORT],
+        },
+      ],
+    },
+  },
+
+  {
+    files: ['apps/prairielearn/elements/**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [RESTRICTED_REACT_BOOTSTRAP_IMPORT],
+          patterns: [
             {
-              importNames: ['OverlayTrigger'],
-              message: 'Use OverlayTrigger from @prairielearn/ui.',
-              name: 'react-bootstrap',
+              message:
+                'Element code must not import from sibling pl-* directories. Use a public API or copy the implementation locally.',
+              regex: '^(?:\\.\\./)+(?:pl-[^/]+)(?:/|$)',
             },
           ],
         },

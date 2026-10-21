@@ -5,7 +5,9 @@ from typing import TypedDict
 import lxml.html
 import prairielearn as pl
 from dag_checker import ColoredEdges, Edges
-from lxml.etree import _Comment
+from lxml.etree import (
+    _Comment,  # noqa: PLC2701 -- lxml exposes comments only through this private type.
+)
 
 SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 

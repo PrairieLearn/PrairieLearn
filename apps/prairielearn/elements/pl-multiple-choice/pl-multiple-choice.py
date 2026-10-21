@@ -96,7 +96,10 @@ def categorize_options(
             else:
                 incorrect_answers.append(answer_tuple)
 
-        elif isinstance(child, lxml.etree._Comment):
+        elif isinstance(
+            child,
+            lxml.etree._Comment,  # noqa: SLF001 -- lxml exposes comments only through this private type.
+        ):
             continue
 
         else:

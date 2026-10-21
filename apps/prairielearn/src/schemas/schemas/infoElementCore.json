@@ -11,6 +11,7 @@
     },
     "controller": {
       "type": "string",
+      "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
       "description": "The name of the element's controller file."
     },
     "dependencies": {
@@ -61,6 +62,7 @@
           "type": "array",
           "items": {
             "type": "string",
+            "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
             "description": "A .css file located in the element's directory."
           },
           "description": "The styles required by this element from the element's directory."
@@ -69,6 +71,7 @@
           "type": "array",
           "items": {
             "type": "string",
+            "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
             "description": "A .js file located in the element's directory."
           },
           "description": "The scripts required by this element from the element's directory."
@@ -103,7 +106,8 @@
             "type": "string"
           },
           "additionalProperties": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
           },
           "description": "The scripts required by this element from the element's directory as an importmap."
         }

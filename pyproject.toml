@@ -103,6 +103,7 @@ preview = true
 
 [tool.ruff.lint]
 select = ["ALL"]
+external = ["PLC2701", "SLF001", "TID251"]
 
 ignore = [
   # These rules provide little value to us

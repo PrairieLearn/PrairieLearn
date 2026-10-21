@@ -169,12 +169,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     parse_error = data["format_errors"].get(name)
 
-    constants_class = psu._Constants
-
     operators: list[str] = list(psu.STANDARD_OPERATORS)
-    operators.extend(constants_class.functions.keys())
+    operators.extend(
+        psu.get_builtin_functions(
+            allow_trig_functions=False,
+        )
+    )
 
-    constants = list(constants_class.variables.keys())
+    constants = list(psu.get_builtin_constants(allow_hidden=False))
 
     # Get the info string using these parameters
     info_params = {
