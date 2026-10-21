@@ -30,7 +30,7 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
 
   const button = page.getByRole('button', { name: 'Original input for String value' });
   await button.click();
-  const popover = page.getByRole('tooltip').filter({ hasText: 'café<U+200b>' });
+  const popover = page.getByRole('dialog').filter({ hasText: 'café<U+200b>' });
   await expect(popover).toHaveClass(/popover-wide/);
   await expect(popover).toHaveClass(/popover-scrollable/);
   await expect(popover).toContainText('café<U+200b><img src=x>');
