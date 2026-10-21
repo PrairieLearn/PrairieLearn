@@ -13,6 +13,12 @@ from typing import Any, overload
 import lxml.html
 
 from prairielearn.colors import PLColor
+from prairielearn.internal.raw_input import (
+    render_raw_input_popover as _render_raw_input_popover,
+)
+from prairielearn.internal.raw_input import (
+    render_raw_input_popover_content as _render_raw_input_popover_content,
+)
 from prairielearn.misc_utils import escape_unicode_string
 
 __all__ = [
@@ -29,6 +35,8 @@ __all__ = [
     "is_boolean_value",
     "is_float_value",
     "is_integer_value",
+    "render_raw_input_popover",
+    "render_raw_input_popover_content",
 ]
 
 # From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
@@ -482,3 +490,34 @@ def escape_invalid_string(string: str) -> str:
         The sanitized user input wrapped in a code block.
     """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
+
+
+def render_raw_input_popover(raw_input: str, input_label: str) -> str:
+    """Render raw input as an accessible popover button.
+
+    The returned HTML and all supplied text are escaped, so the result is safe to
+    insert into a template without additional escaping.
+
+    Args:
+        raw_input: The scalar value to describe.
+        input_label: The accessible name of the input associated with the value.
+
+    Returns:
+        The rendered HTML.
+    """
+    return _render_raw_input_popover(raw_input, input_label)
+
+
+def render_raw_input_popover_content(raw_input: str) -> str:
+    """Render escaped raw-input diagnostics without the surrounding button.
+
+    The returned HTML and the supplied text are escaped, so the result is safe to
+    insert into a template without additional escaping.
+
+    Args:
+        raw_input: The scalar value to describe.
+
+    Returns:
+        The rendered diagnostic HTML.
+    """
+    return _render_raw_input_popover_content(raw_input)
