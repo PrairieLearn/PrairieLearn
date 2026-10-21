@@ -1,13 +1,12 @@
 <pl-question-panel>
   <p>
-    These inputs exercise the original-input rendering used by elements in this question. Some
-    values use characters whose rendered form needs additional explanation.
+    These inputs exercise the answer-as-entered popovers used by elements in this question. Some
+    values contain characters that are also shown as codes.
   </p>
   <p>
     Select <strong>Save &amp; Grade</strong>, then open each question-mark popover in the submitted
-    answer panel. The popovers show the readable value and add the control-and-formatting
-    explanation or an ASCII-only representation only when relevant. Select
-    <strong>Try Again</strong> to confirm that the literal values are restored to the input fields.
+    answer panel. When useful, the popovers show a second version with special characters displayed
+    as codes. After submitting, confirm that the literal values are restored to the input fields.
   </p>
 </pl-question-panel>
 
@@ -58,15 +57,6 @@
       display="block"
     ></pl-units-input>
   </div>
-</pl-card>
-
-<pl-card header="Matrix inputs">
-  <pl-matrix-input
-    answers-name="matrix_value"
-    aria-label="Matrix value"
-    label="Literal matrix:"
-    initial-value="[1,&#8203; 2]"
-  ></pl-matrix-input>
 </pl-card>
 
 <pl-card header="Matrix inputs">
