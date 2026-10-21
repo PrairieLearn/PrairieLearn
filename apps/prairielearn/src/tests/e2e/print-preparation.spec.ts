@@ -68,8 +68,12 @@ test('recovers when creating the first preview fails', async ({ page, courseInst
   expect((await selectAssessmentInstanceById(instanceId)).for_printing).toBe(true);
   await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
   await expect(page.locator(`a[href*="/assessment_instance/${instanceId}/"]`)).toHaveCount(0);
-  await page.goto(`/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}`);
-  await expect(page.getByRole('button', { name: 'Start assessment' })).toBeVisible();
+  // An earlier test may have started a regular attempt, so this page can open that instead.
+  const assessmentPage = await page.goto(
+    `/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}`,
+  );
+  expect(assessmentPage?.status()).toBe(200);
+  expect(page.url()).not.toContain(`/assessment_instance/${instanceId}`);
 });
 
 test('rejects a changed Word snapshot and offers a fresh preview', async ({
