@@ -51,6 +51,7 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
   await expect(popover).toContainText('café<U+200b><img src=x>');
   await expect(popover.getByRole('img')).toHaveCount(0);
   await expect(popover).toContainText('caf<U+e9><U+200b><img src=x>');
+  await popover.getByRole('button', { name: 'Close' }).click();
 
   await page.getByRole('textbox', { name: 'Big O value' }).fill('n');
   await page.getByRole('textbox', { name: 'Integer value' }).fill('1');
