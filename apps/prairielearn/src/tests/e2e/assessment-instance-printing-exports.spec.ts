@@ -50,11 +50,14 @@ test('reports omitted questions and exports the selected Word content', async ({
   await page.goto(`${paperUrl}/preview?${query}`);
   await waitForPrintablePage(page);
   const warnings = await readWarnings(page);
-  // exam1-automaticTestSuite includes a question whose generate() always throws.
-  expect(warnings.length).toBeGreaterThan(0);
+  // This exam has one broken question and two legacy questions that cannot be printed.
+  expect(warnings.map((warning) => warning.code).sort()).toEqual([
+    'broken_variant',
+    'unsupported_question_type',
+    'unsupported_question_type',
+  ]);
   for (const warning of warnings) {
     expect(warning).toMatchObject({
-      code: 'broken_variant',
       question_number: expect.any(String),
     });
     expect(warning.message).toContain(`Question ${warning.question_number}`);
@@ -73,11 +76,11 @@ test('reports omitted questions and exports the selected Word content', async ({
   expect(incomplete.status()).toBe(400);
   expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
 
-  const brokenOnlyQuery = new URLSearchParams(query);
+  const noPrintableQuestionsQuery = new URLSearchParams(query);
   for (const number of new Set(printedQuestionNumbers)) {
-    brokenOnlyQuery.append('exclude_question', number!);
+    noPrintableQuestionsQuery.append('exclude_question', number!);
   }
-  const emptyPreview = await page.request.get(`${paperUrl}/preview?${brokenOnlyQuery}`);
+  const emptyPreview = await page.request.get(`${paperUrl}/preview?${noPrintableQuestionsQuery}`);
   expect(emptyPreview.status()).toBe(422);
   expect(await emptyPreview.text()).toContain('No questions could be rendered');
 
