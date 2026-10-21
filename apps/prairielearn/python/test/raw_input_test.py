@@ -33,17 +33,16 @@ def test_render_raw_input_popover_content(
     content = pl.render_raw_input_popover_content(raw_input)
     root = lxml.html.fragment_fromstring(content, create_parent="div")
     control_and_formatting_messages = root.xpath(
-        "./p/em[contains(., 'Control and formatting characters')]"
+        "./p[contains(., 'Invisible characters')]"
     )
 
     assert readable in content
     assert bool(control_and_formatting_messages) is ("control" in expected_sections)
-    assert ("Show all non-ASCII characters" in content) is (
-        "non_ascii" in expected_sections
-    )
+    assert ("special characters" in content) is ("non_ascii" in expected_sections)
+    assert not root.xpath("./details")
 
     if "control" in expected_sections:
-        assert root.index(control_and_formatting_messages[0].getparent()) == 1
+        assert root.index(control_and_formatting_messages[0]) == 0
 
     if "non_ascii" in expected_sections:
         assert ascii_only in content
@@ -52,7 +51,7 @@ def test_render_raw_input_popover_content(
 def test_render_raw_input_popover_handles_empty_strings() -> None:
     content = pl.render_raw_input_popover_content("")
 
-    assert content.count("(empty string)") == 1
+    assert content.count("(nothing entered)") == 1
 
 
 def test_render_raw_input_popover_escapes_content_for_html_attribute() -> None:
@@ -63,4 +62,4 @@ def test_render_raw_input_popover_escapes_content_for_html_attribute() -> None:
 
     assert html.escape(content, quote=True) in popover
     assert '<img src=x onerror="alert(1)">' not in popover
-    assert 'aria-label="Original input for answer &quot;one&quot;"' in popover
+    assert 'aria-label="Answer as entered for answer &quot;one&quot;"' in popover
