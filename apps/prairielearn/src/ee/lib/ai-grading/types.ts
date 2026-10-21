@@ -9,7 +9,14 @@ import {
 } from '../../../lib/db-types.js';
 
 export const GradingJobDetailsSchema = z.object({
-  grading_job: GradingJobSchema,
+  grading_job: GradingJobSchema.pick({
+    id: true,
+    graded_at: true,
+    grading_method: true,
+    manual_points: true,
+    auto_points: true,
+    feedback: true,
+  }),
   grader: StaffUserSchema,
   rubric_items: z.array(RubricItemSchema),
   rubric_grading: RubricGradingSchema.nullable(),
@@ -21,10 +28,15 @@ const GradingResultSchema = z.object({
   feedback: GradingJobSchema.shape.feedback,
   feedback_sources: z.record(z.string(), GradingJobDetailsSchema),
   latest_update: GradingJobDetailsSchema,
+});
+export type GradingResult = z.infer<typeof GradingResultSchema>;
+
+export const AiGradingExportTextSchema = z.object({
+  grading_job_id: GradingJobSchema.shape.id,
   explanation: z.string().nullable(),
   generated_feedback: z.string().nullable(),
 });
-export type GradingResult = z.infer<typeof GradingResultSchema>;
+export type AiGradingExportText = z.infer<typeof AiGradingExportTextSchema>;
 
 export const AIGradingStatsSchema = z.object({
   human_grading: GradingResultSchema.nullable(),

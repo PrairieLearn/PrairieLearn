@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
@@ -82,6 +82,7 @@ interface AssessmentQuestionTableProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  courseInstanceTrpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -136,6 +137,7 @@ function AiGradingOption({
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
+  courseInstanceTrpcCsrfToken,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
   assessment,
@@ -270,9 +272,39 @@ export function AssessmentQuestionTable({
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     assessmentQuestion.ai_grading_last_selected_model ?? null,
   );
+  const [lastSelectedCredentialId, setLastSelectedCredentialId] = useState<string | null>(
+    assessmentQuestion.ai_grading_last_selected_credential_id,
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
+  const exportAiGradingTextMutation = useMutation(
+    trpc.manualGrading.exportAiGradingText.mutationOptions(),
+  );
+
+  async function getExportOptions(rows: InstanceQuestionRowWithAIGradingStats[]) {
+    const grading_job_ids = rows.flatMap(({ instance_question: iq }) => {
+      const id =
+        iq.ai_grading?.score_source?.grading_job.id ?? iq.ai_grading?.latest_update.grading_job.id;
+      return id ? [id] : [];
+    });
+    try {
+      const text =
+        grading_job_ids.length > 0
+          ? await exportAiGradingTextMutation.mutateAsync({ grading_job_ids })
+          : [];
+      return {
+        assessment,
+        studentLabels,
+        instanceQuestionGroups,
+        rubricData,
+        aiGradingTextByJobId: Object.fromEntries(text.map((item) => [item.grading_job_id, item])),
+      };
+    } catch {
+      // QueryErrors displays the mutation error; cancel this download.
+      return null;
+    }
+  }
 
   // Fetch instance questions data
   const {
@@ -650,6 +682,7 @@ export function AssessmentQuestionTable({
           setAssignedGraderMutation,
           setRequiresManualGradingMutation,
           stopAiGradingJobMutation,
+          exportAiGradingTextMutation,
         ]}
       />
       {deleteAiGradingJobsMutation.isSuccess && (
@@ -929,31 +962,29 @@ export function AssessmentQuestionTable({
         pluralLabel="submissions"
         downloadButtonOptions={{
           filenameBase: `manual_grading_${questionQid}`,
-          mapRowToData: (row) =>
-            getManualGradingCsvData(row, {
-              assessment,
-              studentLabels,
-              instanceQuestionGroups,
-              rubricData,
-            }),
-          mapRowToJsonData: (row) =>
-            getManualGradingJsonData(row, {
-              assessment,
-              studentLabels,
-              instanceQuestionGroups,
-              rubricData,
-            }),
+          isPending: exportAiGradingTextMutation.isPending,
+          getCsvData: async (rows) => {
+            const options = await getExportOptions(rows);
+            return options ? rows.map((row) => getManualGradingCsvData(row, options)) : null;
+          },
+          getJsonData: async (rows) => {
+            const options = await getExportOptions(rows);
+            return options ? rows.map((row) => getManualGradingJsonData(row, options)) : null;
+          },
           hasSelection: true,
         }}
         onResetColumnFilters={onResetColumnFilters}
       />
 
       <AiGradingModelSelectionModal
-        key={lastSelectedModel ?? 'default'}
+        key={`${lastSelectedCredentialId ?? 'official'}:${lastSelectedModel ?? 'default'}`}
+        courseInstanceId={courseInstance.id}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         show={modelSelectionModalState.show}
         data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
+        aiGradingLastSelectedCredentialId={lastSelectedCredentialId}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
@@ -982,12 +1013,15 @@ export function AssessmentQuestionTable({
             numToGrade: ids.length,
           });
         }}
-        onSuccess={(data, modelId) => {
+        onSuccess={(data, selection) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
             data.job_sequence_token,
           );
-          setLastSelectedModel(modelId);
+          setLastSelectedModel(selection.model_id);
+          setLastSelectedCredentialId(
+            selection.provider === 'openai-compatible' ? selection.credential_id : null,
+          );
           setRowSelection({});
         }}
       />
