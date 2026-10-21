@@ -38,20 +38,12 @@ const PrintableQuestionSchema = z.object({
 
 type PrintableQuestion = z.infer<typeof PrintableQuestionSchema>;
 type PrintableQuestionType = NonNullable<Question['type']> | 'Unknown';
-const QUESTION_TYPE_CLASSES = {
-  Calculation: 'calculation',
-  MultipleChoice: 'multiple-choice',
-  Checkbox: 'checkbox',
-  File: 'file',
-  MultipleTrueFalse: 'multiple-true-false',
-  Freeform: 'freeform',
-  Unknown: 'unknown',
-} satisfies Record<PrintableQuestionType, string>;
 
 const BROKEN_QUESTION_FAILURE_CODE = 'broken_variant';
 const BROKEN_QUESTION_FAILURE_STAGE = 'variant_creation';
 const BROKEN_QUESTION_FAILURE_MESSAGE =
   'Question could not be rendered due to an error in question code.';
+const UNSUPPORTED_QUESTION_CODE = 'unsupported_question_type';
 
 /** Development asset URLs use a fresh UUID for each render, even for the same package file. */
 function sameDevelopmentModuleAsset(first: string, second: string): boolean {
@@ -142,7 +134,7 @@ export const validatePrintDocument: PrintablePageOutput<{
 };
 
 export interface OmittedQuestionWarning {
-  code: typeof BROKEN_QUESTION_FAILURE_CODE;
+  code: typeof BROKEN_QUESTION_FAILURE_CODE | typeof UNSUPPORTED_QUESTION_CODE;
   question_number: string;
   qid: string | null;
   message: string;
@@ -153,7 +145,7 @@ export function describeOmittedQuestions(
   questionResults: PrintingQuestionResult[],
 ): OmittedQuestionWarning[] {
   return questionResults.flatMap((result) => {
-    if (result.status !== 'failed') return [];
+    if (result.status === 'rendered') return [];
     const label = result.qid
       ? `Question ${result.questionNumber} (${result.qid})`
       : `Question ${result.questionNumber}`;
@@ -162,7 +154,10 @@ export function describeOmittedQuestions(
         code: result.code,
         question_number: result.questionNumber,
         qid: result.qid,
-        message: `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
+        message:
+          result.status === 'unsupported'
+            ? `${label} uses a legacy question format that cannot be printed. Exclude it or replace it with a Freeform question.`
+            : `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
       },
     ];
   });
@@ -180,6 +175,10 @@ interface PrintingQuestionResultBase {
 export type PrintingQuestionResult =
   | (PrintingQuestionResultBase & {
       status: 'rendered';
+    })
+  | (PrintingQuestionResultBase & {
+      status: 'unsupported';
+      code: typeof UNSUPPORTED_QUESTION_CODE;
     })
   | (PrintingQuestionResultBase & {
       status: 'failed';
@@ -272,7 +271,6 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   questionHtmls: string[];
   questionResults: PrintingQuestionResult[];
   extraHeadersHtml: string;
-  hasLegacyQuestions: boolean;
   maxPoints: number;
 }> {
   const questions = await selectPrintableQuestions(resLocals.assessment_instance.id);
@@ -281,7 +279,6 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   const extraHeaderHtmls = new Set<string>();
   const renderedQuestions: { html: string; namespace: string }[] = [];
   const questionResults: PrintingQuestionResult[] = [];
-  let hasLegacyQuestions = false;
   let maxPoints = 0;
 
   for (const printableQuestion of includedQuestions) {
@@ -294,6 +291,10 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       instanceQuestionId: printableQuestion.instance_question.id,
       questionType,
     };
+    if (questionType !== 'Freeform') {
+      questionResults.push({ ...base, status: 'unsupported', code: UNSUPPORTED_QUESTION_CODE });
+      continue;
+    }
     const renderLocals = {
       urlPrefix: resLocals.urlPrefix,
       authn_user: resLocals.authn_user,
@@ -377,7 +378,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       namespace: `printing-iq-${printableQuestion.instance_question.id}`,
       html: html`
         <section
-          class="printing-question printing-question-${QUESTION_TYPE_CLASSES[questionType]}"
+          class="printing-question printing-question-freeform"
           data-question-type="${questionType}"
           data-print-block-size="${questionBlockSizeOverrides.get(printableQuestion.question_number) ?? defaultQuestionBlockSize}"
           data-question-number="${printableQuestion.question_number}"
@@ -390,7 +391,6 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       `.toString(),
     });
     questionResults.push({ ...base, status: 'rendered' });
-    hasLegacyQuestions ||= questionType !== 'Freeform';
     maxPoints += printableQuestion.assessment_question.max_points ?? 0;
   }
 
@@ -428,7 +428,6 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       }
       ${unsafeHtml(headers.html())}
     `.toString(),
-    hasLegacyQuestions,
     maxPoints,
   };
 }

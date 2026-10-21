@@ -398,7 +398,6 @@ router.get(
       omittedQuestionCount: warnings.length,
       warnings,
       extraHeadersHtml: printingResult.extraHeadersHtml,
-      hasLegacyQuestions: printingResult.hasLegacyQuestions,
       maxPoints: printingResult.maxPoints,
       assessmentTextHtml,
       honorCodeHtml,

@@ -275,7 +275,7 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
     .evaluateAll((questions) => [
       ...new Set(questions.map((question) => (question as HTMLElement).dataset.questionNumber)),
     ]);
-  expect(questionNumbers).toHaveLength(48 - warnings.length);
+  expect(questionNumbers).toHaveLength(45 - warnings.length);
 
   const questions = page.locator('.pagedjs_page .printing-question');
   await expect(
@@ -312,11 +312,11 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
     ),
   ).toHaveCount(0);
   const multipleChoiceSections = page.locator(
-    '.pagedjs_page [data-question-number="15"] .printing-subsection',
+    '.pagedjs_page [data-question-number="12"] .printing-subsection',
   );
   await expect(multipleChoiceSections).toHaveCount(5);
   const drawingSections = page.locator(
-    '.pagedjs_page [data-question-number="39"] .printing-subsection, .pagedjs_page [data-question-number="40"] .printing-subsection',
+    '.pagedjs_page [data-question-number="36"] .printing-subsection, .pagedjs_page [data-question-number="37"] .printing-subsection',
   );
   await expect(drawingSections).toHaveCount(6);
   for (const section of await drawingSections.all()) {
@@ -361,7 +361,7 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
   expect(await indentFields.count()).toBeGreaterThan(0);
   for (const field of await indentFields.all()) await expect(field).toBeEmpty();
   await expect(questions.getByText('Solution with indentation', { exact: true })).toHaveCount(0);
-  const checkboxOptions = page.locator('[data-question-number="14"] .printing-selection-option');
+  const checkboxOptions = page.locator('[data-question-number="11"] .printing-selection-option');
   await expect(checkboxOptions).toHaveCount(3);
   for (const option of await checkboxOptions.all()) {
     const spacing = await option.evaluate((element) => {
@@ -372,7 +372,7 @@ test('exports the broad printing fixture with inline, ordering, sketch, and disp
     expect(spacing.align).toBe('flex-start');
   }
   const textareaLines = page.locator(
-    '.pagedjs_page [data-question-number="35"] .printing-response-lines',
+    '.pagedjs_page [data-question-number="32"] .printing-response-lines',
   );
   const textareaBounds = await textareaLines.boundingBox();
   expect(textareaBounds!.width).toBeGreaterThan(600);
@@ -418,7 +418,7 @@ test('exports the broad answer key with correct answers before distractors', asy
     .evaluateAll((questions) => [
       ...new Set(questions.map((question) => (question as HTMLElement).dataset.questionNumber)),
     ]);
-  expect(questionNumbers).toHaveLength(48 - warnings.length);
+  expect(questionNumbers).toHaveLength(45 - warnings.length);
   await page.goto(`${paperUrl}/preview?${search}&document=answer_key`);
   await waitForPrintablePage(page);
   const answerQuestionNumbers = await page
