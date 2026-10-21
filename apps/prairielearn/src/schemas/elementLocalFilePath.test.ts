@@ -18,14 +18,14 @@ describe('element-local file paths', () => {
     ['absolute POSIX path', '/tmp/file.js'],
     ['Windows drive path', String.raw`C:\elements\file.js`],
     ['backslash traversal', String.raw`..\other-element\file.js`],
+    ['encoded parent traversal', '%2e%2e/other-element/file.js'],
+    ['mixed encoded parent traversal', '.%2E/other-element/file.js'],
+    ['encoded path separator', '..%2fother-element/file.js'],
   ])('rejects %s', (_description, path) => {
     assert.isFalse(ElementLocalFilePathJsonSchema.safeParse(path).success);
   });
 
-  it.each([
-    ['core', ElementCoreJsonSchema],
-    ['course', ElementCourseJsonSchema],
-  ])('applies to every %s element-local file field', (_name, schema) => {
+  it('applies to every core element-local file field', () => {
     const invalidPath = '../pl-other/file.js';
     const configs = [
       { controller: invalidPath },
@@ -38,7 +38,24 @@ describe('element-local file paths', () => {
     ];
 
     for (const config of configs) {
-      assert.isFalse(schema.safeParse(config).success);
+      assert.isFalse(ElementCoreJsonSchema.safeParse(config).success);
+    }
+  });
+
+  it('preserves existing course element path behavior', () => {
+    const legacyPath = '../shared/file.js';
+    const configs = [
+      { controller: legacyPath },
+      { controller: 'controller.py', dependencies: { elementScripts: [legacyPath] } },
+      { controller: 'controller.py', dependencies: { elementStyles: [legacyPath] } },
+      {
+        controller: 'controller.py',
+        dynamicDependencies: { elementScripts: { module: legacyPath } },
+      },
+    ];
+
+    for (const config of configs) {
+      assert.isTrue(ElementCourseJsonSchema.safeParse(config).success);
     }
   });
 });

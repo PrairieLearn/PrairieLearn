@@ -5,6 +5,7 @@ import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { AccessControlJsonSchema, DeadlineEntryJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
+import { ElementLocalFilePathJsonSchema } from './elementLocalFilePath.js';
 import {
   AdvanceScorePercJsonSchema,
   AssessmentAccessRuleJsonSchema,
@@ -54,6 +55,7 @@ import {
 // inlining. Multiple roots can share the same registered subschemas.
 const namedDefinitions = {
   CommentJsonSchema,
+  ElementLocalFilePathJsonSchema,
   DatetimeLocalStringSchema,
   AccessControlJsonSchema,
   DeadlineEntryJsonSchema,

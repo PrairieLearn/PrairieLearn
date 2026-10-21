@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
-import { ElementLocalFilePathJsonSchema } from './elementLocalFilePath.js';
 
 const DependencyJsonSchema = z
   .object({
@@ -33,15 +32,11 @@ const DependencyJsonSchema = z
       .describe('The scripts required by this element from clientFilesCourse.')
       .optional(),
     elementStyles: z
-      .array(
-        ElementLocalFilePathJsonSchema.describe("A .css file located in the element's directory."),
-      )
+      .array(z.string().describe("A .css file located in the element's directory."))
       .describe("The styles required by this element from the element's directory.")
       .optional(),
     elementScripts: z
-      .array(
-        ElementLocalFilePathJsonSchema.describe("A .js file located in the element's directory."),
-      )
+      .array(z.string().describe("A .js file located in the element's directory."))
       .describe("The scripts required by this element from the element's directory.")
       .optional(),
   })
@@ -60,7 +55,7 @@ const DynamicDependencyJsonSchema = z
       .describe('The scripts required by this element from clientFilesCourse as an importmap.')
       .optional(),
     elementScripts: z
-      .record(z.string(), ElementLocalFilePathJsonSchema)
+      .record(z.string(), z.string())
       .describe(
         "The scripts required by this element from the element's directory as an importmap.",
       )
@@ -72,9 +67,7 @@ const DynamicDependencyJsonSchema = z
 export const ElementCourseJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    controller: ElementLocalFilePathJsonSchema.describe(
-      "The name of the element's controller file.",
-    ),
+    controller: z.string().describe("The name of the element's controller file."),
     dependencies: DependencyJsonSchema.optional(),
     dynamicDependencies: DynamicDependencyJsonSchema.optional(),
   })

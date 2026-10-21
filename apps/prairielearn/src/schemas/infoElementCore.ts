@@ -25,15 +25,11 @@ const DependencyJsonSchema = z
       .describe('The scripts required by this element from /node_modules.')
       .optional(),
     elementStyles: z
-      .array(
-        ElementLocalFilePathJsonSchema.describe("A .css file located in the element's directory."),
-      )
+      .array(ElementLocalFilePathJsonSchema)
       .describe("The styles required by this element from the element's directory.")
       .optional(),
     elementScripts: z
-      .array(
-        ElementLocalFilePathJsonSchema.describe("A .js file located in the element's directory."),
-      )
+      .array(ElementLocalFilePathJsonSchema)
       .describe("The scripts required by this element from the element's directory.")
       .optional(),
   })
@@ -60,9 +56,7 @@ const DynamicDependencyJsonSchema = z
 export const ElementCoreJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    controller: ElementLocalFilePathJsonSchema.describe(
-      "The name of the element's controller file.",
-    ),
+    controller: ElementLocalFilePathJsonSchema,
     dependencies: DependencyJsonSchema.optional(),
     dynamicDependencies: DynamicDependencyJsonSchema.optional(),
     additionalNames: z

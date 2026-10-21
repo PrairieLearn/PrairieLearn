@@ -10,9 +10,7 @@
       ]
     },
     "controller": {
-      "type": "string",
-      "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
-      "description": "The name of the element's controller file."
+      "$ref": "#/definitions/ElementLocalFilePathJsonSchema"
     },
     "dependencies": {
       "type": "object",
@@ -61,18 +59,14 @@
         "elementStyles": {
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
-            "description": "A .css file located in the element's directory."
+            "$ref": "#/definitions/ElementLocalFilePathJsonSchema"
           },
           "description": "The styles required by this element from the element's directory."
         },
         "elementScripts": {
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
-            "description": "A .js file located in the element's directory."
+            "$ref": "#/definitions/ElementLocalFilePathJsonSchema"
           },
           "description": "The scripts required by this element from the element's directory."
         }
@@ -106,8 +100,7 @@
             "type": "string"
           },
           "additionalProperties": {
-            "type": "string",
-            "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
+            "$ref": "#/definitions/ElementLocalFilePathJsonSchema"
           },
           "description": "The scripts required by this element from the element's directory as an importmap."
         }
@@ -145,6 +138,11 @@
         }
       ],
       "description": "Arbitrary comment for reference purposes."
+    },
+    "ElementLocalFilePathJsonSchema": {
+      "type": "string",
+      "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*%(?:2[eEfF]|5[cC]))(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+      "description": "A file path contained within the element's directory."
     }
   }
 }
