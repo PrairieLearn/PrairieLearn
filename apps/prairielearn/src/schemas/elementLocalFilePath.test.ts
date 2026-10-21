@@ -17,6 +17,7 @@ describe('element-local file paths', () => {
     ['nested parent traversal', 'scripts/../file.js'],
     ['absolute POSIX path', '/tmp/file.js'],
     ['Windows drive path', String.raw`C:\elements\file.js`],
+    ['Windows drive-relative path', String.raw`C:..\other-element\file.js`],
     ['backslash traversal', String.raw`..\other-element\file.js`],
     ['encoded parent traversal', '%2e%2e/other-element/file.js'],
     ['mixed encoded parent traversal', '.%2E/other-element/file.js'],

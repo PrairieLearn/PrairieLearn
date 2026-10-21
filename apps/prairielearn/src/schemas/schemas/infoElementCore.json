@@ -141,7 +141,7 @@
     },
     "ElementLocalFilePathJsonSchema": {
       "type": "string",
-      "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!.*%(?:2[eEfF]|5[cC]))(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+      "pattern": "^(?![\\\\/])(?![A-Za-z]:)(?!.*%(?:2[eEfF]|5[cC]))(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
       "description": "A file path contained within the element's directory."
     }
   }
