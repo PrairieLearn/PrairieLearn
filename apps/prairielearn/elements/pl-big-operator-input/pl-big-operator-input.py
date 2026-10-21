@@ -139,9 +139,9 @@ ALLOWED_BLANKS: Final[frozenset[AllowedBlank]] = frozenset((
 class _ParseError(ValueError):
     """An author-provided mathematical expression could not be parsed."""
 
-    def __init__(self, src: psu.BaseSympyError) -> None:
-        super().__init__(str(src))
-        self._src = src
+    def __init__(self, source: psu.BaseSympyError) -> None:
+        super().__init__(str(source))
+        self.source = source
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -752,7 +752,7 @@ def _answer_json(
     except _ParseError as exc:
         raise ValueError(
             "The correct answer contains invalid SymPy data."
-        ) from exc._src
+        ) from exc.source
     values: ResponseValues
     try:
         match config.indexing:
@@ -802,7 +802,7 @@ def _answer_json(
     except _ParseError as exc:
         raise ValueError(
             "The correct answer contains invalid SymPy data."
-        ) from exc._src
+        ) from exc.source
     index = sympy.Symbol(config.index, **(body_assumptions or {}).get(config.index, {}))
     return _canonical_json(config, values, index=index)
 
