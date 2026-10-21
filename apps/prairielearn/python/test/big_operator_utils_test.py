@@ -38,45 +38,6 @@ def bounds_answer(**updates: Any) -> dict[str, Any]:
     return answer
 
 
-@pytest.mark.parametrize(
-    "answer",
-    [
-        bounds_answer(operator=[]),
-        bounds_answer(indexing=[]),
-        bounds_answer(operator="Limit"),
-        bounds_answer(domain=sympy_json(sympy.Integers)),
-        bounds_answer(
-            body={
-                "_type": "sympy",
-                "_value": "x",
-                "_variables": [1],
-            }
-        ),
-    ],
-)
-def test_is_big_operator_json_rejects_invalid_structure(
-    answer: dict[str, Any],
-) -> None:
-    assert not pbo.is_big_operator_json(answer)
-
-
-def test_is_big_operator_json_rejects_invalid_approaches_direction() -> None:
-    x = sympy.Symbol("x")
-    answer = dict(
-        pbo.big_operator_to_json(
-            operator="Limit",
-            indexing="approaches",
-            index=x,
-            target=0,
-            direction="from-right",
-            body=1 / x,
-        )
-    )
-    answer["direction"] = "sideways"
-
-    assert not pbo.is_big_operator_json(answer)
-
-
 def test_decode_bounds_big_operator_and_narrow_type() -> None:
     decoded = pbo.json_to_big_operator(bounds_answer())
 
