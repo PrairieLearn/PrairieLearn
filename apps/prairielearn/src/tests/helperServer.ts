@@ -102,6 +102,7 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
 
 export async function after(): Promise<void> {
   debug('after()');
+  // Drain background work before closing the resources it may still use.
   try {
     debug('after(): stop server');
     await server.stopServer();
