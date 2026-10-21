@@ -13,13 +13,10 @@ import sympy
 from lark import Lark, Token, Transformer
 from lark.exceptions import UnexpectedInput, UnexpectedToken
 
-import prairielearn.sympy_utils as psu
-from prairielearn.internal import sympy_constants
+from prairielearn.internal import sympy_constants, sympy_evaluation, sympy_source
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
-
-    from prairielearn.internal.symbolic_input import SourceText
 
 _GRAMMAR = (
     files("prairielearn.internal")
@@ -31,34 +28,34 @@ _GRAMMAR = (
 @dataclass(frozen=True, slots=True)
 class _Operator:
     text: str
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 @dataclass(frozen=True, slots=True)
 class _Number:
     text: str
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 @dataclass(frozen=True, slots=True)
 class _Name:
     text: str
-    span: psu._SourceSpan
-    character_spans: tuple[psu._SourceSpan, ...]
+    span: sympy_source.SourceSpan
+    character_spans: tuple[sympy_source.SourceSpan, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class _Call:
     function: _Name
     arguments: tuple[_Expression, ...]
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 @dataclass(frozen=True, slots=True)
 class _Unary:
     operator: _Operator
     operand: _Expression
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,20 +63,20 @@ class _Binary:
     left: _Expression
     operator: _Operator
     right: _Expression
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 @dataclass(frozen=True, slots=True)
 class _Factorial:
     operand: _Expression
     operator: _Operator
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 @dataclass(frozen=True, slots=True)
 class _FiniteSet:
     items: tuple[_Expression, ...]
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,13 +85,13 @@ class _Interval:
     right: _Expression
     left_bracket: _Operator
     right_bracket: _Operator
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 @dataclass(frozen=True, slots=True)
 class _Group:
     value: _Expression
-    span: psu._SourceSpan
+    span: sympy_source.SourceSpan
 
 
 type _Expression = (
@@ -110,8 +107,10 @@ type _Expression = (
 )
 
 
-def _combine(left: psu._SourceSpan, right: psu._SourceSpan) -> psu._SourceSpan:
-    return psu._SourceSpan(left.start, right.end)
+def _combine(
+    left: sympy_source.SourceSpan, right: sympy_source.SourceSpan
+) -> sympy_source.SourceSpan:
+    return sympy_source.SourceSpan(left.start, right.end)
 
 
 type _ProductTail = tuple[_Operator, _Expression]
@@ -123,10 +122,12 @@ class _SupportsInvert(Protocol):
     def __invert__(self) -> object: ...
 
 
-_ACTIVE_SOURCE: ContextVar[SourceText] = ContextVar("sympy_expression_source")
+_ACTIVE_SOURCE: ContextVar[sympy_source.SourceText] = ContextVar(
+    "sympy_expression_source"
+)
 
 
-def _source_span(start: int, end: int) -> psu._SourceSpan:
+def _source_span(start: int, end: int) -> sympy_source.SourceSpan:
     source = _ACTIVE_SOURCE.get()
     if start == end:
         offset = (
@@ -134,9 +135,9 @@ def _source_span(start: int, end: int) -> psu._SourceSpan:
             if start < len(source.tokens)
             else len(source.raw_text)
         )
-        return psu._SourceSpan(offset, offset)
+        return sympy_source.SourceSpan(offset, offset)
     tokens = source.tokens[start:end]
-    return psu._SourceSpan(tokens[0].raw_offset, tokens[-1].raw_offset + 1)
+    return sympy_source.SourceSpan(tokens[0].raw_offset, tokens[-1].raw_offset + 1)
 
 
 def _token_bounds(token: Token) -> tuple[int, int]:
@@ -200,7 +201,8 @@ class _IRTransformer(Transformer[Token, _TransformValue]):
     def implicit_product_tail(self, items: list[_TransformValue]) -> _ProductTail:
         right = cast(_Expression, items[0])
         operator = _Operator(
-            "juxtapose", psu._SourceSpan(right.span.start, right.span.start)
+            "juxtapose",
+            sympy_source.SourceSpan(right.span.start, right.span.start),
         )
         return operator, right
 
@@ -241,7 +243,7 @@ class _IRTransformer(Transformer[Token, _TransformValue]):
         return _Call(
             function,
             arguments,
-            psu._SourceSpan(function.span.start, right_parenthesis.span.end),
+            sympy_source.SourceSpan(function.span.start, right_parenthesis.span.end),
         )
 
     def group(self, items: list[_TransformValue]) -> _Group:
@@ -250,7 +252,9 @@ class _IRTransformer(Transformer[Token, _TransformValue]):
         right_parenthesis = cast(_Operator, items[2])
         return _Group(
             value,
-            psu._SourceSpan(left_parenthesis.span.start, right_parenthesis.span.end),
+            sympy_source.SourceSpan(
+                left_parenthesis.span.start, right_parenthesis.span.end
+            ),
         )
 
     def set_literal(self, items: list[_TransformValue]) -> _FiniteSet:
@@ -258,7 +262,8 @@ class _IRTransformer(Transformer[Token, _TransformValue]):
         right_brace = cast(_Operator, items[-1])
         values = cast(_Arguments, items[1]) if len(items) == 3 else ()
         return _FiniteSet(
-            values, psu._SourceSpan(left_brace.span.start, right_brace.span.end)
+            values,
+            sympy_source.SourceSpan(left_brace.span.start, right_brace.span.end),
         )
 
     def interval(self, items: list[_TransformValue]) -> _Interval:
@@ -271,7 +276,7 @@ class _IRTransformer(Transformer[Token, _TransformValue]):
             right,
             left_bracket,
             right_bracket,
-            psu._SourceSpan(left_bracket.span.start, right_bracket.span.end),
+            sympy_source.SourceSpan(left_bracket.span.start, right_bracket.span.end),
         )
 
 
@@ -284,7 +289,7 @@ _PARSER = Lark(
 )
 
 
-def _parse(source: SourceText) -> _Expression:
+def _parse(source: sympy_source.SourceText) -> _Expression:
     source_token = _ACTIVE_SOURCE.set(source)
     try:
         return cast(_Expression, _PARSER.parse(source.text))
@@ -297,17 +302,19 @@ def _parse(source: SourceText) -> _Expression:
         if position is None:
             position = len(source.tokens)
         if position < len(source.tokens):
-            span = psu._SourceSpan(
+            span = sympy_source.SourceSpan(
                 source.tokens[position].raw_offset,
                 source.tokens[position].raw_offset + 1,
             )
         else:
-            span = psu._SourceSpan(len(source.raw_text), len(source.raw_text))
-        error = psu.HasParseError(span.start)
-        raise psu._LocalizedSympyError(error, source, span, cause=exc) from None
+            span = sympy_source.SourceSpan(len(source.raw_text), len(source.raw_text))
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.ParseDiagnostic(span.start), source, span, exc
+        ) from None
     except (RecursionError, RuntimeError) as exc:
-        error = psu.HasParseError(-1)
-        raise psu._LocalizedSympyError(error, source, cause=exc) from None
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.ParseDiagnostic(-1), source, cause=exc
+        ) from None
     finally:
         _ACTIVE_SOURCE.reset(source_token)
 
@@ -322,8 +329,8 @@ def _is_splittable(name: str) -> bool:
     return False
 
 
-def _implicit_operator(span: psu._SourceSpan) -> _Operator:
-    return _Operator("juxtapose", psu._SourceSpan(span.start, span.start))
+def _implicit_operator(span: sympy_source.SourceSpan) -> _Operator:
+    return _Operator("juxtapose", sympy_source.SourceSpan(span.start, span.start))
 
 
 def _split_name(name: _Name) -> tuple[_Expression, ...]:
@@ -366,50 +373,17 @@ def _make_implicit_product(items: Sequence[_Expression]) -> _Expression:
     return value
 
 
-def _evaluation_variables(
-    locals_for_eval: psu.LocalsForEval,
-    *,
-    allow_sets: bool,
-    allow_extra_symbols: bool,
-) -> psu.SympyMapT:
-    variables = sympy_constants.legacy_global_variables | locals_for_eval["variables"]
-    for name in sympy_constants.set_domain_names:
-        if allow_extra_symbols and not allow_sets:
-            variables.setdefault(name, sympy.Symbol(name))
-        else:
-            variables.setdefault(name, getattr(sympy.S, name))
-    return variables
-
-
-def _unsupported_globals(
-    functions: psu.SympyFunctionMapT, variables: psu.SympyMapT
-) -> tuple[frozenset[str], frozenset[str]]:
-    configured_names = functions.keys() | variables.keys()
-    return (
-        sympy_constants.sympy_global_names - configured_names,
-        sympy_constants.sympy_global_functions - configured_names,
-    )
-
-
 class _Lowerer:
     def __init__(
         self,
-        source: SourceText,
-        locals_for_eval: psu.LocalsForEval,
-        *,
-        allow_sets: bool,
-        allow_extra_symbols: bool,
+        source: sympy_source.SourceText,
+        context: sympy_evaluation.EvaluationContext,
     ) -> None:
         self.source = source
-        self.functions = locals_for_eval["functions"] | locals_for_eval["helpers"]
-        self.variables = _evaluation_variables(
-            locals_for_eval,
-            allow_sets=allow_sets,
-            allow_extra_symbols=allow_extra_symbols,
-        )
-        self.unsupported_global_names, self.unsupported_global_functions = (
-            _unsupported_globals(self.functions, self.variables)
-        )
+        self.functions = context.functions
+        self.variables = context.variables
+        self.unsupported_global_names = context.unsupported_global_names
+        self.unsupported_global_functions = context.unsupported_global_functions
 
     @staticmethod
     def _is_python_keyword(name: _Name) -> bool:
@@ -420,8 +394,11 @@ class _Lowerer:
         if name.text in {"True", "False"}:
             return name
         if self._is_python_keyword(name):
-            error = psu.HasParseError(name.span.start)
-            raise psu._LocalizedSympyError(error, self.source, name.span)
+            raise sympy_evaluation.ExpressionEvaluationError(
+                sympy_evaluation.ParseDiagnostic(name.span.start),
+                self.source,
+                name.span,
+            )
         if name.text in self.functions or name.text in self.variables:
             return name
         if _is_splittable(name.text):
@@ -530,8 +507,11 @@ class _Lowerer:
         for operator, item in zip(operators, items[1:], strict=True):
             if operator.text == "juxtapose":
                 if isinstance(current[-1], _Number) and isinstance(item, _Number):
-                    error = psu.HasParseError(item.span.start)
-                    raise psu._LocalizedSympyError(error, self.source, item.span)
+                    raise sympy_evaluation.ExpressionEvaluationError(
+                        sympy_evaluation.ParseDiagnostic(item.span.start),
+                        self.source,
+                        item.span,
+                    )
                 current.append(item)
                 continue
             segments.append(self._lower_implicit_segment(current))
@@ -563,9 +543,10 @@ class _Lowerer:
             )
         if isinstance(expression, _Call):
             if self._is_python_keyword(expression.function):
-                error = psu.HasParseError(expression.function.span.start)
-                raise psu._LocalizedSympyError(
-                    error, self.source, expression.function.span
+                raise sympy_evaluation.ExpressionEvaluationError(
+                    sympy_evaluation.ParseDiagnostic(expression.function.span.start),
+                    self.source,
+                    expression.function.span,
                 )
             arguments = tuple(map(self.lower, expression.arguments))
             if (
@@ -616,57 +597,57 @@ class _Lowerer:
 
 @dataclass(frozen=True, slots=True)
 class _Evaluated:
-    value: psu.SympyValue | bool
-    type: psu.ASTSympyType
+    value: sympy_evaluation.SympyValue | bool
+    type: sympy_evaluation.SympyType
 
 
 class Evaluator:
     def __init__(
         self,
-        source: SourceText,
-        locals_for_eval: psu.LocalsForEval,
-        *,
-        allow_sets: bool,
-        simplify_expression: bool,
-        allow_extra_symbols: bool,
+        source: sympy_source.SourceText,
+        context: sympy_evaluation.EvaluationContext,
     ) -> None:
         self.source = source
-        self.functions = locals_for_eval["functions"] | locals_for_eval["helpers"]
-        self.variables = _evaluation_variables(
-            locals_for_eval,
-            allow_sets=allow_sets,
-            allow_extra_symbols=allow_extra_symbols,
-        )
-        self.unsupported_global_names, self.unsupported_global_functions = (
-            _unsupported_globals(self.functions, self.variables)
-        )
-        self.allow_sets = allow_sets
-        self.simplify_expression = simplify_expression
-        self.allow_extra_symbols = allow_extra_symbols
+        self.functions = context.functions
+        self.variables = context.variables
+        self.unsupported_global_names = context.unsupported_global_names
+        self.unsupported_global_functions = context.unsupported_global_functions
+        self.allow_sets = context.allow_sets
+        self.simplify_expression = context.simplify_expression
+        self.allow_extra_symbols = context.allow_extra_symbols
         self.unknown_names: list[_Name] = []
 
-    def _raise(self, error: psu.BaseSympyError, span: psu._SourceSpan) -> Never:
-        if hasattr(error, "offset"):
-            error.offset = span.start  # type: ignore[attr-defined]
-        raise psu._LocalizedSympyError(error, self.source, span)
+    def _raise(
+        self,
+        diagnostic: sympy_evaluation.EvaluationDiagnostic,
+        span: sympy_source.SourceSpan,
+    ) -> Never:
+        raise sympy_evaluation.ExpressionEvaluationError(diagnostic, self.source, span)
 
     def _require_signature(
         self,
         name: str,
         arguments: Sequence[_Evaluated],
-        span: psu._SourceSpan,
-        signatures: Sequence[Sequence[psu.ASTSympyType | None]],
+        span: sympy_source.SourceSpan,
+        signatures: Sequence[Sequence[sympy_evaluation.SympyType | None]],
     ) -> None:
         arity_matches = [
             signature for signature in signatures if len(signature) == len(arguments)
         ]
         if not arity_matches:
-            expected = psu._format_comma_separated(
+            expected = sympy_evaluation.format_comma_separated(
                 sorted({len(signature) for signature in signatures})
             )
-            self._raise(psu.HasFunctionArityError(name, len(arguments), expected), span)
+            self._raise(
+                sympy_evaluation.FunctionArityDiagnostic(
+                    name, len(arguments), expected
+                ),
+                span,
+            )
 
-        failures: list[tuple[int, psu.ASTSympyType, psu.ASTSympyType]] = []
+        failures: list[
+            tuple[int, sympy_evaluation.SympyType, sympy_evaluation.SympyType]
+        ] = []
         for signature in arity_matches:
             for index, (expected, argument) in enumerate(
                 zip(signature, arguments, strict=True)
@@ -677,18 +658,21 @@ class Evaluator:
             else:
                 return
         index, _, got = max(failures, key=lambda failure: failure[0])
-        expected_types = [expected for i, expected, _ in failures if i == index]
-        self._raise(psu.HasArgumentTypeError(name, got, expected_types, index), span)
+        expected_types = tuple(expected for i, expected, _ in failures if i == index)
+        self._raise(
+            sympy_evaluation.ArgumentTypeDiagnostic(name, got, expected_types, index),
+            span,
+        )
 
     def _set_call_type(
         self,
         name: str,
         arguments: Sequence[_Evaluated],
-        span: psu._SourceSpan,
+        span: sympy_source.SourceSpan,
     ) -> None:
-        scalar = psu.ASTSympyType.SCALAR
-        set_type = psu.ASTSympyType.SET
-        bool_type = psu.ASTSympyType.BOOL
+        scalar = sympy_evaluation.SympyType.SCALAR
+        set_type = sympy_evaluation.SympyType.SET
+        bool_type = sympy_evaluation.SympyType.BOOL
         match name:
             case "FiniteSet":
                 return
@@ -701,7 +685,10 @@ class Evaluator:
                 )
             case "Union" | "Intersection":
                 if not arguments:
-                    self._raise(psu.HasFunctionArityError(name, 0, "1+"), span)
+                    self._raise(
+                        sympy_evaluation.FunctionArityDiagnostic(name, 0, "1+"),
+                        span,
+                    )
                 self._require_signature(
                     name, arguments, span, (len(arguments) * (set_type,),)
                 )
@@ -715,24 +702,29 @@ class Evaluator:
         name: str,
         function: Callable[..., object],
         arguments: Sequence[_Evaluated],
-        span: psu._SourceSpan,
+        span: sympy_source.SourceSpan,
     ) -> _Evaluated:
         if self.allow_sets and function is sympy_constants.set_functions.get(name):
             self._set_call_type(name, arguments, span)
-            result_type = psu.ASTSympyType.SET
+            result_type = sympy_evaluation.SympyType.SET
         else:
             if (
                 name in sympy_constants.functions
                 or name in sympy_constants.trig_functions
             ):
-                arities = psu._builtin_function_arities(name) or (len(arguments),)
+                arities = sympy_evaluation.builtin_function_arities(name) or (
+                    len(arguments),
+                )
                 self._require_signature(
                     name,
                     arguments,
                     span,
-                    tuple(arity * (psu.ASTSympyType.SCALAR,) for arity in arities),
+                    tuple(
+                        arity * (sympy_evaluation.SympyType.SCALAR,)
+                        for arity in arities
+                    ),
                 )
-            result_type = psu.ASTSympyType.SCALAR
+            result_type = sympy_evaluation.SympyType.SCALAR
 
         values = [argument.value for argument in arguments]
         kwargs: dict[str, bool] = {}
@@ -744,21 +736,20 @@ class Evaluator:
         try:
             value = function(*values, **kwargs)
         except (TypeError, AttributeError) as exc:
-            raise psu._LocalizedSympyError(
-                psu.BaseSympyError(),
+            raise sympy_evaluation.ExpressionEvaluationError(
+                sympy_evaluation.EvaluationFailureDiagnostic(),
                 self.source,
                 span,
-                evaluation_failure=True,
-                cause=exc,
+                exc,
             ) from None
-        return _Evaluated(cast(psu.SympyValue, value), result_type)
+        return _Evaluated(cast(sympy_evaluation.SympyValue, value), result_type)
 
     def _binary(self, expression: _Binary) -> _Evaluated:
         left = self.evaluate(expression.left)
         right = self.evaluate(expression.right)
         operator = expression.operator.text
-        scalar = psu.ASTSympyType.SCALAR
-        set_type = psu.ASTSympyType.SET
+        scalar = sympy_evaluation.SympyType.SCALAR
+        set_type = sympy_evaluation.SympyType.SET
 
         if operator in sympy_constants.set_operator_names:
             signatures = ((set_type, set_type),)
@@ -796,14 +787,13 @@ class Evaluator:
                     right_value,
                 )
         except (TypeError, AttributeError) as exc:
-            raise psu._LocalizedSympyError(
-                psu.BaseSympyError(),
+            raise sympy_evaluation.ExpressionEvaluationError(
+                sympy_evaluation.EvaluationFailureDiagnostic(),
                 self.source,
                 expression.operator.span,
-                evaluation_failure=True,
-                cause=exc,
+                exc,
             ) from None
-        return _Evaluated(cast(psu.SympyValue, value), result_type)
+        return _Evaluated(cast(sympy_evaluation.SympyValue, value), result_type)
 
     def _scalar_binary(
         self,
@@ -864,15 +854,15 @@ class Evaluator:
                 number_value = sympy.Float(expression.text)
             else:
                 number_value = sympy.Integer(expression.text)
-            return _Evaluated(number_value, psu.ASTSympyType.SCALAR)
+            return _Evaluated(number_value, sympy_evaluation.SympyType.SCALAR)
         if isinstance(expression, _Name):
             if expression.text == "True":
-                return _Evaluated(value=True, type=psu.ASTSympyType.BOOL)
+                return _Evaluated(value=True, type=sympy_evaluation.SympyType.BOOL)
             if expression.text == "False":
-                return _Evaluated(value=False, type=psu.ASTSympyType.BOOL)
+                return _Evaluated(value=False, type=sympy_evaluation.SympyType.BOOL)
             if expression.text in self.functions:
                 self._raise(
-                    psu.FunctionNameWithoutArgumentsError(
+                    sympy_evaluation.FunctionWithoutArgumentsDiagnostic(
                         expression.span.start, expression.text
                     ),
                     expression.span,
@@ -881,36 +871,38 @@ class Evaluator:
             if resolved_value is None:
                 if expression.text in self.unsupported_global_names:
                     if expression.text in self.unsupported_global_functions:
-                        error: psu.BaseSympyError = (
-                            psu.FunctionNameWithoutArgumentsError(
+                        diagnostic: sympy_evaluation.EvaluationDiagnostic = (
+                            sympy_evaluation.FunctionWithoutArgumentsDiagnostic(
                                 expression.span.start, expression.text
                             )
                         )
                     else:
-                        error = psu.HasInvalidSymbolError(
+                        diagnostic = sympy_evaluation.InvalidSymbolDiagnostic(
                             expression.text, expression.span.start
                         )
-                    self._raise(error, expression.span)
+                    self._raise(diagnostic, expression.span)
                 if not self.allow_extra_symbols:
                     self.unknown_names.append(expression)
                 resolved_value = sympy.Symbol(expression.text)
             name_value = sympy.sympify(resolved_value)
             if isinstance(name_value, sympy.Set) and not self.allow_sets:
-                self._raise(psu.HasSetNotationError(), expression.span)
+                self._raise(sympy_evaluation.SetNotationDiagnostic(), expression.span)
             if isinstance(name_value, sympy.Set):
-                value_type = psu.ASTSympyType.SET
+                value_type = sympy_evaluation.SympyType.SET
             elif name_value is sympy.true or name_value is sympy.false:
-                value_type = psu.ASTSympyType.BOOL
+                value_type = sympy_evaluation.SympyType.BOOL
             else:
-                value_type = psu.ASTSympyType.SCALAR
-            return _Evaluated(cast(psu.SympyValue, name_value), value_type)
+                value_type = sympy_evaluation.SympyType.SCALAR
+            return _Evaluated(cast(sympy_evaluation.SympyValue, name_value), value_type)
         if isinstance(expression, _Group):
             return self.evaluate(expression.value)
         if isinstance(expression, _Unary):
             operand = self.evaluate(expression.operand)
-            if operand.type == psu.ASTSympyType.SET:
+            if operand.type == sympy_evaluation.SympyType.SET:
                 self._raise(
-                    psu.HasInvalidExpressionError(expression.operator.span.start),
+                    sympy_evaluation.InvalidExpressionDiagnostic(
+                        expression.operator.span.start
+                    ),
                     expression.operator.span,
                 )
             if expression.operator.text == "+":
@@ -927,7 +919,9 @@ class Evaluator:
             else:
                 value = cast(_SupportsInvert, operand.value)
                 inverted_value = sympy.sympify(~value)
-            return _Evaluated(cast(psu.SympyValue, inverted_value), operand.type)
+            return _Evaluated(
+                cast(sympy_evaluation.SympyValue, inverted_value), operand.type
+            )
         if isinstance(expression, _Binary):
             return self._binary(expression)
         if isinstance(expression, _Factorial):
@@ -936,7 +930,7 @@ class Evaluator:
                 "factorial",
                 (operand,),
                 expression.operator.span,
-                ((psu.ASTSympyType.SCALAR,),),
+                ((sympy_evaluation.SympyType.SCALAR,),),
             )
             return self._call(
                 "factorial",
@@ -951,14 +945,17 @@ class Evaluator:
                     expression.function.text in sympy_constants.trig_functions
                     or expression.function.text in sympy_constants.sympy_globals
                 ):
-                    error: psu.BaseSympyError = psu.HasInvalidFunctionError(
-                        expression.function.span.start, expression.function.text
+                    diagnostic: sympy_evaluation.EvaluationDiagnostic = (
+                        sympy_evaluation.InvalidFunctionDiagnostic(
+                            expression.function.span.start,
+                            expression.function.text,
+                        )
                     )
                 else:
-                    error = psu.HasInvalidExpressionError(
+                    diagnostic = sympy_evaluation.InvalidExpressionDiagnostic(
                         expression.function.span.start
                     )
-                self._raise(error, expression.function.span)
+                self._raise(diagnostic, expression.function.span)
             arguments = tuple(map(self.evaluate, expression.arguments))
             return self._call(
                 expression.function.text,
@@ -968,29 +965,34 @@ class Evaluator:
             )
         if isinstance(expression, _FiniteSet):
             if not self.allow_sets:
-                self._raise(psu.HasSetNotationError(), expression.span)
+                self._raise(sympy_evaluation.SetNotationDiagnostic(), expression.span)
             items = tuple(map(self.evaluate, expression.items))
             return _Evaluated(
                 sympy.FiniteSet(*(cast(sympy.Basic, item.value) for item in items)),
-                psu.ASTSympyType.SET,
+                sympy_evaluation.SympyType.SET,
             )
         if isinstance(expression, _Interval):
             if not self.allow_sets:
-                self._raise(psu.HasSetNotationError(), expression.span)
+                self._raise(sympy_evaluation.SetNotationDiagnostic(), expression.span)
             left = self.evaluate(expression.left)
             right = self.evaluate(expression.right)
-            if psu.ASTSympyType.SET in (left.type, right.type):
+            if sympy_evaluation.SympyType.SET in (left.type, right.type):
                 bad_span = (
                     expression.left.span
-                    if left.type == psu.ASTSympyType.SET
+                    if left.type == sympy_evaluation.SympyType.SET
                     else expression.right.span
                 )
-                self._raise(psu.HasParseError(bad_span.start), bad_span)
+                self._raise(sympy_evaluation.ParseDiagnostic(bad_span.start), bad_span)
             self._require_signature(
                 "Interval",
                 (left, right),
                 expression.left_bracket.span,
-                ((psu.ASTSympyType.SCALAR, psu.ASTSympyType.SCALAR),),
+                (
+                    (
+                        sympy_evaluation.SympyType.SCALAR,
+                        sympy_evaluation.SympyType.SCALAR,
+                    ),
+                ),
             )
             interval_value = sympy.Interval(
                 cast(sympy.Expr, left.value),
@@ -998,51 +1000,36 @@ class Evaluator:
                 left_open=expression.left_bracket.text == "(",
                 right_open=expression.right_bracket.text == ")",
             )
-            return _Evaluated(interval_value, psu.ASTSympyType.SET)
+            return _Evaluated(interval_value, sympy_evaluation.SympyType.SET)
         raise AssertionError(expression)
 
 
 def parse_and_evaluate(
-    source: SourceText,
-    locals_for_eval: psu.LocalsForEval,
-    *,
-    allow_sets: bool,
-    simplify_expression: bool,
-    allow_extra_symbols: bool,
-) -> psu.SympyValue:
+    source: sympy_source.SourceText,
+    context: sympy_evaluation.EvaluationContext,
+) -> sympy_evaluation.SympyValue:
     """Parse normalized source and evaluate it without generated Python."""
     try:
         parsed = _parse(source)
-        lowerer = _Lowerer(
-            source,
-            locals_for_eval,
-            allow_sets=allow_sets,
-            allow_extra_symbols=allow_extra_symbols,
-        )
+        lowerer = _Lowerer(source, context)
         lowered = lowerer.lower(parsed)
-        evaluator = Evaluator(
-            source,
-            locals_for_eval,
-            allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
-            allow_extra_symbols=allow_extra_symbols,
-        )
-        result = cast(psu.SympyValue, evaluator.evaluate(lowered).value)
-    except psu._LocalizedSympyError:
+        evaluator = Evaluator(source, context)
+        result = cast(sympy_evaluation.SympyValue, evaluator.evaluate(lowered).value)
+    except sympy_evaluation.ExpressionEvaluationError:
         raise
     except RecursionError as exc:
-        error = psu.HasParseError(-1)
-        raise psu._LocalizedSympyError(error, source, cause=exc) from None
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.ParseDiagnostic(-1), source, cause=exc
+        ) from None
     except (TypeError, AttributeError) as exc:
-        raise psu._LocalizedSympyError(
-            psu.BaseSympyError(),
-            source,
-            evaluation_failure=True,
-            cause=exc,
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.EvaluationFailureDiagnostic(), source, cause=exc
         ) from None
     except Exception as exc:
-        raise psu.BaseSympyError from exc
-    if not allow_extra_symbols:
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.EvaluationFailureDiagnostic(), source, cause=exc
+        ) from None
+    if not context.allow_extra_symbols:
         valid_names = set(evaluator.variables)
         pending: list[sympy.Basic] = [result]
         invalid_name: str | None = None
@@ -1058,6 +1045,9 @@ def parse_and_evaluate(
                 for candidate in reversed(evaluator.unknown_names)
                 if candidate.text == invalid_name
             )
-            error = psu.HasInvalidSymbolError(name.text, name.span.start)
-            raise psu._LocalizedSympyError(error, source, name.span)
+            raise sympy_evaluation.ExpressionEvaluationError(
+                sympy_evaluation.InvalidSymbolDiagnostic(name.text, name.span.start),
+                source,
+                name.span,
+            )
     return result

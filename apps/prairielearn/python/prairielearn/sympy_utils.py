@@ -380,8 +380,7 @@ class _TokenEvidence:
     token: str
 
 
-_SourceSpan = sympy_source.SourceSpan
-type _ErrorEvidence = _SourceSpan | _IndexEvidence | _TokenEvidence | None
+type _ErrorEvidence = _IndexEvidence | _TokenEvidence | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -1760,9 +1759,9 @@ def _find_token_span(
     return _source_span(source, best_match.start(), best_match.end())
 
 
-def _locate_error(error: _LocalizedSympyError) -> _SourceSpan | None:
-    if isinstance(error.evidence, _SourceSpan):
-        return error.evidence
+def _locate_error(
+    error: _LocalizedSympyError,
+) -> sympy_source.SourceSpan | None:
     if isinstance(error.evidence, _IndexEvidence):
         return _source_span(
             error.source,

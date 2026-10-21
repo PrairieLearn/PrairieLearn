@@ -4,6 +4,7 @@ from typing import Any, Literal
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+from prairielearn.internal import sympy_evaluation, sympy_source
 from prairielearn.internal.symbolic_input import normalize_symbolic_input
 from prairielearn.internal.sympy_expression import parse_and_evaluate
 
@@ -94,7 +95,31 @@ _ORACLE_CASES = (
 )
 
 
-def _error_signature(error: psu.BaseSympyError) -> tuple[Any, ...]:
+def _public_error_signature(error: psu.BaseSympyError) -> tuple[Any, ...]:
+    if isinstance(error, psu.FunctionNameWithoutArgumentsError):
+        return "function-without-arguments", error.text
+    if isinstance(error, psu.HasInvalidSymbolError):
+        return "invalid-symbol", error.symbol
+    if isinstance(error, psu.HasInvalidFunctionError):
+        return "invalid-function", error.text
+    if isinstance(error, psu.HasInvalidExpressionError):
+        return ("invalid-expression",)
+    if isinstance(error, psu.HasParseError):
+        return ("parse",)
+    if isinstance(error, psu.HasSetNotationError):
+        return ("set-notation",)
+    if isinstance(error, psu.HasFunctionArityError):
+        return "function-arity", error.fn, error.provided, error.expected
+    if isinstance(error, psu.HasArgumentTypeError):
+        return (
+            "argument-type",
+            error.fn,
+            str(error.got),
+            tuple(map(str, error.allowable_types)),
+            error.arg_idx,
+        )
+    if type(error) is psu.BaseSympyError:
+        return ("evaluation-failure",)
     if not is_dataclass(error):
         return type(error), str(error)
     semantic_fields = tuple(
@@ -103,6 +128,56 @@ def _error_signature(error: psu.BaseSympyError) -> tuple[Any, ...]:
         if field.name != "offset"
     )
     return type(error), *semantic_fields
+
+
+def _diagnostic_signature(
+    diagnostic: sympy_evaluation.EvaluationDiagnostic,
+) -> tuple[Any, ...]:
+    if isinstance(diagnostic, sympy_evaluation.FunctionWithoutArgumentsDiagnostic):
+        return "function-without-arguments", diagnostic.text
+    if isinstance(diagnostic, sympy_evaluation.InvalidSymbolDiagnostic):
+        return "invalid-symbol", diagnostic.symbol
+    if isinstance(diagnostic, sympy_evaluation.InvalidFunctionDiagnostic):
+        return "invalid-function", diagnostic.text
+    if isinstance(diagnostic, sympy_evaluation.InvalidExpressionDiagnostic):
+        return ("invalid-expression",)
+    if isinstance(diagnostic, sympy_evaluation.ParseDiagnostic):
+        return ("parse",)
+    if isinstance(diagnostic, sympy_evaluation.SetNotationDiagnostic):
+        return ("set-notation",)
+    if isinstance(diagnostic, sympy_evaluation.FunctionArityDiagnostic):
+        return (
+            "function-arity",
+            diagnostic.function,
+            diagnostic.provided,
+            diagnostic.expected,
+        )
+    if isinstance(diagnostic, sympy_evaluation.ArgumentTypeDiagnostic):
+        return (
+            "argument-type",
+            diagnostic.function,
+            str(diagnostic.got),
+            tuple(map(str, diagnostic.allowable_types)),
+            diagnostic.argument_index,
+        )
+    return ("evaluation-failure",)
+
+
+def _evaluation_context(
+    locals_for_eval: psu.LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    simplify_expression: bool = True,
+    allow_extra_symbols: bool = False,
+) -> sympy_evaluation.EvaluationContext:
+    return sympy_evaluation.EvaluationContext.from_locals_for_eval(
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+    )
 
 
 def _capture_oracle_outcome(
@@ -126,10 +201,13 @@ def _capture_oracle_outcome(
         if grammar:
             result = parse_and_evaluate(
                 source,
-                locals_for_eval,
-                allow_sets=case.allow_sets,
-                simplify_expression=simplify_expression,
-                allow_extra_symbols=case.allow_extra_symbols,
+                _evaluation_context(
+                    locals_for_eval,
+                    allow_complex=case.allow_complex,
+                    allow_sets=case.allow_sets,
+                    simplify_expression=simplify_expression,
+                    allow_extra_symbols=case.allow_extra_symbols,
+                ),
             )
             psu.sympy_check(
                 result,
@@ -147,10 +225,16 @@ def _capture_oracle_outcome(
                 simplify_expression=simplify_expression,
                 allow_extra_symbols=case.allow_extra_symbols,
             )[0]
+    except sympy_evaluation.ExpressionEvaluationError as exc:
+        return _OracleOutcome(
+            accepted=False, exception=_diagnostic_signature(exc.diagnostic)
+        )
     except psu._LocalizedSympyError as exc:
-        return _OracleOutcome(accepted=False, exception=_error_signature(exc.error))
+        return _OracleOutcome(
+            accepted=False, exception=_public_error_signature(exc.error)
+        )
     except psu.BaseSympyError as exc:
-        return _OracleOutcome(accepted=False, exception=_error_signature(exc))
+        return _OracleOutcome(accepted=False, exception=_public_error_signature(exc))
 
     return _OracleOutcome(
         accepted=True,
@@ -180,33 +264,31 @@ def test_grammar_evaluator_matches_legacy(case: _OracleCase) -> None:
 @pytest.mark.parametrize(
     ("expression", "expected_error"),
     [
-        ("Chi", psu.FunctionNameWithoutArgumentsError),
-        ("叱", psu.FunctionNameWithoutArgumentsError),
-        ("Chi(x)", psu.HasInvalidFunctionError),
-        ("S", psu.FunctionNameWithoutArgumentsError),
-        ("Q", psu.HasInvalidSymbolError),
-        ("O", psu.FunctionNameWithoutArgumentsError),
-        ("EmptySequence", psu.HasInvalidSymbolError),
-        ("Id", psu.FunctionNameWithoutArgumentsError),
-        ("ord0", psu.HasInvalidSymbolError),
+        ("Chi", sympy_evaluation.FunctionWithoutArgumentsDiagnostic),
+        ("叱", sympy_evaluation.FunctionWithoutArgumentsDiagnostic),
+        ("Chi(x)", sympy_evaluation.InvalidFunctionDiagnostic),
+        ("S", sympy_evaluation.FunctionWithoutArgumentsDiagnostic),
+        ("Q", sympy_evaluation.InvalidSymbolDiagnostic),
+        ("O", sympy_evaluation.FunctionWithoutArgumentsDiagnostic),
+        ("EmptySequence", sympy_evaluation.InvalidSymbolDiagnostic),
+        ("Id", sympy_evaluation.FunctionWithoutArgumentsDiagnostic),
+        ("ord0", sympy_evaluation.InvalidSymbolDiagnostic),
     ],
 )
 def test_extra_symbols_reject_unsupported_sympy_globals(
-    expression: str, expected_error: type[psu.BaseSympyError]
+    expression: str,
+    expected_error: type[object],
 ) -> None:
     source = psu._normalize_source(expression, allow_complex=False, allow_sets=False)
     locals_for_eval = psu._prepare_locals_for_eval(())
 
-    with pytest.raises(psu._LocalizedSympyError) as exc_info:
+    with pytest.raises(sympy_evaluation.ExpressionEvaluationError) as exc_info:
         parse_and_evaluate(
             source,
-            locals_for_eval,
-            allow_sets=False,
-            simplify_expression=True,
-            allow_extra_symbols=True,
+            _evaluation_context(locals_for_eval, allow_extra_symbols=True),
         )
 
-    assert isinstance(exc_info.value.error, expected_error)
+    assert isinstance(exc_info.value.diagnostic, expected_error)
 
 
 def test_unsimplified_set_complement_uses_current_evaluated_structure() -> None:
@@ -214,10 +296,9 @@ def test_unsimplified_set_complement_uses_current_evaluated_structure() -> None:
     source = psu._normalize_source("[0, 5] - {2}", allow_complex=False, allow_sets=True)
     result = parse_and_evaluate(
         source,
-        locals_for_eval,
-        allow_sets=True,
-        simplify_expression=False,
-        allow_extra_symbols=False,
+        _evaluation_context(
+            locals_for_eval, allow_sets=True, simplify_expression=False
+        ),
     )
 
     assert result == sympy.Union(sympy.Interval.Ropen(0, 2), sympy.Interval.Lopen(2, 5))
@@ -246,13 +327,13 @@ def test_python_only_constructs_are_outside_the_grammar(expression: str) -> None
         )
         return parse_and_evaluate(
             source,
-            locals_for_eval,
-            allow_sets=False,
-            simplify_expression=True,
-            allow_extra_symbols=False,
+            _evaluation_context(locals_for_eval),
         )
 
-    with pytest.raises((psu._LocalizedSympyError, psu.BaseSympyError)):
+    with pytest.raises((
+        sympy_evaluation.ExpressionEvaluationError,
+        psu.BaseSympyError,
+    )):
         parse()
 
 
@@ -292,29 +373,23 @@ def test_error_spans_refer_to_raw_student_source(
     )
     locals_for_eval = psu._prepare_locals_for_eval(("x",), allow_sets=allow_sets)
 
-    with pytest.raises(psu._LocalizedSympyError) as exc_info:
+    with pytest.raises(sympy_evaluation.ExpressionEvaluationError) as exc_info:
         parse_and_evaluate(
             source,
-            locals_for_eval,
-            allow_sets=allow_sets,
-            simplify_expression=True,
-            allow_extra_symbols=False,
+            _evaluation_context(locals_for_eval, allow_sets=allow_sets),
         )
 
-    assert exc_info.value.evidence == psu._SourceSpan(expected_start, expected_end)
+    assert exc_info.value.span == sympy_source.SourceSpan(expected_start, expected_end)
 
 
 def test_end_of_input_error_has_zero_width_span() -> None:
     source = psu._normalize_source("x +", allow_complex=False, allow_sets=False)
     locals_for_eval = psu._prepare_locals_for_eval(("x",))
 
-    with pytest.raises(psu._LocalizedSympyError) as exc_info:
+    with pytest.raises(sympy_evaluation.ExpressionEvaluationError) as exc_info:
         parse_and_evaluate(
             source,
-            locals_for_eval,
-            allow_sets=False,
-            simplify_expression=True,
-            allow_extra_symbols=False,
+            _evaluation_context(locals_for_eval),
         )
 
-    assert exc_info.value.evidence == psu._SourceSpan(3, 3)
+    assert exc_info.value.span == sympy_source.SourceSpan(3, 3)
