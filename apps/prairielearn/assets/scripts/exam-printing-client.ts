@@ -518,7 +518,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);
-  const mathJax = Reflect.get(window, 'MathJax') as
+  const mathJax = window.MathJax as
     | {
         startup?: { promise?: Promise<unknown> };
         typesetPromise?: (elements?: Element[]) => Promise<unknown>;

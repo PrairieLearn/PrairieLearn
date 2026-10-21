@@ -5,7 +5,7 @@ export interface DocxSource {
 
 /** Preserve MathML before print transforms clone or replace already-typeset elements. */
 export function annotateDocxMath(source: HTMLElement): void {
-  const mathJax = Reflect.get(window, 'MathJax') as
+  const mathJax = window.MathJax as
     | {
         startup?: {
           document?: { math?: Iterable<{ typesetRoot: Element; math: string; display: boolean }> };
