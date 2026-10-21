@@ -86,31 +86,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
   );
 };
 
-function waitForCanvas(rootElement) {
-  return new Promise((resolve, reject) => {
-    const checkCanvas = () => {
-      if (
-        ![...rootElement.querySelectorAll('canvas')].some(
-          (canvas) => canvas.width > 0 && canvas.height > 0,
-        )
-      ) {
-        return;
-      }
-      clearTimeout(timeout);
-      observer.disconnect();
-      resolve();
-    };
-    const observer = new MutationObserver(checkCanvas);
-    const timeout = setTimeout(() => {
-      observer.disconnect();
-      reject(new Error('Timed out waiting for Excalidraw to render'));
-    }, 60_000);
-    observer.observe(rootElement, { childList: true, subtree: true, attributes: true });
-    checkCanvas();
-  });
-}
-
-export async function initializeExcalidraw(uuid, name, metadata, waitUntilRendered = false) {
+export async function initializeExcalidraw(uuid, name, metadata) {
   const sketch = {};
 
   const rootElement = document.getElementById(`excalidraw-${uuid}`);
@@ -137,8 +113,6 @@ export async function initializeExcalidraw(uuid, name, metadata, waitUntilRender
       }),
     ),
   );
-
-  if (waitUntilRendered) await waitForCanvas(rootElement);
 
   return sketch;
 }

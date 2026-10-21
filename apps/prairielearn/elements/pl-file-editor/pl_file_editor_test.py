@@ -1,9 +1,45 @@
 import base64
 import importlib
+from pathlib import Path
 
+import lxml.html
 import pytest
 
 file_editor = importlib.import_module("pl-file-editor")
+
+
+@pytest.mark.parametrize("submitted_code", [None, "print('submitted café')"])
+def test_render_question_seeds_hidden_input(
+    monkeypatch: pytest.MonkeyPatch, submitted_code: str | None
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    original_code = "print('starter café')"
+    expected_code = submitted_code or original_code
+    submitted_files = (
+        [
+            {
+                "name": "answer.py",
+                "contents": base64.b64encode(submitted_code.encode()).decode(),
+            }
+        ]
+        if submitted_code is not None
+        else []
+    )
+
+    output = file_editor.render(
+        f'<pl-file-editor file-name="answer.py">{original_code}</pl-file-editor>',
+        {
+            "panel": "question",
+            "ai_grading": False,
+            "editable": True,
+            "submitted_answers": {"_files": submitted_files},
+        },
+    )
+
+    hidden_input = lxml.html.fromstring(output).xpath('//input[@type="hidden"]')[0]
+    assert (
+        hidden_input.get("value") == base64.b64encode(expected_code.encode()).decode()
+    )
 
 
 @pytest.mark.parametrize("code", [b"print('hello')", b""])
