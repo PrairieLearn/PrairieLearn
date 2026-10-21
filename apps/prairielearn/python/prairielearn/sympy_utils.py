@@ -17,13 +17,13 @@ from functools import lru_cache
 from io import StringIO
 from tokenize import NUMBER, TokenError, generate_tokens
 from typing import (
-    TYPE_CHECKING,
     Any,
     Literal,
     Never,
     NotRequired,
     TypedDict,
     TypeGuard,
+    assert_never,
     cast,
     overload,
 )
@@ -32,11 +32,13 @@ import sympy
 from sympy.logic.boolalg import Boolean
 from sympy.printing.str import StrPrinter
 
-from prairielearn.internal import sympy_constants, sympy_source
+from prairielearn.internal import (
+    sympy_constants,
+    sympy_evaluation,
+    sympy_expression,
+    sympy_source,
+)
 from prairielearn.misc_utils import full_unidecode
-
-if TYPE_CHECKING:
-    from prairielearn.internal.sympy_utils import EvaluationContext
 
 STANDARD_OPERATORS = sympy_constants.standard_operators
 SET_NOTATION_OPERATORS = sympy_constants.set_notation_operators
@@ -665,6 +667,65 @@ def _raise_unwrapped(error: _LocalizedSympyError) -> Never:
     raise error.error from None
 
 
+def _translate_evaluation_error(
+    error: sympy_evaluation.ExpressionEvaluationError,
+) -> _LocalizedSympyError:
+    diagnostic = error.diagnostic
+    evaluation_failure = False
+    if isinstance(diagnostic, sympy_evaluation.ParseDiagnostic):
+        public_error: BaseSympyError = HasParseError(diagnostic.offset)
+    elif isinstance(diagnostic, sympy_evaluation.InvalidExpressionDiagnostic):
+        public_error = HasInvalidExpressionError(diagnostic.offset)
+    elif isinstance(diagnostic, sympy_evaluation.InvalidFunctionDiagnostic):
+        public_error = HasInvalidFunctionError(diagnostic.offset, diagnostic.text)
+    elif isinstance(diagnostic, sympy_evaluation.FunctionWithoutArgumentsDiagnostic):
+        public_error = FunctionNameWithoutArgumentsError(
+            diagnostic.offset, diagnostic.text
+        )
+    elif isinstance(diagnostic, sympy_evaluation.InvalidSymbolDiagnostic):
+        public_error = HasInvalidSymbolError(diagnostic.symbol, diagnostic.offset)
+    elif isinstance(diagnostic, sympy_evaluation.SetNotationDiagnostic):
+        public_error = HasSetNotationError()
+    elif isinstance(diagnostic, sympy_evaluation.ArgumentTypeDiagnostic):
+        offset = (
+            diagnostic.offset
+            if diagnostic.offset >= 0 or error.span is None
+            else error.span.start
+        )
+        public_error = HasArgumentTypeError(
+            diagnostic.function,
+            _SympyType(diagnostic.got.value),
+            tuple(_SympyType(value.value) for value in diagnostic.allowable_types),
+            diagnostic.argument_index,
+            offset,
+        )
+    elif isinstance(diagnostic, sympy_evaluation.FunctionArityDiagnostic):
+        offset = (
+            diagnostic.offset
+            if diagnostic.offset >= 0 or error.span is None
+            else error.span.start
+        )
+        public_error = HasFunctionArityError(
+            diagnostic.function,
+            diagnostic.provided,
+            diagnostic.expected,
+            offset,
+        )
+    elif isinstance(diagnostic, sympy_evaluation.EvaluationFailureDiagnostic):
+        public_error = BaseSympyError()
+        evaluation_failure = True
+    else:
+        assert_never(diagnostic)
+
+    return _LocalizedSympyError(
+        public_error,
+        error.source,
+        error.span or _default_error_evidence(public_error),
+        evaluation_failure=evaluation_failure,
+        cause=error.cause,
+    )
+
+
 def _evaluate_normalized_source(
     source: sympy_source.SourceText,
     locals_for_eval: LocalsForEval,
@@ -676,10 +737,7 @@ def _evaluate_normalized_source(
     legacy_untyped_names: frozenset[str] = frozenset(),
     legacy_untyped_functions: frozenset[str] = frozenset(),
 ) -> SympyValue:
-    from prairielearn.internal.sympy_expression import parse_and_evaluate
-    from prairielearn.internal.sympy_utils import EvaluationContext
-
-    context = EvaluationContext.from_locals_for_eval(
+    context = sympy_evaluation.EvaluationContext.from_locals_for_eval(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
@@ -688,7 +746,10 @@ def _evaluate_normalized_source(
         legacy_untyped_names=legacy_untyped_names,
         legacy_untyped_functions=legacy_untyped_functions,
     )
-    result = parse_and_evaluate(source, context)
+    try:
+        result = sympy_expression.parse_and_evaluate(source, context)
+    except sympy_evaluation.ExpressionEvaluationError as exc:
+        raise _translate_evaluation_error(exc) from None
     _check_evaluated_result(result, source, context)
     return result
 
@@ -702,19 +763,19 @@ def _evaluate_normalized_source_with_structure(
     simplify_expression: bool,
     allow_extra_symbols: bool,
 ) -> tuple[SympyValue, str]:
-    from prairielearn.internal.sympy_expression import (
-        parse_and_evaluate_with_structure,
-    )
-    from prairielearn.internal.sympy_utils import EvaluationContext
-
-    context = EvaluationContext.from_locals_for_eval(
+    context = sympy_evaluation.EvaluationContext.from_locals_for_eval(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
     )
-    result, structure = parse_and_evaluate_with_structure(source, context)
+    try:
+        result, structure = sympy_expression.parse_and_evaluate_with_structure(
+            source, context
+        )
+    except sympy_evaluation.ExpressionEvaluationError as exc:
+        raise _translate_evaluation_error(exc) from None
     _check_evaluated_result(result, source, context)
     return result, structure
 
@@ -722,7 +783,7 @@ def _evaluate_normalized_source_with_structure(
 def _check_evaluated_result(
     result: SympyValue,
     source: sympy_source.SourceText,
-    context: "EvaluationContext",
+    context: sympy_evaluation.EvaluationContext,
 ) -> None:
     try:
         sympy_check(
@@ -1124,6 +1185,15 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
     return expr.rfind(symbol)
 
 
+def _token_candidates(token: str) -> list[str]:
+    candidates = [token]
+    if token in sympy_constants.union_operators or token == "Union":
+        candidates.extend(sympy_constants.union_operators)
+    elif token in sympy_constants.intersection_operators or token == "Intersection":
+        candidates.extend(sympy_constants.intersection_operators)
+    return candidates
+
+
 def _source_span(
     source: sympy_source.SourceText, start: int, end: int
 ) -> sympy_source.SourceSpan | None:
@@ -1292,7 +1362,7 @@ def sympy_to_json(
 
 
 def _sympy_to_json_impl(
-    a: sympy.Expr | sympy.Set,
+    a: SympyValue,
     *,
     allow_complex: bool,
     allow_trig_functions: bool,

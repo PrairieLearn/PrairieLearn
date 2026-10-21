@@ -1099,10 +1099,6 @@ def _parse_and_evaluate(
         raise sympy_evaluation.ExpressionEvaluationError(
             sympy_evaluation.EvaluationFailureDiagnostic(), source, cause=exc
         ) from None
-    except Exception as exc:
-        raise sympy_evaluation.ExpressionEvaluationError(
-            sympy_evaluation.EvaluationFailureDiagnostic(), source, cause=exc
-        ) from None
     if not context.allow_extra_symbols:
         valid_names = set(evaluator.variables)
         pending: list[sympy.Basic] = [result]
