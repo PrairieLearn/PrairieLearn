@@ -2,7 +2,7 @@ import { Packer } from 'docx';
 import type { Page } from 'playwright';
 
 import type { DocxSource } from './docx-browser.js';
-import type { DocxFigure } from './docx-content.js';
+import type { DocxFigure } from './docx-content-context.js';
 import { type PrintedPageGeometry, createDocxDocument } from './docx-document.js';
 import type { PrintableCover } from './printable-cover.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
@@ -43,14 +43,14 @@ export function createDocxOutput({
           png: await element.screenshot({ type: 'png', scale: 'device' }),
         });
       }
-      const document = createDocxDocument({
+      const wordDocument = createDocxDocument({
         geometry,
         cover: typeof cover === 'function' ? cover(pageDataset) : cover,
         footerLabel,
         source,
         figures,
       });
-      return await Packer.toBuffer(document);
+      return await Packer.toBuffer(wordDocument);
     },
   };
 }
