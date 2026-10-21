@@ -40,12 +40,12 @@ describe('htmlToTextBlocks', () => {
     expect(htmlToTextBlocks('  \n<p> </p><div></div><ol></ol>')).toEqual([]);
   });
 
-  it('omits hidden cover instructions and figures', () => {
+  it('omits hidden cover instructions', () => {
     expect(
       htmlToTextBlocks(`
         <p>Visible <span style="display: none">secret</span> instructions</p>
-        <div hidden><p>Hidden paragraph</p><img src="/hidden.png"></div>
-        <h2>Title <img aria-hidden="true" src="/other.png"></h2>
+        <div hidden><p>Hidden paragraph</p></div>
+        <h2>Title</h2>
         <ul><li>Keep this <span style="visibility: hidden">private</span></li></ul>
       `),
     ).toEqual([
@@ -55,33 +55,15 @@ describe('htmlToTextBlocks', () => {
     ]);
   });
 
-  it('preserves authored images and SVGs among cover instructions', () => {
-    const blocks = htmlToTextBlocks(
-      '<p>Use the diagram <img src="/clientFilesAssessment/diagram.png" alt="Circuit diagram"> below.</p><svg viewBox="0 0 20 10" aria-label="Graph"><path d="M0 0L20 10"/></svg>',
-    );
-    expect(blocks.slice(0, 3)).toEqual([
-      { type: 'paragraph', text: 'Use the diagram' },
-      {
-        type: 'figure',
-        src: '/clientFilesAssessment/diagram.png',
-        alt: 'Circuit diagram',
-      },
-      { type: 'paragraph', text: 'below.' },
-    ]);
-    expect(blocks[3]).toMatchObject({ type: 'figure', alt: 'Graph' });
-    expect(decodeURIComponent((blocks[3] as { src: string }).src)).toContain('viewBox="0 0 20 10"');
-  });
-
-  it('preserves figures inside inline wrappers and headings', () => {
-    const blocks = htmlToTextBlocks(
-      '<p>See <a href="#"><img src="/diagram.png" alt="Diagram"></a> here.</p><h2>Chart <span><svg viewBox="0 0 2 2" aria-label="Chart"><circle cx="1" cy="1" r="1"/></svg></span></h2>',
-    );
-    expect(blocks).toMatchObject([
-      { type: 'paragraph', text: 'See' },
-      { type: 'figure', src: '/diagram.png', alt: 'Diagram' },
-      { type: 'paragraph', text: 'here.' },
-      { type: 'heading', text: 'Chart' },
-      { type: 'figure', alt: 'Chart' },
+  it('ignores images in cover instructions', () => {
+    expect(
+      htmlToTextBlocks(
+        '<p>Read <img src="/diagram.png" alt="Diagram"> carefully.</p><svg><title>Graph</title></svg><h2>Rules <svg><title>Chart</title></svg></h2><ul><li>Show <img src="/icon.png"> your work.</li></ul>',
+      ),
+    ).toEqual([
+      { type: 'paragraph', text: 'Read carefully.' },
+      { type: 'heading', text: 'Rules' },
+      { type: 'list', ordered: false, items: ['Show your work.'] },
     ]);
   });
 });

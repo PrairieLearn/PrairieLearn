@@ -1,10 +1,9 @@
+import { Packer } from 'docx';
 import type { Page } from 'playwright';
-
-import { compiledScriptPath } from '../assets.js';
 
 import type { DocxSource } from './docx-browser.js';
 import type { DocxFigure } from './docx-content.js';
-import type { PrintedPageGeometry } from './docx-document.js';
+import { type PrintedPageGeometry, createDocxDocument } from './docx-document.js';
 import type { PrintableCover } from './printable-cover.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 
@@ -24,7 +23,7 @@ export interface DocxOutputOptions {
   footerLabel: string;
 }
 
-/** Builds editable Word content from the normalized, unpaginated questions. */
+/** Builds an editable Word document from questions captured before pagination. */
 export function createDocxOutput({
   cover,
   footerLabel,
@@ -44,23 +43,14 @@ export function createDocxOutput({
           png: await element.screenshot({ type: 'png', scale: 'device' }),
         });
       }
-      await page.addScriptTag({ url: compiledScriptPath('print-docx-client.ts') });
-      const bytes = await page.evaluate(
-        async (options) => {
-          const build = Reflect.get(window, '__PL_BUILD_PRINT_DOCX__') as
-            ((value: typeof options) => Promise<number[]>) | undefined;
-          if (!build) throw new Error('Word builder did not load');
-          return await build(options);
-        },
-        {
-          geometry,
-          cover: typeof cover === 'function' ? cover(pageDataset) : cover,
-          footerLabel,
-          source,
-          figures: figures.map((figure) => ({ ...figure, png: Array.from(figure.png) })),
-        },
-      );
-      return Buffer.from(bytes);
+      const document = createDocxDocument({
+        geometry,
+        cover: typeof cover === 'function' ? cover(pageDataset) : cover,
+        footerLabel,
+        source,
+        figures,
+      });
+      return await Packer.toBuffer(document);
     },
   };
 }

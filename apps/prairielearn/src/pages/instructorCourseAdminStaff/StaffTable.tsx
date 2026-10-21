@@ -833,10 +833,6 @@ function SelectionToolbar({
     (u) => (u.user.id !== authnUserId && u.user.id !== userId) || isAdministrator,
   );
 
-  const deletableUsers = modifiableUsers.filter(
-    (u) => isAdministrator || u.course_permission.course_role !== 'Owner',
-  );
-
   return (
     <>
       <div className="d-flex align-items-center gap-2">
@@ -853,7 +849,7 @@ function SelectionToolbar({
           variant="light"
           size="sm"
           className="text-danger"
-          disabled={deletableUsers.length === 0}
+          disabled={modifiableUsers.length === 0}
           onClick={() => setShowDeleteModal(true)}
         >
           <i className="fa fa-trash-alt me-1" />
@@ -863,7 +859,7 @@ function SelectionToolbar({
 
       <BulkDeleteModal
         show={showDeleteModal}
-        selectedUsers={deletableUsers}
+        selectedUsers={modifiableUsers}
         onHide={() => setShowDeleteModal(false)}
       />
       <BulkEditAccessModal

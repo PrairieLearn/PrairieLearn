@@ -1,18 +1,17 @@
 import { layoutPrintGradingTable } from '../../src/lib/client/print-cover-layout.js';
 import {
   fitPrintChoiceImages,
+  waitForExcalidrawCanvases,
   waitForPrintImages,
 } from '../../src/lib/client/print-image-layout.js';
-import {
-  parsePrintBlockSize,
-  planPrintQuestionPages,
-} from '../../src/lib/client/print-question-layout.js';
+import { planPrintQuestionPages } from '../../src/lib/client/print-question-layout.js';
 import {
   normalizeAnswerPresentation,
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
 } from '../../src/lib/client/print-response-controls.js';
 import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docx-browser.js';
+import { parseQuestionBlockSize } from '../../src/lib/printing/question-block-size.js';
 
 interface PagedFlow {
   total: number;
@@ -46,60 +45,6 @@ function waitForDocumentReady(): Promise<void> {
 
 function waitForAnimationFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
-}
-
-async function waitForLegacyQuestions(source: HTMLElement): Promise<void> {
-  const containers = [
-    ...source.querySelectorAll<HTMLElement>(
-      '.printing-question:not(.printing-question-freeform) .question-container',
-    ),
-  ];
-  if (containers.length === 0) return;
-
-  const getRenderError = () =>
-    containers.find((container) => container.dataset.legacyQuestionRenderStatus === 'error');
-  const isReady = () =>
-    containers.every((container) => container.dataset.legacyQuestionRenderStatus === 'complete');
-  const describeRenderError = (container: HTMLElement) => {
-    const questionLabel =
-      container.closest('.printing-question')?.getAttribute('aria-label') ?? 'A legacy question';
-    const detail = container.dataset.legacyQuestionRenderError;
-    return new Error(
-      detail
-        ? `${questionLabel} could not be rendered for paper: ${detail}`
-        : `${questionLabel} could not be rendered for paper`,
-    );
-  };
-  const initialRenderError = getRenderError();
-  if (initialRenderError) throw describeRenderError(initialRenderError);
-
-  if (!isReady()) {
-    await new Promise<void>((resolve, reject) => {
-      const observer = new MutationObserver(() => {
-        const renderError = getRenderError();
-        if (renderError) {
-          window.clearTimeout(timeout);
-          observer.disconnect();
-          reject(describeRenderError(renderError));
-          return;
-        }
-        if (!isReady()) return;
-        window.clearTimeout(timeout);
-        observer.disconnect();
-        resolve();
-      });
-      const timeout = window.setTimeout(() => {
-        observer.disconnect();
-        reject(new Error('Timed out waiting for legacy questions to render'));
-      }, 60_000);
-      for (const container of containers) {
-        observer.observe(container, {
-          attributes: true,
-          attributeFilter: ['data-legacy-question-render-status'],
-        });
-      }
-    });
-  }
 }
 
 function getLowestCommonAncestor(elements: HTMLElement[], limit: HTMLElement): HTMLElement | null {
@@ -328,7 +273,7 @@ function keepPrintableGroupsTogether(source: HTMLElement, pageHeight: number): v
 
 function placeQuestionGroupBreaks(source: HTMLElement, pageHeight: number): void {
   for (const page of source.querySelectorAll<HTMLElement>(
-    '.printing-question-page[data-print-allows-flow="true"]',
+    '.printing-question-page[data-print-can-span-pages="true"]',
   )) {
     const pageTop = page.getBoundingClientRect().top;
     let addedSpace = 0;
@@ -336,7 +281,7 @@ function placeQuestionGroupBreaks(source: HTMLElement, pageHeight: number): void
       (group) => !group.parentElement?.closest('.printing-keep-together'),
     );
     // Paged.js can split nested cards and SVGs despite break-inside: avoid. Give it explicit
-    // boundaries for complete subparts, measured at the same width as the generated pages.
+    // boundaries for contiguous spreads, measured at the same width as the generated pages.
     for (const group of groups) {
       const bounds = group.getBoundingClientRect();
       const offset = (bounds.top - pageTop + addedSpace) % pageHeight;
@@ -368,7 +313,7 @@ function formatMeasurement(value: number): string {
 interface PrintLayout {
   contentWidth: number;
   pageHeight: number;
-  plannedPageAllowsFlow: boolean[];
+  plannedPageCanSpanPages: boolean[];
 }
 
 function layoutQuestions(source: HTMLElement): PrintLayout {
@@ -388,7 +333,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
   const measurements = questions.map((question, index) => {
     const id = String(index);
     const label = question.getAttribute('aria-label') ?? `Question ${index + 1}`;
-    const blockSize = parsePrintBlockSize(question.dataset.printBlockSize);
+    const blockSize = parseQuestionBlockSize(question.dataset.printBlockSize);
     const naturalHeight = Number(
       question.dataset.printStudentHeight ?? question.getBoundingClientRect().height,
     );
@@ -404,7 +349,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
     page.dataset.printPlannedPage = String(pageIndex + 1);
     page.dataset.printQuestionCount = String(pagePlan.questions.length);
     page.dataset.printReservedHeight = formatMeasurement(pagePlan.reservedHeight);
-    page.dataset.printAllowsFlow = String(pagePlan.allowsFlow);
+    page.dataset.printCanSpanPages = String(pagePlan.canSpanPages);
 
     for (const [slotIndex, plannedQuestion] of pagePlan.questions.entries()) {
       const question = questionElements.get(plannedQuestion.id);
@@ -414,8 +359,8 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
       question.dataset.printReservedHeight = formatMeasurement(plannedQuestion.reservedHeight);
       question.dataset.printPlannedPage = String(pageIndex + 1);
       question.dataset.printPlannedSlot = String(slotIndex + 1);
-      question.dataset.printAllowsFlow = String(plannedQuestion.allowsFlow);
-      if (plannedQuestion.blockSize !== 'auto' && !plannedQuestion.allowsFlow) {
+      question.dataset.printCanSpanPages = String(plannedQuestion.canSpanPages);
+      if (plannedQuestion.blockSize !== 'auto' && !plannedQuestion.canSpanPages) {
         question.style.setProperty(
           '--printing-question-block-height',
           `${plannedQuestion.reservedHeight}px`,
@@ -434,7 +379,7 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
   return {
     contentWidth,
     pageHeight,
-    plannedPageAllowsFlow: pages.map((page) => page.allowsFlow),
+    plannedPageCanSpanPages: pages.map((page) => page.canSpanPages),
   };
 }
 
@@ -472,7 +417,7 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
   }
 
   let previousLastPageIndex = coverPageIndexes.at(-1) ?? -1;
-  for (const [plannedPageIndex, allowsFlow] of layout.plannedPageAllowsFlow.entries()) {
+  for (const [plannedPageIndex, canSpanPages] of layout.plannedPageCanSpanPages.entries()) {
     const plannedPage = String(plannedPageIndex + 1);
     const containingPageIndexes = generatedPages.flatMap((generatedPage, pageIndex) =>
       generatedPage.querySelector(
@@ -484,7 +429,7 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
     if (containingPageIndexes.length === 0) {
       throw new Error(`Planned question page ${plannedPage} is missing from the paginated exam`);
     }
-    if (!allowsFlow && containingPageIndexes.length !== 1) {
+    if (!canSpanPages && containingPageIndexes.length !== 1) {
       throw new Error(
         `Planned question page ${plannedPage} unexpectedly spans ${containingPageIndexes.length} paginated pages`,
       );
@@ -514,12 +459,13 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   const output = document.querySelector<HTMLElement>('#exam-print-pages');
   if (!source || !output) throw new Error('Printable exam containers are missing');
 
-  await Promise.all([waitForLegacyQuestions(source), ...extraReadinessPromises]);
+  await Promise.all(extraReadinessPromises);
+  await waitForExcalidrawCanvases(source);
   materializePrintableDetails(source);
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);
-  const mathJax = Reflect.get(window, 'MathJax') as
+  const mathJax = window.MathJax as
     | {
         startup?: { promise?: Promise<unknown> };
         typesetPromise?: (elements?: Element[]) => Promise<unknown>;
@@ -529,6 +475,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   annotateDocxMath(source);
   normalizeResponseControls(source);
   await mathJax?.typesetPromise?.([source]);
+  // The first pass preserves copied math; this one catches newly rendered math.
   annotateDocxMath(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
@@ -546,24 +493,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   placeQuestionGroupBreaks(source, layout.pageHeight);
   await waitForAnimationFrame();
 
-  // All asynchronous content is settled above, so Paged.js can use a fixed layout. Its resize
-  // observers otherwise race with page construction and can attempt to reflow incomplete pages.
-  const resizeObserver = window.ResizeObserver;
-  Reflect.set(
-    window,
-    'ResizeObserver',
-    class {
-      disconnect() {}
-      observe() {}
-      unobserve() {}
-    },
-  );
-  let flow: PagedFlow;
-  try {
-    flow = await window.PagedPolyfill.preview(source, undefined, output);
-  } finally {
-    Reflect.set(window, 'ResizeObserver', resizeObserver);
-  }
+  const flow = await window.PagedPolyfill.preview(source, undefined, output);
   validatePagedLayout(output, layout);
   source.remove();
   document.documentElement.dataset.printStatus = 'ready';

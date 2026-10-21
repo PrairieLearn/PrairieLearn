@@ -1,8 +1,6 @@
 import { parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { moveCheckboxInstructions } from './print-checkbox-instructions.js';
-
 const GENERIC_RESPONSE_PLACEHOLDERS = new Set([
   'asymptotic expression',
   'expression',
@@ -414,9 +412,7 @@ function normalizeVariableOutputs(source: HTMLElement): void {
 export function normalizeAnswerPresentation(source: HTMLElement): void {
   normalizeVariableOutputs(source);
   for (const control of source.querySelectorAll('button, .modal, .popover')) control.remove();
-  for (const answer of source.querySelectorAll(
-    '.pl-order-blocks-answer-container:has(> .bg-success-subtle)',
-  )) {
+  for (const answer of source.querySelectorAll('.pl-order-blocks-correct-answer')) {
     if (answer.closest('.printing-order-answer-group')) continue;
     let distractors = answer.nextElementSibling;
     const breaks: Element[] = [];
@@ -424,7 +420,7 @@ export function normalizeAnswerPresentation(source: HTMLElement): void {
       breaks.push(distractors);
       distractors = distractors.nextElementSibling;
     }
-    if (!distractors?.matches('.pl-order-blocks-answer-container:has(> .bg-danger-subtle)')) {
+    if (!distractors?.matches('.pl-order-blocks-distractors')) {
       continue;
     }
     // Keep distractors with their own solution so a page break cannot associate them with
@@ -448,7 +444,7 @@ function groupQuestionSections(source: HTMLElement): void {
     section.append(prompt, response);
   }
   for (const heading of source.querySelectorAll<HTMLElement>(
-    ':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6, :scope > hr',
+    ':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6',
   )) {
     const section = document.createElement('div');
     section.className = 'printing-subsection';
@@ -466,6 +462,29 @@ function groupQuestionSections(source: HTMLElement): void {
   }
 }
 
+function moveCheckboxInstructions(questionBody: HTMLElement): void {
+  const checkboxGroups = new Set<HTMLElement>();
+  for (const checkbox of questionBody.querySelectorAll<HTMLInputElement>(
+    'input[type="checkbox"]',
+  )) {
+    const group = checkbox.closest<HTMLElement>('fieldset, [role="group"]');
+    if (group) checkboxGroups.add(group);
+  }
+
+  for (const group of checkboxGroups) {
+    const children = [...group.children];
+    const firstOption = children.find((child) => child.matches('.form-check'));
+    const instructions = children.find(
+      (child) =>
+        !child.matches('.form-check') && child.querySelector('.form-text.text-muted') !== null,
+    );
+    if (!firstOption || !instructions) continue;
+
+    instructions.classList.add('printing-checkbox-instructions');
+    firstOption.before(instructions);
+  }
+}
+
 function normalizeQuestionBodyResponseControls(questionBody: HTMLElement): void {
   replaceImageCapture(questionBody);
   replaceOrderBlocks(questionBody);
@@ -478,9 +497,7 @@ function normalizeQuestionBodyResponseControls(questionBody: HTMLElement): void 
     'input[type="checkbox"], input[type="radio"]',
   )) {
     control.closest('fieldset, [role="group"]')?.classList.add('printing-selection-group');
-    control
-      .closest('.form-check, .checkbox, .radio, .trueFalse')
-      ?.classList.add('printing-selection-option');
+    control.closest('.form-check, .checkbox, .radio')?.classList.add('printing-selection-option');
   }
   replaceFileEditors(questionBody);
   moveResponseControlPlaceholders(questionBody);

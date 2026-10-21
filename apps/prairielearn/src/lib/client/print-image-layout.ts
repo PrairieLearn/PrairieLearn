@@ -1,4 +1,35 @@
-import { getPrintBlockHeight, parsePrintBlockSize } from './print-question-layout.js';
+import { parseQuestionBlockSize } from '../printing/question-block-size.js';
+
+import { getPrintBlockHeight } from './print-question-layout.js';
+
+const MIN_CHOICE_IMAGE_SCALE = 0.5;
+
+export async function waitForExcalidrawCanvases(source: HTMLElement): Promise<void> {
+  const drawings = source.querySelectorAll<HTMLElement>('.excalidraw-root');
+  await Promise.all(
+    [...drawings].map(async (drawing) => {
+      const hasRenderedCanvas = () =>
+        [...drawing.querySelectorAll('canvas')].some(
+          (canvas) => canvas.width > 0 && canvas.height > 0,
+        );
+      if (hasRenderedCanvas()) return;
+
+      await new Promise<void>((resolve, reject) => {
+        const observer = new MutationObserver(() => {
+          if (!hasRenderedCanvas()) return;
+          window.clearTimeout(timeout);
+          observer.disconnect();
+          resolve();
+        });
+        const timeout = window.setTimeout(() => {
+          observer.disconnect();
+          reject(new Error('Timed out waiting for Excalidraw to render'));
+        }, 60_000);
+        observer.observe(drawing, { childList: true, subtree: true, attributes: true });
+      });
+    }),
+  );
+}
 
 export async function waitForPrintImages(source: HTMLElement): Promise<void> {
   const images: HTMLImageElement[] = [];
@@ -38,7 +69,7 @@ export function fitPrintChoiceImages(questions: Iterable<HTMLElement>, pageHeigh
   for (const question of questions) {
     // Leave room for rounding when Paged.js reconstructs the measured content.
     const availableHeight =
-      getPrintBlockHeight(parsePrintBlockSize(question.dataset.printBlockSize), pageHeight) - 2;
+      getPrintBlockHeight(parseQuestionBlockSize(question.dataset.printBlockSize), pageHeight) - 2;
     if (question.getBoundingClientRect().height <= availableHeight) continue;
 
     const images = [
@@ -75,9 +106,18 @@ export function fitPrintChoiceImages(questions: Iterable<HTMLElement>, pageHeigh
       continue;
     }
 
+    // Keep individual images within a page, but let a long list of choices flow across pages
+    // rather than shrinking every image until the entire question fits on one page.
+    const minimumScale = Math.min(
+      MIN_CHOICE_IMAGE_SCALE,
+      ...images.map(({ bounds }) => (pageHeight - 48) / bounds.height),
+    );
+    scaleImages(minimumScale);
+    if (question.getBoundingClientRect().height > availableHeight) continue;
+
     // Measure the real layout, including captions, wrapping, and option spacing. A common
     // scale preserves equal image sizes and any intentionally different proportions.
-    let lower = 0;
+    let lower = minimumScale;
     let upper = 1;
     for (let iteration = 0; iteration < 12; iteration++) {
       const scale = (lower + upper) / 2;
@@ -85,7 +125,6 @@ export function fitPrintChoiceImages(questions: Iterable<HTMLElement>, pageHeigh
       if (question.getBoundingClientRect().height <= availableHeight) lower = scale;
       else upper = scale;
     }
-    if (lower === 0) restoreImages();
-    else scaleImages(lower);
+    scaleImages(lower);
   }
 }
