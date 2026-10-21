@@ -105,8 +105,7 @@ SELECT
       JOIN submissions AS snew ON (snew.variant_id = vnew.id)
     WHERE
       vnew.instance_question_id = iq.id
-      AND s.id != snew.id
-      AND snew.date > s.date
+      AND (snew.date, snew.id) > (s.date, s.id)
   ) AS has_newer_submission
 FROM
   submissions AS s
@@ -213,11 +212,16 @@ WITH
   updated_instance_question_status AS (
     UPDATE instance_questions AS iq
     SET
-      status = 'invalid'::enum_instance_question_status
+      status = 'invalid'::enum_instance_question_status,
+      grading_pending = iq.grading_pending
+      AND iq.requires_manual_grading
+      AND coalesce(iq.points, 0) < coalesce(aq.max_points, 0)
     FROM
-      updated_variant AS v
+      updated_variant AS v,
+      assessment_questions AS aq
     WHERE
       iq.id = v.instance_question_id
+      AND aq.id = iq.assessment_question_id
       -- This is only updated here if the question is not gradable, if it's
       -- gradable it is updated in a separate step
       AND NOT $gradable

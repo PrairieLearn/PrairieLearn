@@ -8,7 +8,10 @@ import { formatDate, formatInterval } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import { updateAssessmentInstancesGradingPending } from '../models/assessment-instance.js';
+import {
+  clearAssessmentInstancesGradingPending,
+  updateAssessmentInstancesGradingPending,
+} from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import {
@@ -492,7 +495,7 @@ export async function setAssessmentInstanceScore(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const { max_points } = await sqldb.queryRow(
+    const { assessment_id, max_points } = await sqldb.queryRow(
       sql.select_and_lock_assessment_instance,
       { assessment_instance_id },
       AssessmentInstanceSchema,
@@ -504,6 +507,10 @@ export async function setAssessmentInstanceScore(
       points,
       authn_user_id,
     });
+    await clearAssessmentInstancesGradingPending({
+      assessment_id,
+      assessment_instance_ids: [assessment_instance_id],
+    });
   });
 }
 
@@ -513,7 +520,7 @@ export async function setAssessmentInstancePoints(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const { max_points } = await sqldb.queryRow(
+    const { assessment_id, max_points } = await sqldb.queryRow(
       sql.select_and_lock_assessment_instance,
       { assessment_instance_id },
       AssessmentInstanceSchema,
@@ -524,6 +531,10 @@ export async function setAssessmentInstancePoints(
       score_perc,
       points,
       authn_user_id,
+    });
+    await clearAssessmentInstancesGradingPending({
+      assessment_id,
+      assessment_instance_ids: [assessment_instance_id],
     });
   });
 }

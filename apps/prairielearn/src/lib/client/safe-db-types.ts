@@ -402,6 +402,7 @@ export type StaffInstanceQuestion = z.infer<typeof StaffInstanceQuestionSchema>;
 export const RawStudentInstanceQuestionSchema = RawStaffInstanceQuestionSchema.pick({
   auto_points: true,
   current_value: true,
+  grading_pending: true, // potentially sensitive
   highest_submission_score: true,
   id: true,
   manual_points: true,
