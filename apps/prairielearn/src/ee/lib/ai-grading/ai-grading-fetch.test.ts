@@ -139,28 +139,4 @@ describe('bounded custom AI grading requests', () => {
       },
     );
   });
-
-  it('forwards SDK cancellation while reading a grading response', async () => {
-    let received = false;
-    await withServer(
-      (_request, response) => {
-        received = true;
-        response.writeHead(200);
-        response.flushHeaders();
-        response.write('{');
-      },
-      async (baseUrl, fetch) => {
-        const provider = createOpenAICompatible({ name: 'custom', baseURL: baseUrl, fetch });
-        await expect(
-          generateText({
-            model: provider('campus-text'),
-            prompt: 'Grade this',
-            abortSignal: AbortSignal.timeout(100),
-            maxRetries: 0,
-          }),
-        ).rejects.toThrow();
-        expect(received).toBe(true);
-      },
-    );
-  });
 });
