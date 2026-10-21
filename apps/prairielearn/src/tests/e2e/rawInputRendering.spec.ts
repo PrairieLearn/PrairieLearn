@@ -73,7 +73,7 @@ test('shows text and formula editor diagnostics for symbolic input', async ({ pa
     timeout: 15_000,
   });
 
-  const textButton = page.getByRole('button', { name: 'Original input for Symbolic value' });
+  const textButton = page.getByRole('button', { name: 'Answer as entered for Symbolic value' });
   await expect(textButton).toBeVisible();
   await textButton.click();
   const textPopover = page.getByRole('dialog').filter({ hasText: 'x<U+200b>' });
@@ -81,7 +81,7 @@ test('shows text and formula editor diagnostics for symbolic input', async ({ pa
   await textPopover.getByRole('button', { name: 'Close' }).click();
 
   const formulaButton = page.getByRole('button', {
-    name: 'Original input for Symbolic formula value',
+    name: 'Answer as entered for Symbolic formula value',
   });
   await expect(formulaButton).toBeVisible();
   await formulaButton.click();

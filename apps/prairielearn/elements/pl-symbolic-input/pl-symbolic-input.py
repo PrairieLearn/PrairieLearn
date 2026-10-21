@@ -393,7 +393,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else submitted_raw_answer
             ),
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
-            "raw_input_popover_label": f"Original input for {aria_label or name}",
+            "raw_input_popover_label": f"Answer as entered for {aria_label or name}",
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
