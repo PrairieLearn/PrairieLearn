@@ -26,12 +26,6 @@ import {
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
-import {
-  lockAssessmentInstances,
-  selectAndLockAssessmentInstanceIdsForAssessmentQuestion,
-  updateAssessmentInstancesGradingPending,
-} from './assessment-instance.js';
-
 const sql = loadSqlEquiv(import.meta.url);
 
 // Currently, users of this type only care about these specific columns, so
@@ -58,22 +52,16 @@ export async function resetVariantsForAssessmentQuestion({
   authn_user_id: string;
 }) {
   await runInTransactionAsync(async () => {
-    const ids = await selectAndLockAssessmentInstanceIdsForAssessmentQuestion({
-      assessment_id,
-      assessment_question_id: unsafe_assessment_question_id,
-    });
     const variantIds = await queryScalars(
       sql.reset_variants_for_assessment_question,
       {
         assessment_id,
-        assessment_instance_ids: ids,
         unsafe_assessment_question_id,
         authn_user_id,
       },
       IdSchema,
     );
     await execute(sql.clear_grading_pending_for_reset_variants, { variant_ids: variantIds });
-    await updateAssessmentInstancesGradingPending(ids);
   });
 }
 
@@ -87,7 +75,6 @@ export async function resetVariantsForInstanceQuestion({
   authn_user_id: string;
 }) {
   await runInTransactionAsync(async () => {
-    await lockAssessmentInstances([assessment_instance_id]);
     const variantIds = await queryScalars(
       sql.reset_variants_for_instance_question,
       {
@@ -98,7 +85,6 @@ export async function resetVariantsForInstanceQuestion({
       IdSchema,
     );
     await execute(sql.clear_grading_pending_for_reset_variants, { variant_ids: variantIds });
-    await updateAssessmentInstancesGradingPending([assessment_instance_id]);
   });
 }
 

@@ -26,6 +26,13 @@ FROM
 WHERE
   id = $instance_question_id;
 
+-- BLOCK close_instance_question
+UPDATE instance_questions
+SET
+  open = FALSE
+WHERE
+  id = $instance_question_id;
+
 -- BLOCK set_question_retention
 UPDATE assessment_questions
 SET

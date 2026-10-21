@@ -243,9 +243,9 @@ WITH
       -- requires manual grading. This helps ensure that it eventually gets graded.
       requires_manual_grading = iq.requires_manual_grading
       OR mriqmgj.id IS NULL,
-      grading_pending = (
-        iq.grading_pending
-        OR iq.requires_manual_grading
+      grading_pending = iq.grading_pending
+      AND (
+        iq.requires_manual_grading
         OR mriqmgj.id IS NULL
       )
       AND coalesce(iq.status != 'unanswered', FALSE)

@@ -65,7 +65,6 @@ WHERE
   AND v.broken_at IS NULL
   AND aq.id = $unsafe_assessment_question_id
   AND aq.assessment_id = $assessment_id
-  AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
 RETURNING
   v.id;
 
@@ -89,14 +88,14 @@ RETURNING
 -- BLOCK clear_grading_pending_for_reset_variants
 UPDATE instance_questions AS iq
 SET
-  grading_pending = FALSE
+  grading_pending = iq.grading_pending
+  AND iq.requires_manual_grading
 FROM
-  variants AS
-reset
+  variants AS reset_variant
 WHERE
-  reset.id = ANY ($variant_ids::bigint[])
-  AND iq.id = reset.instance_question_id
-  AND reset.id = (
+  reset_variant.id = ANY ($variant_ids::bigint[])
+  AND iq.id = reset_variant.instance_question_id
+  AND reset_variant.id = (
     SELECT
       s.variant_id
     FROM

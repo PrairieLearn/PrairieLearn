@@ -140,20 +140,16 @@ SET
     ELSE iq.requires_manual_grading
   END,
   grading_pending = CASE
-    WHEN $update_requires_manual_grading THEN $requires_manual_grading
-    AND coalesce(iq.status != 'unanswered', FALSE)
-    AND coalesce(iq.points, 0) < coalesce(aq.max_points, 0)
+    WHEN $update_requires_manual_grading
+    AND NOT $requires_manual_grading THEN FALSE
     ELSE iq.grading_pending
   END,
   assigned_grader = CASE
     WHEN $update_assigned_grader THEN $assigned_grader
     ELSE assigned_grader
   END
-FROM
-  assessment_questions AS aq
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND aq.id = iq.assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
 
 -- BLOCK select_rubric_settings_context_keys
