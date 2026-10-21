@@ -102,14 +102,8 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
 
 export async function after(): Promise<void> {
   debug('after()');
-  // call close()/stop() functions in reverse order to the
-  // start() functions above
+  // Drain background work before closing the resources it may still use.
   try {
-    await assets.close();
-
-    debug('after(): finish workers');
-    await codeCaller.finish();
-
     debug('after(): stop server');
     await server.stopServer();
 
@@ -118,6 +112,11 @@ export async function after(): Promise<void> {
 
     debug('after(): close server jobs');
     await serverJobs.stop();
+
+    await assets.close();
+
+    debug('after(): finish workers');
+    await codeCaller.finish();
 
     debug('after(): close cache');
     await cache.close();
