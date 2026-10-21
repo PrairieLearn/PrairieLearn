@@ -88,3 +88,77 @@ it('isolates concurrent requests and links manually captured errors to OTel span
     );
   }
 });
+
+it('redacts credentials from outgoing request events without changing the request body', async () => {
+  const secret = 'test-secret-that-must-not-leak';
+  const body = {
+    '0': {
+      json: {
+        base_url: 'https://provider.example.com',
+        secret_key: secret,
+        credentials: [{ apiKey: secret, password: secret, access_token: secret }],
+      },
+    },
+  };
+  const originalBody = structuredClone(body);
+  const req = {
+    method: 'POST',
+    url: '/trpc/aiGradingProviders.save',
+    headers: { host: 'localhost' },
+    body,
+  };
+  const eventId = await new Promise<string>((resolve) => {
+    Sentry.requestHandler()(req, {}, () => {
+      resolve(Sentry.captureException(new Error('Unexpected save failure')));
+    });
+  });
+  await Sentry.flush();
+
+  const events = envelopes.flatMap(([, items]) =>
+    items.filter(([header]) => header.type === 'event').map(([, event]) => event as Sentry.Event),
+  );
+  const event = events.find((event) => event.event_id === eventId)!;
+  assert.isDefined(event);
+  assert.notInclude(JSON.stringify(event), secret);
+  assert.deepEqual(event.request!.data, {
+    '0': {
+      json: {
+        base_url: 'https://provider.example.com',
+        secret_key: '[REDACTED]',
+        credentials: [{ apiKey: '[REDACTED]', password: '[REDACTED]', access_token: '[REDACTED]' }],
+      },
+    },
+  });
+  assert.deepEqual(body, originalBody);
+});
+
+it('omits request data when credential redaction fails', async () => {
+  const secret = 'test-secret-in-deep-request';
+  const body = JSON.parse(
+    '{"secret_key":"' +
+      secret +
+      '","nested":' +
+      '{"nested":'.repeat(6000) +
+      'null' +
+      '}'.repeat(6000) +
+      '}',
+  );
+  let eventId: string;
+  Sentry.requestHandler()(
+    { method: 'POST', url: '/trpc/aiGradingProviders.save', headers: { host: 'localhost' }, body },
+    {},
+    () => {
+      eventId = Sentry.captureException(new Error('Failed save with deeply nested input'));
+    },
+  );
+  await Sentry.flush();
+
+  const events = envelopes.flatMap(([, items]) =>
+    items.filter(([header]) => header.type === 'event').map(([, event]) => event as Sentry.Event),
+  );
+  const event = events.find((event) => event.event_id === eventId)!;
+  assert.isDefined(event);
+  assert.notInclude(JSON.stringify(event), secret);
+  assert.isUndefined(event.request);
+  assert.equal(event.exception!.values![0].value, 'Failed save with deeply nested input');
+});

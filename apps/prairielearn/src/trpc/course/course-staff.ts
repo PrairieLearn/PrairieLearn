@@ -20,7 +20,6 @@ import { computeCourseStaffSyncPreview } from '../../lib/course-staff-sync.js';
 import {
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
-  type EnumCourseRole,
   EnumCourseRoleSchema,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -88,27 +87,6 @@ function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: 
       code: 'FORBIDDEN',
       message: `Only administrators can ${action} while emulating another user`,
     });
-  }
-}
-
-async function assertCanDeleteUser(
-  authzData: StaffAuthzData,
-  userId: string,
-  courseId: string,
-  courseRole?: EnumCourseRole | null,
-) {
-  assertCanModifyUser(authzData, userId, 'remove themselves from the course staff');
-  if (!authzData.is_administrator && !authzData.is_institution_administrator) {
-    const role =
-      courseRole !== undefined
-        ? courseRole
-        : await selectCoursePermissionForUser({ course_id: courseId, user_id: userId });
-    if (role === 'Owner') {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'Only administrators can remove owners from the course staff',
-      });
-    }
   }
 }
 
@@ -192,7 +170,7 @@ const deleteUser = t.procedure
   .use(requireCoursePermissionOwn)
   .input(z.object({ userId: IdSchema }))
   .mutation(async ({ input, ctx }) => {
-    await assertCanDeleteUser(ctx.authz_data, input.userId, ctx.course.id);
+    assertCanModifyUser(ctx.authz_data, input.userId, 'remove themselves from the course staff');
     await deleteCoursePermissions({
       course_id: ctx.course.id,
       user_id: input.userId,
@@ -311,7 +289,7 @@ const bulkDelete = t.procedure
   .input(z.object({ userIds: z.array(IdSchema).min(1) }))
   .mutation(async ({ input, ctx }) => {
     for (const userId of input.userIds) {
-      await assertCanDeleteUser(ctx.authz_data, userId, ctx.course.id);
+      assertCanModifyUser(ctx.authz_data, userId, 'remove themselves from the course staff');
     }
     await deleteCoursePermissions({
       course_id: ctx.course.id,
@@ -387,11 +365,10 @@ async function buildStaffSyncPreview(ctx: Awaited<ReturnType<typeof createContex
     const result = computeCourseStaffSyncPreview({ csv, courseInstances, staff });
     for (const row of result.rows) {
       if (row.action === 'remove' && row.expected) {
-        await assertCanDeleteUser(
+        assertCanModifyUser(
           ctx.authz_data,
           row.expected.userId,
-          ctx.course.id,
-          row.expected.courseRole,
+          'remove themselves from the course staff',
         );
       } else if (
         row.action === 'update' &&
