@@ -16,6 +16,7 @@ import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 import { updateCourseSharingName } from '../models/course.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
@@ -599,6 +600,15 @@ describe('test course editor', { timeout: 20_000 }, function () {
             },
           ];
           await fs.writeJson(assessmentPath, sourceAssessment);
+          await fs.outputJson(
+            path.join(originDir, 'courseInstances/Fa18/assessments/HW1_legacy/infoAssessment.json'),
+            {
+              ...sourceAssessment,
+              uuid: crypto.randomUUID(),
+              accessControl: undefined,
+              allowAccess: [{ examUuid: '11111111-1111-4111-8111-111111111111' }],
+            },
+          );
         },
       });
       await helperServer.before(courseRepo.courseLiveDir)();
@@ -607,21 +617,25 @@ describe('test course editor', { timeout: 20_000 }, function () {
     afterAll(helperServer.after);
 
     it('removes PrairieTest configuration from the copied assessment', async () => {
-      const trpcClient = createTrpcClientForAssessment('1');
-      await trpcClient.assessmentSettings.copyAssessment.mutate({
-        aid: 'HW1_copy1',
-        title: 'Homework 1 (copy 1)',
-        number: '1',
-        set: 'Homework',
-      });
+      for (const tid of ['HW1', 'HW1_legacy']) {
+        const assessment = await selectAssessmentByTid({ course_instance_id: '1', tid });
+        const trpcClient = createTrpcClientForAssessment(assessment.id);
+        await trpcClient.assessmentSettings.copyAssessment.mutate({
+          aid: `${tid}_copy1`,
+          title: 'Homework 1 (copy 1)',
+          number: '1',
+          set: 'Homework',
+        });
 
-      const copy: AssessmentJsonInput = await fs.readJson(
-        path.join(
-          courseRepo.courseLiveDir,
-          'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
-        ),
-      );
-      assert.isUndefined(copy.accessControl![0].integrations?.prairieTest);
+        const copy: AssessmentJsonInput = await fs.readJson(
+          path.join(
+            courseRepo.courseLiveDir,
+            `courseInstances/Fa18/assessments/${tid}_copy1/infoAssessment.json`,
+          ),
+        );
+        assert.isUndefined(copy.accessControl?.[0].integrations?.prairieTest);
+        assert.isEmpty(copy.allowAccess ?? []);
+      }
     });
   });
 
