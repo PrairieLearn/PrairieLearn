@@ -1,11 +1,8 @@
 import html
 
 import lxml.html
+import prairielearn as pl
 import pytest
-from prairielearn.internal.raw_input import (
-    render_raw_input_popover,
-    render_raw_input_popover_content,
-)
 
 
 @pytest.mark.parametrize(
@@ -42,7 +39,7 @@ def test_render_raw_input_popover_content(
     ascii_only: str,
     expected_sections: tuple[str, ...],
 ) -> None:
-    content = render_raw_input_popover_content(raw_input)
+    content = pl.render_raw_input_popover_content(raw_input)
     root = lxml.html.fragment_fromstring(content, create_parent="div")
     control_and_formatting_messages = root.xpath(
         "./p/em[contains(., 'Control and formatting characters')]"
@@ -62,14 +59,16 @@ def test_render_raw_input_popover_content(
 
 
 def test_render_raw_input_popover_handles_empty_strings() -> None:
-    content = render_raw_input_popover_content("")
+    content = pl.render_raw_input_popover_content("")
 
     assert content.count("(empty string)") == 1
 
 
 def test_render_raw_input_popover_escapes_content_for_html_attribute() -> None:
-    popover = render_raw_input_popover('<img src=x onerror="alert(1)">', 'answer "one"')
-    content = render_raw_input_popover_content('<img src=x onerror="alert(1)">')
+    popover = pl.render_raw_input_popover(
+        '<img src=x onerror="alert(1)">', 'answer "one"'
+    )
+    content = pl.render_raw_input_popover_content('<img src=x onerror="alert(1)">')
 
     assert html.escape(content, quote=True) in popover
     assert '<img src=x onerror="alert(1)">' not in popover
