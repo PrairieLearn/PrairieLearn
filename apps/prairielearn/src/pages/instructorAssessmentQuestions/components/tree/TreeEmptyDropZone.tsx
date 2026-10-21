@@ -5,7 +5,7 @@ export function TreeEmptyDropZone({ dropRef }: { dropRef: (node: HTMLElement | n
       className="bg-warning-subtle"
       style={{ padding: '1rem', textAlign: 'center' }}
     >
-      <i className="bi bi-exclamation-triangle text-warning me-2" aria-hidden="true" />
+      <i className="bi bi-exclamation-triangle text-warning-emphasis me-2" aria-hidden="true" />
       This zone has no questions. Add questions or delete this zone before saving.
     </div>
   );

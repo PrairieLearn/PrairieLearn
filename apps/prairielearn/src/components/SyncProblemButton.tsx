@@ -31,7 +31,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
         className={clsx({
           fa: true,
           'fa-times text-danger': type === 'error',
-          'fa-exclamation-triangle text-warning': type === 'warning',
+          'fa-exclamation-triangle text-warning-emphasis': type === 'warning',
         })}
         aria-hidden="true"
       />

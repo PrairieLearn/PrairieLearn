@@ -50,7 +50,7 @@ export function LockpointRow({
             class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2"
           >
             <div class="d-flex">
-              <i class="fas fa-lock text-warning me-2 mt-1" aria-hidden="true"></i>
+              <i class="fas fa-lock text-warning-emphasis me-2 mt-1" aria-hidden="true"></i>
               <div>
                 <span class="fw-bold">Lockpoint</span>
                 <small class="text-muted d-block">
