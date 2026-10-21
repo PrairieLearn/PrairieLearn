@@ -51,17 +51,6 @@ SYMPY_EVALUATION_ERROR_WITHOUT_LOCATION = (
     "Your answer contains an invalid expression that could not be evaluated. "
     "Check that each function and operator is used with valid arguments."
 )
-_SET_DOMAIN_NAMES = frozenset({
-    "Complexes",
-    "Integers",
-    "Naturals",
-    "Naturals0",
-    "Rationals",
-    "Reals",
-})
-_SET_DOMAINS: frozenset[sympy.Set] = frozenset(
-    getattr(sympy.S, name) for name in _SET_DOMAIN_NAMES
-)
 
 SympyMapT = dict[str, sympy.Basic | complex]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
@@ -111,7 +100,7 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
     # Reals compares equal to Interval(-oo, oo), but only the domain object is a named set.
-    if any(expr is domain for domain in _SET_DOMAINS):
+    if any(expr is domain for domain in sympy_constants.set_domains):
         return {"set"}
     if isinstance(expr, sympy.Interval):
         return {"interval"}
@@ -1192,7 +1181,7 @@ def _evaluate_normalized_source(
         for k, v in cast(SympyMapT, inner_dict).items()
     }
     if allow_extra_symbols and not allow_sets:
-        for domain_name in _SET_DOMAIN_NAMES:
+        for domain_name in sympy_constants.set_domain_names:
             local_dict.setdefault(domain_name, sympy.Symbol(domain_name))
 
     # Keep mutations made during one parse from affecting later parses.
