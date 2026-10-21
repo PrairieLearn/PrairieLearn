@@ -20,7 +20,8 @@ import {
 import { assertNever } from '@prairielearn/utils';
 
 import type { DocxSource } from './docx-browser.js';
-import { type DocxFigure, buildDocxContent } from './docx-content.js';
+import type { DocxFigure } from './docx-content-context.js';
+import { buildDocxContent } from './docx-content.js';
 import type { PrintableCover, PrintableCoverField, PrintableTextBlock } from './printable-cover.js';
 
 /** Sheet and margin geometry measured from the first paginated page, in CSS pixels. */
