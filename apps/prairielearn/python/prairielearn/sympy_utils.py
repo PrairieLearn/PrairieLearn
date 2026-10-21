@@ -17,6 +17,7 @@ from functools import lru_cache
 from io import StringIO
 from tokenize import NUMBER, TokenError, generate_tokens
 from typing import (
+    TYPE_CHECKING,
     Any,
     Literal,
     Never,
@@ -28,10 +29,14 @@ from typing import (
 )
 
 import sympy
+from sympy.logic.boolalg import Boolean
 from sympy.printing.str import StrPrinter
 
 from prairielearn.internal import sympy_constants, sympy_source
 from prairielearn.misc_utils import full_unidecode
+
+if TYPE_CHECKING:
+    from prairielearn.internal.sympy_utils import EvaluationContext
 
 STANDARD_OPERATORS = sympy_constants.standard_operators
 SET_NOTATION_OPERATORS = sympy_constants.set_notation_operators
@@ -67,7 +72,8 @@ class SympyJson(TypedDict):
     _custom_functions: NotRequired[list[str]]
 
 
-type SympyValue = sympy.Expr | sympy.Set
+type SympyExpression = sympy.Expr | Boolean
+type SympyValue = SympyExpression | sympy.Set
 
 
 @dataclass(frozen=True, slots=True)
@@ -424,7 +430,7 @@ def evaluate(
     *,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
-) -> sympy.Expr: ...
+) -> SympyExpression: ...
 
 
 @overload
@@ -671,25 +677,19 @@ def _evaluate_normalized_source(
     legacy_untyped_functions: frozenset[str] = frozenset(),
 ) -> SympyValue:
     from prairielearn.internal.sympy_expression import parse_and_evaluate
+    from prairielearn.internal.sympy_utils import EvaluationContext
 
-    result = parse_and_evaluate(
-        source,
+    context = EvaluationContext.from_locals_for_eval(
         locals_for_eval,
+        allow_complex=allow_complex,
         allow_sets=allow_sets,
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
         legacy_untyped_names=legacy_untyped_names,
         legacy_untyped_functions=legacy_untyped_functions,
     )
-    _check_evaluated_result(
-        result,
-        source,
-        locals_for_eval,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-        allow_extra_symbols=allow_extra_symbols,
-        simplify_expression=simplify_expression,
-    )
+    result = parse_and_evaluate(source, context)
+    _check_evaluated_result(result, source, context)
     return result
 
 
@@ -705,44 +705,35 @@ def _evaluate_normalized_source_with_structure(
     from prairielearn.internal.sympy_expression import (
         parse_and_evaluate_with_structure,
     )
+    from prairielearn.internal.sympy_utils import EvaluationContext
 
-    result, structure = parse_and_evaluate_with_structure(
-        source,
-        locals_for_eval,
-        allow_sets=allow_sets,
-        simplify_expression=simplify_expression,
-        allow_extra_symbols=allow_extra_symbols,
-    )
-    _check_evaluated_result(
-        result,
-        source,
+    context = EvaluationContext.from_locals_for_eval(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
-        allow_extra_symbols=allow_extra_symbols,
         simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
     )
+    result, structure = parse_and_evaluate_with_structure(source, context)
+    _check_evaluated_result(result, source, context)
     return result, structure
 
 
 def _check_evaluated_result(
     result: SympyValue,
     source: sympy_source.SourceText,
-    locals_for_eval: LocalsForEval,
-    *,
-    allow_complex: bool,
-    allow_sets: bool,
-    allow_extra_symbols: bool,
-    simplify_expression: bool,
+    context: "EvaluationContext",
 ) -> None:
     try:
         sympy_check(
             result,
-            locals_for_eval,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
-            allow_extra_symbols=allow_extra_symbols,
-            check_evaluated_complex=not simplify_expression and not allow_complex,
+            context.locals_for_eval,
+            allow_complex=context.allow_complex,
+            allow_sets=context.allow_sets,
+            allow_extra_symbols=context.allow_extra_symbols,
+            check_evaluated_complex=(
+                not context.simplify_expression and not context.allow_complex
+            ),
         )
     except BaseSympyError as exc:
         raise _LocalizedSympyError(
@@ -762,7 +753,7 @@ def evaluate_with_source(
     allow_sets: Literal[False] = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
-) -> tuple[sympy.Expr, str]: ...
+) -> tuple[SympyExpression, str]: ...
 
 
 @overload
@@ -818,7 +809,7 @@ def convert_string_to_sympy(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
-) -> sympy.Expr: ...
+) -> SympyExpression: ...
 
 
 @overload
@@ -1045,7 +1036,7 @@ def convert_string_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
-) -> tuple[sympy.Expr, str]: ...
+) -> tuple[SympyExpression, str]: ...
 
 
 @overload
@@ -1370,7 +1361,7 @@ def json_to_sympy(
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
-) -> sympy.Expr: ...
+) -> SympyExpression: ...
 
 
 @overload
@@ -1442,7 +1433,7 @@ def try_parse_string_as_sympy(
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
     allowed_types: set[AllowedSympyType] | None = None,
-) -> SympyParseResult[sympy.Expr]: ...
+) -> SympyParseResult[SympyExpression]: ...
 
 
 @overload
@@ -1476,7 +1467,7 @@ def try_parse_string_as_sympy(
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
     allowed_types: set[AllowedSympyType] | None = None,
-) -> SympyParseResult[sympy.Expr] | SympyParseResult[SympyValue]:
+) -> SympyParseResult[SympyExpression] | SympyParseResult[SympyValue]:
     """Try to parse expr as a SymPy expression.
 
     Returns:
