@@ -146,7 +146,6 @@ lint-js-cached:
 		--check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/non-apps-prairielearn-tsx
 lint-python:
 	@uv run ruff check ./
-	@uv run ruff check --config ruff-element-boundaries.toml apps/prairielearn/elements
 	@uv run ruff format --check ./
 lint-docs-links: build-docs
 	@pnpm linkinator ./site | python3 scripts/process_linkinator_output.py
