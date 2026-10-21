@@ -19,16 +19,16 @@ const sandboxConfig = {
   secretKey: ['workspace-sandbox-test-secret'] as [string],
   sessionStoreExpireSeconds: 30 * 24 * 60 * 60,
   workspaceAuthzCookieMaxAgeMilliseconds: 60 * 1000,
-  workspaceIsolationMode: 'cross-origin' as const,
+  workspaceHostMode: 'cross-origin' as const,
   workspaceLaunchedTimeoutSec: 12 * 60 * 60,
-  workspaceSandboxBaseDomain: 'us.prairielearn-user-content.com',
+  workspaceSandboxBaseDomain: 'workspace-hosts.test',
 };
 
 describe('workspace sandbox', () => {
-  it('maps workspace IDs to sandbox hosts independently of the isolation mode', async () => {
+  it('maps workspace IDs to sandbox hosts independently of the configured host mode', async () => {
     await withConfig(sandboxConfig, () => {
       const hostname = getWorkspaceSandboxHostname({ workspaceId });
-      assert.equal(hostname, 'w123.us.prairielearn-user-content.com');
+      assert.equal(hostname, 'w123.workspace-hosts.test');
       assert.equal(getWorkspaceSandboxOrigin({ workspaceId }), `https://${hostname}`);
       assert.deepEqual(classifyWorkspaceSandboxHost(hostname), {
         type: 'workspace',
@@ -36,8 +36,8 @@ describe('workspace sandbox', () => {
       });
     });
 
-    await withConfig({ ...sandboxConfig, workspaceIsolationMode: 'same-origin' }, () => {
-      assert.deepEqual(classifyWorkspaceSandboxHost('w123.us.prairielearn-user-content.com'), {
+    await withConfig({ ...sandboxConfig, workspaceHostMode: 'same-origin' }, () => {
+      assert.deepEqual(classifyWorkspaceSandboxHost('w123.workspace-hosts.test'), {
         type: 'workspace',
         workspaceId,
       });
@@ -164,7 +164,7 @@ describe('workspace sandbox', () => {
       );
       assert.deepEqual(
         validateWorkspaceSandboxWebSocketAccess(
-          { headers: { ...headers, origin: 'https://w999999.us.prairielearn-user-content.com' } },
+          { headers: { ...headers, origin: 'https://w999999.workspace-hosts.test' } },
           workspaceId,
         ),
         { authorized: false, reason: 'invalid-origin' },

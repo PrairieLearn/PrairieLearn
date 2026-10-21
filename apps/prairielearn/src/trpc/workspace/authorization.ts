@@ -1,10 +1,10 @@
 import { TRPCError } from '@trpc/server';
 
 import {
+  areWorkspaceSpecificHostsEnabled,
   generateWorkspaceSandboxBootstrapJwt,
   getWorkspaceSandboxAuthorizationCookies,
   getWorkspaceSandboxOrigin,
-  isWorkspaceIsolationEnabled,
 } from '../../lib/workspace-sandbox.js';
 
 import { t, workspaceProcedure } from './init.js';
@@ -13,16 +13,16 @@ export interface WorkspaceAuthorizationError {
   Issue: never;
 }
 
-const requireWorkspaceIsolation = t.middleware(async ({ ctx, next }) => {
-  if (!(await isWorkspaceIsolationEnabled(ctx.locals))) {
-    throw new TRPCError({ code: 'NOT_FOUND', message: 'Workspace sandboxing is not enabled' });
+const requireWorkspaceSpecificHosts = t.middleware(async ({ ctx, next }) => {
+  if (!(await areWorkspaceSpecificHostsEnabled(ctx.locals))) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Workspace-specific hosts are not enabled' });
   }
 
   return next();
 });
 
 const issueMutation = workspaceProcedure
-  .use(requireWorkspaceIsolation)
+  .use(requireWorkspaceSpecificHosts)
   .mutation(async ({ ctx }) => {
     if (!ctx.sessionId) {
       throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session is not available' });

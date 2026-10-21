@@ -14,7 +14,7 @@ export function Workspace({
   showLogs,
   heartbeatIntervalSec,
   visibilityTimeoutSec,
-  workspaceIsolationMode,
+  workspaceHostMode,
   publicQuestionEndpoint,
   trpcCsrfToken,
   socketToken,
@@ -27,7 +27,7 @@ export function Workspace({
   showLogs: boolean;
   heartbeatIntervalSec: number;
   visibilityTimeoutSec: number;
-  workspaceIsolationMode: 'same-origin' | 'cross-origin';
+  workspaceHostMode: 'same-origin' | 'cross-origin';
   publicQuestionEndpoint: boolean;
   trpcCsrfToken: string;
   socketToken: string;
@@ -51,7 +51,7 @@ export function Workspace({
         'workspace-id': workspace_id,
         'heartbeat-interval-sec': heartbeatIntervalSec.toString(),
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
-        'workspace-isolation-mode': workspaceIsolationMode,
+        'workspace-host-mode': workspaceHostMode,
         'public-question-endpoint': publicQuestionEndpoint.toString(),
         'trpc-csrf-token': trpcCsrfToken,
       },

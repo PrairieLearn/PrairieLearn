@@ -15,8 +15,8 @@ import { workspaceTrpcRouter } from './trpc.js';
 const sandboxConfig = {
   secretKey: ['workspace-sandbox-test-secret'] as [string],
   serverCanonicalHost: 'https://us.prairielearn.test',
-  workspaceIsolationMode: 'cross-origin' as const,
-  workspaceSandboxBaseDomain: 'us.prairielearn-user-content.test',
+  workspaceHostMode: 'cross-origin' as const,
+  workspaceSandboxBaseDomain: 'workspace-hosts.test',
 };
 
 async function withWorkspaceServer(fn: (urlBase: string) => Promise<void>) {
@@ -45,7 +45,7 @@ async function withWorkspaceServer(fn: (urlBase: string) => Promise<void>) {
 
 describe('workspace authorization tRPC router', () => {
   it('issues short-lived bootstrap credentials for an authorized running workspace', async () => {
-    await features.runWithGlobalOverrides({ 'user-content-isolation': true }, async () => {
+    await features.runWithGlobalOverrides({ 'workspace-specific-hosts': true }, async () => {
       await withConfig(sandboxConfig, async () => {
         await withWorkspaceServer(async (urlBase) => {
           const client = createWorkspaceTrpcClient({
@@ -56,7 +56,7 @@ describe('workspace authorization tRPC router', () => {
           });
           const result = await client.authorization.issue.mutate();
 
-          assert.equal(result.sandboxOrigin, 'https://w123.us.prairielearn-user-content.test');
+          assert.equal(result.sandboxOrigin, 'https://w123.workspace-hosts.test');
           assert.equal(result.bootstrapUrl, `${result.sandboxOrigin}/bootstrap`);
           assert.deepEqual(await verifyWorkspaceSandboxBootstrapJwt(result.jwt), {
             authorization_cookies: {},

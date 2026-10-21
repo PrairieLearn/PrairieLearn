@@ -21,6 +21,7 @@ import {
   WORKSPACE_SANDBOX_SESSION_COOKIE_NAME,
   type WorkspaceSandboxHost,
   type WorkspaceSandboxSession,
+  areWorkspaceSpecificHostsEnabled,
   classifyWorkspaceSandboxRequestHost,
   generateWorkspaceSandboxCookie,
   generateWorkspaceSandboxSessionCookie,
@@ -28,7 +29,6 @@ import {
   getWorkspaceSandboxCookieMaxAgeMilliseconds,
   getWorkspaceSandboxSession,
   getWorkspaceSandboxSessionCookieMaxAgeMilliseconds,
-  isWorkspaceIsolationEnabled,
   validateWorkspaceSandboxAccess,
   validateWorkspaceSandboxWebSocketAccess,
   verifyWorkspaceSandboxBootstrapJwt,
@@ -179,7 +179,7 @@ export function makeWorkspaceSandboxMiddleware({
   });
   workspaceAuthorizationRouter.use(
     asyncHandler(async (_req, res, next) => {
-      if (!(await isWorkspaceIsolationEnabled(res.locals))) {
+      if (!(await areWorkspaceSpecificHostsEnabled(res.locals))) {
         sendAuthorizationExpired(res);
         return;
       }

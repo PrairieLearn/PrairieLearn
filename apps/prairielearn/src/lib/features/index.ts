@@ -17,7 +17,7 @@ const featureNames = [
   // Can be applied to any context.
   'ai-question-generation',
   'rich-text-editor',
-  'user-content-isolation',
+  'workspace-specific-hosts',
 
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.
   'lti11',

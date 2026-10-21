@@ -86,8 +86,8 @@ import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
 import { getSearchParams } from './lib/url.js';
 import {
+  areWorkspaceSpecificHostsEnabled,
   classifyWorkspaceSandboxRequestHost,
-  isWorkspaceIsolationEnabled,
 } from './lib/workspace-sandbox.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
@@ -350,7 +350,7 @@ export async function initExpress(): Promise<Express> {
       (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
       (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint }), // jumps to error handler if authz fails
       asyncHandler(async (_req, res, next) => {
-        if (await isWorkspaceIsolationEnabled(res.locals)) {
+        if (await areWorkspaceSpecificHostsEnabled(res.locals)) {
           res.status(404).send('Not Found');
           return;
         }
@@ -373,7 +373,7 @@ export async function initExpress(): Promise<Express> {
       makeWorkspaceProxyMiddleware(containerPathRegex),
     ]);
   }
-  if (config.workspaceIsolationMode === 'cross-origin') {
+  if (config.workspaceHostMode === 'cross-origin') {
     app.use(
       makeWorkspaceSandboxMiddleware({
         onProxyRequest: (req) => workspaceProxySocketActivityMetrics.addSocket(req.socket),

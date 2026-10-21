@@ -420,9 +420,9 @@ export const ConfigSchema = z.object({
   workspaceLogsExpirationDays: z.number().nullable().default(120),
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   /**
-   * Whether workspace containers are served from PrairieLearn's origin or an isolated origin.
+   * Whether workspace containers use the main application host or workspace-specific hosts.
    */
-  workspaceIsolationMode: z.enum(['same-origin', 'cross-origin']).default('same-origin'),
+  workspaceHostMode: z.enum(['same-origin', 'cross-origin']).default('same-origin'),
   /** Base domain used for workspace hostnames in cross-origin mode. */
   workspaceSandboxBaseDomain: z
     .string()
@@ -802,16 +802,14 @@ export async function loadConfig(paths: string[]) {
     throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
   }
 
-  if (config.workspaceIsolationMode === 'cross-origin') {
+  if (config.workspaceHostMode === 'cross-origin') {
     if (!config.workspaceSandboxBaseDomain) {
       throw new Error(
-        'workspaceSandboxBaseDomain must be set when workspaceIsolationMode is "cross-origin"',
+        'workspaceSandboxBaseDomain must be set when workspaceHostMode is "cross-origin"',
       );
     }
     if (!config.serverCanonicalHost) {
-      throw new Error(
-        'serverCanonicalHost must be set when workspaceIsolationMode is "cross-origin"',
-      );
+      throw new Error('serverCanonicalHost must be set when workspaceHostMode is "cross-origin"');
     }
 
     const cookieDomain = config.cookieDomain?.replace(/^\./, '').toLowerCase();

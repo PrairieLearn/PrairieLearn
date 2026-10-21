@@ -25,7 +25,7 @@ onDocumentReady(function () {
   const trpcCsrfToken = document.body.getAttribute('data-trpc-csrf-token');
   const publicQuestionEndpoint =
     document.body.getAttribute('data-public-question-endpoint') === 'true';
-  const workspaceIsolationMode = document.body.getAttribute('data-workspace-isolation-mode');
+  const workspaceHostMode = document.body.getAttribute('data-workspace-host-mode');
   const heartbeatIntervalSec = getNumericalAttribute(
     document.body,
     'data-heartbeat-interval-sec',
@@ -102,7 +102,7 @@ onDocumentReady(function () {
   async function loadWorkspaceFrame(loadId: number) {
     showLoadingFrame();
 
-    if (workspaceIsolationMode !== 'cross-origin') {
+    if (workspaceHostMode !== 'cross-origin') {
       const workspaceFrameSrc = window.location.href + '/container/';
       if (workspaceFrame.src !== workspaceFrameSrc) {
         workspaceFrame.src = workspaceFrameSrc;
@@ -234,7 +234,7 @@ onDocumentReady(function () {
 
   window.addEventListener('message', (event) => {
     if (
-      workspaceIsolationMode !== 'cross-origin' ||
+      workspaceHostMode !== 'cross-origin' ||
       sandboxOrigin == null ||
       event.origin !== sandboxOrigin ||
       event.source !== workspaceFrame.contentWindow ||

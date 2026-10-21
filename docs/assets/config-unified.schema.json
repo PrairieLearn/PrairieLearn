@@ -1014,7 +1014,7 @@
       "default": 60000,
       "type": "number"
     },
-    "workspaceIsolationMode": {
+    "workspaceHostMode": {
       "default": "same-origin",
       "type": "string",
       "enum": ["same-origin", "cross-origin"]

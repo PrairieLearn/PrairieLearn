@@ -228,7 +228,7 @@ export function getTrustedPrairieLearnOrigin(): string {
   return new URL(config.serverCanonicalHost).origin;
 }
 
-export async function isWorkspaceIsolationEnabled(locals: {
+export async function areWorkspaceSpecificHostsEnabled(locals: {
   institution?: { id: string };
   course?: { id: string; institution_id?: string };
   course_instance?: { id: string };
@@ -238,11 +238,11 @@ export async function isWorkspaceIsolationEnabled(locals: {
     locals.institution ??
     (locals.course?.institution_id == null ? undefined : { id: locals.course.institution_id });
 
-  // The config switch is an operational fallback; the feature flag controls rollout only in
-  // environments where the cross-origin infrastructure has been configured.
+  // The config switch controls host routing at the deployment level; the feature flag controls
+  // rollout only in environments where workspace-specific hosts have been configured.
   return (
-    config.workspaceIsolationMode === 'cross-origin' &&
-    (await features.enabledFromLocals('user-content-isolation', { ...locals, institution }))
+    config.workspaceHostMode === 'cross-origin' &&
+    (await features.enabledFromLocals('workspace-specific-hosts', { ...locals, institution }))
   );
 }
 
