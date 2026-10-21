@@ -65,7 +65,9 @@ WHERE
   AND v.broken_at IS NULL
   AND aq.id = $unsafe_assessment_question_id
   AND aq.assessment_id = $assessment_id
-  AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[]);
+  AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
+RETURNING
+  v.id;
 
 -- BLOCK reset_variants_for_instance_question
 UPDATE variants AS v
@@ -80,7 +82,34 @@ WHERE
   AND v.open = TRUE
   AND v.broken_at IS NULL
   AND iq.id = $unsafe_instance_question_id
-  AND iq.assessment_instance_id = $assessment_instance_id;
+  AND iq.assessment_instance_id = $assessment_instance_id
+RETURNING
+  v.id;
+
+-- BLOCK clear_grading_pending_for_reset_variants
+UPDATE instance_questions AS iq
+SET
+  grading_pending = FALSE
+FROM
+  variants AS
+reset
+WHERE
+  reset.id = ANY ($variant_ids::bigint[])
+  AND iq.id = reset.instance_question_id
+  AND reset.id = (
+    SELECT
+      s.variant_id
+    FROM
+      variants AS v
+      JOIN submissions AS s ON s.variant_id = v.id
+    WHERE
+      v.instance_question_id = iq.id
+    ORDER BY
+      s.date DESC,
+      s.id DESC
+    LIMIT
+      1
+  );
 
 -- BLOCK select_variant_by_instance_question_id
 WITH

@@ -606,6 +606,7 @@ const minimalStudentZone: z.input<typeof StudentZoneSchema> = {
 const minimalStudentInstanceQuestion: z.input<typeof StudentInstanceQuestionSchema> = {
   auto_points: null,
   current_value: null,
+  grading_pending: false,
   highest_submission_score: null,
   id: '1',
   manual_points: null,

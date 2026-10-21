@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar, queryScalars } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryScalar,
+  queryScalars,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
@@ -103,7 +110,39 @@ export async function updateAssessmentInstancesGradingPending(
   await execute(sql.update_assessment_instances_grading_pending, { assessment_instance_ids });
 }
 
+/** Reconciles question removals when an existing attempt is viewed, without recomputing scores. */
+export async function refreshAssessmentInstanceGradingPending(
+  assessment_instance_id: string,
+): Promise<boolean> {
+  return await runInTransactionAsync(async () => {
+    await lockAssessmentInstances([assessment_instance_id]);
+    await updateAssessmentInstancesGradingPending([assessment_instance_id]);
+    return (await selectAssessmentInstanceById(assessment_instance_id)).grading_pending;
+  });
+}
+
 /** The caller must be in a transaction and lock parents before their questions or variants. */
 export async function lockAssessmentInstances(assessment_instance_ids: string[]): Promise<void> {
   await execute(sql.lock_assessment_instances, { assessment_instance_ids });
+}
+
+/** Acknowledges existing pending work without changing scores or the manual grading queue. */
+export async function clearAssessmentInstancesGradingPending({
+  assessment_id,
+  assessment_instance_ids,
+}: {
+  assessment_id: string;
+  assessment_instance_ids: string[] | null;
+}): Promise<void> {
+  await runInTransactionAsync(async () => {
+    const locked_ids = await queryScalars(
+      sql.select_and_lock_assessment_instances_for_pending_clear,
+      { assessment_id, assessment_instance_ids },
+      IdSchema,
+    );
+    if (locked_ids.length === 0) return;
+    await execute(sql.clear_assessment_instances_grading_pending, {
+      assessment_instance_ids: locked_ids,
+    });
+  });
 }

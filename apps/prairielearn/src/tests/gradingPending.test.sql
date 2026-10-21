@@ -17,3 +17,22 @@ FROM
   assessment_score_logs
 WHERE
   assessment_instance_id = $assessment_instance_id;
+
+-- BLOCK requires_manual_grading
+SELECT
+  requires_manual_grading
+FROM
+  instance_questions
+WHERE
+  id = $instance_question_id;
+
+-- BLOCK set_question_retention
+UPDATE assessment_questions
+SET
+  deleted_at = CASE
+    WHEN $deleted::boolean THEN now()
+    ELSE NULL
+  END,
+  alternative_group_id = $alternative_group_id
+WHERE
+  id = $assessment_question_id;

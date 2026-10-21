@@ -24,7 +24,11 @@ WITH
       current_value = $current_value,
       points_list = $points_list::double precision[],
       variants_points_list = $variants_points_list::double precision[],
-      number_attempts = iq.number_attempts + 1
+      number_attempts = iq.number_attempts + 1,
+      -- Completion must not reopen work acknowledged by an instructor.
+      grading_pending = iq.grading_pending
+      AND iq.requires_manual_grading
+      AND $points::double precision < coalesce($max_points::double precision, 0)
     WHERE
       iq.id = $instance_question_id
   )

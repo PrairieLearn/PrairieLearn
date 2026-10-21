@@ -373,9 +373,14 @@ FOR NO KEY UPDATE OF
 -- BLOCK tag_for_manual_grading
 UPDATE instance_questions iq
 SET
-  requires_manual_grading = TRUE
+  requires_manual_grading = TRUE,
+  grading_pending = coalesce(iq.status != 'unanswered', FALSE)
+  AND coalesce(iq.points, 0) < coalesce(aq.max_points, 0)
+FROM
+  assessment_questions AS aq
 WHERE
   iq.assessment_question_id = $assessment_question_id
+  AND aq.id = iq.assessment_question_id
   AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[]);
 
 -- BLOCK insert_rubric_grading
@@ -553,6 +558,20 @@ WHERE
 
 -- BLOCK update_instance_question_score
 WITH
+  submission_state AS (
+    SELECT
+      EXISTS (
+        SELECT
+          1
+        FROM
+          variants AS v
+          JOIN submissions AS s ON s.variant_id = v.id
+          JOIN submissions AS graded ON graded.id = $submission_id
+        WHERE
+          v.instance_question_id = $instance_question_id
+          AND (s.date, s.id) > (graded.date, graded.id)
+      ) AS has_newer_submission
+  ),
   updated_instance_question AS (
     UPDATE instance_questions AS iq
     SET
@@ -569,9 +588,15 @@ WITH
       -- TODO: this might not be correct. Matt suggested that we might want to
       -- refactor `highest_submission_score` to track only auto points.
       highest_submission_score = COALESCE($score, highest_submission_score),
-      requires_manual_grading = FALSE,
+      -- Grading an older submission does not acknowledge newer saved work.
+      requires_manual_grading = iq.requires_manual_grading
+      AND ss.has_newer_submission,
+      grading_pending = iq.grading_pending
+      AND ss.has_newer_submission,
       last_grader = $authn_user_id,
       is_ai_graded = $is_ai_graded
+    FROM
+      submission_state AS ss
     WHERE
       iq.id = $instance_question_id
     RETURNING
