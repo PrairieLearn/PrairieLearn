@@ -12,10 +12,6 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
 from sympy.printing.str import StrPrinter
-from prairielearn.internal.raw_input import (
-    render_raw_input_popover,
-    render_raw_input_popover_content,
-)
 
 
 class DisplayType(Enum):
@@ -411,11 +407,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
 
         if submitted_raw_answer is not None:
-            html_params["raw_input_popover"] = render_raw_input_popover(
+            html_params["raw_input_popover"] = pl.render_raw_input_popover(
                 submitted_raw_answer, aria_label or name
             )
-            html_params["raw_input_popover_content"] = render_raw_input_popover_content(
-                submitted_raw_answer
+            html_params["raw_input_popover_content"] = (
+                pl.render_raw_input_popover_content(submitted_raw_answer)
             )
 
         if show_score and score is not None:
