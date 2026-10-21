@@ -4,7 +4,7 @@
   "title": "Printable exam coverage",
   "set": "Exam",
   "number": "23",
-  "comment": "Every question in the test course, in a fixed order, for exercising the printable-exam renderer.",
+  "comment": "Freeform questions in a fixed order for exercising the printable-exam renderer.",
   "shuffleQuestions": false,
   "autoClose": false,
   "accessControl": [
@@ -16,7 +16,7 @@
       }
     }
   ],
-  "text": "This exam exists to exercise the printable-exam renderer. It contains every question in the test course in a fixed order, grouped into zones by the print behavior each one exercises.",
+  "text": "This exam exists to exercise the printable-exam renderer. It contains Freeform questions in a fixed order, grouped into zones by the print behavior each one exercises.",
   "honorCode": "## Academic integrity pledge\n\nI, {{user_name}}, pledge that the work on this printed exam is my own.",
   "zones": [
     {
@@ -60,23 +60,6 @@
         },
         {
           "id": "blankAnswers",
-          "autoPoints": [5]
-        }
-      ]
-    },
-    {
-      "comment": "Legacy v2 questions: Calculation, MultipleChoice, and Checkbox render paths. partialCredit4_v2 and partialCredit5_v2_partial are excluded: their templates begin with a mustache lint directive, which rivets treats as a data binding, so they cannot render in a browser.",
-      "questions": [
-        {
-          "id": "addVectors",
-          "autoPoints": [5]
-        },
-        {
-          "id": "fossilFuelsRadio",
-          "autoPoints": [5]
-        },
-        {
-          "id": "v2checkbox",
           "autoPoints": [5]
         }
       ]

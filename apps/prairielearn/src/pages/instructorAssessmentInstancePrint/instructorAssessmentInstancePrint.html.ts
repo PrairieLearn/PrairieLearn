@@ -2,7 +2,6 @@ import { html, unsafeHtml } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.js';
 import {
-  assetPath,
   compiledScriptTag,
   compiledStylesheetTag,
   nodeModulesAssetPath,
@@ -35,7 +34,6 @@ export function InstructorAssessmentInstancePrint({
   omittedQuestionCount = 0,
   warnings = [],
   extraHeadersHtml,
-  hasLegacyQuestions,
   maxPoints,
   assessmentTextHtml,
   honorCodeHtml,
@@ -52,7 +50,6 @@ export function InstructorAssessmentInstancePrint({
   omittedQuestionCount?: number;
   warnings?: { code: string; question_number: string; message: string }[];
   extraHeadersHtml: string;
-  hasLegacyQuestions: boolean;
   maxPoints: number;
   assessmentTextHtml: string | null;
   honorCodeHtml: string | null;
@@ -223,26 +220,7 @@ export function InstructorAssessmentInstancePrint({
             }
           }
         </style>
-        ${unsafeHtml(extraHeadersHtml)}
-        <!--
-          RequireJS must load after every question's own headers. Unlike the per-question pages,
-          this document combines legacy and Freeform questions, so element dependencies such as
-          sylvester, socket.io, and cropper share the page with the legacy AMD loader. Those
-          libraries are UMD: once "define" exists they register as anonymous modules instead of
-          assigning their globals, which both breaks the elements that expect the global and
-          leaves RequireJS unable to resolve the legacy client modules.
-        -->
-        ${
-          hasLegacyQuestions
-            ? html`
-                <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-                <script src="${assetPath('javascripts/require.js')}"></script>
-                <script src="${assetPath('localscripts/question.js')}"></script>
-                <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
-              `
-            : ''
-        }
-        ${compiledStylesheetTag('exam-printing.css')}
+        ${unsafeHtml(extraHeadersHtml)} ${compiledStylesheetTag('exam-printing.css')}
         <style>
           @page {
             @bottom-right {
