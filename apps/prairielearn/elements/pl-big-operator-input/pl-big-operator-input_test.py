@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
+import json
 import re
+import shutil
+import sys
 import time
 from dataclasses import replace
+from pathlib import Path, PurePosixPath
 from typing import Any, Literal, cast, get_args
 
 import lxml.html
@@ -749,6 +754,20 @@ class TestParseUnits:
         assert set(data["submitted_answers"]) == {"op", "other-answer"}
         assert data["submitted_answers"]["other-answer"] == "unchanged"
 
+    def test_component_parser_uses_formula_editor_latex(self) -> None:
+        data = question_data(
+            raw_submitted_answers={
+                "op-lower": "2+-a",
+                "op-lower-latex": r"2\pm a",
+                "op-upper": "2",
+                "op-body": "k",
+            }
+        )
+
+        big_operator_input.parse(html(operator="Sum", variables="a"), data)
+
+        assert 'invalid symbol "±"' in data["format_errors"]["op-lower"]
+
     @pytest.mark.parametrize("panel", ["question", "submission"])
     def test_formula_editor_transport_cleanup_preserves_render(
         self, panel: Literal["question", "submission"]
@@ -939,7 +958,7 @@ class TestGradeUnits:
         assert data["partial_scores"]["op"] == {"score": 0.0, "weight": 1}
 
         root = lxml.html.fragment_fromstring(big_operator_input.render(markup, data))
-        body = root.get_element_by_id("symbolic-input-op-body")
+        body = root.get_element_by_id("big-operator-input-op-body")
         assert body.get("aria-invalid") == "true"
         format_error_links = root.xpath('.//*[@title="Format error"]')
         assert len(format_error_links) == 1
@@ -2334,7 +2353,7 @@ class TestLifecycleRegressions:
 
 class TestSymbolicInputRendering:
     def test_score_badges_do_not_show_percent(self) -> None:
-        data = question_data(raw_submitted_answers={"op": "x"}, panel="submission")
+        data = question_data(raw_submitted_answers={"op": "x"})
         data["submitted_answers"] = {"op": "x"}
         rendered, _view = big_operator_input._render_symbolic_input(
             data,
@@ -2352,6 +2371,46 @@ class TestSymbolicInputRendering:
         )
         assert "text-bg-warning" in rendered
         assert re.search(r"\d+(?:\.\d+)?%", rendered) is None
+
+
+def test_copied_element_is_self_contained(tmp_path: Path) -> None:
+    source = Path(cast(str, big_operator_input.__file__)).parent
+    copied = tmp_path / "pl-big-operator-input"
+    shutil.copytree(source, copied, ignore=shutil.ignore_patterns("__pycache__"))
+
+    info = json.loads((copied / "info.json").read_text(encoding="utf-8"))
+    dependencies = info["dependencies"]
+    for dependency_type in ("elementScripts", "elementStyles"):
+        for asset in dependencies.get(dependency_type, []):
+            assert ".." not in PurePosixPath(asset).parts
+            assert (copied / asset).is_file()
+
+    script = (copied / "pl-big-operator-input.js").read_text(encoding="utf-8")
+    styles = (copied / "pl-big-operator-input.css").read_text(encoding="utf-8")
+    assert "window.PLBigOperatorInput" in script
+    assert "PLSymbolicInput" not in script
+    assert ".pl-symbolic-input" not in styles
+
+    module_name = "copied_pl_big_operator_input"
+    spec = importlib.util.spec_from_file_location(
+        module_name, copied / "pl-big-operator-input.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    copied_module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = copied_module
+    try:
+        spec.loader.exec_module(copied_module)
+        markup = html(operator="Sum")
+        data = question_data()
+        copied_module.prepare(markup, data)
+
+        for panel in ("question", "submission", "answer"):
+            data["panel"] = panel
+            data["editable"] = panel == "question"
+            assert copied_module.render(markup, data)
+    finally:
+        sys.modules.pop(module_name)
 
 
 class TestDocSmoke:

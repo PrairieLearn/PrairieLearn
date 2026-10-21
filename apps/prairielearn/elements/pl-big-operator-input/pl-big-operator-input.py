@@ -4,6 +4,7 @@ import copy
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from types import (
     MappingProxyType as frozendict,  # ruff: ignore[camelcase-imported-as-lowercase]
@@ -14,12 +15,11 @@ import chevron
 import lxml.html
 import prairielearn as pl
 import prairielearn.big_operator_utils as pbo
-import prairielearn.internal.symbolic_input as psi
 import prairielearn.sympy_utils as psu
 import sympy
 import sympy.sets
 from prairielearn.big_operator_utils import BigOperatorName as OperatorName
-from prairielearn.internal.symbolic_input import DisplayType
+from prairielearn.grading_utils import determine_score_params
 from prairielearn.timeout_utils import SignalTimeout, TimeoutState
 
 if TYPE_CHECKING:
@@ -45,9 +45,13 @@ if TYPE_CHECKING:
 
 HERE: Final = Path(__file__).parent
 SCHEMA_PATH: Final = HERE / "schemas" / "pl-big-operator-input.json"
-SYMBOLIC_INPUT_TEMPLATE_PATH: Final = (
-    HERE.parent / "pl-symbolic-input" / "pl-symbolic-input.mustache"
-)
+SYMBOLIC_INPUT_TEMPLATE_PATH: Final = HERE / "partials" / "symbolic-input.mustache"
+
+
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
 
 BODY_SIZE_DEFAULT: Final = 16
 BOUNDS_INDEX_FIELD_SIZE_DEFAULT: Final = 7
@@ -59,6 +63,16 @@ SYMPY_TIMEOUT: Final = 3
 SYMPY_TIMEOUT_FORMAT_ERROR: Final = (
     "Your answer did not converge, try a simpler expression."
 )
+
+
+def _allowed_types_include_sets(allowed_types: set[AllowedSympyType]) -> bool:
+    return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
+
+
+def _replace_imaginary_for_display(
+    expression: psu.SympyValue, imaginary_unit: str
+) -> sympy.Basic:
+    return expression.subs(sympy.I, sympy.Symbol(imaginary_unit))
 
 
 @dataclass(frozen=True, slots=True)
@@ -888,33 +902,6 @@ def _render_symbolic_input(
     score: float | None = None,
     format_error: str | None = None,
 ) -> tuple[str, QuestionData]:
-    config = psi.RenderConfig(
-        # passed-through
-        name=name,
-        label=prefix,
-        aria_label=aria_label,
-        suffix=suffix,
-        variables=list(variables),
-        initial_value_variables=list(variables),
-        custom_functions=list(custom_functions),
-        allow_complex=allow_complex,
-        allowed_types=allowed_types,
-        size=size,
-        show_score=show_score,
-        show_info=show_help_text,
-        display_log_as_ln=display_log_as_ln,
-        imaginary_unit=imaginary_unit,
-        # fixed
-        display=DisplayType.INLINE,
-        placeholder="",
-        allow_trig=True,
-        simplify_expression=True,
-        formula_editor=True,
-        show_score_percent=False,
-        initial_value=None,
-    )
-
-    # create a defensive-copied view over data with tweaked values
     view = copy.deepcopy(data)
     if score is not None:
         view["partial_scores"][name] = {"score": score}
@@ -922,8 +909,62 @@ def _render_symbolic_input(
         view.setdefault("format_errors", {})[name] = format_error
 
     template = SYMBOLIC_INPUT_TEMPLATE_PATH.read_text(encoding="utf-8")
+    allow_sets = _allowed_types_include_sets(allowed_types)
+    operators = [*psu.STANDARD_OPERATORS]
+    if allow_sets:
+        operators.extend(psu.SET_NOTATION_OPERATORS)
+    operators.extend(custom_functions)
+    operators.extend(
+        sorted(
+            psu.get_builtin_functions(
+                allow_trig_functions=True,
+                allow_sets=allow_sets,
+            )
+        )
+    )
+    info = chevron.render(
+        template,
+        {
+            "format": True,
+            "variables": variables,
+            "operators": operators,
+            "constants": sorted(psu.get_builtin_constants(allow_hidden=False)),
+            "allow_complex": allow_complex,
+            "allow_sets": allow_sets,
+        },
+    ).strip()
 
-    html = psi.render_with_config(config, view, template=template)
+    parse_error = view.get("format_errors", {}).get(name)
+    if parse_error is not None:
+        parse_error = f"{parse_error}<hr>{info}"
+
+    context: dict[str, Any] = {
+        "field": True,
+        "name": name,
+        "label": prefix,
+        "aria_label": aria_label,
+        "suffix": suffix,
+        "editable": view.get("editable", True),
+        "info": info,
+        "show_info": show_help_text,
+        "size": size,
+        "allow_trig": True,
+        "allow_sets": allow_sets,
+        "imaginary_unit": imaginary_unit,
+        "log_as_ln": display_log_as_ln,
+        "custom_functions": ",".join(custom_functions),
+        "raw_submitted_answer_latex": view.get("raw_submitted_answers", {}).get(
+            f"{name}-latex"
+        ),
+        "parse_error": parse_error,
+        "feedback_id": f"big-operator-input-{name}-feedback",
+    }
+    field_score = view.get("partial_scores", {}).get(name, {}).get("score")
+    if show_score and field_score is not None:
+        score_type, score_value = determine_score_params(float(field_score))
+        context[score_type] = score_value
+
+    html = chevron.render(template, context).strip()
 
     return html, view
 
@@ -1170,7 +1211,7 @@ def _structured_tex(
 
 
 def _expression_tex(config: RenderConfig, value: sympy.Basic) -> str:
-    display_value = psi.replace_imaginary_for_display(
+    display_value = _replace_imaginary_for_display(
         cast(sympy.Expr, value), config.imaginary_unit
     )
     if config.display_log_as_ln:
@@ -1182,19 +1223,26 @@ def _parse_component_submission(
     config: RenderConfig,
     component: Component,
     source: str | None,
+    formula_editor_latex: str | None = None,
     assumptions: psu.AssumptionsDictT | None = None,
-) -> psi.SymbolicSubmissionParseResult:
+) -> psu.SympyParseResult:
+    if source is None or not source.strip():
+        return psu.SympyParseFailure("No submitted answer.")
+
     variables = (
         tuple(dict.fromkeys((*config.variables, config.index)))
         if component == "body"
         else config.variables
     )
-    return psi.try_parse_symbolic_submission(
+    allowed_types = _component_allowed_types(config, component)
+    return psu.try_parse_symbolic_submission(
         source,
         variables,
         formula_editor=True,
+        formula_editor_latex=formula_editor_latex,
         custom_functions=config.custom_functions,
-        allowed_types=_component_allowed_types(config, component),
+        allow_sets=_allowed_types_include_sets(allowed_types),
+        allowed_types=allowed_types,
         allow_complex=config.allow_complex,
         imaginary_unit=config.imaginary_unit,
         assumptions=(
@@ -1217,9 +1265,12 @@ def _submitted_tex(config: RenderConfig, data: QuestionData) -> str:
     for component in config.components:
         name = config.component_name(component)
         parsed = _parse_component_submission(
-            config, component, cast(str | None, raw.get(name))
+            config,
+            component,
+            cast(str | None, raw.get(name)),
+            cast(str | None, raw.get(f"{name}-latex")),
         )
-        if isinstance(parsed, psu.SympyParseFailure) or parsed.expr == "":
+        if isinstance(parsed, psu.SympyParseFailure):
             continue
         display_raw[name] = _expression_tex(config, parsed.expr)
     return _tex(config, display_raw)
@@ -1344,13 +1395,12 @@ def _parse_values(
             config,
             component,
             cast(str | None, raw_answers.get(name)),
+            cast(str | None, raw_answers.get(f"{name}-latex")),
             assumptions=_component_assumptions(correct, component),
         )
         if isinstance(parsed, psu.SympyParseFailure):
             data.setdefault("format_errors", {})[name] = parsed.error
             continue
-        if parsed.expr == "":
-            raise AssertionError("Component parsing does not allow blank values.")
         if requires_set and not _is_set_input(parsed.expr):
             data.setdefault("format_errors", {})[name] = "This field must be a set."
             continue
@@ -1666,7 +1716,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         case "correct":
             for component, value in correct.items():
                 data["raw_submitted_answers"][config.component_name(component)] = str(
-                    psi.replace_imaginary_for_display(
+                    _replace_imaginary_for_display(
                         cast(sympy.Expr, value), config.imaginary_unit
                     )
                 )
