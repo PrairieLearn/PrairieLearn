@@ -20,6 +20,8 @@ test.beforeEach(async ({ page, courseInstance }) => {
 });
 
 test('shows safe scalar diagnostics and restores literal matrix input', async ({ page }) => {
+  test.slow();
+
   await page.getByRole('textbox', { name: 'String value' }).fill('café\u200b<img src=x>');
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
@@ -28,12 +30,38 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
 
   await expect(page.getByRole('textbox', { name: 'Matrix value' })).toHaveValue('[1,\u200b 2]');
 
-  const button = page.getByRole('button', { name: 'Answer as entered for String value' });
-  await button.click();
+  for (const label of [
+    'String value',
+    'Big O value',
+    'Integer value',
+    'Number value',
+    'Units value',
+    'Matrix value',
+  ]) {
+    await expect(
+      page.getByRole('button', { name: `Answer as entered for ${label}` }),
+    ).toBeVisible();
+  }
+
+  const stringButton = page.getByRole('button', { name: 'Answer as entered for String value' });
+  await stringButton.click();
   const popover = page.getByRole('dialog').filter({ hasText: 'café<U+200b>' });
   await expect(popover).toHaveClass(/popover-wide/);
   await expect(popover).toHaveClass(/popover-scrollable/);
   await expect(popover).toContainText('café<U+200b><img src=x>');
   await expect(popover.getByRole('img')).toHaveCount(0);
   await expect(popover).toContainText('caf<U+e9><U+200b><img src=x>');
+
+  await page.getByRole('textbox', { name: 'Big O value' }).fill('n');
+  await page.getByRole('textbox', { name: 'Integer value' }).fill('1');
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(page.getByRole('heading', { name: 'Submitted answer 2', exact: true })).toBeVisible({
+    timeout: 15_000,
+  });
+
+  const bigOButton = page.getByRole('button', { name: 'Answer as entered for Big O value' });
+  await expect(bigOButton).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Answer as entered for Integer value' }),
+  ).toHaveCount(0);
 });
