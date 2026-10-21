@@ -1,0 +1,144 @@
+{{#field}}
+  <span class="input-group pl-big-operator-input__symbolic-input">
+    {{#label}}
+      <span class="input-group-text" id="big-operator-input-{{name}}-label">{{{label}}}</span>
+    {{/label}}
+    <script>
+      $(function () {
+        window.PLBigOperatorInput("{{name}}");
+      });
+    </script>
+    <input
+      name="{{name}}"
+      id="big-operator-input-sub-{{name}}"
+      type="hidden"
+      value=""
+      data-deferred-initial-value="true"
+    />
+    <input
+      name="{{name}}-latex"
+      id="big-operator-input-latex-{{name}}"
+      type="hidden"
+      value="{{raw_submitted_answer_latex}}"
+      data-deferred-initial-value="true"
+    />
+    <math-field
+      id="big-operator-input-{{name}}"
+      class="form-control pl-big-operator-input__symbolic-field{{#parse_error}} has-validation is-invalid no-validation-icon{{/parse_error}}"
+      {{#parse_error}}
+        aria-invalid="true"
+        aria-errormessage="{{feedback_id}}"
+      {{/parse_error}}
+      {{^editable}}contenteditable="false"{{/editable}}
+      data-placeholder-text=""
+      custom-functions="{{custom_functions}}"
+      {{#log_as_ln}}log-as-ln="log-as-ln"{{/log_as_ln}}
+      imaginary-unit="{{imaginary_unit}}"
+      {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
+      {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
+      {{#suffix}}aria-describedby="big-operator-input-{{name}}-suffix"{{/suffix}}
+      aria-label="{{aria_label}}"
+    ></math-field>
+    {{#suffix}}
+      <span class="input-group-text" id="big-operator-input-{{name}}-suffix">{{{suffix}}}</span>
+    {{/suffix}}
+    {{#show_info}}
+      <button
+        type="button"
+        class="btn btn-light border d-flex align-items-center"
+        data-bs-toggle="popover"
+        data-bs-html="true"
+        title="Symbolic"
+        data-bs-content="{{info}}"
+        data-bs-placement="auto"
+      >
+        <i class="fas fa-question-circle" aria-hidden="true"></i>
+      </button>
+    {{/show_info}}
+    {{#correct}}
+      <span class="input-group-text">
+        <span class="badge text-bg-success" aria-label="Correct">
+          <i class="fas fa-check" aria-hidden="true"></i>
+        </span>
+      </span>
+    {{/correct}}
+    {{#partial}}
+      <span class="input-group-text">
+        <span class="badge text-bg-warning" aria-label="Partially correct">
+          <i class="far fa-circle" aria-hidden="true"></i>
+        </span>
+      </span>
+    {{/partial}}
+    {{#incorrect}}
+      <span class="input-group-text">
+        <span class="badge text-bg-danger" aria-label="Incorrect">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </span>
+      </span>
+    {{/incorrect}}
+  </span>
+  {{#parse_error}}
+    <span id="{{feedback_id}}" class="invalid-feedback d-block">
+      <span class="badge text-bg-danger">
+        Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+      </span>
+      <a
+        class="link-primary"
+        tabindex="0"
+        role="button"
+        data-bs-placement="auto"
+        data-bs-toggle="popover"
+        data-bs-html="true"
+        title="Format error"
+        data-bs-content="{{parse_error}}"
+      >
+        More info…
+      </a>
+    </span>
+  {{/parse_error}}
+{{/field}}
+
+{{#format}}
+  <p>
+    <strong>General format information:</strong><br />
+    Your answer must be a symbolic expression. All numbers must be rational - so, <code>1/2</code>
+    instead of <code>0.5</code>.
+    {{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}
+    {{#allow_sets}}
+      Intervals and sets may be used, e.g. <code>[0, +oo)</code> or
+      <code>{ 0, pi/2, 3pi/2, 2pi }</code>. Sets and intervals have unions (<code>U</code>) and
+      intersections (<code>&amp;</code>), e.g. <code>({1, 3} U (2, 4]) &amp; {0, 2, 4}</code>.
+    {{/allow_sets}}
+  </p>
+  {{#variables.0}}
+    <p>
+      <strong>Allowable variables:</strong>
+      <br />
+      {{#variables}}
+        <code>{{.}}</code>
+        &nbsp;
+      {{/variables}}
+    </p>
+  {{/variables.0}}
+  {{#constants.0}}
+    <p>
+      <strong>Allowable constants:</strong>
+      <br />
+      {{#constants}}
+        <code>{{.}}</code>
+        &nbsp;
+      {{/constants}}
+    </p>
+  {{/constants.0}}
+  {{#operators.0}}
+    <p>
+      <strong>Allowable operators:</strong>
+      <br />
+      {{#operators}}
+        <code>{{.}}</code>
+        &nbsp;
+      {{/operators}}
+    </p>
+  {{/operators.0}}
+  <p>Note that either <code>^</code> or <code>**</code> can be used for exponentiation.</p>
+{{/format}}
