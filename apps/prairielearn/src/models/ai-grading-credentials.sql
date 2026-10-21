@@ -49,13 +49,14 @@ RETURNING
   *;
 
 -- BLOCK lock_course_instance
+-- Serialize configuration changes without blocking foreign-key checks from grading jobs.
 SELECT
   id
 FROM
   course_instances
 WHERE
   id = $course_instance_id
-FOR UPDATE;
+FOR NO KEY UPDATE;
 
 -- BLOCK select_optional_custom_credential
 SELECT

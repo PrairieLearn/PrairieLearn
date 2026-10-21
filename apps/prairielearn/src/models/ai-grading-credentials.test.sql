@@ -48,3 +48,13 @@ FROM
   assessment_questions
 WHERE
   id = $assessment_question_id;
+
+-- BLOCK insert_test_job_sequence
+INSERT INTO
+  job_sequences (course_instance_id, number)
+VALUES
+  ($course_instance_id, 1);
+
+-- BLOCK set_short_lock_timeout
+SET
+  LOCAL lock_timeout = '1s';

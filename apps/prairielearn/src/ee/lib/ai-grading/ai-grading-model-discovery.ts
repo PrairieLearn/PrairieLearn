@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 import { type Cache, cache } from '@prairielearn/cache';
+import { HttpStatusError } from '@prairielearn/error';
 import {
   type PublicFetch,
   ResponseTooLargeError,
@@ -30,7 +31,7 @@ const modelListSchema = z.object({
   ),
 });
 
-export class AiGradingModelDiscoveryError extends Error {
+export class AiGradingModelDiscoveryError extends HttpStatusError {
   constructor(
     public readonly code:
       | 'invalid_endpoint'
@@ -47,7 +48,18 @@ export class AiGradingModelDiscoveryError extends Error {
       | 'invalid_response',
     message: string,
   ) {
-    super(message);
+    super(
+      code === 'timeout'
+        ? 504
+        : code === 'rate_limit'
+          ? 429
+          : ['provider_error', 'request_failed', 'invalid_response', 'response_too_large'].includes(
+                code,
+              )
+            ? 502
+            : 400,
+      message,
+    );
     this.name = 'AiGradingModelDiscoveryError';
   }
 }

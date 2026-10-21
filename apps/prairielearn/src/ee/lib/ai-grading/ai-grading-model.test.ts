@@ -6,12 +6,17 @@ import { loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
 import * as publicFetch from '@prairielearn/public-fetch';
 import { IdSchema } from '@prairielearn/zod';
 
+import { makeAssessmentInstance } from '../../../lib/assessment.js';
 import {
   AiGradingJobSchema,
   AssessmentQuestionSchema,
   type CourseInstance,
+  GradingJobSchema,
+  InstanceQuestionSchema,
 } from '../../../lib/db-types.js';
 import { encryptForStorage } from '../../../lib/encrypted-storage.js';
+import { saveSubmission } from '../../../lib/grading.js';
+import { ensureVariant } from '../../../lib/question-variant.js';
 import * as progress from '../../../lib/serverJobProgressSocket.js';
 import {
   deleteCredential,
@@ -24,9 +29,9 @@ import { selectAssessmentQuestionByQuestionId } from '../../../models/assessment
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
 import { selectCourseByShortName } from '../../../models/course.js';
+import { generateAndEnrollUsers } from '../../../models/enrollment.js';
 import { selectQuestionByQid } from '../../../models/question.js';
-import * as helperCourse from '../../../tests/helperCourse.js';
-import * as helperDb from '../../../tests/helperDb.js';
+import * as helperServer from '../../../tests/helperServer.js';
 import { getOrCreateUser } from '../../../tests/utils/auth.js';
 
 import * as discovery from './ai-grading-model-discovery.js';
@@ -70,8 +75,7 @@ describe('custom AI grading model', () => {
 
   beforeAll(async () => {
     vi.spyOn(progress, 'emitServerJobProgressUpdate').mockResolvedValue(undefined);
-    await helperDb.before();
-    await helperCourse.syncCourse();
+    await helperServer.before()();
     const course = await selectCourseByShortName('QA 101');
     courseInstance = {
       ...(await selectCourseInstanceByShortName({ course, shortName: 'Sp15' })),
@@ -97,7 +101,7 @@ describe('custom AI grading model', () => {
   });
   afterAll(async () => {
     vi.restoreAllMocks();
-    await helperDb.after();
+    await helperServer.after();
   });
 
   async function resolve(
@@ -145,6 +149,20 @@ describe('custom AI grading model', () => {
     expect(resolved.provider).toBe('openai');
     expect(resolved.base_url).toBeNull();
   });
+
+  it.each([
+    ['authentication', 400],
+    ['rate_limit', 429],
+    ['provider_error', 502],
+    ['timeout', 504],
+  ] as const)(
+    'preserves the HTTP status for %s discovery failures when grading',
+    async (code, status) => {
+      const message = 'Could not discover provider models';
+      discover.mockRejectedValueOnce(new discovery.AiGradingModelDiscoveryError(code, message));
+      await expect(resolve()).rejects.toMatchObject({ status, message });
+    },
+  );
 
   it.each([model_id, 'campus-text'])(
     'grades and persists custom model %s with structured output and attachments',
@@ -305,48 +323,130 @@ describe('custom AI grading model', () => {
     }
   });
 
-  it('starts a custom grading job and remembers its identity without platform credits', async () => {
-    const course = await selectCourseByShortName('QA 101');
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
-      tid: 'hw10-aiGrading',
-    });
-    const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
-    const assessment_question = await selectAssessmentQuestionByQuestionId({
-      assessment_id: assessment.id,
-      question_id: question.id,
-    });
-    const credits = await selectCreditPool(courseInstance.id);
-    const jobId = await aiGrade({
-      course,
-      course_instance: courseInstance,
-      assessment,
-      question,
-      assessment_question,
-      urlPrefix: '/pl',
-      authn_user_id: userId,
-      user_id: userId,
-      mode: 'selected',
-      instance_question_ids: [],
-      model_id,
-      provider: 'openai-compatible',
-      credential_id: credentialId,
-    });
-    await expect
-      .poll(async () => queryScalar(sql.select_test_job_status, { id: jobId }, z.string()))
-      .toBe('Success');
-    expect(
-      await queryRow(
-        sql.select_test_assessment_question,
-        { id: assessment_question.id },
-        AssessmentQuestionSchema,
-      ),
-    ).toMatchObject({
-      ai_grading_last_selected_model: model_id,
-      ai_grading_last_selected_credential_id: credentialId,
-    });
-    expect(await selectCreditPool(courseInstance.id)).toEqual(credits);
-  });
+  it(
+    'grades a submission and remembers custom identity without using platform credits',
+    { timeout: 30_000 },
+    async () => {
+      const course = await selectCourseByShortName('QA 101');
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: courseInstance.id,
+        tid: 'hw10-aiGrading',
+      });
+      const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
+      const assessment_question = await selectAssessmentQuestionByQuestionId({
+        assessment_id: assessment.id,
+        question_id: question.id,
+      });
+      const [student] = await generateAndEnrollUsers({
+        count: 1,
+        course_instance_id: courseInstance.id,
+      });
+      const assessmentInstanceId = await makeAssessmentInstance({
+        assessment,
+        user_id: student.id,
+        authn_user_id: student.id,
+        mode: 'Public',
+        time_limit_min: null,
+        date: new Date(),
+        client_fingerprint_id: null,
+      });
+      const instanceQuestionId = await queryScalar(
+        sql.select_test_instance_question_id,
+        { assessment_instance_id: assessmentInstanceId },
+        IdSchema,
+      );
+      const variant = await ensureVariant({
+        question_id: question.id,
+        instance_question_id: instanceQuestionId,
+        user_id: student.id,
+        authn_user_id: student.id,
+        course_instance: courseInstance,
+        variant_course: course,
+        question_course: course,
+        options: {},
+        require_open: false,
+        client_fingerprint_id: null,
+      });
+      const { submission_id: submissionId } = await saveSubmission(
+        {
+          variant_id: variant.id,
+          user_id: student.id,
+          auth_user_id: student.id,
+          submitted_answer: { explanation: 'The range and the coefficient are incorrect.' },
+        },
+        variant,
+        question,
+        course,
+      );
+      const credits = await selectCreditPool(courseInstance.id);
+      const fetch = vi
+        .spyOn(publicFetch, 'publicFetch')
+        .mockResolvedValue(
+          completion(
+            JSON.stringify({
+              explanation: 'Mostly correct',
+              feedback: 'Explain the loop bounds.',
+              score: 75,
+            }),
+          ),
+        );
+      try {
+        const jobId = await aiGrade({
+          course,
+          course_instance: courseInstance,
+          assessment,
+          question,
+          assessment_question,
+          urlPrefix: '/pl',
+          authn_user_id: userId,
+          user_id: userId,
+          mode: 'selected',
+          instance_question_ids: [instanceQuestionId],
+          model_id,
+          provider: 'openai-compatible',
+          credential_id: credentialId,
+        });
+        await helperServer.waitForJobSequenceSuccess(jobId);
+        const result = await queryRow(
+          sql.select_test_grading_result,
+          { job_sequence_id: jobId },
+          z.object({
+            ai_grading_job: AiGradingJobSchema,
+            grading_job: GradingJobSchema,
+            instance_question: InstanceQuestionSchema,
+          }),
+        );
+        expect(result.ai_grading_job).toMatchObject({
+          provider: 'openai-compatible',
+          base_url,
+          model: model_id,
+          cost: null,
+        });
+        expect(result.grading_job).toMatchObject({
+          grading_method: 'AI',
+          submission_id: submissionId,
+          manual_points: 3,
+        });
+        expect(result.instance_question).toMatchObject({
+          manual_points: 3,
+          is_ai_graded: true,
+        });
+      } finally {
+        fetch.mockRestore();
+      }
+      expect(
+        await queryRow(
+          sql.select_test_assessment_question,
+          { id: assessment_question.id },
+          AssessmentQuestionSchema,
+        ),
+      ).toMatchObject({
+        ai_grading_last_selected_model: model_id,
+        ai_grading_last_selected_credential_id: credentialId,
+      });
+      expect(await selectCreditPool(courseInstance.id)).toEqual(credits);
+    },
+  );
 
   it('rejects custom API keys disabled during discovery before creating a grading job', async () => {
     const course = await selectCourseByShortName('QA 101');

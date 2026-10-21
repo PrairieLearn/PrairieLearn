@@ -86,6 +86,19 @@ describe('custom AI grading provider API', { concurrent: false }, () => {
     });
   });
 
+  it('reports a provider discovery timeout as an HTTP gateway timeout', async () => {
+    const api = await client();
+    discover.mockRejectedValueOnce(
+      new discovery.AiGradingModelDiscoveryError('timeout', 'Provider discovery timed out'),
+    );
+    await expect(
+      api.aiGradingProviders.discover.mutate({ base_url, secret_key }),
+    ).rejects.toMatchObject({
+      message: 'Provider discovery timed out',
+      data: { code: 'GATEWAY_TIMEOUT', httpStatus: 504 },
+    });
+  });
+
   it('saves encrypted configuration with safe metadata and redacted audit', async () => {
     const api = await client();
     const result = await api.aiGradingProviders.save.mutate({
