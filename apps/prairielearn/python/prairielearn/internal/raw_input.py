@@ -42,7 +42,7 @@ def _render_popover_content(
             "show_control_and_formatting_message": any(
                 escape_unicode_string(value) != value for value in raw_values
             ),
-            "show_non_ascii_details": any(
+            "show_ascii_only": any(
                 _escape_non_ascii_string(value) != escape_unicode_string(value)
                 for value in raw_values
             ),
@@ -62,7 +62,7 @@ def render_raw_input_popover_content(raw_input: str) -> str:
 def _render_popover_button(content: str, input_label: str) -> str:
     return _render_template(
         "raw_input_popover.mustache",
-        {"content": content, "title": f"Original input for {input_label}"},
+        {"content": content, "title": f"Answer as entered for {input_label}"},
     )
 
 
