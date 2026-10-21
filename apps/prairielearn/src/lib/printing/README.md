@@ -1,10 +1,10 @@
 # Printing
 
-Utilities for rendering printable HTML as PDFs and editable Word documents, and namespacing question HTML so separately rendered fragments can share a page.
+Tools for creating printable PDFs and editable Word documents, plus a helper that keeps question IDs unique when separate questions share a page.
 
 ## Rendering PDFs and Word documents
 
-The rendering browser lays out and paginates question HTML. PDF exports use its completed page snapshot. Word exports use the editable source captured before pagination and screenshots of figures. Create one renderer per application process:
+The browser lays out questions and splits them into pages. PDFs use the finished pages. Word documents use question content saved before page breaks are added, along with images of figures. Create one renderer per application process:
 
 ```ts
 import { config } from './config.js';
@@ -42,11 +42,13 @@ For outputs that also need metadata from the paginated page, use `renderer.rende
 
 ### Word output
 
-The Word document contains native paragraphs, lists, tables, answer spaces, hyperlinks, and Office Math equations. Only actual figures (images, SVG diagrams, and canvases) are captured as images. Question content is captured before pagination, so Word can reflow edited text and its page count can differ from the PDF. The sheet size and margins follow the printable page's CSS. Printable details boxes retain their heading and content. Response guidance appears below its answer line, with surrounding labels and units kept in separate table cells.
+Word documents keep text, lists, tables, answer spaces, links, and equations editable when possible. Images, SVG diagrams, and canvases appear as pictures. Some equations also appear as pictures when no editable version is available.
 
-The rendering browser captures normalized HTML and MathML before Paged.js fragments the questions, then screenshots figures after pagination. `docx-content.ts` maps the source to native Word objects, and `print-docx-client.ts` packages the file in that same browser. The cover and footer remain native content built from the caller's `PrintableCover` and `footerLabel`.
+Word can rearrange pages after edits, so its page count may differ from the PDF. Paper size and margins match the printable page. Details boxes keep their headings and content. Response guidance appears below the answer line, while labels and units stay beside it.
 
-`htmlToTextBlocks` reduces author-provided HTML (for example assessment instructions) to headings, paragraphs, and flat lists for the cover.
+The browser saves question text and equations before it splits them into pages, then captures figures once the page layout is complete. `docx-content.ts` turns the saved content into editable Word content, and `print-docx-client.ts` builds the file in the browser. The cover and footer stay editable; callers supply them through `PrintableCover` and `footerLabel`.
+
+`htmlToTextBlocks` turns HTML content, such as assessment instructions, into headings, paragraphs, simple lists, and figures for the cover. The browser turns cover figures into images before building the Word file.
 
 Omit the `cover` option to start with questions on the first page.
 
