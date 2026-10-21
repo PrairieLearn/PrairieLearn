@@ -15,6 +15,8 @@ import { expect, test } from './fixtures.js';
 // These browser-only tests do not need the application server.
 test.use({ baseURL: '' });
 
+// Question content inside shadow roots can be missed when we copy the page for Word.
+// Check that visible text and figures survive, without duplicating slotted text or including hidden content.
 test('exports shadow-root figures and visible slotted text from a paginated page', async ({
   page,
 }) => {
