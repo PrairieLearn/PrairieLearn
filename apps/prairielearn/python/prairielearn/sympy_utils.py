@@ -20,7 +20,6 @@ from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
 from types import CodeType
 from types import MappingProxyType as FrozenDict
 from typing import (
-    TYPE_CHECKING,
     Any,
     Final,
     Literal,
@@ -35,11 +34,8 @@ from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
-from prairielearn.internal import sympy_constants
+from prairielearn.internal import sympy_constants, sympy_source
 from prairielearn.misc_utils import full_unidecode
-
-if TYPE_CHECKING:
-    from prairielearn.internal.symbolic_input import SourceText, SourceToken
 
 STANDARD_OPERATORS = sympy_constants.standard_operators
 SET_NOTATION_OPERATORS = sympy_constants.set_notation_operators
@@ -804,11 +800,11 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
 
 
 def _normalize_unicode_source(
-    source: "SourceText", *, formula_editor: bool = False
-) -> "SourceText":
+    source: sympy_source.SourceText, *, formula_editor: bool = False
+) -> sympy_source.SourceText:
     """Normalize Unicode while retaining the raw offset of every output character."""
     const = sympy_constants
-    normalized_tokens: list[SourceToken] = []
+    normalized_tokens: list[sympy_source.SourceToken] = []
     for token in source.tokens:
         char = token.text
         normalized_char = char
@@ -841,7 +837,7 @@ def _normalize_unicode_source(
 _MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
 
 
-def _validate_multiplication(source: "SourceText") -> None:
+def _validate_multiplication(source: sympy_source.SourceText) -> None:
     """Reject multiplication signs that normalization would turn into exponentiation."""
     for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, source.text):
         left_offset = source.tokens[match.start("left")].raw_offset
@@ -854,7 +850,7 @@ def _validate_multiplication(source: "SourceText") -> None:
             raise HasInvalidExpressionError(left_offset)
 
 
-def _validate_adjacent_numbers(source: "SourceText") -> None:
+def _validate_adjacent_numbers(source: sympy_source.SourceText) -> None:
     """Reject numeric tokens that implicit multiplication would silently combine."""
     line_offsets = [0]
     for line in source.text.splitlines(keepends=True):
@@ -879,13 +875,14 @@ def _validate_adjacent_numbers(source: "SourceText") -> None:
 
 
 def _rewrite_pattern_source(
-    source: "SourceText",
+    source: sympy_source.SourceText,
     pattern: re.Pattern[str],
     replacement: Callable[
-        [re.Match[str], tuple["SourceToken", ...]], Iterable["SourceToken"]
+        [re.Match[str], tuple[sympy_source.SourceToken, ...]],
+        Iterable[sympy_source.SourceToken],
     ],
-) -> "SourceText":
-    tokens: list[SourceToken] = []
+) -> sympy_source.SourceText:
+    tokens: list[sympy_source.SourceToken] = []
     last_end = 0
     for match in pattern.finditer(source.text):
         tokens.extend(source.tokens[last_end : match.start()])
@@ -896,11 +893,11 @@ def _rewrite_pattern_source(
 
 
 def _validate_and_rewrite_source(
-    source: "SourceText",
+    source: sympy_source.SourceText,
     *,
     allow_complex: bool,
     allow_sets: bool,
-) -> "SourceText":
+) -> sympy_source.SourceText:
     _validate_multiplication(source)
 
     for symbol in sympy_constants.plus_minus_operators:
@@ -946,10 +943,8 @@ def _validate_and_rewrite_source(
 
 def _normalize_source(
     text: str, *, allow_complex: bool, allow_sets: bool
-) -> "SourceText":
-    from prairielearn.internal.symbolic_input import SourceText
-
-    source = _normalize_unicode_source(SourceText.from_text(text))
+) -> sympy_source.SourceText:
+    source = _normalize_unicode_source(sympy_source.SourceText.from_text(text))
     return _validate_and_rewrite_source(
         source,
         allow_complex=allow_complex,
@@ -990,7 +985,7 @@ def _evaluate_with_source(
 
 
 def _evaluate_normalized_source(
-    source: "SourceText",
+    source: sympy_source.SourceText,
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool,
@@ -1237,7 +1232,7 @@ def _convert_string_to_sympy_with_source(
 
 
 def _convert_source_to_sympy_with_source(
-    source: "SourceText | None",
+    source: sympy_source.SourceText | None,
     expr: str,
     variables: Iterable[str] | None = None,
     *,
@@ -1406,7 +1401,7 @@ _TYPE_ERROR_OPERATOR_PATTERN = re.compile(
 )
 
 
-def _find_type_error_offset(source: "SourceText", exc: TypeError) -> int:
+def _find_type_error_offset(source: sympy_source.SourceText, exc: TypeError) -> int:
     """Return an approximate raw offset for a SymPy TypeError."""
     match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
     if match is None:
