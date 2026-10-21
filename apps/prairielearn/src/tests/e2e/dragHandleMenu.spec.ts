@@ -64,9 +64,20 @@ test('the rich text visibility menu opens from the keyboard and changes the sele
   await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
 
-  await editor.getByText('Second block', { exact: true }).click();
-  await trigger.click();
-  await dialog.getByRole('button', { name: 'In answer' }).click();
+  await editor.focus();
+  await page.keyboard.press('Control+End');
+  await page.keyboard.press('ArrowDown');
+  await editor.getByText('First block', { exact: true }).hover();
+  expect(await editor.evaluate(() => window.getSelection()?.anchorNode?.textContent)).toBe(
+    'Second block',
+  );
+  await page.keyboard.press('Tab');
+  await expect(trigger).toBeFocused();
+  await trigger.press('Enter');
+  await expect(dialog.getByRole('button', { name: 'In question' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'In answer' })).toBeFocused();
+  await page.keyboard.press('Enter');
   await expect(firstPanel.getByRole('img', { name: 'Question Panel' })).toBeVisible();
   await expect(secondPanel.getByRole('img', { name: 'Answer Panel' })).toBeVisible();
   await expect(dialog).toBeHidden();

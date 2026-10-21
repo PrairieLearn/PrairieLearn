@@ -13,11 +13,16 @@ test('Bootstrap popovers have a keyboard-accessible Close button', async ({
 
   const dialog = page.getByRole('dialog', { name: 'Upload files' });
   const closeButton = dialog.getByRole('button', { name: 'Close' });
+  const lastControl = dialog.getByRole('button', { name: 'Upload files' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Upload files', exact: true })).toBeVisible();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(dialog.getByLabel('Choose files')).toBeFocused();
   await page.keyboard.press('Shift+Tab');
+  await expect(closeButton).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(lastControl).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(closeButton).toBeFocused();
 
   await page.keyboard.press('Enter');
