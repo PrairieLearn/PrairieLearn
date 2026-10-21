@@ -39,6 +39,7 @@ export type DocxFigure = DocxSource['figures'][number] & { png: Uint8Array };
 const NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 const RULE = { style: BorderStyle.SINGLE, size: 8, color: '333333' };
 const GRID = { style: BorderStyle.SINGLE, size: 4, color: 'BBBBBB' };
+const MAX_TABLE_DIMENSION = 64;
 const NO_BORDERS = {
   top: NONE,
   bottom: NONE,
@@ -419,6 +420,10 @@ export function buildDocxContent(
       $(row)
         .children(matrix ? 'td:not([rowspan])' : 'td, th')
         .toArray();
+    const fallback = () => {
+      const content = $(node).text().trim();
+      return content ? [paragraph([text(content)])] : [];
+    };
     const measuredWidth = number(node, 'data-docx-width', maxWidth);
     maxWidth = Math.min(maxWidth, measuredWidth || maxWidth);
     const rows = $(node)
@@ -427,13 +432,28 @@ export function buildDocxContent(
       .add($(node).children('tr'))
       .toArray()
       .filter((row) => cells(row).length > 0);
-    if (rows.length === 0) {
-      const fallback = $(node).text().trim();
-      return fallback ? [paragraph([text(fallback)])] : [];
+    if (rows.length === 0) return fallback();
+    let columnCount = 0;
+    for (const row of rows) {
+      let rowColumnCount = 0;
+      for (const cell of cells(row)) {
+        const columnSpan = number(cell, 'colspan', 1);
+        const rowSpan = number(cell, 'rowspan', 1);
+        if (
+          !Number.isSafeInteger(columnSpan) ||
+          !Number.isSafeInteger(rowSpan) ||
+          columnSpan < 1 ||
+          rowSpan < 1 ||
+          columnSpan > MAX_TABLE_DIMENSION ||
+          rowSpan > MAX_TABLE_DIMENSION
+        ) {
+          return fallback();
+        }
+        rowColumnCount += columnSpan;
+        if (rowColumnCount > MAX_TABLE_DIMENSION) return fallback();
+      }
+      columnCount = Math.max(columnCount, rowColumnCount);
     }
-    const columnCount = Math.max(
-      ...rows.map((row) => cells(row).reduce((sum, cell) => sum + number(cell, 'colspan', 1), 0)),
-    );
     const columnWidth = Math.floor((maxWidth * 15) / columnCount);
     return [
       new Table({

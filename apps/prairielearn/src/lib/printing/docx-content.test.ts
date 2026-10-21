@@ -75,6 +75,41 @@ it('skips empty table rows and preserves text when a matrix has no usable cells'
   expect(word('w\\:t').text()).toContain('Matrix label');
 });
 
+it.each([
+  ['an oversized column span', '<td colspan="1000000000">First</td><td>Second</td>'],
+  ['a malformed column span', '<td colspan="invalid">First</td><td>Second</td>'],
+  ['a zero column span', '<td colspan="0">First</td><td>Second</td>'],
+  ['a fractional column span', '<td colspan="1.5">First</td><td>Second</td>'],
+  ['an oversized row span', '<td rowspan="1000000000">First</td><td>Second</td>'],
+  ['too many total columns', '<td colspan="40">First</td><td colspan="30">Second</td>'],
+])('preserves table text without allocating a table for %s', async (_, cells) => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <table><tr>${cells}</tr></table>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  expect(word('w\\:tbl')).toHaveLength(0);
+  expect(word('w\\:t').text()).toContain('First');
+  expect(word('w\\:t').text()).toContain('Second');
+});
+
+it('keeps valid column spans as a Word table', async () => {
+  const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
+    <table><tr><td colspan="2">First</td><td>Second</td></tr></table>
+  </div></article>`;
+  const content = buildDocxContent(html, [], 700);
+  const zip = await JSZip.loadAsync(
+    await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
+  );
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  expect(word('w\\:tbl')).toHaveLength(1);
+  expect(word('w\\:gridCol')).toHaveLength(3);
+  expect(word('w\\:gridSpan').attr('w:val')).toBe('2');
+});
+
 it('keeps writing space inside a numbered list item', async () => {
   const html = `<article class="printing-question" data-question-number="1"><div class="question-body">
     <ol><li>Explain your answer:
