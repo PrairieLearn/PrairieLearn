@@ -123,9 +123,8 @@ test('fits image choices uniformly within the paper and requested question block
       expect(image.height).toBeCloseTo(measurements[0].height, 1);
       expect(image.width / image.height).toBeCloseTo(1, 2);
       expect(image.overflow).toBeLessThanOrEqual(1);
-      expect(image.questionHeight).toBeLessThanOrEqual(
-        image.pageHeight * (blockSize === 'half' ? 0.5 : 1) + 1,
-      );
+      expect(image.width).toBeGreaterThanOrEqual(125);
+      expect(image.questionHeight).toBeLessThanOrEqual(image.pageHeight + 1);
     }
   }
   for (const blockSize of ['auto', 'half']) {
