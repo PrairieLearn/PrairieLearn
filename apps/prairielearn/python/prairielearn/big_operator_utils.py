@@ -1,4 +1,8 @@
-"""Utilities for working with pl-big-operator-input answers.
+"""Utilities for constructing and decoding pl-big-operator-input answers.
+
+The public surface is intentionally limited to the structured answer types,
+their encoder and decoder, and the operator-indexing query. Element rendering,
+submission parsing, and grading remain owned by the element controller.
 
 ```python
 from prairielearn.big_operator_utils import ...
@@ -6,7 +10,7 @@ from prairielearn.big_operator_utils import ...
 """
 
 from collections.abc import Set as AbstractSet
-from typing import Any, Literal, TypedDict, TypeGuard, cast, overload
+from typing import Any, Literal, TypedDict, cast, overload
 
 import sympy
 
@@ -132,45 +136,6 @@ _DIRECTIONS: frozenset[str] = frozenset({
     "from-left",
     "from-right",
 })
-
-
-def is_big_operator_json(value: Any) -> TypeGuard[BigOperatorJson]:
-    """Check if a value has the structure of a big-operator JSON answer."""
-    if (
-        not isinstance(value, dict)
-        or value.get("_type") != "big_operator"
-        or value.get("_version") != 1
-    ):
-        return False
-    operator_indexing = _get_valid_operator_indexing_pair(
-        value.get("operator"), value.get("indexing")
-    )
-    if operator_indexing is None:
-        return False
-    _, indexing = operator_indexing
-
-    math_fields = {"index", "body"}
-    match indexing:
-        case "bounds":
-            math_fields.update(("lower", "upper"))
-        case "domain":
-            math_fields.add("domain")
-        case "approaches":
-            math_fields.add("target")
-            direction = value.get("direction")
-            if not isinstance(direction, str) or direction not in _DIRECTIONS:
-                return False
-
-    expected_keys = {"_type", "_version", "operator", "indexing"} | math_fields
-    if indexing == "approaches":
-        expected_keys.add("direction")
-    if set(value) != expected_keys:
-        return False
-    return all(
-        psu.is_sympy_json(value[field])
-        and all(isinstance(name, str) for name in value[field]["_variables"])
-        for field in math_fields
-    )
 
 
 def get_valid_big_operator_indexing(
@@ -599,6 +564,5 @@ __all__ = [
     "BigOperatorValue",
     "big_operator_to_json",
     "get_valid_big_operator_indexing",
-    "is_big_operator_json",
     "json_to_big_operator",
 ]
