@@ -4,10 +4,6 @@ To allow instructors to share their course content with others and to avoid inst
 
 ## Using shared questions
 
-You can use a shared question by referencing it from an assessment, or by copying it when source copying is allowed. A reference uses the question maintained in the source course; a copy is a separate question in your course that you can edit independently.
-
-### Using a question by reference
-
 To refer to a question from another course, use the question ID (qid) prefixed by the `@` symbol and the sharing name of the other course. For example, to use the question `addNumbers` from the course with sharing name `test-course`, you would put `@test-course/addNumbers` into your `assessmentInfo.json`. In the context of the `assessmentInfo.json`, this may look like:
 
 ```json title="assessmentInfo.json"
@@ -24,22 +20,6 @@ To refer to a question from another course, use the question ID (qid) prefixed b
   ]
 }
 ```
-
-### Question-copy provenance
-
-A question's `info.json` can record its source in the optional `copiedFrom` field:
-
-```json title="info.json (partial)"
-{
-  "copiedFrom": "ed80830c-fd51-43e3-9f13-6a41e4c7dfd5/cbf5cbf2-6458-4f13-a418-aa4d2b1093ff/mechanics/newtonsThirdLaw"
-}
-```
-
-The first UUID identifies the source course, using the UUID assigned by the PrairieLearn database. It is separate from the course's sharing name and the deprecated UUID in `infoCourse.json`. The second UUID is the source question's `uuid` from its `info.json`. A reference containing just these two UUIDs is also valid. Everything after the second UUID is optional, human-readable text; PrairieLearn ignores it when looking up the source, so renaming the source QID does not break the reference. Source courses do not need a sharing name.
-
-The field can be edited or removed. During each sync, PrairieLearn looks up the declared source. If the source is not available on this PrairieLearn installation, the reference is preserved without a warning. PrairieLearn looks for the source again the next time the consuming course syncs.
-
-This field records a declared relationship; it does not verify authorship or grant access to the source. It does not change the sharing-name syntax used to reference shared questions in assessments. Copy operations do not yet populate this field automatically.
 
 ## Sharing questions
 

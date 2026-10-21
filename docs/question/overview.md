@@ -106,7 +106,6 @@ The `info.json` file for each question defines properties of the question. For e
 | `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                                                                                                              |
 | `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                                                                                                        |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                                                                                                         |
-| `copiedFrom`             | string  | The source course UUID and question UUID, optionally followed by cosmetic text. See [Question-copy provenance](../contentSharing.md#question-copy-provenance). (Optional; default: none)                                                                                                                           |
 
 !!! note "Local development note"
 
