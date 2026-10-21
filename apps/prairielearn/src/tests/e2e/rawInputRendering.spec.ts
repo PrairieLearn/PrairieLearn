@@ -91,3 +91,41 @@ test('shows text and formula editor diagnostics for symbolic input', async ({ pa
   await expect(formulaPopover.locator('math-field')).toHaveCount(1);
   await expect(formulaPopover).toContainText('x');
 });
+
+test('preserves the shape of matrix component diagnostics', async ({ page }) => {
+  for (const [name, value] of [
+    ['Row 1, Column 1', '1\u200b'],
+    ['Row 1, Column 2', 'café'],
+    ['Row 2, Column 1', ''],
+    ['Row 2, Column 2', '4'],
+  ] as const) {
+    await page.getByRole('textbox', { name }).fill(value);
+  }
+
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
+    timeout: 15_000,
+  });
+
+  const button = page.getByRole('button', { name: 'Answer as entered for Matrix grid' });
+  await expect(button).toBeVisible();
+  await button.click();
+
+  const popover = page.getByRole('dialog').filter({ hasText: '1<U+200b>' });
+  await expect(popover).toBeVisible();
+  const tables = popover.getByRole('table');
+  await expect(tables).toHaveCount(2);
+  const readableTable = tables.first();
+  await expect(readableTable.getByRole('row')).toHaveCount(2);
+  await expect(readableTable.getByRole('row').first().getByRole('cell')).toHaveCount(2);
+  await expect(readableTable.getByRole('row').last().getByRole('cell')).toHaveCount(2);
+  await expect(readableTable).toContainText('1<U+200b>');
+  await expect(readableTable).toContainText('café');
+
+  const asciiTable = tables.last();
+  await expect(asciiTable).toBeVisible();
+  await expect(asciiTable.getByRole('row')).toHaveCount(2);
+  await expect(asciiTable.getByRole('row').first().getByRole('cell')).toHaveCount(2);
+  await expect(asciiTable.getByRole('row').last().getByRole('cell')).toHaveCount(2);
+  await expect(asciiTable).toContainText('caf<U+e9>');
+});
