@@ -35,7 +35,6 @@ export type GradingResult = z.infer<typeof GradingResultSchema>;
 
 export const AiGradingExportTextSchema = z.object({
   grading_job_id: GradingJobSchema.shape.id,
-  model: AiGradingJobSchema.shape.model.nullable(),
   explanation: z.string().nullable(),
   generated_feedback: z.string().nullable(),
 });

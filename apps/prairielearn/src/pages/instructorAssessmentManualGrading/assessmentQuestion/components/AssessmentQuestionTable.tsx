@@ -71,6 +71,7 @@ const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> 
 };
 const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_AI_MODEL_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
@@ -194,6 +195,11 @@ export function AssessmentQuestionTable({
         urlKey: 'graded_by',
         parser: parseAsMultiSelectFilter(),
         defaultValue: DEFAULT_GRADED_BY_FILTER,
+      },
+      ai_grading_model: {
+        urlKey: 'ai_model',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_AI_MODEL_FILTER,
       },
       instance_question_group_name: {
         urlKey: 'submission_group',
@@ -330,6 +336,15 @@ export function AssessmentQuestionTable({
     return Array.from(graders).sort();
   }, [instanceQuestionsInfo, aiGradingMode]);
 
+  const allAiModels = Array.from(
+    new Set(
+      instanceQuestionsInfo.map((row) => {
+        const aiGrading = row.instance_question.ai_grading;
+        return (aiGrading?.score_source ?? aiGrading?.latest_update)?.ai_grading_model ?? 'None';
+      }),
+    ),
+  ).sort();
+
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {
     const groups = new Set<string>();
@@ -465,6 +480,7 @@ export function AssessmentQuestionTable({
             'student_labels',
             'points',
             'rubric_grading_item_ids',
+            'ai_grading_model',
           ].includes(col.id)
         ) {
           return [[col.id, false]];
@@ -635,6 +651,7 @@ export function AssessmentQuestionTable({
   const columnFiltersComponents = createColumnFilters({
     studentLabels,
     allGraders,
+    allAiModels,
     allSubmissionGroups,
     allAiAgreementItems,
   });

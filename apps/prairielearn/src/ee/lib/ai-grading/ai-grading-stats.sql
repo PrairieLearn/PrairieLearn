@@ -190,17 +190,12 @@ FROM
   score_jobs AS sj;
 
 -- BLOCK select_ai_grading_completions_for_export
--- Load only metadata and completions for the requested export's grading jobs. Prompts contain
+-- Load only completions for the requested export's grading jobs. Prompts contain
 -- base64 images and must never be serialized here, even for downloads.
 SELECT
   gj.id AS grading_job_id,
-  agj.model,
-  agj.completion
-FROM
-  grading_jobs AS gj
-  LEFT JOIN LATERAL (
+  (
     SELECT
-      agj.model,
       agj.completion
     FROM
       ai_grading_jobs AS agj
@@ -210,7 +205,9 @@ FROM
       agj.id DESC
     LIMIT
       1
-  ) AS agj ON TRUE
+  ) AS completion
+FROM
+  grading_jobs AS gj
   JOIN submissions AS s ON s.id = gj.submission_id
   JOIN variants AS v ON v.id = s.variant_id
   JOIN instance_questions AS iq ON iq.id = v.instance_question_id

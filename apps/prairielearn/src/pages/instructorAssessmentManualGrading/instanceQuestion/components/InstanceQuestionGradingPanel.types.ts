@@ -41,7 +41,6 @@ export interface InstanceQuestionGradingPanelProps {
   graderGuidelinesRendered: string | null;
   gradedByHumanName: string | null;
   aiGradingInfo: {
-    model: string | null;
     selectedRubricItemIds: string[];
     submissionManuallyGraded: boolean;
   } | null;

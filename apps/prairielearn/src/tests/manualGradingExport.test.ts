@@ -5,10 +5,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  fillInstanceQuestionColumnEntries,
-  selectAiGradingExportText,
-} from '../ee/lib/ai-grading/ai-grading-stats.js';
+import { fillInstanceQuestionColumnEntries } from '../ee/lib/ai-grading/ai-grading-stats.js';
 import { buildAiGradingInfo, deleteAiGradingJobs } from '../ee/lib/ai-grading/ai-grading-util.js';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
@@ -339,18 +336,10 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
       'historical-model',
     );
     assert.equal(row.instance_question.ai_grading?.latest_update.ai_grading_model, 'custom-model');
-    const aiText = await selectAiGradingExportText({
-      assessment_question_id: aq.id,
-      grading_job_ids: [aiScore.grading_job_id!, aiFeedbackUpdate.grading_job_id!],
-    });
-    const exportOptions = {
-      ...options,
-      aiGradingTextByJobId: Object.fromEntries(aiText.map((item) => [item.grading_job_id, item])),
-    };
-    const json = getManualGradingJsonData(row, exportOptions);
+    const json = getManualGradingJsonData(row, options);
     assert.equal(json.ai_grading?.model, 'historical-model');
     assert.equal(json.ai_grading?.grading_job_id, aiScore.grading_job_id);
-    const csv = getManualGradingCsvData(row, exportOptions);
+    const csv = getManualGradingCsvData(row, options);
     assert.deepInclude(csv, { name: 'AI model', value: 'historical-model' });
     const aiGradingInfo = await buildAiGradingInfo({
       submission_id: submissionId,
@@ -391,7 +380,7 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
     await grade({ manual_points: 4 });
     const scoreEdit = getManualGradingJsonData(
       await selectExportRow(assessment, aq, iqId),
-      exportOptions,
+      options,
     );
     assert.equal(scoreEdit.human_grading?.manual_points, 4);
     assert.deepEqual(scoreEdit.human_grading?.feedback, json.human_grading?.feedback);

@@ -11,7 +11,6 @@ import {
   numericColumnFilterFn,
 } from '@prairielearn/ui';
 
-import { AiGradingBadge } from '../../../../components/AiGradingBadge.js';
 import {
   StudentLabelsCell,
   StudentLabelsHeader,
@@ -311,12 +310,8 @@ export function createColumns({
     columnHelper.accessor('last_grader_name', {
       id: 'last_grader_name',
       header: 'Graded by',
-      size: 220,
       cell: (info) => {
         const row = info.row.original;
-        const aiGrading = row.instance_question.ai_grading;
-        const model =
-          (aiGrading?.score_source ?? aiGrading?.latest_update)?.ai_grading_model ?? null;
         if (aiGradingMode) {
           const showPlus =
             row.instance_question.ai_grading_status !== 'None' &&
@@ -324,11 +319,16 @@ export function createColumns({
           return (
             <span>
               {row.instance_question.ai_grading_status !== 'None' && (
-                <AiGradingBadge
-                  model={model}
-                  label={generateAiGraderName(row.instance_question.ai_grading_status)}
-                  muted={row.instance_question.ai_grading_status === 'OutdatedRubric'}
-                />
+                <span
+                  className={`badge rounded-pill text-bg-light border ${
+                    row.instance_question.ai_grading_status === 'Graded' ||
+                    row.instance_question.ai_grading_status === 'LatestRubric'
+                      ? ''
+                      : 'text-muted'
+                  }`}
+                >
+                  {generateAiGraderName(row.instance_question.ai_grading_status)}
+                </span>
               )}
               {showPlus && ' + '}
               {row.instance_question.last_human_grader && (
@@ -339,7 +339,11 @@ export function createColumns({
         } else {
           if (!info.getValue()) return 'Unassigned';
           if (row.instance_question.is_ai_graded) {
-            return <AiGradingBadge model={model} />;
+            return (
+              <span className="badge rounded-pill text-bg-light border">
+                {generateAiGraderName()}
+              </span>
+            );
           }
           return info.getValue();
         }
@@ -378,6 +382,27 @@ export function createColumns({
         return aLastHumanGrader.localeCompare(bLastHumanGrader);
       },
     }),
+
+    columnHelper.accessor(
+      (row) => {
+        const aiGrading = row.instance_question.ai_grading;
+        return (aiGrading?.score_source ?? aiGrading?.latest_update)?.ai_grading_model ?? null;
+      },
+      {
+        id: 'ai_grading_model',
+        header: 'AI model',
+        size: 220,
+        cell: (info) => (
+          <span className="font-monospace" title={info.getValue() ?? undefined}>
+            {info.getValue() ?? '—'}
+          </span>
+        ),
+        filterFn: (row, columnId, filter: MultiSelectFilterValue) =>
+          applyMultiSelectFilter(filter, (values) =>
+            values.includes(row.getValue<string | null>(columnId) ?? 'None'),
+          ),
+      },
+    ),
 
     // AI agreement column
     columnHelper.accessor((row) => row.instance_question.rubric_difference, {

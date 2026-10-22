@@ -146,7 +146,6 @@ export function buildInstanceQuestionGradingPanelProps({
     gradedByHumanName,
     aiGradingInfo: aiGradingInfo
       ? {
-          model: aiGradingInfo.model,
           selectedRubricItemIds: aiGradingInfo.selectedRubricItemIds,
           submissionManuallyGraded: aiGradingInfo.submissionManuallyGraded,
         }

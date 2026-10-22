@@ -131,7 +131,7 @@ export function getManualGradingJsonData(
     ai_grading: iq.ai_grading
       ? {
           ...gradingResultToExportFields(iq.ai_grading),
-          model: aiText?.model ?? null,
+          model: (iq.ai_grading.score_source ?? iq.ai_grading.latest_update).ai_grading_model,
           explanation: aiText?.explanation ?? null,
           generated_feedback: aiText?.generated_feedback ?? null,
         }

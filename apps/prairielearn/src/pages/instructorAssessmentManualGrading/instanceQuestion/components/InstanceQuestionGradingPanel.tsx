@@ -4,7 +4,6 @@ import Form from 'react-bootstrap/Form';
 
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
-import { AiGradingBadge } from '../../../../components/AiGradingBadge.js';
 import { subscribeToInstanceQuestionGradingPanelUpdates } from '../../../../lib/client/manual-grading-events.js';
 import { mathjaxTypeset } from '../../../../lib/client/mathjax.js';
 import {
@@ -300,7 +299,9 @@ function InstanceQuestionGradingPanelInner({
           <li className="list-group-item">
             <div className="d-flex align-items-center flex-wrap gap-1">
               <span>Graded by:</span>
-              {data.aiGradingInfo && <AiGradingBadge model={data.aiGradingInfo.model} />}
+              {data.aiGradingInfo && (
+                <span className="badge text-bg-light border fw-medium">AI</span>
+              )}
               {data.aiGradingInfo && data.gradedByHumanName && <span>+</span>}
               {data.gradedByHumanName && <span>{data.gradedByHumanName}</span>}
               {data.aiGradingInfo && (
