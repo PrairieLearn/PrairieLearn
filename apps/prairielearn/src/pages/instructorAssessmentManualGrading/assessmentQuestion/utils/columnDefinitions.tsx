@@ -11,6 +11,7 @@ import {
   numericColumnFilterFn,
 } from '@prairielearn/ui';
 
+import { AiGradingBadge } from '../../../../components/AiGradingBadge.js';
 import {
   StudentLabelsCell,
   StudentLabelsHeader,
@@ -310,8 +311,12 @@ export function createColumns({
     columnHelper.accessor('last_grader_name', {
       id: 'last_grader_name',
       header: 'Graded by',
+      size: 220,
       cell: (info) => {
         const row = info.row.original;
+        const aiGrading = row.instance_question.ai_grading;
+        const model =
+          (aiGrading?.score_source ?? aiGrading?.latest_update)?.ai_grading_model ?? null;
         if (aiGradingMode) {
           const showPlus =
             row.instance_question.ai_grading_status !== 'None' &&
@@ -319,16 +324,11 @@ export function createColumns({
           return (
             <span>
               {row.instance_question.ai_grading_status !== 'None' && (
-                <span
-                  className={`badge rounded-pill text-bg-light border ${
-                    row.instance_question.ai_grading_status === 'Graded' ||
-                    row.instance_question.ai_grading_status === 'LatestRubric'
-                      ? ''
-                      : 'text-muted'
-                  }`}
-                >
-                  {generateAiGraderName(row.instance_question.ai_grading_status)}
-                </span>
+                <AiGradingBadge
+                  model={model}
+                  label={generateAiGraderName(row.instance_question.ai_grading_status)}
+                  muted={row.instance_question.ai_grading_status === 'OutdatedRubric'}
+                />
               )}
               {showPlus && ' + '}
               {row.instance_question.last_human_grader && (
@@ -339,11 +339,7 @@ export function createColumns({
         } else {
           if (!info.getValue()) return 'Unassigned';
           if (row.instance_question.is_ai_graded) {
-            return (
-              <span className="badge rounded-pill text-bg-light border">
-                {generateAiGraderName()}
-              </span>
-            );
+            return <AiGradingBadge model={model} />;
           }
           return info.getValue();
         }

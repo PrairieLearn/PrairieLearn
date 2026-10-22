@@ -8,6 +8,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import {
+  AiGradingJobSchema,
   type Assessment,
   type AssessmentQuestion,
   GradingJobSchema,
@@ -277,8 +278,22 @@ export async function selectGradingResults<T extends { id: string }>(
   );
 
   const source = (job: (typeof grading_jobs)[number]) => {
-    const { grading_job, grader, rubric_items, rubric_grading, rubric_grading_items } = job;
-    return { grading_job, grader, rubric_items, rubric_grading, rubric_grading_items };
+    const {
+      ai_grading_model,
+      grading_job,
+      grader,
+      rubric_items,
+      rubric_grading,
+      rubric_grading_items,
+    } = job;
+    return {
+      ai_grading_model,
+      grading_job,
+      grader,
+      rubric_items,
+      rubric_grading,
+      rubric_grading_items,
+    };
   };
 
   return Object.fromEntries(
@@ -324,11 +339,16 @@ export async function selectAiGradingExportText({
   const rows = await queryRows(
     sql.select_ai_grading_completions_for_export,
     { assessment_question_id, grading_job_ids },
-    z.object({ grading_job_id: IdSchema, completion: z.unknown() }),
+    z.object({
+      grading_job_id: IdSchema,
+      model: AiGradingJobSchema.shape.model.nullable(),
+      completion: z.unknown(),
+    }),
   );
-  return rows.map(({ grading_job_id, completion }) =>
+  return rows.map(({ grading_job_id, model, completion }) =>
     AiGradingExportTextSchema.parse({
       grading_job_id,
+      model,
       explanation: extractAiGradingTextFromCompletion(completion),
       generated_feedback: extractAiGradingTextFromCompletion(completion, 'feedback'),
     }),

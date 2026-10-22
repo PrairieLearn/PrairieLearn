@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { StaffUserSchema } from '../../../lib/client/safe-db-types.js';
 import {
+  AiGradingJobSchema,
   GradingJobSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
@@ -9,6 +10,7 @@ import {
 } from '../../../lib/db-types.js';
 
 export const GradingJobDetailsSchema = z.object({
+  ai_grading_model: AiGradingJobSchema.shape.model.nullable(),
   grading_job: GradingJobSchema.pick({
     id: true,
     graded_at: true,
@@ -33,6 +35,7 @@ export type GradingResult = z.infer<typeof GradingResultSchema>;
 
 export const AiGradingExportTextSchema = z.object({
   grading_job_id: GradingJobSchema.shape.id,
+  model: AiGradingJobSchema.shape.model.nullable(),
   explanation: z.string().nullable(),
   generated_feedback: z.string().nullable(),
 });
@@ -72,6 +75,7 @@ export interface AiGradingGeneralStats {
 }
 
 export interface InstanceQuestionAIGradingInfoBase {
+  model: string | null;
   /** If the submission was also manually graded. */
   submissionManuallyGraded: boolean;
   /** The IDs of the rubric items selected by the AI grader. */

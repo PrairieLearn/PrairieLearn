@@ -52,6 +52,18 @@ SELECT
     'feedback',
     gj.feedback
   ) AS grading_job,
+  (
+    SELECT
+      agj.model
+    FROM
+      ai_grading_jobs AS agj
+    WHERE
+      agj.grading_job_id = gj.id
+    ORDER BY
+      agj.id DESC
+    LIMIT
+      1
+  ) AS ai_grading_model,
   ls.instance_question_id,
   jsonb_build_object(
     'id',
@@ -178,12 +190,17 @@ FROM
   score_jobs AS sj;
 
 -- BLOCK select_ai_grading_completions_for_export
--- Load only completions for the requested export's grading jobs. Prompts contain
+-- Load only metadata and completions for the requested export's grading jobs. Prompts contain
 -- base64 images and must never be serialized here, even for downloads.
 SELECT
   gj.id AS grading_job_id,
-  (
+  agj.model,
+  agj.completion
+FROM
+  grading_jobs AS gj
+  LEFT JOIN LATERAL (
     SELECT
+      agj.model,
       agj.completion
     FROM
       ai_grading_jobs AS agj
@@ -193,9 +210,7 @@ SELECT
       agj.id DESC
     LIMIT
       1
-  ) AS completion
-FROM
-  grading_jobs AS gj
+  ) AS agj ON TRUE
   JOIN submissions AS s ON s.id = gj.submission_id
   JOIN variants AS v ON v.id = s.variant_id
   JOIN instance_questions AS iq ON iq.id = v.instance_question_id

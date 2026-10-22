@@ -304,6 +304,7 @@ WHERE
 -- BLOCK select_ai_grading_job_data_for_submission
 SELECT
   gj.manual_rubric_grading_id,
+  agj.model,
   agj.prompt,
   agj.completion,
   agj.rotation_correction_degrees
@@ -314,8 +315,12 @@ WHERE
   submission_id = $submission_id
   AND grading_method = 'AI'
   AND gj.deleted_at IS NULL
+  AND gj.graded_at IS NOT NULL
 ORDER BY
-  gj.date DESC
+  (gj.manual_points IS NOT NULL) DESC,
+  gj.graded_at DESC,
+  gj.id DESC,
+  agj.id DESC
 LIMIT
   1;
 

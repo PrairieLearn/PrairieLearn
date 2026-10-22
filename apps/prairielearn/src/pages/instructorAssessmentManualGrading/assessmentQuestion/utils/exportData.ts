@@ -131,6 +131,7 @@ export function getManualGradingJsonData(
     ai_grading: iq.ai_grading
       ? {
           ...gradingResultToExportFields(iq.ai_grading),
+          model: aiText?.model ?? null,
           explanation: aiText?.explanation ?? null,
           generated_feedback: aiText?.generated_feedback ?? null,
         }
@@ -209,6 +210,7 @@ export function getManualGradingCsvData(
     { name: 'Human Manual Points', value: data.human_grading?.manual_points ?? '' },
     { name: 'Human Grading', value: jsonCell(data.human_grading) },
     { name: 'AI Manual Points', value: data.ai_grading?.manual_points ?? '' },
+    { name: 'AI model', value: data.ai_grading?.model ?? '' },
     { name: 'AI Grading', value: jsonCell(data.ai_grading) },
     { name: 'AI Grading Status', value: data.ai_grading_status },
     {
