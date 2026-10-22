@@ -47,6 +47,8 @@ INSERT INTO
     completion,
     rotation_correction_degrees,
     model,
+    provider,
+    base_url,
     prompt_tokens,
     completion_tokens,
     cost,
@@ -61,6 +63,8 @@ VALUES
     $completion,
     $rotation_correction_degrees,
     $model,
+    $provider,
+    $base_url,
     $prompt_tokens,
     $completion_tokens,
     $cost,
@@ -136,6 +140,7 @@ WITH
       JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
       gj.grading_method = 'Manual'
+      AND gj.deleted_at IS NULL
     ORDER BY
       s.id ASC,
       gj.date DESC,
@@ -152,6 +157,7 @@ WITH
       JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
       gj.grading_method != 'AI'
+      AND gj.deleted_at IS NULL
     ORDER BY
       s.id ASC,
       gj.date DESC,
@@ -189,6 +195,7 @@ WITH
       JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
       gj.grading_method = 'Manual'
+      AND gj.deleted_at IS NULL
     ORDER BY
       iq.id ASC,
       gj.date DESC,
@@ -289,7 +296,8 @@ WHERE
 -- BLOCK set_ai_grading_last_selected_model
 UPDATE assessment_questions
 SET
-  ai_grading_last_selected_model = $model_id
+  ai_grading_last_selected_model = $model_id,
+  ai_grading_last_selected_credential_id = $credential_id
 WHERE
   id = $assessment_question_id;
 

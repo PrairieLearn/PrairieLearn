@@ -1,8 +1,46 @@
 import { z } from 'zod';
 
-import { RubricItemSchema } from '../../../lib/db-types.js';
+import { StaffUserSchema } from '../../../lib/client/safe-db-types.js';
+import {
+  GradingJobSchema,
+  RubricGradingItemSchema,
+  RubricGradingSchema,
+  RubricItemSchema,
+} from '../../../lib/db-types.js';
+
+export const GradingJobDetailsSchema = z.object({
+  grading_job: GradingJobSchema.pick({
+    id: true,
+    graded_at: true,
+    grading_method: true,
+    manual_points: true,
+    auto_points: true,
+    feedback: true,
+  }),
+  grader: StaffUserSchema,
+  rubric_items: z.array(RubricItemSchema),
+  rubric_grading: RubricGradingSchema.nullable(),
+  rubric_grading_items: z.array(RubricGradingItemSchema),
+});
+const GradingResultSchema = z.object({
+  score_source: GradingJobDetailsSchema.nullable(),
+  auto_points_source: GradingJobDetailsSchema.nullable(),
+  feedback: GradingJobSchema.shape.feedback,
+  feedback_sources: z.record(z.string(), GradingJobDetailsSchema),
+  latest_update: GradingJobDetailsSchema,
+});
+export type GradingResult = z.infer<typeof GradingResultSchema>;
+
+export const AiGradingExportTextSchema = z.object({
+  grading_job_id: GradingJobSchema.shape.id,
+  explanation: z.string().nullable(),
+  generated_feedback: z.string().nullable(),
+});
+export type AiGradingExportText = z.infer<typeof AiGradingExportTextSchema>;
 
 export const AIGradingStatsSchema = z.object({
+  human_grading: GradingResultSchema.nullable(),
+  ai_grading: GradingResultSchema.nullable(),
   last_human_grader: z.string().nullable(),
   ai_grading_status: z.enum(['Graded', 'LatestRubric', 'OutdatedRubric', 'None']),
   point_difference: z.number().nullable(),
