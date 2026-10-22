@@ -137,6 +137,31 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   ).toBeEnabled();
 });
 
+test('reports an offscreen preview error without waiting for the preparation timeout', async ({
+  page,
+  courseInstance,
+}) => {
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
+
+  await page.route('**/paper/preview?*', async (route) => {
+    if (new URL(route.request().url()).searchParams.get('document') !== 'answer_key') {
+      return await route.continue();
+    }
+    return await route.fulfill({
+      status: 422,
+      contentType: 'text/html',
+      body: '<!doctype html><html><body>No questions could be printed.</body></html>',
+    });
+  });
+
+  await chooseDownload(page, 'Download Form A answer key (PDF)');
+  await expect(
+    page.getByRole('alert').getByText('Form A: The printable preview could not be loaded.'),
+  ).toBeVisible({ timeout: 10_000 });
+  await expect(downloadMenu(page)).toBeEnabled();
+});
+
 test('shows the prepared PDF type and size in its download link', async ({
   page,
   courseInstance,

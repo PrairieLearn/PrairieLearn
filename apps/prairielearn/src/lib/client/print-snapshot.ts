@@ -41,29 +41,34 @@ async function renderInFrame<T>(
   frame.style.cssText =
     'position:fixed;left:-200vw;top:0;width:1200px;height:800px;border:0;pointer-events:none';
   let timeout: number | undefined;
+  let observer: MutationObserver | undefined;
   const ready = new Promise<T>((resolve, reject) => {
     timeout = window.setTimeout(() => {
       reject(new Error('The printable preview is taking longer than expected.'));
     }, 120_000);
     frame.addEventListener('load', () => {
-      const root = frame.contentDocument?.documentElement;
-      if (!root) {
+      const doc = frame.contentDocument;
+      if (doc?.URL === 'about:blank') return;
+      const root = doc?.documentElement;
+      if (!root?.dataset.printStatus) {
         reject(new Error('The printable preview could not be loaded.'));
         return;
       }
-      const observer = new MutationObserver(check);
-      observer.observe(root, { attributes: true, attributeFilter: ['data-print-status'] });
+      observer?.disconnect();
+      const statusObserver = new MutationObserver(check);
+      observer = statusObserver;
+      statusObserver.observe(root, { attributes: true, attributeFilter: ['data-print-status'] });
 
       function check() {
         if (root?.dataset.printStatus === 'ready') {
-          observer.disconnect();
+          statusObserver.disconnect();
           try {
             void Promise.resolve(capture(frame.contentDocument!)).then(resolve, reject);
           } catch (error) {
             reject(error);
           }
         } else if (root?.dataset.printStatus === 'error') {
-          observer.disconnect();
+          statusObserver.disconnect();
           reject(new Error(root.dataset.printError ?? 'Unable to lay out this exam.'));
         }
       }
@@ -76,6 +81,7 @@ async function renderInFrame<T>(
     return await ready;
   } finally {
     window.clearTimeout(timeout);
+    observer?.disconnect();
     frame.remove();
   }
 }

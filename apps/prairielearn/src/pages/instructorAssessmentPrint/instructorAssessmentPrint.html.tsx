@@ -273,7 +273,17 @@ function PrintPreparation({
     const url = `${base}/preview?${printLayoutSearch(appliedSettings)}&form_label=${label}&document=${printDocument}`;
     const cached = snapshotsRef.current.get(url);
     if (cached) return cached;
-    const snapshot = await renderPrintSnapshot(url);
+    let snapshot: PrintSnapshot;
+    try {
+      snapshot = await renderPrintSnapshot(url);
+    } catch (error) {
+      throw new Error(
+        `Form ${label}: ${error instanceof Error ? error.message : 'The preview could not be prepared.'}`,
+        {
+          cause: error,
+        },
+      );
+    }
     snapshotsRef.current.set(url, snapshot);
     return snapshot;
   }
