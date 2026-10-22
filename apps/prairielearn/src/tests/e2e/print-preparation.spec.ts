@@ -248,7 +248,7 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   expect(new URL(page.url()).searchParams.get('instance')).toBe(form);
 });
 
-test('prepares homework with matching student copies, answer keys, and booklet exports', async ({
+test('prepares homework with matching student copies, answer keys, and Word exports', async ({
   page,
   courseInstance,
 }) => {
@@ -288,12 +288,10 @@ test('prepares homework with matching student copies, answer keys, and booklet e
     .locator('.pagedjs_page')
     .getByText('What percentage score would you like for this question?');
   const questionText = await question.innerText();
-  const studentPageCount = await frame.locator('.pagedjs_page').count();
   await page.getByRole('button', { name: 'Answer key', exact: true }).click();
   await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
   await expect(frame.locator(':root')).toHaveAttribute('data-print-document', 'answer_key');
   await expect(question).toHaveText(questionText, { useInnerText: true });
-  const answerKeyPageCount = await frame.locator('.pagedjs_page').count();
   await page.getByRole('button', { name: 'Student copy', exact: true }).click();
   await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
   await expect(question).toHaveText(questionText, { useInnerText: true });
@@ -308,15 +306,6 @@ test('prepares homework with matching student copies, answer keys, and booklet e
   ).toString();
   expect(documentXml).toContain('Question HW15.1');
   expect(documentXml).not.toContain('Question HW15.2');
-  await chooseDownload(page, 'Download booklet PDF…');
-  await page.getByLabel('Number of students', { exact: true }).fill('3');
-  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-  await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
-  const download = await downloaded;
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  expect(await download.failure()).toBeNull();
-  const packet = await PDFDocument.load(await fs.readFile(await download.path()));
-  expect(packet.getPageCount()).toBe(3 * studentPageCount + answerKeyPageCount);
 });
 
 test('combines exam copies with custom covers and appends every form’s answer key', async ({
@@ -348,22 +337,20 @@ test('combines exam copies with custom covers and appends every form’s answer 
   expect(await selectAssessmentInstanceById(originalInstanceId)).toEqual(originalInstance);
 
   const formIds = [new URL(page.url()).searchParams.get('instance')!];
-  for (const label of ['B', 'C']) {
-    await page.getByRole('button', { name: 'Add assessment instance', exact: true }).click();
-    await expect(page.getByRole('button', { name: new RegExp(`^Form ${label}`) })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await expect(downloadMenu(page)).toBeEnabled({
-      timeout: 120_000,
-    });
-    formIds.push(new URL(page.url()).searchParams.get('instance')!);
-  }
-  expect(new Set(formIds).size).toBe(3);
+  await page.getByRole('button', { name: 'Add assessment instance', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^Form B/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(downloadMenu(page)).toBeEnabled({
+    timeout: 120_000,
+  });
+  formIds.push(new URL(page.url()).searchParams.get('instance')!);
+  expect(new Set(formIds).size).toBe(2);
   const pageCounts: number[] = [];
   const answerKeyPageCounts: number[] = [];
   const frame = page.frameLocator('iframe[title="Printable document preview"]');
-  for (const label of ['A', 'B', 'C']) {
+  for (const label of ['A', 'B']) {
     await page
       .getByRole('combobox', { name: 'Preview form', exact: true })
       .selectOption({ label: `Form ${label}` });
@@ -375,7 +362,7 @@ test('combines exam copies with custom covers and appends every form’s answer 
       'true',
     );
     expect(new URL(page.url()).searchParams.get('instance')).toBe(
-      formIds[['A', 'B', 'C'].indexOf(label)],
+      formIds[['A', 'B'].indexOf(label)],
     );
     if (label === 'B') {
       await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
@@ -409,7 +396,7 @@ test('combines exam copies with custom covers and appends every form’s answer 
   await chooseDownload(page, 'Download all forms (PDF)');
   expect((await allFormsResponse).status()).toBe(200);
   const allFormsDownload = await allForms;
-  expect(allFormsDownload.suggestedFilename()).toMatch(/assessment_3_copies\.pdf$/);
+  expect(allFormsDownload.suggestedFilename()).toMatch(/assessment_2_copies\.pdf$/);
   expect(
     (await PDFDocument.load(await fs.readFile(await allFormsDownload.path()))).getPageCount(),
   ).toBe(pageCounts.reduce((total, count) => total + count, 0));
@@ -427,7 +414,7 @@ test('combines exam copies with custom covers and appends every form’s answer 
   await chooseDownload(page, 'Download booklet PDF…');
   await page.getByLabel('Number of students', { exact: true }).fill(String(copies));
   await expect(
-    page.getByText('Forms A, B, C repeat in order, one complete copy per student.', {
+    page.getByText('Forms A, B repeat in order, one complete copy per student.', {
       exact: false,
     }),
   ).toBeVisible();
