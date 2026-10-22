@@ -16,6 +16,6 @@ COPY --chmod=0755 --chown=root:root pl-gosu-helper.sh /usr/bin/
 COPY src /xterm
 
 WORKDIR /xterm
-RUN npm install --frozen-lockfile && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 ENTRYPOINT ["/usr/bin/pl-gosu-helper.sh", "node", "server.js", "-w", "/home/student"]
