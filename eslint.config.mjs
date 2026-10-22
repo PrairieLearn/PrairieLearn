@@ -165,7 +165,6 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [RESTRICTED_REACT_BOOTSTRAP_IMPORT],
           patterns: [
             {
               message:
