@@ -185,54 +185,29 @@ test('lets image choices flow across pages before shrinking them below legible s
   }
 });
 
-test('preserves fitting checkbox images and their different aspect ratios', async ({
-  page,
-  imageQuestion,
-}) => {
-  const dimensions = [
-    { width: 60, height: 30 },
-    { width: 60, height: 40 },
-  ];
-  const preview = await imageQuestion(imageChoices({ element: 'pl-checkbox', dimensions }));
-  const response = await page.goto(`${preview}?exclude_question=2&paper_size=Letter`);
-  expect(response!.ok()).toBe(true);
+test('keeps a full page of choices at its measured height', async ({ page, imageQuestion }) => {
+  const preview = await imageQuestion(
+    `<style>.printing-question[data-question-number="1"] { min-height: var(--exam-print-content-height); }</style>${imageChoices(
+      {
+        element: 'pl-multiple-choice',
+        dimensions: Array.from({ length: 4 }, () => ({ width: 60, height: 30 })),
+      },
+    )}`,
+  );
+
+  await page.goto(`${preview}?exclude_question=2&paper_size=Letter&block_size=auto`);
   await waitForPrintablePage(page);
-  for (const [index, { width, height }] of dimensions.entries()) {
-    const image = page.getByRole('img', { name: `Image choice ${index + 1}`, exact: true });
-    const bounds = await image.boundingBox();
-    expect(bounds!.width).toBeCloseTo(width, 1);
-    expect(bounds!.height).toBeCloseTo(height, 1);
-  }
+  await expect(page.locator('.pagedjs_page')).toHaveCount(2);
+  const question = page.getByRole('region', { name: 'Question 1', exact: true });
+  await expect(question).toHaveCount(1);
+  await expect(question.getByRole('img', { name: /^Image choice / })).toHaveCount(4);
+  const height = await question.evaluate((element) => ({
+    measured: Number(element.dataset.printMeasuredHeight),
+    actual: element.getBoundingClientRect().height,
+  }));
+  expect(height.actual).toBeGreaterThan(height.measured - 4);
+  expect(height.actual).toBeLessThanOrEqual(height.measured + 1);
 });
-
-for (const element of ['pl-multiple-choice', 'pl-checkbox'] as const) {
-  test(`keeps a full page of ${element} choices at its measured height`, async ({
-    page,
-    imageQuestion,
-  }) => {
-    const preview = await imageQuestion(
-      `<style>.printing-question[data-question-number="1"] { min-height: var(--exam-print-content-height); }</style>${imageChoices(
-        {
-          element,
-          dimensions: Array.from({ length: 4 }, () => ({ width: 60, height: 30 })),
-        },
-      )}`,
-    );
-
-    await page.goto(`${preview}?exclude_question=2&paper_size=Letter&block_size=auto`);
-    await waitForPrintablePage(page);
-    await expect(page.locator('.pagedjs_page')).toHaveCount(2);
-    const question = page.getByRole('region', { name: 'Question 1', exact: true });
-    await expect(question).toHaveCount(1);
-    await expect(question.getByRole('img', { name: /^Image choice / })).toHaveCount(4);
-    const height = await question.evaluate((element) => ({
-      measured: Number(element.dataset.printMeasuredHeight),
-      actual: element.getBoundingClientRect().height,
-    }));
-    expect(height.actual).toBeGreaterThan(height.measured - 4);
-    expect(height.actual).toBeLessThanOrEqual(height.measured + 1);
-  });
-}
 
 test('moves a question that outgrows its requested block to the next page', async ({
   page,

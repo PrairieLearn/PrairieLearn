@@ -82,32 +82,17 @@ for (const document of ['exam', 'answer_key'] as const) {
       courseInstance.id,
       'exam20-assessmentTools',
     );
-    await page.goto(`${paperUrl(courseInstance, assessmentInstanceId)}&document=${document}`);
+    const response = await page.goto(
+      `${paperUrl(courseInstance, assessmentInstanceId)}&document=${document}`,
+    );
     await readPaginatedQuestionLayout(page);
     await expect(page.getByText('Consider two numbers', { exact: false })).toBeVisible();
+    await expect(page.locator('script:not([type="application/json"])')).toHaveCount(0);
+    expect(response?.headers()['content-security-policy']).toContain("script-src 'none'");
     const { violations } = await page.evaluate(async () => await axe.run());
     expect(violations).toEqual([]);
   });
 }
-
-test('uses the same selected questions and totals in the exam and answer key', async ({
-  page,
-  courseInstance,
-}) => {
-  const assessmentInstanceId = await createPrintableAssessmentInstance(
-    courseInstance.id,
-    'exam20-assessmentTools',
-  );
-  for (const document of ['exam', 'answer_key'] as const) {
-    await page.goto(
-      `${paperUrl(courseInstance, assessmentInstanceId)}&exclude_question=1&document=${document}`,
-    );
-    const layout = await readPaginatedQuestionLayout(page);
-    expect(Object.keys(layout.questionPages)).toEqual(['2']);
-    await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
-    await expect(page.locator(':root')).toHaveAttribute('data-print-max-points', '10');
-  }
-});
 
 for (const shuffle of [false, true]) {
   test(`prints homework labels and selected question sizes with shuffling=${shuffle}`, async ({

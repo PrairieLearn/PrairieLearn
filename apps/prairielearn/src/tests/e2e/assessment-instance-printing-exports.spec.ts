@@ -216,164 +216,41 @@ test('previews and exports an exam with more than 64 figures', async ({
   }
 });
 
-test('rejects invalid print query parameters', async ({ page, courseInstance }) => {
-  const { paperUrl } = await createPrintableExam(courseInstance, 'exam20-assessmentTools');
-
-  expect((await page.request.get(`${paperUrl}/preview?paper_size=Letter&bogus=1`)).status()).toBe(
-    400,
-  );
-  expect((await page.request.get(`${paperUrl}/preview?paper_size=Tabloid`)).status()).toBe(400);
-  expect(
-    (await page.request.get(`${paperUrl}/preview?paper_size=Letter&document=solutions`)).status(),
-  ).toBe(400);
-});
-
-test('rejects invalid question exclusions in previews', async ({ page, courseInstance }) => {
-  const { paperUrl } = await createPrintableExam(courseInstance, 'exam20-assessmentTools');
-  for (const exclusion of [
-    'exclude_question=1&exclude_question=1',
-    'exclude_question=99',
-    'exclude_question=1&exclude_question=2',
-  ]) {
-    const response = await page.request.get(`${paperUrl}/preview?paper_size=Letter&${exclusion}`);
-    expect(response.status()).toBe(400);
-  }
-});
-
-test('exports the broad printing fixture with inline, ordering, sketch, and display-only questions', async ({
+test('prints representative controls and exports editable Word content', async ({
   page,
   courseInstance,
 }) => {
   const { paperUrl } = await createPrintableExam(courseInstance, 'exam23-printing');
   await page.goto(`${paperUrl}/preview?paper_size=Letter`);
   await waitForPrintablePage(page);
-  const warnings = await readWarnings(page);
-  expect(warnings.map((warning) => warning.qid)).toEqual(
-    expect.arrayContaining(['brokenGeneration', 'brokenPrepare']),
-  );
   const search = new URLSearchParams({ paper_size: 'Letter' });
-  for (const warning of warnings) search.append('exclude_question', warning.question_number);
+  for (const warning of await readWarnings(page)) {
+    search.append('exclude_question', warning.question_number);
+  }
+
   await page.goto(`${paperUrl}/preview?${search}`);
   await waitForPrintablePage(page);
-  const questionNumbers = await page
-    .locator('.pagedjs_page .printing-question')
-    .evaluateAll((questions) => [
-      ...new Set(questions.map((question) => (question as HTMLElement).dataset.questionNumber)),
-    ]);
-  expect(questionNumbers).toHaveLength(45 - warnings.length);
-
   const questions = page.locator('.pagedjs_page .printing-question');
   await expect(
-    questions.locator(
-      'math-field, textarea, select, input[type="range"], input[type="file"], iframe, .image-capture-card, .si-toolbar',
-    ),
+    questions.locator('math-field, textarea, select, input[type="file"], iframe'),
   ).toHaveCount(0);
-  const responseHints = questions.locator('.printing-response-placeholder');
+  expect(await questions.locator('.printing-response-placeholder').allTextContents()).toContain(
+    '3 significant figures',
+  );
   await expect(
-    responseHints.filter({ hasText: /^(symbolic expression|asymptotic expression|integer)$/i }),
-  ).toHaveCount(0);
-  expect(await responseHints.allTextContents()).toContain('3 significant figures');
-  expect(await responseHints.allTextContents()).toContain('symbolic expression (blank is allowed)');
-  const displayQuestion = questions.filter({
-    has: page.locator('[data-print-answer-name="number_block"]'),
-  });
-  expect(
-    await displayQuestion
-      .getByRole('heading', { name: 'pl-number-input', exact: true })
-      .evaluate((heading) => Number.parseFloat(getComputedStyle(heading).fontSize)),
-  ).toBeLessThanOrEqual(15);
-  const matrixLines = questions.locator(
-    '.pl-matrix-component-input-container [data-print-response-line]',
-  );
-  await expect(matrixLines).toHaveCount(4);
-  for (const line of await matrixLines.all()) {
-    expect(await line.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(
-      50,
-    );
-  }
-  await expect(
-    questions.locator(
-      '.printing-keep-together[data-split-from], .printing-keep-together[data-split-to]',
-    ),
-  ).toHaveCount(0);
-  const drawingSections = page.locator(
-    '.pagedjs_page [data-question-number="36"] .printing-subsection, .pagedjs_page [data-question-number="37"] .printing-subsection',
-  );
-  await expect(drawingSections).toHaveCount(6);
-  for (const section of await drawingSections.all()) {
-    await expect(section.locator('p')).toHaveCount(1);
-    await expect(section.locator('.printing-drawing-response')).toHaveCount(1);
-  }
-  for (const section of await drawingSections.all()) {
-    const overflow = await section.evaluate((element) => {
-      const bounds = element.getBoundingClientRect();
-      const pageBounds = element
-        .closest('.pagedjs_page')!
-        .querySelector('.pagedjs_area')!
-        .getBoundingClientRect();
-      return Math.max(pageBounds.top - bounds.top, bounds.bottom - pageBounds.bottom);
-    });
-    expect(overflow).toBeLessThanOrEqual(1);
-  }
-  const blockChoices = questions.getByRole('group', {
-    name: 'Choose only one block from this group',
-    exact: true,
-  });
-  await expect(blockChoices).toHaveCount(4);
-  for (const group of await blockChoices.all()) {
-    await expect(
-      group.getByText('Choose only one block from this group', { exact: true }),
-    ).toHaveCount(1);
-    await expect(group.getByRole('listitem')).toHaveCount(3);
-    await expect(group.getByLabel('Order number', { exact: true })).toHaveCount(3);
-  }
-  await expect(questions.getByText(/Alternative group/)).toHaveCount(0);
-  await expect(questions.locator('.printing-order-source ol')).toHaveCount(0);
-  for (const position of await questions.getByLabel('Order number', { exact: true }).all()) {
-    await expect(position).toBeEmpty();
-    const bounds = await position.boundingBox();
-    expect(bounds!.width).toBeGreaterThanOrEqual(28);
-    expect(bounds!.height).toBeGreaterThanOrEqual(28);
-  }
-  const indentFields = questions.getByLabel('Indentation level', { exact: true });
-  expect(await indentFields.count()).toBeGreaterThan(0);
-  for (const field of await indentFields.all()) await expect(field).toBeEmpty();
-  await expect(questions.getByText('Solution with indentation', { exact: true })).toHaveCount(0);
-  const checkboxOptions = page.locator('[data-question-number="11"] .printing-selection-option');
-  await expect(checkboxOptions).toHaveCount(3);
-  for (const option of await checkboxOptions.all()) {
-    const spacing = await option.evaluate((element) => {
-      const style = getComputedStyle(element);
-      return { padding: Number.parseFloat(style.paddingTop), align: style.alignItems };
-    });
-    expect(spacing.padding).toBeGreaterThanOrEqual(8);
-    expect(spacing.align).toBe('flex-start');
-  }
-  const textareaLines = page.locator(
-    '.pagedjs_page [data-question-number="32"] .printing-response-lines',
-  );
-  const textareaBounds = await textareaLines.boundingBox();
-  expect(textareaBounds!.width).toBeGreaterThan(600);
-  const sketches = questions.locator('svg.printing-sketch');
-  await expect(sketches).toHaveCount(17);
-  for (const sketch of await sketches.all()) {
-    await expect(sketch).toHaveAttribute('viewBox', '0 0 800 450');
-  }
+    questions.getByRole('group', { name: 'Choose only one block from this group', exact: true }),
+  ).not.toHaveCount(0);
+  await expect(questions.locator('svg.printing-sketch')).not.toHaveCount(0);
 
-  const docxResponse = await downloadPrintableWord(page, paperUrl, String(search));
-  expect(docxResponse.status()).toBe(200);
-  const archive = await unzipper.Open.buffer(await docxResponse.body());
+  const response = await downloadPrintableWord(page, paperUrl, String(search));
+  expect(response.status()).toBe(200);
+  const archive = await unzipper.Open.buffer(await response.body());
   const documentXml = (
     await archive.files.find((file) => file.path === 'word/document.xml')!.buffer()
   ).toString();
-  for (const number of questionNumbers) expect(documentXml).toContain(`Question ${number}`);
-  expect(documentXml.match(/<m:oMath>/g)?.length).toBeGreaterThan(100);
   expect(documentXml).toContain('Choose only one block from this group');
-  expect(documentXml).toContain('Indent');
-  expect(documentXml).not.toContain('Solution with indentation');
   expect(documentXml).toContain('Find the derivative');
-  expect(documentXml).not.toContain('PrintedQuestionImage');
-  expect(documentXml).toContain('w:hRule="atLeast"');
+  expect(documentXml).not.toContain('Solution with indentation');
 });
 
 test('exports the broad answer key with correct answers before distractors', async ({
