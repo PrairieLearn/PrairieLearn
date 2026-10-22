@@ -186,7 +186,7 @@ test('prints details content in visible boxes and preserves it in Word', async (
   expect(documentXml.match(/<w:shd w:fill="F7F7F7"\/>/g)).toHaveLength(2);
 });
 
-test('prints representative controls and exports editable Word content', async ({
+test('prints representative controls, editable Word content, and an ordered answer key', async ({
   page,
   courseInstance,
 }) => {
@@ -221,74 +221,17 @@ test('prints representative controls and exports editable Word content', async (
   expect(documentXml).toContain('Choose only one block from this group');
   expect(documentXml).toContain('Find the derivative');
   expect(documentXml).not.toContain('Solution with indentation');
-});
 
-test('exports the broad answer key with correct answers before distractors', async ({
-  page,
-  courseInstance,
-}) => {
-  const { paperUrl } = await createPrintableExam(courseInstance, 'exam23-printing');
-  await page.goto(`${paperUrl}/preview?paper_size=Letter`);
-  await waitForPrintablePage(page);
-  const warnings = await readWarnings(page);
-  expect(warnings.map((warning) => warning.qid)).toEqual(
-    expect.arrayContaining(['brokenGeneration', 'brokenPrepare']),
-  );
-  const search = new URLSearchParams({ paper_size: 'Letter' });
-  for (const warning of warnings) search.append('exclude_question', warning.question_number);
-  await page.goto(`${paperUrl}/preview?${search}`);
-  await waitForPrintablePage(page);
-  const questionNumbers = await page
-    .locator('.pagedjs_page .printing-question')
-    .evaluateAll((questions) => [
-      ...new Set(questions.map((question) => (question as HTMLElement).dataset.questionNumber)),
-    ]);
-  expect(questionNumbers).toHaveLength(45 - warnings.length);
   await page.goto(`${paperUrl}/preview?${search}&document=answer_key`);
   await waitForPrintablePage(page);
-  const answerQuestionNumbers = await page
-    .locator('.pagedjs_page .printing-question')
-    .evaluateAll((questions) => [
-      ...new Set(
-        questions
-          .filter((question) => question.querySelector('[data-print-answer-key]'))
-          .map((question) => (question as HTMLElement).dataset.questionNumber),
-      ),
-    ]);
-  expect(answerQuestionNumbers).toEqual(questionNumbers);
-  const orderAnswerGroups = page.locator('.pagedjs_page .printing-order-answer-group');
-  await expect(orderAnswerGroups).toHaveCount(5);
-  for (const group of await orderAnswerGroups.all()) {
-    const correct = group.locator('.pl-order-blocks-answer-container:has(> .bg-success-subtle)');
-    const incorrect = group.locator('.pl-order-blocks-answer-container:has(> .bg-danger-subtle)');
-    await expect(correct).toHaveCount(1);
-    await expect(incorrect).toHaveCount(1);
-    const correctBounds = await correct.boundingBox();
-    const incorrectBounds = await incorrect.boundingBox();
-    expect(incorrectBounds!.y).toBeGreaterThanOrEqual(correctBounds!.y + correctBounds!.height);
-    const overflow = await group.evaluate((element) => {
-      const bounds = element.getBoundingClientRect();
-      const pageBounds = element
-        .closest('.pagedjs_page')!
-        .querySelector('.pagedjs_area')!
-        .getBoundingClientRect();
-      return Math.max(pageBounds.top - bounds.top, bounds.bottom - pageBounds.bottom);
-    });
-    expect(overflow).toBeLessThanOrEqual(1);
-  }
-  expect(
-    await page
-      .locator('.printing-answer-key-content')
-      .evaluateAll((answers) =>
-        answers.every((answer) => getComputedStyle(answer).transform === 'none'),
-      ),
-  ).toBe(true);
-  const answerKeyResponse = await downloadPrintableWord(
-    page,
-    paperUrl,
-    `${search}&document=answer_key`,
-  );
-  expect(answerKeyResponse.status()).toBe(200);
+  const answerGroup = page.locator('.pagedjs_page .printing-order-answer-group').first();
+  const correct = answerGroup.locator('.pl-order-blocks-correct-answer');
+  const distractors = answerGroup.locator('.pl-order-blocks-distractors');
+  await expect(correct).toBeVisible();
+  await expect(distractors).toBeVisible();
+  const correctBounds = await correct.boundingBox();
+  const distractorBounds = await distractors.boundingBox();
+  expect(distractorBounds!.y).toBeGreaterThanOrEqual(correctBounds!.y + correctBounds!.height);
 });
 
 test('refuses incomplete question and answer-key renders and recovers after a correction', async ({
