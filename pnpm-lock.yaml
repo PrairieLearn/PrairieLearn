@@ -218,7 +218,7 @@ overrides:
   linkinator>marked: ^18
   markdownlint-cli2>smol-toml: ^1
   notebookjs>jsdom: '*'
-  jsdom>undici: 8.12.3
+  jsdom>undici: ^8.12.3
 
 importers:
 
@@ -2457,7 +2457,7 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       undici:
-        specifier: 8.12.3
+        specifier: ^8.12.3
         version: 8.12.3
     devDependencies:
       '@prairielearn/tsconfig':
@@ -2540,7 +2540,7 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(vitest@5.0.2)
       undici:
-        specifier: 8.12.3
+        specifier: ^8.12.3
         version: 8.12.3
       vitest:
         specifier: ^5.0.2
