@@ -193,7 +193,7 @@ test('renders readable answer keys for every student question', async ({
 }) => {
   const assessmentInstanceId = await createPrintableAssessmentInstance(
     courseInstance.id,
-    'exam1-automaticTestSuite',
+    'exam20-assessmentTools',
   );
   const endpoint = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
 

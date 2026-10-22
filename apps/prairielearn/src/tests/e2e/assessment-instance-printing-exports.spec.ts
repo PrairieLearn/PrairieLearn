@@ -215,7 +215,7 @@ test('previews and exports an exam with more than 64 figures', async ({
 });
 
 test('rejects invalid print query parameters', async ({ page, courseInstance }) => {
-  const { paperUrl } = await createPrintableExam(courseInstance, 'exam1-automaticTestSuite');
+  const { paperUrl } = await createPrintableExam(courseInstance, 'exam20-assessmentTools');
 
   expect((await page.request.get(`${paperUrl}/preview?paper_size=Letter&bogus=1`)).status()).toBe(
     400,
