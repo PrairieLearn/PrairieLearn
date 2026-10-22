@@ -1,7 +1,7 @@
 import html
 import os
 import re
-import warnings
+import subprocess
 
 import lxml.html
 import networkx as nx
@@ -250,19 +250,29 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
 
-    with warnings.catch_warnings():
-        # Only apply ignore filter if we enable hiding warnings
-        if not log_warnings:
-            warnings.simplefilter("ignore")
-
+    if log_warnings:
         svg_bytes = translated_dotcode.draw(format="svg", prog=engine)
-        if svg_bytes is None:
-            raise TypeError("Graph was not returned.")
-        svg = svg_bytes.decode("utf-8", "strict")
-        # https://gitlab.com/graphviz/graphviz/-/merge_requests/3404
-        # We can switch to svg_inline when we have use graphviz >= 10.0.1
-        svg = re.sub(XML_DECLARATION, "", svg)
-        svg = re.sub(DOCTYPE_DECLARATION, "", svg)
+    else:
+        # PyGraphviz 2 writes native Graphviz diagnostics directly to stderr,
+        # bypassing Python's warning filters. Capture them to suppress warnings
+        # while retaining diagnostics when rendering fails.
+        result = subprocess.run(
+            ["dot", f"-K{engine}", "-Tsvg"],
+            input=translated_dotcode.string().encode(translated_dotcode.encoding),
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise OSError(result.stderr.decode(translated_dotcode.encoding))
+        svg_bytes = result.stdout
+
+    if svg_bytes is None:
+        raise TypeError("Graph was not returned.")
+    svg = svg_bytes.decode("utf-8", "strict")
+    # https://gitlab.com/graphviz/graphviz/-/merge_requests/3404
+    # We can switch to svg_inline when we have use graphviz >= 10.0.1
+    svg = re.sub(XML_DECLARATION, "", svg)
+    svg = re.sub(DOCTYPE_DECLARATION, "", svg)
 
     # When an author provides a text alternative, expose the whole graph as a
     # single labeled image. The `role="img"` makes the SVG's descendants
