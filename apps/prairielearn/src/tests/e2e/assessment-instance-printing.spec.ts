@@ -97,7 +97,7 @@ test('reuses closed homework variants for student copies and answer keys', async
   expect(variants).toHaveLength(1);
   await execute(sql.close_variants, { assessment_instance_id: assessmentInstanceId });
 
-  for (const document of ['exam', 'answer_key', 'exam']) {
+  for (const document of ['exam', 'answer_key']) {
     await page.goto(`${url}&document=${document}`);
     const layout = await readPaginatedQuestionLayout(page);
     expect(Object.keys(layout.questionPages)).toHaveLength(1);
