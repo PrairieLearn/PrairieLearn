@@ -102,7 +102,7 @@ export function buildDocxContent(
     if (has(node, '.input-group') && $(node).find('table, .printing-response-area').length > 0) {
       return walk(node.children, format, maxWidth);
     }
-    if (has(node, '.form-check, .checkbox, .radio, .trueFalse, .input-group, .printing-choice')) {
+    if (has(node, '.form-check, .input-group, .printing-choice')) {
       return [paragraph(inline(node.children, format, maxWidth))];
     }
     return renderHtmlElement(ctx, node, format, maxWidth, walk);
