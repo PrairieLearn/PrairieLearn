@@ -20,8 +20,6 @@ overrides:
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
-  # jsdom pins Undici exactly; use the patched release.
-  'jsdom>undici': '8.12.3'
 
 # Delay newly published npm packages for 3 days.
 minimumReleaseAge: 4320
@@ -50,8 +48,6 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
-  # Includes the October 2026 Undici security fixes.
-  - 'undici@8.12.3'
   - '@prairielearn/sketchresponse@0.2.1'
   - 'typescript-cp@0.1.11'
   - express@4.22.3
