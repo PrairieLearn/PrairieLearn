@@ -2,6 +2,7 @@ import html
 import os
 import re
 import subprocess
+import warnings
 
 import lxml.html
 import networkx as nx
@@ -250,25 +251,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
 
-    if log_warnings:
-        svg_bytes = translated_dotcode.draw(format="svg", prog=engine)
-    else:
-        # PyGraphviz 2 writes native Graphviz diagnostics directly to stderr,
-        # bypassing Python's warning filters. Capture them to suppress warnings
-        # while retaining diagnostics when rendering fails.
-        result = subprocess.run(
-            ["dot", f"-K{engine}", "-Tsvg"],
-            input=translated_dotcode.string().encode(translated_dotcode.encoding),
-            capture_output=True,
-            check=False,
+    # PyGraphviz 2's native renderer bypasses Python's warning filters and uses
+    # CoreFoundation on macOS, which cannot run safely in our forked workers.
+    result = subprocess.run(
+        ["dot", f"-K{engine}", "-Tsvg"],
+        input=translated_dotcode.string().encode(translated_dotcode.encoding),
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise OSError(result.stderr.decode(translated_dotcode.encoding))
+    if log_warnings and result.stderr:
+        warnings.warn(
+            result.stderr.decode(translated_dotcode.encoding),
+            RuntimeWarning,
+            stacklevel=2,
         )
-        if result.returncode != 0:
-            raise OSError(result.stderr.decode(translated_dotcode.encoding))
-        svg_bytes = result.stdout
 
-    if svg_bytes is None:
-        raise TypeError("Graph was not returned.")
-    svg = svg_bytes.decode("utf-8", "strict")
+    svg = result.stdout.decode("utf-8", "strict")
     # https://gitlab.com/graphviz/graphviz/-/merge_requests/3404
     # We can switch to svg_inline when we have use graphviz >= 10.0.1
     svg = re.sub(XML_DECLARATION, "", svg)
