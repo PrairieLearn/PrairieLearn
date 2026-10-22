@@ -1918,6 +1918,10 @@ WITH
         $assessment_instance_ids::bigint[] IS NULL
         OR ai.id = ANY ($assessment_instance_ids::bigint[])
       )
+      AND (
+        NOT $for_printing_only::boolean
+        OR ai.for_printing
+      )
     RETURNING
       ai.*
   )

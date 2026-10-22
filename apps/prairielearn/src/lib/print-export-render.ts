@@ -25,6 +25,7 @@ export interface PrintExportWork {
 export async function renderPrintExport(
   work: PrintExportWork,
   parsedCovers?: PDFDocument[],
+  shutdownSignal?: AbortSignal,
 ): Promise<Buffer> {
   const covers =
     parsedCovers ??
@@ -34,10 +35,12 @@ export async function renderPrintExport(
           new File([Buffer.from(base64, 'base64')], name, { type: 'application/pdf' }),
       ),
     ));
+  if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
   const renderer = getPrintRenderer();
   const forms: { pdf: Buffer; coverPageCount: number }[] = [];
   const answerKeys: Buffer[] = [];
   for (const snapshot of work.snapshots) {
+    if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
     const pdfOutput = createPdfOutput();
     const rendered = await renderer.render(
       {
@@ -70,5 +73,6 @@ export async function renderPrintExport(
       forms.push(rendered);
     }
   }
+  if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
   return await assemblePrintPacket({ forms, covers, copies: work.copies, answerKeys });
 }

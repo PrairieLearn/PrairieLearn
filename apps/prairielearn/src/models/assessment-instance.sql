@@ -15,6 +15,7 @@ SELECT
       assessment_instances
     WHERE
       assessment_id = $assessment_id
+      AND NOT for_printing
   );
 
 -- BLOCK select_assessment_instances_for_user

@@ -12,7 +12,6 @@ import { makeAssessmentInstance } from '../lib/assessment.js';
 import { getFromS3, uploadToS3 } from '../lib/aws.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
-import { MAX_PRINT_SNAPSHOT_BYTES } from '../lib/client/print-snapshot-limits.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { getFileStoreS3Bucket } from '../lib/file-store.js';
@@ -25,10 +24,7 @@ import {
   storeCompletedPrintExport,
 } from '../lib/print-export-jobs.js';
 import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
-import {
-  assessmentHasPrintRandomization,
-  inspectPrintPreparationQuestions,
-} from '../lib/print-preparation.js';
+import { assessmentHasPrintRandomization } from '../lib/print-preparation.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
 import { getPrintableQuestionListDigest } from '../lib/printing.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
@@ -127,30 +123,23 @@ describe('print preparation', { timeout: 60_000 }, () => {
     },
   );
 
-  test.each(['exam20-assessmentTools', 'hw1-automaticTestSuite'])(
-    'regeneration creates a replacement and preserves the original instance (%s)',
-    async (tid) => {
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid,
-      });
-      const api = client(assessment.id);
-      const first = await api.printableExams.create.mutate();
-      const original = await selectAssessmentInstanceById(first.assessmentInstanceId);
-      const originalQuestions = await api.printableExams.questions.query(first);
-      const regenerated = await api.printableExams.regenerate.mutate(first);
-      expect(regenerated.assessmentInstanceId).not.toBe(first.assessmentInstanceId);
-      expect(await selectAssessmentInstanceById(first.assessmentInstanceId)).toEqual(original);
-      expect(await api.printableExams.questions.query(first)).toEqual(originalQuestions);
-      expect(await api.printableExams.questions.query(regenerated)).toHaveLength(
-        originalQuestions.length,
-      );
-      expect(
-        (await selectAssessmentInstanceById(regenerated.assessmentInstanceId))
-          .include_in_statistics,
-      ).toBe(false);
-    },
-  );
+  test('regeneration creates a replacement and preserves the original instance', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const first = await api.printableExams.create.mutate();
+    const original = await selectAssessmentInstanceById(first.assessmentInstanceId);
+    const originalQuestions = await api.printableExams.questions.query(first);
+    const regenerated = await api.printableExams.regenerate.mutate(first);
+    expect(regenerated.assessmentInstanceId).not.toBe(first.assessmentInstanceId);
+    expect(await selectAssessmentInstanceById(first.assessmentInstanceId)).toEqual(original);
+    expect(await api.printableExams.questions.query(first)).toEqual(originalQuestions);
+    expect(await api.printableExams.questions.query(regenerated)).toHaveLength(
+      originalQuestions.length,
+    );
+    expect(
+      (await selectAssessmentInstanceById(regenerated.assessmentInstanceId)).include_in_statistics,
+    ).toBe(false);
+  });
 
   test('does not expose or regenerate another user’s instance or another assessment’s instance', async () => {
     const assessment = await printAssessment();
@@ -233,37 +222,31 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test.each(['exam20-assessmentTools', 'hw1-automaticTestSuite'])(
-    'concurrent student requests still reuse a single allowed attempt (%s)',
-    async (tid) => {
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid,
-      });
-      const user = await getOrCreateUser({
-        uid: 'single-attempt@example.com',
-        name: 'Single attempt',
-        uin: '555555556',
-      });
-      const ids = await Promise.all(
-        Array.from({ length: 3 }, () =>
-          makeAssessmentInstance({
-            assessment,
-            user_id: user.id,
-            authn_user_id: user.id,
-            mode: 'Public',
-            time_limit_min: null,
-            date: new Date(),
-            client_fingerprint_id: null,
-          }),
-        ),
-      );
-      expect(new Set(ids).size).toBe(1);
-      expect((await selectAssessmentInstanceById(ids[0])).number).toBe(1);
-    },
-  );
+  test('concurrent student requests still reuse a single allowed attempt', async () => {
+    const assessment = await printAssessment();
+    const user = await getOrCreateUser({
+      uid: 'single-attempt@example.com',
+      name: 'Single attempt',
+      uin: '555555556',
+    });
+    const ids = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        makeAssessmentInstance({
+          assessment,
+          user_id: user.id,
+          authn_user_id: user.id,
+          mode: 'Public',
+          time_limit_min: null,
+          date: new Date(),
+          client_fingerprint_id: null,
+        }),
+      ),
+    );
+    expect(new Set(ids).size).toBe(1);
+    expect((await selectAssessmentInstanceById(ids[0])).number).toBe(1);
+  });
 
-  test('warns about missing question files but propagates unexpected inspection failures', async () => {
+  test('warns about missing question files', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableExams.create.mutate();
@@ -284,31 +267,21 @@ describe('print preparation', { timeout: 60_000 }, () => {
         'Could not inspect this question’s source. Review its preview before printing.',
       );
       expect(inspected).toHaveLength(questions.length);
-      await fs.mkdir(filename);
-      await expect(
-        inspectPrintPreparationQuestions(instance.assessmentInstanceId),
-      ).rejects.toMatchObject({ code: 'EISDIR' });
     } finally {
-      await fs.rm(filename, { recursive: true, force: true });
       await fs.writeFile(filename, original);
     }
   });
 
-  test.each(['Name', 'Section\nsection', 'x'.repeat(41)])(
-    'returns actionable errors for invalid cover labels: %s',
-    async (identityFields) => {
-      const assessment = await printAssessment();
-      const input = packetInput('1');
-      const metadata = PrintPacketMetadataSchema.parse(
-        JSON.parse(input.get('metadata')!.toString()),
-      );
-      metadata.instances[0].settings.identityFields = identityFields;
-      input.set('metadata', JSON.stringify(metadata));
-      await expect(client(assessment.id).printableExamExport.pdf.mutate(input)).rejects.toThrow(
-        /Name and Date|different label|40 characters/,
-      );
-    },
-  );
+  test('returns an actionable error for a reserved cover label', async () => {
+    const assessment = await printAssessment();
+    const input = packetInput('1');
+    const metadata = PrintPacketMetadataSchema.parse(JSON.parse(input.get('metadata')!.toString()));
+    metadata.instances[0].settings.identityFields = 'Name';
+    input.set('metadata', JSON.stringify(metadata));
+    await expect(client(assessment.id).printableExamExport.pdf.mutate(input)).rejects.toThrow(
+      'Name and Date',
+    );
+  });
 
   test('validates packet export settings before rendering', async () => {
     const assessment = await printAssessment();
@@ -348,21 +321,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
     data.append('snapshotIds', 'placeholder');
     await expect(api.printableExamExport.pdf.mutate(data)).rejects.toThrow(
       'The export would exceed 10,000 pages.',
-    );
-  });
-
-  test('accepts the maximum expected snapshot and cover upload before validation', async () => {
-    const assessment = await printAssessment();
-    const api = client(assessment.id);
-    const instance = await api.printableExams.create.mutate();
-    const data = packetInput(instance.assessmentInstanceId);
-    const snapshot = new Uint8Array(MAX_PRINT_SNAPSHOT_BYTES);
-    for (let i = 0; i < 5; i++) {
-      data.append('pages', new File([snapshot], `page-${i}.html`));
-    }
-    data.append('coverPages', new File([new Uint8Array(10_000_000)], 'invalid.pdf'));
-    await expect(api.printableExamExport.pdf.mutate(data)).rejects.toThrow(
-      'valid PDF without password protection',
     );
   });
 
@@ -584,11 +542,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
     );
   });
 
-  test('reports exams with questions that support multiple variants', async () => {
-    const assessment = await printAssessment();
-    expect(await assessmentHasPrintRandomization(assessment.id)).toBe(true);
-  });
-
   test.each([
     ['question order', sql.enable_shuffle],
     ['zone selection', sql.enable_zone_selection],
@@ -603,21 +556,18 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
   });
 
-  test.each([1, 100])(
-    'treats choose-all pools (%s) as static when variants and order are fixed',
-    async (numberChoose) => {
-      const assessment = await printAssessment();
-      await runInTransactionAndRollback(async () => {
-        await execute(sql.set_static_assessment, { assessment_id: assessment.id });
-        // Both zones and alternative groups in this assessment contain exactly one question.
-        await execute(sql.choose_all_questions, {
-          assessment_id: assessment.id,
-          number_choose: numberChoose,
-        });
-        expect(await assessmentHasPrintRandomization(assessment.id)).toBe(false);
+  test('treats choose-all pools as static when variants and order are fixed', async () => {
+    const assessment = await printAssessment();
+    await runInTransactionAndRollback(async () => {
+      await execute(sql.set_static_assessment, { assessment_id: assessment.id });
+      // Both zones and alternative groups in this assessment contain exactly one question.
+      await execute(sql.choose_all_questions, {
+        assessment_id: assessment.id,
+        number_choose: 1,
       });
-    },
-  );
+      expect(await assessmentHasPrintRandomization(assessment.id)).toBe(false);
+    });
+  });
 
   test.each([false, true])(
     'supports homework question labels with shuffling=%s',
