@@ -15,12 +15,15 @@ import { isBrowserRenderingAvailable } from '../../lib/printing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { requirePrintableExams } from '../../middlewares/requirePrintableExams.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js';
 
 import { InstructorAssessmentPrint } from './instructorAssessmentPrint.html.js';
 
 const router = Router();
+
+router.use(requirePrintableExams);
 
 router.get(
   '/',

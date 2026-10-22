@@ -488,6 +488,7 @@ describe('accessibility', () => {
 
     await features.enable('question-sharing');
     await features.enable('ai-grading');
+    await features.enable('printable-exams');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,

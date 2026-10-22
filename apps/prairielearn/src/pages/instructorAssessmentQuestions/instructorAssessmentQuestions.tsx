@@ -196,7 +196,10 @@ router.get(
                 pageContext.authz_data.has_course_instance_permission_edit
               }
               canEdit={canEdit}
-              renderingAvailable={isBrowserRenderingAvailable()}
+              printableExamsAvailable={
+                isBrowserRenderingAvailable() &&
+                (await features.enabledFromLocals('printable-exams', res.locals))
+              }
               courseHasQuestions={courseHasQuestions}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}

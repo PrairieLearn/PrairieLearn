@@ -17,6 +17,7 @@ import elementExtensionFiles from '../../pages/elementExtensionFiles/elementExte
 import elementFiles from '../../pages/elementFiles/elementFiles.js';
 import { config } from '../config.js';
 import { InstanceQuestionSchema, QuestionSchema, VariantSchema } from '../db-types.js';
+import { features } from '../features/index.js';
 import { idsEqual } from '../id.js';
 import { getDynamicFile } from '../question-variant.js';
 
@@ -57,7 +58,18 @@ export function applyPrintAssetRoutes(app: Express): void {
       ) {
         throw new HttpStatusError(403, 'Print asset access denied');
       }
-      res.locals.course = await selectCourseById(courseInstance.course_id);
+      const course = await selectCourseById(courseInstance.course_id);
+      if (
+        !(await features.enabled('printable-exams', {
+          institution_id: course.institution_id,
+          course_id: course.id,
+          course_instance_id: courseInstance.id,
+          user_id: scope.authnUserId,
+        }))
+      ) {
+        throw new HttpStatusError(403, 'Print asset access denied');
+      }
+      res.locals.course = course;
       res.locals.course_instance = courseInstance;
       res.locals.assessment = assessment;
       res.locals.assessment_instance = assessmentInstance;

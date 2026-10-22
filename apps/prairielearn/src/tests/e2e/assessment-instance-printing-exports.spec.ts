@@ -7,12 +7,14 @@ import * as unzipper from 'unzipper';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { syncCourse } from '../helperCourse.js';
 
-import { expect, test } from './fixtures.js';
+import { createTest, expect } from './fixtures.js';
 import {
   createPrintableAssessmentInstance,
   downloadPrintableWord,
   waitForPrintablePage,
 } from './utils/printing.js';
+
+const test = createTest({ features: { 'printable-exams': true } });
 
 // Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
 test.describe.configure({ timeout: 180_000 });

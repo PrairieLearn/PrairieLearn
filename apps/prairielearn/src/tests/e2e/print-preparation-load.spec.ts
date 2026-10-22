@@ -7,7 +7,9 @@ import { promisify } from 'node:util';
 import { selectJobsByJobSequenceId } from '../../lib/server-jobs.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 
-import { expect, test } from './fixtures.js';
+import { createTest, expect } from './fixtures.js';
+
+const test = createTest({ features: { 'printable-exams': true } });
 
 const execFileAsync = promisify(execFile);
 const userCount = Number(process.env.PRINT_LOAD_USERS);

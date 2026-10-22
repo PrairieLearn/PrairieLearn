@@ -6,10 +6,10 @@ import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
-import { test as base, expect } from './fixtures.js';
+import { createTest, expect } from './fixtures.js';
 import { waitForPrintablePage } from './utils/printing.js';
 
-const test = base.extend<{
+const test = createTest({ features: { 'printable-exams': true } }).extend<{
   imageQuestion: (html: string) => Promise<string>;
 }>({
   imageQuestion: async ({ testCoursePath, courseInstance }, use) => {

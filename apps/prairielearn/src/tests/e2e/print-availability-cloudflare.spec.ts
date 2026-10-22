@@ -3,7 +3,11 @@ import { selectAssessmentByTid } from '../../models/assessment.js';
 import { createTest, expect } from './fixtures.js';
 
 const test = createTest(
-  { printingCloudflareAccountId: 'account', printingCloudflareApiToken: 'token' },
+  {
+    features: { 'printable-exams': true },
+    printingCloudflareAccountId: 'account',
+    printingCloudflareApiToken: 'token',
+  },
   { PLAYWRIGHT_BROWSERS_PATH: '/private/tmp/pl-print-browser-unavailable' },
 );
 

@@ -4,6 +4,7 @@ import superjson from 'superjson';
 
 import { appErrorFormatter } from '@prairielearn/trpc/server';
 
+import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
@@ -32,6 +33,13 @@ export const requireCoursePermissionPreview = t.middleware(async (opts) => {
       code: 'FORBIDDEN',
       message: 'Access denied (must be a course previewer)',
     });
+  }
+  return opts.next();
+});
+
+export const requirePrintableExams = t.middleware(async (opts) => {
+  if (!(await features.enabledFromLocals('printable-exams', opts.ctx.locals))) {
+    throw new TRPCError({ code: 'NOT_FOUND' });
   }
   return opts.next();
 });

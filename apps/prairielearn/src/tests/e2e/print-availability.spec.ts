@@ -4,7 +4,7 @@ import { createTest, expect } from './fixtures.js';
 
 const missingBrowser = { PLAYWRIGHT_BROWSERS_PATH: '/private/tmp/pl-print-browser-unavailable' };
 
-const test = createTest(undefined, missingBrowser);
+const test = createTest({ features: { 'printable-exams': true } }, missingBrowser);
 test('hides Print when PDF rendering is unavailable', async ({ page, courseInstance }) => {
   const assessment = await selectAssessmentByTid({
     course_instance_id: courseInstance.id,

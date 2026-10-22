@@ -7,8 +7,10 @@ import type { CourseInstance } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
-import { expect, test } from './fixtures.js';
+import { createTest, expect } from './fixtures.js';
 import { createPrintableAssessmentInstance, waitForPrintablePage } from './utils/printing.js';
+
+const test = createTest({ features: { 'printable-exams': true } });
 
 const sql = loadSqlEquiv(import.meta.url);
 

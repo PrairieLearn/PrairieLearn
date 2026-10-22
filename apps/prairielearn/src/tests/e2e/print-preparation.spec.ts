@@ -18,7 +18,9 @@ import {
 import { syncCourse } from '../helperCourse.js';
 import { getOrCreateUser } from '../utils/auth.js';
 
-import { expect, test } from './fixtures.js';
+import { createTest, expect } from './fixtures.js';
+
+const test = createTest({ features: { 'printable-exams': true } });
 
 test.describe.configure({ timeout: 180_000 });
 

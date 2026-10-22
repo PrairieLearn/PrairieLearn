@@ -14,10 +14,11 @@ const cloudflareApiToken = process.env.CF_API_TOKEN;
 const test = createTest(
   cloudflareAccountId && cloudflareApiToken
     ? {
+        features: { 'printable-exams': true },
         printingCloudflareAccountId: cloudflareAccountId,
         printingCloudflareApiToken: cloudflareApiToken,
       }
-    : undefined,
+    : { features: { 'printable-exams': true } },
 );
 
 test.describe.configure({ timeout: 180_000 });

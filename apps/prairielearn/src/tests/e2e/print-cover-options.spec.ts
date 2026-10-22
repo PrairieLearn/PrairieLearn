@@ -5,12 +5,14 @@ import * as unzipper from 'unzipper';
 
 import { syncCourse } from '../helperCourse.js';
 
-import { expect, test } from './fixtures.js';
+import { createTest, expect } from './fixtures.js';
 import {
   createPrintableAssessmentInstance,
   downloadPrintableWord,
   waitForPrintablePage,
 } from './utils/printing.js';
+
+const test = createTest({ features: { 'printable-exams': true } });
 
 async function paperBase(courseInstanceId: string, tid: string) {
   const instanceId = await createPrintableAssessmentInstance(courseInstanceId, tid);
