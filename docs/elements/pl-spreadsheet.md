@@ -856,7 +856,8 @@ being edited, it and every cell that depends on it show their values as the stud
 types, and a line below the formula bar describes any error in the selected cell's
 value. The editor also supports keyboard navigation, copy/paste,
 relative-reference fill (with the fill down/right buttons, or by dragging a cell's
-corner handle up, down, left, or right along its row or column), and undo/redo.
+corner handle in any direction to fill the rectangular range between it and the
+target cell), and undo/redo.
 The sheet tabs and fill controls are keyboard accessible. Editable and read-only
 cells are distinguished with text and accessibility state, not color alone.
 Submission, answer, and manual-grading views use native HTML tables. Multi-sheet

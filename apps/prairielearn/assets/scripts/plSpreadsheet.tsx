@@ -338,7 +338,12 @@ function SpreadsheetEditor({
   const pendingRangeRef = useRef<CellRange | null>(null);
   const dragFocusRef = useRef<CellPosition | null>(null);
   const didDragRangeRef = useRef(false);
-  const fillDragRef = useRef<{ source: CellPosition; target: CellPosition } | null>(null);
+  const fillDragRef = useRef<{
+    source: CellPosition;
+    target: CellPosition;
+    pointerId: number;
+  } | null>(null);
+  const fillRangeRef = useRef<(source: CellPosition, target: CellPosition) => void>(() => {});
   const suppressActiveAnnouncementRef = useRef(false);
   // Whether formula bar editing started from the grid, so Enter and Tab return there.
   const editOriginRef = useRef<'grid' | 'bar'>('bar');
@@ -563,50 +568,45 @@ function SpreadsheetEditor({
     commitCells(edits, `Cleared ${formatReference(range.anchor, range.focus)}.`);
   }
 
-  /** Fills the cells from `source` (exclusive) to `target` along a single row or column. */
-  function fillLine(source: CellPosition, target: CellPosition) {
+  /** Fills the rectangular range from `source` (exclusive) to `target`. */
+  function fillRange(source: CellPosition, target: CellPosition) {
     const end = clampPosition(target, sheet);
-    const rowDistance = Math.abs(end.row - source.row);
-    const columnDistance = Math.abs(end.column - source.column);
-    // Fill along whichever single row or column the target lies furthest along.
-    const rowStep = rowDistance >= columnDistance ? Math.sign(end.row - source.row) : 0;
-    const columnStep = rowDistance >= columnDistance ? 0 : Math.sign(end.column - source.column);
-    const count = Math.max(rowDistance, columnDistance);
     const sourceInput = finalInput(
       config,
-      rawSubmission,
+      rawSubmissionRef.current,
       sheet.name,
       cellAddress(source.row, source.column),
     );
     const edits = [];
-    for (let step = 1; step <= count; step += 1) {
-      const row = source.row + rowStep * step;
-      const column = source.column + columnStep * step;
-      edits.push({
-        row,
-        column,
-        input: getRelativeFillInput(sourceInput, {
-          rowOffset: row - source.row,
-          columnOffset: column - source.column,
-        }),
-      });
+    for (let row = Math.min(source.row, end.row); row <= Math.max(source.row, end.row); row += 1) {
+      for (
+        let column = Math.min(source.column, end.column);
+        column <= Math.max(source.column, end.column);
+        column += 1
+      ) {
+        if (row === source.row && column === source.column) continue;
+        edits.push({
+          row,
+          column,
+          input: getRelativeFillInput(sourceInput, {
+            rowOffset: row - source.row,
+            columnOffset: column - source.column,
+          }),
+        });
+      }
     }
     if (edits.length === 0) return;
-    const first = edits[0];
-    const last = edits[edits.length - 1];
-    const range =
-      first === last
-        ? cellAddress(first.row, first.column)
-        : `${cellAddress(first.row, first.column)}:${cellAddress(last.row, last.column)}`;
+    const range = formatReference(source, end);
     commitCells(edits, `${range}: filled from ${cellAddress(source.row, source.column)}.`);
   }
+  fillRangeRef.current = fillRange;
 
   function fillTo(targetRow: number, targetColumn: number) {
     if (!activeCell || !isCellEditable(sheet, targetRow, targetColumn)) {
       setAnnouncement('The target cell is read-only or outside the sheet.');
       return;
     }
-    fillLine(activeCell, { row: targetRow, column: targetColumn });
+    fillRange(activeCell, { row: targetRow, column: targetColumn });
     gridRef.current?.setActivePosition({ idx: targetColumn + 1, rowIdx: targetRow });
   }
 
@@ -972,6 +972,45 @@ function SpreadsheetEditor({
     };
   }, [sheet.columns, sheet.rows]);
 
+  // Track fill drags on the window so releasing outside the editor still commits the previewed fill.
+  useEffect(() => {
+    function handlePointerMove(event: PointerEvent) {
+      const drag = fillDragRef.current;
+      if (event.pointerId !== drag?.pointerId) return;
+      event.preventDefault();
+      const target = cellAtPoint(editorRef.current, sheet, event.clientX, event.clientY);
+      if (!target || (target.row === drag.target.row && target.column === drag.target.column)) {
+        return;
+      }
+      drag.target = target;
+      setSelectedRange({ anchor: drag.source, focus: target });
+      gridRef.current?.scrollToCell({ idx: target.column + 1, rowIdx: target.row });
+    }
+
+    function handlePointerUp(event: PointerEvent) {
+      const drag = fillDragRef.current;
+      if (event.pointerId !== drag?.pointerId) return;
+      fillDragRef.current = null;
+      fillRangeRef.current(drag.source, drag.target);
+    }
+
+    function handlePointerCancel(event: PointerEvent) {
+      const drag = fillDragRef.current;
+      if (event.pointerId !== drag?.pointerId) return;
+      fillDragRef.current = null;
+      setSelectedRange({ anchor: drag.source, focus: drag.source });
+    }
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerCancel);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerCancel);
+    };
+  }, [sheet]);
+
   function handleRowsChange(nextRows: SpreadsheetRow[], data: RowsChangeData<SpreadsheetRow>) {
     if (data.column.key === '__row') return;
     const parsedColumn = parseCellAddress(`${data.column.key}1`);
@@ -990,15 +1029,6 @@ function SpreadsheetEditor({
       })),
       'Filled the rest of the column from the active cell.',
     );
-  }
-
-  /** The end of a fill handle drag from `source`, kept to the row or column it moves along most. */
-  function fillTarget(source: CellPosition, clientX: number, clientY: number) {
-    const cell = cellAtPoint(editorRef.current, sheet, clientX, clientY);
-    if (!cell) return null;
-    return Math.abs(cell.row - source.row) >= Math.abs(cell.column - source.column)
-      ? { row: cell.row, column: source.column }
-      : { row: source.row, column: cell.column };
   }
 
   function handleFill(event: FillEvent<SpreadsheetRow>): SpreadsheetRow {
@@ -1175,7 +1205,11 @@ function SpreadsheetEditor({
           event.preventDefault();
           event.stopPropagation();
           event.target.setPointerCapture(event.pointerId);
-          fillDragRef.current = { source: activeCell, target: activeCell };
+          fillDragRef.current = {
+            source: activeCell,
+            target: activeCell,
+            pointerId: event.pointerId,
+          };
         }}
         onPointerMove={(event) => {
           // Moving the mouse over the sheet hides the formula bar's popups so the cells under
@@ -1191,27 +1225,6 @@ function SpreadsheetEditor({
           ) {
             formulaInputRef.current?.hidePopups();
           }
-          const drag = fillDragRef.current;
-          if (!drag) return;
-          const target = fillTarget(drag.source, event.clientX, event.clientY);
-          if (!target || (target.row === drag.target.row && target.column === drag.target.column)) {
-            return;
-          }
-          drag.target = target;
-          setSelectedRange({ anchor: drag.source, focus: target });
-          gridRef.current?.scrollToCell({ idx: target.column + 1, rowIdx: target.row });
-        }}
-        onPointerUp={() => {
-          const drag = fillDragRef.current;
-          if (!drag) return;
-          fillDragRef.current = null;
-          fillLine(drag.source, drag.target);
-        }}
-        onLostPointerCapture={() => {
-          const drag = fillDragRef.current;
-          if (!drag) return;
-          fillDragRef.current = null;
-          setSelectedRange({ anchor: drag.source, focus: drag.source });
         }}
       >
         {expanded && (

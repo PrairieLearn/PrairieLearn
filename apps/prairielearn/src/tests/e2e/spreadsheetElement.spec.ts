@@ -377,7 +377,7 @@ test('suggests functions in the formula bar', async ({ page, courseInstance }) =
   await expect(rawAnswer).toHaveValue(/"B2":"=1\+SUMIF\(A3:B3, \\">0\\"\)\+MAX\(C2\)"/);
 });
 
-test('fills a row or column by dragging the fill handle', async ({ page, courseInstance }) => {
+test('fills a rectangular range by dragging the fill handle', async ({ page, courseInstance }) => {
   const question = await selectQuestionByQid({
     qid: 'spreadsheetElement',
     course_id: courseInstance.course_id,
@@ -402,17 +402,34 @@ test('fills a row or column by dragging the fill handle', async ({ page, courseI
     await grid.locator('.rdg-cell-drag-handle').dragTo(cell(to));
   }
 
-  // The fill follows the dominant direction of the drag rather than covering C3:D4.
   await dragFill('D2', 'C4');
+  await expect(rawAnswer).toHaveValue(/"C2":"=A2\*B2"/);
+  await expect(rawAnswer).toHaveValue(/"C3":"=A3\*B3"/);
+  await expect(rawAnswer).toHaveValue(/"C4":"=A4\*B4"/);
   await expect(rawAnswer).toHaveValue(/"D3":"=B3\*C3"/);
   await expect(rawAnswer).toHaveValue(/"D4":"=B4\*C4"/);
-  await expect(rawAnswer).not.toHaveValue(/"C[34]"/);
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(6);
   // One drag is one undoable change.
   await undo.click();
-  await expect(rawAnswer).not.toHaveValue(/"D[34]"/);
+  await expect(rawAnswer).not.toHaveValue(/"[CD][234]"/);
 
   await editCell(grid, 'D4', '=B4+C4');
-  await dragFill('D4', 'D2');
+  await cell('D4').click();
+  const d1 = grid.getByRole('gridcell', { name: /^D1, read-only/ });
+  const editor = grid.locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]');
+  const d1Box = await d1.boundingBox();
+  const editorBox = await editor.boundingBox();
+  if (!d1Box || !editorBox) throw new Error('Expected the spreadsheet to have a bounding box');
+  await grid.locator('.rdg-cell-drag-handle').hover();
+  await page.mouse.down();
+  await d1.hover();
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(4);
+  // Losing pointer capture outside the editor must still commit the highlighted fill.
+  await grid
+    .locator('.rdg-cell-drag-handle')
+    .evaluate((fillHandle) => fillHandle.releasePointerCapture(1));
+  await page.mouse.move(d1Box.x + d1Box.width / 2, editorBox.y - 5);
+  await page.mouse.up();
   await expect(rawAnswer).toHaveValue(/"D3":"=B3\+C3"/);
   await expect(rawAnswer).toHaveValue(/"D2":"=B2\+C2"/);
   await undo.click();
