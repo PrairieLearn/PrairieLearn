@@ -11,6 +11,10 @@ import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';
+import {
+  selectAssessmentHasInstances,
+  selectAssessmentInstancesForUser,
+} from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import { settingsScope } from '../trpc/assessment/assessment-settings.js';
@@ -388,6 +392,7 @@ describe('Changing assessment type', { concurrent: false }, () => {
       await execute(sql.insert_dummy_instance, {
         assessment_id: assessmentId,
         user_id: devUser.id,
+        for_printing: false,
       });
 
       const trpcClient = await createTrpcClient();
@@ -398,6 +403,54 @@ describe('Changing assessment type', { concurrent: false }, () => {
             origHash: await getOrigHash(),
           }),
         ).rejects.toThrow(/student instances already exist/);
+      } finally {
+        await execute(sql.delete_dummy_instances, { assessment_id: assessmentId });
+      }
+    });
+
+    test('removes printable forms when changing type or enabling group work', async () => {
+      await setupAssessmentInfo({
+        uuid: baseUuid,
+        type: 'Homework',
+        title: 'Type-change test',
+        set: 'Homework',
+        number: '1',
+        zones: [{ questions: [{ ...baseQuestion, autoPoints: 10 }] }],
+      });
+
+      const devUser = await getConfiguredUser();
+      await execute(sql.insert_dummy_instance, {
+        assessment_id: assessmentId,
+        user_id: devUser.id,
+        for_printing: true,
+      });
+
+      try {
+        assert.isFalse(await selectAssessmentHasInstances(assessmentId));
+        const trpcClient = await createTrpcClient();
+        await trpcClient.assessmentSettings.changeAssessmentType.mutate({
+          newType: 'Exam',
+          origHash: await getOrigHash(),
+        });
+        assert.isEmpty(
+          await selectAssessmentInstancesForUser({
+            assessment_id: assessmentId,
+            user_id: devUser.id,
+          }),
+        );
+
+        await execute(sql.insert_dummy_instance, {
+          assessment_id: assessmentId,
+          user_id: devUser.id,
+          for_printing: true,
+        });
+        await trpcClient.assessmentGroups.enableGroupWork.mutate({ origHash: null });
+        assert.isEmpty(
+          await selectAssessmentInstancesForUser({
+            assessment_id: assessmentId,
+            user_id: devUser.id,
+          }),
+        );
       } finally {
         await execute(sql.delete_dummy_instances, { assessment_id: assessmentId });
       }

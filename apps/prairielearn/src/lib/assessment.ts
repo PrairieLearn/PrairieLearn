@@ -649,6 +649,19 @@ export async function deleteAllAssessmentInstancesForAssessment(
     assessment_id,
     authn_user_id,
     assessment_instance_ids,
+    for_printing_only: false,
+  });
+}
+
+export async function deletePrintableAssessmentInstancesForAssessment(
+  assessment_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.execute(sql.delete_all_assessment_instances_for_assessment, {
+    assessment_id,
+    authn_user_id,
+    assessment_instance_ids: null,
+    for_printing_only: true,
   });
 }
 

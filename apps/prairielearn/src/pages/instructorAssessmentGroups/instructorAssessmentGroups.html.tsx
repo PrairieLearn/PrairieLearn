@@ -50,7 +50,7 @@ function NoGroupConfigCard({
 
   const canEdit = enableAccess.status === 'allowed';
   const description = canEdit
-    ? 'Enable group work to allow students to collaborate and submit as groups.'
+    ? 'Enable group work to allow students to collaborate and submit as groups. Existing printable forms will be removed.'
     : 'Group work is not enabled for this assessment.';
 
   return (
