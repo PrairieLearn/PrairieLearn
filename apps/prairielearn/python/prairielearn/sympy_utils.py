@@ -2161,7 +2161,6 @@ def normalize_formula_editor_output(
         known_tokens,
         function_names,
         latex=latex,
-        unicode_transform=greek_unicode_transform,
     )
 
 
@@ -2569,59 +2568,6 @@ def validate_names_for_conflicts(
         )
 
 
-# From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
-_GREEK_ALPHABET = {
-    0x0391: "Alpha",
-    0x0392: "Beta",
-    0x0393: "Gamma",
-    0x0394: "Delta",
-    0x0395: "Epsilon",
-    0x0396: "Zeta",
-    0x0397: "Eta",
-    0x0398: "Theta",
-    0x0399: "Iota",
-    0x039A: "Kappa",
-    0x039B: "Lambda",
-    0x039C: "Mu",
-    0x039D: "Nu",
-    0x039E: "Xi",
-    0x039F: "Omicron",
-    0x03A0: "Pi",
-    0x03A1: "Rho",
-    0x03A3: "Sigma",
-    0x03A4: "Tau",
-    0x03A5: "Upsilon",
-    0x03A6: "Phi",
-    0x03A7: "Chi",
-    0x03A8: "Psi",
-    0x03A9: "Omega",
-    0x03B1: "alpha",
-    0x03B2: "beta",
-    0x03B3: "gamma",
-    0x03B4: "delta",
-    0x03B5: "epsilon",
-    0x03B6: "zeta",
-    0x03B7: "eta",
-    0x03B8: "theta",
-    0x03B9: "iota",
-    0x03BA: "kappa",
-    0x03BB: "lambda",
-    0x03BC: "mu",
-    0x03BD: "nu",
-    0x03BE: "xi",
-    0x03BF: "omicron",
-    0x03C0: "pi",
-    0x03C1: "rho",
-    0x03C3: "sigma",
-    0x03C4: "tau",
-    0x03C5: "upsilon",
-    0x03C6: "phi",
-    0x03C7: "chi",
-    0x03C8: "psi",
-    0x03C9: "omega",
-}
-
-
 def greek_unicode_transform(input_str: str) -> str:
     """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
-    return input_str.translate(_GREEK_ALPHABET)
+    return internal_symbolic_input.greek_unicode_transform(input_str)
