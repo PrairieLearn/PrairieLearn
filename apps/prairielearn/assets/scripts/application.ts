@@ -5,4 +5,3 @@ import './behaviors/tooltip.js';
 import './behaviors/collapsible-card.js';
 import './behaviors/clipboard-popover.js';
 import './behaviors/number-input-wheel.js';
-import './behaviors/pdf-preview.js';
