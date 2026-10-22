@@ -21,15 +21,19 @@ export default defineConfig({
         '**/*.sql',
 
         // These modules maintain state that can't be hot-reloaded. This should
-        // generally match the list of modules that need to be explicitly closed
-        // in the `close` function of `src/server.ts`.
+        // generally match the application modules cleaned up during shutdown
+        // in `src/server.ts`.
         //
         // This doesn't include things like `@prairielearn/postgres` and
         // `@prairielearn/named-locks`. Changes to dependencies aren't picked up
         // by Vite, so they'll always require a manual restart of the Vite process itself.
-        './src/lib/cron.ts',
+        './src/cron/index.ts',
+        './src/lib/externalGraderDeadLetters.ts',
+        './src/lib/externalGraderResults.ts',
         './src/lib/server-jobs.ts',
+        './src/lib/serverJobProgressSocket.ts',
         './src/lib/socket-server.ts',
+        './src/lib/workspace.ts',
         './src/lib/assets.ts',
         './src/lib/code-caller/index.ts',
         './src/lib/load.ts',

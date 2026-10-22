@@ -1420,6 +1420,8 @@ export const QuestionGenerationContextEmbeddingSchema = z.object({
 
 export const QuestionSchema = z.object({
   client_files: z.array(z.string()).nullable(),
+  copied_from: z.string().nullable(),
+  copied_from_question_id: IdSchema.nullable(),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   dependencies: z.any(),
