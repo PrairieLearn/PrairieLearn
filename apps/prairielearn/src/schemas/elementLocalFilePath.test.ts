@@ -5,7 +5,7 @@ import { ElementCoreJsonSchema } from './infoElementCore.js';
 import { ElementCourseJsonSchema } from './infoElementCourse.js';
 
 describe('element-local file paths', () => {
-  it.each(['controller.py', 'scripts/editor.js', 'styles/nested/element.css'])(
+  it.each(['controller.py', './controller.py', 'scripts/editor.js', 'styles/nested/element.css'])(
     'accepts %s',
     (path) => {
       assert.isTrue(ElementLocalFilePathJsonSchema.safeParse(path).success);
