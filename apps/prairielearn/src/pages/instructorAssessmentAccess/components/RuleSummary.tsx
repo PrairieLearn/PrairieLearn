@@ -6,7 +6,6 @@ import { Button, Card } from 'react-bootstrap';
 import { type FieldErrors, get } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
@@ -1198,10 +1197,6 @@ export function PrairieTestExamsTable({
             label: term ? `${name} (${term})` : name,
             archived,
           }));
-          const archiveWarning = courseAndCenters
-            .filter(({ archived }) => archived)
-            .map(({ label }) => `${label} is archived in PrairieTest`)
-            .join('; ');
 
           return (
             // We don't use UUID as they might be duplicated in the list.
@@ -1215,31 +1210,13 @@ export function PrairieTestExamsTable({
                   </span>
                 ) : examName && examLink ? (
                   <>
-                    {archiveWarning && (
-                      <OverlayTrigger
-                        tooltip={{
-                          body: archiveWarning,
-                          props: { id: `prairietest-archived-${index}` },
-                        }}
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="btn-xs p-0 border-0 lh-1 align-middle me-1"
-                          aria-label={`Archive warning for ${examName}`}
-                        >
-                          <i
-                            className="bi bi-exclamation-triangle-fill text-warning"
-                            aria-hidden="true"
-                          />
-                        </Button>
-                      </OverlayTrigger>
-                    )}
                     <a href={examLink} target="_blank" rel="noopener noreferrer">
                       {examName}
                     </a>
                     <div className="small text-body-secondary">
-                      {courseAndCenters.map(({ label }) => label).join(', ')}
+                      {courseAndCenters
+                        .map(({ label, archived }) => `${label}${archived ? ' — Archived' : ''}`)
+                        .join(', ')}
                     </div>
                   </>
                 ) : (
