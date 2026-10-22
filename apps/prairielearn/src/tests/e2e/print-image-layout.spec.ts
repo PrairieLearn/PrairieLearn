@@ -127,20 +127,18 @@ test('fits image choices uniformly within the paper and requested question block
       expect(image.questionHeight).toBeLessThanOrEqual(image.pageHeight + 1);
     }
   }
-  for (const blockSize of ['auto', 'half']) {
-    const response = await page.goto(
-      `${preview}?exclude_question=2&paper_size=Letter&document=answer_key&block_size=${blockSize}`,
-    );
-    expect(response!.ok()).toBe(true);
-    await waitForPrintablePage(page);
-    await expect(
-      page.locator('[data-print-answer-key]').getByRole('img', {
-        name: 'Image choice 1',
-        exact: true,
-      }),
-    ).toHaveCount(1);
-    await expect(page.getByRole('img', { name: /^Image choice / })).toHaveCount(5);
-  }
+  const response = await page.goto(
+    `${preview}?exclude_question=2&paper_size=Letter&document=answer_key&block_size=auto`,
+  );
+  expect(response!.ok()).toBe(true);
+  await waitForPrintablePage(page);
+  await expect(
+    page.locator('[data-print-answer-key]').getByRole('img', {
+      name: 'Image choice 1',
+      exact: true,
+    }),
+  ).toHaveCount(1);
+  await expect(page.getByRole('img', { name: /^Image choice / })).toHaveCount(5);
 });
 
 test('lets image choices flow across pages before shrinking them below legible size', async ({

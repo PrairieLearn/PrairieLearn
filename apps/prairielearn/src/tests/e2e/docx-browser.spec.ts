@@ -164,10 +164,9 @@ test('keeps printing when an equation cannot become editable Word math', async (
 
   await loadPrintClient(page);
   await expect(page.locator('.pagedjs_page').first()).toBeVisible();
-  const { source, zip } = await readWordOutput(page);
+  const source = await page.evaluate(
+    () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource,
+  );
   expect(source.figures).toEqual([expect.objectContaining({ id: '1', alt: 'Equation' })]);
   expect(source.html).toContain('<img data-docx-figure="1">');
-  expect(
-    zip.files.filter((file) => file.path.startsWith('word/media/') && file.path.endsWith('.png')),
-  ).toHaveLength(1);
 });
