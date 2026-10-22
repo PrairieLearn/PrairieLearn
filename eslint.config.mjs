@@ -160,7 +160,7 @@ export default [
   },
 
   {
-    files: ['apps/prairielearn/elements/**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
+    files: ['apps/prairielearn/elements/**/*.{js,mjs,cjs}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -174,27 +174,9 @@ export default [
           ],
         },
       ],
-    },
-  },
-
-  {
-    files: ['apps/prairielearn/elements/**/*.{js,jsx,mjs,cjs}'],
-    rules: {
       'no-restricted-syntax': [
         'error',
         ...NO_RESTRICTED_SYNTAX,
-        ...ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTIONS,
-      ],
-    },
-  },
-
-  {
-    files: ['apps/prairielearn/elements/**/*.{ts,tsx,mts,cts}'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...NO_RESTRICTED_SYNTAX,
-        ...TYPESCRIPT_RESTRICTED_SYNTAX,
         ...ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTIONS,
       ],
     },
