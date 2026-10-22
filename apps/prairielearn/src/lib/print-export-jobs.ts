@@ -27,6 +27,23 @@ const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
 const WORKER_LIMIT = 2;
 const PRINT_EXPORT_EXPIRY_MS = 24 * 60 * 60 * 1000;
+const activePrintExports = new Set<Promise<void>>();
+let printExportShutdownController = new AbortController();
+
+function isAborted(signal: AbortSignal): boolean {
+  // The signal can change while a worker is awaiting S3 or browser work.
+  return signal.aborted;
+}
+
+export function beginPrintExportShutdown() {
+  printExportShutdownController.abort();
+}
+
+export async function waitForPrintExportWorkers() {
+  await Promise.allSettled(activePrintExports);
+  // Vite can restart the server without restarting this process.
+  printExportShutdownController = new AbortController();
+}
 
 const PersistedWorkSchema = z.object({
   document: z.enum(['exam', 'answer_key', 'booklet']),
@@ -226,7 +243,9 @@ async function runClaimedPrintExport({
   const meter = metrics.getMeter('prairielearn');
   const attributes = { document };
   const startedAt = performance.now();
+  const shutdownSignal = printExportShutdownController.signal;
   const heartbeat = setInterval(() => {
+    if (isAborted(shutdownSignal)) return;
     void execute(sql.renew_print_export_lease, { job_id: id, owner }).catch((error: unknown) => {
       logger.error('Could not renew print export lease', error);
     });
@@ -240,11 +259,18 @@ async function runClaimedPrintExport({
         JSON.parse((await getFromS3(bucket, inputKey, true)).toString('utf8')),
       );
       const { encryptedCookieHeader, ...rest } = persisted;
-      packet = await renderPrintExport({
-        ...rest,
-        cookieHeader: encryptedCookieHeader ? decryptFromStorage(encryptedCookieHeader) : undefined,
-      });
+      packet = await renderPrintExport(
+        {
+          ...rest,
+          cookieHeader: encryptedCookieHeader
+            ? decryptFromStorage(encryptedCookieHeader)
+            : undefined,
+        },
+        undefined,
+        shutdownSignal,
+      );
     } catch (error) {
+      if (isAborted(shutdownSignal)) return;
       getCounter(meter, 'print.export.background.failures', { valueType: ValueType.INT }).add(
         1,
         attributes,
@@ -262,9 +288,11 @@ async function runClaimedPrintExport({
       });
       return;
     }
+    if (isAborted(shutdownSignal)) return;
     const key = `${KEY_PREFIX}${randomUUID()}.pdf`;
     try {
       await uploadToS3(bucket, key, null, false, packet);
+      if (isAborted(shutdownSignal)) return;
       inputCanBeDeleted = await finishPrintExport({
         id,
         jobSequenceId,
@@ -312,6 +340,7 @@ async function runClaimedPrintExport({
 
 /** Claims a shared pool of queued exports; expired leases are claimed again after a restart. */
 export async function processQueuedPrintExports(): Promise<void> {
+  if (isAborted(printExportShutdownController.signal)) return;
   const owner = randomUUID();
   const { claimed, exhausted } = await runInTransactionAsync(async () => {
     await execute(sql.lock_print_export_queue, {});
@@ -345,19 +374,25 @@ export async function processQueuedPrintExports(): Promise<void> {
     }
   }
   for (const job of claimed) {
+    if (isAborted(printExportShutdownController.signal)) return;
     getHistogram(metrics.getMeter('prairielearn'), 'print.export.background.queue_wait', {
       unit: 'milliseconds',
       valueType: ValueType.DOUBLE,
     }).record(Date.now() - job.queued_at.getTime(), { document: job.document });
-    void runClaimedPrintExport({
+    const worker = runClaimedPrintExport({
       id: job.id,
       jobSequenceId: job.job_sequence_id,
       inputKey: job.input_key,
       document: job.document,
       owner,
-    }).catch((error: unknown) => {
-      logger.error('Print export worker failed', error);
-    });
+    })
+      .catch((error: unknown) => {
+        logger.error('Print export worker failed', error);
+      })
+      .finally(() => {
+        activePrintExports.delete(worker);
+      });
+    activePrintExports.add(worker);
   }
 }
 

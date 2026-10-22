@@ -77,6 +77,7 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { beginPrintExportShutdown, waitForPrintExportWorkers } from './lib/print-export-jobs.js';
 import { closePrintRenderer } from './lib/printing.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
@@ -2740,6 +2741,7 @@ if (shouldStartServer) {
     if (process.env.NODE_ENV !== 'test') {
       logger.info('Shutting down async processing');
     }
+    beginPrintExportShutdown();
     // First, stop all services that use the database.
     const serviceResults = await Promise.allSettled([
       externalGraderDeadLetters.stop(),
@@ -2759,6 +2761,7 @@ if (shouldStartServer) {
         Sentry.captureException(r.reason);
       }
     });
+    await waitForPrintExportWorkers();
 
     // Then close the database connections now that nothing is using them.
     const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
@@ -2818,7 +2821,10 @@ if (shouldStartServer) {
  */
 export async function close() {
   // These are run in the opposite order in which they're initialized/started.
+  beginPrintExportShutdown();
   await cron.stop();
+  await closePrintRenderer();
+  await waitForPrintExportWorkers();
   await serverJobs.stop();
   await socketServer.close();
   await cache.close();
