@@ -755,7 +755,7 @@ class TestParseUnits:
         assert set(data["submitted_answers"]) == {"op", "other-answer"}
         assert data["submitted_answers"]["other-answer"] == "unchanged"
 
-    def test_component_parser_uses_formula_editor_latex(self) -> None:
+    def test_component_parser_normalizes_formula_editor_output(self) -> None:
         data = question_data(
             raw_submitted_answers={
                 "op-lower": "2+-a",

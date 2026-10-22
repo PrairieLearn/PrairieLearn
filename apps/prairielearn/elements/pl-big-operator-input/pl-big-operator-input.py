@@ -1235,13 +1235,23 @@ def _parse_component_submission(
         else config.variables
     )
     allowed_types = _component_allowed_types(config, component)
-    return psu.try_parse_symbolic_submission(
+    allow_sets = _allowed_types_include_sets(allowed_types)
+    normalized_source = psu.normalize_formula_editor_output(
         source,
         variables,
-        formula_editor=True,
-        formula_editor_latex=formula_editor_latex,
+        latex=formula_editor_latex,
+        allow_sets=allow_sets,
         custom_functions=config.custom_functions,
-        allow_sets=_allowed_types_include_sets(allowed_types),
+    )
+    if normalized_source is None:
+        return psu.SympyParseFailure(psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
+
+    return psu.try_parse_string_as_sympy(
+        normalized_source,
+        variables,
+        allow_hidden=True,
+        custom_functions=list(config.custom_functions),
+        allow_sets=allow_sets,
         allowed_types=allowed_types,
         allow_complex=config.allow_complex,
         imaginary_unit=config.imaginary_unit,
