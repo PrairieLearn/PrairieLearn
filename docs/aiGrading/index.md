@@ -23,7 +23,7 @@ Common use cases include:
 - Source code, code explanations, and written reasoning
 - Short-answer justifications
 
-Questions can combine these elements. For example, when a question contains both `pl-file-upload` and `pl-image-capture`, every distinct submitted file is sent to the model once.
+Questions can combine these elements. For example, when a question contains both `pl-file-upload` and `pl-image-capture`, every distinct supported submitted file is sent to the model once.
 
 AI grading also includes files saved in the submission from [workspaces](../workspaces/index.md). Only files collected for grading are included; the AI grader does not read the live workspace. A [`pl-file-preview`](../elements/pl-file-preview.md) element is not required for AI grading, but is recommended so students can check their submitted files.
 
@@ -31,7 +31,7 @@ AI grading also includes files saved in the submission from [workspaces](../work
 
 - **Text and source code:** Files such as `.py`, `.cpp`, `.java`, `.txt`, `.csv`, and `.json` are decoded and sent as text with their filenames. Any filename or extension is accepted if the contents are readable text. Indentation and line breaks are preserved. Unicode is preserved when `pl-file-editor`'s `normalize-to-ascii` option is disabled (the default); enabling it normalizes non-ASCII characters before submission. Supported encodings are UTF-8 (with or without a byte-order mark) and UTF-16 (with a byte-order mark).
 - **PDFs and images:** PDF, JPEG, PNG, and WebP files are sent as attachments so the model can interpret their visual content.
-- **Other binary formats or encodings:** Files such as ZIP archives, compiled programs, and binary Office documents are not decoded as text. An unreadable file causes AI grading of that submission to fail with an error identifying the file, rather than producing a grade with missing content. Convert these files to a supported format or use manual grading.
+- **Other binary formats or encodings:** Files such as ZIP archives, compiled programs, and binary Office documents are not decoded as text. AI grading continues with the rest of the submission, and the model receives a message naming the unreadable file and explaining that its contents are unavailable. Convert these files to a supported format if their contents are needed for grading.
 
 Text files are passed as source text, without executing code or rendering HTML, Markdown, or SVG. File contents count toward the model's input limits; they are not truncated by PrairieLearn.
 
@@ -167,7 +167,7 @@ AI grading requires either PrairieLearn-managed credits or a custom API key. Bil
 ### Billing modes
 
 - **PrairieLearn-managed credits** — Simpler setup, no provider account needed. You purchase credits through PrairieLearn and pay a 20% infrastructure fee on top of provider costs.
-- **Custom API key** — Bring your own provider key (OpenAI, Anthropic, Google). You're billed directly by the provider and PrairieLearn charges no infrastructure fee.
+- **Custom API key** — Bring your own key for OpenAI, Anthropic, Google, or an OpenAI-compatible endpoint. PrairieLearn charges no infrastructure fee; endpoint charges depend on the provider's terms.
 
 You can switch between billing modes at any time. Purchased credits and saved API keys persist until you explicitly remove them, so switching back later does not require re-purchasing credits or re-entering keys.
 
@@ -204,6 +204,35 @@ API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
     When using custom API keys, instructors are responsible for the provider terms and account configuration.
 
     ![Custom API key billing configuration.](ai-grading-byok.png)
+
+### OpenAI-compatible providers
+
+You can configure one OpenAI-compatible provider per course instance, alongside your keys for official providers. This allows you to use a university-supported or other custom endpoint that offers an OpenAI-compatible API.
+
+#### Configure a provider
+
+As a course owner:
+
+1. Go to **Instance settings → AI grading** and enable **Use custom API keys**.
+2. Click **Add key** and select **OpenAI-compatible**.
+3. Enter the API base URL and API key. The URL must use HTTPS and be publicly reachable from PrairieLearn. Include the provider's API path, such as `https://provider.example/v1`; do not include `/models` or `/chat/completions`.
+4. Click **Next** to load the provider's available models. PrairieLearn requests `/models` relative to the base URL you entered.
+5. Review the model list and save the configuration. Loading the list confirms access to the catalog; it does not verify that each model can grade submissions.
+
+When starting AI grading, choose a model from **Custom provider models** in the model-selection dialog.
+
+#### Model requirements and limitations
+
+- **Structured outputs are required.** Choose a model and endpoint that support JSON schema structured outputs. Appearing in the model list does not guarantee this support.
+- **Image and PDF support is strongly recommended.** PrairieLearn attempts to send attachments to the selected model. If the endpoint or model cannot process an attachment, that submission can fail; separate text-only submissions can still succeed. Test representative submissions before grading a full batch.
+- **Pricing is unavailable.** The model catalog does not provide token prices, so PrairieLearn cannot show relative costs for custom models. A name matching an official model does not establish the custom endpoint's price. Check pricing with your provider; unknown pricing does not mean the model is free.
+- **Compatibility varies by endpoint.** Some features supported by official providers may not be available through an OpenAI-compatible endpoint.
+
+With a custom endpoint, review the provider's terms, data retention, and account configuration before sending student submissions. PrairieLearn's managed-credit data-use assurances do not establish the policies of your custom provider.
+
+#### Replace or remove a provider
+
+To change the URL or API key, use **Add key → OpenAI-compatible** again. Saving replaces the existing configuration; it does not add a second compatible provider to the course instance. You can also delete the configuration from the API-key table.
 
 ## Accuracy
 

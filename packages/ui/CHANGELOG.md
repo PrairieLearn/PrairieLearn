@@ -1,5 +1,17 @@
 # @prairielearn/ui
 
+## 4.3.0
+
+### Minor Changes
+
+- e6c306d: Add accessible Close buttons to click-triggered popovers and include them in focus traps.
+
+## 4.2.0
+
+### Minor Changes
+
+- 32a1f8b: Support async CSV and JSON data providers for table downloads, with shared row eligibility and a pending state.
+
 ## 4.1.2
 
 ### Patch Changes

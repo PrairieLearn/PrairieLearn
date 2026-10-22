@@ -183,6 +183,17 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
         ("l n 4 * c o t (9x)", True, ["x"], [], "ln (4) * cot (9x)"),
         ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
         ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
+        # Bare function arguments ended by a "(" that multiplies them
+        ("l n x (x+1)", False, ["x"], [], "ln (x) (x+1)"),
+        ("l n 2x(x+1)", False, ["x"], [], "ln (2x)(x+1)"),
+        ("l n 2(l n 3(x))", False, ["x"], [], "ln (2)(ln (3)(x))"),
+        # A "(" that groups an exponent or calls a function stays in the argument
+        ("l n x^(2)", False, ["x"], [], "ln x^(2)"),
+        ("l n f(x)", False, ["x"], ["f"], "ln f(x)"),
+        ("l n f2(x)", False, ["x"], ["f2"], "ln f2(x)"),
+        ("l n a t a n 2(y,x)", True, ["x", "y"], [], "ln atan2(y,x)"),
+        ("l n a b s (x)(x+1)", False, ["x"], [], "ln (abs (x))(x+1)"),
+        ("l n Α(x)", False, ["x"], ["Α"], "ln  Alpha (x)"),  # ruff:ignore[ambiguous-unicode-character-string]
         # Operators the editor writes in AsciiMath form (\div and \ast)
         ("2 -: x", False, ["x"], [], "2 / x"),
         ("2 ** x", False, ["x"], [], "2 * x"),
@@ -202,6 +213,26 @@ def test_format_formula_editor_submission_for_sympy(
 ) -> None:
     out = symbolic_input.format_formula_editor_submission_for_sympy(
         sub, allow_trig, variables, custom_functions
+    )
+    assert out == expected
+
+
+@pytest.mark.parametrize(
+    ("sub", "expected"),
+    [
+        ("C o m p l e m e n t ({1},{2})", "Complement ({1},{2})"),
+        ("{1} c u p {2} * {3}", "{1} cup {2} * {3}"),
+    ],
+)
+def test_format_formula_editor_submission_with_set_names(
+    sub: str, expected: str
+) -> None:
+    out = symbolic_input.format_formula_editor_submission_for_sympy(
+        sub,
+        False,
+        [],
+        [],
+        allow_sets=True,
     )
     assert out == expected
 
@@ -267,6 +298,68 @@ def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -
     assert symbolic_input._restore_plus_minus(submission, latex) == expected
 
 
+def test_formula_editor_bare_argument_before_implicit_multiplication() -> None:
+    r"""The editor displays `\ln 8\left(...\right)` as ln(8)·(...)."""
+    x = sympy.Symbol("x")
+    element_html = build_element_html('variables="x"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": "l n 8(x+1)"})
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.log(8) * (
+        x + 1
+    )
+
+
+def test_formula_editor_bare_argument_with_unsimplified_set_grading() -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        'formula-editor="true"',
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'correct-answer="{ln(8)*(x+1)}"',
+    )
+    data = make_question_data(submitted_answers={"test": "{l n 8(x+1)}"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_formula_editor_set_constructor_is_recognized() -> None:
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'correct-answer="{1} - {2}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "C o m p l e m e n t ({1},{2})"}
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_formula_editor_function_ending_in_digit_stays_in_bare_argument() -> None:
+    x, y = sympy.symbols("x y")
+    element_html = build_element_html('variables="x,y"', 'formula-editor="true"')
+    data = make_question_data(submitted_answers={"test": "ln atan2(y,x)"})
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.log(
+        sympy.atan2(y, x)
+    )
+
+
 def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> None:
     element_html = build_element_html('variables="a"', 'formula-editor="true"')
     data = make_question_data(
@@ -287,16 +380,18 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
 
 def test_formula_editor_deeply_nested_bare_arguments() -> None:
     depth = 1200
-    submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"
-    expected = "sin (2(" * depth + "x" + " * y))" * depth + " * z"
+    submission = "s i n f(" * depth + "x" + ")(y)" * depth
+    expected = "sin (f(" * depth + "x" + "))(y)" * depth
     assert (
         symbolic_input.format_formula_editor_submission_for_sympy(
-            submission, True, ["x", "y", "z"], []
+            submission, True, ["x", "y"], ["f"]
         )
         == expected
     )
 
-    element_html = build_element_html('variables="x,y,z"', 'formula-editor="true"')
+    element_html = build_element_html(
+        'variables="x,y"', 'custom-functions="f"', 'formula-editor="true"'
+    )
     data = make_question_data(submitted_answers={"test": submission})
     symbolic_input.parse(element_html, data)
     assert "syntax error" in data["format_errors"]["test"]
@@ -357,6 +452,57 @@ def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
 
     assert "test" in data["format_errors"]
     assert "complex number" in data["format_errors"]["test"]
+
+
+def test_unevaluated_real_subexpression_ignores_false_complex_assumption(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_is_disallowed_complex = psu._is_disallowed_complex
+
+    def is_disallowed_complex(item: sympy.Basic) -> bool:
+        # SymPy can intermittently report this unevaluated product as non-real.
+        if isinstance(item, sympy.Mul) and item.args == (
+            sympy.Integer(1),
+            sympy.Integer(0),
+        ):
+            return True
+        return original_is_disallowed_complex(item)
+
+    monkeypatch.setattr(psu, "_is_disallowed_complex", is_disallowed_complex)
+
+    element_html = build_element_html(
+        'variables="x"', 'display-simplified-expression="false"'
+    )
+    data = make_question_data(
+        submitted_answers={"test": "(x-0)/6"},
+        correct_answers={
+            "test": psu.sympy_to_json(sympy.Symbol("x") / sympy.Integer(6))
+        },
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert data["submitted_answers"]["test"]["_value"] == "(x - 1*0)/6"
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_adjacent_decimal_points_report_source(*, simplify_expression: bool) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "|x+1| + 2..3"},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(42))},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    error = data["format_errors"]["test"]
+    assert "invalid expression" in error
+    assert "2..3" in error
+    assert data["submitted_answers"]["test"] is None
 
 
 @pytest.mark.parametrize("a_sub", ["log(-x^2)", "sqrt(-x^2)"])

@@ -167,7 +167,7 @@ const mockInstructorData = {
     repository: 'https://github.com/example/example.git',
     sharing_name: 'example',
     show_getting_started: false,
-    uuid: null,
+    uuid: '00000000-0000-4000-8000-000000000001',
   },
   institution: TEST_INSTITUTION,
 };
@@ -251,6 +251,7 @@ const mockAssessmentData = {
 
 const STAFF_ASSESSMENT_QUESTION = {
   advance_score_perc: null,
+  ai_grading_last_selected_credential_id: null,
   ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
@@ -324,6 +325,8 @@ const STAFF_ASSESSMENT_QUESTION = {
 
 const STAFF_QUESTION = {
   client_files: null,
+  copied_from: null,
+  copied_from_question_id: null,
   course_id: '1',
   deleted_at: null,
   dependencies: null,

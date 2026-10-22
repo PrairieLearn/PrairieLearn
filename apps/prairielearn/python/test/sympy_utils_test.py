@@ -881,6 +881,23 @@ class TestExceptions:
                 a_sub, self.VARIABLES, allow_complex=False, simplify_expression=True
             )
 
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_complex_cube_root(self, *, simplify_expression: bool) -> None:
+        with pytest.raises(psu.HasComplexError):
+            psu.convert_string_to_sympy(
+                "(-8)**(1/3)",
+                self.VARIABLES,
+                allow_complex=False,
+                simplify_expression=simplify_expression,
+            )
+
+        psu.convert_string_to_sympy(
+            "(-8)**(1/3)",
+            self.VARIABLES,
+            allow_complex=True,
+            simplify_expression=simplify_expression,
+        )
+
     @pytest.mark.parametrize(
         "text",
         [
@@ -1354,6 +1371,15 @@ def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
 )
 def test_get_items_list(items_string: str | None, expected_output: list[str]) -> None:
     assert psu.get_items_list(items_string) == expected_output
+
+
+def test_builtin_callable_functions_exclude_set_operators() -> None:
+    callable_functions = psu.get_builtin_callable_functions(allow_sets=True)
+
+    assert {"Interval", "FiniteSet", "Union", "Intersection", "Complement"} <= (
+        callable_functions
+    )
+    assert callable_functions.isdisjoint({"U", "cup", "cap", "∪", "∩"})  # ruff:ignore[ambiguous-unicode-character-string]
 
 
 class TestValidateNamesForConflicts:

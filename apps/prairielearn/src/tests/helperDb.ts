@@ -223,6 +223,7 @@ export async function dropTemplate(): Promise<void> {
  * @param params.name The name of the migration to test.
  * @param params.beforeMigration A function to run before the migration.
  * @param params.afterMigration A function to run after the migration.
+ * @knipignore
  */
 export async function testMigration<T>({
   name,
