@@ -323,7 +323,6 @@ WITH
           AND gj.deleted_at IS NULL
           AND gj.graded_at IS NOT NULL
         ORDER BY
-          (gj.manual_points IS NOT NULL) DESC,
           gj.graded_at DESC,
           gj.id DESC,
           agj.id DESC

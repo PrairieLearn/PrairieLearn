@@ -293,7 +293,7 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
     assert.deepEqual(memberUids, expectedUids);
   });
 
-  test('preserves scores, feedback, and AI model attribution across partial edits', async () => {
+  test('preserves grading provenance and model attribution across AI regrades and human edits', async () => {
     const { assessment, aq, grader, iqId, submissionId, options } =
       await createGradingExportFixture();
     const [updater] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
@@ -316,11 +316,14 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
       auto_points: 0,
       feedback: { manual: 'Original human feedback', extra: 'Retained human feedback' },
     });
+    const earlierAiScore = await grade(
+      { manual_points: 1, feedback: { manual: 'Earlier AI feedback' } },
+      true,
+    );
     const aiScore = await grade({ manual_points: 2, feedback: { manual: 'AI feedback' } }, true);
-    const aiFeedbackUpdate = await grade({ feedback: { manual: 'Updated AI feedback' } }, true);
     for (const [result, model] of [
-      [aiScore, 'historical-model'],
-      [aiFeedbackUpdate, 'custom-model'],
+      [earlierAiScore, 'earlier-model'],
+      [aiScore, 'current-model'],
     ] as const) {
       await sqldb.execute(sql.insert_ai_grading_metadata, {
         grading_job_id: result.grading_job_id,
@@ -331,21 +334,17 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
     const feedbackUpdate = await grade({ feedback: { manual: 'Updated human feedback' } });
     const autoUpdate = await grade({ auto_points: 1 }, false, updater.id);
     const row = await selectExportRow(assessment, aq, iqId);
-    assert.equal(
-      row.instance_question.ai_grading?.score_source?.ai_grading_model,
-      'historical-model',
-    );
-    assert.equal(row.instance_question.ai_grading?.latest_update.ai_grading_model, 'custom-model');
+    assert.equal(row.instance_question.ai_grading?.latest_update.ai_grading_model, 'current-model');
     const json = getManualGradingJsonData(row, options);
-    assert.equal(json.ai_grading?.model, 'historical-model');
+    assert.equal(json.ai_grading?.model, 'current-model');
     assert.equal(json.ai_grading?.grading_job_id, aiScore.grading_job_id);
     const csv = getManualGradingCsvData(row, options);
-    assert.deepInclude(csv, { name: 'AI model', value: 'historical-model' });
+    assert.deepInclude(csv, { name: 'AI model', value: 'current-model' });
     const aiGradingInfo = await buildAiGradingInfo({
       submission_id: submissionId,
       submissionHtmls: [],
     });
-    assert.equal(aiGradingInfo?.model, 'historical-model');
+    assert.equal(aiGradingInfo?.model, 'current-model');
 
     const downloadsUrl = `http://localhost:${config.serverPort}/pl/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/downloads`;
     const downloadsPage = await fetch(downloadsUrl);
@@ -356,7 +355,7 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
       assert.equal(download.status, 200);
       const records = csvParse<Record<string, string>>(await download.text(), { columns: true });
       const submission = records.find((record) => record.submission_id === submissionId)!;
-      assert.equal(submission['AI model'], 'historical-model');
+      assert.equal(submission['AI model'], 'current-model');
     }
     assert.equal(json.manual_points, 2);
     assert.equal(json.human_grading?.manual_points, 3);
@@ -384,7 +383,7 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
     );
     assert.equal(scoreEdit.human_grading?.manual_points, 4);
     assert.deepEqual(scoreEdit.human_grading?.feedback, json.human_grading?.feedback);
-    assert.equal(scoreEdit.ai_grading?.model, 'historical-model');
+    assert.equal(scoreEdit.ai_grading?.model, 'current-model');
   });
 
   test('excludes inactive conflict attempts while retaining conflict details and AI-deletion recovery', async () => {

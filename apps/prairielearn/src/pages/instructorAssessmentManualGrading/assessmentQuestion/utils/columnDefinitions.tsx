@@ -384,10 +384,7 @@ export function createColumns({
     }),
 
     columnHelper.accessor(
-      (row) => {
-        const aiGrading = row.instance_question.ai_grading;
-        return (aiGrading?.score_source ?? aiGrading?.latest_update)?.ai_grading_model ?? null;
-      },
+      (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? null,
       {
         id: 'ai_grading_model',
         header: 'AI model',

@@ -80,8 +80,7 @@ export function getManualGradingJsonData(
   }: ExportOptions,
 ) {
   const iq = row.instance_question;
-  const aiJobId =
-    iq.ai_grading?.score_source?.grading_job.id ?? iq.ai_grading?.latest_update.grading_job.id;
+  const aiJobId = iq.ai_grading?.latest_update.grading_job.id;
   const aiText = aiJobId ? aiGradingTextByJobId?.[aiJobId] : undefined;
   const submissionGroupId =
     iq.manual_instance_question_group_id ?? iq.ai_instance_question_group_id;
@@ -131,7 +130,7 @@ export function getManualGradingJsonData(
     ai_grading: iq.ai_grading
       ? {
           ...gradingResultToExportFields(iq.ai_grading),
-          model: (iq.ai_grading.score_source ?? iq.ai_grading.latest_update).ai_grading_model,
+          model: iq.ai_grading.latest_update.ai_grading_model,
           explanation: aiText?.explanation ?? null,
           generated_feedback: aiText?.generated_feedback ?? null,
         }

@@ -290,8 +290,7 @@ export function AssessmentQuestionTable({
 
   async function getExportOptions(rows: InstanceQuestionRowWithAIGradingStats[]) {
     const grading_job_ids = rows.flatMap(({ instance_question: iq }) => {
-      const id =
-        iq.ai_grading?.score_source?.grading_job.id ?? iq.ai_grading?.latest_update.grading_job.id;
+      const id = iq.ai_grading?.latest_update.grading_job.id;
       return id ? [id] : [];
     });
     try {
@@ -338,10 +337,9 @@ export function AssessmentQuestionTable({
 
   const allAiModels = Array.from(
     new Set(
-      instanceQuestionsInfo.map((row) => {
-        const aiGrading = row.instance_question.ai_grading;
-        return (aiGrading?.score_source ?? aiGrading?.latest_update)?.ai_grading_model ?? 'None';
-      }),
+      instanceQuestionsInfo.map(
+        (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? 'None',
+      ),
     ),
   ).sort();
 
