@@ -306,7 +306,6 @@ testpaths = [
   "apps/prairielearn/elements",
   "apps/prairielearn/python/test",
   "graders/python/python_autograder/tests",
-  "scripts",
 ]
 
 [tool.uv]
