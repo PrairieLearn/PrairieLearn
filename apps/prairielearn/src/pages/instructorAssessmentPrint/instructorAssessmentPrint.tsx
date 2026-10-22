@@ -74,6 +74,7 @@ router.get(
               groupWork={assessment.team_work}
               requireHonorCode={!!assessment.require_honor_code}
               instances={instances}
+              enrolledStudents={studentCount}
               defaultCopies={Math.min(MAX_PRINT_COPIES, Math.max(1, studentCount))}
               renderingAvailable={isBrowserRenderingAvailable()}
               canEditStudentData={authz_data.has_course_instance_permission_edit}

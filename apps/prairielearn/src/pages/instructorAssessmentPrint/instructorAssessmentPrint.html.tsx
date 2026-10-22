@@ -59,6 +59,7 @@ interface PrintPreparationProps {
   groupWork: boolean;
   requireHonorCode: boolean;
   instances: StaffAssessmentInstance[];
+  enrolledStudents: number;
   defaultCopies: number;
   renderingAvailable: boolean;
   canEditStudentData: boolean;
@@ -95,6 +96,7 @@ function PrintPreparation({
   groupWork,
   requireHonorCode,
   instances: initialInstances,
+  enrolledStudents,
   defaultCopies,
   renderingAvailable,
   canEditStudentData,
@@ -1381,6 +1383,7 @@ function PrintPreparation({
       <BookletDownloadModal
         show={showBookletModal}
         students={copies}
+        enrolledStudents={enrolledStudents}
         formLabels={instanceIds.map((_, index) => String.fromCharCode(65 + index))}
         pending={booklet.isPending || preparingPdf === 'booklet'}
         progress={preparingPdf === 'booklet' ? pdfPreparationProgress : null}

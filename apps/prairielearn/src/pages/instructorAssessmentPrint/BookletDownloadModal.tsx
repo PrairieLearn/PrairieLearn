@@ -1,4 +1,4 @@
-import { Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { getAppError } from '@prairielearn/trpc/client';
@@ -9,6 +9,7 @@ import { MAX_PRINT_COPIES } from '../../lib/client/print-packet.js';
 export function BookletDownloadModal({
   show,
   students,
+  enrolledStudents,
   formLabels,
   pending,
   progress,
@@ -18,6 +19,7 @@ export function BookletDownloadModal({
 }: {
   show: boolean;
   students: number;
+  enrolledStudents: number;
   formLabels: string[];
   pending: boolean;
   progress: { completed: number; total: number } | null;
@@ -78,6 +80,12 @@ export function BookletDownloadModal({
               {errors.students?.message}
             </Form.Control.Feedback>
           </Form.Group>
+          {enrolledStudents > MAX_PRINT_COPIES && (
+            <Alert variant="warning" className="mt-3 mb-0">
+              This course has {enrolledStudents} enrolled students. A booklet can include up to{' '}
+              {MAX_PRINT_COPIES} copies. Download additional booklets to cover the class.
+            </Alert>
+          )}
           <p id="print-booklet-students-help" className="small text-muted mt-3 mb-0">
             {formLabels.length > 1
               ? `Forms ${formLabels.join(', ')} repeat in order, one complete copy per student.`
