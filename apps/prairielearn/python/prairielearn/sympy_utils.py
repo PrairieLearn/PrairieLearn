@@ -36,6 +36,7 @@ from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
+from prairielearn.internal import symbolic_input as internal_symbolic_input
 from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
@@ -1925,6 +1926,16 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
+    normalized_expr = internal_symbolic_input.normalize_absolute_value_bars(
+        expr, allow_sets=allow_sets
+    )
+    if normalized_expr is None:
+        return SympyParseFailure(
+            "The absolute value bars in your answer are mismatched or ambiguous: "
+            f"<code>{expr}</code>."
+        )
+    expr = normalized_expr
+
     if allowed_types is None:
         allowed_types = {"all"} if allow_sets else {"expression"}
 
@@ -2057,6 +2068,101 @@ def try_parse_string_as_sympy(
         return type_failure
 
     return SympyParseSuccess(expr_parsed)
+
+
+def _build_formula_editor_tokens(
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    allow_trig_functions: bool,
+    allow_sets: bool,
+) -> list[str]:
+    tokens = (
+        list(STANDARD_OPERATORS)
+        + list(
+            get_builtin_functions(
+                allow_trig_functions=allow_trig_functions,
+                allow_sets=allow_sets,
+            )
+        )
+        + list(custom_functions)
+        + list(variables)
+    )
+    tokens += [
+        greek_unicode_transform(token)
+        for token in tokens
+        if greek_unicode_transform(token) != token
+    ]
+    return [token for token in tokens if len(token) > 1 and token != "**"]
+
+
+@overload
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str: ...
+
+
+@overload
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    latex: str | None,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str | None: ...
+
+
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    latex: str | None = None,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str | None:
+    r"""Normalize MathLive formula-editor output for symbolic parsing.
+
+    The optional LaTeX representation recovers information lost in MathLive's
+    plain-text representation, such as the distinction between ``\pm`` and a
+    typed ``+-``.
+
+    Returns:
+        The normalized output, or ``None`` if the plain-text and LaTeX
+        representations cannot be matched.
+    """
+    variable_names = tuple(variables or ())
+    custom_function_names = tuple(custom_functions)
+    known_tokens = _build_formula_editor_tokens(
+        variable_names,
+        custom_function_names,
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    )
+    function_names = frozenset(
+        greek_unicode_transform(name)
+        for name in (
+            get_builtin_callable_functions(
+                allow_trig_functions=allow_trig_functions,
+                allow_sets=allow_sets,
+            )
+            | set(custom_function_names)
+        )
+    )
+    return internal_symbolic_input.normalize_formula_editor_submission(
+        submission,
+        known_tokens,
+        function_names,
+        latex=latex,
+        unicode_transform=greek_unicode_transform,
+    )
 
 
 def validate_string_as_sympy(
