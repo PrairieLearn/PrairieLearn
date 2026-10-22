@@ -1,5 +1,5 @@
 import { formatDate } from '@prairielearn/formatter';
-import { html } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 
 import type { LegacyAssessmentAccessRuleResult } from '../lib/assessment-access-control/authz-result.js';
 import type { AccessTimelineEntry } from '../lib/assessment-access-control/timeline.js';
@@ -42,31 +42,44 @@ export function StudentAccessTimelineSchedule({
 function CreditSchedule({ rows }: { rows: { credit: string; start: string; end: string }[] }) {
   if (rows.length === 0) return '';
 
+  const content = html`
+    <div class="table-responsive">
+      <table class="table table-sm mb-0" aria-label="Credit schedule">
+        <thead>
+          <tr>
+            <th scope="col">Credit</th>
+            <th scope="col">Start</th>
+            <th scope="col">End</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(
+            (row) => html`
+              <tr>
+                <td>${row.credit}</td>
+                <td>${row.start}</td>
+                <td>${row.end}</td>
+              </tr>
+            `,
+          )}
+        </tbody>
+      </table>
+    </div>
+  `;
+
   return html`
-    <details class="mt-1 text-start">
-      <summary class="small">Credit schedule</summary>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0" aria-label="Credit schedule">
-          <thead>
-            <tr>
-              <th scope="col">Credit</th>
-              <th scope="col">Start</th>
-              <th scope="col">End</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(
-              (row) => html`
-                <tr>
-                  <td>${row.credit}</td>
-                  <td>${row.start}</td>
-                  <td>${row.end}</td>
-                </tr>
-              `,
-            )}
-          </tbody>
-        </table>
-      </div>
-    </details>
+    <button
+      type="button"
+      class="btn btn-xs btn-outline-secondary ms-1"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Credit schedule"
+      data-bs-content="${escapeHtml(content)}"
+      data-bs-custom-class="popover-wide"
+      data-bs-placement="bottom"
+    >
+      Credit schedule
+    </button>
   `;
 }
