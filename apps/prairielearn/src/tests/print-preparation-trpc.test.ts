@@ -94,7 +94,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await courseDirectory.cleanup();
   });
 
-  test.each(['exam20-assessmentTools', 'hw1-automaticTestSuite'])(
+  test.each(['exam20-assessmentTools', 'hw7-bonusPoints'])(
     'creates independent instructor instances even when students only get one attempt (%s)',
     async (tid) => {
       const assessment = await selectAssessmentByTid({
@@ -116,7 +116,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
       expect((await selectAssessmentById(assessment.id)).multiple_instance).toBe(false);
       const questions = await api.printableExams.questions.query(first);
       expect(questions.length).toBeGreaterThan(0);
-      expect(questions[0].number).toBe(assessment.type === 'Homework' ? 'HW1.1' : '1');
+      expect(questions[0].number).toBe(
+        assessment.type === 'Homework' ? `HW${assessment.number}.1` : '1',
+      );
       expect(questions.flatMap((question) => question.concerns)).not.toContain(
         'Could not inspect this question’s source. Review its preview before printing.',
       );
@@ -145,7 +147,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const assessment = await printAssessment();
     const otherAssessment = await selectAssessmentByTid({
       course_instance_id: '1',
-      tid: 'exam1-automaticTestSuite',
+      tid: 'exam23-printing',
     });
     const otherUser = await getOrCreateUser({
       uid: 'print-student@example.com',
@@ -386,7 +388,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect(studentResponse.status).toBe(403);
     const otherAssessment = await selectAssessmentByTid({
       course_instance_id: '1',
-      tid: 'exam1-automaticTestSuite',
+      tid: 'exam23-printing',
     });
     await expect(
       client(otherAssessment.id).printableExamExport.status.query({ jobSequenceId }),
