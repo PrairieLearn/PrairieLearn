@@ -9,17 +9,17 @@ export function getNavPageTabs() {
   const navPagesTabs = {
     public_assessment: [
       {
-        activeSubPage: 'questions',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
-        iconClasses: 'far fa-file-alt',
-        tabLabel: 'Questions',
-      },
-      {
         activeSubPage: 'file_view',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/file_view`,
         iconClasses: 'fa fa-edit',
         tabLabel: 'Files',
         renderCondition: ({ assessment }) => assessment.share_source_publicly,
+      },
+      {
+        activeSubPage: 'questions',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
+        iconClasses: 'far fa-file-alt',
+        tabLabel: 'Questions',
       },
     ],
     public_question: [
