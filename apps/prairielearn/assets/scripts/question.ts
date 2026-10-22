@@ -24,6 +24,17 @@ import './behaviors/bootstrap-compat.js';
 // automatically garbage collected when the container is removed from the DOM,
 // so some of these observers don't need explicit cleanup logic.
 onDocumentReady(() => {
+  // Safari does not fire load for PDF objects. Keep the URL usable until removal,
+  // including while a preview is collapsed or moved within the document.
+  // https://github.com/WebKit/WebKit/pull/43885
+  // https://bugs.webkit.org/show_bug.cgi?id=143673
+  observe('object.js-file-preview-pdf', {
+    constructor: HTMLObjectElement,
+    remove(pdf) {
+      if (!pdf.isConnected) URL.revokeObjectURL(pdf.data);
+    },
+  });
+
   observe('.question-container', {
     constructor: HTMLDivElement,
     initialize(container) {
