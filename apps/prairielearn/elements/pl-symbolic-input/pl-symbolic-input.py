@@ -1317,10 +1317,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "incorrect":
         offset = random.randint(1, 100)
         for _ in range(2):
-            if not allow_sets and a_tru_str != "":
-                candidate = f"{a_tru_str} + {offset:d}"
+            if isinstance(a_tru, sympy.Expr):
+                candidate = f"({a_tru_str}) + {offset:d}"
                 candidate_sympy = a_tru + sympy.Integer(offset)
-                if candidate_sympy == a_tru:
+                if _sympy_values_equal(candidate_sympy, a_tru):
                     candidate = f"{offset:d}"
                     candidate_sympy = sympy.Integer(offset)
             elif "all" in allowed_types or "expression" in allowed_types:
@@ -1335,7 +1335,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             else:
                 raise AssertionError(f"Unexpected allowed types: {allowed_types}")
 
-            if candidate_sympy != a_tru:
+            if a_tru == "" or not _sympy_values_equal(candidate_sympy, a_tru):
                 break
             offset += 1
         else:
