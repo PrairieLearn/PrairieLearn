@@ -1,14 +1,11 @@
-import type { Request, Response } from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
+import { UserSchema } from '../lib/db-types.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
 
-import { UserSchema } from './db-types.js';
-
-export async function setPublicAssessmentLocals(req: Request, res: Response) {
-  res.locals.user = UserSchema.parse(res.locals.authn_user);
-  res.locals.authz_data = { user: res.locals.user };
+export default asyncHandler(async (req, res, next) => {
   const assessment = await selectOptionalAssessmentById(req.params.assessment_id);
 
   if (
@@ -19,5 +16,9 @@ export async function setPublicAssessmentLocals(req: Request, res: Response) {
     throw new error.HttpStatusError(404, 'Not Found');
   }
 
+  res.locals.user = UserSchema.parse(res.locals.authn_user);
+  res.locals.authz_data = { user: res.locals.user };
   res.locals.assessment = assessment;
-}
+  res.locals.navPage = 'public_assessment';
+  next();
+});

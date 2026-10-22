@@ -1130,6 +1130,18 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
       assert.equal(syncResult.status, 'complete');
       assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 
+      const question = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+      });
+      const downloadUrl = `${baseUrl}/public/course/${sharingCourse.id}/question/${question.id}/file_download/questions/${question.qid}/info.json`;
+      const download = await fetch(downloadUrl);
+      assert.equal(download.status, 200);
+      assert.deepEqual(
+        await download.json(),
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+      );
+
       sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
         true;
       delete sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID]

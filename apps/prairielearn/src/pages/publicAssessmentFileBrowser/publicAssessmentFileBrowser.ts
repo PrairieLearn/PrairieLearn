@@ -3,7 +3,6 @@ import asyncHandler from 'express-async-handler';
 
 import { createFileBrowser } from '../../components/FileBrowser.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import { setPublicAssessmentLocals } from '../../lib/publicAssessment.js';
 import { encodePath } from '../../lib/uri-util.js';
 
 const router = Router({ mergeParams: true });
@@ -11,8 +10,6 @@ const router = Router({ mergeParams: true });
 router.get(
   '/*',
   asyncHandler(async (req, res) => {
-    await setPublicAssessmentLocals(req, res);
-
     const paths = getPaths(req.params[0], res.locals);
 
     try {

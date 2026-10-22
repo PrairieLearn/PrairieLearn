@@ -1959,12 +1959,10 @@ export async function initExpress(): Promise<Express> {
   app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/questions`);
   });
-  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'public_assessment';
-      next();
-    },
-  ]);
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzPublicAssessment.js')).default,
+  );
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
