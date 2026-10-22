@@ -1,7 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import { ElementLocalFilePathJsonSchema } from './elementLocalFilePath.js';
-import { ElementCoreJsonSchema } from './infoElementCore.js';
+import { ElementCoreJsonSchema, ElementLocalFilePathJsonSchema } from './infoElementCore.js';
 import { ElementCourseJsonSchema } from './infoElementCourse.js';
 
 describe('element-local file paths', () => {

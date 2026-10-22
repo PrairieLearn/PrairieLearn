@@ -5,7 +5,6 @@ import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { AccessControlJsonSchema, DeadlineEntryJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
-import { ElementLocalFilePathJsonSchema } from './elementLocalFilePath.js';
 import {
   AdvanceScorePercJsonSchema,
   AssessmentAccessRuleJsonSchema,
@@ -25,7 +24,11 @@ import {
 } from './infoAssessment.js';
 import { ColorJsonSchema, type CourseJson, CourseJsonSchema } from './infoCourse.js';
 import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseInstance.js';
-import { type ElementCoreJson, ElementCoreJsonSchema } from './infoElementCore.js';
+import {
+  type ElementCoreJson,
+  ElementCoreJsonSchema,
+  ElementLocalFilePathJsonSchema,
+} from './infoElementCore.js';
 import { type ElementCourseJson, ElementCourseJsonSchema } from './infoElementCourse.js';
 import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoElementExtension.js';
 import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
