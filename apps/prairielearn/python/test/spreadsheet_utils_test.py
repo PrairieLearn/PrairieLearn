@@ -1,5 +1,6 @@
 import datetime
 import random
+from collections.abc import Callable
 from dataclasses import FrozenInstanceError, is_dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -1378,6 +1379,50 @@ def test_spreadsheet_wrapper_resolves_open_ended_ranges() -> None:
     )
     with pytest.raises(ValueError, match="outside A1:C3"):
         inputs.range("D1:D")
+
+
+@pytest.mark.parametrize(
+    ("formula", "expected"),
+    [
+        ("=ABS(B2-$C1)", "=ABS($B$2-$C$1)"),
+        ("=SUM(A2:B3, C:C)", "=SUM($A$2:$B$3, $C:$C)"),
+        (
+            "='Weekly Sales'!B2*Rates!$A$1",
+            "='Weekly Sales'!$B$2*Rates!$A$1",
+        ),
+        ('=IF(A1>0,"A1",A1)&TRUE', '=IF($A$1>0,"A1",$A$1)&TRUE'),
+        ("=PI()", "=PI()"),
+    ],
+)
+def test_make_absolute_anchors_formula_references(formula: str, expected: str) -> None:
+    assert psp.make_absolute(formula) == expected
+
+
+@pytest.mark.parametrize(
+    ("formula", "expected"),
+    [
+        ("=ABS($B$2-$C1)", "=ABS(B2-C1)"),
+        ("=SUM($A$2:B$3, $C:C)", "=SUM(A2:B3, C:C)"),
+        (
+            "='Weekly Sales'!$B$2*Rates!$A$1",
+            "='Weekly Sales'!B2*Rates!A1",
+        ),
+        ('=IF($A$1>0,"$A$1",A1)&TRUE', '=IF(A1>0,"$A$1",A1)&TRUE'),
+        ("=PI()", "=PI()"),
+    ],
+)
+def test_make_relative_unanchors_formula_references(
+    formula: str, expected: str
+) -> None:
+    assert psp.make_relative(formula) == expected
+
+
+@pytest.mark.parametrize("converter", [psp.make_absolute, psp.make_relative])
+def test_make_reference_converter_requires_a_formula(
+    converter: Callable[[str], str],
+) -> None:
+    with pytest.raises(psp.FormulaParseError, match='must start with "="'):
+        converter("A1")
 
 
 @pytest.mark.parametrize(

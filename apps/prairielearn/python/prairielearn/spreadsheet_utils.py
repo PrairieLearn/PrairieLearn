@@ -127,6 +127,8 @@ __all__ = [
     "get_spreadsheet_grading_output",
     "get_spreadsheet_result",
     "get_spreadsheet_value",
+    "make_absolute",
+    "make_relative",
     "parse_spreadsheet_formula",
     "random_cases",
     "read_spreadsheet",
@@ -1360,6 +1362,51 @@ def _shift_formula_reference_endpoint(
             raise ValueError(f'Shifting reference "{text}" moves it above row 1.')
         parts.append(f"{'$' if endpoint.row_absolute else ''}{row}")
     return prefix + "".join(parts)
+
+
+def _make_formula_reference_endpoint(
+    endpoint: FormulaReferenceEndpoint, *, absolute: bool
+) -> str:
+    prefix = "" if endpoint.sheet is None else f"{_safe_sheet_name(endpoint.sheet)}!"
+    anchor = "$" if absolute else ""
+    reference = f"{anchor}{endpoint.column}"
+    if isinstance(endpoint, FormulaCellReference):
+        reference += f"{anchor}{endpoint.row}"
+    return prefix + reference
+
+
+def _make_formula_references(formula: str, *, absolute: bool) -> str:
+    if not isinstance(formula, str) or not formula.startswith("="):
+        raise FormulaParseError('Spreadsheet formulas must start with "=".')
+    try:
+        tokens = Tokenizer(formula).tokens()
+    except Exception as exc:
+        raise FormulaParseError("The spreadsheet formula could not be parsed.") from exc
+    rendered: list[str] = ["="]
+    for token in tokens:
+        if token.token_type != TokenType.Operand or token.subtype != TokenSubType.Range:
+            rendered.append(token.value)
+            continue
+        reference = _parse_reference(token.value)
+        if isinstance(reference, FormulaReferenceNode):
+            rendered.append(
+                _make_formula_reference_endpoint(reference.reference, absolute=absolute)
+            )
+        else:
+            start = _make_formula_reference_endpoint(reference.start, absolute=absolute)
+            end = _make_formula_reference_endpoint(reference.end, absolute=absolute)
+            rendered.append(f"{start}:{end}")
+    return "".join(rendered)
+
+
+def make_absolute(formula: str) -> str:
+    """Make every row and column reference in a formula absolute."""
+    return _make_formula_references(formula, absolute=True)
+
+
+def make_relative(formula: str) -> str:
+    """Make every row and column reference in a formula relative."""
+    return _make_formula_references(formula, absolute=False)
 
 
 def shift_formula(formula: str, *, rows: int = 0, columns: int = 0) -> str:
