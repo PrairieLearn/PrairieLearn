@@ -1,7 +1,7 @@
 import importlib
 import string
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import prairielearn.sympy_utils as psu
 import pytest
@@ -27,6 +27,7 @@ def make_question_data(
     answers_names: dict[str, Any] | None = None,
     panel: str = "question",
     editable: bool = True,
+    test_type: Literal["correct", "incorrect", "invalid"] = "correct",
 ) -> dict[str, Any]:
     submitted_answers = submitted_answers or {}
     return {
@@ -42,6 +43,7 @@ def make_question_data(
         "partial_scores": {},
         "panel": panel,
         "editable": editable,
+        "test_type": test_type,
     }
 
 
@@ -229,8 +231,10 @@ def test_incorrect_answer_uses_an_allowed_type_and_avoids_collision(
 ) -> None:
     monkeypatch.setattr(symbolic_input.random, "randint", lambda _start, _end: 5)
     element_html = build_element_html(f'allowed-types="{allowed_types}"')
-    data = make_question_data(correct_answers={"test": correct_answer})
-    data["test_type"] = "incorrect"
+    data = make_question_data(
+        correct_answers={"test": correct_answer},
+        test_type="incorrect",
+    )
 
     symbolic_input.test(element_html, data)
     data["submitted_answers"] = data["raw_submitted_answers"].copy()
@@ -246,14 +250,36 @@ def test_incorrect_answer_uses_an_allowed_type_and_avoids_collision(
     )
 
 
+def test_incorrect_expression_answer_is_not_equivalent_when_sets_are_allowed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(symbolic_input.random, "randint", lambda _start, _end: 5)
+    element_html = build_element_html(
+        'allowed-types="all"',
+        'display-simplified-expression="false"',
+    )
+    data = make_question_data(
+        correct_answers={"test": "2+3"},
+        test_type="incorrect",
+    )
+
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+    data["partial_scores"] = {}
+    symbolic_input.grade(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert data["partial_scores"]["test"]["score"] == 0
+
+
 def test_correct_answer_generation_round_trips_set_domains() -> None:
     element_html = build_element_html('allow-sets="true"')
     data = make_question_data(
         correct_answers={
             "test": psu.sympy_to_json(sympy.S.Reals, allow_sets=True),
-        }
+        },
     )
-    data["test_type"] = "correct"
 
     symbolic_input.test(element_html, data)
     data["submitted_answers"] = data["raw_submitted_answers"].copy()
