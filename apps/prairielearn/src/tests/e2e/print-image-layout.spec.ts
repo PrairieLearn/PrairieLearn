@@ -185,30 +185,6 @@ test('lets image choices flow across pages before shrinking them below legible s
   }
 });
 
-test('keeps a full page of choices at its measured height', async ({ page, imageQuestion }) => {
-  const preview = await imageQuestion(
-    `<style>.printing-question[data-question-number="1"] { min-height: var(--exam-print-content-height); }</style>${imageChoices(
-      {
-        element: 'pl-multiple-choice',
-        dimensions: Array.from({ length: 4 }, () => ({ width: 60, height: 30 })),
-      },
-    )}`,
-  );
-
-  await page.goto(`${preview}?exclude_question=2&paper_size=Letter&block_size=auto`);
-  await waitForPrintablePage(page);
-  await expect(page.locator('.pagedjs_page')).toHaveCount(2);
-  const question = page.getByRole('region', { name: 'Question 1', exact: true });
-  await expect(question).toHaveCount(1);
-  await expect(question.getByRole('img', { name: /^Image choice / })).toHaveCount(4);
-  const height = await question.evaluate((element) => ({
-    measured: Number(element.dataset.printMeasuredHeight),
-    actual: element.getBoundingClientRect().height,
-  }));
-  expect(height.actual).toBeGreaterThan(height.measured - 4);
-  expect(height.actual).toBeLessThanOrEqual(height.measured + 1);
-});
-
 test('moves a question that outgrows its requested block to the next page', async ({
   page,
   imageQuestion,

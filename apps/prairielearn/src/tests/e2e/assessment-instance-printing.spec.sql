@@ -7,10 +7,3 @@ FROM
 WHERE
   v.instance_question_id = iq.id
   AND iq.assessment_instance_id = $assessment_instance_id;
-
--- BLOCK set_shuffle_questions
-UPDATE assessments
-SET
-  shuffle_questions = $shuffle_questions
-WHERE
-  id = $assessment_id;
