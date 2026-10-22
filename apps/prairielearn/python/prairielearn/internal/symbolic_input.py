@@ -4,22 +4,23 @@ import re
 from collections.abc import Callable, Sequence
 from functools import lru_cache
 
+_ABSOLUTE_VALUE_PATTERN = re.compile(
+    r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
+)
+_BAR_PATTERN = re.compile(r"\|")
+
 
 def normalize_absolute_value_bars(submission: str, *, allow_sets: bool) -> str | None:
     """Replace absolute-value bars with syntax understood by the SymPy parser."""
     # The formula editor writes \lvert, \rvert and \mid as U+2223 (DIVIDES).
     submission = submission.replace("\u2223", "|")
 
-    pattern = re.compile(
-        r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
-    )
-    bar_pattern = re.compile(r"\|")
     search_from = 0
     preceding_bars: list[int] = []
-    while match := pattern.search(submission, search_from):
+    while match := _ABSOLUTE_VALUE_PATTERN.search(submission, search_from):
         preceding_bars.extend(
             bar_match.start()
-            for bar_match in bar_pattern.finditer(
+            for bar_match in _BAR_PATTERN.finditer(
                 submission, search_from, match.start()
             )
         )
