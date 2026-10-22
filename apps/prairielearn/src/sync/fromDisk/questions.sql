@@ -1,5 +1,8 @@
 -- BLOCK select_copied_from_questions
--- Historical provenance includes soft-deleted courses and questions.
+-- Resolve declared historical provenance independently of current sharing access.
+-- Include soft-deleted courses/questions and questions that were never shared,
+-- are no longer shared, or are not shared with the consuming course. Resolving
+-- the relationship does not grant access to the source content.
 SELECT
   reference.qid,
   source.id AS copied_from_question_id
@@ -13,24 +16,20 @@ FROM
 UPDATE questions AS question
 SET
   copied_from = provenance.copied_from,
-  copied_from_question_id = provenance.copied_from_question_id,
-  sync_warnings = provenance.sync_warnings
+  copied_from_question_id = provenance.copied_from_question_id
 FROM
   jsonb_to_recordset($provenance::jsonb) AS provenance (
     question_id bigint,
     copied_from text,
-    copied_from_question_id bigint,
-    sync_warnings text
+    copied_from_question_id bigint
   )
 WHERE
   question.id = provenance.question_id
   AND question.course_id = $course_id
   AND (
     question.copied_from,
-    question.copied_from_question_id,
-    question.sync_warnings
+    question.copied_from_question_id
   ) IS DISTINCT FROM (
     provenance.copied_from,
-    provenance.copied_from_question_id,
-    provenance.sync_warnings
+    provenance.copied_from_question_id
   );

@@ -106,19 +106,19 @@ describe('Question syncing', () => {
       const consumingData = util.getCourseData();
       consumingData.questions[util.QUESTION_ID].copiedFrom =
         `${sourceCourse.uuid}/${sourceInfo.uuid}`;
-      const consumer = await util.writeAndSyncCourseData(consumingData);
+      const consumer = await withConfig({ checkSharingOnSync: true }, () =>
+        util.writeAndSyncCourseData(consumingData),
+      );
       const copiedQuestion = await findSyncedQuestion(util.QUESTION_ID);
       assert.equal(
         copiedQuestion.copied_from,
         consumingData.questions[util.QUESTION_ID].copiedFrom,
       );
       assert.isNull(copiedQuestion.copied_from_question_id);
-      assert.include(copiedQuestion.sync_warnings, 'copiedFrom');
+      assert.isEmpty(copiedQuestion.sync_warnings);
+
       assert(consumer.syncResults.status === 'complete');
-      assert.equal(
-        copiedQuestion.sync_warnings,
-        consumer.syncResults.courseData.questions[util.QUESTION_ID].warnings.join('\n'),
-      );
+      assert.isEmpty(consumer.syncResults.courseData.questions[util.QUESTION_ID].warnings);
 
       sourceData.questions.origin = sourceInfo;
       await util.overwriteAndSyncCourseData(sourceData, source.courseDir);
@@ -126,7 +126,6 @@ describe('Question syncing', () => {
       const sourceQuestion = await findSyncedQuestion('origin');
       const resolvedQuestion = await findSyncedQuestion(util.QUESTION_ID);
       assert.equal(resolvedQuestion.copied_from_question_id, sourceQuestion.id);
-      assert.isEmpty(resolvedQuestion.sync_warnings);
     });
   });
 
