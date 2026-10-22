@@ -120,9 +120,9 @@
     "brotli": 757
   },
   "scripts/question.ts": {
-    "raw": 74653,
-    "gzip": 23531,
-    "brotli": 21051
+    "raw": 74771,
+    "gzip": 23583,
+    "brotli": 21113
   },
   "scripts/studentAssessmentClient.ts": {
     "raw": 564,
