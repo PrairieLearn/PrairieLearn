@@ -364,7 +364,7 @@ test('combines exam copies with custom covers and appends every form’s answer 
     expect(new URL(page.url()).searchParams.get('instance')).toBe(
       formIds[['A', 'B'].indexOf(label)],
     );
-    if (label === 'B') {
+    if (label === 'A') {
       await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
       await expect(
         page.getByRole('combobox', { name: 'Preview form', exact: true }),
@@ -445,7 +445,7 @@ test('combines exam copies with custom covers and appends every form’s answer 
   });
   await page
     .getByRole('combobox', { name: 'Preview form', exact: true })
-    .selectOption({ label: 'Form B' });
+    .selectOption({ label: 'Form A' });
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
