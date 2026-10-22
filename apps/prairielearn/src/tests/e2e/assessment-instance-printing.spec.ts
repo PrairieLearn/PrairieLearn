@@ -131,7 +131,7 @@ test('renders readable answer keys for every student question', async ({
   const user = await getConfiguredUser();
   const assessment = await selectAssessmentByTid({
     course_instance_id: courseInstance.id,
-    tid: 'exam1-automaticTestSuite',
+    tid: 'exam20-assessmentTools',
   });
   const assessmentInstanceId = await makeAssessmentInstance({
     assessment,
