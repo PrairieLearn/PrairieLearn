@@ -1820,6 +1820,7 @@ def _table_data(
                 for index in range(sheet.get("columns", 1))
             ],
             "rows": rows,
+            "table_width": 56 + 96 * sheet.get("columns", 1),
         })
     return table_sheets
 
@@ -2021,6 +2022,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         sheet.get("volatile_ranges")
         for sheet in config.get("template", {}).get("sheets", [])
     )
+    sheets = render_data.get("sheets")
+    if isinstance(sheets, list):
+        render_data["multiple_sheets"] = len(sheets) > 1
+        for index, sheet in enumerate(sheets):
+            sheet["tab_id"] = f"pl-spreadsheet-tab-{render_data['uuid']}-{index}"
+            sheet["panel_id"] = f"pl-spreadsheet-panel-{render_data['uuid']}-{index}"
+            sheet["selected"] = index == 0
     with open("pl-spreadsheet.mustache", encoding="utf-8") as template_file:
         return chevron.render(template_file, render_data).strip()
 

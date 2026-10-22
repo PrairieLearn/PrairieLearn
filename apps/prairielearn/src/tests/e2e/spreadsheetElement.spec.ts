@@ -699,8 +699,32 @@ test('supports accessible local editing and trusted submission', async ({
 
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByText(/100%/).first()).toBeVisible({ timeout: GRADING_TIMEOUT });
-  const submissionTable = page.getByRole('table', { name: 'Inputs', exact: true });
+  const submission = page.getByTestId('submission-block');
+  const submittedParameterDemo = submission.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const submissionInputsTab = submittedParameterDemo.getByRole('tab', {
+    name: 'Inputs',
+    exact: true,
+  });
+  const submissionSummaryTab = submittedParameterDemo.getByRole('tab', {
+    name: 'Summary',
+    exact: true,
+  });
+  const submissionTable = submittedParameterDemo.getByRole('table', {
+    name: 'Inputs',
+    exact: true,
+    includeHidden: true,
+  });
+  const submissionSummaryTable = submittedParameterDemo.getByRole('table', {
+    name: 'Summary',
+    exact: true,
+    includeHidden: true,
+  });
+  await expect(submissionInputsTab).toHaveAttribute('aria-selected', 'true');
+  await expect(submissionSummaryTab).toHaveAttribute('aria-selected', 'false');
   await expect(submissionTable).toBeVisible();
+  await expect(submissionSummaryTable).toBeHidden();
   await expect(submissionTable.getByRole('columnheader', { name: 'D' })).toBeVisible();
   await expect(submissionTable.getByRole('rowheader', { name: '2' })).toBeVisible();
   const submissionD2 = submissionTable.getByRole('cell', { name: 'Cell D2' });
@@ -708,16 +732,50 @@ test('supports accessible local editing and trusted submission', async ({
   const submissionD2Formula = submissionD2.getByText('=B2*C2', { exact: true });
   await expect(submissionD2Value).toBeVisible();
   await expect(submissionD2Formula).toBeHidden();
-  const formulaToggle = page.getByRole('switch', {
+  const formulaToggle = submittedParameterDemo.getByRole('switch', {
     name: 'Show formulas for Spreadsheet test',
   });
   await expect(formulaToggle).not.toBeChecked();
   await formulaToggle.check();
   await expect(submissionD2Value).toBeHidden();
   await expect(submissionD2Formula).toBeVisible();
+
+  await submissionSummaryTab.click();
+  await expect(submissionTable).toBeHidden();
+  await expect(submissionSummaryTable).toBeVisible();
+  await expect(
+    submissionSummaryTable.getByText('=SUM(Inputs!D2:D4)', { exact: true }),
+  ).toBeVisible();
+  await submissionSummaryTab.press('ArrowRight');
+  await expect(submissionInputsTab).toBeFocused();
+  await expect(submissionInputsTab).toHaveAttribute('aria-selected', 'true');
+  await submissionSummaryTab.click();
+
+  const openReadOnlyButton = submittedParameterDemo.getByRole('button', {
+    name: 'Open spreadsheet full screen',
+  });
+  await openReadOnlyButton.click();
+  const readOnlyPopup = page.getByRole('dialog', { name: 'Spreadsheet test' });
+  await expect(readOnlyPopup).toBeVisible();
+  await expect(submissionSummaryTab).toHaveAttribute('aria-selected', 'true');
+  await expect(formulaToggle).toBeChecked();
+  const viewport = page.viewportSize();
+  const popupBox = await readOnlyPopup.boundingBox();
+  expect(popupBox?.width).toBeGreaterThan((viewport?.width ?? 0) - 64);
+  expect(popupBox?.height).toBeGreaterThan((viewport?.height ?? 0) - 64);
+  await readOnlyPopup.getByRole('button', { name: 'Close full-screen spreadsheet' }).click();
+  await expect(readOnlyPopup).toBeHidden();
+  await expect(openReadOnlyButton).toBeFocused();
+
+  await openReadOnlyButton.click();
+  await page.keyboard.press('Escape');
+  await expect(readOnlyPopup).toBeHidden();
+  await expect(submissionSummaryTable).toBeVisible();
   await formulaToggle.uncheck();
-  await expect(submissionD2Value).toBeVisible();
-  await expect(submissionD2Formula).toBeHidden();
+  await expect(submissionSummaryTable.getByText('12', { exact: true })).toBeVisible();
+  await expect(
+    submissionSummaryTable.getByText('=SUM(Inputs!D2:D4)', { exact: true }),
+  ).toBeHidden();
   await page.addScriptTag({ content: axe.source });
   const readOnlyAccessibilityResults = await page.evaluate(async () => {
     return await window.axe.run('[data-testid="submission-block"] .pl-spreadsheet', {
@@ -846,8 +904,9 @@ test('shows submitted workbooks like the editor', async ({ page, courseInstance 
   const grid = page.getByRole('grid', {
     name: 'File-backed spreadsheet test, sheet Inputs',
   });
+  const longFormula = `=$A$1+2${'+0'.repeat(80)}`;
   await editCell(grid, 'A1', '3');
-  await editCell(grid, 'A2', '=$A$1+2');
+  await editCell(grid, 'A2', longFormula);
   await page.getByRole('button', { name: /Save & Grade/ }).click();
 
   const submission = page.getByTestId('submission-block');
@@ -870,9 +929,22 @@ test('shows submitted workbooks like the editor', async ({ page, courseInstance 
       .getByRole('columnheader')
       .evaluateAll((headers) => headers.map((header) => header.getBoundingClientRect().width));
   const valueWidths = await columnWidths();
+  expect(valueWidths[0]).toBeCloseTo(56, 0);
+  expect(valueWidths[1]).toBeCloseTo(valueWidths[2], 4);
+  expect(valueWidths[1]).toBeGreaterThanOrEqual(96);
+  const tableBox = await table.boundingBox();
+  const tableContainerBox = await table.locator('xpath=..').boundingBox();
+  expect(tableBox?.width).toBeCloseTo(tableContainerBox?.width ?? 0, 0);
   await submission.getByRole('switch', { name: /Show formulas/ }).check();
-  const formula = table.getByRole('cell', { name: 'Cell A2, incorrect' }).getByText('=$A$1+2');
+  const formula = table.getByRole('cell', { name: 'Cell A2, incorrect' }).getByText(longFormula);
   await expect(formula).toBeVisible();
+  expect(
+    await formula.evaluate((element) => element.scrollWidth > element.clientWidth),
+  ).toBeTruthy();
+  await expect(table.getByRole('cell', { name: 'Cell A2, incorrect' })).toHaveAttribute(
+    'title',
+    longFormula,
+  );
   // The $ signs in absolute references must not start MathJax typesetting.
   await expect(submission.locator('mjx-container')).toHaveCount(0);
   expect(await columnWidths()).toEqual(valueWidths);

@@ -1155,7 +1155,10 @@ function SpreadsheetEditor({
       )}
       <div
         ref={editorRef}
-        className={clsx('pl-spreadsheet-editor', expanded && 'is-expanded')}
+        className={clsx(
+          'pl-spreadsheet-editor pl-spreadsheet-full-screen-view',
+          expanded && 'is-expanded',
+        )}
         role={expanded ? 'dialog' : undefined}
         aria-modal={expanded ? true : undefined}
         aria-label={expanded ? options.aria_label : undefined}
@@ -1562,19 +1565,194 @@ function loadSpreadsheetEngine(): Promise<void> {
 }
 
 onDocumentReady(() => {
-  observe('.js-pl-spreadsheet-formula-toggle', {
-    constructor: HTMLInputElement,
-    initialize(toggle) {
-      const readOnlySpreadsheet = toggle.closest('.pl-spreadsheet-read-only');
-      if (!readOnlySpreadsheet) return;
+  observe('.pl-spreadsheet-read-only', {
+    constructor: HTMLDivElement,
+    initialize(readOnlySpreadsheet) {
+      const formulaToggle = readOnlySpreadsheet.querySelector<HTMLInputElement>(
+        '.js-pl-spreadsheet-formula-toggle',
+      );
+      const expandButton = readOnlySpreadsheet.querySelector<HTMLButtonElement>(
+        '.js-pl-spreadsheet-expand',
+      );
+      const closeButton = readOnlySpreadsheet.querySelector<HTMLButtonElement>(
+        '.js-pl-spreadsheet-popup-close',
+      );
+      const popupHeader = readOnlySpreadsheet.querySelector<HTMLElement>(
+        '.pl-spreadsheet-popup-header',
+      );
+      if (!formulaToggle || !expandButton || !closeButton || !popupHeader) return;
+      const readOnlyFormulaToggle = formulaToggle;
+      const readOnlyExpandButton = expandButton;
+      const readOnlyPopupHeader = popupHeader;
 
-      const updateView = () =>
-        readOnlySpreadsheet.classList.toggle('is-showing-formulas', toggle.checked);
+      let titleFrame: number | null = null;
 
-      toggle.checked = false;
-      updateView();
-      toggle.addEventListener('change', updateView);
-      return { remove: () => toggle.removeEventListener('change', updateView) };
+      function scheduleClippedTitles() {
+        if (titleFrame !== null) return;
+        titleFrame = requestAnimationFrame(() => {
+          titleFrame = null;
+          const view = readOnlyFormulaToggle.checked ? 'formulas' : 'values';
+          for (const cell of readOnlySpreadsheet.querySelectorAll<HTMLTableCellElement>('td')) {
+            if (cell.offsetParent === null) continue;
+            const value = cell.querySelector<HTMLElement>(
+              `[data-spreadsheet-view="${CSS.escape(view)}"]`,
+            );
+            if (value && value.scrollWidth > value.clientWidth) {
+              cell.title = value.textContent;
+            } else {
+              cell.removeAttribute('title');
+            }
+          }
+        });
+      }
+      const resizeObserver = new ResizeObserver(scheduleClippedTitles);
+      resizeObserver.observe(readOnlySpreadsheet);
+
+      const updateFormulaView = () => {
+        readOnlySpreadsheet.classList.toggle('is-showing-formulas', readOnlyFormulaToggle.checked);
+        scheduleClippedTitles();
+      };
+      readOnlyFormulaToggle.checked = false;
+      updateFormulaView();
+      readOnlyFormulaToggle.addEventListener('change', updateFormulaView);
+
+      const tabList = readOnlySpreadsheet.querySelector<HTMLElement>(
+        '.js-pl-spreadsheet-read-only-tabs',
+      );
+      const tabs = tabList
+        ? Array.from(tabList.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+        : [];
+      const panels = Array.from(
+        readOnlySpreadsheet.querySelectorAll<HTMLElement>('.pl-spreadsheet-read-only-sheet'),
+      );
+
+      function activateSheet(index: number, moveFocus: boolean) {
+        tabs.forEach((tab, tabIndex) => {
+          const selected = tabIndex === index;
+          tab.setAttribute('aria-selected', String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+          panels[tabIndex].hidden = !selected;
+        });
+        if (moveFocus) tabs[index].focus();
+        scheduleClippedTitles();
+      }
+
+      const handleTabClick = (event: MouseEvent) => {
+        const tab =
+          event.target instanceof Element
+            ? event.target.closest<HTMLButtonElement>('[role="tab"]')
+            : null;
+        const index = tab ? tabs.indexOf(tab) : -1;
+        if (index >= 0) activateSheet(index, false);
+      };
+      const handleTabKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        const tab = event.target instanceof HTMLButtonElement ? event.target : null;
+        const index = tab ? tabs.indexOf(tab) : -1;
+        if (index < 0) return;
+        event.preventDefault();
+        const offset = event.key === 'ArrowRight' ? 1 : -1;
+        activateSheet((index + offset + tabs.length) % tabs.length, true);
+      };
+
+      if (tabList) {
+        readOnlySpreadsheet.classList.add('is-tabbed');
+        tabList.hidden = false;
+        activateSheet(0, false);
+        tabList.addEventListener('click', handleTabClick);
+        tabList.addEventListener('keydown', handleTabKeyDown);
+      }
+
+      let expanded = false;
+      let backdrop: HTMLDivElement | null = null;
+      let previousBodyOverflow = '';
+      const icon = readOnlyExpandButton.querySelector('i');
+
+      function updateExpandButton() {
+        readOnlyExpandButton.setAttribute(
+          'aria-label',
+          expanded ? 'Exit full screen' : 'Open spreadsheet full screen',
+        );
+        readOnlyExpandButton.title = expanded ? 'Exit full screen' : 'Open full screen';
+        icon?.classList.toggle('bi-arrows-fullscreen', !expanded);
+        icon?.classList.toggle('bi-fullscreen-exit', expanded);
+      }
+
+      const keepFocusInside = (event: FocusEvent) => {
+        if (event.target instanceof Node && !readOnlySpreadsheet.contains(event.target)) {
+          closeButton.focus();
+        }
+      };
+      const closeOnEscape = (event: KeyboardEvent) => {
+        if (event.key !== 'Escape' || event.defaultPrevented) return;
+        event.preventDefault();
+        closePopup();
+      };
+      const closeFromControl = () => closePopup();
+
+      function openPopup() {
+        expanded = true;
+        previousBodyOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        readOnlySpreadsheet.classList.add('is-expanded');
+        readOnlySpreadsheet.setAttribute('role', 'dialog');
+        readOnlySpreadsheet.setAttribute('aria-modal', 'true');
+        readOnlySpreadsheet.setAttribute(
+          'aria-label',
+          readOnlySpreadsheet.dataset.ariaLabel ?? 'Spreadsheet',
+        );
+        readOnlyPopupHeader.hidden = false;
+        backdrop = document.createElement('div');
+        backdrop.className = 'pl-spreadsheet-popup-backdrop';
+        backdrop.addEventListener('click', closeFromControl);
+        readOnlySpreadsheet.before(backdrop);
+        document.addEventListener('focusin', keepFocusInside);
+        document.addEventListener('keydown', closeOnEscape);
+        updateExpandButton();
+        scheduleClippedTitles();
+      }
+
+      function closePopup(restoreFocus = true) {
+        if (!expanded) return;
+        expanded = false;
+        document.body.style.overflow = previousBodyOverflow;
+        readOnlySpreadsheet.classList.remove('is-expanded');
+        readOnlySpreadsheet.removeAttribute('role');
+        readOnlySpreadsheet.removeAttribute('aria-modal');
+        readOnlySpreadsheet.removeAttribute('aria-label');
+        readOnlyPopupHeader.hidden = true;
+        backdrop?.removeEventListener('click', closeFromControl);
+        backdrop?.remove();
+        backdrop = null;
+        document.removeEventListener('focusin', keepFocusInside);
+        document.removeEventListener('keydown', closeOnEscape);
+        updateExpandButton();
+        if (restoreFocus) readOnlyExpandButton.focus();
+        scheduleClippedTitles();
+      }
+
+      const togglePopup = () => (expanded ? closePopup() : openPopup());
+      readOnlyExpandButton.hidden = false;
+      updateExpandButton();
+      readOnlyExpandButton.addEventListener('click', togglePopup);
+      closeButton.addEventListener('click', closeFromControl);
+
+      return {
+        remove: () => {
+          closePopup(false);
+          resizeObserver.disconnect();
+          if (titleFrame !== null) cancelAnimationFrame(titleFrame);
+          readOnlyFormulaToggle.removeEventListener('change', updateFormulaView);
+          tabList?.removeEventListener('click', handleTabClick);
+          tabList?.removeEventListener('keydown', handleTabKeyDown);
+          readOnlyExpandButton.removeEventListener('click', togglePopup);
+          closeButton.removeEventListener('click', closeFromControl);
+          readOnlySpreadsheet.classList.remove('is-showing-formulas', 'is-tabbed');
+          panels.forEach((panel) => (panel.hidden = false));
+          if (tabList) tabList.hidden = true;
+          readOnlyExpandButton.hidden = true;
+        },
+      };
     },
   });
 

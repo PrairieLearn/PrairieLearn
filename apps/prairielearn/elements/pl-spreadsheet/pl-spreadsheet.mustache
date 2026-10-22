@@ -47,50 +47,100 @@
   {{/editable}}
 
   {{#read_only}}
-    <div class="card-body pl-spreadsheet-read-only mathjax_ignore">
-      {{#reference_answer}}
-        <p class="mb-3">
-          Highlighted cells show a reference solution. Other formulas that produce the same
-          results may also be correct.
-        </p>
-      {{/reference_answer}}
-      {{#sheets}}
-        <section class="mb-4" aria-label="Sheet {{name}}">
-          <div class="table-responsive">
-            <table class="table table-sm table-bordered mb-0 pl-spreadsheet-table">
-              <caption>{{name}}</caption>
-              <thead>
-                <tr>
-                  <th scope="col" aria-label="Row number"></th>
-                  {{#columns}}<th scope="col">{{name}}</th>{{/columns}}
-                </tr>
-              </thead>
-              <tbody>
-                {{#rows}}
-                  <tr>
-                    <th scope="row">{{number}}</th>
-                    {{#cells}}
-                      <td
-                        aria-label="Cell {{address}}{{#answer_cell}}, reference solution{{/answer_cell}}{{#incorrect_cell}}, incorrect{{/incorrect_cell}}{{#volatile}}, randomized{{/volatile}}"
-                        {{#class_name}}class="{{class_name}}"{{/class_name}}
-                      >
-                        <div class="pl-spreadsheet-table-cell">
-                          <span
-                            data-spreadsheet-view="values"
-                            {{#error}}class="pl-spreadsheet-cell-error"{{/error}}
-                          >{{value}}</span>
-                          <span data-spreadsheet-view="formulas">{{formula}}</span>
-                        </div>
-                      </td>
-                    {{/cells}}
-                  </tr>
-                {{/rows}}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      {{/sheets}}
-      <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+    <div
+      class="card-body pl-spreadsheet-read-only pl-spreadsheet-full-screen-view mathjax_ignore"
+      data-aria-label="{{aria_label}}"
+    >
+      <div class="pl-spreadsheet-popup-header" hidden>
+        <span>{{aria_label}}</span>
+        <button
+          type="button"
+          class="btn-close js-pl-spreadsheet-popup-close"
+          aria-label="Close full-screen spreadsheet"
+        ></button>
+      </div>
+      <div class="pl-spreadsheet-read-only-content">
+        {{#reference_answer}}
+          <p class="mb-3">
+            Highlighted cells show a reference solution. Other formulas that produce the same
+            results may also be correct.
+          </p>
+        {{/reference_answer}}
+        <div class="pl-spreadsheet-read-only-sheets">
+          {{#sheets}}
+            <section
+              class="pl-spreadsheet-read-only-sheet mb-4"
+              id="{{panel_id}}"
+              {{#multiple_sheets}}role="tabpanel" aria-labelledby="{{tab_id}}"{{/multiple_sheets}}
+              {{^multiple_sheets}}aria-label="Sheet {{name}}"{{/multiple_sheets}}
+            >
+              <div class="table-responsive">
+                <table
+                  class="table table-sm table-bordered mb-0 pl-spreadsheet-table"
+                  style="min-width: {{table_width}}px"
+                >
+                  <caption>{{name}}</caption>
+                  <colgroup>
+                    <col class="pl-spreadsheet-row-header-column" />
+                    {{#columns}}<col />{{/columns}}
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th scope="col" aria-label="Row number"></th>
+                      {{#columns}}<th scope="col">{{name}}</th>{{/columns}}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#rows}}
+                      <tr>
+                        <th scope="row">{{number}}</th>
+                        {{#cells}}
+                          <td
+                            aria-label="Cell {{address}}{{#answer_cell}}, reference solution{{/answer_cell}}{{#incorrect_cell}}, incorrect{{/incorrect_cell}}{{#volatile}}, randomized{{/volatile}}"
+                            title="{{value}}"
+                            {{#class_name}}class="{{class_name}}"{{/class_name}}
+                          >
+                            <div class="pl-spreadsheet-table-cell">
+                              <span
+                                data-spreadsheet-view="values"
+                                {{#error}}class="pl-spreadsheet-cell-error"{{/error}}
+                              >{{value}}</span>
+                              <span data-spreadsheet-view="formulas">{{formula}}</span>
+                            </div>
+                          </td>
+                        {{/cells}}
+                      </tr>
+                    {{/rows}}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          {{/sheets}}
+        </div>
+      </div>
+      {{#multiple_sheets}}
+        <div
+          class="pl-spreadsheet-sheet-tabs js-pl-spreadsheet-read-only-tabs"
+          role="tablist"
+          aria-label="Workbook sheets"
+          hidden
+        >
+          {{#sheets}}
+            <button
+              type="button"
+              class="pl-spreadsheet-sheet-tab"
+              id="{{tab_id}}"
+              role="tab"
+              aria-controls="{{panel_id}}"
+              aria-selected="{{#selected}}true{{/selected}}{{^selected}}false{{/selected}}"
+              tabindex="{{#selected}}0{{/selected}}{{^selected}}-1{{/selected}}"
+            >
+              {{name}}
+            </button>
+          {{/sheets}}
+        </div>
+      {{/multiple_sheets}}
+      <div class="pl-spreadsheet-read-only-controls d-flex flex-wrap align-items-center justify-content-end gap-2">
         {{#has_volatile}}
           <div class="pl-spreadsheet-legend me-auto">
             <span class="pl-spreadsheet-legend-item">
@@ -110,6 +160,15 @@
           />
         </div>
         <label for="pl-spreadsheet-formula-toggle-{{uuid}}">Formulas</label>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary js-pl-spreadsheet-expand"
+          aria-label="Open spreadsheet full screen"
+          title="Open full screen"
+          hidden
+        >
+          <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
   {{/read_only}}

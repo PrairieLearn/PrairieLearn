@@ -588,7 +588,8 @@
 
 /* Sized like the editor's grid, so a submitted sheet looks like the one that was edited. */
 .pl-spreadsheet-table {
-  width: auto;
+  width: 100%;
+  table-layout: fixed;
   font-size: 14px;
 }
 
@@ -599,12 +600,13 @@
   white-space: nowrap;
 }
 
-.pl-spreadsheet-table > :not(caption) > * > :not(:first-child) {
-  min-width: 96px;
+.pl-spreadsheet-row-header-column {
+  width: 56px;
 }
 
 .pl-spreadsheet-table > :not(caption) > * > :first-child {
   width: 56px;
+  max-width: 56px;
   color: var(--bs-secondary-color);
 }
 
@@ -616,21 +618,41 @@
   --bs-table-bg: var(--pl-spreadsheet-volatile-bg);
 }
 
-/*
- * Values and formulas share one grid area, and the one not shown is only made invisible,
- * so each column keeps the width of its widest content in either view.
- */
+/* Values and formulas share one grid area so switching views does not change the layout. */
 .pl-spreadsheet-table-cell {
   display: grid;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .pl-spreadsheet-table-cell > * {
   grid-area: 1 / 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pl-spreadsheet-read-only:not(.is-showing-formulas) [data-spreadsheet-view='formulas'],
 .pl-spreadsheet-read-only.is-showing-formulas [data-spreadsheet-view='values'] {
   visibility: hidden;
+}
+
+/* With JavaScript, one read-only sheet is shown at a time and its tab supplies the visible name. */
+.pl-spreadsheet-read-only.is-tabbed .pl-spreadsheet-read-only-sheet {
+  margin-bottom: 0 !important;
+}
+
+.pl-spreadsheet-read-only.is-tabbed .pl-spreadsheet-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (forced-colors: active) {
@@ -722,7 +744,7 @@
   background-color: rgb(0 0 0 / 50%);
 }
 
-.pl-spreadsheet-editor.is-expanded {
+.pl-spreadsheet-full-screen-view.is-expanded {
   position: fixed;
   inset: 1rem;
   z-index: 1055;
@@ -732,6 +754,25 @@
   border-radius: var(--bs-border-radius-lg);
   background-color: var(--bs-body-bg);
   box-shadow: var(--bs-box-shadow-lg);
+}
+
+.pl-spreadsheet-read-only.is-expanded {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.pl-spreadsheet-read-only.is-expanded .pl-spreadsheet-read-only-content {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+  overflow: auto;
+}
+
+.pl-spreadsheet-read-only.is-expanded .pl-spreadsheet-read-only-controls {
+  flex-shrink: 0;
+  padding: 0.5rem;
+  border-top: var(--bs-border-width) solid var(--bs-border-color);
 }
 
 .pl-spreadsheet-popup-header {

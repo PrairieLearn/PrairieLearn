@@ -60,6 +60,18 @@ def template() -> dict[str, Any]:
     }
 
 
+def multi_sheet_template() -> dict[str, Any]:
+    workbook = template()
+    workbook["sheets"].append({
+        "name": "Summary",
+        "rows": 1,
+        "columns": 1,
+        "cells": {"A1": "=Inputs!B2"},
+        "editable_ranges": [],
+    })
+    return workbook
+
+
 def grading_config() -> dict[str, Any]:
     return {
         "schema_version": 2,
@@ -226,6 +238,7 @@ def test_prepare_csv_keeps_hidden_source_cells_server_only(tmp_path: Path) -> No
     ]
 
     table = spreadsheet._table_data(config, None)[0]
+    assert table["table_width"] == 248
     assert [column["name"] for column in table["columns"]] == ["A", "B"]
     assert [row["number"] for row in table["rows"]] == [1, 2]
     assert table["rows"][1]["cells"][1] == {
@@ -524,16 +537,54 @@ def test_render_editable_and_read_only_views(element_directory: None) -> None:
     b2 = rendered.xpath('//td[@aria-label="Cell B2"]')[0]
     assert b2.xpath('.//span[@data-spreadsheet-view="values"]/text()') == ["6"]
     assert b2.xpath('.//span[@data-spreadsheet-view="formulas"]/text()') == ["=A2*2"]
+    assert b2.get("title") == "6"
     # Formulas such as =$A$1 must not be typeset as math.
     assert rendered.find_class("pl-spreadsheet-read-only") == rendered.find_class(
         "mathjax_ignore"
     )
     assert 'role="switch"' in read_only_html
     assert 'aria-label="Show formulas for Budget model"' in read_only_html
+    assert not rendered.xpath('.//*[@role="tablist"]')
+    expand_button = rendered.xpath(
+        './/button[@aria-label="Open spreadsheet full screen"]'
+    )
+    assert len(expand_button) == 1
+    assert "hidden" in expand_button[0].attrib
 
     data["panel"] = "answer"
     answer_html = spreadsheet.render(ELEMENT_HTML, data)
     assert "grading is defined by the question" in answer_html
+
+
+def test_render_multi_sheet_submission_has_progressively_enhanced_tabs(
+    element_directory: None,
+) -> None:
+    data = prepare_data(params={"workbook": multi_sheet_template()})
+    data["panel"] = "submission"
+    data["submitted_answers"]["model"] = snapshot(data)
+
+    rendered = html.fromstring(spreadsheet.render(ELEMENT_HTML, data))
+
+    tab_list = rendered.xpath('.//*[@role="tablist"]')[0]
+    assert "hidden" in tab_list.attrib
+    tabs = tab_list.xpath('./button[@role="tab"]')
+    assert [tab.text_content().strip() for tab in tabs] == ["Inputs", "Summary"]
+    assert [tab.get("aria-selected") for tab in tabs] == ["true", "false"]
+    assert [tab.get("tabindex") for tab in tabs] == ["0", "-1"]
+
+    panels = rendered.xpath('.//*[@role="tabpanel"]')
+    assert len(panels) == 2
+    assert all("hidden" not in panel.attrib for panel in panels)
+    assert [tab.get("aria-controls") for tab in tabs] == [
+        panel.get("id") for panel in panels
+    ]
+    assert [panel.get("aria-labelledby") for panel in panels] == [
+        tab.get("id") for tab in tabs
+    ]
+    assert rendered.xpath(".//table/@style") == [
+        "min-width: 344px",
+        "min-width: 152px",
+    ]
 
 
 def test_render_does_not_expose_private_grading_config(element_directory: None) -> None:
@@ -780,7 +831,10 @@ def test_prepare_reference_children_create_a_grading_config(
 def test_render_answer_panel_shows_the_evaluated_reference_workbook(
     element_directory: None,
 ) -> None:
-    data = prepare_data(correct_answers={"model": reference_grading_config()})
+    data = prepare_data(
+        params={"workbook": multi_sheet_template()},
+        correct_answers={"model": reference_grading_config()},
+    )
     data["panel"] = "answer"
     assert "grading is defined by the question" in spreadsheet.render(
         ELEMENT_HTML, data
@@ -802,7 +856,18 @@ def test_render_answer_panel_shows_the_evaluated_reference_workbook(
                         "result": {"type": "number", "value": 6},
                     },
                 },
-            }
+            },
+            {
+                "name": "Summary",
+                "rows": 1,
+                "columns": 1,
+                "cells": {
+                    "A1": {
+                        "input": {"type": "formula", "value": "=Inputs!B2"},
+                        "result": {"type": "number", "value": 4},
+                    }
+                },
+            },
         ]
     }
     rendered = html.fromstring(spreadsheet.render(ELEMENT_HTML, data))
@@ -819,6 +884,10 @@ def test_render_answer_panel_shows_the_evaluated_reference_workbook(
         './/span[@data-spreadsheet-view="formulas"]/text()'
     ) == ["=A2*3"]
     assert "Checks" not in rendered.text_content()
+    assert [
+        tab.text_content().strip()
+        for tab in rendered.xpath('.//*[@role="tablist"]/button[@role="tab"]')
+    ] == ["Inputs", "Summary"]
 
 
 def test_reference_answer_cells_use_student_coordinates() -> None:

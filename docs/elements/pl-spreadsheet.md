@@ -859,9 +859,13 @@ relative-reference fill (with the fill down/right buttons, or by dragging a cell
 corner handle up, down, left, or right along its row or column), and undo/redo.
 The sheet tabs and fill controls are keyboard accessible. Editable and read-only
 cells are distinguished with text and accessibility state, not color alone.
-Submission and manual-grading views use native HTML tables. These tables show
+Submission, answer, and manual-grading views use native HTML tables. Multi-sheet
+workbooks show one table at a time with the same keyboard-accessible sheet tabs as
+the editor. Read-only spreadsheets can also be opened full screen. They show
 calculated values by default and provide a Values/Formulas switch for viewing every
-cell's original input.
+cell's original input. Their columns expand evenly to use the available width while
+keeping the editor's minimum size; overflowing workbooks scroll horizontally, and
+clipped cell contents are available by hovering over the cell.
 
 The formula bar colors formulas as students type, giving each distinct cell
 reference its own color and outlining the referenced cells in the grid in the same
