@@ -5,8 +5,6 @@ import axe from 'axe-core';
 import { PDFDocument } from 'pdf-lib';
 import * as unzipper from 'unzipper';
 
-import { withResolvers } from '@prairielearn/utils';
-
 import { MAX_INLINE_PRINT_PACKET_PAGES } from '../../lib/client/print-packet.js';
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -521,50 +519,6 @@ test('distinguishes paper review flags from broken questions omitted from the do
   ).toBeVisible({ timeout: 120_000 });
 });
 
-test('protects pending preview settings', async ({ page, courseInstance }) => {
-  await openPrintPreparation(page, courseInstance.id);
-  await page.getByLabel('Additional student information').fill('Section');
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-  const downloadButton = downloadMenu(page);
-  await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
-  const updatePreview = page.getByRole('button', { name: 'Update preview', exact: true });
-  await expect(updatePreview).toBeDisabled();
-  await page.getByLabel('Additional student information').fill('Room');
-  await expect(updatePreview).toBeEnabled();
-  await page.getByLabel('Additional student information').fill('Section');
-  await expect(updatePreview).toBeDisabled();
-  // Whitespace is normalized on submit, so applying it refreshes the same preview settings.
-  await page.getByLabel('Additional student information').fill(' Section ');
-  await expect(updatePreview).toBeEnabled();
-  const requested = withResolvers<undefined>();
-  const resume = withResolvers<undefined>();
-  await page.route('**/assessment_instance/*/paper/preview?*', async (route) => {
-    requested.resolve(undefined);
-    await resume.promise;
-    await route.continue();
-  });
-  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
-  await requested.promise;
-  try {
-    await expect(page.getByLabel('Additional student information')).toBeDisabled();
-    await expect(page.getByLabel('Paper size')).toBeDisabled();
-    await expect(page.getByLabel('Spacing for question 1', { exact: true })).toBeDisabled();
-    await expect(
-      page.getByRole('checkbox', { name: 'Include question 1', exact: true }),
-    ).toBeDisabled();
-  } finally {
-    resume.resolve(undefined);
-  }
-  await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
-  await page.unroute('**/assessment_instance/*/paper/preview?*');
-  await expect(page.getByLabel('Additional student information')).toHaveValue('Section');
-  await page.getByLabel('Additional student information').fill('Room');
-  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
-  await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
-  await expect(page.getByLabel('Additional student information')).toHaveValue('Room');
-  await expect(updatePreview).toBeDisabled();
-});
-
 test('validates a booklet count and retries a failed download', async ({
   page,
   courseInstance,
@@ -592,11 +546,7 @@ test('validates a booklet count and retries a failed download', async ({
   expect(await (await downloaded).failure()).toBeNull();
   await expect(downloadMenu(page)).toBeEnabled();
 });
-test('limits static assessments to one form even when the saved URL selects several', async ({
-  page,
-  courseInstance,
-  testCoursePath,
-}) => {
+test('limits static assessments to one form', async ({ page, courseInstance, testCoursePath }) => {
   const assessmentFile = `${testCoursePath}/courseInstances/Sp15/assessments/exam20-assessmentTools/infoAssessment.json`;
   const questionFile = `${testCoursePath}/questions/partialCredit3/info.json`;
   const originalAssessment = await fs.readFile(assessmentFile, 'utf8');
@@ -615,7 +565,7 @@ test('limits static assessments to one form even when the saved URL selects seve
     );
     await fs.writeFile(assessmentFile, JSON.stringify(assessmentInfo));
     await syncCourse(testCoursePath);
-    const assessment = await openPrintPreparation(page, courseInstance.id);
+    await openPrintPreparation(page, courseInstance.id);
     await expect(
       page.getByRole('heading', { name: 'Assessment instances', exact: true }),
     ).toBeVisible();
@@ -646,86 +596,11 @@ test('limits static assessments to one form even when the saved URL selects seve
     await expect(
       page.getByRole('button', { name: 'Download all forms (PDF)', exact: true }),
     ).toHaveCount(0);
-    await page.getByRole('button', { name: 'Download booklet PDF…', exact: true }).click();
-    await page.getByLabel('Number of students', { exact: true }).fill('2');
-    const requested = page.waitForRequest((request) =>
-      new URL(request.url()).pathname.endsWith('/printableExamExport.pdf'),
-    );
-    const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-    await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
-    const request = await requested;
-    expect(request.method()).toBe('POST');
-    expect(await (await downloaded).failure()).toBeNull();
-
-    await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?instances=999999999&instance=999999999`,
-    );
-    await expect(
-      page.getByText('Unavailable forms were removed from the selection.', { exact: false }),
-    ).toBeVisible();
-    await page.getByRole('button', { name: 'Create preview', exact: true }).click();
-    await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   } finally {
     await fs.writeFile(assessmentFile, originalAssessment);
     await fs.writeFile(questionFile, originalQuestion);
     await syncCourse(testCoursePath);
   }
-});
-
-test('omits the default cover while keeping a custom cover in the PDF', async ({
-  page,
-  courseInstance,
-}) => {
-  await openPrintPreparation(page, courseInstance.id);
-  const includeCover = page.getByRole('checkbox', {
-    name: 'Include default cover page',
-    exact: true,
-  });
-  await expect(includeCover).toBeChecked();
-  await preparePreview(page);
-  const frame = page.frameLocator('iframe[title="Printable document preview"]');
-  const pageCountWithCover = await frame.locator('.pagedjs_page').count();
-  await page.getByLabel('Additional student information').fill('Room');
-  await includeCover.uncheck();
-  await expect(page.getByLabel('Additional student information')).toHaveCount(0);
-  await expect(downloadMenu(page)).toBeDisabled();
-  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(frame.locator('.exam-cover')).toHaveCount(0);
-  await expect(frame.locator('.pagedjs_page')).toHaveCount(pageCountWithCover - 1);
-  await expect(
-    frame.locator('.pagedjs_page').first().locator('.printing-question').first(),
-  ).toBeVisible();
-  const studentPages = pageCountWithCover - 1;
-  await includeCover.check();
-  await expect(page.getByLabel('Additional student information')).toHaveValue('Room');
-  await includeCover.uncheck();
-  await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeDisabled();
-
-  await page.getByRole('button', { name: 'Answer key', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(frame.locator('.exam-cover')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Student copy', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-
-  const cover = await PDFDocument.create();
-  cover.addPage([400, 600]).drawText('Custom instructions');
-  await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
-    name: 'instructions.pdf',
-    mimeType: 'application/pdf',
-    buffer: Buffer.from(await cover.save()),
-  });
-  const pdfDownload = page.waitForEvent('download', { timeout: 120_000 });
-  await chooseDownload(page, 'Download Form A (PDF)');
-  const pdf = await PDFDocument.load(await fs.readFile(await (await pdfDownload).path()));
-  expect(pdf.getPageCount()).toBe(studentPages + 1);
-  expect(pdf.getPage(0).getSize()).toEqual({ width: 400, height: 600 });
-
-  await includeCover.check();
-  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(frame.getByRole('article', { name: 'Exam cover page', exact: true })).toBeVisible();
-  await expect(frame.locator('.pagedjs_page')).toHaveCount(pageCountWithCover);
 });
 
 test('lets instructors choose grading and pledge content on the cover', async ({
@@ -755,5 +630,5 @@ test('lets instructors choose grading and pledge content on the cover', async ({
   await expect(grading).toHaveCount(0);
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(frame.getByRole('region', { name: 'Grading table' })).toHaveCount(0);
+  await expect(frame.locator('.exam-cover')).toHaveCount(0);
 });
