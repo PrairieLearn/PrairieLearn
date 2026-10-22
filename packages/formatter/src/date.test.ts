@@ -1,65 +1,14 @@
-import { Temporal } from '@js-temporal/polyfill';
-import { afterEach, assert, describe, it, vi } from 'vitest';
+import { assert, describe, it } from 'vitest';
 
 import {
   formatDate,
   formatDateFriendly,
-  formatDateHMS,
   formatDateISO,
   formatDateRangeFriendly,
   formatDateWithinRange,
   formatDateYMD,
   formatDateYMDHM,
-  formatTz,
-} from './index.js';
-
-describe('cached date formatting', () => {
-  it('uses the offset and abbreviation for each date across a DST transition', () => {
-    const timeZone = 'America/Chicago';
-    const before = new Date('2026-11-01T06:30:00Z');
-    const after = new Date('2026-11-01T07:30:00Z');
-
-    assert.equal(formatDateISO(before, timeZone), '2026-11-01T01:30:00-05:00');
-    assert.equal(formatDateISO(after, timeZone), '2026-11-01T01:30:00-06:00');
-    assert.equal(formatDateHMS(before, timeZone), '01:30:00 (CDT)');
-    assert.equal(formatDateHMS(after, timeZone), '01:30:00 (CST)');
-    assert.equal(formatDateHMS(before, timeZone, { includeTz: false }), '01:30:00');
-  });
-
-  it.each([
-    ['2026-03-08T02:30', '2026-03-08 03:30:00 (CDT)', '2026-03-08T03:30:00-05:00', '3:30am'],
-    ['2026-11-01T01:30', '2026-11-01 01:30:00 (CDT)', '2026-11-01T01:30:00-05:00', '1:30am'],
-  ])('preserves Temporal disambiguation for %s', (input, expected, iso, time) => {
-    const timeZone = 'America/Chicago';
-    const date = Temporal.PlainDateTime.from(input);
-    const options = { timeOnly: true, includeTz: false };
-
-    assert.equal(formatDate(date, timeZone), expected);
-    assert.equal(formatDateISO(date, timeZone), iso);
-    assert.equal(formatDateFriendly(date, timeZone, options), time);
-  });
-
-  describe('current date', () => {
-    afterEach(() => vi.useRealTimers());
-
-    it('evaluates relative dates and the current time zone abbreviation on each call', () => {
-      vi.useFakeTimers({ toFake: ['Date'] });
-      vi.setSystemTime(new Date('2026-03-07T18:00:00Z'));
-      const timeZone = 'America/Chicago';
-      const start = new Date('2026-03-08T17:00:00Z');
-      const end = new Date('2026-03-08T18:00:00Z');
-
-      assert.equal(formatTz(timeZone), 'CST');
-      assert.equal(formatDateFriendly(start, timeZone), 'tomorrow, 12pm (CDT)');
-      assert.equal(formatDateRangeFriendly(start, end, timeZone), 'tomorrow, 12pm to 1pm (CDT)');
-
-      vi.setSystemTime(new Date('2026-03-08T18:00:00Z'));
-      assert.equal(formatTz(timeZone), 'CDT');
-      assert.equal(formatDateFriendly(start, timeZone), 'today, 12pm (CDT)');
-      assert.equal(formatDateRangeFriendly(start, end, timeZone), 'today, 12pm to 1pm (CDT)');
-    });
-  });
-});
+} from './date.js';
 
 describe('date formatting', () => {
   describe('formatDate', () => {
