@@ -45,19 +45,14 @@ test('reports omitted questions and exports the selected Word content', async ({
 }) => {
   const { paperUrl, assessmentInstanceId } = await createPrintableExam(
     courseInstance,
-    'exam1-automaticTestSuite',
+    'exam24-printingOmittedQuestion',
   );
   const query = 'paper_size=Letter&identity_field=Section&identity_field=Student+ID';
 
   await page.goto(`${paperUrl}/preview?${query}`);
   await waitForPrintablePage(page);
   const warnings = await readWarnings(page);
-  // This exam has one broken question and two legacy questions that cannot be printed.
-  expect(warnings.map((warning) => warning.code).sort()).toEqual([
-    'broken_variant',
-    'unsupported_question_type',
-    'unsupported_question_type',
-  ]);
+  expect(warnings.map((warning) => warning.code)).toEqual(['broken_variant']);
   for (const warning of warnings) {
     expect(warning).toMatchObject({
       question_number: expect.any(String),
@@ -222,7 +217,7 @@ test('previews and exports an exam with more than 64 figures', async ({
 });
 
 test('rejects invalid print query parameters', async ({ page, courseInstance }) => {
-  const { paperUrl } = await createPrintableExam(courseInstance, 'exam1-automaticTestSuite');
+  const { paperUrl } = await createPrintableExam(courseInstance, 'exam20-assessmentTools');
 
   expect((await page.request.get(`${paperUrl}/preview?paper_size=Letter&bogus=1`)).status()).toBe(
     400,

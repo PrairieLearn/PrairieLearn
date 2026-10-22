@@ -104,7 +104,7 @@ export async function inspectPrintPreparationQuestions(
       }
       if (question.type !== 'Freeform') {
         concerns.push(
-          'Uses a legacy question format that cannot be printed. Exclude it or replace it with a Freeform question.',
+          'Uses a question type that cannot be printed. Exclude it or replace it with a Freeform question.',
         );
       } else if (question.directory) {
         try {

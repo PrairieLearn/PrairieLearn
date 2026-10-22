@@ -195,7 +195,7 @@ test('renders readable answer keys for every student question', async ({
 }) => {
   const assessmentInstanceId = await createPrintableAssessmentInstance(
     courseInstance.id,
-    'exam1-automaticTestSuite',
+    'exam20-assessmentTools',
   );
   const endpoint = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
 
@@ -237,15 +237,4 @@ test('renders readable answer keys for every student question', async ({
     });
     expect(presentation.questionNumber).toBeTruthy();
   }
-});
-
-test('rejects a print preview with only legacy v2 questions', async ({ page, courseInstance }) => {
-  const assessmentInstanceId = await createPrintableAssessmentInstance(
-    courseInstance.id,
-    'exam24-printingLegacyQuestions',
-  );
-
-  const response = await page.goto(paperUrl(courseInstance, assessmentInstanceId));
-  expect(response?.status()).toBe(422);
-  await expect(page.locator('.pagedjs_page')).toHaveCount(0);
 });
