@@ -32,6 +32,135 @@ def _caret_template(template_expr: str) -> tuple[str, str]:
             raise pytest.UsageError("caret template must have exactly one unescaped !")
 
 
+@pytest.mark.parametrize(
+    ("submission", "variables", "kwargs", "expected"),
+    [
+        (
+            "s i n ( x )",
+            ["x"],
+            {},
+            sympy.sin(sympy.Symbol("x")),
+        ),
+        (
+            "Α0 + Α",  # ruff:ignore[ambiguous-unicode-character-string]
+            ["Α0", "Α"],  # ruff:ignore[ambiguous-unicode-character-string]
+            {},
+            sympy.Symbol("Alpha0") + sympy.Symbol("Alpha"),
+        ),
+        (
+            "m y f u n ( x )",
+            ["x"],
+            {"custom_functions": ("myfun",)},
+            sympy.Function("myfun")(sympy.Symbol("x")),
+        ),
+    ],
+)
+def test_normalize_formula_editor_output(
+    submission: str,
+    variables: list[str] | None,
+    kwargs: dict[str, Any],
+    expected: psu.SympyValue,
+) -> None:
+    normalized = psu.normalize_formula_editor_output(submission, variables, **kwargs)
+    assert normalized is not None
+
+    result = psu.try_parse_string_as_sympy(normalized, variables, **kwargs)
+
+    assert result == psu.SympyParseSuccess(expected)
+
+
+def test_normalize_formula_editor_output_uses_latex_to_restore_plus_minus() -> None:
+    result = psu.normalize_formula_editor_output(
+        "2+-a",
+        ["a"],
+        latex=r"2\pm a",
+    )
+    assert result == "2±a"
+
+    typed_result = psu.normalize_formula_editor_output(
+        "2+-a",
+        ["a"],
+        latex="2+-a",
+    )
+    assert typed_result == "2+-a"
+
+
+def test_normalize_formula_editor_output_rejects_mismatched_latex() -> None:
+    assert (
+        psu.normalize_formula_editor_output("2+-a", ["a"], latex=r"2\pm a \pm b")
+        is None
+    )
+
+
+def test_normalize_formula_editor_output_handles_deep_input() -> None:
+    depth = 1200
+    submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"
+
+    normalized = psu.normalize_formula_editor_output(
+        submission,
+        ["x", "y", "z"],
+    )
+    assert normalized is not None
+
+    result = psu.try_parse_string_as_sympy(normalized, ["x", "y", "z"])
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert "syntax error" in result.error
+
+
+@pytest.mark.parametrize(
+    ("submission", "variables", "kwargs", "expected"),
+    [
+        ("||x| + 1|", ["x"], {}, sympy.Abs(sympy.Abs(sympy.Symbol("x")) + 1)),
+        (
+            "{1, 2} | [3, 4]",
+            None,
+            {"allow_sets": True, "allowed_types": {"all"}},
+            sympy.Union(sympy.FiniteSet(1, 2), sympy.Interval(3, 4)),
+        ),
+    ],
+)
+def test_try_parse_string_as_sympy_normalizes_absolute_value_syntax(
+    submission: str,
+    variables: list[str] | None,
+    kwargs: dict[str, Any],
+    expected: psu.SympyValue,
+) -> None:
+    result = psu.try_parse_string_as_sympy(submission, variables, **kwargs)
+
+    assert result == psu.SympyParseSuccess(expected)
+
+
+def test_try_parse_string_as_sympy_reports_ambiguous_absolute_value_bars() -> None:
+    result = psu.try_parse_string_as_sympy("|x", ["x"])
+
+    assert result == psu.SympyParseFailure(
+        "The absolute value bars in your answer are mismatched or ambiguous: "
+        "<code>|x</code>."
+    )
+
+
+def test_try_parse_string_as_sympy_rejects_disallowed_type() -> None:
+    result = psu.try_parse_string_as_sympy(
+        "{1, 2}",
+        None,
+        allow_sets=True,
+        allowed_types={"interval"},
+    )
+
+    assert result == psu.SympyParseFailure(
+        "Your answer uses finite-set, which this input does not accept. "
+        "Allowed types: interval."
+    )
+
+
+def test_try_parse_string_as_sympy_reports_malformed_input() -> None:
+    result = psu.try_parse_string_as_sympy("x +* 1", ["x"])
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert "syntax error" in result.error
+
+
 def test_evaluate() -> None:
     """Test evaluate in the case of custom functions"""
     z = sympy.Symbol("z")
