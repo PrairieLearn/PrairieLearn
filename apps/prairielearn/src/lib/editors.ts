@@ -621,6 +621,18 @@ export class AssessmentCopyEditor extends Editor {
 
     delete infoJson.shareSourcePublicly;
     removeStudentSpecificAccessControlRulesForCopy(infoJson);
+    for (const rule of infoJson.accessControl ?? []) {
+      if (rule.integrations) {
+        delete rule.integrations.prairieTest;
+        if (Object.keys(rule.integrations).length === 0) {
+          delete rule.integrations;
+        }
+      }
+    }
+    if (infoJson.allowAccess) {
+      // Removing only the exam UUID would broaden access beyond that PrairieTest exam.
+      infoJson.allowAccess = infoJson.allowAccess.filter((rule) => !rule.examUuid);
+    }
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;

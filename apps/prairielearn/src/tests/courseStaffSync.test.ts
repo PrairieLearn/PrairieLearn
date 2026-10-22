@@ -138,6 +138,27 @@ describe('Course staff CSV preview', { concurrent: false }, () => {
     }
   });
 
+  test('allows an Owner to preview and remove another Owner via CSV', async () => {
+    const uid = 'other-owner@example.com';
+    const owner = await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid,
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    const client = createClient(true);
+    const text = `uid,course\n${uid},`;
+    const preview = await client.courseStaff.preview.mutate({ text });
+    expect(preview.summary.remove).toBe(1);
+    expect(
+      (await selectCourseUsers({ course_id: '1' })).some((row) => row.user.id === owner.id),
+    ).toBe(true);
+    await client.courseStaff.sync.mutate({ text, confirmationToken: preview.confirmationToken });
+    expect(
+      (await selectCourseUsers({ course_id: '1' })).some((row) => row.user.id === owner.id),
+    ).toBe(false);
+  });
+
   test('previews enrollment deletion only for removed staff, including instances omitted from the CSV', async () => {
     const [removed, kept] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
     for (const user of [removed, kept]) {

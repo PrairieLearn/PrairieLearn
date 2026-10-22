@@ -1,5 +1,11 @@
 # @prairielearn/public-fetch
 
+## 1.2.0
+
+### Minor Changes
+
+- 866c7ce: Add `readResponseWithLimit` and `ResponseTooLargeError` for reading untrusted response bodies with a byte limit.
+
 ## 1.1.2
 
 ### Patch Changes
