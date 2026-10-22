@@ -183,14 +183,3 @@ test('renders readable answer keys for every student question', async ({
     expect(presentation.questionNumber).toBeTruthy();
   }
 });
-
-test('rejects a print preview with only legacy v2 questions', async ({ page, courseInstance }) => {
-  const assessmentInstanceId = await makePrintableAssessmentInstance(
-    courseInstance,
-    'exam24-printingLegacyQuestions',
-  );
-
-  const response = await page.goto(paperUrl(courseInstance, assessmentInstanceId));
-  expect(response?.status()).toBe(422);
-  await expect(page.locator('.pagedjs_page')).toHaveCount(0);
-});

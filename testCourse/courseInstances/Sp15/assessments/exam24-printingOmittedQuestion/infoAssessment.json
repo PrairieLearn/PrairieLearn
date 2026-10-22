@@ -1,7 +1,7 @@
 {
   "uuid": "2f8c82ad-a47e-467d-bffb-411231745847",
   "type": "Exam",
-  "title": "Printable exam with legacy questions",
+  "title": "Printable exam with a broken question",
   "set": "Exam",
   "number": "24",
   "shuffleQuestions": false,
@@ -17,22 +17,21 @@
   ],
   "zones": [
     {
-      "title": "Legacy questions",
+      "title": "Questions with one broken variant",
       "questions": [
         {
-          "id": "addVectors",
+          "id": "addNumbers",
           "autoPoints": [5]
         },
         {
-          "id": "fossilFuelsRadio",
+          "id": "partialCredit1",
           "autoPoints": [5]
         },
         {
-          "id": "v2checkbox",
+          "id": "brokenGeneration",
           "autoPoints": [5]
         }
-      ],
-      "comment": "Calculation, MultipleChoice, and Checkbox render paths. partialCredit4_v2 and partialCredit5_v2_partial are excluded: their templates begin with a mustache lint directive, which rivets treats as a data binding, so they cannot render in a browser."
+      ]
     }
   ]
 }

@@ -218,7 +218,6 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
         qid: 'includes-fallback-text',
         assessmentQuestionId: '301',
         instanceQuestionId: '101',
-        questionType: 'Freeform',
       },
       {
         status: 'failed',
@@ -227,7 +226,6 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
         qid: 'broken-generation',
         assessmentQuestionId: '302',
         instanceQuestionId: '102',
-        questionType: 'Freeform',
         code: 'broken_variant',
         stage: 'variant_creation',
         message: 'Question could not be rendered due to an error in question code.',
@@ -241,7 +239,6 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
         qid: 'manual-solution',
         assessmentQuestionId: '303',
         instanceQuestionId: '103',
-        questionType: 'Freeform',
       },
       {
         status: 'rendered',
@@ -250,7 +247,6 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
         qid: 'manual-without-solution',
         assessmentQuestionId: '304',
         instanceQuestionId: '104',
-        questionType: 'Freeform',
       },
     ]);
     expect(result.extraHeadersHtml).toContain('data-question-id="201"');
@@ -269,10 +265,10 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     }
   });
 
-  it('omits legacy questions before rendering and reports why', async () => {
+  it('omits unsupported question types before rendering and reports why', async () => {
     mocks.queryRows.mockResolvedValue([
       questions[0],
-      { ...questions[1], question: { ...questions[1].question, type: 'Calculation' } },
+      { ...questions[1], question: { ...questions[1].question, type: null } },
     ]);
 
     const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals);
@@ -289,7 +285,7 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
         question_number: '2',
         qid: 'broken-generation',
         message:
-          'Question 2 (broken-generation) uses a legacy question format that cannot be printed. Exclude it or replace it with a Freeform question.',
+          'Question 2 (broken-generation) uses a question type that cannot be printed. Exclude it or replace it with a Freeform question.',
       },
     ]);
   });

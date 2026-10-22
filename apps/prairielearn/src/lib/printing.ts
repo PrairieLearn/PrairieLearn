@@ -14,7 +14,6 @@ import { config } from './config.js';
 import {
   AssessmentQuestionSchema,
   InstanceQuestionSchema,
-  type Question,
   QuestionSchema,
   SprocQuestionOrderSchema,
 } from './db-types.js';
@@ -37,7 +36,6 @@ const PrintableQuestionSchema = z.object({
 });
 
 type PrintableQuestion = z.infer<typeof PrintableQuestionSchema>;
-type PrintableQuestionType = NonNullable<Question['type']> | 'Unknown';
 
 const BROKEN_QUESTION_FAILURE_CODE = 'broken_variant';
 const BROKEN_QUESTION_FAILURE_STAGE = 'variant_creation';
@@ -156,7 +154,7 @@ export function describeOmittedQuestions(
         qid: result.qid,
         message:
           result.status === 'unsupported'
-            ? `${label} uses a legacy question format that cannot be printed. Exclude it or replace it with a Freeform question.`
+            ? `${label} uses a question type that cannot be printed. Exclude it or replace it with a Freeform question.`
             : `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
       },
     ];
@@ -169,7 +167,6 @@ interface PrintingQuestionResultBase {
   qid: string | null;
   assessmentQuestionId: string;
   instanceQuestionId: string;
-  questionType: PrintableQuestionType;
 }
 
 export type PrintingQuestionResult =
@@ -282,16 +279,14 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   let maxPoints = 0;
 
   for (const printableQuestion of includedQuestions) {
-    const questionType = printableQuestion.question.type ?? 'Unknown';
     const base: PrintingQuestionResultBase = {
       questionNumber: printableQuestion.question_number,
       questionId: printableQuestion.question.id,
       qid: printableQuestion.question.qid,
       assessmentQuestionId: printableQuestion.assessment_question.id,
       instanceQuestionId: printableQuestion.instance_question.id,
-      questionType,
     };
-    if (questionType !== 'Freeform') {
+    if (printableQuestion.question.type !== 'Freeform') {
       questionResults.push({ ...base, status: 'unsupported', code: UNSUPPORTED_QUESTION_CODE });
       continue;
     }
@@ -379,7 +374,6 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       html: html`
         <section
           class="printing-question printing-question-freeform"
-          data-question-type="${questionType}"
           data-print-block-size="${questionBlockSizeOverrides.get(printableQuestion.question_number) ?? defaultQuestionBlockSize}"
           data-question-number="${printableQuestion.question_number}"
           data-question-id="${printableQuestion.question.id}"
