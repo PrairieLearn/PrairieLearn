@@ -85,7 +85,7 @@ function getAnswerKeyResponseTargets(questionBody: HTMLElement): HTMLElement[] {
       targets.push(
         ...ungroupedChoiceControls.map(
           (control) =>
-            control.closest<HTMLElement>('.form-check, .checkbox') ??
+            control.closest<HTMLElement>('.form-check') ??
             control.closest<HTMLElement>('label') ??
             control,
         ),
