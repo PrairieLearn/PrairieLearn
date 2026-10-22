@@ -2056,6 +2056,9 @@ importers:
       es-toolkit:
         specifier: ^1.52.0
         version: 1.52.0
+      lru-cache:
+        specifier: ^11.5.3
+        version: 11.5.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
