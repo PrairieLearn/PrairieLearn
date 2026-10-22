@@ -335,13 +335,17 @@ export function AssessmentQuestionTable({
     return Array.from(graders).sort();
   }, [instanceQuestionsInfo, aiGradingMode]);
 
-  const allAiModels = Array.from(
-    new Set(
-      instanceQuestionsInfo.map(
-        (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? 'None',
-      ),
-    ),
-  ).sort();
+  const allAiModels = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          instanceQuestionsInfo.map(
+            (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? 'None',
+          ),
+        ),
+      ).sort(),
+    [instanceQuestionsInfo],
+  );
 
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {
