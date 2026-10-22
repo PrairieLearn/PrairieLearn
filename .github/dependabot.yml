@@ -160,6 +160,10 @@ updates:
       - '/workspaces/vscode-python'
     rebase-strategy: disabled
     groups:
+      # Security updates do not use the multi-ecosystem version-update group.
+      security:
+        applies-to: security-updates
+        patterns: ['*']
       all-patch-minor:
         update-types:
           - 'patch'
@@ -184,6 +188,10 @@ updates:
     # Currently we only have a `uv.lock` in the root directory.
     directories:
       - '/'
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ['*']
     ignore:
       - dependency-name: 'pandas'
         versions: ['>=3.0']
