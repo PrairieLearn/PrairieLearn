@@ -232,6 +232,12 @@ export const QuestionJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     uuid: z.guid().describe('Unique identifier (UUID).'),
+    copiedFrom: z
+      .templateLiteral([z.guid(), '/', z.guid(), z.string().startsWith('/').optional()])
+      .describe(
+        'The course UUID and question UUID of the source question, separated by a slash, optionally followed by a slash and human-readable text. Only the two UUIDs identify the source.',
+      )
+      .optional(),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
       .describe('Type of the question. This should be set to "v3" for new questions.'),
