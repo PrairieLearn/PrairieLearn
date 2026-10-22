@@ -67,6 +67,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
     share_publicly: q.sharePublicly,
     share_source_publicly: q.shareSourcePublicly,
     preferences_schema: q.preferences,
+    shared_state_access: q.sharedStateAccess,
   };
 }
 
