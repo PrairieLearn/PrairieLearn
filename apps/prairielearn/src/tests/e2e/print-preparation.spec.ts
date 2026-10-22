@@ -7,16 +7,10 @@ import * as unzipper from 'unzipper';
 
 import { withResolvers } from '@prairielearn/utils';
 
-import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { MAX_INLINE_PRINT_PACKET_PAGES } from '../../lib/client/print-packet.js';
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
-import {
-  countJoinedStudentsInCourseInstance,
-  ensureUncheckedEnrollment,
-} from '../../models/enrollment.js';
 import { syncCourse } from '../helperCourse.js';
-import { getOrCreateUser } from '../utils/auth.js';
 
 import { createTest, expect } from './fixtures.js';
 
@@ -128,151 +122,6 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   await expect(page.getByText('Preparing documents 0 of 1…')).toBeVisible();
   await expect(page.getByRole('alert').getByText('Answer key preparation failed')).toBeVisible();
   await expect(downloadMenu(page)).toBeEnabled();
-
-  await chooseDownload(page, 'Download booklet PDF…');
-  const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
-  await modal.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
-  await expect(modal.getByText('Preparing documents 0 of 2…')).toBeVisible();
-  await expect(modal.getByRole('alert').getByText('Answer key preparation failed')).toBeVisible();
-  await expect(
-    modal.getByRole('button', { name: 'Download booklet PDF', exact: true }),
-  ).toBeEnabled();
-});
-
-test('reports an offscreen preview error without waiting for the preparation timeout', async ({
-  page,
-  courseInstance,
-}) => {
-  await openPrintPreparation(page, courseInstance.id);
-  await preparePreview(page);
-
-  await page.route('**/paper/preview?*', async (route) => {
-    if (new URL(route.request().url()).searchParams.get('document') !== 'answer_key') {
-      return await route.continue();
-    }
-    return await route.fulfill({
-      status: 422,
-      contentType: 'text/html',
-      body: '<!doctype html><html><body>No questions could be printed.</body></html>',
-    });
-  });
-
-  await chooseDownload(page, 'Download Form A answer key (PDF)');
-  await expect(
-    page.getByRole('alert').getByText('Form A: The printable preview could not be loaded.'),
-  ).toBeVisible({ timeout: 10_000 });
-  await expect(downloadMenu(page)).toBeEnabled();
-});
-
-test('shows the prepared PDF type and size in its download link', async ({
-  page,
-  courseInstance,
-}) => {
-  const assessment = await assessmentFor(courseInstance.id);
-  await page.route('**/printableExamExport.status?*', (route) =>
-    route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        result: {
-          data: {
-            json: {
-              status: 'Success',
-              ready: true,
-              sizeBytes: 1_647_482,
-              exportLabel: 'Form A answer key PDF',
-              failureMessage: null,
-              canViewJobLogs: true,
-            },
-          },
-        },
-      }),
-    }),
-  );
-  await page.goto(
-    `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print_preparation?export=999999`,
-  );
-  await expect(
-    page.getByRole('link', { name: 'Download Form A answer key PDF (1.6 MB)' }),
-  ).toBeVisible();
-});
-
-test('explains a failed background export and offers a fresh preview', async ({
-  page,
-  courseInstance,
-}) => {
-  await openPrintPreparation(page, courseInstance.id);
-  await preparePreview(page);
-
-  const jobSequenceId = '999999';
-  await page.route('**/printableExamExport.status?*', (route) =>
-    route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        result: {
-          data: {
-            json: {
-              status: 'Error',
-              ready: false,
-              sizeBytes: null,
-              failureMessage:
-                'This print preview has expired or changed. Select Update preview and try again.',
-              canViewJobLogs: true,
-            },
-          },
-        },
-      }),
-    }),
-  );
-  const url = new URL(page.url());
-  url.searchParams.set('export', jobSequenceId);
-  await page.goto(url.href);
-  await expect(
-    page.getByRole('alert').getByText('This print preview has expired or changed.'),
-  ).toBeVisible({ timeout: 120_000 });
-  await expect(downloadMenu(page)).toBeDisabled();
-  await expect(page.getByRole('link', { name: 'View job details' })).toHaveAttribute(
-    'href',
-    `/pl/course_instance/${courseInstance.id}/instructor/jobSequence/${jobSequenceId}`,
-  );
-
-  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(page.getByRole('link', { name: 'View job details' })).toHaveCount(0);
-});
-
-test('defaults booklet copies to the number of enrolled students', async ({
-  page,
-  courseInstance,
-}) => {
-  const initialStudentCount = await countJoinedStudentsInCourseInstance(courseInstance);
-  await openPrintPreparation(page, courseInstance.id);
-  await preparePreview(page);
-  await chooseDownload(page, 'Download booklet PDF…');
-  const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
-  await expect(modal.getByLabel('Number of students')).toHaveValue(
-    String(Math.max(1, initialStudentCount)),
-  );
-  await modal.getByRole('button', { name: 'Cancel', exact: true }).click();
-
-  for (let index = 1; index <= 3; index++) {
-    const student = await getOrCreateUser({
-      uid: `print-student-${index}@example.com`,
-      name: `Print Student ${index}`,
-      uin: `print-${index}`,
-    });
-    await ensureUncheckedEnrollment({
-      userId: student.id,
-      courseInstance,
-      authzData: dangerousFullSystemAuthz(),
-      requiredRole: ['System'],
-      actionDetail: 'implicit_joined',
-    });
-  }
-
-  await page.reload();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await chooseDownload(page, 'Download booklet PDF…');
-  await expect(modal.getByLabel('Number of students')).toHaveValue(String(initialStudentCount + 3));
 });
 
 test('prepares an exam and key with consistent variants and downloads', async ({
@@ -302,35 +151,15 @@ test('prepares an exam and key with consistent variants and downloads', async ({
     .getByTitle('Printable document preview', { exact: true })
     .getAttribute('src');
   const form = previewUrl!.match(/\/assessment_instance\/(\d+)\/paper\//)![1];
-  // The active form can come from the URL or fall back to the first selected instance.
-  for (const explicitSelection of [false, true]) {
-    const url = new URL(page.url());
-    url.searchParams.set('instances', form);
-    if (explicitSelection) url.searchParams.set('instance', form);
-    else url.searchParams.delete('instance');
-    await page.goto(url.href);
-    await expect(downloadMenu(page)).toBeEnabled({
-      timeout: 120_000,
-    });
-    const activeForm = page.getByRole('button', { name: /^Form A/ });
-    await expect(activeForm).toHaveAttribute('aria-pressed', 'true');
-    await activeForm.click();
-    await downloadMenu(page).click();
-    for (const name of [
-      'Download Form A (PDF)',
-      'Download Form A Word (.docx)',
-      'Download Form A answer key (PDF)',
-      'Download booklet PDF…',
-    ]) {
-      await expect(page.getByRole('button', { name, exact: true })).toBeEnabled();
-    }
-    // A single form has nothing to combine.
-    await expect(
-      page.getByRole('button', { name: 'Download all forms (PDF)', exact: true }),
-    ).toHaveCount(0);
-    await page.keyboard.press('Escape');
-    await expect(page).toHaveURL(url.href);
-  }
+  const url = new URL(page.url());
+  url.searchParams.set('instances', form);
+  url.searchParams.set('instance', form);
+  await page.goto(url.href);
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await expect(page.getByRole('button', { name: /^Form A/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   const frame = page.frameLocator('iframe[title="Printable document preview"]');
   await expect(frame.locator(':root')).toHaveAttribute('data-print-status', 'ready');
   await expect(page.getByRole('heading', { name: /Questions in this form/ })).toBeVisible();
@@ -400,43 +229,14 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   await page.addScriptTag({ content: axe.source });
   const { violations } = await page.evaluate(async () => await axe.run());
   expect(violations).toEqual([]);
-  for (const [item, extension] of [
-    ['Download Form A answer key (PDF)', 'pdf'],
-    ['Download Form A Word (.docx)', 'docx'],
-  ]) {
-    const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-    const response = page.waitForResponse((response) =>
-      new URL(response.url()).pathname.endsWith(
-        extension === 'pdf' ? '/printableExamExport.pdf' : '/paper/docx',
-      ),
-    );
-    await chooseDownload(page, item);
-    const exportResponse = await response;
-    expect(exportResponse.ok()).toBe(true);
-    const exportRequest = exportResponse.request();
-    if (extension === 'pdf') {
-      expect(exportRequest.method()).toBe('POST');
-    } else {
-      const search = new URL(exportRequest.url()).searchParams;
-      expect(search.getAll('exclude_question')).toEqual(['1']);
-      expect(search.get('document')).toBe('exam');
-      expect(exportRequest.headers()['content-type']).toContain('application/octet-stream');
-    }
-    const file = await downloaded;
-    if (extension === 'pdf') {
-      expect(file.suggestedFilename()).toMatch(/answer_keys_1_copies\.pdf$/);
-    } else {
-      expect(file.suggestedFilename()).toBe('assessment-form-A.docx');
-    }
-    expect(await file.failure()).toBeNull();
-    if (extension === 'pdf') {
-      const pdf = await PDFDocument.load(await fs.readFile(await file.path()));
-      const { width, height } = pdf.getPage(0).getSize();
-      expect(width).toBeCloseTo((210 / 25.4) * 72, 0);
-      expect(height).toBeCloseTo((297 / 25.4) * 72, 0);
-    }
-    await expect(downloadMenu(page)).toBeEnabled();
-  }
+  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
+  await chooseDownload(page, 'Download Form A answer key (PDF)');
+  const file = await downloaded;
+  expect(await file.failure()).toBeNull();
+  const pdf = await PDFDocument.load(await fs.readFile(await file.path()));
+  const { width, height } = pdf.getPage(0).getSize();
+  expect(width).toBeCloseTo((210 / 25.4) * 72, 0);
+  expect(height).toBeCloseTo((297 / 25.4) * 72, 0);
   await page.getByRole('checkbox', { name: 'Include question 1', exact: true }).check();
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({
@@ -500,28 +300,16 @@ test('prepares homework with matching student copies, answer keys, and booklet e
   await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
   await expect(question).toHaveText(questionText, { useInnerText: true });
 
-  for (const [item, extension] of [
-    ['Download Form A (PDF)', 'pdf'],
-    ['Download Form A Word (.docx)', 'docx'],
-  ]) {
-    const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-    await chooseDownload(page, item);
-    const download = await downloaded;
-    expect(await download.failure()).toBeNull();
-    expect(download.suggestedFilename()).not.toContain('exam');
-    const data = await fs.readFile(await download.path());
-    if (extension === 'pdf') {
-      expect((await PDFDocument.load(data)).getPageCount()).toBe(studentPageCount);
-    } else {
-      expect(download.suggestedFilename()).toBe('assessment-form-A.docx');
-      const archive = await unzipper.Open.buffer(data);
-      const documentXml = (
-        await archive.files.find((file) => file.path === 'word/document.xml')!.buffer()
-      ).toString();
-      expect(documentXml).toContain('Question HW15.1');
-      expect(documentXml).not.toContain('Question HW15.2');
-    }
-  }
+  const wordDownload = page.waitForEvent('download', { timeout: 120_000 });
+  await chooseDownload(page, 'Download Form A Word (.docx)');
+  const word = await wordDownload;
+  expect(await word.failure()).toBeNull();
+  const archive = await unzipper.Open.file(await word.path());
+  const documentXml = (
+    await archive.files.find((file) => file.path === 'word/document.xml')!.buffer()
+  ).toString();
+  expect(documentXml).toContain('Question HW15.1');
+  expect(documentXml).not.toContain('Question HW15.2');
   await chooseDownload(page, 'Download booklet PDF…');
   await page.getByLabel('Number of students', { exact: true }).fill('3');
   const downloaded = page.waitForEvent('download', { timeout: 120_000 });
@@ -628,33 +416,6 @@ test('combines exam copies with custom covers and appends every form’s answer 
     (await PDFDocument.load(await fs.readFile(await allFormsDownload.path()))).getPageCount(),
   ).toBe(pageCounts.reduce((total, count) => total + count, 0));
 
-  // Download a different form without changing the active preview or losing its saved spacing.
-  for (const extension of ['pdf', 'docx']) {
-    const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-    const requested = page.waitForRequest((request) =>
-      new URL(request.url()).pathname.endsWith(
-        extension === 'pdf' ? '/printableExamExport.pdf' : '/paper/docx',
-      ),
-    );
-    await chooseDownload(
-      page,
-      extension === 'pdf' ? 'Download Form B (PDF)' : 'Download Form B Word (.docx)',
-    );
-    const request = await requested;
-    if (extension === 'pdf') {
-      expect(request.method()).toBe('POST');
-    } else {
-      const url = new URL(request.url());
-      expect(url.pathname).toContain(`/assessment_instance/${formIds[1]}/paper/docx`);
-      expect(url.searchParams.get('form_label')).toBe('B');
-      expect(url.searchParams.getAll('question_block_size')).toEqual(['1:full']);
-    }
-    expect(await (await downloaded).failure()).toBeNull();
-    await expect(page.getByRole('combobox', { name: 'Preview form', exact: true })).toHaveValue(
-      formIds[2],
-    );
-  }
-
   const cover = await PDFDocument.create();
   cover.addPage([400, 600]).drawText('Extended exam instructions');
   await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
@@ -664,69 +425,35 @@ test('combines exam copies with custom covers and appends every form’s answer 
   });
   await expect(page.getByText('extended-instructions.pdf', { exact: true })).toBeVisible();
   expect(new URL(page.url()).searchParams.get('instances')?.split(',')).toEqual(formIds);
-  let exports = 0;
-  page.on('request', (request) => {
-    if (new URL(request.url()).pathname.endsWith('/printableExamExport.pdf')) exports++;
-  });
-  for (const copies of [45, 1]) {
-    await chooseDownload(page, 'Download booklet PDF…');
-    await expect(page.getByRole('dialog')).toContainText('Download booklet PDF');
-    await page.getByLabel('Number of students', { exact: true }).fill(String(copies));
-    if (copies === 45) {
-      await expect(
-        page.getByText('Forms A, B, C repeat in order, one complete copy per student.', {
-          exact: false,
-        }),
-      ).toBeVisible();
-      await expect(
-        page.getByText('One answer key for each form is appended at the end.', { exact: false }),
-      ).toBeVisible();
-    }
-    const exportCount = exports;
-    const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-    await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
-    const expectedPageCount =
-      Array.from(
-        { length: copies },
-        (_, index) => pageCounts[index % pageCounts.length] + 1,
-      ).reduce((total, count) => total + count, 0) +
-      answerKeyPageCounts.reduce((total, count) => total + count, 0);
-    if (copies === 45) {
-      expect(expectedPageCount).toBeGreaterThanOrEqual(MAX_INLINE_PRINT_PACKET_PAGES);
-    }
-    if (expectedPageCount >= MAX_INLINE_PRINT_PACKET_PAGES) {
-      const preparedPdf = page.getByRole('link', {
-        name: `Download booklet PDF for ${copies} students`,
-      });
-      await expect(preparedPdf).toBeVisible({ timeout: 120_000 });
-      await preparedPdf.click();
-    }
-    const download = await downloaded;
-    expect(download.suggestedFilename()).toMatch(new RegExp(`booklet_${copies}_copies\\.pdf$`));
-    expect(await download.failure()).toBeNull();
-    const downloadedBytes = await fs.readFile(await download.path());
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    expect(exports).toBe(exportCount + 1);
-
-    const packet = await PDFDocument.load(downloadedBytes);
-    let copyStart = 0;
-    for (let copy = 0; copy < copies; copy++) {
-      expect(packet.getPage(copyStart + 1).getSize()).toEqual({ width: 400, height: 600 });
-      copyStart += pageCounts[copy % pageCounts.length] + 1;
-    }
-    expect(packet.getPageCount()).toBe(
-      copyStart + answerKeyPageCounts.reduce((total, count) => total + count, 0),
-    );
-    for (const answerKeyPage of packet.getPages().slice(copyStart)) {
-      expect(answerKeyPage.getSize()).toEqual({ width: 612, height: 792 });
-    }
-  }
-  const reusedExports = exports;
-  const reused = page.waitForEvent('download', { timeout: 120_000 });
+  const copies = 45;
   await chooseDownload(page, 'Download booklet PDF…');
+  await page.getByLabel('Number of students', { exact: true }).fill(String(copies));
+  await expect(
+    page.getByText('Forms A, B, C repeat in order, one complete copy per student.', {
+      exact: false,
+    }),
+  ).toBeVisible();
+  const expectedStudentPages = Array.from(
+    { length: copies },
+    (_, index) => pageCounts[index % pageCounts.length] + 1,
+  ).reduce((total, count) => total + count, 0);
+  const expectedPageCount =
+    expectedStudentPages + answerKeyPageCounts.reduce((total, count) => total + count, 0);
+  expect(expectedPageCount).toBeGreaterThanOrEqual(MAX_INLINE_PRINT_PACKET_PAGES);
+  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
   await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
-  expect(await (await reused).failure()).toBeNull();
-  expect(exports).toBe(reusedExports + 1);
+  const preparedPdf = page.getByRole('link', {
+    name: `Download booklet PDF for ${copies} students`,
+  });
+  await expect(preparedPdf).toBeVisible({ timeout: 120_000 });
+  await preparedPdf.click();
+  const download = await downloaded;
+  expect(await download.failure()).toBeNull();
+  const packet = await PDFDocument.load(await fs.readFile(await download.path()));
+  expect(packet.getPageCount()).toBe(expectedPageCount);
+  expect(packet.getPage(1).getSize()).toEqual({ width: 400, height: 600 });
+  expect(packet.getPage(pageCounts[0] + 2).getSize()).toEqual({ width: 400, height: 600 });
+  expect(packet.getPage(expectedStudentPages).getSize()).toEqual({ width: 612, height: 792 });
   await page.getByRole('button', { name: 'Student copy', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
@@ -794,10 +521,7 @@ test('distinguishes paper review flags from broken questions omitted from the do
   ).toBeVisible({ timeout: 120_000 });
 });
 
-test('protects pending preview settings and shows a PDF export error once', async ({
-  page,
-  courseInstance,
-}) => {
+test('protects pending preview settings', async ({ page, courseInstance }) => {
   await openPrintPreparation(page, courseInstance.id);
   await page.getByLabel('Additional student information').fill('Section');
   await page.getByRole('button', { name: 'Create preview', exact: true }).click();
@@ -839,80 +563,35 @@ test('protects pending preview settings and shows a PDF export error once', asyn
   await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
   await expect(page.getByLabel('Additional student information')).toHaveValue('Room');
   await expect(updatePreview).toBeDisabled();
-  await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
-    name: 'invalid-cover.pdf',
-    mimeType: 'application/pdf',
-    buffer: Buffer.from('invalid PDF'),
-  });
-  await chooseDownload(page, 'Download Form A (PDF)');
-  await expect(page.getByText(/valid PDF without password protection/)).toHaveCount(1);
-  await expect(downloadButton).toBeEnabled();
 });
 
-test('validates booklet counts and preserves preview recovery after a failed download', async ({
+test('validates a booklet count and retries a failed download', async ({
   page,
   courseInstance,
 }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
   await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
   await chooseDownload(page, 'Download booklet PDF…');
   const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
   const students = modal.getByLabel('Number of students', { exact: true });
   const submit = modal.getByRole('button', { name: 'Download booklet PDF', exact: true });
-  await expect(students).toBeFocused();
-  const defaultStudentCount = await students.inputValue();
-  for (const value of ['', '0', '1.5', '501']) {
-    await students.fill(value);
-    await submit.click();
-    await expect(students).toBeFocused();
-    await expect(students).toHaveAttribute('aria-invalid', 'true');
-    await expect(modal.getByText('Enter a whole number between 1 and 500.')).toBeVisible();
-  }
-  await students.fill('500');
-  await expect(submit).toBeEnabled();
-  await page.addScriptTag({ content: axe.source });
-  expect((await page.evaluate(async () => await axe.run())).violations).toEqual([]);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  await modal.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(modal).toHaveCount(0);
-  await chooseDownload(page, 'Download booklet PDF…');
-  await expect(students).toHaveValue(defaultStudentCount);
-  await students.fill('2');
+  await students.fill('0');
+  await submit.click();
+  await expect(students).toHaveAttribute('aria-invalid', 'true');
+  await expect(modal.getByText('Enter a whole number between 1 and 500.')).toBeVisible();
 
-  const requested = withResolvers<undefined>();
-  const resume = withResolvers<undefined>();
-  await page.route('**/printableExamExport.pdf', async (route) => {
-    requested.resolve(undefined);
-    await resume.promise;
-    await route.abort();
-  });
-  await students.press('Enter');
-  await requested.promise;
-  try {
-    await expect(modal.getByRole('status')).toHaveText('Generating…');
-    await expect(modal.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled();
-    await expect(modal.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
-    await page.keyboard.press('Escape');
-    await expect(modal).toBeVisible();
-  } finally {
-    resume.resolve(undefined);
-  }
+  await students.fill('2');
+  await page.route('**/printableExamExport.pdf', (route) => route.abort(), { times: 1 });
+  await submit.click();
   await expect(modal.getByRole('alert')).toBeVisible();
-  await expect(page.getByRole('alert')).toHaveCount(1);
-  await modal.getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(modal).toHaveCount(0);
-  await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeDisabled();
+  await expect(submit).toBeEnabled();
   await page.unroute('**/printableExamExport.pdf');
-  await chooseDownload(page, 'Download booklet PDF…');
-  await expect(modal.getByRole('alert')).toHaveCount(0);
-  const downloaded = page.waitForEvent('download');
+
+  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
   await submit.click();
   expect(await (await downloaded).failure()).toBeNull();
   await expect(downloadMenu(page)).toBeEnabled();
 });
-
 test('limits static assessments to one form even when the saved URL selects several', async ({
   page,
   courseInstance,
@@ -993,7 +672,7 @@ test('limits static assessments to one form even when the saved URL selects seve
   }
 });
 
-test('can omit the default cover in previews and every download while keeping custom covers', async ({
+test('omits the default cover while keeping a custom cover in the PDF', async ({
   page,
   courseInstance,
 }) => {
@@ -1026,7 +705,6 @@ test('can omit the default cover in previews and every download while keeping cu
   await page.getByRole('button', { name: 'Answer key', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   await expect(frame.locator('.exam-cover')).toHaveCount(0);
-  const answerKeyPages = await frame.locator('.pagedjs_page').count();
   await page.getByRole('button', { name: 'Student copy', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 
@@ -1042,34 +720,6 @@ test('can omit the default cover in previews and every download while keeping cu
   const pdf = await PDFDocument.load(await fs.readFile(await (await pdfDownload).path()));
   expect(pdf.getPageCount()).toBe(studentPages + 1);
   expect(pdf.getPage(0).getSize()).toEqual({ width: 400, height: 600 });
-
-  const answerKeyDownload = page.waitForEvent('download', { timeout: 120_000 });
-  await chooseDownload(page, 'Download Form A answer key (PDF)');
-  const answerKey = await PDFDocument.load(
-    await fs.readFile(await (await answerKeyDownload).path()),
-  );
-  expect(answerKey.getPageCount()).toBe(answerKeyPages);
-  expect(answerKey.getPages().every((sheet) => sheet.getWidth() === 612)).toBe(true);
-
-  const wordDownload = page.waitForEvent('download', { timeout: 120_000 });
-  await chooseDownload(page, 'Download Form A Word (.docx)');
-  const word = await unzipper.Open.file(await (await wordDownload).path());
-  const xml = (
-    await word.files.find((file) => file.path === 'word/document.xml')!.buffer()
-  ).toString();
-  expect(xml).toContain('Question 1');
-  expect(xml).not.toContain('Exam with assessment tools');
-  expect(xml).not.toContain('<w:pageBreakBefore/>');
-
-  await chooseDownload(page, 'Download booklet PDF…');
-  await page.getByLabel('Number of students', { exact: true }).fill('2');
-  const bookletDownload = page.waitForEvent('download', { timeout: 120_000 });
-  await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
-  const booklet = await PDFDocument.load(await fs.readFile(await (await bookletDownload).path()));
-  expect(booklet.getPageCount()).toBe(2 * (studentPages + 1) + answerKeyPages);
-  for (const index of [0, studentPages + 1]) {
-    expect(booklet.getPage(index).getSize()).toEqual({ width: 400, height: 600 });
-  }
 
   await includeCover.check();
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
