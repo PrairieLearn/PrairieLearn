@@ -30,8 +30,7 @@ const abortController = new AbortController();
 const processingFinished = withResolvers();
 
 export async function init() {
-  // If we're not configured to use AWS, don't try to do anything here
-  if (!config.externalGradingUseAws) return;
+  if (!config.externalGradingUseAws || !config.externalGradingEnableResults) return;
 
   const sqs = new SQSClient(makeAwsClientConfig());
   const queueUrl = await getQueueUrl(sqs, config.externalGradingResultsQueueName);
@@ -104,7 +103,7 @@ export async function init() {
 }
 
 export async function stop() {
-  if (!config.externalGradingUseAws) return;
+  if (!config.externalGradingUseAws || !config.externalGradingEnableResults) return;
 
   if (abortController.signal.aborted) {
     throw new Error('Already stopped');
