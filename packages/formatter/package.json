@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "es-toolkit": "^1.52.0"
+    "es-toolkit": "^1.52.0",
+    "lru-cache": "^11.5.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
