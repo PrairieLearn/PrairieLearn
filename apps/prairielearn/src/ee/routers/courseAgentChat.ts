@@ -1,110 +1,115 @@
-import { type Response as ExpressResponse, Router } from 'express';
+import { type IncomingMessage, type Server, ServerResponse } from 'node:http';
+
+import { type Express, type Request, type Response, Router } from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
+import { checkSignedTokenPrefix } from '@prairielearn/signed-token';
 import { IdSchema, parseRequest } from '@prairielearn/zod';
 
+import { extractPageContext } from '../../lib/client/page-context.js';
+import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseAgentEnabled } from '../lib/course-agent/access.js';
-import { postCourseAgentChat } from '../lib/course-agent/client.js';
-import { pipeUiMessageStream } from '../lib/ui-message-stream.js';
-import {
-  selectOptionalCourseAgentConversation,
-  updateCourseAgentConversationTitleIfDefault,
-} from '../models/course-agent-conversation.js';
+import { buildCourseAgentServiceRequest } from '../lib/course-agent/client.js';
+import { selectOptionalCourseAgentConversation } from '../models/course-agent-conversation.js';
 
 const router = Router({ mergeParams: true });
-
-const TITLE_MAX_LENGTH = 80;
-
-const PostRequestSchemas = {
+const RequestSchemas = {
   params: z.object({ course_id: IdSchema, conversation_id: IdSchema }),
-  body: z.object({
-    // `useChat` sends only the newest message; the history lives in the agent service.
-    message: z.object({
-      role: z.literal('user'),
-      parts: z
-        .array(z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(20_000) }))
-        .length(1),
-    }),
-  }),
+  query: z.object({ csrfToken: z.string().optional() }),
 };
+const upgradeHeads = new WeakMap<IncomingMessage, Buffer>();
+const proxy = createProxyMiddleware<Request, Response>({
+  // Upgrades are forwarded explicitly, after the Express authorization chain.
+  ws: false,
+  changeOrigin: true,
+  router: () => new URL(config.courseAgentServiceUrl!).origin,
+  on: {
+    error: (err, _req, res) => {
+      logger.error('Course agent proxy failed', err);
+      if ('writeHead' in res) {
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('The course agent is unavailable.');
+      } else {
+        res.destroy();
+      }
+    },
+  },
+});
 
-function titleFromMessage(text: string) {
-  const title = text.replaceAll(/\s+/g, ' ').trim();
-  return title.length > TITLE_MAX_LENGTH ? `${title.slice(0, TITLE_MAX_LENGTH - 1)}…` : title;
+/** Send upgrades through the same session/authentication/RBAC chain as HTTP. */
+export function handleCourseAgentUpgrade(app: Express, req: IncomingMessage, head: Buffer) {
+  if (!/^\/pl\/course\/\d+\/course_agent\/conversations\/\d+(?:\?|$)/.test(req.url ?? '')) return;
+  upgradeHeads.set(req, head);
+  const res = new ServerResponse(req);
+  res.assignSocket(req.socket);
+  // A rejected upgrade is an HTTP response on a socket outside Node's request loop.
+  res.shouldKeepAlive = false;
+  res.once('finish', () => req.socket.end());
+  app(req, res);
 }
 
-function isPrematureClose(err: unknown) {
-  return err instanceof Error && 'code' in err && err.code === 'ERR_STREAM_PREMATURE_CLOSE';
+export function initCourseAgentProxy(server: Server, app: Express) {
+  server.on('upgrade', (req, _socket, head) => handleCourseAgentUpgrade(app, req, head));
 }
 
-/** The AI SDK client shows the response body as the error, so errors are plain text. */
-function sendError(res: ExpressResponse, status: number, text: string) {
-  res.status(status).type('text').send(text);
-}
-
-router.post(
-  '/conversations/:conversation_id/chat',
-  typedAsyncHandler<'course'>(async (req, res) => {
-    const { params, body } = parseRequest(req, PostRequestSchemas);
-
+router.get(
+  ['/conversations/:conversation_id', '/conversations/:conversation_id/get-messages'],
+  typedAsyncHandler<'course'>(async (req, res, next) => {
+    const { params, query } = parseRequest(req, RequestSchemas);
     if (!(await courseAgentEnabled(res.locals))) {
-      sendError(res, 403, 'The course agent is not available in this course.');
-      return;
+      throw new HttpStatusError(403, 'The course agent is not available in this course.');
     }
-
+    const { authn_user, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+    const head = upgradeHeads.get(req);
+    if (
+      head &&
+      (!query.csrfToken ||
+        !checkSignedTokenPrefix(
+          query.csrfToken,
+          { url: req.originalUrl.split('?')[0], authn_user_id: authn_user.id },
+          config.secretKey,
+        ))
+    ) {
+      throw new HttpStatusError(403, 'CSRF fail');
+    }
     const conversation = await selectOptionalCourseAgentConversation({
       id: params.conversation_id,
       course_id: params.course_id,
-      user_id: res.locals.authn_user.id,
+      user_id: authn_user.id,
     });
-    if (!conversation) {
-      sendError(res, 404, 'Conversation not found.');
+    if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
+    if (!head && !req.path.endsWith('/get-messages')) {
+      res.sendStatus(426);
       return;
     }
-
-    await updateCourseAgentConversationTitleIfDefault({
-      id: conversation.id,
-      title: titleFromMessage(body.message.parts[0].text),
+    const path = `conversations/${conversation.agent_conversation_id}${head ? '' : '/get-messages'}`;
+    const { url, headers } = buildCourseAgentServiceRequest(path);
+    // Keep the SDK connection ID, but never forward the browser's CSRF token or cookies.
+    url.search = new URL(req.originalUrl, 'http://localhost').search;
+    url.searchParams.delete('csrfToken');
+    req.url = url.pathname + url.search;
+    delete req.headers.cookie;
+    req.headers.authorization = headers.Authorization;
+    req.headers['x-pl-user-id'] = authn_user.id;
+    req.headers['x-pl-course-context'] = JSON.stringify({
+      courseTitle: course.title ?? '',
+      courseShortName: course.short_name,
     });
-
-    const abort = new AbortController();
-    let upstream: Response;
-    try {
-      upstream = await postCourseAgentChat({
-        agentConversationId: conversation.agent_conversation_id,
-        message: body.message,
-        context: {
-          courseTitle: res.locals.course.title ?? '',
-          courseShortName: res.locals.course.short_name ?? '',
-        },
-        signal: abort.signal,
-      });
-    } catch (err) {
-      logger.error('Course agent service request failed', err);
-      sendError(res, 502, 'The course agent is unavailable. Please try again.');
-      return;
-    }
-
-    if (!upstream.ok || !upstream.body) {
-      // Never forward the service's error body, which may include internals.
-      if (upstream.status === 409) {
-        sendError(res, 409, 'The agent is still replying. Wait for it to finish, or stop it.');
-      } else {
-        logger.error(`Course agent service responded with ${upstream.status}`);
-        sendError(res, 502, 'The course agent is unavailable. Please try again.');
-      }
-      return;
-    }
-
-    try {
-      await pipeUiMessageStream(upstream.body, res);
-    } catch (err) {
-      // The browser closed the request (Stop, or navigating away). Cancel the
-      // upstream request too. Stopping generation in the DO is not yet reliable.
-      abort.abort();
-      if (!isPrematureClose(err)) logger.error('Course agent stream failed', err);
+    if (head) {
+      res.detachSocket(req.socket);
+      // Finish Express request accounting; the proxy now owns the long-lived socket.
+      res.statusCode = 101;
+      res.emit('close');
+      proxy.upgrade(req, req.socket, head);
+    } else {
+      await proxy(req, res, next);
     }
   }),
 );
