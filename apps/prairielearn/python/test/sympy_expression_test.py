@@ -8,8 +8,7 @@ from prairielearn.internal import sympy_evaluation, sympy_source
 from prairielearn.internal.sympy_expression import parse_and_evaluate
 
 
-# This differential-oracle suite is temporary. PR #16069 removes it when the grammar
-# evaluator replaces the legacy evaluation path.
+# Keep the internal grammar and its public adapter behaviorally aligned.
 @dataclass(frozen=True, slots=True)
 class _OracleCase:
     expression: str
@@ -216,14 +215,18 @@ def _capture_oracle_outcome(
                 allow_extra_symbols=case.allow_extra_symbols,
             )
         else:
-            result = psu._evaluate_normalized_source(
-                source,
-                locals_for_eval,
+            result = psu.convert_string_to_sympy(
+                case.expression,
+                variables=case.variables,
+                allow_hidden=case.allow_hidden,
                 allow_complex=case.allow_complex,
                 allow_sets=case.allow_sets,
+                allow_trig_functions=case.allow_trig_functions,
                 simplify_expression=simplify_expression,
+                custom_functions=case.custom_functions,
+                assumptions=case.assumptions,
                 allow_extra_symbols=case.allow_extra_symbols,
-            )[0]
+            )
     except sympy_evaluation.ExpressionEvaluationError as exc:
         return _OracleOutcome(
             accepted=False, exception=_diagnostic_signature(exc.diagnostic)
@@ -239,15 +242,20 @@ def _capture_oracle_outcome(
         accepted=True,
         result_type=type(result),
         structure=sympy.srepr(result),
-        serialized=psu.sympy_to_json(result, allow_sets=case.allow_sets),
+        serialized=psu._sympy_to_json_impl(
+            result,
+            allow_complex=True,
+            allow_trig_functions=True,
+            allow_sets=case.allow_sets,
+        ),
     )
 
 
 @pytest.mark.parametrize("case", _ORACLE_CASES, ids=lambda case: case.expression)
-def test_grammar_evaluator_matches_legacy(case: _OracleCase) -> None:
+def test_public_adapter_matches_internal_evaluator(case: _OracleCase) -> None:
     simplification_modes = (True, False) if case.simplification == "both" else (True,)
     for simplify_expression in simplification_modes:
-        legacy = _capture_oracle_outcome(
+        public = _capture_oracle_outcome(
             case,
             grammar=False,
             simplify_expression=simplify_expression,
@@ -257,7 +265,7 @@ def test_grammar_evaluator_matches_legacy(case: _OracleCase) -> None:
             grammar=True,
             simplify_expression=simplify_expression,
         )
-        assert grammar == legacy
+        assert grammar == public
 
 
 @pytest.mark.parametrize(
@@ -345,8 +353,8 @@ def test_python_only_constructs_are_outside_the_grammar(expression: str) -> None
         "expected_end",
     ),
     [
-        ("x + theta + theta", False, False, 12, 17),
-        ("x + λ + λ", False, False, 8, 9),
+        ("x + theta + theta", False, False, 4, 9),
+        ("x + λ + λ", False, False, 4, 5),
         ("{} cup bad", False, True, 3, 6),
         ("{:x:} + bad_name", True, False, 8, 16),
         ("s i n x + bad_name", True, False, 10, 18),
