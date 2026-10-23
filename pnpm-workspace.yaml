@@ -9,6 +9,10 @@ overrides:
   # We use Sentry's runtime SDK, not its bundler-plugin entry points. Omit the
   # plugins and their CLI/parser dependencies to reduce install size.
   '@sentry/node>@sentry/bundler-plugins': '-'
+  # We load Paged.js's prebuilt browser bundle, which does not need these packages.
+  'pagedjs@0.4.3>@babel/polyfill': '-'
+  'pagedjs@0.4.3>@babel/runtime': '-'
+  'pagedjs@0.4.3>event-emitter': '-'
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
@@ -34,6 +38,7 @@ allowBuilds:
   core-js: false
   cpu-features: false
   dtrace-provider: false
+  es5-ext: false
   esbuild: false
   protobufjs: false
   sharp: false
