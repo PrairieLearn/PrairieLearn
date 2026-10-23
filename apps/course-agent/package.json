@@ -3,13 +3,12 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "wrangler deploy --dry-run --outdir dist",
+    "build": "tsc --noEmit && wrangler deploy --dry-run --outdir dist",
     "check-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false --check",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --port 8790 --persist-to .wrangler/local",
     "generate-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.78",
