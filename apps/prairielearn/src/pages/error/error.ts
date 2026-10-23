@@ -14,7 +14,12 @@ import { ErrorPage } from './error.html.js';
  *
  * @see http://expressjs.com/en/guide/using-middleware.html#middleware.error-handling
  */
-export default (function (err, req, res, _next) {
+export default (function (err, req, res, next) {
+  if (res.headersSent || res.destroyed) {
+    next(err);
+    return;
+  }
+
   const errorId = res.locals.error_id;
 
   err.status ??= 500;
