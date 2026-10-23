@@ -181,7 +181,6 @@ const createCheckoutMutation = t.procedure
       payment_intent_data: {
         description: 'AI Grading Credits',
         metadata,
-        receipt_email: authn_user.email ?? undefined,
       },
     });
 
