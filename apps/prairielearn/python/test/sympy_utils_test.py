@@ -637,6 +637,55 @@ class TestSympy:
             psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
         )
 
+    @pytest.mark.parametrize(
+        ("text", "operation_type"),
+        [
+            ("{0} U (1-1, e^1)", sympy.Union),
+            (
+                "(sin(pi/2), 9/3] - ((log(1), exp(0)) U {})",
+                sympy.Complement,
+            ),
+            (
+                "(-oo, 2+1] & ({e, 4/2, 0} - {1, 0/3})",
+                sympy.Intersection,
+            ),
+            (
+                "Complement({e^1}, Union({x-x, 1+1, x+0}, {sqrt(9)}))",
+                sympy.Complement,
+            ),
+        ],
+    )
+    def test_unsimplified_sets_json_conversion_preserves_value(
+        self, text: str, operation_type: type[sympy.Set]
+    ) -> None:
+        parsed = psu.convert_string_to_sympy(
+            text,
+            ["x"],
+            allow_sets=True,
+            simplify_expression=False,
+        )
+
+        encoded = psu.sympy_to_json(parsed, allow_sets=True)
+        restored = psu.json_to_sympy(
+            encoded,
+            allow_sets=True,
+            simplify_expression=False,
+        )
+        evaluated = psu.json_to_sympy(encoded, allow_sets=True)
+
+        assert isinstance(restored, operation_type)
+        assert evaluated == parsed.doit()
+
+    def test_json_conversion_preserves_hidden_constant_wire_names(self) -> None:
+        expression = sympy.Add(sympy.E, sympy.I, evaluate=False)
+
+        assert psu.sympy_to_json(expression, allow_complex=True)["_value"] == (
+            "_Exp1 + _ImaginaryUnit"
+        )
+        assert psu.sympy_to_json(expression, allow_complex=False)["_value"] == (
+            "_Exp1 + I"
+        )
+
     @pytest.mark.parametrize("simplify_expression", [True, False])
     @pytest.mark.parametrize("operator", ["|", "&"])
     def test_legacy_scalar_set_operator_json_conversion(
