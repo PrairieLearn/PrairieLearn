@@ -255,7 +255,8 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
 
     const docxResponse = await helperClient.fetchCheerio(url.replace('/preview?', '/docx?'), {
       method: 'POST',
-      headers,
+      headers: { ...headers, 'Content-Type': 'application/octet-stream' },
+      body: JSON.stringify({ html: '<html></html>', source: { html: '', figures: [] } }),
     });
     assert.equal(docxResponse.status, 403);
   });

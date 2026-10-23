@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
-import { JsonFromStringSchema, parseRequestBody, parseRequestQuery } from '@prairielearn/zod';
+import { JsonFromStringSchema, parseRequest, parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import {
@@ -102,11 +102,14 @@ const PrintSnapshotSchema = z.object({
     ),
   }) satisfies z.ZodType<DocxSource>,
 });
-const DocxPostBodySchema = z
-  .instanceof(Buffer)
-  .transform((body) => body.toString('utf8'))
-  .pipe(JsonFromStringSchema)
-  .pipe(PrintSnapshotSchema);
+const DocxPostRequestSchemas = {
+  query: DocumentQuerySchema,
+  body: z
+    .instanceof(Buffer)
+    .transform((body) => body.toString('utf8'))
+    .pipe(JsonFromStringSchema)
+    .pipe(PrintSnapshotSchema),
+};
 
 /** The layout choices shared by every printable output of one assessment instance. */
 interface PrintLayout {
@@ -119,11 +122,6 @@ interface PrintLayout {
   blockSize: QuestionBlockSize | undefined;
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>;
   excludedQuestionNumbers: ReadonlySet<string>;
-}
-
-interface PrintLocals {
-  printLayout: PrintLayout;
-  printDocument: PrintDocument;
 }
 
 function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout {
@@ -165,22 +163,11 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
   };
 }
 
-const validateDocumentQuery: RequestHandler = (req, res, next) => {
-  const query = parseRequestQuery(req, DocumentQuerySchema);
-  res.locals.printLayout = parsePrintLayout(query);
-  res.locals.printDocument = query.document;
-  next();
-};
-
-const authorizePrintDocument: RequestHandler = (_req, res, next) => {
-  if (
-    res.locals.printDocument === 'answer_key' &&
-    !res.locals.authz_data.has_course_instance_permission_edit
-  ) {
+function authorizePrintDocument(document: PrintDocument, canEdit: boolean) {
+  if (document === 'answer_key' && !canEdit) {
     throw new HttpStatusError(403, 'Access denied');
   }
-  next();
-};
+}
 
 function buildPrintSearchParams(layout: PrintLayout, document: PrintDocument): URLSearchParams {
   const params = new URLSearchParams({ paper_size: layout.paperSize });
@@ -239,13 +226,15 @@ router.use(
 
 router.get(
   '/preview',
-  validateDocumentQuery,
-  authorizePrintDocument,
   selectAndAuthzAssessmentInstance,
-  typedAsyncHandler<'assessment-instance', PrintLocals>(async (req, res) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+    const query = parseRequestQuery(req, DocumentQuerySchema);
+    const layout = parsePrintLayout(query);
+    const { document } = query;
+    authorizePrintDocument(document, res.locals.authz_data.has_course_instance_permission_edit);
+
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    const { printLayout: layout, printDocument: document } = res.locals;
 
     const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
       defaultQuestionBlockSize: layout.blockSize ?? 'auto',
@@ -331,13 +320,14 @@ router.get(
 
 router.post(
   '/docx',
-  validateDocumentQuery,
-  authorizePrintDocument,
   selectAndAuthzAssessmentInstance,
   parseDocxBody,
-  typedAsyncHandler<'assessment-instance', PrintLocals>(async (req, res) => {
-    const snapshot = parseRequestBody(req, DocxPostBodySchema);
-    const { printLayout: layout, printDocument: document } = res.locals;
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+    const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
+    const layout = parsePrintLayout(query);
+    const { document } = query;
+    authorizePrintDocument(document, res.locals.authz_data.has_course_instance_permission_edit);
+
     await validateQuestionsForPrinting(
       res.locals.assessment_instance.id,
       layout.questionBlockSizeOverrides,
