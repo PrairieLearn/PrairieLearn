@@ -52,6 +52,6 @@ pnpm --filter @prairielearn/course-agent deploy
 
 New conversations use `OPENAI_MODEL` from `wrangler.jsonc` (GPT-6 Luna by default). Each conversation persists its model at startup and keeps it across deployments. Existing conversations without a saved model adopt the configured model when next started.
 
-After changing bindings or required secrets in `wrangler.jsonc`, regenerate the environment types with `pnpm --filter @prairielearn/course-agent generate-types`. Secret values belong in `.dev.vars` locally or Cloudflare deployment secrets, never in `wrangler.jsonc`.
+After changing variables, bindings, or required secrets in `wrangler.jsonc`, regenerate the environment types with `pnpm --filter @prairielearn/course-agent generate-types` and commit the updated declaration file. CI runs `pnpm --filter @prairielearn/course-agent check-types` and fails if the generated types are stale. Secret values belong in `.dev.vars` locally or Cloudflare deployment secrets, never in `wrangler.jsonc`.
 
 `PL_SERVICE_TOKEN` is a static service credential, not an expiring JWT. Store it only in deployment secrets and rotate/revoke it if compromised. For rotation, the current single-token configuration requires a coordinated change in the Worker and PrairieLearn; requests using the old token fail once the Worker switches. Short-lived service tokens and overlapping key rotation are follow-ups. Credential changes do not automatically terminate streams that were already accepted.
