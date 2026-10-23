@@ -5,7 +5,6 @@ import prairielearn.sympy_utils as psu
 import pytest
 import sympy
 from prairielearn.internal import sympy_evaluation, sympy_source
-from prairielearn.internal.symbolic_input import normalize_symbolic_input
 from prairielearn.internal.sympy_expression import parse_and_evaluate
 
 
@@ -361,7 +360,7 @@ def test_error_spans_refer_to_raw_student_source(
     expected_start: int,
     expected_end: int,
 ) -> None:
-    source = normalize_symbolic_input(
+    source = psu._normalize_symbolic_input(
         expression,
         ("x",),
         (),
