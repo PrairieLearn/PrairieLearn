@@ -18,6 +18,7 @@ import {
 } from '../lib/db-types.js';
 import { deleteFile, uploadFile } from '../lib/file-store.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectOrInsertUserByUid } from '../models/user.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -395,8 +396,9 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
     assert.isAtLeast(events[0].event_date.getTime(), beforeUpload);
     assert.isAtMost(events[0].event_date.getTime(), afterUpload);
 
+    const deleter = await selectOrInsertUserByUid('note-deleter@example.com');
     const beforeDelete = Date.now();
-    await deleteFile(fileId, '1');
+    await deleteFile(fileId, deleter.id);
     const afterDelete = Date.now();
     const updatedLog = await selectAssessmentInstanceLog(locals.assessment_instance.id, false);
     const updatedEvents = updatedLog.filter((entry) => entry.data?.file_id === fileId);
@@ -404,11 +406,21 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
     assert.deepEqual(updatedEvents[0], events[0]);
     assert.deepInclude(updatedEvents[1], {
       event_name: 'Delete personal note',
-      auth_user_uid: 'dev@example.com',
+      auth_user_uid: deleter.uid,
       data: expectedData,
     });
     assert.isAtLeast(updatedEvents[1].event_date.getTime(), beforeDelete);
     assert.isAtMost(updatedEvents[1].event_date.getTime(), afterDelete);
+
+    await deleteFile(fileId, '1');
+    const repeatedDeleteLog = await selectAssessmentInstanceLog(
+      locals.assessment_instance.id,
+      false,
+    );
+    assert.deepEqual(
+      repeatedDeleteLog.filter((entry) => entry.data?.file_id === fileId),
+      updatedEvents,
+    );
   });
 
   describe('assessment_instance: set attach files page URL', function () {
