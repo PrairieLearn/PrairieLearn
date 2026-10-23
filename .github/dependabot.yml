@@ -181,6 +181,15 @@ updates:
       # instructors. Retaining for now out of an abundance of caution.
       - dependency-name: 'numpy'
         versions: ['>=2.5']
+      # PuLP 4 removes LpVariable(...), LpVariable.dicts(...), and PULP_CBC_CMD,
+      # stops bundling CBC, and changes solve/status APIs. This can break course
+      # question and grader code mid-term; upgrade separately after coordinating
+      # course migrations and solver installation.
+      # This upgrade was already backed out of #15898:
+      # https://github.com/PrairieLearn/PrairieLearn/pull/15898#issuecomment-6085242106
+      # https://coin-or.github.io/pulp/guides/how_to_migrate_to_v4.html
+      - dependency-name: 'pulp'
+        versions: ['>=4']
 
   - package-ecosystem: uv
     multi-ecosystem-group: python
@@ -201,3 +210,6 @@ updates:
       # instructors. Retaining for now out of an abundance of caution.
       - dependency-name: 'numpy'
         versions: ['>=2.5']
+      # Match the pip hold above: PuLP 4 requires course migrations and CBC setup.
+      - dependency-name: 'pulp'
+        versions: ['>=4']

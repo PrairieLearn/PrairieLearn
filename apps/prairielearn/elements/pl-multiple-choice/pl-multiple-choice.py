@@ -7,7 +7,6 @@ from enum import Enum
 from typing import NamedTuple, assert_never
 
 import chevron
-import lxml.etree
 import lxml.html
 import prairielearn as pl
 
@@ -96,7 +95,7 @@ def categorize_options(
             else:
                 incorrect_answers.append(answer_tuple)
 
-        elif isinstance(child, lxml.etree._Comment):
+        elif isinstance(child, lxml.html.HtmlComment):
             continue
 
         else:
