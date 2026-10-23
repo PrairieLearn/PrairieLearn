@@ -4,14 +4,12 @@ import { z } from 'zod';
 import { IdSchema } from '@prairielearn/zod';
 
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
-import {
-  createCourseAgentConversation,
-  fetchCourseAgentMessages,
-} from '../../ee/lib/course-agent/client.js';
+import { createCourseAgentConversation } from '../../ee/lib/course-agent/client.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
+  updateCourseAgentConversationTitleIfDefault,
 } from '../../ee/models/course-agent-conversation.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 
@@ -38,6 +36,22 @@ export const courseAgentRouter = t.router({
     return z.array(StaffCourseAgentConversationSchema).parse(conversations);
   }),
 
+  setTitle: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, text: z.string().trim().min(1).max(20_000) }))
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      const title = input.text.replaceAll(/\s+/g, ' ');
+      await updateCourseAgentConversationTitleIfDefault({
+        id: conversation.id,
+        title: title.length > 80 ? `${title.slice(0, 79)}…` : title,
+      });
+    }),
+
   // Record only conversations whose Cloudflare startup succeeded.
   create: courseAgentProcedure.mutation(async ({ ctx }) => {
     const agentConversationId = await createCourseAgentConversation();
@@ -48,18 +62,10 @@ export const courseAgentRouter = t.router({
     });
     return StaffCourseAgentConversationSchema.parse(conversation);
   }),
-
-  messages: courseAgentProcedure
-    .input(z.object({ conversationId: IdSchema }))
-    .query(async ({ ctx, input }) => {
-      const conversation = await selectOptionalCourseAgentConversation({
-        id: input.conversationId,
-        course_id: ctx.course.id,
-        user_id: ctx.locals.authn_user.id,
-      });
-      if (!conversation) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Conversation not found.' });
-      }
-      return await fetchCourseAgentMessages(conversation.agent_conversation_id);
-    }),
 });
+
+export interface CourseAgentError {
+  List: never;
+  Create: never;
+  SetTitle: never;
+}

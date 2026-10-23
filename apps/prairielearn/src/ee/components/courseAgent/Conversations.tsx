@@ -1,31 +1,44 @@
-import { useChat } from '@ai-sdk/react';
+import { useAgentChat } from '@cloudflare/ai-chat/react';
+import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { DefaultChatTransport, type UIMessage } from 'ai';
+import { useAgent } from 'agents/react';
+import type { UIMessage } from 'ai';
+import { useQueryState } from 'nuqs';
 import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { useTRPC } from '../../../trpc/course/context.js';
+import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
   courseId,
   chatCsrfToken,
+  active,
 }: {
   courseId: string;
   chatCsrfToken: string;
+  active: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
   // Default to the most recent conversation until the user selects one.
-  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [pickedId, setPickedId] = useQueryState('courseAgentConversation');
   const selectedId = run(() => {
-    if (pickedId !== null) return pickedId;
+    if (
+      pickedId !== null &&
+      conversations.data?.some((conversation) => conversation.id === pickedId)
+    ) {
+      return pickedId;
+    }
     if (conversations.data && conversations.data.length > 0) {
       return conversations.data[0].id;
     }
@@ -40,10 +53,12 @@ export function Conversations({
     ...trpc.courseAgent.create.mutationOptions(),
     onSuccess: async (conversation) => {
       await queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
-      setPickedId(conversation.id);
+      await setPickedId(conversation.id);
     },
   });
 
+  const listError = getAppError<CourseAgentError['List']>(conversations.error);
+  const createError = getAppError<CourseAgentError['Create']>(create.error);
   return (
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
       <div className="d-flex gap-2 align-items-center border-bottom px-3 py-2">
@@ -64,7 +79,7 @@ export function Conversations({
                 key={conversation.id}
                 as="button"
                 active={conversation.id === selectedId}
-                onClick={() => setPickedId(conversation.id)}
+                onClick={() => void setPickedId(conversation.id)}
               >
                 <span className="d-block text-truncate">{conversation.title}</span>
               </Dropdown.Item>
@@ -88,13 +103,15 @@ export function Conversations({
         </OverlayTrigger>
       </div>
       {conversations.isError || create.isError ? (
-        <Alert variant="danger" className="m-3">
-          {(conversations.error ?? create.error)?.message}
-        </Alert>
+        <AppErrorAlert
+          className="m-3"
+          error={listError ?? createError}
+          render={{ UNKNOWN: ({ message }) => message }}
+        />
       ) : conversations.isPending ? (
         <Loading />
-      ) : selectedId ? (
-        <ConversationChat
+      ) : selectedId && active ? (
+        <Chat
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
@@ -122,78 +139,52 @@ function Loading() {
   );
 }
 
-function ConversationChat({
-  courseId,
-  conversationId,
-  chatCsrfToken,
-}: {
-  courseId: string;
-  conversationId: string;
-  chatCsrfToken: string;
-}) {
-  const trpc = useTRPC();
-  // `useChat` reads its initial messages only once, so load the history before mounting it.
-  const history = useQuery({
-    ...trpc.courseAgent.messages.queryOptions({ conversationId }),
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-  });
-
-  if (history.isError) {
-    return (
-      <Alert variant="danger" className="m-3">
-        {history.error.message}
-      </Alert>
-    );
-  }
-  if (history.isPending) return <Loading />;
-  return (
-    <Chat
-      courseId={courseId}
-      conversationId={conversationId}
-      chatCsrfToken={chatCsrfToken}
-      initialMessages={history.data}
-    />
-  );
-}
-
 function Chat({
   courseId,
   conversationId,
   chatCsrfToken,
-  initialMessages,
 }: {
   courseId: string;
   conversationId: string;
   chatCsrfToken: string;
-  initialMessages: UIMessage[];
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [transport] = useState(
-    () =>
-      new DefaultChatTransport({
-        api: `/pl/course/${courseId}/course_agent/conversations/${conversationId}/chat`,
-        headers: { 'X-CSRF-Token': chatCsrfToken },
-        // The server keeps the history; send only the newest message.
-        prepareSendMessagesRequest: ({ messages, headers }) => ({
-          body: { message: messages.at(-1) },
-          headers,
-        }),
-      }),
-  );
-  const { messages, sendMessage, status, stop, error } = useChat({
-    id: conversationId,
-    messages: initialMessages,
-    transport,
-    throttle: 100,
-    // The first message sets the conversation's title.
-    onFinish: () =>
-      void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
+  const [historyReady, setHistoryReady] = useState(false);
+  const agent = useAgent({
+    agent: 'Conversation',
+    basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
+    query: { csrfToken: chatCsrfToken },
+    onClose: () => setHistoryReady(false),
+    onMessage: (event) => {
+      const message = JSON.parse(event.data) as OutgoingMessage;
+      if (message.type === MessageType.CF_AGENT_CHAT_MESSAGES) setHistoryReady(true);
+    },
   });
+  const {
+    messages,
+    sendMessage,
+    status,
+    stop,
+    isServerStreaming,
+    isRecovering,
+    error,
+    connectionError,
+  } = useAgentChat({
+    agent,
+    throttle: 100,
+    getInitialMessages: null,
+  });
+  const title = useMutation({
+    ...trpc.courseAgent.setTitle.mutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
+  });
+  const titleError = getAppError<CourseAgentError['SetTitle']>(title.error);
+  // Do not send an empty client transcript before the SDK's initial history arrives.
+  const connected = agent.readyState === 1 && historyReady;
   const [draft, setDraft] = useState('');
-  const isBusy = ['submitted', 'streaming'].includes(status);
-  // Show loading while a turn is submitted or streaming and has no visible output yet.
+  const isBusy = ['submitted', 'streaming'].includes(status) || isServerStreaming || isRecovering;
+  // Show loading while a turn is submitted, streaming, or recovering with no visible output.
   // When a turn finishes or fails, isBusy is false, so isLoading is false.
   const isLoading = run(() => {
     if (!isBusy) return false;
@@ -208,8 +199,9 @@ function Chat({
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || isBusy) return;
+    if (!text || isBusy || !connected) return;
     void sendMessage({ text });
+    title.mutate({ conversationId, text });
     setDraft('');
   };
 
@@ -237,6 +229,13 @@ function Chat({
               Thinking…
             </div>
           )}
+          {!connected && <div className="small text-muted">Connecting…</div>}
+          {connectionError && (
+            <Alert variant="danger">Could not connect to the course agent.</Alert>
+          )}
+          {title.isError && (
+            <AppErrorAlert error={titleError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
           {error && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
@@ -256,12 +255,22 @@ function Chat({
         />
         <div className="d-flex justify-content-end mt-2">
           {isBusy ? (
-            <Button variant="outline-secondary" size="sm" onClick={() => void stop()}>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              disabled={!connected}
+              onClick={() => void stop()}
+            >
               <i className="bi bi-stop-fill me-1" aria-hidden="true" />
               Stop
             </Button>
           ) : (
-            <Button type="submit" size="sm" aria-label="Send" disabled={!draft.trim()}>
+            <Button
+              type="submit"
+              size="sm"
+              aria-label="Send"
+              disabled={!draft.trim() || !connected}
+            >
               <i className="bi bi-send" aria-hidden="true" />
             </Button>
           )}
