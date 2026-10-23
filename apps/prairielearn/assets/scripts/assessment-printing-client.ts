@@ -1,4 +1,3 @@
-import { layoutPrintGradingTable } from '../../src/lib/client/print-cover-layout.js';
 import {
   fitPrintChoiceImages,
   waitForExcalidrawCanvases,
@@ -12,6 +11,8 @@ import {
 } from '../../src/lib/client/print-response-controls.js';
 import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docx-browser.js';
 import { parseQuestionBlockSize } from '../../src/lib/printing/question-block-size.js';
+
+import { layoutPrintGradingTable } from './lib/print-cover-layout.js';
 
 interface PagedFlow {
   total: number;
