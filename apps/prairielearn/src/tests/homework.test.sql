@@ -31,3 +31,12 @@ SET
   max_points = 13
 WHERE
   tid = 'hw1-automaticTestSuite';
+
+-- BLOCK select_personal_note
+SELECT
+  *
+FROM
+  files
+WHERE
+  assessment_instance_id = $assessment_instance_id
+  AND display_filename = $filename;

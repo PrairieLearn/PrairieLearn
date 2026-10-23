@@ -6,18 +6,22 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectAssessmentInstanceLog } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import {
   type AssessmentInstance,
   AssessmentInstanceSchema,
+  FileSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SubmissionSchema,
   type Variant,
 } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectUserById } from '../models/user.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
+import { fetchCheerio } from './helperClient.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
@@ -367,6 +371,65 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
   };
 
   startAssessment();
+
+  it('logs personal note creation and deletion with their timestamps and users', async () => {
+    const response = await fetchCheerio(locals.assessmentInstanceUrl);
+    assert.isTrue(response.ok);
+    const csrfToken = response.$('.attach-text-form input[name="__csrf_token"]').val() as string;
+    const filename = 'log-test-note.txt';
+    const added = await fetch(locals.assessmentInstanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'attach_text',
+        __csrf_token: csrfToken,
+        filename,
+        contents: 'Personal note for the assessment log test.',
+      }),
+    });
+    assert.isTrue(added.ok);
+
+    const fileParams = { assessment_instance_id: locals.assessment_instance.id, filename };
+    const file = await sqldb.queryRow(sql.select_personal_note, fileParams, FileSchema);
+    const creator = await selectUserById(file.created_by!);
+    const log = await selectAssessmentInstanceLog(locals.assessment_instance.id, false);
+    const events = log.filter((entry) => entry.data?.file_id === file.id);
+    assert.lengthOf(events, 1);
+    assert.include(events[0], {
+      event_name: 'Add personal note',
+      auth_user_uid: creator.uid,
+      instance_question_id: null,
+      variant_id: null,
+      submission_id: null,
+    });
+    assert.deepEqual(events[0].event_date, file.created_at);
+    assert.deepEqual(events[0].data, { file_id: file.id, display_filename: filename });
+
+    const deleted = await fetch(locals.assessmentInstanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'delete_file',
+        __csrf_token: csrfToken,
+        file_id: file.id,
+      }),
+    });
+    assert.isTrue(deleted.ok);
+
+    const deletedFile = await sqldb.queryRow(sql.select_personal_note, fileParams, FileSchema);
+    const deleter = await selectUserById(deletedFile.deleted_by!);
+    const updatedLog = await selectAssessmentInstanceLog(locals.assessment_instance.id, false);
+    const updatedEvents = updatedLog.filter((entry) => entry.data?.file_id === file.id);
+    assert.lengthOf(updatedEvents, 2);
+    assert.deepEqual(updatedEvents[0], events[0]);
+    assert.include(updatedEvents[1], {
+      event_name: 'Delete personal note',
+      auth_user_uid: deleter.uid,
+      instance_question_id: null,
+      variant_id: null,
+      submission_id: null,
+    });
+    assert.deepEqual(updatedEvents[1].event_date, deletedFile.deleted_at);
+    assert.deepEqual(updatedEvents[1].data, { file_id: file.id, display_filename: filename });
+  });
 
   describe('assessment_instance: set attach files page URL', function () {
     it('should succeed', function () {
