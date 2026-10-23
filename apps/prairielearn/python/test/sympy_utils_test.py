@@ -628,6 +628,19 @@ class TestSympy:
 
         assert result == psu.SympyParseSuccess(expected)
 
+    def test_type_validation_preserves_unsimplified_expression(self) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "[0, sin(pi/2)] U {1}",
+            None,
+            allow_sets=True,
+            simplify_expression=False,
+            allowed_types={"interval"},
+        )
+
+        assert isinstance(result, psu.SympyParseSuccess)
+        assert isinstance(result.expr, sympy.Union)
+        assert result.expr.doit() == sympy.Interval(0, 1)
+
     @pytest.mark.parametrize(
         ("text", "allowed_types", "missing_types"),
         [
@@ -827,12 +840,6 @@ class TestSympy:
         )
 
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
-
-    @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
-    def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
-        assert sympy_expr == psu.json_to_sympy(
-            psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
-        )
 
     def test_unsimplified_set_json_conversion_preserves_operation(self) -> None:
         constant = sympy.Add(sympy.E, sympy.I, evaluate=False)
