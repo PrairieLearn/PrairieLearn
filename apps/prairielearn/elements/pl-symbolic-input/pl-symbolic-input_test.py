@@ -202,16 +202,17 @@ def test_prepare_rejects_disallowed_correct_answer_type(
         symbolic_input.prepare(element_html, data)
 
 
-def test_prepare_accepts_allowed_correct_answer_type() -> None:
+def test_prepare_accepts_simplified_correct_answer_type() -> None:
     element_html = build_element_html(
         'allowed-types="interval"',
-        'correct-answer="[1, 2] U [3, 4]"',
+        'correct-answer="[0, sin(pi/2)] U {1}"',
+        'display-simplified-expression="false"',
     )
     data = make_question_data()
 
     symbolic_input.prepare(element_html, data)
 
-    assert data["correct_answers"]["test"] == "[1, 2] U [3, 4]"
+    assert data["correct_answers"]["test"] == "[0, sin(pi/2)] U {1}"
 
 
 @pytest.mark.parametrize(

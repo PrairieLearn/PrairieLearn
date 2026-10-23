@@ -182,7 +182,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f"Parsing correct answer {a_true!r} for {name!r} failed."
             ) from exc
 
-        type_failure = psu.check_sympy_types(parsed_answer, allowed_types)
+        type_failure = psu.check_sympy_types(
+            parsed_answer, allowed_types, simplify_expression=simplify_expression
+        )
         if type_failure is not None:
             raise ValueError(
                 f"Parsing correct answer {a_true!r} for {name!r} failed: "
