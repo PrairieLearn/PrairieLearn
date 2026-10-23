@@ -1,6 +1,6 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.js';
+import { BaseHeadContents } from '../../components/HeadContents.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -78,12 +78,11 @@ export function InstructorAssessmentInstancePrint({
       data-print-max-points="${maxPoints}"
     >
       <head>
-        ${HeadContents({
+        ${BaseHeadContents({
           resLocals,
           pageTitle: isAnswerKey
             ? `${resLocals.assessment_label} answer key`
             : `${resLocals.assessment_label} printable assessment`,
-          includeApplicationScripts: false,
         })}
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
