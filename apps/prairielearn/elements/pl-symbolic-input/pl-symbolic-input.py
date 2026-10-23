@@ -230,19 +230,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
-    constants_class = psu._Constants
-
     operators: list[str] = list(psu.STANDARD_OPERATORS)
     if allow_sets:
         operators.extend(psu.SET_NOTATION_OPERATORS)
     operators.extend(custom_functions)
-    operators.extend(constants_class.functions.keys())
-    if allow_trig:
-        operators.extend(constants_class.trig_functions.keys())
-    if allow_sets:
-        operators.extend(constants_class.set_functions.keys())
+    operators.extend(
+        sorted(
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+                include_helpers=False,
+            )
+        )
+    )
 
-    constants = list(constants_class.variables.keys())
+    constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
     info_params = {
         "format": True,
