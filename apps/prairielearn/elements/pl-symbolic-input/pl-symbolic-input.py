@@ -291,7 +291,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
-                    simplify_expression=simplify_expression,
+                    # The stored tree already has the requested display state.
+                    simplify_expression=False,
                 ),
                 imaginary_unit,
             )
@@ -563,7 +564,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             a_sub_json,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
-            simplify_expression=simplify_expression,
+            simplify_expression=not simplify_expression,
         )
 
         # Finally, store the result
@@ -1116,7 +1117,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
-                simplify_expression=simplify_expression,
+                # Correct-answer strings have not been evaluated or serialized yet.
+                simplify_expression=True,
             )
         else:
             a_tru_sympy = psu.json_to_sympy(
@@ -1145,7 +1147,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expression,
+                # Unsimplified submissions need one evaluation for grading;
+                # simplified submissions must not be evaluated a second time.
+                simplify_expression=not simplify_expression,
             )
 
         for simplification in additional_simplifications:
