@@ -22,9 +22,10 @@ $(function() {
       </div>
     </div>
     {{/clipboard_enabled}}
-    <div id="rte-{{editor_uuid}}" class="border mathjax_ignore" data-options="{{quill_options_json}}"></div>
-    <div id="rte-keyboard-hint-{{editor_uuid}}" class="small text-body-secondary px-2 py-1" hidden>
-      Press Esc, then Tab to leave the editor.
+    <div id="rte-{{editor_uuid}}" class="mathjax_ignore" data-options="{{quill_options_json}}"></div>
+    <div id="rte-keyboard-hint-{{editor_uuid}}"
+         class="pl-rich-text-editor-keyboard-hint editor-keyboard-hint position-relative small text-body-secondary bg-body px-2 py-1">
+      Press <kbd>Esc</kbd>, then <kbd>Tab</kbd> to leave the editor.
     </div>
     {{#footer_enabled}}
     <div class="pl-rich-text-editor-counter-container align-items-center d-flex justify-content-between">

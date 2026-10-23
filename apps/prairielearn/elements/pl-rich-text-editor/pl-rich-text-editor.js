@@ -161,7 +161,24 @@
     const quill = new Quill(baseElement, options);
     if (!options.readOnly) {
       const hint = document.getElementById(`rte-keyboard-hint-${uuid}`);
-      hint.hidden = false;
+      const updateHintPosition = () => {
+        // Questions can be replaced without unloading the page.
+        if (!hint.isConnected) {
+          window.removeEventListener('scroll', updateHintPosition, true);
+          window.removeEventListener('resize', updateHintPosition);
+          return;
+        }
+        if (!hint.offsetHeight) return;
+        // Preserve horizontal question scrolling, which would otherwise trap CSS sticky.
+        const parentTop = hint.parentElement.getBoundingClientRect().top;
+        const naturalBottom = parentTop + hint.offsetTop + hint.offsetHeight;
+        const bottom = Math.max(parentTop + hint.offsetHeight, window.innerHeight);
+        hint.style.transform = `translateY(${Math.min(0, bottom - naturalBottom)}px)`;
+      };
+      window.addEventListener('scroll', updateHintPosition, { capture: true });
+      window.addEventListener('resize', updateHintPosition);
+      quill.on('text-change', updateHintPosition);
+      quill.root.addEventListener('focus', updateHintPosition);
       quill.root.setAttribute('role', 'textbox');
       quill.root.setAttribute('aria-label', 'Rich text editor');
       quill.root.setAttribute('aria-multiline', 'true');
@@ -184,6 +201,31 @@
       );
       quill.root.addEventListener('blur', () => {
         escapePressed = false;
+      });
+      let cursorFrame = 0;
+      // Quill scrolls after emitting selection events, including silent paste updates.
+      // Wait for that scroll before accounting for the hint, coalescing rapid cursor changes.
+      quill.on('editor-change', (eventName) => {
+        if (eventName !== 'selection-change') return;
+        cancelAnimationFrame(cursorFrame);
+        cursorFrame = requestAnimationFrame(() => {
+          updateHintPosition();
+          const range = quill.getSelection();
+          if (!range || !quill.hasFocus()) return;
+          const caret = quill.getBounds(range.index + range.length);
+          const editorBounds = baseElement.getBoundingClientRect();
+          const hintBounds = hint.getBoundingClientRect();
+          const top = editorBounds.top + caret.top;
+          const bottom = editorBounds.top + caret.bottom;
+          if (bottom > hintBounds.top && top < hintBounds.bottom) {
+            quill.scrollRectIntoView({
+              top,
+              bottom: bottom + hintBounds.height,
+              left: editorBounds.left + caret.left,
+              right: editorBounds.left + caret.right,
+            });
+          }
+        });
       });
     }
 

@@ -1,1 +1,30 @@
 @import url('@prairielearn/ui/components/styles.css');
+
+.editor-keyboard-hint {
+  display: none;
+  /* Ace's gutter uses z-index 4; pinned guidance must cover it too. */
+  z-index: 5;
+}
+
+/* Ace's scroller accepts Enter; its text input accepts typing. Gutter focus needs neither hint.
+   Keep both descriptions in the DOM so aria-describedby also works when they are hidden. */
+.ace_editor:has(.ace_scroller:focus, .ace_text-input:focus) + .editor-keyboard-hint,
+.ql-container:has(.ql-editor:focus) + .editor-keyboard-hint {
+  display: block;
+}
+
+.editor-keyboard-hint .keyboard-entry-hint,
+.editor-keyboard-hint .keyboard-exit-hint {
+  display: none;
+}
+
+.ace_editor:has(.ace_scroller:focus) + .editor-keyboard-hint .keyboard-entry-hint,
+.ace_editor:has(.ace_text-input:focus) + .editor-keyboard-hint .keyboard-exit-hint {
+  display: inline;
+}
+
+.editor-keyboard-hint kbd {
+  color: var(--bs-secondary-color);
+  background-color: var(--bs-tertiary-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+}
