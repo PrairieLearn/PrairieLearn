@@ -30,7 +30,7 @@ async function readWarnings(page: Page) {
   );
 }
 
-async function createPrintableExam(courseInstance: CourseInstance, tid: string) {
+async function createPrintableAssessment(courseInstance: CourseInstance, tid: string) {
   const user = await getConfiguredUser();
   const assessment = await selectAssessmentByTid({
     course_instance_id: courseInstance.id,
@@ -53,7 +53,7 @@ test('reports omitted questions and exports the selected Word content', async ({
   page,
   courseInstance,
 }) => {
-  const { paperUrl, assessmentInstanceId } = await createPrintableExam(
+  const { paperUrl, assessmentInstanceId } = await createPrintableAssessment(
     courseInstance,
     'exam24-printingOmittedQuestion',
   );
@@ -141,7 +141,7 @@ test('prints details content in visible boxes and preserves it in Word', async (
   page,
   courseInstance,
 }) => {
-  const { paperUrl } = await createPrintableExam(courseInstance, 'exam26-printingDetails');
+  const { paperUrl } = await createPrintableAssessment(courseInstance, 'exam26-printingDetails');
   await page.goto(`${paperUrl}/preview?paper_size=Letter`);
   await waitForPrintablePage(page);
 
@@ -190,7 +190,7 @@ test('prints representative controls, editable Word content, and an ordered answ
   page,
   courseInstance,
 }) => {
-  const { paperUrl } = await createPrintableExam(courseInstance, 'exam23-printing');
+  const { paperUrl } = await createPrintableAssessment(courseInstance, 'exam23-printing');
   await page.goto(`${paperUrl}/preview?paper_size=Letter`);
   await waitForPrintablePage(page);
   const search = new URLSearchParams({ paper_size: 'Letter' });
@@ -239,7 +239,7 @@ test('refuses incomplete question and answer-key renders and recovers after a co
   courseInstance,
   testCoursePath,
 }) => {
-  const { paperUrl } = await createPrintableExam(courseInstance, 'exam20-assessmentTools');
+  const { paperUrl } = await createPrintableAssessment(courseInstance, 'exam20-assessmentTools');
   const serverPath = path.join(testCoursePath, 'questions/addNumbers/server.py');
   const original = await fs.readFile(serverPath, 'utf8');
   try {
@@ -249,8 +249,8 @@ test('refuses incomplete question and answer-key renders and recovers after a co
         `${original}\n\ndef render(data, html):\n    if data["panel"] == "${panel}":\n        raise Exception("Deliberately broken printable render")\n    return html\n`,
       );
       await syncCourse(testCoursePath);
-      const exam = await page.request.get(`${paperUrl}/preview?paper_size=Letter`);
-      expect(exam.status()).toBe(panel === 'question' ? 500 : 200);
+      const assessment = await page.request.get(`${paperUrl}/preview?paper_size=Letter`);
+      expect(assessment.status()).toBe(panel === 'question' ? 500 : 200);
       const answerKey = await page.request.get(
         `${paperUrl}/preview?paper_size=Letter&document=answer_key`,
       );

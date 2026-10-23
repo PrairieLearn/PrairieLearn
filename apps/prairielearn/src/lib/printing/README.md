@@ -56,6 +56,8 @@ Omit the `cover` option to start with questions on the first page.
 
 ### PrairieLearn endpoint parameters
 
+`document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
+
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
 `form_label=A` through `form_label=Z` gives an assessment instance a short label on its cover and footers. Omitting it preserves the assessment instance's existing numeric Form ID label.
@@ -84,4 +86,4 @@ This sets a half-page default and allows Question 3 to size itself automatically
 
 Questions are normally rendered in separate documents, so author-generated IDs can repeat between questions. Built-in formula-editor symbolic inputs and sketch inputs generate unique DOM IDs when rendered while keeping their answer names stable. Before combining fragments in a preview or print document, use `namespaceQuestionHtmls` with a stable, unique namespace for each question. It renames IDs repeated across fragments and supported references in the rendered HTML: ID-reference attributes, inline `style` attributes and `<style>` blocks, and literal `getElementById`, `querySelector`, `querySelectorAll`, `closest`, `matches`, and `$` calls in inline scripts.
 
-The helper does not read external CSS or JavaScript files. IDs referenced from those files must be unique across the combined fragments. If an ID collides, the HTML ID is renamed but the external reference stays the same; the helper cannot detect or report the broken reference. Custom course elements remain best-effort for printable exams, so preview the output before printing. It namespaces IDs inside each `pl-graph` SVG before checking for duplicate IDs within one fragment. Other duplicate IDs within one fragment, or any duplicate IDs left after namespacing, are rejected.
+The helper does not read external CSS or JavaScript files. IDs referenced from those files must be unique across the combined fragments. If an ID collides, the HTML ID is renamed but the external reference stays the same; the helper cannot detect or report the broken reference. Custom course elements remain best-effort for printable assessments, so preview the output before printing. It namespaces IDs inside each `pl-graph` SVG before checking for duplicate IDs within one fragment. Other duplicate IDs within one fragment, or any duplicate IDs left after namespacing, are rejected.

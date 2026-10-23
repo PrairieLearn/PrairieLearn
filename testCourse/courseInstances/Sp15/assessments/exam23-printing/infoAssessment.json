@@ -1,10 +1,10 @@
 {
   "uuid": "855256bb-f531-48a4-b842-7eebb7047d3f",
   "type": "Exam",
-  "title": "Printable exam coverage",
+  "title": "Printable assessment coverage",
   "set": "Exam",
   "number": "23",
-  "comment": "Freeform questions in a fixed order for exercising the printable-exam renderer.",
+  "comment": "Freeform questions in a fixed order for exercising the printable-assessment renderer.",
   "shuffleQuestions": false,
   "autoClose": false,
   "accessControl": [
@@ -16,8 +16,8 @@
       }
     }
   ],
-  "text": "This exam exists to exercise the printable-exam renderer. It contains Freeform questions in a fixed order, grouped into zones by the print behavior each one exercises.",
-  "honorCode": "## Academic integrity pledge\n\nI, {{user_name}}, pledge that the work on this printed exam is my own.",
+  "text": "This assessment exists to exercise the printable-assessment renderer. It contains Freeform questions in a fixed order, grouped into zones by the print behavior each one exercises.",
+  "honorCode": "## Academic integrity pledge\n\nI, {{user_name}}, pledge that the work on this printed assessment is my own.",
   "zones": [
     {
       "comment": "Baseline inputs: number, integer, string, units, and big-O responses.",

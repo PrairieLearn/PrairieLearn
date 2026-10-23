@@ -108,11 +108,11 @@ test('renders accessible previews and readable answer keys for every student que
   );
   const endpoint = `${paperUrl(courseInstance, assessmentInstanceId)}&identity_field=Section&identity_field=Student%20ID`;
 
-  const examResponse = await page.goto(endpoint);
-  const examLayout = await readPaginatedQuestionLayout(page);
+  const assessmentResponse = await page.goto(endpoint);
+  const assessmentLayout = await readPaginatedQuestionLayout(page);
   await expectAccessiblePreview(page);
-  expect(examResponse?.headers()['content-security-policy']).toContain("script-src 'none'");
-  expect(Object.keys(examLayout.questionPages).length).toBeGreaterThan(1);
+  expect(assessmentResponse?.headers()['content-security-policy']).toContain("script-src 'none'");
+  expect(Object.keys(assessmentLayout.questionPages).length).toBeGreaterThan(1);
   const coverPage = page.locator('.pagedjs_page').first();
   await expect(coverPage.getByText('Name', { exact: true })).toBeVisible();
   await expect(coverPage.getByText('Section', { exact: true })).toBeVisible();
@@ -124,7 +124,9 @@ test('renders accessible previews and readable answer keys for every student que
   await expectAccessiblePreview(page);
   expect(answerKeyResponse?.headers()['content-security-policy']).toContain("script-src 'none'");
 
-  expect(Object.keys(answerKeyLayout.questionPages)).toEqual(Object.keys(examLayout.questionPages));
+  expect(Object.keys(answerKeyLayout.questionPages)).toEqual(
+    Object.keys(assessmentLayout.questionPages),
+  );
   const answerContents = await page
     .locator('.printing-answer-key-content')
     .evaluateAll((contents) =>
@@ -141,7 +143,7 @@ test('renders accessible previews and readable answer keys for every student que
   }
 
   const presentations = await readAnswerKeyQuestionPresentations(page);
-  expect(presentations).toHaveLength(Object.keys(examLayout.questionPages).length);
+  expect(presentations).toHaveLength(Object.keys(assessmentLayout.questionPages).length);
   for (const presentation of presentations) {
     expect(presentation).toMatchObject({
       answerRegionCount: 1,

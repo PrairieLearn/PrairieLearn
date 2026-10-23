@@ -37,7 +37,7 @@ test('fills the cover grading table down columns using only included questions',
   const table = cover.getByRole('region', { name: 'Grading table' });
   await expect(table).toBeVisible();
   const layout = await table.evaluate((element) => {
-    const grid = element.querySelector('.exam-grading-grid')!;
+    const grid = element.querySelector('.assessment-grading-grid')!;
     const bounds = grid.getBoundingClientRect();
     const pageBounds = element
       .closest('.pagedjs_page')!

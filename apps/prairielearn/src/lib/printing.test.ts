@@ -332,7 +332,7 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     );
   });
 
-  it.each(['exam', 'answer_key'] as const)(
+  it.each(['assessment', 'answer_key'] as const)(
     'stops rendering the %s on an unexpected error instead of omitting the question',
     async (document) => {
       const error = new Error('Rendering unavailable');
@@ -345,7 +345,7 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     },
   );
 
-  it.each(['exam', 'answer_key'] as const)(
+  it.each(['assessment', 'answer_key'] as const)(
     'excludes selected questions before rendering the %s and preserves the remaining numbers',
     async (document) => {
       const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals, {
@@ -371,7 +371,7 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
         mocks.getAndRenderVariant.mock.calls.map(
           (invocation) => (invocation[2] as { question: { id: string } }).question.id,
         ),
-      ).toEqual(document === 'exam' ? ['203', '204'] : ['203', '203', '204']);
+      ).toEqual(document === 'assessment' ? ['203', '204'] : ['203', '203', '204']);
     },
   );
 

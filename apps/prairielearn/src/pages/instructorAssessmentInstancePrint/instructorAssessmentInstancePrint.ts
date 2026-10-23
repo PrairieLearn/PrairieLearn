@@ -86,7 +86,7 @@ const LayoutQuerySchema = z.object({
     .default([]),
 });
 const DocumentQuerySchema = LayoutQuerySchema.extend({
-  document: z.enum(PRINT_DOCUMENTS).default('exam'),
+  document: z.enum(PRINT_DOCUMENTS).default('assessment'),
 });
 const PrintSnapshotSchema = z.object({
   html: z.string().min(1).max(MAX_PRINT_SNAPSHOT_BYTES),
@@ -198,7 +198,7 @@ function buildPrintSearchParams(layout: PrintLayout, document: PrintDocument): U
   for (const questionNumber of layout.excludedQuestionNumbers) {
     params.append('exclude_question', questionNumber);
   }
-  if (document !== 'exam') params.set('document', document);
+  if (document !== 'assessment') params.set('document', document);
   return params;
 }
 

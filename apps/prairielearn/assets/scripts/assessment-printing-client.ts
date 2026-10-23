@@ -27,7 +27,7 @@ declare global {
         renderTo?: HTMLElement,
       ) => Promise<PagedFlow>;
     };
-    PrairieLearnExamPrinting: {
+    PrairieLearnAssessmentPrinting: {
       waitUntil: (promise: Promise<unknown>) => void;
     };
     __PL_PRINT_READINESS_PROMISES__?: Promise<unknown>[];
@@ -254,7 +254,7 @@ function materializePrintableDetails(source: HTMLElement): void {
 
 function measurePrintablePage(source: HTMLElement): { width: number; height: number } {
   const measure = document.createElement('div');
-  measure.className = 'exam-print-page-measure';
+  measure.className = 'assessment-print-page-measure';
   source.append(measure);
   const { width, height } = measure.getBoundingClientRect();
   measure.remove();
@@ -317,7 +317,7 @@ interface PrintLayout {
 }
 
 function layoutQuestions(source: HTMLElement): PrintLayout {
-  const questionsContainer = source.querySelector<HTMLElement>('.exam-questions');
+  const questionsContainer = source.querySelector<HTMLElement>('.assessment-questions');
   if (!questionsContainer) throw new Error('Printable question container is missing');
 
   const questions = [
@@ -406,11 +406,11 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
 
   const generatedPages = [...output.querySelectorAll<HTMLElement>('.pagedjs_page')];
   const coverPageIndexes = generatedPages.flatMap((generatedPage, pageIndex) =>
-    generatedPage.querySelector('.exam-cover') ? [pageIndex] : [],
+    generatedPage.querySelector('.assessment-cover') ? [pageIndex] : [],
   );
   const includeCoverPage = document.documentElement.dataset.printIncludeCover !== 'false';
   if (includeCoverPage && (coverPageIndexes.length !== 1 || coverPageIndexes[0] !== 0)) {
-    throw new Error('The exam cover must occupy the first paginated page by itself');
+    throw new Error('The assessment cover must occupy the first paginated page by itself');
   }
   if (!includeCoverPage && coverPageIndexes.length > 0) {
     throw new Error('The document includes a cover page when it is disabled');
@@ -427,7 +427,9 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
         : [],
     );
     if (containingPageIndexes.length === 0) {
-      throw new Error(`Planned question page ${plannedPage} is missing from the paginated exam`);
+      throw new Error(
+        `Planned question page ${plannedPage} is missing from the paginated assessment`,
+      );
     }
     if (!canSpanPages && containingPageIndexes.length !== 1) {
       throw new Error(
@@ -444,20 +446,20 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
       containingPageIndexes.length
     ) {
       throw new Error(
-        `Planned question page ${plannedPage} is not contiguous in the paginated exam`,
+        `Planned question page ${plannedPage} is not contiguous in the paginated assessment`,
       );
     }
     previousLastPageIndex = containingPageIndexes.at(-1)!;
   }
 }
 
-async function paginateExam(): Promise<{ totalPages: number }> {
+async function paginateAssessment(): Promise<{ totalPages: number }> {
   await waitForDocumentReady();
   const extraReadinessPromises = window.__PL_PRINT_READINESS_PROMISES__;
-  if (!extraReadinessPromises) throw new Error('Exam printing bootstrap is missing');
-  const source = document.querySelector<HTMLElement>('#exam-print-source');
-  const output = document.querySelector<HTMLElement>('#exam-print-pages');
-  if (!source || !output) throw new Error('Printable exam containers are missing');
+  if (!extraReadinessPromises) throw new Error('Assessment printing bootstrap is missing');
+  const source = document.querySelector<HTMLElement>('#assessment-print-source');
+  const output = document.querySelector<HTMLElement>('#assessment-print-pages');
+  if (!source || !output) throw new Error('Printable assessment containers are missing');
 
   await Promise.all(extraReadinessPromises);
   await waitForExcalidrawCanvases(source);
@@ -501,11 +503,11 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   return { totalPages: flow.total };
 }
 
-window.__PL_PRINT_READY__ = paginateExam().catch((error: unknown) => {
+window.__PL_PRINT_READY__ = paginateAssessment().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   document.documentElement.dataset.printStatus = 'error';
   document.documentElement.dataset.printError = message;
-  const status = document.querySelector('#exam-print-status');
-  if (status) status.textContent = `Unable to paginate this exam: ${message}`;
+  const status = document.querySelector('#assessment-print-status');
+  if (status) status.textContent = `Unable to paginate this assessment: ${message}`;
   throw error;
 });

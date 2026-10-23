@@ -7,7 +7,7 @@ import {
 import type { PrintDocument } from '../../lib/printing.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export const DEFAULT_EXAM_INSTRUCTIONS: readonly string[] = [
+export const DEFAULT_ASSESSMENT_INSTRUCTIONS: readonly string[] = [
   'Write your name and identifying information clearly above.',
   'Show your work and place each final answer in the space provided.',
   'If you need more room, identify the question number on any additional page.',
@@ -86,7 +86,7 @@ export function buildPrintableCover({
   const instructionBlocks: PrintableTextBlock[] = [
     isAnswerKey
       ? { type: 'paragraph', text: answerKeyDescription(formId, formLabel) }
-      : { type: 'list', ordered: true, items: [...DEFAULT_EXAM_INSTRUCTIONS] },
+      : { type: 'list', ordered: true, items: [...DEFAULT_ASSESSMENT_INSTRUCTIONS] },
     ...(assessmentTextHtml ? htmlToTextBlocks(assessmentTextHtml) : []),
   ];
   const sections: PrintableCover['sections'] = [
@@ -116,6 +116,6 @@ export function buildPrintableCover({
     ],
     sections,
     gradingTable: isAnswerKey ? undefined : gradingTable,
-    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  ${getPrintFooterLabel({ document: 'exam', formId, formLabel })}`,
+    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  ${getPrintFooterLabel({ document: 'assessment', formId, formLabel })}`,
   };
 }

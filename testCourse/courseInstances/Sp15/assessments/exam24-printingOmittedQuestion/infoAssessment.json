@@ -1,7 +1,7 @@
 {
   "uuid": "2f8c82ad-a47e-467d-bffb-411231745847",
   "type": "Exam",
-  "title": "Printable exam with a broken question",
+  "title": "Printable assessment with a broken question",
   "set": "Exam",
   "number": "24",
   "shuffleQuestions": false,

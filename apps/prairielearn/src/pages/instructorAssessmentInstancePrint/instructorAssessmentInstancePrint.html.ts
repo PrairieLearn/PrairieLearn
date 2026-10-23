@@ -10,7 +10,7 @@ import type { PaperSize } from '../../lib/printing/pdf-output.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 import {
-  DEFAULT_EXAM_INSTRUCTIONS,
+  DEFAULT_ASSESSMENT_INSTRUCTIONS,
   answerKeyDescription,
   getDefaultHonorCodePledge,
   getPrintCoverFields,
@@ -40,7 +40,7 @@ export function InstructorAssessmentInstancePrint({
   includeHonorCode,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
-  document: 'exam' | 'answer_key';
+  document: 'assessment' | 'answer_key';
   formLabel?: string;
   paperSize: PaperSize;
   includeCoverPage: boolean;
@@ -88,19 +88,19 @@ export function InstructorAssessmentInstancePrint({
           document.urlPrefix = '${resLocals.urlPrefix}';
           window.PagedConfig = { auto: false };
           window.__PL_PRINT_READINESS_PROMISES__ = [];
-          window.PrairieLearnExamPrinting = {
+          window.PrairieLearnAssessmentPrinting = {
             waitUntil(promise) {
               void promise.catch(() => undefined);
               window.__PL_PRINT_READINESS_PROMISES__.push(promise);
             },
           };
         </script>
-        ${compiledScriptTag('exam-printing-client.ts')}
+        ${compiledScriptTag('assessment-printing-client.ts')}
         <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>
         <style>
           :root {
-            --exam-print-page-width: ${paperWidth};
-            --exam-print-page-height: ${paperHeight};
+            --assessment-print-page-width: ${paperWidth};
+            --assessment-print-page-height: ${paperHeight};
           }
 
           @page {
@@ -108,7 +108,7 @@ export function InstructorAssessmentInstancePrint({
           }
         </style>
         <style data-pagedjs-ignore>
-          #exam-print-status {
+          #assessment-print-status {
             background: #fff;
             border: 1px solid #bbb;
             border-radius: 0.25rem;
@@ -121,34 +121,34 @@ export function InstructorAssessmentInstancePrint({
             z-index: 1000;
           }
 
-          html[data-print-status='ready'] #exam-print-status {
+          html[data-print-status='ready'] #assessment-print-status {
             display: none;
           }
 
-          html[data-print-status='error'] #exam-print-status {
+          html[data-print-status='error'] #assessment-print-status {
             background: #f8d7da;
             border-color: #842029;
             color: #842029;
           }
 
-          .exam-grading-table {
+          .assessment-grading-table {
             flex-shrink: 0;
             margin-bottom: 12px;
           }
-          .exam-grading-grid {
+          .assessment-grading-grid {
             display: grid;
             column-gap: 20px;
             grid-auto-flow: column;
             grid-auto-columns: minmax(0, 1fr);
           }
-          .exam-grading-row {
+          .assessment-grading-row {
             display: flex;
             align-items: flex-end;
             gap: 8px;
             padding-bottom: 6px;
             font-size: 10pt;
           }
-          .exam-grading-score {
+          .assessment-grading-score {
             flex: 0 1 150px;
             border-bottom: 1px solid #111;
             margin-bottom: 3px;
@@ -161,11 +161,11 @@ export function InstructorAssessmentInstancePrint({
               margin: 0;
             }
 
-            #exam-print-pages {
+            #assessment-print-pages {
               overflow-x: auto;
             }
 
-            #exam-print-pages .pagedjs_pages {
+            #assessment-print-pages .pagedjs_pages {
               align-items: center;
               box-sizing: border-box;
               display: flex;
@@ -176,7 +176,7 @@ export function InstructorAssessmentInstancePrint({
               width: max-content;
             }
 
-            #exam-print-pages .pagedjs_page {
+            #assessment-print-pages .pagedjs_page {
               background: #fff;
               box-shadow: 0 0.25rem 1.25rem rgb(0 0 0 / 18%);
               margin: 0;
@@ -195,31 +195,31 @@ export function InstructorAssessmentInstancePrint({
               padding: 0 !important;
             }
 
-            #exam-print-status {
+            #assessment-print-status {
               display: none !important;
             }
 
-            #exam-print-pages .pagedjs_pages {
+            #assessment-print-pages .pagedjs_pages {
               display: block !important;
             }
 
-            #exam-print-pages .pagedjs_page {
+            #assessment-print-pages .pagedjs_page {
               break-after: page;
               box-shadow: none !important;
               margin: 0 !important;
             }
 
-            #exam-print-pages .exam-cover {
+            #assessment-print-pages .assessment-cover {
               break-after: auto !important;
               page: auto !important;
             }
 
-            #exam-print-pages .pagedjs_page:last-child {
+            #assessment-print-pages .pagedjs_page:last-child {
               break-after: auto;
             }
           }
         </style>
-        ${unsafeHtml(extraHeadersHtml)} ${compiledStylesheetTag('exam-printing.css')}
+        ${unsafeHtml(extraHeadersHtml)} ${compiledStylesheetTag('assessment-printing.css')}
         <style>
           @page {
             @bottom-right {
@@ -230,7 +230,7 @@ export function InstructorAssessmentInstancePrint({
             }
           }
 
-          @page exam-cover {
+          @page assessment-cover {
             @bottom-right {
               color: #555;
               content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
@@ -247,40 +247,42 @@ export function InstructorAssessmentInstancePrint({
         ${compiledScriptTag('question.ts')}
       </head>
       <body>
-        <div id="exam-print-status" role="status">
+        <div id="assessment-print-status" role="status">
           Preparing ${paperSize} ${documentLabel.toLowerCase()} pages…
         </div>
-        <div id="exam-print-source" class="exam-print-document">
+        <div id="assessment-print-source" class="assessment-print-document">
           ${
             includeCoverPage
               ? html`
-                  <article class="exam-cover" aria-label="${documentLabel} cover page">
-                    <header class="exam-cover-header">
-                      <div class="exam-cover-course">${resLocals.course.short_name}</div>
-                      <div class="exam-cover-course-title">
+                  <article class="assessment-cover" aria-label="${documentLabel} cover page">
+                    <header class="assessment-cover-header">
+                      <div class="assessment-cover-course">${resLocals.course.short_name}</div>
+                      <div class="assessment-cover-course-title">
                         ${resLocals.course.title ?? resLocals.course_instance.long_name ?? ''}
                       </div>
                       <h1>${resLocals.assessment_label}</h1>
                       ${
                         resLocals.assessment.title
-                          ? html`<div class="exam-cover-title">${resLocals.assessment.title}</div>`
+                          ? html`<div class="assessment-cover-title">
+                              ${resLocals.assessment.title}
+                            </div>`
                           : ''
                       }
-                      ${isAnswerKey ? html`<div class="exam-cover-document-label">Answer key</div>` : ''}
+                      ${isAnswerKey ? html`<div class="assessment-cover-document-label">Answer key</div>` : ''}
                     </header>
 
                     ${
                       isAnswerKey
                         ? ''
                         : html`
-                            <div class="exam-cover-fields">
+                            <div class="assessment-cover-fields">
                               ${getPrintCoverFields({
                                 identityFields,
                                 teamWork: resLocals.assessment.team_work,
                               }).map(
                                 (field) => html`
                                   <div
-                                    class="exam-cover-field${field.wide ? ' exam-cover-field-wide' : ''}"
+                                    class="assessment-cover-field${field.wide ? ' assessment-cover-field-wide' : ''}"
                                   >
                                     <span>${field.label}</span>
                                   </div>
@@ -290,7 +292,7 @@ export function InstructorAssessmentInstancePrint({
                           `
                     }
 
-                    <dl class="exam-cover-summary">
+                    <dl class="assessment-cover-summary">
                       <div>
                         <dt>Questions</dt>
                         <dd>${questionHtmls.length}</dd>
@@ -306,10 +308,10 @@ export function InstructorAssessmentInstancePrint({
                     </dl>
 
                     <section
-                      class="exam-cover-instructions"
-                      aria-labelledby="exam-instructions-heading"
+                      class="assessment-cover-instructions"
+                      aria-labelledby="assessment-instructions-heading"
                     >
-                      <h2 id="exam-instructions-heading">
+                      <h2 id="assessment-instructions-heading">
                         ${isAnswerKey ? 'About this answer key' : 'Instructions'}
                       </h2>
                       ${
@@ -318,12 +320,12 @@ export function InstructorAssessmentInstancePrint({
                               ${answerKeyDescription(resLocals.assessment_instance.id, formLabel)}
                             </p>`
                           : html`<ol>
-                              ${DEFAULT_EXAM_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
+                              ${DEFAULT_ASSESSMENT_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
                             </ol>`
                       }
                       ${
                         assessmentTextHtml
-                          ? html`<div class="exam-cover-custom-instructions">
+                          ? html`<div class="assessment-cover-custom-instructions">
                               ${unsafeHtml(assessmentTextHtml)}
                             </div>`
                           : ''
@@ -334,7 +336,7 @@ export function InstructorAssessmentInstancePrint({
                       !isAnswerKey && includeHonorCode
                         ? html`
                             <section
-                              class="exam-cover-honor-code"
+                              class="assessment-cover-honor-code"
                               aria-labelledby="honor-code-heading"
                             >
                               <h2 id="honor-code-heading">Academic integrity pledge</h2>
@@ -347,7 +349,7 @@ export function InstructorAssessmentInstancePrint({
                                       ).map((item) => html`<li>${item}</li>`)}
                                     </ul>`
                               }
-                              <div class="exam-cover-signature"><span>Signature</span></div>
+                              <div class="assessment-cover-signature"><span>Signature</span></div>
                             </section>
                           `
                         : ''
@@ -355,9 +357,13 @@ export function InstructorAssessmentInstancePrint({
                     ${
                       !isAnswerKey && includeGradingTable
                         ? html`
-                            <section class="exam-grading-table" aria-label="Grading table" hidden>
+                            <section
+                              class="assessment-grading-table"
+                              aria-label="Grading table"
+                              hidden
+                            >
                               <h2>Grading</h2>
-                              <div class="exam-grading-grid"></div>
+                              <div class="assessment-grading-grid"></div>
                             </section>
                           `
                         : ''
@@ -367,7 +373,7 @@ export function InstructorAssessmentInstancePrint({
                       ${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}
                       <span
                         >${getPrintFooterLabel({
-                          document: 'exam',
+                          document: 'assessment',
                           formId: resLocals.assessment_instance.id,
                           formLabel,
                         })}</span
@@ -378,11 +384,11 @@ export function InstructorAssessmentInstancePrint({
               : ''
           }
 
-          <div class="exam-questions">
+          <div class="assessment-questions">
             ${questionHtmls.map((questionHtml) => unsafeHtml(questionHtml))}
           </div>
         </div>
-        <main id="exam-print-pages"></main>
+        <main id="assessment-print-pages"></main>
         <noscript>This printable assessment requires JavaScript to to prepare its layout.</noscript>
       </body>
     </html>`;

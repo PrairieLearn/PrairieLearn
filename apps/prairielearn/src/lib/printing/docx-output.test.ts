@@ -22,7 +22,7 @@ const cover: PrintableCover = {
   eyebrow: 'XC 101',
   eyebrowDetail: 'Example Course',
   title: 'E4',
-  subtitle: 'Exam including autograded and manually graded questions',
+  subtitle: 'Assessment including autograded and manually graded questions',
   fields: [
     { label: 'Name', wide: true },
     { label: 'Section' },

@@ -56,7 +56,7 @@ function sameDevelopmentModuleAsset(first: string, second: string): boolean {
   );
 }
 
-export const PRINT_DOCUMENTS = ['exam', 'answer_key'] as const;
+export const PRINT_DOCUMENTS = ['assessment', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
 
 let printRenderer: PrintRenderer | null = null;
@@ -262,7 +262,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
     defaultQuestionBlockSize = 'auto',
     questionBlockSizeOverrides = new Map(),
     excludedQuestionNumbers = new Set(),
-    document = 'exam',
+    document = 'assessment',
   }: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
 ): Promise<{
   questionHtmls: string[];
@@ -310,7 +310,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       authz_result: resLocals.authz_result,
     };
     const renderState = await getAndRenderVariant(null, null, renderLocals, {
-      renderMode: document === 'exam' ? 'blank' : 'answer-key',
+      renderMode: document === 'assessment' ? 'blank' : 'answer-key',
       issuesLoadExtraData: false,
     });
 

@@ -147,8 +147,8 @@ test('moves a question that outgrows its requested block to the next page', asyn
 }) => {
   const preview = await imageQuestion(
     `<style>
-      .printing-question[data-question-number="1"] { min-height: calc(var(--exam-print-content-height) / 2 - 30px); }
-      .printing-question[data-question-number="2"] { min-height: calc(var(--exam-print-content-height) / 2 + 30px); }
+      .printing-question[data-question-number="1"] { min-height: calc(var(--assessment-print-content-height) / 2 - 30px); }
+      .printing-question[data-question-number="2"] { min-height: calc(var(--assessment-print-content-height) / 2 + 30px); }
     </style><pl-question-panel><p>Keep this question on the first page.</p></pl-question-panel><pl-integer-input answers-name="value" correct-answer="1"></pl-integer-input>`,
   );
 
