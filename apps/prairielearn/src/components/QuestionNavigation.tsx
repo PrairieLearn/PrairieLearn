@@ -67,49 +67,64 @@ export function QuestionNavSideButton({
       : { buttonId: 'question-nav-prev', buttonLabel: 'Previous question' };
   let disabledExplanation: HtmlValue | null = null;
 
-  if (instanceQuestionId == null) {
-    return html`
-      <button id="${buttonId}" class="btn btn-primary mb-3 disabled" disabled>
-        ${buttonLabel}
-      </button>
-    `;
-  }
-
-  if (groupRolePermissions?.can_view === false) {
-    disabledExplanation = html`Your current group role (${userGroupRoles}) restricts access to the
-    ${buttonLabel.toLowerCase()}.`;
-  } else if (nextQuestionAccessMode === 'blocked_sequence') {
-    disabledExplanation = html`You must score at least <b>${advanceScorePerc}%</b> on a submission
-      to this question in order to unlock the next. If you run out of attempts, the next question
-      will unlock automatically.`;
-  } else if (nextQuestionAccessMode === 'blocked_lockpoint') {
-    disabledExplanation = html`You must cross the lockpoint on the assessment overview page before
-    you can proceed to the next question.`;
-  }
-
-  if (disabledExplanation != null) {
-    return html`
-      <button
-        id="${buttonId}"
-        class="btn btn-secondary mb-3 pl-sequence-locked"
-        data-bs-toggle="popover"
-        data-bs-container="body"
-        data-bs-html="true"
-        data-bs-content="${disabledExplanation}"
-      >
-        ${buttonLabel}
-        <i class="fas fa-lock ms-1" aria-label="Locked"></i>
-      </button>
-    `;
+  if (instanceQuestionId != null) {
+    if (groupRolePermissions?.can_view === false) {
+      disabledExplanation = html`Your current group role (${userGroupRoles}) restricts access to the
+      ${buttonLabel.toLowerCase()}.`;
+    } else if (nextQuestionAccessMode === 'blocked_sequence') {
+      disabledExplanation = html`You must score at least <b>${advanceScorePerc}%</b> on a submission
+        to this question in order to unlock the next. If you run out of attempts, the next question
+        will unlock automatically.`;
+    } else if (nextQuestionAccessMode === 'blocked_lockpoint') {
+      disabledExplanation = html`You must cross the lockpoint on the assessment overview page before
+      you can proceed to the next question.`;
+    }
   }
 
   return html`
-    <a
-      id="${buttonId}"
-      class="btn btn-primary mb-3"
-      href="${urlPrefix}/instance_question/${instanceQuestionId}/"
+    <span
+      id="${buttonId}-container"
+      class="d-inline-block align-top mx-1 mb-3"
+      style="max-width: 22rem"
     >
-      ${buttonLabel}
-    </a>
+      ${
+        instanceQuestionId == null || disabledExplanation != null
+          ? html`
+              <button
+                id="${buttonId}"
+                type="button"
+                class="btn ${
+                  disabledExplanation != null ? 'btn-secondary pl-sequence-locked' : 'btn-primary'
+                }"
+                disabled
+              >
+                ${buttonLabel}
+                ${
+                  disabledExplanation != null
+                    ? html`<i class="fas fa-lock ms-1" aria-hidden="true"></i>`
+                    : ''
+                }
+              </button>
+            `
+          : html`
+              <a
+                id="${buttonId}"
+                class="btn btn-primary"
+                href="${urlPrefix}/instance_question/${instanceQuestionId}/"
+              >
+                ${buttonLabel}
+              </a>
+            `
+      }
+      ${
+        disabledExplanation != null
+          ? html`
+              <span id="${buttonId}-reason" class="d-block small text-muted mt-1">
+                ${disabledExplanation}
+              </span>
+            `
+          : ''
+      }
+    </span>
   `;
 }
