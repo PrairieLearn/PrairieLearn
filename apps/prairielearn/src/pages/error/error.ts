@@ -20,6 +20,11 @@ export default (function (err, req, res, next) {
     return;
   }
 
+  // Downloads can fail after setting headers but before streaming starts.
+  // Don't send the error response with the download's content type or filename.
+  res.removeHeader('Content-Disposition');
+  res.removeHeader('Content-Type');
+
   const errorId = res.locals.error_id;
 
   err.status ??= 500;
