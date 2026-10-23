@@ -65,11 +65,11 @@ Most PrairieLearn elements are designed to meet these requirements by default. H
 
 ### Alternatives to drawing input
 
-Drawing inputs such as [`pl-drawing`](../pl-drawing/index.md), [`pl-excalidraw`](../elements/pl-excalidraw.md), and [`pl-sketch`](../elements/pl-sketch.md) are not fully usable with keyboards and screen readers. Consider alternatives that assess the same concepts:
+Drawing inputs such as [`pl-drawing`](../pl-drawing/index.md), [`pl-excalidraw`](../elements/pl-excalidraw.md), and [`pl-sketch`](../elements/pl-sketch.md) do not fully support keyboard navigation or screen reader interaction. Consider alternatives that assess the same concepts:
 
 - **Text responses** with [`pl-rich-text-editor`](../elements/pl-rich-text-editor.md) let students describe a diagram using typing or speech-to-text. This can help students who use screen readers or have difficulty drawing or handwriting.
 - **Structured inputs**, such as labeled fields for each force's magnitude and direction, avoid precise dragging and break the response into smaller parts.
-- **File uploads** with [`pl-file-upload`](../elements/pl-file-upload.md) let students work in familiar software with their preferred assistive tools.
+- **File uploads** with [`pl-file-upload`](../elements/pl-file-upload.md) allow students to work in familiar software with their preferred assistive tools.
 - **Image capture** with [`pl-image-capture`](../elements/pl-image-capture.md) lets students submit paper drawings if handwriting is easier than using a mouse. It may still be difficult for students with visual or motor disabilities or dysgraphia, so consider offering a text option too.
 
 Alternative responses need their own grading approach, often [manual grading](../manualGrading/index.md). Students should only need to complete one response format.
