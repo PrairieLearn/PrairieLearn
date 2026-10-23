@@ -63,16 +63,6 @@ export function getCursorPositionFromCursorOffset(
   return { row, column };
 }
 
-function updateKeyboardHint(editor: ace.Ace.Editor, hint: HTMLElement | null) {
-  if (!hint) return;
-  const handler = editor.getKeyboardHandler();
-  const isVim = '$id' in handler && handler.$id === 'ace/keyboard/vim';
-  const text = isVim
-    ? 'To leave, press Esc to return to Vim Normal mode if needed, then Esc, then Tab.'
-    : 'Press Esc, then Tab to leave the editor.';
-  if (hint.textContent !== text) hint.textContent = text;
-}
-
 export function AceFileEditor({
   label,
   value,
@@ -91,13 +81,13 @@ export function AceFileEditor({
   readOnly?: boolean;
   className?: string;
   focusOnMount?: boolean;
-  options?: Partial<ace.Ace.EditorOptions>;
+  /** The exit hint assumes default key bindings; custom handlers such as Vim need different instructions. */
+  options?: Partial<Omit<ace.Ace.EditorOptions, 'keyboardHandler'>>;
   onChange?: (value: string) => void;
   onReady?: (editor: ace.Ace.Editor) => void;
   ref?: Ref<AceFileEditorHandle>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const keyboardHintRef = useRef<HTMLSpanElement>(null);
   const keyboardHintId = useId();
   const editorRef = useRef<ace.Ace.Editor | null>(null);
   const valueRef = useRef(value);
@@ -132,7 +122,6 @@ export function AceFileEditor({
       showPrintMargin: false,
       theme: 'ace/theme/chrome',
       ...initialOptionsRef.current,
-      keyboardHandler: null,
     } satisfies Partial<ace.Ace.EditorOptions>);
 
     editor.getSession().setValue(valueRef.current);
@@ -146,16 +135,11 @@ export function AceFileEditor({
     };
 
     editor.getSession().on('change', handleChange);
-    const handleKeyboardHintUpdate = () => updateKeyboardHint(editor, keyboardHintRef.current);
-    // Keymaps load asynchronously; render and focus events reflect the active handler.
-    editor.renderer.on('afterRender', handleKeyboardHintUpdate);
-    editor.on('focus', handleKeyboardHintUpdate);
     editorRef.current = editor;
     onReadyRef.current?.(editor);
 
     return () => {
       editor.getSession().off('change', handleChange);
-      editor.renderer.off('afterRender', handleKeyboardHintUpdate);
       editor.destroy();
       editor.container.replaceChildren();
       editorRef.current = null;
@@ -178,18 +162,8 @@ export function AceFileEditor({
     } else {
       editor.renderer.scroller.setAttribute('aria-describedby', `${keyboardHintId}-entry`);
       editor.textInput.getElement().setAttribute('aria-describedby', `${keyboardHintId}-exit`);
-      updateKeyboardHint(editor, keyboardHintRef.current);
     }
   }, [mode, readOnly, label, keyboardHintId]);
-
-  // Keymaps load asynchronously; update the hint only once the requested handler is active.
-  useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    editor.setKeyboardHandler(options?.keyboardHandler ?? null, () =>
-      updateKeyboardHint(editor, keyboardHintRef.current),
-    );
-  }, [options?.keyboardHandler]);
 
   // Set the accessible name and description before moving focus into the editor.
   useEffect(() => {
@@ -216,9 +190,7 @@ export function AceFileEditor({
       {!readOnly && (
         <div className="small text-body-secondary border-top px-2 py-1 flex-shrink-0">
           <span id={`${keyboardHintId}-entry`}>Press Enter to edit.</span>{' '}
-          <span ref={keyboardHintRef} id={`${keyboardHintId}-exit`}>
-            Press Esc, then Tab to leave the editor.
-          </span>
+          <span id={`${keyboardHintId}-exit`}>Press Esc, then Tab to leave the editor.</span>
         </div>
       )}
     </>
