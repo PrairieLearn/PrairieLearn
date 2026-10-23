@@ -38,12 +38,12 @@ describe('conversation creation', () => {
 });
 
 describe('conversation routing', () => {
-  it.each([
-    ['chat', 'POST', `/conversations/${UUID}/chat`],
-    ['messages', 'GET', '/get-messages'],
-  ])('forwards %s requests from the trusted caller', async (action, method, pathname) => {
-    const response = await worker.fetch(request(`/conversations/${UUID}/${action}`, method), env);
-    expect(response.status).toBe(200);
-    expect(new URL(conversation.fetch.mock.lastCall![0].url).pathname).toBe(pathname);
-  });
+  it.each([`/conversations/${UUID}`, `/conversations/${UUID}/get-messages`])(
+    'forwards native SDK route %s from the trusted caller',
+    async (pathname) => {
+      const response = await worker.fetch(request(pathname, 'GET'), env);
+      expect(response.status).toBe(200);
+      expect(new URL(conversation.fetch.mock.lastCall![0].url).pathname).toBe(pathname);
+    },
+  );
 });
