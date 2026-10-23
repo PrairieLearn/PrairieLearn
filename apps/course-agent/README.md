@@ -1,46 +1,59 @@
 # `@prairielearn/course-agent`
 
-The course agent service: a Cloudflare Worker with one Durable Object per conversation. PrairieLearn is its only caller; browsers never connect to it directly.
+The course agent service is a Cloudflare Worker with one `AIChatAgent` Durable Object per conversation. PrairieLearn is its only caller; browsers connect through PrairieLearn's authenticated proxy.
 
-Each conversation is an `AIChatAgent` from the Cloudflare Agents SDK. The SDK stores the transcript (`this.messages`) and runs each turn through `saveMessages()`. Chat is served over plain HTTP instead of the SDK's WebSocket protocol, so the wire format is the AI SDK UI message stream that `useChat` understands.
+## Responsibilities
 
-## API
+- **PrairieLearn:** session authentication, course-owner RBAC, private conversation catalog, conversation titles, and trusted course context.
+- **Cloudflare SDK:** message persistence, streaming, reconnect/replay, explicit Stop, and interrupted-turn recovery.
+- **Conversation:** pinned model, course instructions, and the model stream returned by `onChatMessage()`.
 
-Every request must send `Authorization: Bearer <PL_SERVICE_TOKEN>`.
+There is one SDK-owned message history and its native temporary stream buffer. The DO stores its pinned `model` and `courseContext`; PL owns its separate conversation catalog. There is no application reply-state machine, second transcript, custom replay protocol, or protected SDK stream override.
 
-- `POST /conversations` returns `201` with `{ "id": "<uuid>" }`. No body is needed; the service generates the ID and waits for the SDK's conversation startup before responding.
-- `GET /conversations/<uuid>/messages` returns the conversation's `UIMessage[]` (`[]` for a new conversation).
-- `POST /conversations/<uuid>/chat` with `{ message, context? }` streams the reply as an AI SDK UI message stream.
-  - `message` contains `role: "user"` and currently a single text part in `parts`. Do not send a message ID; the service generates it. Only the newest message is sent; the history lives here.
-  - Each accepted POST creates a new message, even if the text is identical. There is no retry deduplication or response replay; callers should not automatically retry submissions. Generated message IDs are available in the conversation history.
-  - `context` is optional `{ courseTitle, courseShortName }`, used in the system prompt. The last supplied context is persisted in SDK state for restart recovery; omit it to reuse that context. PrairieLearn remains authoritative and can refresh it on subsequent requests.
-  - Cancelling the response stream aborts the turn and saves the partial reply. (Closing the request from PrairieLearn does not reliably cancel it yet; an explicit stop request is a follow-up.)
+## Communication
 
-Errors: `400` invalid body, `401` bad or missing token, `404` unknown path, `409` a reply is already in progress, `426` WebSocket upgrade.
+The browser uses `useAgent()` from `agents/react` and `useAgentChat()` from `@cloudflare/ai-chat/react`. The browser connects through PrairieLearn. On each connection, the DO sends saved history using the SDK's `CF_AGENT_CHAT_MESSAGES` message, then the SDK handles replay and live output. The hook sets `getInitialMessages: null` to avoid a separate HTTP history fetch racing startup recovery. Send stays disabled until that initial transcript arrives. The SDK's history HTTP route remains available:
 
-PrairieLearn stores the returned ID in its conversation catalog and checks existence and ownership before forwarding chat or history requests. The service trusts its authenticated caller; it does not maintain a second conversation registry. Direct requests with an arbitrary valid UUID can instantiate a Durable Object.
+| Browser route                                                   | Internal service route                   | Behavior                                                           |
+| --------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------ |
+| tRPC `courseAgent.create`                                       | `POST /conversations`                    | Create a Cloudflare-generated UUID, then record it in PL's catalog |
+| WebSocket `/pl/course/{course}/course_agent/conversations/{id}` | WebSocket `/conversations/{uuid}`        | Native Cloudflare chat protocol: send, stream, resume, Stop        |
+| `GET .../conversations/{id}/get-messages`                       | `GET /conversations/{uuid}/get-messages` | SDK-owned saved history                                            |
+| tRPC `courseAgent.setTitle`                                     | None                                     | Set the catalog title from the first submitted message             |
+
+Browser IDs are PL catalog IDs. Service IDs are Cloudflare-generated UUIDs. The service requires `Authorization: Bearer <PL_SERVICE_TOKEN>` on every request, including upgrades. It trusts PrairieLearn's catalog/ownership checks when routing a valid UUID.
+
+PrairieLearn sends WebSocket upgrades through the existing Express session, authentication, and course authorization middleware before proxying. The handshake also requires a signed, user-bound prefix CSRF token in its query string. The proxy removes that token and browser cookies, replaces authorization with the service credential, and supplies `X-PL-User-Id` and `X-PL-Course-Context`. Browser state-update messages cannot overwrite the DO's model or trusted course context.
+
+Refreshing, switching conversations, or closing the panel disconnects the reader; the SDK keeps the turn running. Returning to the same conversation loads saved history and resumes the existing stream without submitting another prompt. The selected conversation is retained in the URL. The hook's `stop()` explicitly cancels the server turn, using the abort signal passed into `onChatMessage()`.
+
+The native SDK protocol replaces the earlier HTTP `/chat` and `/stop` adapter. The SDK generates user-message/request IDs in its client and assistant-message IDs on the server. It sends the transcript using its own protocol; consumers do not construct that payload. Cloudflare still generates conversation IDs. User-message validation, transcript synchronization, and replay follow the pinned SDK's behavior rather than a separate application protocol.
+
+Worker restart recovery is distinct from browser reconnection. The SDK saves recoverable buffered partial output; `onChatRecovery()` returns `{ continue: false }` so it does not automatically rerun an interrupted prompt. This does not promise recovery of output that had not reached the SDK's durable buffer.
+
+Conversation-list activity indicators, unread/read markers, sandbox execution, and usage/limit infrastructure remain outside this service’s current scope.
 
 ## Local development
 
+Configure the Worker locally using `.dev.vars.example`, then start it:
+
 ```sh
-cp .dev.vars.example .dev.vars               # then fill in PL_SERVICE_TOKEN and OPENAI_API_KEY
-pnpm --filter @prairielearn/course-agent dev # http://localhost:8790
+pnpm --filter @prairielearn/course-agent dev
 ```
 
-Try it with `curl` (set `PL_SERVICE_TOKEN` in your shell to the same local service token):
+Configure PL's `courseAgentServiceUrl`, `courseAgentServiceToken`, and the `course-agent` feature flag, then run the PL development server. Open the course agent as a course owner. Send a message, refresh or switch conversations during its reply, and return to the same conversation. Stop should cancel execution; simply closing the panel should leave it running.
+
+The new chat interface uses the SDK WebSocket protocol, so the previous chat `curl` examples no longer apply. Conversation creation and saved-history requests remain HTTP:
 
 ```sh
-conversation_id=$(curl --fail-with-body -sS -X POST \
-  -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
-  http://localhost:8790/conversations | python3 -c 'import json, sys; print(json.load(sys.stdin)["id"])')
-
-curl -N --fail-with-body -H "Authorization: Bearer $PL_SERVICE_TOKEN" -H 'Content-Type: application/json' \
-  -d '{"message":{"role":"user","parts":[{"type":"text","text":"Hello"}]}}' \
-  "http://localhost:8790/conversations/$conversation_id/chat"
+curl --fail-with-body -X POST -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
+  http://localhost:8790/conversations
 
 curl --fail-with-body -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
-  "http://localhost:8790/conversations/$conversation_id/messages"
+  "http://localhost:8790/conversations/$conversation_id/get-messages"
 ```
+
+`test/wrangler.jsonc` runs a scripted producer with explicit dummy credentials and separate SQLite storage. Browser tests exercise real PL authorization/proxying, the native Cloudflare client/server protocol, refresh and switching, and Stop without using provider credentials or paid model calls. It is a test fixture, not the deployment entry point.
 
 ## Deployment
 
@@ -50,8 +63,8 @@ pnpm exec wrangler secret put OPENAI_API_KEY
 pnpm --filter @prairielearn/course-agent deploy
 ```
 
-New conversations use `OPENAI_MODEL` from `wrangler.jsonc` (GPT-6 Luna by default). Each conversation persists its model at startup and keeps it across deployments. Existing conversations without a saved model adopt the configured model when next started.
+New conversations use `OPENAI_MODEL` from `wrangler.jsonc`. Each conversation persists its model at startup and keeps it across deployments. Existing conversations without a saved model adopt the configured model when next started.
 
-After changing variables, bindings, or required secrets in `wrangler.jsonc`, regenerate the environment types with `pnpm --filter @prairielearn/course-agent generate-types` and commit the updated declaration file. CI runs `pnpm --filter @prairielearn/course-agent check-types` and fails if the generated types are stale. Secret values belong in `.dev.vars` locally or Cloudflare deployment secrets, never in `wrangler.jsonc`.
+After changing bindings, variables, or required secrets, regenerate `src/env.d.ts` with `pnpm --filter @prairielearn/course-agent generate-types`. CI checks it with `check-types`. Secret values belong in local `.dev.vars` or Cloudflare deployment secrets.
 
-`PL_SERVICE_TOKEN` is a static service credential, not an expiring JWT. Store it only in deployment secrets and rotate/revoke it if compromised. For rotation, the current single-token configuration requires a coordinated change in the Worker and PrairieLearn; requests using the old token fail once the Worker switches. Short-lived service tokens and overlapping key rotation are follow-ups. Credential changes do not automatically terminate streams that were already accepted.
+`PL_SERVICE_TOKEN` is a static service credential. Rotating it requires a coordinated Worker and PL change; rotation does not automatically close already accepted connections.

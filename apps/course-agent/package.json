@@ -14,7 +14,6 @@
   "dependencies": {
     "@ai-sdk/openai": "^4.0.78",
     "@cloudflare/ai-chat": "0.12.1",
-    "@prairielearn/utils": "workspace:^",
     "agents": "0.28.0",
     "ai": "^7.0.116",
     "zod": "^4.6.5"
