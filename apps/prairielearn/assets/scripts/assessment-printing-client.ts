@@ -317,6 +317,11 @@ interface PrintLayout {
   plannedPageCanSpanPages: boolean[];
 }
 
+/**
+ * Measures questions at the final print width and groups them into planned page containers.
+ * Requested block sizes reserve answer space; oversized questions may span multiple pages.
+ * The containers and returned geometry let validation detect unexpected changes during pagination.
+ */
 function layoutQuestions(source: HTMLElement): PrintLayout {
   const questionsContainer = source.querySelector<HTMLElement>('.assessment-questions');
   if (!questionsContainer) throw new Error('Printable question container is missing');
@@ -384,6 +389,10 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
   };
 }
 
+/**
+ * Checks that Paged.js preserved the measured page geometry and planned question placement.
+ * Rejects unexpected page splits or cover placement before the document is marked ready for export.
+ */
 function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
   const pagedArea = output.querySelector<HTMLElement>('.pagedjs_area');
   if (!pagedArea) throw new Error('Paged.js did not create a printable content area');
@@ -454,6 +463,12 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
   }
 }
 
+/**
+ * Prepares question content, captures editable Word content, and paginates the assessment.
+ * Waits for asynchronous elements, math, fonts, and images before measuring; captures Word
+ * content before pagination splits the DOM. Marks the document ready only after validating
+ * the generated pages against the measured layout.
+ */
 async function paginateAssessment(): Promise<{ totalPages: number }> {
   await waitForDocumentReady();
   const extraReadinessPromises = window.__PL_PRINT_READINESS_PROMISES__;

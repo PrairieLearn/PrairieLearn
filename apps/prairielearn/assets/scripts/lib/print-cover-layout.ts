@@ -1,3 +1,8 @@
+/**
+ * Fits the optional grading table into the cover's remaining space before pagination.
+ * Call after fonts and images have loaded, with the printable content height in CSS pixels.
+ * Throws if the table cannot fit and saves the successful layout for the Word cover.
+ */
 export function layoutPrintGradingTable(source: HTMLElement, pageHeight: number): void {
   const table = source.querySelector<HTMLElement>('.assessment-grading-table');
   if (!table) return;
