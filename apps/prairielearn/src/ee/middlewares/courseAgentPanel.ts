@@ -24,6 +24,7 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
     courseId: res.locals.course.id,
     authnUserId: res.locals.authn_user.id,
     initialOpen: req.session.course_agent_panel_open === true,
+    search: new URL(req.originalUrl, 'http://localhost').search,
   });
   next();
 });

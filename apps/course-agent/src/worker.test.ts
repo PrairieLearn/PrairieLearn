@@ -40,7 +40,8 @@ describe('conversation creation', () => {
 describe('conversation routing', () => {
   it.each([
     ['chat', 'POST', `/conversations/${UUID}/chat`],
-    ['messages', 'GET', '/get-messages'],
+    ['chat', 'GET', `/conversations/${UUID}/chat`],
+    ['stop', 'POST', `/conversations/${UUID}/stop`],
   ])('forwards %s requests from the trusted caller', async (action, method, pathname) => {
     const response = await worker.fetch(request(`/conversations/${UUID}/${action}`, method), env);
     expect(response.status).toBe(200);

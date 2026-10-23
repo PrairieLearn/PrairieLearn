@@ -1,184 +1,162 @@
-import { type UIMessage, type UIMessageChunk, streamText } from 'ai';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 
-import type { ChatContext } from '../http/chat-request.js';
+import { startScriptedAgent } from '../../../prairielearn/src/tests/utils/course-agent-worker.js';
 
-import { Conversation } from './conversation.js';
+let agent: Awaited<ReturnType<typeof startScriptedAgent>>;
+beforeAll(async () => {
+  agent = await startScriptedAgent();
+}, 60000);
+afterAll(async () => {
+  await agent.close();
+});
+const create = () => agent.create();
+const control = (id: string, action: Parameters<typeof agent.control>[1], text?: string) =>
+  agent.control(id, action, text);
 
-interface State {
-  courseContext: ChatContext | null;
-}
-const historyConsumer = vi.hoisted(() => ({ replies: [] as string[] }));
-
-const generateReply = vi.hoisted(() =>
-  vi.fn<(options: { abortSignal?: AbortSignal }) => { stream: ReadableStream<UIMessageChunk> }>(),
-);
-
-vi.mock('@cloudflare/ai-chat', () => ({
-  AIChatAgent: class {
-    initialState: State = { courseContext: null };
-    messages: UIMessage[] = [];
-    private savedState?: State;
-    constructor(
-      _ctx: DurableObjectState,
-      readonly env: Env,
-    ) {}
-
-    get state() {
-      return this.savedState ?? this.initialState;
-    }
-
-    setState(state: State) {
-      this.savedState = state;
-    }
-
-    async saveMessages(
-      update: (messages: UIMessage[]) => UIMessage[],
-      options: { signal: AbortSignal },
-    ) {
-      this.messages = update(this.messages);
-      const response = await this.onChatMessage(() => {}, { abortSignal: options.signal });
-      historyConsumer.replies.push(await response.text());
-    }
-
-    async onChatMessage(
-      _onFinish: () => void,
-      _options?: { abortSignal: AbortSignal },
-    ): Promise<Response> {
-      throw new Error('The conversation must implement onChatMessage');
-    }
-  },
-}));
-
-vi.mock('@ai-sdk/openai', () => ({ createOpenAI: () => () => 'test-model' }));
-vi.mock('ai', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  streamText: generateReply,
-  toUIMessageStream: ({ stream }: { stream: ReadableStream<UIMessageChunk> }) => stream,
-}));
-
-const context = { courseTitle: 'Intro to Programming', courseShortName: 'CS 101' };
-const env = {
-  OPENAI_API_KEY: 'test',
-  OPENAI_MODEL: 'test-model',
-  PL_SERVICE_TOKEN: 'test',
-} as Env;
-
-function createConversation() {
-  // The mocked SDK consumes the history stream; no Cloudflare runtime is used here.
-  return new Conversation({} as DurableObjectState, env);
-}
-
-function chat(courseContext?: ChatContext) {
-  return new Request('https://agent.test/conversations/test/chat', {
+async function send(id: string) {
+  const response = await fetch(`${agent.url}/conversations/${id}/chat`, {
     method: 'POST',
+    headers: agent.headers,
     body: JSON.stringify({
-      message: { role: 'user', parts: [{ type: 'text', text: 'Hello' }] },
-      context: courseContext,
+      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+      context: { courseTitle: 'Test', courseShortName: 'CS 101' },
     }),
   });
+  expect(response.status).toBe(200);
+  return response;
 }
 
-beforeEach(() => {
-  historyConsumer.replies = [];
-  vi.clearAllMocks();
-  generateReply.mockReset().mockImplementation(() => ({
-    stream: new ReadableStream<UIMessageChunk>({
-      start(controller) {
-        controller.enqueue({ type: 'start' });
-        controller.enqueue({ type: 'finish' });
-        controller.close();
-      },
-    }),
-  }));
-});
+async function open(id: string) {
+  const response = await fetch(`${agent.url}/conversations/${id}/chat`, { headers: agent.headers });
+  expect(response.status).toBe(200);
+  const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = '';
+  return {
+    reader,
+    async next(): Promise<Record<string, unknown>> {
+      while (!buffer.includes('\n\n')) {
+        const item = await reader.read();
+        expect(item.done).toBe(false);
+        buffer += item.value;
+      }
+      const end = buffer.indexOf('\n\n');
+      const data = buffer.slice(0, end).slice(6);
+      buffer = buffer.slice(end + 2);
+      return JSON.parse(data);
+    },
+    async final() {
+      for (;;) {
+        const frame = await this.next();
+        if (frame.type === 'snapshot' && frame.phase === 'final') return frame;
+      }
+    },
+  };
+}
 
-describe('conversation prompt context', () => {
-  it('reuses context when omitted and refreshes it when supplied', async () => {
-    const conversation = createConversation();
-    await (await conversation.onRequest(chat(context))).text();
-    await (await conversation.onRequest(chat())).text();
-    expect(streamText).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        instructions: expect.stringContaining('CS 101: Intro to Programming'),
-      }),
-    );
+it('replays a short partial reply after disconnection, then saves the same reply once', async () => {
+  const id = await create();
+  const post = await send(id);
+  const assistant = post.headers.get('X-Assistant-Message-Id');
+  expect(assistant).toBeTruthy();
+  await expect.poll(async () => (await control(id, 'stats')).ready).toBe(true);
+  await control(id, 'advance', 'Hello');
+  await post.body!.cancel();
+  const chat = await open(id);
+  const initial = await chat.next();
+  expect(initial).toMatchObject({
+    type: 'snapshot',
+    reply: { status: 'running', assistantMessageId: assistant },
+  });
+  const replay = [];
+  while (!JSON.stringify(replay).includes('Hello')) replay.push(await chat.next());
+  await control(id, 'advance', ' again');
+  await control(id, 'finish');
+  const final = await chat.final();
+  expect(final).toMatchObject({
+    reply: { status: 'idle' },
+    messages: [
+      { role: 'user' },
+      { id: assistant, role: 'assistant', parts: [{ type: 'text', text: 'Hello again' }] },
+    ],
+  });
+  expect((await control(id, 'stats')).calls).toBe(1);
+  const saved = await open(id);
+  expect(await saved.next()).toMatchObject({ reply: { status: 'idle' }, messages: final.messages });
+  expect((await saved.reader.read()).done).toBe(true);
+}, 15000);
 
-    await (await conversation.onRequest(chat({ ...context, courseTitle: 'Renamed' }))).text();
-    expect(streamText).toHaveBeenLastCalledWith(
-      expect.objectContaining({ instructions: expect.stringContaining('CS 101: Renamed') }),
-    );
+it('explicit Stop persists partial output and stale Stop cannot cancel a successor', async () => {
+  const id = await create();
+  const first = await send(id);
+  const firstId = first.headers.get('X-Assistant-Message-Id');
+  await expect.poll(async () => (await control(id, 'stats')).ready).toBe(true);
+  await control(id, 'advance', 'Partial');
+  const stop = await fetch(`${agent.url}/conversations/${id}/stop`, {
+    method: 'POST',
+    headers: agent.headers,
+    body: JSON.stringify({ assistantMessageId: firstId }),
+  });
+  expect(stop.status).toBe(202);
+  expect(await first.text()).toContain('Partial');
+  const second = await send(id);
+  const stale = await fetch(`${agent.url}/conversations/${id}/stop`, {
+    method: 'POST',
+    headers: agent.headers,
+    body: JSON.stringify({ assistantMessageId: firstId }),
+  });
+  expect(stale.status).toBe(204);
+  await control(id, 'finish');
+  await second.text();
+}, 15000);
+
+it('survives completion while a reader pauses at its initial snapshot', async () => {
+  const id = await create();
+  const post = await send(id);
+  const read = await open(id);
+  await read.next();
+  await expect.poll(async () => (await control(id, 'stats')).ready).toBe(true);
+  await control(id, 'advance', 'Complete answer');
+  await control(id, 'finish');
+  await post.text();
+  expect(await read.final()).toMatchObject({
+    messages: [{ role: 'user' }, { role: 'assistant', parts: [{ text: 'Complete answer' }] }],
+  });
+}, 15000);
+
+it('a provider failure settles readers with saved history and a failed state', async () => {
+  const id = await create();
+  const post = await send(id);
+  const read = await open(id);
+  await read.next();
+  await expect.poll(async () => (await control(id, 'stats')).ready).toBe(true);
+  await control(id, 'fail');
+  await post.text();
+  expect(await read.final()).toMatchObject({
+    reply: { status: 'failed', error: { code: 'reply_failed' } },
   });
 });
 
-describe('HTTP reply handoff', () => {
-  it('streams to HTTP before generation finishes and gives the SDK the same reply', async () => {
-    const source = Promise.withResolvers<ReadableStreamDefaultController<UIMessageChunk>>();
-    generateReply.mockImplementationOnce(() => ({
-      stream: new ReadableStream<UIMessageChunk>({
-        start(controller) {
-          source.resolve(controller);
-          controller.enqueue({ type: 'start' });
-          controller.enqueue({ type: 'text-start', id: 'text' });
-          controller.enqueue({ type: 'text-delta', id: 'text', delta: 'Hello' });
-        },
-      }),
-    }));
-    const conversation = createConversation();
-    const response = await conversation.onRequest(chat());
-    const reader = response.body!.getReader();
-    let httpReply = '';
-    while (!httpReply.includes('Hello')) {
-      const { done, value } = await reader.read();
-      expect(done).toBe(false);
-      httpReply += new TextDecoder().decode(value);
-    }
-    expect(historyConsumer.replies).toEqual([]);
-    expect((await conversation.onRequest(chat())).status).toBe(409);
-
-    const controller = await source.promise;
-    controller.enqueue({ type: 'text-end', id: 'text' });
-    controller.enqueue({ type: 'finish' });
-    controller.close();
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      httpReply += new TextDecoder().decode(value);
-    }
-    await vi.waitFor(() => expect(historyConsumer.replies).toEqual([httpReply]));
+it('recovers durable partial output after a Worker restart without rerunning the model', async () => {
+  const id = await create();
+  const post = await send(id);
+  await expect.poll(async () => (await control(id, 'stats')).ready).toBe(true);
+  await control(id, 'advance', 'Durable partial');
+  const observed = await open(id);
+  let frame = await observed.next();
+  while (!JSON.stringify(frame).includes('Durable partial')) frame = await observed.next();
+  await observed.reader.cancel();
+  await post.body!.cancel();
+  await agent.restart();
+  const read = await open(id);
+  const snapshot = await read.next();
+  expect(JSON.stringify(snapshot)).toContain('Durable partial');
+  expect(snapshot).toMatchObject({
+    reply: { status: 'failed', error: { code: 'reply_interrupted' } },
   });
-
-  it('returns 502 when generation fails to start and allows another request', async () => {
-    generateReply.mockImplementationOnce(() => {
-      throw new Error('provider unavailable');
-    });
-    const conversation = createConversation();
-    const response = await conversation.onRequest(chat());
-    expect(response.status).toBe(502);
-    expect(await response.text()).toBe('The agent could not start a reply');
-    const next = await conversation.onRequest(chat());
-    expect(next.status).toBe(200);
-    await next.text();
-  });
-
-  it('aborts on response cancellation while the history consumer receives the partial reply', async () => {
-    generateReply.mockImplementationOnce((options) => ({
-      stream: new ReadableStream<UIMessageChunk>({
-        start(controller) {
-          controller.enqueue({ type: 'start' });
-          controller.enqueue({ type: 'text-start', id: 'text' });
-          controller.enqueue({ type: 'text-delta', id: 'text', delta: 'Partial reply' });
-          options.abortSignal!.addEventListener('abort', () => controller.close());
-        },
-      }),
-    }));
-    const conversation = createConversation();
-    const response = await conversation.onRequest(chat());
-    const reader = response.body!.getReader();
-    await reader.read();
-    await reader.cancel('Stop');
-    await vi.waitFor(() => expect(generateReply.mock.lastCall![0].abortSignal!.aborted).toBe(true));
-    await vi.waitFor(() => expect(historyConsumer.replies).toHaveLength(1));
-    expect(historyConsumer.replies[0]).toContain('Partial reply');
-  });
-});
+  expect((await control(id, 'stats')).calls).toBe(0);
+  expect((await read.reader.read()).done).toBe(true);
+  const next = await send(id);
+  await control(id, 'finish');
+  await next.text();
+  expect((await control(id, 'stats')).calls).toBe(1);
+}, 60000);

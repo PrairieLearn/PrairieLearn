@@ -257,9 +257,9 @@ describe('Course agent', () => {
 
     test('rejects unknown catalog IDs before contacting Cloudflare', async () => {
       await withUser(owner, async () => {
-        await expect(
-          createClient(owner).courseAgent.messages.query({ conversationId: '999999999' }),
-        ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+        expect(
+          (await fetch(`${siteUrl}/pl/course/1/course_agent/conversations/999999999/chat`)).status,
+        ).toBe(404);
         expect((await postChat(owner, '999999999', 'Hi')).status).toBe(404);
       });
       expect(agentFetch).not.toHaveBeenCalled();
@@ -277,22 +277,34 @@ describe('Course agent', () => {
       });
     });
 
-    test('loads history from the agent service', async () => {
+    test('loads and relays the chat snapshot in one service request', async () => {
       const conversation = await insertCourseAgentConversation({
         agent_conversation_id: crypto.randomUUID(),
         course_id: '1',
         user_id: owner.id,
       });
-      agentFetch.mockResolvedValueOnce(Response.json([userMessage('Hi'), assistantMessage]));
+      const frame = {
+        type: 'snapshot',
+        phase: 'initial',
+        messages: [userMessage('Hi'), assistantMessage],
+        reply: { status: 'idle' },
+      };
+      agentFetch.mockResolvedValueOnce(
+        new Response(`data: ${JSON.stringify(frame)}\n\n`, {
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
       await withUser(owner, async () => {
-        const messages = await createClient(owner).courseAgent.messages.query({
-          conversationId: conversation.id,
-        });
-        expect(messages.map((m) => m.id)).toEqual(['msg-Hi', 'assistant-1']);
+        const response = await fetch(
+          `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/chat`,
+        );
+        expect(response.headers.get('content-type')).toContain('text/event-stream');
+        expect(response.headers.get('x-vercel-ai-ui-message-stream')).toBeNull();
+        expect(await response.text()).toContain(JSON.stringify(frame));
       });
       const [url, init] = agentFetch.mock.calls[0];
       expect(String(url)).toBe(
-        `${agentServiceUrl}/conversations/${conversation.agent_conversation_id}/messages`,
+        `${agentServiceUrl}/conversations/${conversation.agent_conversation_id}/chat`,
       );
       expect(init?.headers).toMatchObject({ Authorization: 'Bearer service-token' });
     });
@@ -304,9 +316,10 @@ describe('Course agent', () => {
         user_id: otherOwner.id,
       });
       await withUser(owner, async () => {
-        await expect(
-          createClient(owner).courseAgent.messages.query({ conversationId: others.id }),
-        ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+        expect(
+          (await fetch(`${siteUrl}/pl/course/1/course_agent/conversations/${others.id}/chat`))
+            .status,
+        ).toBe(404);
         expect((await postChat(owner, others.id, 'Hi')).status).toBe(404);
       });
       expect(agentFetch).not.toHaveBeenCalled();
@@ -369,7 +382,67 @@ describe('Course agent', () => {
       });
     });
 
-    test('stopping the request cancels the agent service request', async () => {
+    test('forwards an authorized Stop and enforces CSRF and ownership', async () => {
+      const conversation = await insertCourseAgentConversation({
+        agent_conversation_id: crypto.randomUUID(),
+        course_id: '1',
+        user_id: owner.id,
+      });
+      const assistantMessageId = crypto.randomUUID();
+      const stopUrl = `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/stop`;
+      const stopHeaders = {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': generatePrefixCsrfToken(
+          { url: '/pl/course/1/course_agent', authn_user_id: owner.id },
+          config.secretKey,
+        ),
+      };
+      await withUser(owner, async () => {
+        expect(
+          (
+            await fetch(stopUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ assistantMessageId }),
+            })
+          ).status,
+        ).toBe(403);
+        agentFetch.mockResolvedValueOnce(new Response(null, { status: 202 }));
+        expect(
+          (
+            await fetch(stopUrl, {
+              method: 'POST',
+              headers: stopHeaders,
+              body: JSON.stringify({ assistantMessageId }),
+            })
+          ).status,
+        ).toBe(202);
+      });
+      const [url, init] = agentFetch.mock.calls[0];
+      expect(String(url)).toBe(
+        `${agentServiceUrl}/conversations/${conversation.agent_conversation_id}/stop`,
+      );
+      expect(JSON.parse(String(init?.body))).toEqual({ assistantMessageId });
+      agentFetch.mockClear();
+      await withUser(otherOwner, async () => {
+        const token = generatePrefixCsrfToken(
+          { url: '/pl/course/1/course_agent', authn_user_id: otherOwner.id },
+          config.secretKey,
+        );
+        expect(
+          (
+            await fetch(stopUrl, {
+              method: 'POST',
+              headers: { ...stopHeaders, 'X-CSRF-Token': token },
+              body: JSON.stringify({ assistantMessageId }),
+            })
+          ).status,
+        ).toBe(404);
+      });
+      expect(agentFetch).not.toHaveBeenCalled();
+    });
+
+    test('disconnecting the reader releases its upstream request', async () => {
       const conversation = await insertCourseAgentConversation({
         agent_conversation_id: crypto.randomUUID(),
         course_id: '1',

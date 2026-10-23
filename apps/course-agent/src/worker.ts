@@ -29,11 +29,8 @@ export default {
     // PrairieLearn checks conversation existence and ownership in its catalog
     // before forwarding requests. The service trusts its authenticated caller.
     switch (route.action) {
-      case 'messages':
-        if (request.method !== 'GET') return new Response('Not found', { status: 404 });
-        // Served by `AIChatAgent`'s built-in history route.
-        return conversation.fetch(new Request(new URL('/get-messages', request.url), request));
       case 'chat':
+      case 'stop':
         return conversation.fetch(request);
       default:
         assertNever(route.action);

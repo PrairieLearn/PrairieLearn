@@ -1,4 +1,4 @@
-import { type UIMessage, validateUIMessages } from 'ai';
+import type { UIMessage } from 'ai';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -35,25 +35,38 @@ export async function createCourseAgentConversation(): Promise<string> {
   return CreatedConversationSchema.parse(await response.json()).id;
 }
 
-/** Loads a conversation's history from the course agent service. */
-export async function fetchCourseAgentMessages(agentConversationId: string): Promise<UIMessage[]> {
+/** Reads saved history and follows the current reply through one HTTP response. */
+export async function getCourseAgentChat(
+  agentConversationId: string,
+  signal: AbortSignal,
+): Promise<Response> {
   const { url, headers } = buildServiceRequest(
-    `conversations/${encodeURIComponent(agentConversationId)}/messages`,
+    `conversations/${encodeURIComponent(agentConversationId)}/chat`,
   );
-  const response = await fetch(url, { headers, signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) {
-    throw new error.HttpStatusError(502, 'Could not load the course agent conversation');
-  }
-  const messages: unknown = await response.json();
-  // `validateUIMessages` rejects an empty array, which is a valid history.
-  if (Array.isArray(messages) && messages.length === 0) return [];
-  return await validateUIMessages({ messages });
+  return await fetch(url, { headers, signal });
+}
+
+/** Cancellation is an execution command, independent of any output reader. */
+export async function stopCourseAgentChat(
+  agentConversationId: string,
+  assistantMessageId: string,
+  signal: AbortSignal,
+): Promise<Response> {
+  const { url, headers } = buildServiceRequest(
+    `conversations/${encodeURIComponent(agentConversationId)}/stop`,
+  );
+  return await fetch(url, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ assistantMessageId }),
+    signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
+  });
 }
 
 /**
  * Sends the newest user message to the course agent service. The response body
- * is the reply as an AI SDK UI message stream. Aborting `signal` closes the request;
- * stopping generation in the Durable Object is not yet reliable.
+ * is the reply as an AI SDK UI message stream. Aborting `signal` only detaches
+ * this reader; use the explicit Stop command to cancel execution.
  */
 export async function postCourseAgentChat({
   agentConversationId,

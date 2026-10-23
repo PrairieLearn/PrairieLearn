@@ -1,17 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { IdSchema } from '@prairielearn/zod';
-
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
-import {
-  createCourseAgentConversation,
-  fetchCourseAgentMessages,
-} from '../../ee/lib/course-agent/client.js';
+import { createCourseAgentConversation } from '../../ee/lib/course-agent/client.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
-  selectOptionalCourseAgentConversation,
 } from '../../ee/models/course-agent-conversation.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 
@@ -48,18 +42,9 @@ export const courseAgentRouter = t.router({
     });
     return StaffCourseAgentConversationSchema.parse(conversation);
   }),
-
-  messages: courseAgentProcedure
-    .input(z.object({ conversationId: IdSchema }))
-    .query(async ({ ctx, input }) => {
-      const conversation = await selectOptionalCourseAgentConversation({
-        id: input.conversationId,
-        course_id: ctx.course.id,
-        user_id: ctx.locals.authn_user.id,
-      });
-      if (!conversation) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Conversation not found.' });
-      }
-      return await fetchCourseAgentMessages(conversation.agent_conversation_id);
-    }),
 });
+
+export interface CourseAgentError {
+  List: never;
+  Create: never;
+}

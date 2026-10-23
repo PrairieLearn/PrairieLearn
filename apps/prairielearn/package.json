@@ -157,6 +157,7 @@
     "echarts": "^6.1.0",
     "es-main": "^1.4.0",
     "es-toolkit": "^1.52.0",
+    "eventsource-parser": "^3.1.0",
     "execa": "^10.0.1",
     "express": "^4.22.3 <5",
     "express-async-handler": "^1.2.0",

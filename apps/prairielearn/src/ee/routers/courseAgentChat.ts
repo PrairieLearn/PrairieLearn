@@ -2,109 +2,135 @@ import { type Response as ExpressResponse, Router } from 'express';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { IdSchema, parseRequest } from '@prairielearn/zod';
+import { IdSchema, parseRequestBody, parseRequestParams } from '@prairielearn/zod';
 
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseAgentEnabled } from '../lib/course-agent/access.js';
-import { postCourseAgentChat } from '../lib/course-agent/client.js';
-import { pipeUiMessageStream } from '../lib/ui-message-stream.js';
+import {
+  getCourseAgentChat,
+  postCourseAgentChat,
+  stopCourseAgentChat,
+} from '../lib/course-agent/client.js';
+import { pipeEventStream, pipeUiMessageStream } from '../lib/ui-message-stream.js';
 import {
   selectOptionalCourseAgentConversation,
   updateCourseAgentConversationTitleIfDefault,
 } from '../models/course-agent-conversation.js';
 
 const router = Router({ mergeParams: true });
-
-const TITLE_MAX_LENGTH = 80;
-
-const PostRequestSchemas = {
-  params: z.object({ course_id: IdSchema, conversation_id: IdSchema }),
-  body: z.object({
-    // `useChat` sends only the newest message; the history lives in the agent service.
-    message: z.object({
-      role: z.literal('user'),
-      parts: z
-        .array(z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(20_000) }))
-        .length(1),
-    }),
+const ParamsSchema = z.object({
+  course_id: IdSchema,
+  conversation_id: IdSchema,
+  action: z.enum(['chat', 'stop']),
+});
+const ChatPostBodySchema = z.object({
+  message: z.object({
+    role: z.literal('user'),
+    parts: z.tuple([
+      z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(20_000) }),
+    ]),
   }),
-};
+});
+const StopPostBodySchema = z.object({ assistantMessageId: z.uuid() });
 
-function titleFromMessage(text: string) {
-  const title = text.replaceAll(/\s+/g, ' ').trim();
-  return title.length > TITLE_MAX_LENGTH ? `${title.slice(0, TITLE_MAX_LENGTH - 1)}…` : title;
-}
-
-function isPrematureClose(err: unknown) {
-  return err instanceof Error && 'code' in err && err.code === 'ERR_STREAM_PREMATURE_CLOSE';
-}
-
-/** The AI SDK client shows the response body as the error, so errors are plain text. */
 function sendError(res: ExpressResponse, status: number, text: string) {
   res.status(status).type('text').send(text);
 }
 
-router.post(
-  '/conversations/:conversation_id/chat',
+router.all(
+  '/conversations/:conversation_id/:action(chat|stop)',
   typedAsyncHandler<'course'>(async (req, res) => {
-    const { params, body } = parseRequest(req, PostRequestSchemas);
-
+    const params = parseRequestParams(req, ParamsSchema);
+    if (req.method !== 'POST' && !(req.method === 'GET' && params.action === 'chat')) {
+      res.sendStatus(404);
+      return;
+    }
+    // Validate all consumed request data before the catalog lookup.
+    const message =
+      req.method === 'POST' && params.action === 'chat'
+        ? parseRequestBody(req, ChatPostBodySchema).message
+        : null;
+    const stop = params.action === 'stop' ? parseRequestBody(req, StopPostBodySchema) : null;
     if (!(await courseAgentEnabled(res.locals))) {
       sendError(res, 403, 'The course agent is not available in this course.');
       return;
     }
-
+    const { authn_user, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
     const conversation = await selectOptionalCourseAgentConversation({
       id: params.conversation_id,
       course_id: params.course_id,
-      user_id: res.locals.authn_user.id,
+      user_id: authn_user.id,
     });
     if (!conversation) {
       sendError(res, 404, 'Conversation not found.');
       return;
     }
-
-    await updateCourseAgentConversationTitleIfDefault({
-      id: conversation.id,
-      title: titleFromMessage(body.message.parts[0].text),
-    });
-
-    const abort = new AbortController();
-    let upstream: Response;
-    try {
-      upstream = await postCourseAgentChat({
-        agentConversationId: conversation.agent_conversation_id,
-        message: body.message,
-        context: {
-          courseTitle: res.locals.course.title ?? '',
-          courseShortName: res.locals.course.short_name ?? '',
-        },
-        signal: abort.signal,
+    if (message) {
+      const title = message.parts[0].text.replaceAll(/\s+/g, ' ').trim();
+      await updateCourseAgentConversationTitleIfDefault({
+        id: conversation.id,
+        title: title.length > 80 ? `${title.slice(0, 79)}…` : title,
       });
-    } catch (err) {
-      logger.error('Course agent service request failed', err);
-      sendError(res, 502, 'The course agent is unavailable. Please try again.');
-      return;
     }
-
-    if (!upstream.ok || !upstream.body) {
-      // Never forward the service's error body, which may include internals.
-      if (upstream.status === 409) {
-        sendError(res, 409, 'The agent is still replying. Wait for it to finish, or stop it.');
-      } else {
-        logger.error(`Course agent service responded with ${upstream.status}`);
-        sendError(res, 502, 'The course agent is unavailable. Please try again.');
-      }
-      return;
-    }
-
+    const abort = new AbortController();
+    const close = () => abort.abort();
+    res.once('close', close);
     try {
-      await pipeUiMessageStream(upstream.body, res);
+      const id = conversation.agent_conversation_id;
+      const upstream = await (stop
+        ? stopCourseAgentChat(id, stop.assistantMessageId, abort.signal)
+        : message
+          ? postCourseAgentChat({
+              agentConversationId: id,
+              message,
+              context: { courseTitle: course.title ?? '', courseShortName: course.short_name },
+              signal: abort.signal,
+            })
+          : getCourseAgentChat(id, abort.signal));
+      if (stop && [202, 204].includes(upstream.status)) {
+        res.sendStatus(upstream.status);
+        return;
+      }
+      if (!upstream.ok || !upstream.body) {
+        if (upstream.status === 409) {
+          sendError(res, 409, 'The agent is still replying. Wait for it to finish, or stop it.');
+        } else {
+          logger.error(`Course agent service responded with ${upstream.status}`);
+          sendError(res, 502, 'The course agent is unavailable. Please reconnect.');
+        }
+        return;
+      }
+      // A late upstream response can arrive after the browser has disconnected.
+      res.removeListener('close', close);
+      if (res.destroyed || res.writableEnded) {
+        await upstream.body.cancel();
+        return;
+      }
+      if (message) {
+        const assistantId = upstream.headers.get('X-Assistant-Message-Id');
+        if (assistantId) res.setHeader('X-Assistant-Message-Id', assistantId);
+        await pipeUiMessageStream(upstream.body, res);
+      } else {
+        await pipeEventStream(upstream.body, res);
+      }
     } catch (err) {
-      // The browser closed the request (Stop, or navigating away). Cancel the
-      // upstream request too. Stopping generation in the DO is not yet reliable.
+      const disconnected =
+        err instanceof Error && 'code' in err && err.code === 'ERR_STREAM_PREMATURE_CLOSE';
+      if (!abort.signal.aborted && !disconnected) {
+        logger.error('Course agent service request failed', err);
+        if (!res.headersSent) {
+          sendError(res, 502, 'The course agent is unavailable. Please reconnect.');
+        } else {
+          res.destroy();
+        }
+      }
+    } finally {
+      res.removeListener('close', close);
       abort.abort();
-      if (!isPrematureClose(err)) logger.error('Course agent stream failed', err);
     }
   }),
 );

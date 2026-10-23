@@ -1,31 +1,44 @@
 import { useChat } from '@ai-sdk/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type UIMessage } from 'ai';
-import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
+import { useQueryState } from 'nuqs';
+import { type KeyboardEvent, type SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { useTRPC } from '../../../trpc/course/context.js';
+import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
+
+import { ChatReadError, type ClientReplyState, readChat } from './chat-reader.js';
 
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
   courseId,
   chatCsrfToken,
+  active,
 }: {
   courseId: string;
   chatCsrfToken: string;
+  active: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
   // Default to the most recent conversation until the user selects one.
-  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [pickedId, setPickedId] = useQueryState('courseAgentConversation');
   const selectedId = run(() => {
-    if (pickedId !== null) return pickedId;
+    if (
+      pickedId !== null &&
+      conversations.data?.some((conversation) => conversation.id === pickedId)
+    ) {
+      return pickedId;
+    }
     if (conversations.data && conversations.data.length > 0) {
       return conversations.data[0].id;
     }
@@ -40,10 +53,12 @@ export function Conversations({
     ...trpc.courseAgent.create.mutationOptions(),
     onSuccess: async (conversation) => {
       await queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
-      setPickedId(conversation.id);
+      await setPickedId(conversation.id);
     },
   });
 
+  const listError = getAppError<CourseAgentError['List']>(conversations.error);
+  const createError = getAppError<CourseAgentError['Create']>(create.error);
   return (
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
       <div className="d-flex gap-2 align-items-center border-bottom px-3 py-2">
@@ -64,7 +79,7 @@ export function Conversations({
                 key={conversation.id}
                 as="button"
                 active={conversation.id === selectedId}
-                onClick={() => setPickedId(conversation.id)}
+                onClick={() => void setPickedId(conversation.id)}
               >
                 <span className="d-block text-truncate">{conversation.title}</span>
               </Dropdown.Item>
@@ -88,13 +103,15 @@ export function Conversations({
         </OverlayTrigger>
       </div>
       {conversations.isError || create.isError ? (
-        <Alert variant="danger" className="m-3">
-          {(conversations.error ?? create.error)?.message}
-        </Alert>
+        <AppErrorAlert
+          className="m-3"
+          error={listError ?? createError}
+          render={{ UNKNOWN: ({ message }) => message }}
+        />
       ) : conversations.isPending ? (
         <Loading />
-      ) : selectedId ? (
-        <ConversationChat
+      ) : selectedId && active ? (
+        <Chat
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
@@ -122,77 +139,135 @@ function Loading() {
   );
 }
 
-function ConversationChat({
-  courseId,
-  conversationId,
-  chatCsrfToken,
-}: {
-  courseId: string;
-  conversationId: string;
-  chatCsrfToken: string;
-}) {
-  const trpc = useTRPC();
-  // `useChat` reads its initial messages only once, so load the history before mounting it.
-  const history = useQuery({
-    ...trpc.courseAgent.messages.queryOptions({ conversationId }),
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-  });
-
-  if (history.isError) {
-    return (
-      <Alert variant="danger" className="m-3">
-        {history.error.message}
-      </Alert>
-    );
-  }
-  if (history.isPending) return <Loading />;
-  return (
-    <Chat
-      courseId={courseId}
-      conversationId={conversationId}
-      chatCsrfToken={chatCsrfToken}
-      initialMessages={history.data}
-    />
-  );
-}
-
 function Chat({
   courseId,
   conversationId,
   chatCsrfToken,
-  initialMessages,
 }: {
   courseId: string;
   conversationId: string;
   chatCsrfToken: string;
-  initialMessages: UIMessage[];
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const [reply, setReply] = useState<ClientReplyState>({ status: 'idle' });
+  const [connected, setConnected] = useState(false);
+  const [readError, setReadError] = useState<string | null>(null);
+  const [attachment, setAttachment] = useState(0);
+  const [stopping, setStopping] = useState(false);
+  const observationRef = useRef<AbortController | null>(null);
+  const api = `/pl/course/${courseId}/course_agent/conversations/${conversationId}`;
+  const reconnect = () => {
+    setConnected(false);
+    setReadError(null);
+    setAttachment((value) => value + 1);
+  };
   const [transport] = useState(
     () =>
       new DefaultChatTransport({
-        api: `/pl/course/${courseId}/course_agent/conversations/${conversationId}/chat`,
+        api: `${api}/chat`,
         headers: { 'X-CSRF-Token': chatCsrfToken },
-        // The server keeps the history; send only the newest message.
         prepareSendMessagesRequest: ({ messages, headers }) => ({
           body: { message: messages.at(-1) },
           headers,
         }),
+        fetch: async (input, init) => {
+          const response = await fetch(input, init);
+          const id = response.headers.get('X-Assistant-Message-Id');
+          if (id) setReply({ status: 'running', assistantMessageId: id });
+          return response;
+        },
       }),
   );
-  const { messages, sendMessage, status, stop, error } = useChat({
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    status,
+    stop: detach,
+    error,
+  } = useChat({
     id: conversationId,
-    messages: initialMessages,
     transport,
     throttle: 100,
-    // The first message sets the conversation's title.
-    onFinish: () =>
-      void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
+    onFinish: ({ isAbort, isError }) => {
+      if (!isAbort && !isError) {
+        setReply({ status: 'idle' });
+        setStopping(false);
+      }
+      void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+    },
+    onError: reconnect,
   });
+  // Every attachment starts from server history. Switching detaches this reader,
+  // and its callbacks cannot write into the next conversation's view.
+  useEffect(() => {
+    const abort = new AbortController();
+    observationRef.current = abort;
+    const isAborted = () => abort.signal.aborted;
+    void (async () => {
+      for (let attempt = 0; !isAborted(); attempt++) {
+        try {
+          const response = await fetch(`${api}/chat`, { signal: abort.signal });
+          await readChat(
+            response,
+            abort.signal,
+            (snapshot) => {
+              if (isAborted()) return;
+              setMessages(snapshot.messages);
+              setReply(snapshot.reply);
+              setStopping(false);
+              setConnected(true);
+              setReadError(null);
+            },
+            (next) => {
+              if (!isAborted()) setMessages(next);
+            },
+          );
+          return;
+        } catch (err) {
+          if (isAborted()) return;
+          setConnected(false);
+          if (attempt >= 2 || (err instanceof ChatReadError && !err.retryable)) {
+            setReadError(
+              err instanceof Error ? err.message : 'Could not reconnect to the conversation.',
+            );
+            return;
+          }
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          try {
+            await new Promise((resolve) => {
+              timer = setTimeout(resolve, 500 * (attempt + 1));
+            });
+          } finally {
+            clearTimeout(timer);
+          }
+        }
+      }
+    })();
+    return () => {
+      abort.abort();
+      void detach();
+    };
+  }, [api, attachment, setMessages, detach]);
+  const stopReply = async () => {
+    if (reply.status !== 'running') return;
+    setStopping(true);
+    try {
+      const response = await fetch(`${api}/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': chatCsrfToken },
+        body: JSON.stringify({ assistantMessageId: reply.assistantMessageId }),
+      });
+      if (!response.ok) throw new Error('The reply could not be stopped. Reconnect to check it.');
+    } catch (err) {
+      setStopping(false);
+      setReadError(err instanceof Error ? err.message : 'The reply could not be stopped.');
+      reconnect();
+    }
+  };
   const [draft, setDraft] = useState('');
-  const isBusy = ['submitted', 'streaming'].includes(status);
+  const isBusy = ['submitted', 'streaming'].includes(status) || reply.status === 'running';
   // Show loading while a turn is submitted or streaming and has no visible output yet.
   // When a turn finishes or fails, isBusy is false, so isLoading is false.
   const isLoading = run(() => {
@@ -208,7 +283,9 @@ function Chat({
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || isBusy) return;
+    if (!text || isBusy || !connected) return;
+    observationRef.current?.abort();
+    setReadError(null);
     void sendMessage({ text });
     setDraft('');
   };
@@ -237,6 +314,17 @@ function Chat({
               Thinking…
             </div>
           )}
+          {(!connected || readError) && (
+            <div className="small text-muted">
+              {readError ?? 'Connecting…'}
+              {readError && (
+                <Button variant="link" size="sm" onClick={reconnect}>
+                  Reconnect
+                </Button>
+              )}
+            </div>
+          )}
+          {reply.status === 'failed' && <Alert variant="danger">{reply.error.message}</Alert>}
           {error && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
@@ -256,12 +344,22 @@ function Chat({
         />
         <div className="d-flex justify-content-end mt-2">
           {isBusy ? (
-            <Button variant="outline-secondary" size="sm" onClick={() => void stop()}>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              disabled={reply.status !== 'running' || stopping}
+              onClick={() => void stopReply()}
+            >
               <i className="bi bi-stop-fill me-1" aria-hidden="true" />
               Stop
             </Button>
           ) : (
-            <Button type="submit" size="sm" aria-label="Send" disabled={!draft.trim()}>
+            <Button
+              type="submit"
+              size="sm"
+              aria-label="Send"
+              disabled={!draft.trim() || !connected}
+            >
               <i className="bi bi-send" aria-hidden="true" />
             </Button>
           )}
