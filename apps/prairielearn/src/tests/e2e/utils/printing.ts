@@ -6,7 +6,7 @@ import { expect } from '../fixtures.js';
 
 export async function waitForPrintablePage(page: Page): Promise<void> {
   const root = page.locator(':root');
-  await expect(root).toHaveAttribute('data-print-status', /^(ready|error)$/, { timeout: 120_000 });
+  await expect(root).toHaveAttribute('data-print-status', /^(ready|error)$/);
   const state = await root.evaluate((element) => ({
     status: element.dataset.printStatus,
     error: element.dataset.printError,
@@ -35,6 +35,6 @@ export async function downloadPrintableWord(page: Page, paperUrl: string, search
       'X-CSRF-Token': generateCsrfToken({ url: `${paperUrl}/docx`, authnUserId: id }),
     },
     data: JSON.stringify({ html, source }),
-    timeout: 120_000,
+    timeout: 30_000,
   });
 }
