@@ -42,13 +42,8 @@ def _imports_internal_sympy_module(node: ast.AST) -> bool:
     [
         (
             "prairielearn.sympy_utils",
-            "prairielearn.internal.symbolic_input",
             "prairielearn.internal.sympy_source",
-        ),
-        (
-            "prairielearn.internal.symbolic_input",
-            "prairielearn.sympy_utils",
-            "prairielearn.internal.sympy_source",
+            "prairielearn.internal.sympy_constants",
         ),
         (
             "prairielearn.internal.sympy_source",

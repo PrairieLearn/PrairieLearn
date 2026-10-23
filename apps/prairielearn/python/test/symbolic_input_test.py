@@ -3,7 +3,7 @@ import string
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-from prairielearn.internal import symbolic_input, sympy_source
+from prairielearn.internal import sympy_source
 
 
 def _normalize_symbolic_input(
@@ -12,7 +12,7 @@ def _normalize_symbolic_input(
     formula_editor: bool = False,
     allow_sets: bool = False,
 ) -> sympy_source.SourceText:
-    return symbolic_input.normalize_symbolic_input(
+    return psu._normalize_symbolic_input(
         text,
         ["alpha", "x", "y", "j"],
         [],
@@ -31,9 +31,7 @@ def _format_absolute_values(submission: str, *, allow_sets: bool = False) -> str
             "|",
         )
     )
-    return symbolic_input._convert_absolute_values_source(
-        source, allow_sets=allow_sets
-    ).text
+    return psu._convert_absolute_values_source(source, allow_sets=allow_sets).text
 
 
 def _format_formula_editor_submission(
@@ -47,7 +45,7 @@ def _format_formula_editor_submission(
     source = psu._normalize_unicode_source(
         sympy_source.SourceText.from_text(submission), formula_editor=True
     )
-    return symbolic_input._format_formula_editor_source(
+    return psu._format_formula_editor_source(
         source,
         variables,
         custom_functions,
@@ -225,7 +223,7 @@ def test_format_formula_editor_submission_with_set_names(
     ],
 )
 def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
-    source = symbolic_input._restore_plus_minus_source(
+    source = psu._restore_plus_minus_source(
         sympy_source.SourceText.from_text(submission), latex
     )
     assert (None if source is None else source.text) == expected
@@ -311,7 +309,7 @@ def test_symbolic_input_normalization_combines_stages_in_order() -> None:
     source = _normalize_symbolic_input(raw, formula_editor=True)
     assert source.text == "abs(ln (2) * x)**2 + 2*e+3 + 3*j"
 
-    result = symbolic_input._try_parse_normalized_source_as_sympy(
+    result = psu._try_parse_normalized_source_as_sympy(
         source,
         raw,
         ["x", "j"],
@@ -323,7 +321,7 @@ def test_symbolic_input_normalization_combines_stages_in_order() -> None:
 
 
 def test_formula_editor_does_not_merge_normalized_unicode_multiplication() -> None:
-    result = symbolic_input.try_normalize_symbolic_input(
+    result = psu._try_normalize_symbolic_input(
         "2 ×* x",  # ruff:ignore[ambiguous-unicode-character-string]
         ["x"],
         [],
@@ -345,11 +343,11 @@ def test_symbolic_input_normalization_preserves_set_unions() -> None:
 
 
 def test_parse_symbolic_submission_serializes_result() -> None:
-    result = symbolic_input.try_parse_symbolic_submission(
+    result = psu.try_parse_symbolic_submission(
         "|x|",
         ["x"],
     )
-    assert isinstance(result, symbolic_input.SymbolicSubmissionParseSuccess)
+    assert isinstance(result, psu._SymbolicSubmissionParseSuccess)
     assert result.expr == sympy.Abs(sympy.Symbol("x"))
     assert result.json != ""
     assert psu.json_to_sympy(result.json) == result.expr

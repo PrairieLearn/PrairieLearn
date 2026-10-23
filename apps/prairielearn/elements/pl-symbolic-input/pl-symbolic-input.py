@@ -7,7 +7,6 @@ from typing import assert_never
 import chevron
 import lxml.html
 import prairielearn as pl
-import prairielearn.internal.symbolic_input as psi
 import prairielearn.sympy_utils as psu
 import sympy
 
@@ -485,11 +484,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    result = psi.try_parse_symbolic_submission(
+    result = psu.try_parse_symbolic_submission(
         data["submitted_answers"].get(name),
         variables,
         formula_editor=formula_editor,
-        latex=data["raw_submitted_answers"].get(name + "-latex"),
+        formula_editor_latex=data["raw_submitted_answers"].get(name + "-latex"),
         allow_blank=allow_blank,
         blank_value=blank_value,
         allow_complex=allow_complex,
