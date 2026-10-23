@@ -91,6 +91,10 @@ export interface PrintRendererOptions {
 }
 
 export interface RenderPageOptions {
+  /**
+   * Page URL on the local application server. Cloudflare uses a separate navigation origin,
+   * but protected assets are fetched from this URL's origin, including in production.
+   */
   url: string;
   /** Public page origin used by Cloudflare; the request itself is intercepted. */
   browserOrigin?: string;

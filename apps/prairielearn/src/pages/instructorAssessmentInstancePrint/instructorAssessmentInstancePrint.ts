@@ -275,13 +275,13 @@ router.get(
         'Printable document rendering is not configured on this server',
       );
     }
-    const previewUrl = new URL(
+    const localPreviewUrl = new URL(
       req.originalUrl,
       `${config.serverType}://localhost:${config.serverPort}`,
     );
     const { html, source } = await getPrintRenderer().render(
       {
-        url: previewUrl.href,
+        url: localPreviewUrl.href,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: rawHtml,
         cookieHeader: req.get('cookie'),
@@ -380,7 +380,7 @@ router.post(
     ) {
       throw new HttpStatusError(400, 'The printable pages contain executable content.');
     }
-    const previewUrl = new URL(
+    const localPreviewUrl = new URL(
       printUrl(req.baseUrl, 'preview', layout, document),
       `${config.serverType}://localhost:${config.serverPort}`,
     );
@@ -400,7 +400,7 @@ router.post(
     });
     const contents = await getPrintRenderer().render(
       {
-        url: previewUrl.href,
+        url: localPreviewUrl.href,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: snapshot.html,
         cookieHeader: req.get('cookie'),
