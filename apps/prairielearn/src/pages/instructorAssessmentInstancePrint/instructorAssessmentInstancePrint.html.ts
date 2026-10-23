@@ -131,15 +131,6 @@ export function InstructorAssessmentInstancePrint({
               font-size: 8pt;
             }
           }
-
-          @page assessment-cover {
-            @bottom-right {
-              color: #555;
-              content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
-              font-family: system-ui, sans-serif;
-              font-size: 8pt;
-            }
-          }
         </style>
         <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
         <meta
