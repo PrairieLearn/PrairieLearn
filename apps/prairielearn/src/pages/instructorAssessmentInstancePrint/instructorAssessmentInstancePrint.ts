@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
-import { parseRequestQuery } from '@prairielearn/zod';
+import { JsonFromStringSchema, parseRequestBody, parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import {
@@ -102,6 +102,12 @@ const PrintSnapshotSchema = z.object({
     ),
   }) satisfies z.ZodType<DocxSource>,
 });
+const DocxPostBodySchema = z
+  .instanceof(Buffer)
+  .transform((body) => body.toString('utf8'))
+  .pipe(JsonFromStringSchema)
+  .pipe(PrintSnapshotSchema);
+
 /** The layout choices shared by every printable output of one assessment instance. */
 interface PrintLayout {
   paperSize: PaperSize;
@@ -224,6 +230,7 @@ const parseDocxBody: RequestHandler = (req, res, next) => {
 
 const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
   async (req, res) => {
+    const snapshot = parseRequestBody(req, DocxPostBodySchema);
     const { printLayout: layout, printDocument: document } = res.locals;
     await validateQuestionsForPrinting(
       res.locals.assessment_instance.id,
@@ -261,9 +268,6 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
         'Printable document rendering is not configured on this server',
       );
     }
-    const snapshot = PrintSnapshotSchema.parse(
-      JSON.parse(z.instanceof(Buffer).parse(req.body).toString('utf8')),
-    );
     const $ = load(snapshot.html);
     const hasExecutableAttributes =
       $('*').filter((_index, node) =>
