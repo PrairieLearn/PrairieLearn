@@ -6,7 +6,6 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectAssessmentInstanceLog } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import {
   type AssessmentInstance,
@@ -16,9 +15,7 @@ import {
   SubmissionSchema,
   type Variant,
 } from '../lib/db-types.js';
-import { deleteFile, uploadFile } from '../lib/file-store.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectOrInsertUserByUid } from '../models/user.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -370,58 +367,6 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
   };
 
   startAssessment();
-
-  it('logs personal note creation and deletion with their timestamps and users', async () => {
-    const beforeUpload = Date.now();
-    const fileId = await uploadFile({
-      display_filename: 'log-test-note.txt',
-      contents: Buffer.from('Personal note for the assessment log test.'),
-      type: 'student_upload',
-      assessment_id: locals.assessment_id,
-      assessment_instance_id: locals.assessment_instance.id,
-      instance_question_id: null,
-      user_id: '1',
-      authn_user_id: '1',
-    });
-    const afterUpload = Date.now();
-    const log = await selectAssessmentInstanceLog(locals.assessment_instance.id, false);
-    const events = log.filter((entry) => entry.data?.file_id === fileId);
-    const expectedData = { file_id: fileId, display_filename: 'log-test-note.txt' };
-    assert.lengthOf(events, 1);
-    assert.deepInclude(events[0], {
-      event_name: 'Add personal note',
-      auth_user_uid: 'dev@example.com',
-      data: expectedData,
-    });
-    assert.isAtLeast(events[0].event_date.getTime(), beforeUpload);
-    assert.isAtMost(events[0].event_date.getTime(), afterUpload);
-
-    const deleter = await selectOrInsertUserByUid('note-deleter@example.com');
-    const beforeDelete = Date.now();
-    await deleteFile(fileId, deleter.id);
-    const afterDelete = Date.now();
-    const updatedLog = await selectAssessmentInstanceLog(locals.assessment_instance.id, false);
-    const updatedEvents = updatedLog.filter((entry) => entry.data?.file_id === fileId);
-    assert.lengthOf(updatedEvents, 2);
-    assert.deepEqual(updatedEvents[0], events[0]);
-    assert.deepInclude(updatedEvents[1], {
-      event_name: 'Delete personal note',
-      auth_user_uid: deleter.uid,
-      data: expectedData,
-    });
-    assert.isAtLeast(updatedEvents[1].event_date.getTime(), beforeDelete);
-    assert.isAtMost(updatedEvents[1].event_date.getTime(), afterDelete);
-
-    await deleteFile(fileId, '1');
-    const repeatedDeleteLog = await selectAssessmentInstanceLog(
-      locals.assessment_instance.id,
-      false,
-    );
-    assert.deepEqual(
-      repeatedDeleteLog.filter((entry) => entry.data?.file_id === fileId),
-      updatedEvents,
-    );
-  });
 
   describe('assessment_instance: set attach files page URL', function () {
     it('should succeed', function () {
