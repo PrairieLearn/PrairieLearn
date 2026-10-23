@@ -159,6 +159,33 @@
 
     const inputElement = $('#rte-input-' + uuid);
     const quill = new Quill(baseElement, options);
+    if (!options.readOnly) {
+      const hint = document.getElementById(`rte-keyboard-hint-${uuid}`);
+      hint.hidden = false;
+      quill.root.setAttribute('role', 'textbox');
+      quill.root.setAttribute('aria-label', 'Rich text editor');
+      quill.root.setAttribute('aria-multiline', 'true');
+      quill.root.setAttribute('aria-describedby', hint.id);
+
+      // Quill consumes Tab in lists, code blocks, and tables before the generic
+      // binding above runs. Let Escape bypass those bindings for the next Tab.
+      let escapePressed = false;
+      quill.root.addEventListener(
+        'keydown',
+        (event) => {
+          if (event.key === 'Escape') {
+            escapePressed = true;
+          } else if (!['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) {
+            if (event.key === 'Tab' && escapePressed) event.stopImmediatePropagation();
+            escapePressed = false;
+          }
+        },
+        { capture: true },
+      );
+      quill.root.addEventListener('blur', () => {
+        escapePressed = false;
+      });
+    }
 
     // Quill 2 gives its picker dropdowns (size, header, color, background) an
     // ARIA role but no accessible name, and labels the format buttons with terse

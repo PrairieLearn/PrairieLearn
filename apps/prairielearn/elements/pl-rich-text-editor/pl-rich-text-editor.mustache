@@ -23,6 +23,9 @@ $(function() {
     </div>
     {{/clipboard_enabled}}
     <div id="rte-{{editor_uuid}}" class="border mathjax_ignore" data-options="{{quill_options_json}}"></div>
+    <div id="rte-keyboard-hint-{{editor_uuid}}" class="small text-body-secondary px-2 py-1" hidden>
+      Press Esc, then Tab to leave the editor.
+    </div>
     {{#footer_enabled}}
     <div class="pl-rich-text-editor-counter-container align-items-center d-flex justify-content-between">
       <div class="gap-2">

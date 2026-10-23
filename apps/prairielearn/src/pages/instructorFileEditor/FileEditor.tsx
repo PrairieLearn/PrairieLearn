@@ -541,6 +541,7 @@ export function FileEditor({
                     />
                     <AceFileEditor
                       ref={editorRef}
+                      label={editorData.fileName}
                       value={contents}
                       mode={editorData.aceMode}
                       readOnly={readOnly}
@@ -615,6 +616,7 @@ export function FileEditor({
                     </div>
                     <div className="card-body p-0">
                       <AceFileEditor
+                        label={`Their version of ${editorData.fileName}`}
                         value={diskContents}
                         mode={editorData.aceMode}
                         className="editor"
