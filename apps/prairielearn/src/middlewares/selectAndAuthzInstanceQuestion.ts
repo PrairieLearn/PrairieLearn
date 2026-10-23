@@ -133,6 +133,7 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
     : formatLegacyAssessmentInstanceAccess(
         rawRow.authz_result,
         res.locals.course_instance.display_timezone,
+        res.locals.req_date,
       );
   const row: SelectAndAuthzInstanceQuestion = { ...rawRow, authz_result: authzResult };
 
