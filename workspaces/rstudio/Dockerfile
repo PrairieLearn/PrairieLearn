@@ -38,6 +38,8 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
+# Temporary workaround until the RStudio base image includes patched Node:
+# https://github.com/PrairieLearn/PrairieLearn/pull/16132
 FROM node:24.22.1-bookworm-slim AS node
 
 FROM rocker/rstudio:4.6.1
