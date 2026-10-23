@@ -27,6 +27,7 @@ interface TitleOptions {
   };
   pageTitle?: string;
   pageNote?: string;
+  includeApplicationScripts?: boolean;
 }
 
 export function HeadContents(titleOptions: TitleOptions) {
@@ -53,8 +54,12 @@ export function HeadContents(titleOptions: TitleOptions) {
       href="${nodeModulesAssetPath('@fortawesome/fontawesome-free/css/all.min.css')}"
       rel="stylesheet"
     />
-    ${compiledStylesheetTag('prairielearn-ui.css')} ${compiledScriptTag('application.ts')}
-    ${compiledScriptTag('navbarClient.ts')}
+    ${compiledStylesheetTag('prairielearn-ui.css')}
+    ${
+      titleOptions.includeApplicationScripts === false
+        ? ''
+        : html`${compiledScriptTag('application.ts')} ${compiledScriptTag('navbarClient.ts')}`
+    }
   `;
 }
 

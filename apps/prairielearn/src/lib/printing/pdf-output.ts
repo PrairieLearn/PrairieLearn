@@ -1,5 +1,8 @@
 import type { PrintablePageOutput } from './printable-page-output.js';
 
+export const PAPER_SIZES = ['Letter', 'A4'] as const;
+export type PaperSize = (typeof PAPER_SIZES)[number];
+
 /** Prints the paginated page with Chromium's PDF engine; the page's `@page` CSS sets the sheet size. */
 export function createPdfOutput(): PrintablePageOutput<Buffer> {
   return {
