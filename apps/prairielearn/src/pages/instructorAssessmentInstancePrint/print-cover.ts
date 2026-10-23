@@ -7,6 +7,9 @@ import {
 import type { PrintDocument } from '../../lib/printing.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
+/** Leaves space for a handwritten name on printed honor-code pledges. */
+export const BLANK_NAME_PLACEHOLDER = '____________________________';
+
 export const DEFAULT_ASSESSMENT_INSTRUCTIONS: readonly string[] = [
   'Write your name and identifying information clearly above.',
   'Show your work and place each final answer in the space provided.',
@@ -34,7 +37,7 @@ export function getPrintCoverFields({
 
 export function getDefaultHonorCodePledge(teamWork: boolean): string[] {
   return [
-    `I certify that I am ____________________________ and ${teamWork ? 'our group is' : 'I am'} allowed to take this assessment.`,
+    `I certify that I am ${BLANK_NAME_PLACEHOLDER} and ${teamWork ? 'our group is' : 'I am'} allowed to take this assessment.`,
     `${teamWork ? 'We' : 'I'} pledge on ${teamWork ? 'our' : 'my'} honor that ${teamWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this assessment and that all work will be ${teamWork ? 'our' : 'my'} own.`,
   ];
 }

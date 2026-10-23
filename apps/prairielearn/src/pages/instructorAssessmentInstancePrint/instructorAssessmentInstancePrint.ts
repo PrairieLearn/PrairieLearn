@@ -37,7 +37,7 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 
 import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
-import { buildPrintableCover, getPrintFooterLabel } from './print-cover.js';
+import { BLANK_NAME_PLACEHOLDER, buildPrintableCover, getPrintFooterLabel } from './print-cover.js';
 
 const QuestionBlockSizeSchema = z.enum(QUESTION_BLOCK_SIZES);
 const QuestionNumberSchema = z.string().min(1);
@@ -199,7 +199,7 @@ function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
     honorCodeHtml: resLocals.assessment.honor_code
       ? markdownToHtml(
           mustache.render(resLocals.assessment.honor_code, {
-            user_name: '____________________________',
+            user_name: BLANK_NAME_PLACEHOLDER,
           }),
           { allowHtml: false, interpretMath: false },
         ).replace(/^<h([1-6])>Academic integrity pledge<\/h\1>\s*/i, '')
