@@ -30,6 +30,9 @@ export const StudentAssessmentsRowBaseSchema = z.object({
   label: z.string(),
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
+  assessment_instance_score_perc_pending:
+    AssessmentInstanceSchema.shape.score_perc_pending.nullable(),
+  assessment_instance_grading_pending: AssessmentInstanceSchema.shape.grading_pending.nullable(),
   assessment_instance_open: AssessmentInstanceSchema.shape.open.nullable(),
   assessment_instance_date_limit: AssessmentInstanceSchema.shape.date_limit.nullable(),
   link: z.string(),
@@ -165,7 +168,11 @@ export function StudentAssessments({
 function AssessmentScore(row: StudentAssessmentsRow) {
   if (row.assessment_instance_id == null) return 'Not started';
   if (!row.authz_result.show_closed_assessment_score) return 'Score not shown';
-  return ScorebarHtml(row.assessment_instance_score_perc, { classes: 'mx-auto' });
+  return ScorebarHtml(row.assessment_instance_score_perc, {
+    classes: 'mx-auto',
+    scorePending: row.assessment_instance_score_perc_pending ?? 0,
+    gradingPending: row.assessment_instance_grading_pending ?? false,
+  });
 }
 
 function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {
