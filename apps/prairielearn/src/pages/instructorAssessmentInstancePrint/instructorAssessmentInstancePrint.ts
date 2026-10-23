@@ -282,7 +282,7 @@ router.get(
     }).toString();
     if (!isBrowserRenderingAvailable()) {
       throw new HttpStatusError(
-        503,
+        404,
         'Printable document rendering is not configured on this server',
       );
     }
@@ -370,7 +370,7 @@ router.post(
 
     if (!isBrowserRenderingAvailable()) {
       throw new HttpStatusError(
-        503,
+        404,
         'Printable document rendering is not configured on this server',
       );
     }
