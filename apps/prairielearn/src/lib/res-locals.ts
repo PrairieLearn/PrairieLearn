@@ -22,6 +22,7 @@ import type { Course, CourseInstance } from './db-types.js';
 
 interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
+  assessment_instance_grading_pending?: boolean;
 }
 
 interface ResLocalsForPageLookup {
