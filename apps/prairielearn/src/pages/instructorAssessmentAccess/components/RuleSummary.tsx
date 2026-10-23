@@ -1188,19 +1188,27 @@ export function PrairieTestExamsTable({
                   {
                     name: meta.pt_course_name,
                     term: meta.pt_course_term,
-                    archived: meta.pt_course_archived,
                   },
                 ]
               : []),
             ...(meta?.pt_centers ?? []),
-          ].map(({ name, term, archived }) => ({
-            label: term ? `${name} (${term})` : name,
-            archived,
-          }));
-          const archiveWarning = courseAndCenters
-            .filter(({ archived }) => archived)
-            .map(({ label }) => `${label} is archived in PrairieTest`)
-            .join('; ');
+          ].map(({ name, term }) => (term ? `${name} (${term})` : name));
+          const archiveWarning = run(() => {
+            const centers = meta?.pt_centers ?? [];
+            const archivedCenters = centers.filter(({ archived }) => archived);
+            if (centers.length <= 1 && archivedCenters.length > 0) {
+              return meta?.pt_course_archived
+                ? 'This course and testing center are archived in PrairieTest.'
+                : 'This testing center is archived in PrairieTest.';
+            }
+            return [
+              ...(meta?.pt_course_archived ? ['This course is archived in PrairieTest.'] : []),
+              ...archivedCenters.map(
+                ({ name, term }) =>
+                  `${term ? `${name} (${term})` : name} is archived in PrairieTest.`,
+              ),
+            ].join(' ');
+          });
 
           return (
             // We don't use UUID as they might be duplicated in the list.
@@ -1217,9 +1225,7 @@ export function PrairieTestExamsTable({
                     <a href={examLink} target="_blank" rel="noopener noreferrer">
                       {examName}
                     </a>
-                    <div className="small text-body-secondary">
-                      {courseAndCenters.map(({ label }) => label).join(', ')}
-                    </div>
+                    <div className="small text-body-secondary">{courseAndCenters.join(', ')}</div>
                     {archiveWarning && (
                       <div className="small">
                         <i
