@@ -6,7 +6,6 @@ import { Button, Card } from 'react-bootstrap';
 import { type FieldErrors, get } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
@@ -1215,32 +1214,21 @@ export function PrairieTestExamsTable({
                   </span>
                 ) : examName && examLink ? (
                   <>
-                    {archiveWarning && (
-                      <OverlayTrigger
-                        tooltip={{
-                          body: archiveWarning,
-                          props: { id: `prairietest-archived-${index}` },
-                        }}
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="btn-xs p-0 border-0 lh-1 align-middle me-1"
-                          aria-label={`Archive warning for ${examName}`}
-                        >
-                          <i
-                            className="bi bi-exclamation-triangle-fill text-warning"
-                            aria-hidden="true"
-                          />
-                        </Button>
-                      </OverlayTrigger>
-                    )}
                     <a href={examLink} target="_blank" rel="noopener noreferrer">
                       {examName}
                     </a>
                     <div className="small text-body-secondary">
                       {courseAndCenters.map(({ label }) => label).join(', ')}
                     </div>
+                    {archiveWarning && (
+                      <div className="small">
+                        <i
+                          className="bi bi-exclamation-triangle-fill text-warning me-1"
+                          aria-hidden="true"
+                        />
+                        {archiveWarning}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <span className="text-body-secondary">Unknown exam</span>
