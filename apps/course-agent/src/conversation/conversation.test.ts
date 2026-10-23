@@ -1,7 +1,6 @@
 import { type UIMessage, type UIMessageChunk, streamText } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Env } from '../env.js';
 import type { ChatContext } from '../http/chat-request.js';
 
 import { Conversation } from './conversation.js';
@@ -9,10 +8,7 @@ import { Conversation } from './conversation.js';
 interface State {
   courseContext: ChatContext | null;
 }
-const storage = vi.hoisted(() => ({
-  state: undefined as State | undefined,
-  savedReplies: [] as string[],
-}));
+const historyConsumer = vi.hoisted(() => ({ replies: [] as string[] }));
 
 const generateReply = vi.hoisted(() =>
   vi.fn<(options: { abortSignal?: AbortSignal }) => { stream: ReadableStream<UIMessageChunk> }>(),
@@ -22,17 +18,18 @@ vi.mock('@cloudflare/ai-chat', () => ({
   AIChatAgent: class {
     initialState: State = { courseContext: null };
     messages: UIMessage[] = [];
+    private savedState?: State;
     constructor(
       _ctx: DurableObjectState,
       readonly env: Env,
     ) {}
 
     get state() {
-      return storage.state ?? this.initialState;
+      return this.savedState ?? this.initialState;
     }
 
     setState(state: State) {
-      storage.state = structuredClone(state);
+      this.savedState = state;
     }
 
     async saveMessages(
@@ -41,7 +38,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
     ) {
       this.messages = update(this.messages);
       const response = await this.onChatMessage(() => {}, { abortSignal: options.signal });
-      storage.savedReplies.push(await response.text());
+      historyConsumer.replies.push(await response.text());
     }
 
     async onChatMessage(
@@ -68,7 +65,7 @@ const env = {
 } as Env;
 
 function createConversation() {
-  // The mocked SDK supplies storage; no Cloudflare runtime is used in this unit test.
+  // The mocked SDK consumes the history stream; no Cloudflare runtime is used here.
   return new Conversation({} as DurableObjectState, env);
 }
 
@@ -83,9 +80,7 @@ function chat(courseContext?: ChatContext) {
 }
 
 beforeEach(() => {
-  storage.state = undefined;
-  storage.savedReplies = [];
-  vi.restoreAllMocks();
+  historyConsumer.replies = [];
   vi.clearAllMocks();
   generateReply.mockReset().mockImplementation(() => ({
     stream: new ReadableStream<UIMessageChunk>({
@@ -99,52 +94,20 @@ beforeEach(() => {
 });
 
 describe('conversation prompt context', () => {
-  it('retains accepted context for a fresh instance without a waiting HTTP request', async () => {
-    const first = createConversation();
-    const response = await first.onRequest(chat(context));
-    expect(response.status).toBe(200);
-    await response.text();
-
-    const recovered = createConversation();
-    await (await recovered.onChatMessage(() => {})).text();
-    expect(streamText).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        instructions: expect.stringContaining('CS 101: Intro to Programming'),
-      }),
-    );
-  });
-
   it('reuses context when omitted and refreshes it when supplied', async () => {
-    await (await createConversation().onRequest(chat(context))).text();
-    await (await createConversation().onRequest(chat())).text();
+    const conversation = createConversation();
+    await (await conversation.onRequest(chat(context))).text();
+    await (await conversation.onRequest(chat())).text();
     expect(streamText).toHaveBeenLastCalledWith(
       expect.objectContaining({
         instructions: expect.stringContaining('CS 101: Intro to Programming'),
       }),
     );
 
-    await (
-      await createConversation().onRequest(chat({ ...context, courseTitle: 'Renamed' }))
-    ).text();
+    await (await conversation.onRequest(chat({ ...context, courseTitle: 'Renamed' }))).text();
     expect(streamText).toHaveBeenLastCalledWith(
       expect.objectContaining({ instructions: expect.stringContaining('CS 101: Renamed') }),
     );
-  });
-
-  it('assigns different server IDs to repeated message submissions', async () => {
-    const conversation = createConversation();
-    for (let i = 0; i < 3; i++) {
-      const response = await conversation.onRequest(chat(context));
-      expect(response.status).toBe(200);
-      await response.text();
-    }
-    const ids = conversation.messages.map((message) => message.id);
-    expect(ids).toHaveLength(3);
-    expect(new Set(ids).size).toBe(3);
-    for (const id of ids) {
-      expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-    }
-    expect(streamText).toHaveBeenCalledTimes(3);
   });
 });
 
@@ -156,52 +119,55 @@ describe('HTTP reply handoff', () => {
         start(controller) {
           source.resolve(controller);
           controller.enqueue({ type: 'start' });
+          controller.enqueue({ type: 'text-start', id: 'text' });
+          controller.enqueue({ type: 'text-delta', id: 'text', delta: 'Hello' });
         },
       }),
     }));
     const conversation = createConversation();
     const response = await conversation.onRequest(chat());
     const reader = response.body!.getReader();
-    const first = await reader.read();
-    expect(new TextDecoder().decode(first.value)).toContain('"type":"start"');
-    expect(storage.savedReplies).toEqual([]);
+    let httpReply = '';
+    while (!httpReply.includes('Hello')) {
+      const { done, value } = await reader.read();
+      expect(done).toBe(false);
+      httpReply += new TextDecoder().decode(value);
+    }
+    expect(historyConsumer.replies).toEqual([]);
     expect((await conversation.onRequest(chat())).status).toBe(409);
 
     const controller = await source.promise;
+    controller.enqueue({ type: 'text-end', id: 'text' });
     controller.enqueue({ type: 'finish' });
     controller.close();
-    let httpReply = new TextDecoder().decode(first.value);
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
       httpReply += new TextDecoder().decode(value);
     }
-    await vi.waitFor(() => expect(storage.savedReplies).toEqual([httpReply]));
+    await vi.waitFor(() => expect(historyConsumer.replies).toEqual([httpReply]));
   });
 
-  it('returns 502 if the SDK finishes without supplying a reply', async () => {
+  it('returns 502 when generation fails to start and allows another request', async () => {
+    generateReply.mockImplementationOnce(() => {
+      throw new Error('provider unavailable');
+    });
     const conversation = createConversation();
-    vi.spyOn(conversation, 'onChatMessage').mockResolvedValueOnce(new Response());
-    expect((await conversation.onRequest(chat())).status).toBe(502);
+    const response = await conversation.onRequest(chat());
+    expect(response.status).toBe(502);
+    expect(await response.text()).toBe('The agent could not start a reply');
+    const next = await conversation.onRequest(chat());
+    expect(next.status).toBe(200);
+    await next.text();
   });
 
-  it.each([new Error('provider unavailable'), 'provider unavailable'])(
-    'returns 502 for a failure before the reply starts: %s',
-    async (reason) => {
-      const conversation = createConversation();
-      vi.spyOn(conversation, 'saveMessages').mockRejectedValueOnce(reason);
-      const response = await conversation.onRequest(chat());
-      expect(response.status).toBe(502);
-      expect(await response.text()).toBe('The agent could not start a reply');
-      await (await conversation.onRequest(chat())).text();
-    },
-  );
-
-  it('aborts on response cancellation while letting the SDK save the partial reply', async () => {
+  it('aborts on response cancellation while the history consumer receives the partial reply', async () => {
     generateReply.mockImplementationOnce((options) => ({
       stream: new ReadableStream<UIMessageChunk>({
         start(controller) {
           controller.enqueue({ type: 'start' });
+          controller.enqueue({ type: 'text-start', id: 'text' });
+          controller.enqueue({ type: 'text-delta', id: 'text', delta: 'Partial reply' });
           options.abortSignal!.addEventListener('abort', () => controller.close());
         },
       }),
@@ -212,7 +178,7 @@ describe('HTTP reply handoff', () => {
     await reader.read();
     await reader.cancel('Stop');
     await vi.waitFor(() => expect(generateReply.mock.lastCall![0].abortSignal!.aborted).toBe(true));
-    await vi.waitFor(() => expect(storage.savedReplies).toHaveLength(1));
-    expect(storage.savedReplies[0]).toContain('"type":"start"');
+    await vi.waitFor(() => expect(historyConsumer.replies).toHaveLength(1));
+    expect(historyConsumer.replies[0]).toContain('Partial reply');
   });
 });

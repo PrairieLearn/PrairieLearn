@@ -11,7 +11,7 @@ Every request must send `Authorization: Bearer <PL_SERVICE_TOKEN>`.
 - `POST /conversations` returns `201` with `{ "id": "<uuid>" }`. No body is needed; the service generates the ID and waits for the SDK's conversation startup before responding.
 - `GET /conversations/<uuid>/messages` returns the conversation's `UIMessage[]` (`[]` for a new conversation).
 - `POST /conversations/<uuid>/chat` with `{ message, context? }` streams the reply as an AI SDK UI message stream.
-  - `message` contains `role: "user"` and a single text part in `parts`. Do not send a message ID; the service generates it. Only the newest message is sent; the history lives here.
+  - `message` contains `role: "user"` and currently a single text part in `parts`. Do not send a message ID; the service generates it. Only the newest message is sent; the history lives here.
   - Each accepted POST creates a new message, even if the text is identical. There is no retry deduplication or response replay; callers should not automatically retry submissions. Generated message IDs are available in the conversation history.
   - `context` is optional `{ courseTitle, courseShortName }`, used in the system prompt. The last supplied context is persisted in SDK state for restart recovery; omit it to reuse that context. PrairieLearn remains authoritative and can refresh it on subsequent requests.
   - Cancelling the response stream aborts the turn and saves the partial reply. (Closing the request from PrairieLearn does not reliably cancel it yet; an explicit stop request is a follow-up.)
@@ -50,6 +50,8 @@ pnpm exec wrangler secret put OPENAI_API_KEY
 pnpm --filter @prairielearn/course-agent deploy
 ```
 
-The model is set by `OPENAI_MODEL` in `wrangler.jsonc`.
+New conversations use `OPENAI_MODEL` from `wrangler.jsonc` (GPT-6 Luna by default). Each conversation persists its model at startup and keeps it across deployments. Existing conversations without a saved model adopt the configured model when next started.
+
+After changing variables, bindings, or required secrets in `wrangler.jsonc`, regenerate the environment types with `pnpm --filter @prairielearn/course-agent generate-types` and commit the updated declaration file. CI runs `pnpm --filter @prairielearn/course-agent check-types` and fails if the generated types are stale. Secret values belong in `.dev.vars` locally or Cloudflare deployment secrets, never in `wrangler.jsonc`.
 
 `PL_SERVICE_TOKEN` is a static service credential, not an expiring JWT. Store it only in deployment secrets and rotate/revoke it if compromised. For rotation, the current single-token configuration requires a coordinated change in the Worker and PrairieLearn; requests using the old token fail once the Worker switches. Short-lived service tokens and overlapping key rotation are follow-ups. Credential changes do not automatically terminate streams that were already accepted.

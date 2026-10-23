@@ -4,14 +4,17 @@
   "private": true,
   "scripts": {
     "build": "wrangler deploy --dry-run --outdir dist",
+    "check-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false --check",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --port 8790 --persist-to .wrangler/local",
+    "generate-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.78",
     "@cloudflare/ai-chat": "0.12.1",
+    "@prairielearn/utils": "workspace:^",
     "agents": "0.28.0",
     "ai": "^7.0.116",
     "zod": "^4.6.5"
