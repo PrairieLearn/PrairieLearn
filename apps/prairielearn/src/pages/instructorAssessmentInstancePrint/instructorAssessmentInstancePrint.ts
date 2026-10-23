@@ -228,8 +228,114 @@ const parseDocxBody: RequestHandler = (req, res, next) => {
   raw({ type: 'application/octet-stream', limit: 16 * 1024 * 1024 })(req, res, next);
 };
 
-const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
-  async (req, res) => {
+const router = Router({ mergeParams: true });
+
+router.use(
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'block',
+  }),
+);
+
+router.get(
+  '/preview',
+  validateDocumentQuery,
+  authorizePrintDocument,
+  selectAndAuthzAssessmentInstance,
+  typedAsyncHandler<'assessment-instance', PrintLocals>(async (req, res) => {
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    const { printLayout: layout, printDocument: document } = res.locals;
+
+    const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
+      defaultQuestionBlockSize: layout.blockSize ?? 'auto',
+      questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
+      excludedQuestionNumbers: layout.excludedQuestionNumbers,
+      document,
+    });
+    if (printingResult.questionHtmls.length === 0) {
+      throw new HttpStatusError(
+        422,
+        'No questions could be rendered for this printable assessment',
+      );
+    }
+    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const warnings = describeOmittedQuestions(printingResult.questionResults);
+
+    const rawHtml = InstructorAssessmentInstancePrint({
+      resLocals: res.locals,
+      paperSize: layout.paperSize,
+      includeCoverPage: layout.includeCoverPage,
+      includeGradingTable: layout.includeGradingTable,
+      includeHonorCode:
+        layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+      document,
+      formLabel: layout.formLabel,
+      identityFields: layout.identityFields,
+      questionHtmls: printingResult.questionHtmls,
+      omittedQuestionCount: warnings.length,
+      warnings,
+      extraHeadersHtml: printingResult.extraHeadersHtml,
+      maxPoints: printingResult.maxPoints,
+      assessmentTextHtml,
+      honorCodeHtml,
+    }).toString();
+    if (!isBrowserRenderingAvailable()) {
+      throw new HttpStatusError(
+        503,
+        'Printable document rendering is not configured on this server',
+      );
+    }
+    const previewUrl = new URL(
+      req.originalUrl,
+      `${config.serverType}://localhost:${config.serverPort}`,
+    );
+    const { html, source } = await getPrintRenderer().render(
+      {
+        url: previewUrl.href,
+        browserOrigin: config.serverCanonicalHost ?? undefined,
+        html: rawHtml,
+        cookieHeader: req.get('cookie'),
+        runScripts: true,
+      },
+      {
+        label: 'preview',
+        produce: async (page) =>
+          await page.evaluate(() => {
+            const source = Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as
+              DocxSource | undefined;
+            if (!source) throw new Error('The preview did not capture editable question content.');
+            const copy = globalThis.document.documentElement.cloneNode(true) as HTMLElement;
+            copy
+              .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
+              .forEach((node) => node.remove());
+            const data = globalThis.document.createElement('script');
+            data.id = 'pl-print-docx-source';
+            data.type = 'application/json';
+            data.textContent = JSON.stringify(source).replaceAll('<', '\\u003c');
+            copy.querySelector('head')?.append(data);
+            return { html: `<!doctype html>\n${copy.outerHTML}`, source };
+          }),
+      },
+    );
+    PrintSnapshotSchema.shape.source.parse(source);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
+    );
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.send(html);
+  }),
+);
+
+router.post(
+  '/docx',
+  validateDocumentQuery,
+  authorizePrintDocument,
+  selectAndAuthzAssessmentInstance,
+  parseDocxBody,
+  typedAsyncHandler<'assessment-instance', PrintLocals>(async (req, res) => {
     const snapshot = parseRequestBody(req, DocxPostBodySchema);
     const { printLayout: layout, printDocument: document } = res.locals;
     await validateQuestionsForPrinting(
@@ -351,117 +457,7 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
     );
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(contents);
-  },
-);
-
-const router = Router({ mergeParams: true });
-
-router.use(
-  createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_preview'],
-    unauthorizedUsers: 'block',
   }),
-);
-
-router.get(
-  '/preview',
-  validateDocumentQuery,
-  authorizePrintDocument,
-  selectAndAuthzAssessmentInstance,
-  typedAsyncHandler<'assessment-instance', PrintLocals>(async (req, res) => {
-    res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    const { printLayout: layout, printDocument: document } = res.locals;
-
-    const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
-      defaultQuestionBlockSize: layout.blockSize ?? 'auto',
-      questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
-      excludedQuestionNumbers: layout.excludedQuestionNumbers,
-      document,
-    });
-    if (printingResult.questionHtmls.length === 0) {
-      throw new HttpStatusError(
-        422,
-        'No questions could be rendered for this printable assessment',
-      );
-    }
-    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-    const warnings = describeOmittedQuestions(printingResult.questionResults);
-
-    const rawHtml = InstructorAssessmentInstancePrint({
-      resLocals: res.locals,
-      paperSize: layout.paperSize,
-      includeCoverPage: layout.includeCoverPage,
-      includeGradingTable: layout.includeGradingTable,
-      includeHonorCode:
-        layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
-      document,
-      formLabel: layout.formLabel,
-      identityFields: layout.identityFields,
-      questionHtmls: printingResult.questionHtmls,
-      omittedQuestionCount: warnings.length,
-      warnings,
-      extraHeadersHtml: printingResult.extraHeadersHtml,
-      maxPoints: printingResult.maxPoints,
-      assessmentTextHtml,
-      honorCodeHtml,
-    }).toString();
-    if (!isBrowserRenderingAvailable()) {
-      throw new HttpStatusError(
-        503,
-        'Printable document rendering is not configured on this server',
-      );
-    }
-    const previewUrl = new URL(
-      req.originalUrl,
-      `${config.serverType}://localhost:${config.serverPort}`,
-    );
-    const { html, source } = await getPrintRenderer().render(
-      {
-        url: previewUrl.href,
-        browserOrigin: config.serverCanonicalHost ?? undefined,
-        html: rawHtml,
-        cookieHeader: req.get('cookie'),
-        runScripts: true,
-      },
-      {
-        label: 'preview',
-        produce: async (page) =>
-          await page.evaluate(() => {
-            const source = Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as
-              DocxSource | undefined;
-            if (!source) throw new Error('The preview did not capture editable question content.');
-            const copy = globalThis.document.documentElement.cloneNode(true) as HTMLElement;
-            copy
-              .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
-              .forEach((node) => node.remove());
-            const data = globalThis.document.createElement('script');
-            data.id = 'pl-print-docx-source';
-            data.type = 'application/json';
-            data.textContent = JSON.stringify(source).replaceAll('<', '\\u003c');
-            copy.querySelector('head')?.append(data);
-            return { html: `<!doctype html>\n${copy.outerHTML}`, source };
-          }),
-      },
-    );
-    PrintSnapshotSchema.shape.source.parse(source);
-    res.setHeader('Cache-Control', 'private, no-store');
-    res.setHeader(
-      'Content-Security-Policy',
-      "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
-    );
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.send(html);
-  }),
-);
-
-router.post(
-  '/docx',
-  validateDocumentQuery,
-  authorizePrintDocument,
-  selectAndAuthzAssessmentInstance,
-  parseDocxBody,
-  createDocxHandler,
 );
 
 export default router;
