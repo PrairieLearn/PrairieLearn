@@ -130,6 +130,8 @@ jobs:
         run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
+      - name: Check that course agent generated types are up-to-date
+        run: pnpm --filter @prairielearn/course-agent check-types
       - name: Check that element schemas are up-to-date
         run: make check-element-schemas
       - name: Check that all packages exist on npm
