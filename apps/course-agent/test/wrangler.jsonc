@@ -1,5 +1,5 @@
 {
-  "name": "course-agent-http-test",
+  "name": "course-agent-sdk-test",
   "main": "./worker.ts",
   "compatibility_date": "2026-09-17",
   "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],

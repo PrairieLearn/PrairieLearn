@@ -105,3 +105,31 @@ agentTest(
     expect((await agent.control(a, 'stats')).calls).toBe(1);
   },
 );
+
+agentTest(
+  'recovers stored partial output after a Worker restart without rerunning the prompt',
+  async ({ page, courseInstance, agent }) => {
+    const id = await prepare(courseInstance.course_id, agent, 'Recovery test');
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/instances`);
+    await page.getByRole('button', { name: 'Open course agent' }).click();
+    await page.getByLabel('Message', { exact: true }).fill('Interrupted turn');
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect.poll(async () => (await agent.control(id, 'stats')).ready).toBe(true);
+    // Cross the SDK's native buffering boundary before simulating an eviction.
+    for (let i = 0; i < 12; i++) await agent.control(id, 'advance', 'partial ');
+    await expect(page.getByText('partial '.repeat(12).trim(), { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Close course agent' }).click();
+    await agent.restart();
+    await page.getByRole('button', { name: 'Open course agent' }).click();
+    await expect(page.getByText(/partial partial/)).toBeVisible();
+    await page.getByLabel('Message', { exact: true }).fill('Continue explicitly');
+    await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeEnabled();
+    expect((await agent.control(id, 'stats')).calls).toBe(0);
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect.poll(async () => (await agent.control(id, 'stats')).ready).toBe(true);
+    await agent.control(id, 'advance', 'Recovered');
+    await agent.control(id, 'finish');
+    await expect(page.getByText('Recovered', { exact: true })).toBeVisible();
+    expect((await agent.control(id, 'stats')).calls).toBe(1);
+  },
+);

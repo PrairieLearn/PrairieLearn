@@ -1,8 +1,10 @@
-import { useChat } from '@ai-sdk/react';
+import { useAgentChat } from '@cloudflare/ai-chat/react';
+import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { DefaultChatTransport, type UIMessage } from 'ai';
+import { useAgent } from 'agents/react';
+import type { UIMessage } from 'ai';
 import { useQueryState } from 'nuqs';
-import { type KeyboardEvent, type SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -14,8 +16,6 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
-
-import { ChatReadError, type ClientReplyState, readChat } from './chat-reader.js';
 
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
@@ -150,125 +150,41 @@ function Chat({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [reply, setReply] = useState<ClientReplyState>({ status: 'idle' });
-  const [connected, setConnected] = useState(false);
-  const [readError, setReadError] = useState<string | null>(null);
-  const [attachment, setAttachment] = useState(0);
-  const [stopping, setStopping] = useState(false);
-  const observationRef = useRef<AbortController | null>(null);
-  const api = `/pl/course/${courseId}/course_agent/conversations/${conversationId}`;
-  const reconnect = () => {
-    setConnected(false);
-    setReadError(null);
-    setAttachment((value) => value + 1);
-  };
-  const [transport] = useState(
-    () =>
-      new DefaultChatTransport({
-        api: `${api}/chat`,
-        headers: { 'X-CSRF-Token': chatCsrfToken },
-        prepareSendMessagesRequest: ({ messages, headers }) => ({
-          body: { message: messages.at(-1) },
-          headers,
-        }),
-        fetch: async (input, init) => {
-          const response = await fetch(input, init);
-          const id = response.headers.get('X-Assistant-Message-Id');
-          if (id) setReply({ status: 'running', assistantMessageId: id });
-          return response;
-        },
-      }),
-  );
+  const [historyReady, setHistoryReady] = useState(false);
+  const agent = useAgent({
+    agent: 'Conversation',
+    basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
+    query: { csrfToken: chatCsrfToken },
+    onClose: () => setHistoryReady(false),
+    onMessage: (event) => {
+      const message = JSON.parse(event.data) as OutgoingMessage;
+      if (message.type === MessageType.CF_AGENT_CHAT_MESSAGES) setHistoryReady(true);
+    },
+  });
   const {
     messages,
-    setMessages,
     sendMessage,
     status,
-    stop: detach,
+    stop,
+    isServerStreaming,
+    isRecovering,
     error,
-  } = useChat({
-    id: conversationId,
-    transport,
+    connectionError,
+  } = useAgentChat({
+    agent,
     throttle: 100,
-    onFinish: ({ isAbort, isError }) => {
-      if (!isAbort && !isError) {
-        setReply({ status: 'idle' });
-        setStopping(false);
-      }
-      void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
-    },
-    onError: reconnect,
+    getInitialMessages: null,
   });
-  // Every attachment starts from server history. Switching detaches this reader,
-  // and its callbacks cannot write into the next conversation's view.
-  useEffect(() => {
-    const abort = new AbortController();
-    observationRef.current = abort;
-    const isAborted = () => abort.signal.aborted;
-    void (async () => {
-      for (let attempt = 0; !isAborted(); attempt++) {
-        try {
-          const response = await fetch(`${api}/chat`, { signal: abort.signal });
-          await readChat(
-            response,
-            abort.signal,
-            (snapshot) => {
-              if (isAborted()) return;
-              setMessages(snapshot.messages);
-              setReply(snapshot.reply);
-              setStopping(false);
-              setConnected(true);
-              setReadError(null);
-            },
-            (next) => {
-              if (!isAborted()) setMessages(next);
-            },
-          );
-          return;
-        } catch (err) {
-          if (isAborted()) return;
-          setConnected(false);
-          if (attempt >= 2 || (err instanceof ChatReadError && !err.retryable)) {
-            setReadError(
-              err instanceof Error ? err.message : 'Could not reconnect to the conversation.',
-            );
-            return;
-          }
-          let timer: ReturnType<typeof setTimeout> | undefined;
-          try {
-            await new Promise((resolve) => {
-              timer = setTimeout(resolve, 500 * (attempt + 1));
-            });
-          } finally {
-            clearTimeout(timer);
-          }
-        }
-      }
-    })();
-    return () => {
-      abort.abort();
-      void detach();
-    };
-  }, [api, attachment, setMessages, detach]);
-  const stopReply = async () => {
-    if (reply.status !== 'running') return;
-    setStopping(true);
-    try {
-      const response = await fetch(`${api}/stop`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': chatCsrfToken },
-        body: JSON.stringify({ assistantMessageId: reply.assistantMessageId }),
-      });
-      if (!response.ok) throw new Error('The reply could not be stopped. Reconnect to check it.');
-    } catch (err) {
-      setStopping(false);
-      setReadError(err instanceof Error ? err.message : 'The reply could not be stopped.');
-      reconnect();
-    }
-  };
+  const title = useMutation({
+    ...trpc.courseAgent.setTitle.mutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
+  });
+  const titleError = getAppError<CourseAgentError['SetTitle']>(title.error);
+  // Do not send an empty client transcript before the SDK's initial history arrives.
+  const connected = agent.readyState === 1 && historyReady;
   const [draft, setDraft] = useState('');
-  const isBusy = ['submitted', 'streaming'].includes(status) || reply.status === 'running';
-  // Show loading while a turn is submitted or streaming and has no visible output yet.
+  const isBusy = ['submitted', 'streaming'].includes(status) || isServerStreaming || isRecovering;
+  // Show loading while a turn is submitted, streaming, or recovering with no visible output.
   // When a turn finishes or fails, isBusy is false, so isLoading is false.
   const isLoading = run(() => {
     if (!isBusy) return false;
@@ -284,9 +200,8 @@ function Chat({
     event?.preventDefault();
     const text = draft.trim();
     if (!text || isBusy || !connected) return;
-    observationRef.current?.abort();
-    setReadError(null);
     void sendMessage({ text });
+    title.mutate({ conversationId, text });
     setDraft('');
   };
 
@@ -314,17 +229,13 @@ function Chat({
               Thinking…
             </div>
           )}
-          {(!connected || readError) && (
-            <div className="small text-muted">
-              {readError ?? 'Connecting…'}
-              {readError && (
-                <Button variant="link" size="sm" onClick={reconnect}>
-                  Reconnect
-                </Button>
-              )}
-            </div>
+          {!connected && <div className="small text-muted">Connecting…</div>}
+          {connectionError && (
+            <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
-          {reply.status === 'failed' && <Alert variant="danger">{reply.error.message}</Alert>}
+          {title.isError && (
+            <AppErrorAlert error={titleError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
           {error && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
@@ -347,8 +258,8 @@ function Chat({
             <Button
               variant="outline-secondary"
               size="sm"
-              disabled={reply.status !== 'running' || stopping}
-              onClick={() => void stopReply()}
+              disabled={!connected}
+              onClick={() => void stop()}
             >
               <i className="bi bi-stop-fill me-1" aria-hidden="true" />
               Stop

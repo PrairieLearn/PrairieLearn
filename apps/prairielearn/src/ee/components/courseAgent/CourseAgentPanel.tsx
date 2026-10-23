@@ -79,7 +79,7 @@ function Panel({
   initialOpen: boolean;
 }) {
   const [open, setOpen] = useState(initialOpen);
-  // Stays mounted after the first open, so closing the panel doesn't cancel a reply in progress.
+  // Keep the picker and its query state mounted after the first open.
   const [hasEverOpened, setHasEverOpened] = useState(initialOpen);
   // Animate only after the user toggles, so a panel restored open on page load doesn't slide in.
   const [animate, setAnimate] = useState(false);

@@ -13,7 +13,7 @@ export async function startScriptedAgent() {
   await new Promise<void>((resolve, reject) =>
     socket.close((err) => (err ? reject(err) : resolve())),
   );
-  const storage = await mkdtemp(path.join(tmpdir(), 'course-agent-http-'));
+  const storage = await mkdtemp(path.join(tmpdir(), 'course-agent-sdk-'));
   const url = `http://127.0.0.1:${port}`;
   const headers = { Authorization: 'Bearer scripted-local-test-only' };
   let child: ReturnType<typeof spawn>;

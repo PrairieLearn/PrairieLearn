@@ -17,17 +17,6 @@ export async function pipeUiMessageStream(
     res.setHeader(key, value);
   });
 
-  await pipeEventStream(stream, res);
-}
-
-/** Pipes SSE without labelling a custom envelope as a native AI SDK stream. */
-export async function pipeEventStream(
-  stream: ReadableStream<string> | ReadableStream<Uint8Array>,
-  res: Response,
-) {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-store, no-transform');
-  res.setHeader('X-Accel-Buffering', 'no');
   // `Readable.fromWeb` accepts node:stream/web's `ReadableStream`, but the `ai`
   // package and `fetch` return the global (lib.dom) `ReadableStream`. They are
   // runtime-compatible (Node implements WHATWG streams) but TypeScript treats

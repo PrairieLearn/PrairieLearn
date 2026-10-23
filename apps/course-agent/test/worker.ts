@@ -8,7 +8,7 @@ export class Conversation extends BaseConversation {
   private controller: ReadableStreamDefaultController<UIMessageChunk> | null = null;
   private calls = 0;
 
-  protected override createReply(signal: AbortSignal, messageId: string) {
+  protected override createReply(signal: AbortSignal | undefined, messageId: string) {
     this.calls++;
     return Promise.resolve(
       new ReadableStream<UIMessageChunk>({
@@ -16,8 +16,8 @@ export class Conversation extends BaseConversation {
           this.controller = controller;
           controller.enqueue({ type: 'start', messageId });
           controller.enqueue({ type: 'text-start', id: 'text' });
-          signal.addEventListener('abort', () => this.finish(), { once: true });
-          if (signal.aborted) this.finish();
+          signal?.addEventListener('abort', () => this.finish(), { once: true });
+          if (signal?.aborted) this.finish();
         },
       }),
     );

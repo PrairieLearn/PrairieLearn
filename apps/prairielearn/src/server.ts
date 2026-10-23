@@ -2153,6 +2153,11 @@ export async function startServer(app: express.Express) {
     }
   }
 
+  if (isEnterprise()) {
+    const { initCourseAgentProxy } = await import('./ee/routers/courseAgentChat.js');
+    initCourseAgentProxy(server, app);
+  }
+
   // Capture metrics about the server, including the number of active connections
   // and the total number of connections that have been started.
   const meter = opentelemetry.metrics.getMeter('prairielearn');

@@ -1,136 +1,115 @@
-import { type Response as ExpressResponse, Router } from 'express';
+import { type IncomingMessage, type Server, ServerResponse } from 'node:http';
+
+import { type Express, type Request, type Response, Router } from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { IdSchema, parseRequestBody, parseRequestParams } from '@prairielearn/zod';
+import { checkSignedTokenPrefix } from '@prairielearn/signed-token';
+import { IdSchema, parseRequest } from '@prairielearn/zod';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseAgentEnabled } from '../lib/course-agent/access.js';
-import {
-  getCourseAgentChat,
-  postCourseAgentChat,
-  stopCourseAgentChat,
-} from '../lib/course-agent/client.js';
-import { pipeEventStream, pipeUiMessageStream } from '../lib/ui-message-stream.js';
-import {
-  selectOptionalCourseAgentConversation,
-  updateCourseAgentConversationTitleIfDefault,
-} from '../models/course-agent-conversation.js';
+import { buildCourseAgentServiceRequest } from '../lib/course-agent/client.js';
+import { selectOptionalCourseAgentConversation } from '../models/course-agent-conversation.js';
 
 const router = Router({ mergeParams: true });
-const ParamsSchema = z.object({
-  course_id: IdSchema,
-  conversation_id: IdSchema,
-  action: z.enum(['chat', 'stop']),
+const RequestSchemas = {
+  params: z.object({ course_id: IdSchema, conversation_id: IdSchema }),
+  query: z.object({ csrfToken: z.string().optional() }),
+};
+const upgradeHeads = new WeakMap<IncomingMessage, Buffer>();
+const proxy = createProxyMiddleware<Request, Response>({
+  // Upgrades are forwarded explicitly, after the Express authorization chain.
+  ws: false,
+  changeOrigin: true,
+  router: () => new URL(config.courseAgentServiceUrl!).origin,
+  on: {
+    error: (err, _req, res) => {
+      logger.error('Course agent proxy failed', err);
+      if ('writeHead' in res) {
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('The course agent is unavailable.');
+      } else {
+        res.destroy();
+      }
+    },
+  },
 });
-const ChatPostBodySchema = z.object({
-  message: z.object({
-    role: z.literal('user'),
-    parts: z.tuple([
-      z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(20_000) }),
-    ]),
-  }),
-});
-const StopPostBodySchema = z.object({ assistantMessageId: z.uuid() });
 
-function sendError(res: ExpressResponse, status: number, text: string) {
-  res.status(status).type('text').send(text);
+/** Send upgrades through the same session/authentication/RBAC chain as HTTP. */
+export function handleCourseAgentUpgrade(app: Express, req: IncomingMessage, head: Buffer) {
+  if (!/^\/pl\/course\/\d+\/course_agent\/conversations\/\d+(?:\?|$)/.test(req.url ?? '')) return;
+  upgradeHeads.set(req, head);
+  const res = new ServerResponse(req);
+  res.assignSocket(req.socket);
+  // A rejected upgrade is an HTTP response on a socket outside Node's request loop.
+  res.shouldKeepAlive = false;
+  res.once('finish', () => req.socket.end());
+  app(req, res);
 }
 
-router.all(
-  '/conversations/:conversation_id/:action(chat|stop)',
-  typedAsyncHandler<'course'>(async (req, res) => {
-    const params = parseRequestParams(req, ParamsSchema);
-    if (req.method !== 'POST' && !(req.method === 'GET' && params.action === 'chat')) {
-      res.sendStatus(404);
-      return;
-    }
-    // Validate all consumed request data before the catalog lookup.
-    const message =
-      req.method === 'POST' && params.action === 'chat'
-        ? parseRequestBody(req, ChatPostBodySchema).message
-        : null;
-    const stop = params.action === 'stop' ? parseRequestBody(req, StopPostBodySchema) : null;
+export function initCourseAgentProxy(server: Server, app: Express) {
+  server.on('upgrade', (req, _socket, head) => handleCourseAgentUpgrade(app, req, head));
+}
+
+router.get(
+  ['/conversations/:conversation_id', '/conversations/:conversation_id/get-messages'],
+  typedAsyncHandler<'course'>(async (req, res, next) => {
+    const { params, query } = parseRequest(req, RequestSchemas);
     if (!(await courseAgentEnabled(res.locals))) {
-      sendError(res, 403, 'The course agent is not available in this course.');
-      return;
+      throw new HttpStatusError(403, 'The course agent is not available in this course.');
     }
     const { authn_user, course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
     });
+    const head = upgradeHeads.get(req);
+    if (
+      head &&
+      (!query.csrfToken ||
+        !checkSignedTokenPrefix(
+          query.csrfToken,
+          { url: req.originalUrl.split('?')[0], authn_user_id: authn_user.id },
+          config.secretKey,
+        ))
+    ) {
+      throw new HttpStatusError(403, 'CSRF fail');
+    }
     const conversation = await selectOptionalCourseAgentConversation({
       id: params.conversation_id,
       course_id: params.course_id,
       user_id: authn_user.id,
     });
-    if (!conversation) {
-      sendError(res, 404, 'Conversation not found.');
+    if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
+    if (!head && !req.path.endsWith('/get-messages')) {
+      res.sendStatus(426);
       return;
     }
-    if (message) {
-      const title = message.parts[0].text.replaceAll(/\s+/g, ' ').trim();
-      await updateCourseAgentConversationTitleIfDefault({
-        id: conversation.id,
-        title: title.length > 80 ? `${title.slice(0, 79)}…` : title,
-      });
-    }
-    const abort = new AbortController();
-    const close = () => abort.abort();
-    res.once('close', close);
-    try {
-      const id = conversation.agent_conversation_id;
-      const upstream = await (stop
-        ? stopCourseAgentChat(id, stop.assistantMessageId, abort.signal)
-        : message
-          ? postCourseAgentChat({
-              agentConversationId: id,
-              message,
-              context: { courseTitle: course.title ?? '', courseShortName: course.short_name },
-              signal: abort.signal,
-            })
-          : getCourseAgentChat(id, abort.signal));
-      if (stop && [202, 204].includes(upstream.status)) {
-        res.sendStatus(upstream.status);
-        return;
-      }
-      if (!upstream.ok || !upstream.body) {
-        if (upstream.status === 409) {
-          sendError(res, 409, 'The agent is still replying. Wait for it to finish, or stop it.');
-        } else {
-          logger.error(`Course agent service responded with ${upstream.status}`);
-          sendError(res, 502, 'The course agent is unavailable. Please reconnect.');
-        }
-        return;
-      }
-      // A late upstream response can arrive after the browser has disconnected.
-      res.removeListener('close', close);
-      if (res.destroyed || res.writableEnded) {
-        await upstream.body.cancel();
-        return;
-      }
-      if (message) {
-        const assistantId = upstream.headers.get('X-Assistant-Message-Id');
-        if (assistantId) res.setHeader('X-Assistant-Message-Id', assistantId);
-        await pipeUiMessageStream(upstream.body, res);
-      } else {
-        await pipeEventStream(upstream.body, res);
-      }
-    } catch (err) {
-      const disconnected =
-        err instanceof Error && 'code' in err && err.code === 'ERR_STREAM_PREMATURE_CLOSE';
-      if (!abort.signal.aborted && !disconnected) {
-        logger.error('Course agent service request failed', err);
-        if (!res.headersSent) {
-          sendError(res, 502, 'The course agent is unavailable. Please reconnect.');
-        } else {
-          res.destroy();
-        }
-      }
-    } finally {
-      res.removeListener('close', close);
-      abort.abort();
+    const path = `conversations/${conversation.agent_conversation_id}${head ? '' : '/get-messages'}`;
+    const { url, headers } = buildCourseAgentServiceRequest(path);
+    // Keep the SDK connection ID, but never forward the browser's CSRF token or cookies.
+    url.search = new URL(req.originalUrl, 'http://localhost').search;
+    url.searchParams.delete('csrfToken');
+    req.url = url.pathname + url.search;
+    delete req.headers.cookie;
+    req.headers.authorization = headers.Authorization;
+    req.headers['x-pl-user-id'] = authn_user.id;
+    req.headers['x-pl-course-context'] = JSON.stringify({
+      courseTitle: course.title ?? '',
+      courseShortName: course.short_name,
+    });
+    if (head) {
+      res.detachSocket(req.socket);
+      // Finish Express request accounting; the proxy now owns the long-lived socket.
+      res.statusCode = 101;
+      res.emit('close');
+      proxy.upgrade(req, req.socket, head);
+    } else {
+      await proxy(req, res, next);
     }
   }),
 );

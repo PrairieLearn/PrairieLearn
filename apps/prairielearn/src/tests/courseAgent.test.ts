@@ -1,3 +1,6 @@
+import { type IncomingHttpHeaders, createServer, request } from 'node:http';
+import type { AddressInfo } from 'node:net';
+
 import fetchCookie from 'fetch-cookie';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -21,7 +24,7 @@ import { getOrCreateUser, withUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
-const agentServiceUrl = 'http://course-agent.test';
+let agentServiceUrl: string;
 const coursePageUrl = `${siteUrl}/pl/course/1/course_admin/settings`;
 const courseInstancePageUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`;
 
@@ -37,20 +40,26 @@ const assistantMessage = {
   parts: [{ type: 'text', text: 'Hello!' }],
 };
 
-const SSE_BODY = [
-  { type: 'start' },
-  { type: 'text-start', id: 't1' },
-  { type: 'text-delta', id: 't1', delta: 'Hello!' },
-  { type: 'text-end', id: 't1' },
-  { type: 'finish' },
-]
-  .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
-  .join('')
-  .concat('data: [DONE]\n\n');
-
-function uiMessageStreamResponse(body: string | ReadableStream<Uint8Array>) {
-  return new Response(body, {
-    headers: { 'content-type': 'text/event-stream', 'x-vercel-ai-ui-message-stream': 'v1' },
+function upgradeStatus(url: string) {
+  return new Promise<number>((resolve, reject) => {
+    const req = request(url, {
+      headers: {
+        Connection: 'Upgrade',
+        Upgrade: 'websocket',
+        'Sec-WebSocket-Version': '13',
+        'Sec-WebSocket-Key': Buffer.from('test-handshake!!').toString('base64'),
+      },
+    });
+    req.on('response', (res) => {
+      res.resume();
+      resolve(res.statusCode!);
+    });
+    req.on('upgrade', (_res, socket) => {
+      socket.destroy();
+      resolve(101);
+    });
+    req.on('error', reject);
+    req.end();
   });
 }
 
@@ -67,32 +76,26 @@ function createClient(user: User, csrfToken?: string) {
   });
 }
 
-function postChat(
-  user: User,
-  conversationId: string,
-  text: string,
-  { csrfToken, signal }: { csrfToken?: string; signal?: AbortSignal } = {},
-) {
-  return fetch(`${siteUrl}/pl/course/1/course_agent/conversations/${conversationId}/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token':
-        csrfToken ??
-        generatePrefixCsrfToken(
-          { url: '/pl/course/1/course_agent', authn_user_id: user.id },
-          config.secretKey,
-        ),
-    },
-    body: JSON.stringify({ message: userMessage(text) }),
-    signal,
-  });
-}
-
 describe('Course agent', () => {
   let owner: User;
   let otherOwner: User;
   const agentFetch = vi.fn<typeof fetch>();
+  const proxied: { url: string | undefined; headers: IncomingHttpHeaders }[] = [];
+  const service = createServer((req, res) => {
+    proxied.push({ url: req.url, headers: req.headers });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify([userMessage('Hi'), assistantMessage]));
+  });
+  beforeAll(async () => {
+    await new Promise<void>((resolve) => service.listen(0, '127.0.0.1', resolve));
+    agentServiceUrl = `http://127.0.0.1:${(service.address() as AddressInfo).port}`;
+  });
+  afterAll(async () => {
+    service.closeAllConnections();
+    await new Promise<void>((resolve, reject) =>
+      service.close((err) => (err ? reject(err) : resolve())),
+    );
+  });
 
   // The course agent's routes are mounted only on Enterprise Edition servers.
   const originalIsEnterprise = config.isEnterprise;
@@ -132,6 +135,7 @@ describe('Course agent', () => {
       courseAgentServiceToken: 'service-token',
       features: { ...config.features, 'course-agent': true },
     });
+    proxied.length = 0;
     agentFetch.mockReset().mockRejectedValue(new Error('Unexpected course agent request'));
     const realFetch = fetch;
     // Only requests to the agent service are faked; requests to PL stay real.
@@ -158,7 +162,13 @@ describe('Course agent', () => {
             course_id: '1',
             user_id: owner.id,
           });
-          expect((await postChat(owner, conversation.id, 'Hi')).status).toBe(403);
+          expect(
+            (
+              await fetch(
+                `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/get-messages`,
+              )
+            ).status,
+          ).toBe(403);
           const page = await fetchCheerio(coursePageUrl);
           expect(page.$('.course-agent-panel').length).toBe(0);
         }),
@@ -202,7 +212,11 @@ describe('Course agent', () => {
           user_id: owner.id,
           agent_conversation_id: crypto.randomUUID(),
         });
-        expect((await postChat(owner, id, 'Hi', { csrfToken: 'invalid' })).status).toBe(403);
+        expect(
+          await upgradeStatus(
+            `${siteUrl}/pl/course/1/course_agent/conversations/${id}?csrfToken=invalid`,
+          ),
+        ).toBe(403);
       });
       expect(agentFetch).not.toHaveBeenCalled();
     });
@@ -258,9 +272,9 @@ describe('Course agent', () => {
     test('rejects unknown catalog IDs before contacting Cloudflare', async () => {
       await withUser(owner, async () => {
         expect(
-          (await fetch(`${siteUrl}/pl/course/1/course_agent/conversations/999999999/chat`)).status,
+          (await fetch(`${siteUrl}/pl/course/1/course_agent/conversations/999999999/get-messages`))
+            .status,
         ).toBe(404);
-        expect((await postChat(owner, '999999999', 'Hi')).status).toBe(404);
       });
       expect(agentFetch).not.toHaveBeenCalled();
     });
@@ -277,36 +291,37 @@ describe('Course agent', () => {
       });
     });
 
-    test('loads and relays the chat snapshot in one service request', async () => {
+    test('proxies SDK history with service credentials and PL-owned context', async () => {
       const conversation = await insertCourseAgentConversation({
         agent_conversation_id: crypto.randomUUID(),
         course_id: '1',
         user_id: owner.id,
       });
-      const frame = {
-        type: 'snapshot',
-        phase: 'initial',
-        messages: [userMessage('Hi'), assistantMessage],
-        reply: { status: 'idle' },
-      };
-      agentFetch.mockResolvedValueOnce(
-        new Response(`data: ${JSON.stringify(frame)}\n\n`, {
-          headers: { 'Content-Type': 'text/event-stream' },
-        }),
-      );
       await withUser(owner, async () => {
         const response = await fetch(
-          `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/chat`,
+          `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/get-messages`,
+          {
+            headers: {
+              Cookie: 'browser-only=private',
+              Authorization: 'untrusted',
+              'X-PL-Course-Context': 'spoofed',
+            },
+          },
         );
-        expect(response.headers.get('content-type')).toContain('text/event-stream');
-        expect(response.headers.get('x-vercel-ai-ui-message-stream')).toBeNull();
-        expect(await response.text()).toContain(JSON.stringify(frame));
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual([userMessage('Hi'), assistantMessage]);
       });
-      const [url, init] = agentFetch.mock.calls[0];
-      expect(String(url)).toBe(
-        `${agentServiceUrl}/conversations/${conversation.agent_conversation_id}/chat`,
+      expect(proxied).toHaveLength(1);
+      expect(proxied[0].url).toBe(
+        `/conversations/${conversation.agent_conversation_id}/get-messages`,
       );
-      expect(init?.headers).toMatchObject({ Authorization: 'Bearer service-token' });
+      expect(proxied[0].headers.authorization).toBe('Bearer service-token');
+      expect(proxied[0].headers.cookie).toBeUndefined();
+      expect(proxied[0].headers['x-pl-user-id']).toBe(owner.id);
+      expect(JSON.parse(String(proxied[0].headers['x-pl-course-context']))).toEqual({
+        courseTitle: expect.any(String),
+        courseShortName: expect.any(String),
+      });
     });
 
     test('hides other users’ conversations', async () => {
@@ -317,158 +332,65 @@ describe('Course agent', () => {
       });
       await withUser(owner, async () => {
         expect(
-          (await fetch(`${siteUrl}/pl/course/1/course_agent/conversations/${others.id}/chat`))
-            .status,
+          (
+            await fetch(
+              `${siteUrl}/pl/course/1/course_agent/conversations/${others.id}/get-messages`,
+            )
+          ).status,
         ).toBe(404);
-        expect((await postChat(owner, others.id, 'Hi')).status).toBe(404);
+        const token = generatePrefixCsrfToken(
+          { url: '/pl/course/1/course_agent', authn_user_id: owner.id },
+          config.secretKey,
+        );
+        expect(
+          await upgradeStatus(
+            `${siteUrl}/pl/course/1/course_agent/conversations/${others.id}?csrfToken=${token}`,
+          ),
+        ).toBe(404);
       });
       expect(agentFetch).not.toHaveBeenCalled();
     });
   });
 
-  describe('chat', () => {
-    test('relays the reply stream and sets the title from the first message', async () => {
-      const conversation = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: owner.id,
-      });
-      agentFetch.mockImplementation(async () => uiMessageStreamResponse(SSE_BODY));
-
-      await withUser(owner, async () => {
-        const response = await postChat(owner, conversation.id, 'How do I add a question?');
-        expect(response.status).toBe(200);
-        expect(response.headers.get('x-vercel-ai-ui-message-stream')).toBe('v1');
-        expect(await response.text()).toBe(SSE_BODY);
-
-        await (await postChat(owner, conversation.id, 'A follow-up')).text();
-      });
-
-      const [url, init] = agentFetch.mock.calls[0];
-      expect(String(url)).toBe(
-        `${agentServiceUrl}/conversations/${conversation.agent_conversation_id}/chat`,
-      );
-      expect(init?.headers).toMatchObject({ Authorization: 'Bearer service-token' });
-      expect(JSON.parse(init?.body as string)).toEqual({
-        message: { role: 'user', parts: [{ type: 'text', text: 'How do I add a question?' }] },
-        context: { courseTitle: expect.any(String), courseShortName: expect.any(String) },
-      });
-
-      const updated = await selectOptionalCourseAgentConversation({
-        id: conversation.id,
-        course_id: '1',
-        user_id: owner.id,
-      });
-      // The first message sets the title; later messages don't change it.
-      expect(updated?.title).toBe('How do I add a question?');
+  test('sets the first-message title through an owner-scoped, CSRF-protected mutation', async () => {
+    const conversation = await insertCourseAgentConversation({
+      agent_conversation_id: crypto.randomUUID(),
+      course_id: '1',
+      user_id: owner.id,
     });
-
-    test.each([
-      { upstreamStatus: 409, status: 409 },
-      { upstreamStatus: 500, status: 502 },
-    ])('maps an upstream $upstreamStatus to $status', async ({ upstreamStatus, status }) => {
-      const conversation = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: owner.id,
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      await client.courseAgent.setTitle.mutate({
+        conversationId: conversation.id,
+        text: 'First message',
       });
-      agentFetch.mockResolvedValueOnce(
-        new Response('Error: internal stack trace', { status: upstreamStatus }),
-      );
-      await withUser(owner, async () => {
-        const response = await postChat(owner, conversation.id, 'Hi');
-        expect(response.status).toBe(status);
-        expect(await response.text()).not.toContain('stack trace');
+      await client.courseAgent.setTitle.mutate({
+        conversationId: conversation.id,
+        text: 'Follow-up',
       });
+      expect(
+        (
+          await selectOptionalCourseAgentConversation({
+            id: conversation.id,
+            course_id: '1',
+            user_id: owner.id,
+          })
+        )?.title,
+      ).toBe('First message');
+      await expect(
+        createClient(owner, 'invalid').courseAgent.setTitle.mutate({
+          conversationId: conversation.id,
+          text: 'Forged',
+        }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     });
-
-    test('forwards an authorized Stop and enforces CSRF and ownership', async () => {
-      const conversation = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: owner.id,
-      });
-      const assistantMessageId = crypto.randomUUID();
-      const stopUrl = `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/stop`;
-      const stopHeaders = {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': generatePrefixCsrfToken(
-          { url: '/pl/course/1/course_agent', authn_user_id: owner.id },
-          config.secretKey,
-        ),
-      };
-      await withUser(owner, async () => {
-        expect(
-          (
-            await fetch(stopUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ assistantMessageId }),
-            })
-          ).status,
-        ).toBe(403);
-        agentFetch.mockResolvedValueOnce(new Response(null, { status: 202 }));
-        expect(
-          (
-            await fetch(stopUrl, {
-              method: 'POST',
-              headers: stopHeaders,
-              body: JSON.stringify({ assistantMessageId }),
-            })
-          ).status,
-        ).toBe(202);
-      });
-      const [url, init] = agentFetch.mock.calls[0];
-      expect(String(url)).toBe(
-        `${agentServiceUrl}/conversations/${conversation.agent_conversation_id}/stop`,
-      );
-      expect(JSON.parse(String(init?.body))).toEqual({ assistantMessageId });
-      agentFetch.mockClear();
-      await withUser(otherOwner, async () => {
-        const token = generatePrefixCsrfToken(
-          { url: '/pl/course/1/course_agent', authn_user_id: otherOwner.id },
-          config.secretKey,
-        );
-        expect(
-          (
-            await fetch(stopUrl, {
-              method: 'POST',
-              headers: { ...stopHeaders, 'X-CSRF-Token': token },
-              body: JSON.stringify({ assistantMessageId }),
-            })
-          ).status,
-        ).toBe(404);
-      });
-      expect(agentFetch).not.toHaveBeenCalled();
-    });
-
-    test('disconnecting the reader releases its upstream request', async () => {
-      const conversation = await insertCourseAgentConversation({
-        agent_conversation_id: crypto.randomUUID(),
-        course_id: '1',
-        user_id: owner.id,
-      });
-      let upstreamSignal: AbortSignal | undefined;
-      agentFetch.mockImplementationOnce(async (_input, init) => {
-        upstreamSignal = init?.signal ?? undefined;
-        const encoder = new TextEncoder();
-        // A reply that never finishes on its own.
-        const body = new ReadableStream<Uint8Array>({
-          start(controller) {
-            controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'));
-          },
-        });
-        return uiMessageStreamResponse(body);
-      });
-
-      await withUser(owner, async () => {
-        const abort = new AbortController();
-        const response = await postChat(owner, conversation.id, 'Hi', { signal: abort.signal });
-        const reader = response.body!.getReader();
-        await reader.read();
-        abort.abort();
-      });
-      await vi.waitFor(() => expect(upstreamSignal?.aborted).toBe(true));
+    await withUser(otherOwner, async () => {
+      await expect(
+        createClient(otherOwner).courseAgent.setTitle.mutate({
+          conversationId: conversation.id,
+          text: 'Someone else',
+        }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
     });
   });
 
