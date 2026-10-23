@@ -28,6 +28,7 @@
 !testCourse/
 
 # Forbid specific patterns.
+apps/course-agent/
 .DS_Store
 /config.json
 apps/*/dist/
