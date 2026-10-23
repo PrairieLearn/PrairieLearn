@@ -130,41 +130,49 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if isinstance(expr, (sympy.Union, sympy.Intersection, sympy.Complement)):
         required_types: set[_UsedSympyType] = set()
         for arg in expr.args:
-            arg_types = _used_sympy_types(arg)
-            required_types.update(arg_types)
+            required_types.update(_used_sympy_types(arg))
         return required_types
     if isinstance(expr, sympy.Set):
+        # Recursion is unnecessary because set is broader than all other used types.
         return {"set"}
     return {"expression"}
 
 
 def check_sympy_types(
-    expr: sympy.Basic, allowed_types: set[AllowedSympyType]
+    expr: sympy.Basic,
+    allowed_types: set[AllowedSympyType],
+    *,
+    simplify_expression: bool = True,
 ) -> SympyParseFailure | None:
-    """Return a parse failure if the expression uses a disallowed SymPy type."""
-    used_types = _used_sympy_types(expr)
-    matches_allowed_type = (
-        "all" in allowed_types
-        or (isinstance(expr, sympy.Set) and "set" in allowed_types)
-        or all(
-            not {"set", "finite-set", "interval"}.isdisjoint(allowed_types)
-            if used_type == "empty-set"
-            else used_type in allowed_types
-            for used_type in used_types
-        )
-    )
-    if matches_allowed_type:
+    """Return a parse failure if the expression uses a disallowed SymPy type.
+
+    Args:
+        expr: The parsed expression.
+        allowed_types: The types the expression may use.
+        simplify_expression: Whether `expr` was parsed with simplification. If not,
+            an evaluated copy is classified so that the result doesn't depend on
+            whether the original expression is preserved for display.
+    """
+    if "all" in allowed_types:
+        return None
+    allowed = cast(set[_SympyValueType], allowed_types)
+    # SymPy's set evaluation isn't idempotent, so only evaluate unevaluated trees.
+    if not simplify_expression and isinstance(expr, sympy.Set):
+        expr = expr.doit()
+
+    if isinstance(expr, sympy.Set) and "set" in allowed:
         return None
 
-    disallowed_types = {
-        "set" if used_type == "empty-set" else used_type
-        for used_type in used_types
-        if (
-            {"set", "finite-set", "interval"}.isdisjoint(allowed_types)
-            if used_type == "empty-set"
-            else used_type not in allowed_types
-        )
-    }
+    used_types = _used_sympy_types(expr)
+    if used_types == {"empty-set"}:
+        if not allowed.isdisjoint({"finite-set", "interval"}):
+            return None
+        used_types = {"set"}
+
+    disallowed_types = used_types - allowed
+    if not disallowed_types:
+        return None
+
     return SympyParseFailure(
         f"Your answer uses {', '.join(sorted(disallowed_types))}, which this input "
         f"does not accept. Allowed types: {', '.join(sorted(allowed_types))}."
@@ -1932,6 +1940,9 @@ def try_parse_string_as_sympy(
             simplify_expression=simplify_expression,
             assumptions=assumptions,
         )
+        type_failure = check_sympy_types(
+            expr_parsed, allowed_types, simplify_expression=simplify_expression
+        )
     except HasFloatError as exc:
         return SympyParseFailure(
             f"Your answer contains the floating-point number {exc.n}. "
@@ -2042,7 +2053,6 @@ def try_parse_string_as_sympy(
             f"Unexpected error: {exc}. Please contact the course staff."
         )
 
-    type_failure = check_sympy_types(expr_parsed, allowed_types)
     if type_failure is not None:
         return type_failure
 
