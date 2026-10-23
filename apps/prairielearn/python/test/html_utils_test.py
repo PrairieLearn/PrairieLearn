@@ -54,6 +54,16 @@ def test_render_raw_input_popover_handles_empty_strings() -> None:
     assert content.count("(nothing entered)") == 1
 
 
+def test_render_raw_input_popover_can_hide_ascii_only_input() -> None:
+    assert (
+        pl.render_raw_input_popover("plain ASCII", "answer", show_if_ascii_only=False)
+        == ""
+    )
+    assert 'aria-label="Answer as entered for answer"' in pl.render_raw_input_popover(
+        "café", "answer", show_if_ascii_only=False
+    )
+
+
 def test_render_raw_input_popover_escapes_content_for_html_attribute() -> None:
     popover = pl.render_raw_input_popover(
         '<img src=x onerror="alert(1)">', 'answer "one"'
