@@ -1,5 +1,3 @@
-import { Readable } from 'node:stream';
-
 import { CsvError } from 'csv-parse';
 import { z } from 'zod';
 
@@ -30,7 +28,7 @@ export async function parseStudentSyncCsv(
   const labelsByName = new Map(labels.map((label) => [label.name, label.id]));
   const rows = new Map<string, string[] | undefined>();
   let headers: string[] | undefined;
-  const parser = createCsvParser(Readable.from([text]), {
+  const parser = createCsvParser(text, {
     columns: false,
     cast: false,
     info: true,

@@ -1129,9 +1129,6 @@ importers:
       socket.io-client:
         specifier: ^4.8.4
         version: 4.8.4(supports-color@7.2.0)
-      streamifier:
-        specifier: ^0.1.1
-        version: 0.1.1
       strip-ansi:
         specifier: ^7.2.0
         version: 7.2.0
@@ -1334,9 +1331,6 @@ importers:
       '@types/serve-static':
         specifier: ^2.2.0 <3
         version: 2.2.0
-      '@types/streamifier':
-        specifier: ^0.1.2
-        version: 0.1.2
       '@types/tmp':
         specifier: ^0.2.6
         version: 0.2.6
@@ -5815,9 +5809,6 @@ packages:
   '@types/ssh2@1.15.5':
     resolution: {integrity: sha512-N1ASjp/nXH3ovBHddRJpli4ozpk6UdDYIX4RJWFa9L1YKnzdhTlVmiGHm4DZnj/jLbqZpes4aeR30EFGQtvhQQ==}
 
-  '@types/streamifier@0.1.2':
-    resolution: {integrity: sha512-W53GwxY5Tunz3JUoP1YWDidrAadenSZKOBKMRl6RO3yThOFd03w7yx3HypI8ABGuUCGDHCHUml/5e45FWRt1TQ==}
-
   '@types/tmp@0.2.6':
     resolution: {integrity: sha512-chhaNf2oKHlRkDGt+tiKE2Z5aJ6qalm7Z9rlLdBwmOiAAf09YQvvoLXjWK4HWPF1xU/fqvMgfNfpVoBscA/tKA==}
 
@@ -10151,10 +10142,6 @@ packages:
   stream-transform@3.6.0:
     resolution: {integrity: sha512-iDtH6HV1MOQ3Ipva+9g/kke1uVLubZlEbGCxbWWlI+Ak++sDRQRxmPZ1iXlmXdLK6kP5fIziUf79GBB7erbppQ==}
 
-  streamifier@0.1.1:
-    resolution: {integrity: sha512-zDgl+muIlWzXNsXeyUfOk9dChMjlpkq0DRsxujtYPgyJ676yQ8jEm6zzaaWHFDg5BNcLuif0eD2MTyJdZqXpdg==}
-    engines: {node: '>=0.10'}
-
   streamsearch@0.1.2:
     resolution: {integrity: sha512-jos8u++JKm0ARcSUTAZXOVC0mSox7Bhn6sBgty73P1f3JGf7yG2clTbBNHUdde/kdvP2FESam+vM6l8jBrNxHA==}
     engines: {node: '>=0.8.0'}
@@ -13996,10 +13983,6 @@ snapshots:
   '@types/ssh2@1.15.5':
     dependencies:
       '@types/node': 18.19.130
-
-  '@types/streamifier@0.1.2':
-    dependencies:
-      '@types/node': 24.19.0
 
   '@types/tmp@0.2.6': {}
 
@@ -18793,8 +18776,6 @@ snapshots:
       readable-stream: 3.6.2
 
   stream-transform@3.6.0: {}
-
-  streamifier@0.1.1: {}
 
   streamsearch@0.1.2: {}
 
