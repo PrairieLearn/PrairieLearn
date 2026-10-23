@@ -3,6 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { BaseHeadContents } from '../../components/HeadContents.js';
 import {
   compiledScriptTag,
+  compiledStylesheetPath,
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
@@ -107,115 +108,16 @@ export function InstructorAssessmentInstancePrint({
             size: ${paperWidth} ${paperHeight};
           }
         </style>
+        <link
+          rel="stylesheet"
+          href="${compiledStylesheetPath('assessment-printing-preview.css')}"
+          data-pagedjs-ignore
+        />
         <style data-pagedjs-ignore>
-          #assessment-print-status {
-            background: #fff;
-            border: 1px solid #bbb;
-            border-radius: 0.25rem;
-            box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 12%);
-            left: 50%;
-            padding: 0.65rem 1rem;
-            position: fixed;
-            top: 1rem;
-            transform: translateX(-50%);
-            z-index: 1000;
-          }
-
-          html[data-print-status='ready'] #assessment-print-status {
-            display: none;
-          }
-
-          html[data-print-status='error'] #assessment-print-status {
-            background: #f8d7da;
-            border-color: #842029;
-            color: #842029;
-          }
-
-          .assessment-grading-table {
-            flex-shrink: 0;
-            margin-bottom: 12px;
-          }
-          .assessment-grading-grid {
-            display: grid;
-            column-gap: 20px;
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(0, 1fr);
-          }
-          .assessment-grading-row {
-            display: flex;
-            align-items: flex-end;
-            gap: 8px;
-            padding-bottom: 6px;
-            font-size: 10pt;
-          }
-          .assessment-grading-score {
-            flex: 0 1 150px;
-            border-bottom: 1px solid #111;
-            margin-bottom: 3px;
-          }
-
-          @media screen {
-            html,
-            body {
-              background: #e7eaee;
-              margin: 0;
-            }
-
-            #assessment-print-pages {
-              overflow-x: auto;
-            }
-
-            #assessment-print-pages .pagedjs_pages {
-              align-items: center;
-              box-sizing: border-box;
-              display: flex;
-              flex-direction: column;
-              gap: 1.25rem;
-              min-width: 100%;
-              padding: 1.75rem 0;
-              width: max-content;
-            }
-
-            #assessment-print-pages .pagedjs_page {
-              background: #fff;
-              box-shadow: 0 0.25rem 1.25rem rgb(0 0 0 / 18%);
-              margin: 0;
-            }
-          }
-
           @media print {
             @page {
               size: ${paperSize};
               margin: 0;
-            }
-
-            html,
-            body {
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-
-            #assessment-print-status {
-              display: none !important;
-            }
-
-            #assessment-print-pages .pagedjs_pages {
-              display: block !important;
-            }
-
-            #assessment-print-pages .pagedjs_page {
-              break-after: page;
-              box-shadow: none !important;
-              margin: 0 !important;
-            }
-
-            #assessment-print-pages .assessment-cover {
-              break-after: auto !important;
-              page: auto !important;
-            }
-
-            #assessment-print-pages .pagedjs_page:last-child {
-              break-after: auto;
             }
           }
         </style>
