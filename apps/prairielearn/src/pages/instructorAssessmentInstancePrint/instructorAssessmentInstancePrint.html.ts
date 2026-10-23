@@ -291,7 +291,6 @@ export function InstructorAssessmentInstancePrint({
           </div>
         </div>
         <main id="assessment-print-pages"></main>
-        <noscript>This printable assessment requires JavaScript to to prepare its layout.</noscript>
       </body>
     </html>`;
 }
