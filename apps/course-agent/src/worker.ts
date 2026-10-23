@@ -1,6 +1,7 @@
 import { getAgentByName } from 'agents';
 
-import type { Env } from './env.js';
+import { assertNever } from '@prairielearn/utils';
+
 import { isAuthorized } from './http/auth.js';
 import { parseRoute } from './http/routes.js';
 
@@ -27,11 +28,15 @@ export default {
     const conversation = await getAgentByName(env.Conversation, route.conversationId);
     // PrairieLearn checks conversation existence and ownership in its catalog
     // before forwarding requests. The service trusts its authenticated caller.
-    if (route.action === 'messages') {
-      if (request.method !== 'GET') return new Response('Not found', { status: 404 });
-      // Served by `AIChatAgent`'s built-in history route.
-      return conversation.fetch(new Request(new URL('/get-messages', request.url), request));
+    switch (route.action) {
+      case 'messages':
+        if (request.method !== 'GET') return new Response('Not found', { status: 404 });
+        // Served by `AIChatAgent`'s built-in history route.
+        return conversation.fetch(new Request(new URL('/get-messages', request.url), request));
+      case 'chat':
+        return conversation.fetch(request);
+      default:
+        assertNever(route.action);
     }
-    return conversation.fetch(request);
   },
 } satisfies ExportedHandler<Env>;
