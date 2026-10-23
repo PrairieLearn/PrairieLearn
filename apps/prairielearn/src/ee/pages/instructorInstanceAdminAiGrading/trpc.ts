@@ -179,7 +179,7 @@ const createCheckoutMutation = t.procedure
       cancel_url: `${urlBase}?checkout=cancelled`,
       metadata,
       payment_intent_data: {
-        description: 'AI Grading Credits',
+        description: 'AI grading credits',
         metadata,
       },
     });
