@@ -373,7 +373,7 @@ def test_parse_errors_point_to_raw_submission(
 ) -> None:
     raw_index = caret_spec.index("!")
     submission = caret_spec.replace("!", "")
-    result = symbolic_input.try_parse_symbolic_submission(submission, variables)
+    result = psu.try_parse_symbolic_submission(submission, variables)
     assert isinstance(result, psu.SympyParseFailure)
     assert expected_message in result.error
     match = re.search(r"<pre>(.*?)</pre>", result.error, re.DOTALL)
