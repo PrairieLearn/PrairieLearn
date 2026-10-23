@@ -550,6 +550,7 @@ class TestSympy:
             ("{1, 2}", {"set"}, sympy.FiniteSet(1, 2)),
             ("{}", {"finite-set"}, sympy.EmptySet),
             ("{}", {"interval"}, sympy.EmptySet),
+            ("{{}}", {"finite-set"}, sympy.FiniteSet(sympy.EmptySet)),
             (
                 "(-infty, 0) U [0, infty)",
                 {"interval"},
@@ -646,6 +647,7 @@ class TestSympy:
         [
             ("m + 1", {"set"}, "expression"),
             ("{}", {"expression"}, "set"),
+            ("{{}}", {"expression"}, "finite-set, set"),
             ("[1, 2] U [3, 4]", {"finite-set"}, "interval"),
             ("m + 1", {"finite-set", "interval"}, "expression"),
             ("{1, 2}", {"expression", "interval"}, "finite-set"),

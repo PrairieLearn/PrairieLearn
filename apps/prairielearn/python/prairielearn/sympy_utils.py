@@ -164,10 +164,10 @@ def check_sympy_types(
         return None
 
     used_types = _used_sympy_types(expr)
-    if used_types == {"empty-set"}:
-        if not allowed.isdisjoint({"finite-set", "interval"}):
-            return None
-        used_types = {"set"}
+    if "empty-set" in used_types:
+        used_types.remove("empty-set")
+        if allowed.isdisjoint({"finite-set", "interval"}):
+            used_types.add("set")
 
     disallowed_types = used_types - allowed
     if not disallowed_types:
