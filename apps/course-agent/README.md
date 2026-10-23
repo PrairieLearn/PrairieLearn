@@ -53,8 +53,6 @@ curl --fail-with-body -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
   "http://localhost:8790/conversations/$conversation_id/get-messages"
 ```
 
-`test/wrangler.jsonc` runs a scripted producer with explicit dummy credentials and separate SQLite storage. Browser tests exercise real PL authorization/proxying, the native Cloudflare client/server protocol, refresh and switching, and Stop without using provider credentials or paid model calls. It is a test fixture, not the deployment entry point.
-
 ## Deployment
 
 ```sh
