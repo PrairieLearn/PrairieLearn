@@ -39,6 +39,7 @@ import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import {
   type PrintDocument,
   getPrintRenderer,
+  getPrintableInstanceQuestionIds,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
@@ -46,11 +47,12 @@ import {
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 
-import { requireCoursePermissionPreview, t } from './init.js';
+import { requireCoursePermissionPreview, requirePrintableExams, t } from './init.js';
 
 export const printableExamExportRouter = t.router({
   pdf: t.procedure
     .use(requireCoursePermissionPreview)
+    .use(requirePrintableExams)
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
       let metadata: z.infer<typeof PrintPacketMetadataSchema>;
@@ -203,6 +205,17 @@ export const printableExamExportRouter = t.router({
             instance.assessmentInstanceId,
             excludedQuestions,
           );
+          const assetScope = {
+            courseInstanceId: ctx.course_instance.id,
+            assessmentId: ctx.assessment.id,
+            assessmentInstanceId: instance.assessmentInstanceId,
+            instanceQuestionIds: await getPrintableInstanceQuestionIds(
+              instance.assessmentInstanceId,
+              excludedQuestions,
+            ),
+            authnUserId: ctx.authn_user.id,
+            userId: ctx.locals.user.id,
+          };
           for (const printDocument of plan.documents) {
             if (printDocument === 'exam' && index >= metadata.copies) continue;
             const search = new URLSearchParams(printLayoutSearch(instance.settings));
@@ -231,10 +244,10 @@ export const printableExamExportRouter = t.router({
             }
             snapshots.push({
               formLabel: instance.formLabel,
-              paperSize: instance.settings.paperSize,
               printDocument,
               previewUrl: previewUrl.href,
               html,
+              assetScope,
             });
           }
         }
@@ -256,7 +269,6 @@ export const printableExamExportRouter = t.router({
               base64: Buffer.from(await file.arrayBuffer()).toString('base64'),
             })),
           ),
-          cookieHeader: ctx.cookieHeader,
         };
         const inputBytes =
           pages.data.reduce((sum, page) => sum + page.size, 0) +
@@ -354,6 +366,7 @@ export const printableExamExportRouter = t.router({
     }),
   status: t.procedure
     .use(requireCoursePermissionPreview)
+    .use(requirePrintableExams)
     .input(z.object({ jobSequenceId: IdSchema }))
     .query(async ({ ctx, input }) => {
       const job = await selectPrintExportJob({

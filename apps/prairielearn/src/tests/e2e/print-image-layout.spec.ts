@@ -6,10 +6,10 @@ import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
-import { test as base, expect } from './fixtures.js';
+import { createTest, expect } from './fixtures.js';
 import { waitForPrintablePage } from './utils/printing.js';
 
-const test = base.extend<{
+const test = createTest({ features: { 'printable-exams': true } }).extend<{
   imageQuestion: (html: string) => Promise<string>;
 }>({
   imageQuestion: async ({ testCoursePath, courseInstance }, use) => {
@@ -139,6 +139,48 @@ test('fits image choices uniformly within the paper and requested question block
     }),
   ).toHaveCount(1);
   await expect(page.getByRole('img', { name: /^Image choice / })).toHaveCount(5);
+});
+
+test('lets image choices flow across pages before shrinking them below legible size', async ({
+  page,
+  imageQuestion,
+}) => {
+  const preview = await imageQuestion(
+    imageChoices({
+      element: 'pl-multiple-choice',
+      dimensions: Array.from({ length: 10 }, () => ({ width: 250, height: 250 })),
+    }),
+  );
+  for (const paperSize of ['Letter', 'A4']) {
+    await page.goto(`${preview}?exclude_question=2&paper_size=${paperSize}`);
+    await waitForPrintablePage(page);
+    const images = page.getByRole('img', { name: /^Image choice / });
+    await expect(images).toHaveCount(10);
+    const measurements = await images.evaluateAll((elements) =>
+      elements.map((element) => {
+        const bounds = element.getBoundingClientRect();
+        const page = element.closest('.pagedjs_page')!;
+        const area = page.querySelector('.pagedjs_area')!.getBoundingClientRect();
+        return {
+          width: bounds.width,
+          height: bounds.height,
+          page: page.getAttribute('data-page-number'),
+          overflow: Math.max(
+            area.left - bounds.left,
+            bounds.right - area.right,
+            area.top - bounds.top,
+            bounds.bottom - area.bottom,
+          ),
+        };
+      }),
+    );
+    expect(new Set(measurements.map(({ page }) => page)).size).toBeGreaterThan(1);
+    for (const image of measurements) {
+      expect(image.width).toBeGreaterThanOrEqual(125);
+      expect(image.height).toBeGreaterThanOrEqual(125);
+      expect(image.overflow).toBeLessThanOrEqual(1);
+    }
+  }
 });
 
 test('moves a question that outgrows its requested block to the next page', async ({

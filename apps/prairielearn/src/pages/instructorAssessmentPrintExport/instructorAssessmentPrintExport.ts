@@ -9,8 +9,10 @@ import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 import { getPrintExportStream, selectPrintExportJob } from '../../lib/print-export-jobs.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { requirePrintableExams } from '../../middlewares/requirePrintableExams.js';
 
 const router = Router();
+router.use(requirePrintableExams);
 const ParamsSchema = z.object({ jobSequenceId: IdSchema });
 
 router.get(

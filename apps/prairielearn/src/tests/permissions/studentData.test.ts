@@ -9,6 +9,7 @@ import {
   SprocUsersSelectOrInsertSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
@@ -245,6 +246,7 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
   });
 
   test('instructor (student data viewer) cannot print an E1 answer key', async () => {
+    await features.enable('printable-exams');
     const paperUrl = context.examAssessmentInstanceUrl
       .replace('/assessment_instance/', '/instructor/assessment_instance/')
       .replace(/\/$/, '');

@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   describeOmittedQuestions,
+  getPrintableInstanceQuestionIds,
   renderAssessmentInstanceQuestionsForPrinting,
   validateQuestionsForPrinting,
 } from './printing.js';
@@ -289,30 +290,35 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     }
   });
 
-  it('omits unsupported question types before rendering and reports why', async () => {
-    mocks.queryRows.mockResolvedValue([
-      questions[0],
-      { ...questions[1], question: { ...questions[1].question, type: null } },
-    ]);
+  it.each(['exam', 'answer_key'] as const)(
+    'omits unsupported question types from the %s before rendering them',
+    async (document) => {
+      mocks.queryRows.mockResolvedValue([
+        questions[0],
+        { ...questions[1], question: { ...questions[1].question, type: null } },
+      ]);
 
-    const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals);
+      const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals, { document });
 
-    expect(result.questionHtmls).toHaveLength(1);
-    expect(result.questionResults.map((question) => question.status)).toEqual([
-      'rendered',
-      'unsupported',
-    ]);
-    expect(mocks.getAndRenderVariant).toHaveBeenCalledTimes(1);
-    expect(describeOmittedQuestions(result.questionResults)).toEqual([
-      {
-        code: 'unsupported_question_type',
-        question_number: '2',
-        qid: 'broken-generation',
-        message:
-          'Question 2 (broken-generation) uses a question type that cannot be printed. Exclude it or replace it with a Freeform question.',
-      },
-    ]);
-  });
+      expect(result.questionHtmls).toHaveLength(1);
+      expect(result.questionResults.map((question) => question.status)).toEqual([
+        'rendered',
+        'unsupported',
+      ]);
+      expect(result.extraHeadersHtml).not.toContain('data-question-id="202"');
+      expect(mocks.getAndRenderVariant).toHaveBeenCalledTimes(1);
+      expect(describeOmittedQuestions(result.questionResults)).toEqual([
+        {
+          code: 'unsupported_question_type',
+          question_number: '2',
+          qid: 'broken-generation',
+          message:
+            'Question 2 (broken-generation) uses a question type that cannot be printed. Exclude it or replace it with a Freeform question.',
+        },
+      ]);
+      expect(await getPrintableInstanceQuestionIds('4', new Set())).toEqual(['101']);
+    },
+  );
 
   it('renders an answer key from the same assessment-instance variants without submissions', async () => {
     const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals, {

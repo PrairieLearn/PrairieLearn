@@ -4,7 +4,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { MAX_PRINT_COPIES, MAX_PRINT_INSTANCES } from './client/print-packet.js';
 import { PrintIdentityFieldsTextSchema } from './client/print-preparation.js';
-import { PAPER_SIZES } from './printing/pdf-output.js';
+import { PAPER_SIZES } from './printing/paper-size.js';
 import { QUESTION_BLOCK_SIZES } from './printing/question-block-size.js';
 
 const QuestionNumberSchema = z.string().min(1);

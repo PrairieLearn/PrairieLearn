@@ -6,7 +6,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
-import type { PaperSize } from '../../lib/printing/pdf-output.js';
+import { PAPER_DIMENSIONS, type PaperSize } from '../../lib/printing/paper-size.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 import {
@@ -16,11 +16,6 @@ import {
   getPrintCoverFields,
   getPrintFooterLabel,
 } from './print-cover.js';
-
-const PAPER_DIMENSIONS = {
-  Letter: { width: '8.5in', height: '11in' },
-  A4: { width: '210mm', height: '297mm' },
-} satisfies Record<PaperSize, { width: string; height: string }>;
 
 export function InstructorAssessmentInstancePrint({
   resLocals,
@@ -69,7 +64,6 @@ export function InstructorAssessmentInstancePrint({
       lang="en"
       data-print-document="${document}"
       data-print-form-label="${formLabel ?? ''}"
-      data-print-paper-size="${paperSize}"
       data-print-include-cover="${includeCoverPage}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
@@ -186,7 +180,7 @@ export function InstructorAssessmentInstancePrint({
 
           @media print {
             @page {
-              size: ${paperSize};
+              size: ${paperWidth} ${paperHeight};
               margin: 0;
             }
 

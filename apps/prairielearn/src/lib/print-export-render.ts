@@ -4,7 +4,8 @@ import { HttpStatusError } from '@prairielearn/error';
 
 import { config } from './config.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
-import { type PaperSize, createPdfOutput } from './printing/pdf-output.js';
+import { createPdfOutput } from './printing/pdf-output.js';
+import type { PrintAssetScope } from './printing/print-asset-access.js';
 import { type PrintDocument, getPrintRenderer, validatePrintDocument } from './printing.js';
 
 export interface PrintExportWork {
@@ -13,13 +14,12 @@ export interface PrintExportWork {
   filename: string;
   snapshots: {
     formLabel: string;
-    paperSize: PaperSize;
     printDocument: PrintDocument;
     previewUrl: string;
     html: string;
+    assetScope: PrintAssetScope;
   }[];
   covers: { name: string; base64: string }[];
-  cookieHeader?: string;
 }
 
 export async function renderPrintExport(
@@ -47,7 +47,7 @@ export async function renderPrintExport(
         url: snapshot.previewUrl,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: snapshot.html,
-        cookieHeader: work.cookieHeader,
+        assetScope: snapshot.assetScope,
       },
       {
         label: work.document === 'booklet' ? 'booklet PDF' : 'PDF',
@@ -55,12 +55,10 @@ export async function renderPrintExport(
           const identity = await page.evaluate(() => ({
             document: document.documentElement.dataset.printDocument,
             formLabel: document.documentElement.dataset.printFormLabel,
-            paperSize: document.documentElement.dataset.printPaperSize,
           }));
           if (
             identity.document !== snapshot.printDocument ||
-            identity.formLabel !== snapshot.formLabel ||
-            identity.paperSize !== snapshot.paperSize
+            identity.formLabel !== snapshot.formLabel
           ) {
             throw new HttpStatusError(400, 'The printable pages do not match the selected form.');
           }

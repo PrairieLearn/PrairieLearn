@@ -18,7 +18,8 @@ import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js
 import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
-import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
+import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import {
   checkPrintSnapshotId,
   createPrintSnapshotId,
@@ -32,6 +33,7 @@ import {
   type PrintDocument,
   describeOmittedQuestions,
   getPrintRenderer,
+  getPrintableInstanceQuestionIds,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
@@ -41,6 +43,7 @@ import {
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { requirePrintableExams } from '../../middlewares/requirePrintableExams.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 
 import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
@@ -222,6 +225,20 @@ function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
   };
 }
 
+function printAssetScope(
+  resLocals: ResLocalsForPage<'assessment-instance'>,
+  instanceQuestionIds: string[],
+): PrintAssetScope {
+  return {
+    courseInstanceId: resLocals.course_instance.id,
+    assessmentId: resLocals.assessment.id,
+    assessmentInstanceId: resLocals.assessment_instance.id,
+    instanceQuestionIds,
+    authnUserId: resLocals.authn_user.id,
+    userId: resLocals.user.id,
+  };
+}
+
 const parseDocxBody: RequestHandler = (req, res, next) => {
   if (!req.is('application/octet-stream')) {
     next(new HttpStatusError(415, 'The Word export request has an unsupported format.'));
@@ -328,7 +345,13 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
         url: previewUrl.href,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: snapshot.html,
-        cookieHeader: req.get('cookie'),
+        assetScope: printAssetScope(
+          res.locals,
+          await getPrintableInstanceQuestionIds(
+            res.locals.assessment_instance.id,
+            layout.excludedQuestionNumbers,
+          ),
+        ),
         runScripts: true,
       },
       {
@@ -337,13 +360,8 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
           const identity = await page.evaluate(() => ({
             document: globalThis.document.documentElement.dataset.printDocument,
             formLabel: globalThis.document.documentElement.dataset.printFormLabel,
-            paperSize: globalThis.document.documentElement.dataset.printPaperSize,
           }));
-          if (
-            identity.document !== document ||
-            identity.formLabel !== (layout.formLabel ?? '') ||
-            identity.paperSize !== layout.paperSize
-          ) {
+          if (identity.document !== document || identity.formLabel !== (layout.formLabel ?? '')) {
             throw new HttpStatusError(400, 'The printable pages do not match this document.');
           }
           await validatePrintDocument(page);
@@ -376,6 +394,8 @@ const createDocxHandler = typedAsyncHandler<'assessment-instance', PrintLocals>(
 );
 
 const router = Router({ mergeParams: true });
+
+router.use(requirePrintableExams);
 
 router.use(
   createAuthzMiddleware({
@@ -464,7 +484,12 @@ router.get(
         url: previewUrl.href,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: rawHtml,
-        cookieHeader: req.get('cookie'),
+        assetScope: printAssetScope(
+          res.locals,
+          printingResult.questionResults
+            .filter((result) => result.status === 'rendered')
+            .map(({ instanceQuestionId }) => instanceQuestionId),
+        ),
         runScripts: true,
       },
       {

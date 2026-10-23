@@ -8,9 +8,11 @@ import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js
 import { inspectPrintPreparationQuestions } from '../../lib/print-preparation.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 
-import { requireCoursePermissionPreview, t } from './init.js';
+import { requireCoursePermissionPreview, requirePrintableExams, t } from './init.js';
 
-const printableAssessmentProcedure = t.procedure.use(requireCoursePermissionPreview);
+const printableAssessmentProcedure = t.procedure
+  .use(requireCoursePermissionPreview)
+  .use(requirePrintableExams);
 
 const createInstanceProcedure = printableAssessmentProcedure.use(async ({ ctx, next }) => {
   if (ctx.assessment.team_work) {
