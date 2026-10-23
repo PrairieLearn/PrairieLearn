@@ -8,15 +8,14 @@ import {
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
 import type { PaperSize } from '../../lib/printing/pdf-output.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
 import {
   DEFAULT_ASSESSMENT_INSTRUCTIONS,
   answerKeyDescription,
   getDefaultHonorCodePledge,
   getPrintCoverFields,
   getPrintFooterLabel,
-} from './print-cover.js';
+} from '../../lib/printing/print-cover.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 const PAPER_DIMENSIONS = {
   Letter: { width: '8.5in', height: '11in' },

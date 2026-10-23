@@ -18,6 +18,11 @@ import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
 import {
+  BLANK_NAME_PLACEHOLDER,
+  buildPrintableCover,
+  getPrintFooterLabel,
+} from '../../lib/printing/print-cover.js';
+import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
 } from '../../lib/printing/question-block-size.js';
@@ -37,7 +42,6 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 
 import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
-import { BLANK_NAME_PLACEHOLDER, buildPrintableCover, getPrintFooterLabel } from './print-cover.js';
 
 const QuestionBlockSizeSchema = z.enum(QUESTION_BLOCK_SIZES);
 const QuestionNumberSchema = z.string().min(1);
