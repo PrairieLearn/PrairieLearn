@@ -29,6 +29,34 @@ test.describe('Instructor file editor', () => {
     questionId = (await selectQuestionByQid({ qid: 'addNumbers', course_id: '1' })).id;
   });
 
+  test('keeps keyboard guidance and the caret visible in a long file', async ({
+    page,
+    courseInstance,
+  }) => {
+    const question = await selectQuestionByQid({
+      qid: 'addNumbers',
+      course_id: courseInstance.course_id,
+    });
+    await page.goto(fileEditUrl(question.id, 'server.py'));
+    await setAceEditorContent(page, '# Long file\n'.repeat(120));
+
+    const editor = page.getByRole('group', { name: 'server.py', exact: true });
+    await editor.focus();
+    await expect(page.getByText('Press Enter to edit.', { exact: true })).toBeInViewport();
+    await page.keyboard.press('Enter');
+    for (let i = 0; i < 40; i++) await page.keyboard.press('ArrowDown');
+
+    const exitHint = page.getByText('Press Esc, then Tab to leave the editor.', { exact: true });
+    await expect(exitHint).toBeInViewport();
+    await expect
+      .poll(async () => {
+        const caret = await page.locator('.ace_cursor').boundingBox();
+        const hint = await exitHint.boundingBox();
+        return caret!.y + caret!.height - hint!.y;
+      })
+      .toBeLessThanOrEqual(0);
+  });
+
   test('edits a file and syncs the change to disk', async ({ page, testCoursePath }) => {
     const filePath = questionFilePath(testCoursePath, 'server.py');
     const original = await fs.readFile(filePath, 'utf8');

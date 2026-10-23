@@ -1,5 +1,5 @@
 import ace from 'ace-builds';
-import { type Ref, useEffect, useImperativeHandle, useRef } from 'react';
+import { type Ref, useEffect, useId, useImperativeHandle, useRef } from 'react';
 
 /**
  * Ace loads modes/themes/workers dynamically as needed, but it's unable to
@@ -64,6 +64,7 @@ export function getCursorPositionFromCursorOffset(
 }
 
 export function AceFileEditor({
+  label,
   value,
   mode = 'ace/mode/text',
   readOnly = false,
@@ -74,17 +75,21 @@ export function AceFileEditor({
   onReady,
   ref,
 }: {
+  label: string;
   value: string;
   mode?: string;
   readOnly?: boolean;
   className?: string;
   focusOnMount?: boolean;
-  options?: Partial<ace.Ace.EditorOptions>;
+  /** The exit hint assumes default key bindings; custom handlers such as Vim need different instructions. */
+  options?: Partial<Omit<ace.Ace.EditorOptions, 'keyboardHandler'>>;
   onChange?: (value: string) => void;
   onReady?: (editor: ace.Ace.Editor) => void;
   ref?: Ref<AceFileEditorHandle>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const keyboardHintId = useId();
+  const keyboardHintRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ace.Ace.Editor | null>(null);
   const valueRef = useRef(value);
   const initialModeRef = useRef(mode);
@@ -123,7 +128,6 @@ export function AceFileEditor({
     editor.getSession().setValue(valueRef.current);
     editor.gotoLine(1, 0, false);
     editor.getSession().getUndoManager().reset();
-    if (initialFocusOnMountRef.current) editor.focus();
 
     const handleChange = () => {
       const nextValue = editor.getValue();
@@ -131,11 +135,35 @@ export function AceFileEditor({
       onChangeRef.current?.(nextValue);
     };
 
+    let cursorMoved = false;
+    const handleCursorChange = () => {
+      cursorMoved = true;
+    };
+    const keepCursorAboveHint = () => {
+      if (!cursorMoved) return;
+      cursorMoved = false;
+      if (!editor.isFocused() || !keyboardHintRef.current) return;
+      const cursor = editor.container.querySelector<HTMLElement>('.ace_cursor');
+      if (!cursor) return;
+
+      const cursorBounds = cursor.getBoundingClientRect();
+      const hintBounds = keyboardHintRef.current.getBoundingClientRect();
+      // Ace scrolls against the viewport edge, so it can leave the caret behind our sticky hint.
+      // Only move an overlapping caret; manually scrolling away from it should remain possible.
+      if (cursorBounds.bottom > hintBounds.top && cursorBounds.top < hintBounds.bottom) {
+        cursor.scrollIntoView({ block: 'center', inline: 'nearest' });
+      }
+    };
+
+    editor.on('changeSelection', handleCursorChange);
+    editor.renderer.on('afterRender', keepCursorAboveHint);
     editor.getSession().on('change', handleChange);
     editorRef.current = editor;
     onReadyRef.current?.(editor);
 
     return () => {
+      editor.off('changeSelection', handleCursorChange);
+      editor.renderer.off('afterRender', keepCursorAboveHint);
       editor.getSession().off('change', handleChange);
       editor.destroy();
       editor.container.replaceChildren();
@@ -150,7 +178,22 @@ export function AceFileEditor({
 
     editor.getSession().setMode(mode);
     editor.setReadOnly(readOnly);
-  }, [mode, readOnly]);
+    const accessibleLabel = label + (readOnly ? ' (read only)' : '');
+    editor.setOption('textInputAriaLabel', accessibleLabel);
+    editor.renderer.scroller.setAttribute('aria-label', accessibleLabel);
+    if (readOnly) {
+      editor.renderer.scroller.removeAttribute('aria-describedby');
+      editor.textInput.getElement().removeAttribute('aria-describedby');
+    } else {
+      editor.renderer.scroller.setAttribute('aria-describedby', `${keyboardHintId}-entry`);
+      editor.textInput.getElement().setAttribute('aria-describedby', `${keyboardHintId}-exit`);
+    }
+  }, [mode, readOnly, label, keyboardHintId]);
+
+  // Set the accessible name and description before moving focus into the editor.
+  useEffect(() => {
+    if (initialFocusOnMountRef.current) editorRef.current?.focus();
+  }, []);
 
   // Reset Ace contents when the `value` prop changes out from under local edits
   // (e.g. discarding changes back to a saved baseline). This is destructive: it
@@ -166,5 +209,22 @@ export function AceFileEditor({
     editor.getSession().getUndoManager().reset();
   }, [value]);
 
-  return <div ref={containerRef} className={className} />;
+  return (
+    <>
+      <div ref={containerRef} className={className} />
+      {!readOnly && (
+        <div
+          ref={keyboardHintRef}
+          className="editor-keyboard-hint sticky-bottom small text-body-secondary bg-body border-top rounded-bottom px-2 py-1 flex-shrink-0"
+        >
+          <span id={`${keyboardHintId}-entry`} className="keyboard-entry-hint">
+            Press <kbd>Enter</kbd> to edit.
+          </span>
+          <span id={`${keyboardHintId}-exit`} className="keyboard-exit-hint">
+            Press <kbd>Esc</kbd>, then <kbd>Tab</kbd> to leave the editor.
+          </span>
+        </div>
+      )}
+    </>
+  );
 }

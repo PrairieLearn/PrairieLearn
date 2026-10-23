@@ -25,6 +25,18 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
   this.editor.setReadOnly(options.readOnly);
+  const label = this.editorElement.data('label') + (options.readOnly ? ' (read only)' : '');
+  this.editor.setOption('textInputAriaLabel', label);
+  this.editor.renderer.scroller.setAttribute('aria-label', label);
+  if (!options.readOnly) {
+    this.editor.renderer.scroller.setAttribute(
+      'aria-describedby',
+      `file-editor-${uuid}-keyboard-entry-hint`,
+    );
+    this.editor.textInput
+      .getElement()
+      .setAttribute('aria-describedby', `file-editor-${uuid}-keyboard-exit-hint`);
+  }
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
 
   if (options.aceMode) {
@@ -51,7 +63,7 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setFontSize(12);
   }
 
-  this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+  this.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
 
   if (options.minLines) {
     this.editor.setOption('minLines', options.minLines);
@@ -97,8 +109,63 @@ window.PLFileEditor = function (uuid, options) {
   this.initSettingsButton(uuid);
 
   if (!options.readOnly) {
+    this.initKeyboardHint();
     this.initRestoreOriginalButton();
   }
+};
+
+window.PLFileEditor.prototype.initKeyboardHint = function () {
+  const hint = this.element.find('.editor-keyboard-hint')[0];
+  const updateHintPosition = () => {
+    // Questions can be replaced without unloading the page.
+    if (!hint.isConnected) {
+      window.removeEventListener('scroll', updateHintPosition, true);
+      window.removeEventListener('resize', updateHintPosition);
+      return;
+    }
+    if (!hint.offsetHeight) return;
+    // The question body's horizontal overflow creates a scroll container that traps
+    // CSS sticky positioning. Translate within the editor instead, preserving that overflow.
+    const parentTop = hint.parentElement.getBoundingClientRect().top;
+    const naturalBottom = parentTop + hint.offsetTop + hint.offsetHeight;
+    const bottom = Math.max(parentTop + hint.offsetHeight, window.innerHeight);
+    hint.style.transform = `translateY(${Math.min(0, bottom - naturalBottom)}px)`;
+  };
+  window.addEventListener('scroll', updateHintPosition, { capture: true });
+  window.addEventListener('resize', updateHintPosition);
+  this.editor.container.addEventListener('focusin', updateHintPosition);
+  updateHintPosition();
+
+  let cursorMoved = false;
+  this.editor.on('changeSelection', () => {
+    cursorMoved = true;
+  });
+  this.editor.renderer.on('afterRender', () => {
+    updateHintPosition();
+    if (!cursorMoved) return;
+    cursorMoved = false;
+    if (!this.editor.isFocused()) return;
+    const cursor = this.editor.container.querySelector('.ace_cursor');
+    if (!cursor) return;
+    const cursorBounds = cursor.getBoundingClientRect();
+    const hintBounds = hint.getBoundingClientRect();
+    // Ace's automatic scrolling does not account for the sticky hint's height.
+    if (cursorBounds.bottom > hintBounds.top && cursorBounds.top < hintBounds.bottom) {
+      cursor.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }
+  });
+};
+
+window.PLFileEditor.prototype.setKeyboardHandler = function (handler) {
+  // Update after the module loads, so the hint describes the active keymap.
+  this.editor.setKeyboardHandler(handler, () => {
+    const hint = this.element.find('.keyboard-exit-hint')[0];
+    if (!hint) return;
+    const isVim = this.editor.getKeyboardHandler().$id === 'ace/keyboard/vim';
+    hint.innerHTML = isVim
+      ? 'To leave, press <kbd>Esc</kbd> to return to Vim Normal mode if needed, then <kbd>Esc</kbd>, then <kbd>Tab</kbd>.'
+      : 'Press <kbd>Esc</kbd>, then <kbd>Tab</kbd> to leave the editor.';
+  });
 };
 
 window.PLFileEditor.prototype.syncSettings = function () {
@@ -110,14 +177,14 @@ window.PLFileEditor.prototype.syncSettings = function () {
       this.editor.setFontSize(event.newValue);
     }
     if (event.key === 'pl-file-editor-keyboardHandler') {
-      this.editor.setKeyboardHandler(event.newValue);
+      this.setKeyboardHandler(event.newValue);
     }
   });
 
   window.addEventListener('pl-file-editor-settings-changed', () => {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    this.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
   });
 };
 
@@ -352,7 +419,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
 
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    this.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
 
     window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
     this.modal.modal('hide');
@@ -361,9 +428,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.closeSettingsButton.click(() => {
     this.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     this.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
-    this.editor.setKeyboardHandler(
-      sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
-    );
+    this.setKeyboardHandler(sessionStorage.getItem('pl-file-editor-keyboardHandler-current'));
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');

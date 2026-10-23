@@ -1,4 +1,5 @@
 import type ace from 'ace-builds';
+import clsx from 'clsx';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
@@ -522,7 +523,12 @@ export function FileEditor({
             </div>
             <div className="row">
               <div id="file-editor-draft" className="col">
-                <div className="card p-0">
+                {/* Only the comparison panes need borders inside the outer editor card. */}
+                <div
+                  className={clsx('card p-0', {
+                    'border-0 rounded-0 bg-transparent': !showVersionChoice,
+                  })}
+                >
                   {showVersionChoice ? (
                     <div className="card-header text-center">
                       <h4 className="mb-4">My version</h4>
@@ -541,6 +547,7 @@ export function FileEditor({
                     />
                     <AceFileEditor
                       ref={editorRef}
+                      label={editorData.fileName}
                       value={contents}
                       mode={editorData.aceMode}
                       readOnly={readOnly}
@@ -615,6 +622,7 @@ export function FileEditor({
                     </div>
                     <div className="card-body p-0">
                       <AceFileEditor
+                        label={`Their version of ${editorData.fileName}`}
                         value={diskContents}
                         mode={editorData.aceMode}
                         className="editor"
