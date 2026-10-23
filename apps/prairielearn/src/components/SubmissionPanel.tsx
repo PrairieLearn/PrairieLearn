@@ -480,7 +480,7 @@ function SubmissionInfoModal({
                     <td>${gradingJobStats.submitDuration}</td>
                   </tr>
                   <tr>
-                    <th><span class="text-warning me-2">&bull;</span>Queue duration</th>
+                    <th><span class="text-warning-emphasis me-2">&bull;</span>Queue duration</th>
                     <td>${gradingJobStats.queueDuration}</td>
                   </tr>
                   <tr>
