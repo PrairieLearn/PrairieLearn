@@ -247,6 +247,7 @@ export default [
 
     // Transpiled code
     'apps/*/dist/*',
+    'apps/course-agent/.wrangler/*',
     'apps/prairielearn/public/build/*',
     'packages/*/dist/*',
 
