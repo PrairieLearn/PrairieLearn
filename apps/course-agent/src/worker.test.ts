@@ -2,7 +2,6 @@ import { getAgentByName } from 'agents';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import type { Env } from './env.js';
 import { parseRoute } from './http/routes.js';
 import worker from './worker.js';
 

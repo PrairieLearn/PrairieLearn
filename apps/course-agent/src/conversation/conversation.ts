@@ -14,12 +14,8 @@ import { type ChatContext, parseChatRequest } from '../http/chat-request.js';
 
 import { buildInstructions } from './instructions.js';
 
-export interface ConversationEnv {
-  OPENAI_API_KEY: string;
-  OPENAI_MODEL: string;
-}
-
 interface ConversationState {
+  model?: string;
   courseContext: ChatContext | null;
 }
 
@@ -29,13 +25,25 @@ interface ConversationState {
  * Chat is served over plain HTTP (from PrairieLearn) instead of the SDK's
  * WebSocket protocol, so the wire format is the AI SDK UI message stream.
  */
-export class Conversation extends AIChatAgent<ConversationEnv, ConversationState> {
+export class Conversation extends AIChatAgent<Env, ConversationState> {
   override initialState: ConversationState = { courseContext: null };
   /** The turn whose HTTP request is waiting for its reply, if any. */
   private turn: {
     replyReady: PromiseWithResolvers<ReadableStream<UIMessageChunk>>;
     abort: AbortController;
   } | null = null;
+
+  override onStart() {
+    this.getModel();
+  }
+
+  private getModel(): string {
+    if (this.state.model) return this.state.model;
+    // Existing conversations adopt the configured model once, then retain it across deployments.
+    const model = this.env.OPENAI_MODEL;
+    this.setState({ ...this.state, model });
+    return model;
+  }
 
   // The Worker has already authenticated and routed the request. History is
   // served by `AIChatAgent`'s built-in `get-messages` route (the Worker forwards
@@ -57,7 +65,7 @@ export class Conversation extends AIChatAgent<ConversationEnv, ConversationState
     }
 
     // Retain the PL-supplied prompt context for SDK recovery without an HTTP request.
-    if (context) this.setState({ courseContext: context });
+    if (context) this.setState({ ...this.state, courseContext: context });
 
     // onChatMessage supplies the stream before saveMessages finishes consuming it.
     const turn = {
@@ -119,7 +127,7 @@ export class Conversation extends AIChatAgent<ConversationEnv, ConversationState
   ) {
     const turn = this.turn;
     const result = streamText({
-      model: createOpenAI({ apiKey: this.env.OPENAI_API_KEY })(this.env.OPENAI_MODEL),
+      model: createOpenAI({ apiKey: this.env.OPENAI_API_KEY })(this.getModel()),
       instructions: buildInstructions(this.state.courseContext ?? undefined),
       messages: await convertToModelMessages(this.messages),
       abortSignal: options?.abortSignal,

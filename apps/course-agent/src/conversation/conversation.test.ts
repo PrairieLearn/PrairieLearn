@@ -1,7 +1,6 @@
 import { type UIMessage, type UIMessageChunk, streamText } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Env } from '../env.js';
 import type { ChatContext } from '../http/chat-request.js';
 
 import { Conversation } from './conversation.js';
