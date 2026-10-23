@@ -10,10 +10,12 @@ export function renderCourseAgentPanel({
   courseId,
   authnUserId,
   initialOpen,
+  search,
 }: {
   courseId: string;
   authnUserId: string;
   initialOpen: boolean;
+  search: string;
 }) {
   const csrfToken = (url: string) =>
     generatePrefixCsrfToken({ url, authn_user_id: authnUserId }, config.secretKey);
@@ -24,6 +26,7 @@ export function renderCourseAgentPanel({
         trpcCsrfToken={csrfToken(getCourseTrpcUrl(courseId))}
         chatCsrfToken={csrfToken(`/pl/course/${courseId}/course_agent`)}
         initialOpen={initialOpen}
+        search={search}
       />
     </Hydrate>,
   );

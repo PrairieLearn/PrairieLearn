@@ -11,6 +11,7 @@ import {
 import { Button, Offcanvas } from 'react-bootstrap';
 
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import { NuqsAdapter } from '@prairielearn/ui';
 
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';
 import { TRPCProvider } from '../../../trpc/course/context.js';
@@ -43,22 +44,26 @@ export function CourseAgentPanel({
   trpcCsrfToken,
   chatCsrfToken,
   initialOpen,
+  search,
 }: {
   courseId: string;
   trpcCsrfToken: string;
   chatCsrfToken: string;
   initialOpen: boolean;
+  search: string;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
     createCourseTrpcClient({ courseId, csrfToken: trpcCsrfToken }),
   );
   return (
-    <QueryClientProviderDebug client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <Panel courseId={courseId} chatCsrfToken={chatCsrfToken} initialOpen={initialOpen} />
-      </TRPCProvider>
-    </QueryClientProviderDebug>
+    <NuqsAdapter search={search}>
+      <QueryClientProviderDebug client={queryClient}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <Panel courseId={courseId} chatCsrfToken={chatCsrfToken} initialOpen={initialOpen} />
+        </TRPCProvider>
+      </QueryClientProviderDebug>
+    </NuqsAdapter>
   );
 }
 
@@ -74,7 +79,7 @@ function Panel({
   initialOpen: boolean;
 }) {
   const [open, setOpen] = useState(initialOpen);
-  // Stays mounted after the first open, so closing the panel doesn't cancel a reply in progress.
+  // Keep the picker and its query state mounted after the first open.
   const [hasEverOpened, setHasEverOpened] = useState(initialOpen);
   // Animate only after the user toggles, so a panel restored open on page load doesn't slide in.
   const [animate, setAnimate] = useState(false);
@@ -157,7 +162,9 @@ function Panel({
             <i className="bi bi-x-lg" aria-hidden="true" />
           </Button>
         </div>
-        {hasEverOpened && <Conversations courseId={courseId} chatCsrfToken={chatCsrfToken} />}
+        {hasEverOpened && (
+          <Conversations courseId={courseId} chatCsrfToken={chatCsrfToken} active={open} />
+        )}
       </Offcanvas>
     </>
   );
