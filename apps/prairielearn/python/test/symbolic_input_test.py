@@ -43,6 +43,18 @@ def test_normalize_absolute_value_bars_handles_long_input() -> None:
     assert result == "abs(x)" * 5000 + "abs(x+" * 2000 + "y" + ")" * 2000
 
 
+@pytest.mark.parametrize("submission", ["|x", "x|"])
+def test_try_parse_string_as_sympy_reports_ambiguous_absolute_value_bars(
+    submission: str,
+) -> None:
+    result = psu.try_parse_string_as_sympy(submission, ["x"])
+
+    assert result == psu.SympyParseFailure(
+        "The absolute value bars in your answer are mismatched or ambiguous: "
+        f"<code>{submission}</code>."
+    )
+
+
 @pytest.mark.parametrize(
     ("submission", "expected"),
     [
