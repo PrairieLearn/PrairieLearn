@@ -386,6 +386,23 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
     assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 2 - sympy.Symbol("a")
 
 
+def test_formula_editor_does_not_normalize_blank_value() -> None:
+    element_html = build_element_html(
+        'formula-editor="true"',
+        'allow-blank="true"',
+        'blank-value="2 ** 3"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": ""},
+        raw_submitted_answers={"test": "", "test-latex": ""},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == 8
+
+
 def test_formula_editor_deeply_nested_bare_arguments() -> None:
     depth = 1200
     submission = "s i n 2(" * depth + "x" + " * y)" * depth + " * z"

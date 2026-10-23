@@ -620,17 +620,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    if submitted_answer.strip() == "":
-        if allow_blank:
-            submitted_answer = blank_value
-            if submitted_answer.strip() == "":
-                data["submitted_answers"][name] = ""
-                return
-        else:
-            data["format_errors"][name] = "No submitted answer."
-            data["submitted_answers"][name] = None
-            return
-
     if formula_editor:
         normalized_answer = psu.normalize_formula_editor_output(
             submitted_answer,
@@ -645,6 +634,17 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["submitted_answers"][name] = None
             return
         submitted_answer = normalized_answer
+
+    if submitted_answer.strip() == "":
+        if allow_blank:
+            submitted_answer = blank_value
+            if submitted_answer.strip() == "":
+                data["submitted_answers"][name] = ""
+                return
+        else:
+            data["format_errors"][name] = "No submitted answer."
+            data["submitted_answers"][name] = None
+            return
 
     # Retrieve variable assumptions encoded in correct answer
     assumptions_dict = None
