@@ -91,7 +91,11 @@ def test_evaluate_with_set_variables(*, simplify_expression: bool) -> None:
         simplify_expression=simplify_expression,
     )
 
-    assert result == sympy.FiniteSet(1)
+    if simplify_expression:
+        assert result == sympy.FiniteSet(1)
+    else:
+        assert isinstance(result, sympy.Complement)
+        assert result.doit() == sympy.FiniteSet(1)
 
 
 class TestSympy:
@@ -337,39 +341,60 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(
-        ("a_sub", "sympy_ref"),
+        ("a_sub", "operation_type", "evaluated_result"),
         [
-            ("{1} U {2}", sympy.FiniteSet(1, 2)),
-            ("{1} cup {2}", sympy.FiniteSet(1, 2)),
-            ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # ruff:ignore[ambiguous-unicode-character-string]
-            ("{1} | {2}", sympy.FiniteSet(1, 2)),
-            ("{1, 2} cap {2}", sympy.FiniteSet(2)),
-            ("{1, 2} ∩ {2}", sympy.FiniteSet(2)),
-            ("{1, 2} & {2}", sympy.FiniteSet(2)),
-            ("{1} + {2}", sympy.FiniteSet(1, 2)),
-            ("{1, 2} - {2}", sympy.FiniteSet(1)),
+            ("{1} U {2}", sympy.Union, sympy.FiniteSet(1, 2)),
+            ("{1} cup {2}", sympy.Union, sympy.FiniteSet(1, 2)),
+            ("{1} ∪ {2}", sympy.Union, sympy.FiniteSet(1, 2)),  # ruff:ignore[ambiguous-unicode-character-string]
+            ("{1} | {2}", sympy.Union, sympy.FiniteSet(1, 2)),
+            ("{1, 2} cap {2}", sympy.Intersection, sympy.FiniteSet(2)),
+            ("{1, 2} ∩ {2}", sympy.Intersection, sympy.FiniteSet(2)),
+            ("{1, 2} & {2}", sympy.Intersection, sympy.FiniteSet(2)),
+            ("{1} + {2}", sympy.Union, sympy.FiniteSet(1, 2)),
+            ("{1, 2} - {2}", sympy.Complement, sympy.FiniteSet(1)),
+            ("Union({1}, {2})", sympy.Union, sympy.FiniteSet(1, 2)),
+            (
+                "Intersection({1, 2}, {2})",
+                sympy.Intersection,
+                sympy.FiniteSet(2),
+            ),
+            (
+                "Complement({1, 2}, {2})",
+                sympy.Complement,
+                sympy.FiniteSet(1),
+            ),
             (
                 "({1} U {2}) - ({2} & {2, 3})",
+                sympy.Complement,
                 sympy.FiniteSet(1),
             ),
         ],
     )
-    def test_set_operations_without_simplification(
-        self, a_sub: str, sympy_ref: sympy.Set
+    def test_set_operations_are_preserved_without_simplification(
+        self,
+        a_sub: str,
+        operation_type: type[sympy.Set],
+        evaluated_result: sympy.Set,
     ) -> None:
-        assert sympy_ref == psu.convert_string_to_sympy(
+        result = psu.convert_string_to_sympy(
             a_sub,
             simplify_expression=False,
             allow_sets=True,
         )
 
+        assert isinstance(result, operation_type)
+        assert result.doit() == evaluated_result
+
     def test_set_subtraction_ignores_custom_complement(self) -> None:
-        assert sympy.FiniteSet(1) == psu.convert_string_to_sympy(
+        result = psu.convert_string_to_sympy(
             "{1, 2} - {2}",
             simplify_expression=False,
             allow_sets=True,
             custom_functions=["Complement"],
         )
+
+        assert isinstance(result, sympy.Complement)
+        assert result.doit() == sympy.FiniteSet(1)
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
     @pytest.mark.parametrize(
@@ -385,11 +410,16 @@ class TestSympy:
     def test_named_set_domains(
         self, a_sub: str, sympy_ref: sympy.Set, *, simplify_expression: bool
     ) -> None:
-        assert sympy_ref == psu.convert_string_to_sympy(
+        result = psu.convert_string_to_sympy(
             a_sub,
             simplify_expression=simplify_expression,
             allow_sets=True,
         )
+        if simplify_expression:
+            assert result == sympy_ref
+        else:
+            assert isinstance(result, (sympy.Complement, sympy.Intersection))
+            assert result.doit() == sympy_ref
 
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
@@ -486,7 +516,11 @@ class TestSympy:
 
         x, y = sympy.symbols("x y")
         assert isinstance(result, psu.SympyParseSuccess)
-        assert result.expr == sympy.FiniteSet(x, y)
+        if simplify_expression:
+            assert result.expr == sympy.FiniteSet(x, y)
+        else:
+            assert isinstance(result.expr, sympy.Union)
+            assert result.expr.doit() == sympy.FiniteSet(x, y)
 
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
         result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)

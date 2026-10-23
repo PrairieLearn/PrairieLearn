@@ -453,7 +453,7 @@ class CheckAST(ast.NodeVisitor):
     functions: SympyFunctionMapT
     resolved_names: Mapping[str, Any]
     __parents: dict[int, ast.AST]
-    __set_operations: set[ast.BinOp]
+    __set_operations: set[ast.BinOp | ast.Call]
     __type_cache: dict[int, ASTSympyType | None]
 
     __unparsed_opstr: FrozenDict[type[ast.AST], str] = FrozenDict({
@@ -517,7 +517,7 @@ class CheckAST(ast.NodeVisitor):
 
     def _check_expression(
         self, expr: str
-    ) -> tuple[ast.Expression, frozenset[ast.BinOp]]:
+    ) -> tuple[ast.Expression, frozenset[ast.BinOp | ast.Call]]:
         # Parse (convert string to AST)
         try:
             root = ast.parse(expr, mode="eval")
@@ -602,7 +602,10 @@ class CheckAST(ast.NodeVisitor):
                 and fn in _Constants.set_functions
                 and resolved_function == _Constants.set_functions[fn]
             ):
-                return self._set_type(node, self._infer_set_function_type(name, args))
+                inferred_type = self._infer_set_function_type(name, args)
+                if fn in _SET_OPERATION_FUNCTIONS.values():
+                    self.__set_operations.add(node)
+                return self._set_type(node, inferred_type)
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
                 arities = _builtin_function_arities(fn) or (len(args),)
                 self._enforce_signature(
@@ -713,7 +716,7 @@ def _ast_check_str(
     *,
     allow_sets: bool = False,
     resolved_names: Mapping[str, Any] | None = None,
-) -> tuple[ast.Expression, frozenset[ast.BinOp]]:
+) -> tuple[ast.Expression, frozenset[ast.BinOp | ast.Call]]:
     """Check an expression and return its parsed AST and validated set operations."""
     # Disallow AST nodes that are not in whitelist
     #
@@ -774,11 +777,11 @@ def ast_check_str(
 
 
 class _SetOperationTransformer(ast.NodeTransformer):
-    """Rewrite only binary operations validated as set operations."""
+    """Keep validated set operations unevaluated."""
 
     def __init__(
         self,
-        set_operations: frozenset[ast.BinOp],
+        set_operations: frozenset[ast.BinOp | ast.Call],
         occupied_names: Iterable[str],
     ) -> None:
         self._set_operations = set_operations
@@ -787,7 +790,9 @@ class _SetOperationTransformer(ast.NodeTransformer):
 
         used_names = set(occupied_names)
         protected_names: dict[str, str] = {}
-        for operation_type in {type(node.op) for node in set_operations}:
+        for operation_type in {
+            type(node.op) for node in set_operations if isinstance(node, ast.BinOp)
+        }:
             function_name = _SET_OPERATION_FUNCTIONS[operation_type]
             protected_name = protected_names.get(function_name)
             if protected_name is None:
@@ -811,10 +816,18 @@ class _SetOperationTransformer(ast.NodeTransformer):
             ast.Call(
                 func=ast.Name(id=function_name, ctx=ast.Load()),
                 args=[node.left, node.right],
-                keywords=[],
+                keywords=[ast.keyword(arg="evaluate", value=ast.Constant(value=False))],
             ),
             node,
         )
+
+    def visit_Call(self, node: ast.Call) -> ast.AST:
+        node = cast(ast.Call, self.generic_visit(node))
+        if node in self._set_operations:
+            node.keywords.append(
+                ast.keyword(arg="evaluate", value=ast.Constant(value=False))
+            )
+        return node
 
 
 def sympy_check(
