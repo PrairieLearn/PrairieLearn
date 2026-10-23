@@ -419,7 +419,10 @@ router.post(
             identity.formLabel !== (layout.formLabel ?? '') ||
             identity.paperSize !== layout.paperSize
           ) {
-            throw new HttpStatusError(400, 'The printable pages do not match this document.');
+            throw new HttpStatusError(
+              400,
+              'The preview does not match the requested document type, form label, or paper size. Generate a new preview before exporting.',
+            );
           }
           await validatePrintDocument(page);
           return await output.produce(page);
