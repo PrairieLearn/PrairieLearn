@@ -1489,6 +1489,81 @@ def _convert_string_to_sympy_with_source(
     )
 
 
+def _prepare_locals_for_eval(
+    variables: Iterable[str] | None = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Iterable[str] | None = None,
+    assumptions: AssumptionsDictT | None = None,
+) -> LocalsForEval:
+    """Construct the functions, variables, and helpers used for evaluation.
+
+    Returns:
+        The functions, variables, and helpers available during evaluation.
+
+    Raises:
+        HasInvalidAssumptionError: If the assumptions are not valid.
+        HasConflictingVariableError: If variable names conflict with existing names.
+        HasConflictingFunctionError: If function names conflict with existing names.
+    """
+    if assumptions is not None:
+        unbound_variables = assumptions.keys() - set(
+            variables if variables is not None else []
+        )
+        if unbound_variables:
+            raise HasInvalidAssumptionError(
+                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
+            )
+
+    conflict_vars, conflict_fns, valid_names = _build_name_conflict_data(
+        variables if variables is not None else [],
+        custom_functions if custom_functions is not None else [],
+        allow_complex=allow_complex,
+        allow_hidden=allow_hidden,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+    )
+
+    if conflict_vars:
+        raise HasConflictingVariableError(
+            f"Conflicting variable name(s): {', '.join(conflict_vars)}"
+        )
+    if conflict_fns:
+        raise HasConflictingFunctionError(
+            f"Conflicting function name(s): {', '.join(conflict_fns)}"
+        )
+
+    const = sympy_constants
+    locals_for_eval: LocalsForEval = {
+        "functions": dict(const.functions),
+        "variables": dict(const.variables),
+        "helpers": dict(const.helpers),
+    }
+
+    if allow_hidden:
+        locals_for_eval["variables"].update(const.hidden_variables)
+    if allow_complex:
+        locals_for_eval["variables"].update(const.complex_variables)
+        if allow_hidden:
+            locals_for_eval["variables"].update(const.hidden_complex_variables)
+    if allow_trig_functions:
+        locals_for_eval["functions"].update(const.trig_functions)
+    if allow_sets:
+        locals_for_eval["functions"].update(const.set_functions)
+
+    for name, (is_var, raw_name) in valid_names.items():
+        if is_var:
+            var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
+            locals_for_eval["variables"][name] = sympy.Symbol(name, **var_assumptions)
+        else:
+            locals_for_eval["functions"][name] = sympy.Function(name)
+
+    return locals_for_eval
+
+
 def _convert_source_to_sympy_with_source(
     source: sympy_source.SourceText | None,
     expr: str,
@@ -1513,69 +1588,16 @@ def _convert_source_to_sympy_with_source(
     Returns:
         A tuple of the sympy expression and the source code that was used to generate it.
 
-    Raises:
-        HasInvalidAssumptionError: If the assumptions are not valid.
-        HasConflictingVariableError: If the variable names conflict with existing names.
-        HasConflictingFunctionError: If the function names conflict with existing names.
     """
-    # Check assumptions are all made about valid variables only
-    if assumptions is not None:
-        unbound_variables = assumptions.keys() - set(
-            variables if variables is not None else []
-        )
-        if unbound_variables:
-            raise HasInvalidAssumptionError(
-                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
-            )
-
-    # Check user-defined names are valid
-    conflict_vars, conflict_fns, valid_names = _build_name_conflict_data(
-        variables if variables is not None else [],
-        custom_functions if custom_functions is not None else [],
-        allow_complex=allow_complex,
+    locals_for_eval = _prepare_locals_for_eval(
+        variables,
         allow_hidden=allow_hidden,
+        allow_complex=allow_complex,
         allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
+        custom_functions=custom_functions,
+        assumptions=assumptions,
     )
-
-    if conflict_vars:
-        raise HasConflictingVariableError(
-            f"Conflicting variable name(s): {', '.join(conflict_vars)}"
-        )
-    if conflict_fns:
-        raise HasConflictingFunctionError(
-            f"Conflicting function name(s): {', '.join(conflict_fns)}"
-        )
-
-    # Create a whitelist of valid functions and variables (and a special flag
-    # for numbers that are converted to sympy integers).
-    const = sympy_constants
-
-    locals_for_eval: LocalsForEval = {
-        "functions": dict(const.functions),
-        "variables": dict(const.variables),
-        "helpers": dict(const.helpers),
-    }
-
-    if allow_hidden:
-        locals_for_eval["variables"].update(const.hidden_variables)
-    if allow_complex:
-        locals_for_eval["variables"].update(const.complex_variables)
-        if allow_hidden:
-            locals_for_eval["variables"].update(const.hidden_complex_variables)
-
-    if allow_trig_functions:
-        locals_for_eval["functions"].update(const.trig_functions)
-
-    if allow_sets:
-        locals_for_eval["functions"].update(const.set_functions)
-
-    for name, (is_var, raw_name) in valid_names.items():
-        if is_var:
-            var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
-            locals_for_eval["variables"][name] = sympy.Symbol(name, **var_assumptions)
-        else:
-            locals_for_eval["functions"][name] = sympy.Function(name)
 
     # Do the conversion
     if source is None:
@@ -1737,7 +1759,9 @@ def _find_token_span(
     return _source_span(source, best_match.start(), best_match.end())
 
 
-def _locate_error(error: _LocalizedSympyError) -> sympy_source.SourceSpan | None:
+def _locate_error(
+    error: _LocalizedSympyError,
+) -> sympy_source.SourceSpan | None:
     if isinstance(error.evidence, _IndexEvidence):
         return _source_span(
             error.source,
