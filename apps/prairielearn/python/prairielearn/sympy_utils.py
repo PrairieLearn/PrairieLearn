@@ -234,6 +234,18 @@ class _SympyJsonStrPrinter(StrPrinter):
     Callers must deserialize with `allow_sets=True` or the literal forms will be rejected.
     """
 
+    def __init__(self, *, allow_complex: bool) -> None:
+        super().__init__()
+        self.allow_complex = allow_complex
+
+    def _print_Exp1(self, expr: sympy.Basic) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
+        return "_Exp1"
+
+    def _print_ImaginaryUnit(self, expr: sympy.Basic) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
+        if self.allow_complex:
+            return "_ImaginaryUnit"
+        return "I"
+
     def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
         return "{}"
 
@@ -1549,8 +1561,6 @@ def sympy_to_json(
     if isinstance(a, sympy.Set) and not allow_sets:
         raise HasSetNotationError
 
-    const = _Constants
-
     # Get list of variables in the sympy expression
     variables = list(map(str, a.free_symbols))
 
@@ -1561,16 +1571,6 @@ def sympy_to_json(
         allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
     )
-
-    # Apply substitutions for hidden variables
-    a_sub = a.subs([
-        (val, sympy.symbols(key)) for key, val in const.hidden_variables.items()
-    ])
-    if allow_complex:
-        a_sub = a_sub.subs([
-            (val, sympy.symbols(key))
-            for key, val in const.hidden_complex_variables.items()
-        ])
 
     assumptions_dict = {
         str(variable): variable.assumptions0 for variable in a.free_symbols
@@ -1583,7 +1583,7 @@ def sympy_to_json(
         name
         for func_obj in function_atoms
         if _allows_legacy_custom_function_override(name := str(func_obj.func))
-        and func_obj.func != const.set_functions[name]
+        and func_obj.func != _Constants.set_functions[name]
     }
     custom_functions = list(
         (functions_set - reserved) | legacy_custom_function_overrides
@@ -1591,7 +1591,7 @@ def sympy_to_json(
 
     return {
         "_type": "sympy",
-        "_value": _SympyJsonStrPrinter().doprint(a_sub),
+        "_value": _SympyJsonStrPrinter(allow_complex=allow_complex).doprint(a),
         "_variables": variables,
         "_assumptions": assumptions_dict,
         "_custom_functions": custom_functions,
