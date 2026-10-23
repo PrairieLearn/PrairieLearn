@@ -726,6 +726,7 @@ export async function updateInstanceQuestionScore({
     if (new_score_perc != null && !current_submission.modified_at_conflict) {
       await sqldb.execute(sql.update_instance_question_score, {
         instance_question_id: current_submission.instance_question_id,
+        submission_id: current_submission.submission_id,
         points: new_points,
         score_perc: new_score_perc,
         auto_points: new_auto_points,

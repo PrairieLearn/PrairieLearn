@@ -137,7 +137,12 @@ UPDATE instance_questions AS iq
 SET
   requires_manual_grading = CASE
     WHEN $update_requires_manual_grading THEN $requires_manual_grading
-    ELSE requires_manual_grading
+    ELSE iq.requires_manual_grading
+  END,
+  grading_pending = CASE
+    WHEN $update_requires_manual_grading
+    AND NOT $requires_manual_grading THEN FALSE
+    ELSE iq.grading_pending
   END,
   assigned_grader = CASE
     WHEN $update_assigned_grader THEN $assigned_grader

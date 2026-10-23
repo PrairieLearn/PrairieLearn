@@ -104,6 +104,26 @@ ORDER BY
 LIMIT
   1;
 
+-- BLOCK select_and_lock_assessment_instances_for_ai_grading_deletion
+SELECT
+  ai.id
+FROM
+  assessment_instances AS ai
+WHERE
+  EXISTS (
+    SELECT
+      1
+    FROM
+      instance_questions AS iq
+    WHERE
+      iq.assessment_instance_id = ai.id
+      AND iq.assessment_question_id = ANY ($assessment_question_ids::bigint[])
+  )
+ORDER BY
+  ai.id
+FOR NO KEY UPDATE OF
+  ai;
+
 -- BLOCK delete_ai_grading_jobs
 WITH
   deleted_grading_jobs AS (
@@ -119,6 +139,7 @@ WITH
       gj.submission_id = s.id
       AND gj.grading_method = 'AI'
       AND gj.deleted_at IS NULL
+      AND iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
       AND iq.assessment_question_id IN (
         SELECT
           unnest($assessment_question_ids::bigint[])
@@ -224,7 +245,17 @@ WITH
       is_ai_graded = FALSE,
       -- If there is no previous manual grading job, we'll flag that the instance question
       -- requires manual grading. This helps ensure that it eventually gets graded.
-      requires_manual_grading = (coalesce(mriqmgj.id IS NULL, FALSE))
+      requires_manual_grading = iq.requires_manual_grading
+      OR mriqmgj.id IS NULL,
+      grading_pending = iq.grading_pending
+      AND (
+        iq.requires_manual_grading
+        OR mriqmgj.id IS NULL
+      )
+      AND coalesce(iq.status != 'unanswered', FALSE)
+      AND (
+        coalesce(iq.auto_points, 0) + coalesce(mriqmgj.manual_points, 0)
+      ) < coalesce(aq.max_points, 0)
     FROM
       deleted_grading_jobs AS dgj
       JOIN assessment_questions AS aq ON (aq.id = dgj.assessment_question_id)
