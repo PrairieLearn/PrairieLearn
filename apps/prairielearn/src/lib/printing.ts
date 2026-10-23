@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 
 import { load } from 'cheerio';
@@ -237,6 +238,24 @@ function selectIncludedQuestions(
   return includedQuestions;
 }
 
+function digestPrintableQuestions(questions: PrintableQuestion[]): string {
+  const identities = questions.map((question) => [
+    question.instance_question.id,
+    question.assessment_question.id,
+    question.question.id,
+    question.question_number,
+  ]);
+  return createHash('sha256').update(JSON.stringify(identities)).digest('hex');
+}
+
+export async function getPrintableQuestionListDigest(
+  assessmentInstanceId: string,
+  excludedQuestionNumbers: ReadonlySet<string>,
+): Promise<string> {
+  const questions = await selectPrintableQuestions(assessmentInstanceId);
+  return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
+}
+
 export async function validateQuestionsForPrinting(
   assessmentInstanceId: string,
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,
@@ -266,6 +285,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   }: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
 ): Promise<{
   questionHtmls: string[];
+  questionListDigest: string;
   questionResults: PrintingQuestionResult[];
   extraHeadersHtml: string;
   maxPoints: number;
@@ -411,6 +431,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
 
   return {
     questionHtmls: namespaceQuestionHtmls(renderedQuestions),
+    questionListDigest: digestPrintableQuestions(includedQuestions),
     questionResults,
     extraHeadersHtml: html`
       ${

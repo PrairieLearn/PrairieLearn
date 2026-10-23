@@ -3,34 +3,26 @@ import path from 'node:path';
 
 import * as unzipper from 'unzipper';
 
-import { makeAssessmentInstance } from '../../lib/assessment.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
-import { getConfiguredUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
-import { downloadPrintableWord, waitForPrintablePage } from './utils/printing.js';
+import {
+  createPrintableAssessmentInstance,
+  downloadPrintableWord,
+  waitForPrintablePage,
+} from './utils/printing.js';
+
+async function paperBase(courseInstanceId: string, tid: string) {
+  const instanceId = await createPrintableAssessmentInstance(courseInstanceId, tid);
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${instanceId}/paper`;
+}
 
 test('fills the cover grading table down columns using only included questions', async ({
   page,
   courseInstance,
 }) => {
   test.setTimeout(180_000);
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam23-printing',
-  });
-  const user = await getConfiguredUser();
-  const instanceId = await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
-  const base = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/paper`;
+  const base = await paperBase(courseInstance.id, 'exam23-printing');
   await page.goto(`${base}/preview?paper_size=Letter&grading_table=true&exclude_question=2`);
   await waitForPrintablePage(page);
   const cover = page.getByRole('article', { name: 'Exam cover page' });
@@ -97,18 +89,7 @@ test('uses the configured honor code for printed pledges even when it is disable
       }),
     );
     await syncCourse(testCoursePath);
-    const assessment = await selectAssessmentByTid({ course_instance_id: courseInstance.id, tid });
-    const user = await getConfiguredUser();
-    const instanceId = await makeAssessmentInstance({
-      assessment,
-      user_id: user.id,
-      authn_user_id: user.id,
-      mode: 'Public',
-      time_limit_min: null,
-      date: new Date(),
-      client_fingerprint_id: null,
-    });
-    const base = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/paper`;
+    const base = await paperBase(courseInstance.id, tid);
     await page.goto(`${base}/preview?paper_size=Letter&include_honor_code=true`);
     await waitForPrintablePage(page);
     const pledge = page.getByRole('region', { name: 'Academic integrity pledge' });

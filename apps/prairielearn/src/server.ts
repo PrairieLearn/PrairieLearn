@@ -77,6 +77,7 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { beginPrintExportShutdown, waitForPrintExportWorkers } from './lib/print-export-jobs.js';
 import { closePrintRenderer } from './lib/printing.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
@@ -965,6 +966,11 @@ export async function initExpress(): Promise<Express> {
       (await import('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics.js'))
         .default,
     ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print_preparation/exports',
+    (await import('./pages/instructorAssessmentPrintExport/instructorAssessmentPrintExport.js'))
+      .default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',
@@ -2792,6 +2798,8 @@ if (shouldStartServer) {
  * full server restarts.
  */
 export async function close() {
+  beginPrintExportShutdown();
+
   // Disconnect clients before draining workspace startups, but keep Redis
   // adapters available for progress broadcasts from running jobs.
   socketServer.io?.engine.close();
@@ -2810,13 +2818,16 @@ export async function close() {
   // for their final status writes and notifications before closing dependencies.
   await settleShutdownTasks([serverJobs.stop()]);
 
+  // Let print workers finish cleanup while their dependencies are available.
+  await settleShutdownTasks([closePrintRenderer()]);
+  await waitForPrintExportWorkers();
+
   await settleShutdownTasks([
     serverJobProgressSocket.close(),
     socketServer.close(),
     cache.close(),
     assets.close(),
     codeCaller.finish(),
-    closePrintRenderer(),
   ]);
   load.close();
   nodeMetrics.stop();

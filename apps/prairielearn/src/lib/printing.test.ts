@@ -153,6 +153,30 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
     expect($('script[src="/element.js"]')).toHaveLength(1);
   });
 
+  it('combines development URLs for the same package asset', async () => {
+    mocks.queryRows.mockResolvedValue([questions[0], questions[2]]);
+    const render = mocks.getAndRenderVariant.getMockImplementation()!;
+    mocks.getAndRenderVariant.mockImplementation(async (...args: unknown[]) => {
+      const state = await render(...args);
+      const { question } = args[2] as { question: { id: string } };
+      const url = `/assets/node_modules/00000000-0000-4000-8000-000000000${question.id}/@prairielearn/marked-mathjax/dist/index.js`;
+      return {
+        ...state,
+        extraHeadersHtml: `<script type="importmap">${JSON.stringify({ imports: { '@prairielearn/marked-mathjax': url } })}</script>`,
+      };
+    });
+
+    const result = await renderAssessmentInstanceQuestionsForPrinting(resLocals);
+    const $ = load(result.extraHeadersHtml);
+    expect(JSON.parse($('script[type="importmap"]').text())).toEqual({
+      imports: {
+        '@prairielearn/marked-mathjax': expect.stringMatching(
+          /^\/assets\/node_modules\/00000000-0000-4000-8000-00000000020[13]\/@prairielearn\/marked-mathjax\/dist\/index\.js$/,
+        ),
+      },
+    });
+  });
+
   it('rejects conflicting URLs for the same question import', async () => {
     mocks.queryRows.mockResolvedValue([questions[0], questions[2]]);
     const render = mocks.getAndRenderVariant.getMockImplementation()!;
