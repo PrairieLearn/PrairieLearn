@@ -1031,6 +1031,7 @@ export async function correctImagesOrientation({
 
 const AiGradingJobDataForSubmissionSchema = z.object({
   manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+  model: AiGradingJobSchema.shape.model.nullable(),
   prompt: AiGradingJobSchema.shape.prompt,
   completion: AiGradingJobSchema.shape.completion,
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
@@ -1141,6 +1142,7 @@ export async function buildAiGradingInfo({
   });
 
   const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
+    model: aiGradingJobData.model,
     submissionManuallyGraded,
     prompt: formattedPrompt,
     selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
