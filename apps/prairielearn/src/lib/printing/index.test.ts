@@ -1,12 +1,13 @@
 import { load } from 'cheerio';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ResLocalsForPage } from '../res-locals.js';
+
 import {
   describeOmittedQuestions,
   renderAssessmentInstanceQuestionsForPrinting,
   validateQuestionsForPrinting,
-} from './printing.js';
-import type { ResLocalsForPage } from './res-locals.js';
+} from './index.js';
 
 const mocks = vi.hoisted(() => {
   // Tests share a module cache; server tests may have loaded printing before these mocks.
@@ -27,11 +28,11 @@ vi.mock('@prairielearn/postgres', () => ({
   queryRows: mocks.queryRows,
 }));
 
-vi.mock('./question-render.js', () => ({
+vi.mock('../question-render.js', () => ({
   getAndRenderVariant: mocks.getAndRenderVariant,
 }));
 
-vi.mock('../components/QuestionContainer.js', () => ({
+vi.mock('../../components/QuestionContainer.js', () => ({
   QuestionContainer: ({
     resLocals,
   }: {

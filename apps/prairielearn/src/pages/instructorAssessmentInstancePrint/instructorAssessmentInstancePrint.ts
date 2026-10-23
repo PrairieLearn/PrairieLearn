@@ -16,6 +16,16 @@ import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits
 import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
+import {
+  PRINT_DOCUMENTS,
+  type PrintDocument,
+  describeOmittedQuestions,
+  getPrintRenderer,
+  isBrowserRenderingAvailable,
+  renderAssessmentInstanceQuestionsForPrinting,
+  validatePrintDocument,
+  validateQuestionsForPrinting,
+} from '../../lib/printing/index.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
 import {
   BLANK_NAME_PLACEHOLDER,
@@ -26,16 +36,6 @@ import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
 } from '../../lib/printing/question-block-size.js';
-import {
-  PRINT_DOCUMENTS,
-  type PrintDocument,
-  describeOmittedQuestions,
-  getPrintRenderer,
-  isBrowserRenderingAvailable,
-  renderAssessmentInstanceQuestionsForPrinting,
-  validatePrintDocument,
-  validateQuestionsForPrinting,
-} from '../../lib/printing.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';

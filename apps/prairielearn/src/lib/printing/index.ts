@@ -8,22 +8,22 @@ import { HttpStatusError } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
-import { QuestionContainer } from '../components/QuestionContainer.js';
-
-import { config } from './config.js';
+import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { config } from '../config.js';
 import {
   AssessmentQuestionSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SprocQuestionOrderSchema,
-} from './db-types.js';
-import { namespaceQuestionHtmls } from './printing/namespace-question-htmls.js';
-import { PrintRenderer } from './printing/print-renderer.js';
-import type { PrintablePageOutput } from './printing/printable-page-output.js';
-import type { QuestionBlockSize } from './printing/question-block-size.js';
-import { RenderQueue } from './printing/render-queue.js';
-import { getAndRenderVariant } from './question-render.js';
-import type { ResLocalsForPage } from './res-locals.js';
+} from '../db-types.js';
+import { getAndRenderVariant } from '../question-render.js';
+import type { ResLocalsForPage } from '../res-locals.js';
+
+import { namespaceQuestionHtmls } from './namespace-question-htmls.js';
+import { PrintRenderer } from './print-renderer.js';
+import type { PrintablePageOutput } from './printable-page-output.js';
+import type { QuestionBlockSize } from './question-block-size.js';
+import { RenderQueue } from './render-queue.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

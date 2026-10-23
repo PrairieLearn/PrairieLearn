@@ -1,4 +1,3 @@
-import type { PrintDocument } from '../printing.js';
 import type { ResLocalsForPage } from '../res-locals.js';
 
 import {
@@ -7,6 +6,8 @@ import {
   type PrintableTextBlock,
   htmlToTextBlocks,
 } from './printable-cover.js';
+
+import type { PrintDocument } from './index.js';
 
 /** Leaves space for a handwritten name on printed honor-code pledges. */
 export const BLANK_NAME_PLACEHOLDER = '____________________________';
