@@ -271,15 +271,6 @@ def to_json(
         return v
 
 
-def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
-    """Return True if all fields in the '_value' dictionary are present."""
-    return (
-        "_value" in v
-        and isinstance(v["_value"], dict)
-        and all(field in v["_value"] for field in fields)
-    )
-
-
 def from_json(v: _JSONSerializedType | Any) -> Any:
     """
     Converts a JSON serialized value (from [`to_json`][prairielearn.conversion_utils.to_json]) back to its original type.
@@ -313,92 +304,99 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
     Raises:
         ValueError: If the JSON object is not in the expected format.
     """
-    if isinstance(v, dict) and v.get("_type") == "big_operator":
-        return _pbo.json_to_big_operator(v)
-    if isinstance(v, dict) and "_type" in v:
-        v_json = cast(_JSONSerializedType, v)
-        if v_json["_type"] == "complex":
-            if _has_value_fields(v_json, ["real", "imag"]):
-                return complex(v_json["_value"]["real"], v_json["_value"]["imag"])
-            else:
-                raise ValueError(
-                    "variable of type complex should have value with real and imaginary pair"
-                )
-        elif v_json["_type"] == "np_scalar":
-            if "_concrete_type" in v_json and "_value" in v_json:
-                return getattr(np, v_json["_concrete_type"])(v_json["_value"])
-            else:
-                raise ValueError(
-                    f"variable of type {v_json['_type']} needs both concrete type and value information"
-                )
-        elif v_json["_type"] == "ndarray":
-            if "_value" in v_json:
-                if "_dtype" in v_json:
-                    return np.array(v_json["_value"]).astype(v_json["_dtype"])
-                else:
-                    return np.array(v_json["_value"])
-            else:
-                raise ValueError("variable of type ndarray should have value")
-        elif v_json["_type"] == "complex_ndarray":
-            if _has_value_fields(v_json, ["real", "imag"]):
-                if "_dtype" in v_json:
-                    return (
-                        np.array(v_json["_value"]["real"])
-                        + np.array(v_json["_value"]["imag"]) * 1j
-                    ).astype(v_json["_dtype"])
-                else:
-                    return (
-                        np.array(v_json["_value"]["real"])
-                        + np.array(v_json["_value"]["imag"]) * 1j
-                    )
-            else:
-                raise ValueError(
-                    "variable of type complex_ndarray should have value with real and imaginary pair"
-                )
-        elif v_json["_type"] == "sympy":
-            if not is_sympy_json(v_json):
-                raise ValueError(
-                    "variable claiming to be of type sympy doesn't pass typechecks"
-                )
-            return json_to_sympy(v_json)
-        elif v_json["_type"] == "sympy_matrix":
-            if (
-                ("_value" in v_json)
-                and ("_variables" in v_json)
-                and ("_shape" in v_json)
-            ):
-                value = v_json["_value"]
-                variables = v_json["_variables"]
-                shape = v_json["_shape"]
-                matrix = sympy.Matrix.zeros(shape[0], shape[1])
-                for i in range(shape[0]):
-                    for j in range(shape[1]):
-                        matrix[i, j] = convert_string_to_sympy(value[i][j], variables)
-                return matrix
-            else:
-                raise ValueError(
-                    "variable of type sympy_matrix should have value, variables, and shape"
-                )
-        elif v_json["_type"] == "dataframe":
-            if _has_value_fields(v_json, ["index", "columns", "data"]):
-                val = v_json["_value"]
-                return pd.DataFrame(
-                    index=val["index"], columns=val["columns"], data=val["data"]
-                )
-            else:
-                raise ValueError(
-                    "variable of type dataframe should have value with index, columns, and data"
-                )
-        elif v_json["_type"] == "dataframe_v2":
+    match v:
+        case {"_type": "big_operator"}:
+            return _pbo.json_to_big_operator(v)
+
+        case {"_type": "complex", "_value": {"real": real, "imag": imag}}:
+            return complex(real, imag)
+        case {"_type": "complex"}:
+            raise ValueError(
+                "variable of type complex should have value with real and imaginary pair"
+            )
+
+        case {"_type": "np_scalar", "_concrete_type": typ, "_value": value}:
+            return getattr(np, typ)(value)
+        case {"_type": "np_scalar"}:
+            raise ValueError(
+                "variable of type np_scalar needs both concrete type and value information"
+            )
+
+        case {"_type": "ndarray", "_value": value, "_dtype": dtype}:
+            return np.array(value).astype(dtype)
+        case {"_type": "ndarray", "_value": value}:
+            return np.array(value)
+        case {"_type": "ndarray"}:
+            raise ValueError("variable of type ndarray should have value")
+
+        case {
+            "_type": "complex_ndarray",
+            "_value": {"real": real, "imag": imag},
+            "_dtype": dtype,
+        }:
+            return (np.array(real) + np.array(imag) * 1j).astype(dtype)
+        case {
+            "_type": "complex_ndarray",
+            "_value": {"real": real, "imag": imag},
+        }:
+            return np.array(real) + np.array(imag) * 1j
+        case {"_type": "complex_ndarray"}:
+            raise ValueError(
+                "variable of type complex_ndarray should have value with real and imaginary pair"
+            )
+
+        case {"_type": "sympy"} if is_sympy_json(v):
+            return json_to_sympy(v)
+        case {"_type": "sympy"}:
+            raise ValueError(
+                "variable claiming to be of type sympy doesn't pass typechecks"
+            )
+
+        case {
+            "_type": "sympy_matrix",
+            "_value": value,
+            "_variables": variables,
+            "_shape": shape,
+        }:
+            matrix = sympy.Matrix.zeros(shape[0], shape[1])
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    matrix[i, j] = convert_string_to_sympy(value[i][j], variables)
+            return matrix
+        case {"_type": "sympy_matrix"}:
+            raise ValueError(
+                "variable of type sympy_matrix should have value, variables, and shape"
+            )
+
+        case {
+            "_type": "dataframe",
+            "_value": {"index": index, "columns": columns, "data": data},
+        }:
+            return pd.DataFrame(index=index, columns=columns, data=data)
+        case {"_type": "dataframe"}:
+            raise ValueError(
+                "variable of type dataframe should have value with index, columns, and data"
+            )
+
+        case {"_type": "dataframe_v2", "_value": value}:
             # Convert native JSON back to a string representation so that
             # pandas read_json() can process it.
-            value_str = StringIO(json.dumps(v_json["_value"]))
+            value_str = StringIO(json.dumps(value))
             return pd.read_json(value_str, orient="table")
-        elif v_json["_type"] == "networkx_graph":
-            return nx.adjacency_graph(v_json["_value"])
-        else:
-            raise ValueError("variable has unknown type {}".format(v_json["_type"]))
-    return v
+        case {"_type": "dataframe_v2"}:
+            raise ValueError("variable of type dataframe v2 should have a value")
+
+        case {"_type": "networkx_graph", "_value": value}:
+            return nx.adjacency_graph(value)
+        case {"_type": "networkx_graph"}:
+            raise ValueError("variable of type networkx_graph should have a value")
+
+        case {"_type": typ}:
+            raise ValueError(f"variable has unknown type {typ}")
+
+        case _:
+            # I'm not sure why this is the default, but it is.
+            return v
 
 
 _NumericScalarType = numbers.Number | complex | np.generic
