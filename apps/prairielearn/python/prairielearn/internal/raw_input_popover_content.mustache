@@ -1,8 +1,0 @@
-{{#show_control_and_formatting_message}}
-    <p class="mb-1">Invisible characters appear like <code>&lt;U+200b&gt;</code>.</p>
-{{/show_control_and_formatting_message}}
-{{#readable}}{{> raw_input_value}}{{/readable}}
-{{#show_ascii_only}}
-    <p class="mb-1 mt-2">With all special characters shown as codes:</p>
-    {{#ascii_only}}{{> raw_input_value}}{{/ascii_only}}
-{{/show_ascii_only}}
