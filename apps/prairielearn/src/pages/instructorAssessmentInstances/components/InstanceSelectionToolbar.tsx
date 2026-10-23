@@ -20,7 +20,10 @@ export function InstanceSelectionToolbar({
   courseInstanceId: string;
   assessmentId: string;
   timezone: string;
-  onActionSuccess: (result: { message: string; action: 'delete' | 'timeLimit' }) => void;
+  onActionSuccess: (result: {
+    message: string;
+    action: 'delete' | 'timeLimit' | 'clearGradingPending';
+  }) => void;
   groupWork: boolean;
   isDevMode: boolean;
 }) {
