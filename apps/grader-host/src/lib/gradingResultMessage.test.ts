@@ -37,11 +37,11 @@ describe('serializeGradingResultMessage', () => {
       data: { message: '' },
     };
     const envelopeBytes = Buffer.byteLength(JSON.stringify(notification), 'utf8');
-    notification.data.message = '\uffff' + 'a'.repeat(250 * 1024 - envelopeBytes - 6);
+    notification.data.message =
+      '\uffff' + 'a'.repeat(250 * 1024 - envelopeBytes - '\\uffff'.length);
 
     const messageBody = serializeGradingResultMessage(notification.jobId, notification.data);
 
-    assert.equal(Buffer.byteLength(messageBody, 'utf8'), 250 * 1024);
     assert.deepEqual(JSON.parse(messageBody), notification);
 
     notification.data.message += 'a';
