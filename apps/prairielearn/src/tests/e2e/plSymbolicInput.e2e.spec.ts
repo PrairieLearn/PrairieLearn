@@ -152,6 +152,28 @@ test.describe('pl-symbolic-input formula editor', () => {
       await page.getByLabel(/operatorname\{ln\}/).click();
     });
   });
+
+  test('does not group the preceding term when typing a set operator', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-interval_notation');
+    await expect(formulaEditor).toBeVisible();
+
+    for (const [key, operator] of [
+      ['U', '\\cup'],
+      ['&', '\\cap'],
+    ]) {
+      await fillFormulaEditor(formulaEditor, '');
+      for (const char of `[0,1]${key}`) await formulaEditor.press(char);
+      await expect(page.locator('#symbolic-input-latex-interval_notation')).toHaveValue(
+        `\\left\\lbrack0,1\\right\\rbrack${operator}`,
+      );
+
+      await page.keyboard.press('Backspace');
+      await page.keyboard.press('Backspace');
+      await expect(page.locator('#symbolic-input-latex-interval_notation')).toHaveValue(
+        '\\left\\lbrack0,1\\right.',
+      );
+    }
+  });
 });
 
 test.describe('pl-symbolic-input unicode multiplication keys', () => {
