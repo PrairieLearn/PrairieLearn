@@ -310,7 +310,11 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       authz_result: resLocals.authz_result,
     };
     const renderState = await getAndRenderVariant(null, null, renderLocals, {
-      renderMode: document === 'assessment' ? 'blank' : 'answer-key',
+      includeSubmissions: false,
+      showCorrectAnswer: document === 'answer_key',
+      // Printed copies and answer keys must reuse saved variants, including closed homework variants.
+      requireOpenVariant: false,
+      throwOnFatalError: true,
       issuesLoadExtraData: false,
     });
 
@@ -339,7 +343,10 @@ async function renderAssessmentInstanceQuestionsUnbounded(
         null,
         renderLocals,
         {
-          renderMode: 'answer-key',
+          includeSubmissions: false,
+          showCorrectAnswer: true,
+          requireOpenVariant: false,
+          throwOnFatalError: true,
           questionRenderContext: 'manual_grading',
           issuesLoadExtraData: false,
         },

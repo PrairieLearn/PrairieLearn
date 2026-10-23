@@ -120,9 +120,7 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
             : questionId === '203' || questionId === '204'
               ? ''
               : `Correct answer ${questionId}`,
-        showCorrectAnswer:
-          (args[3] as { renderMode?: 'default' | 'blank' | 'answer-key' }).renderMode ===
-          'answer-key',
+        showCorrectAnswer: (args[3] as { showCorrectAnswer: boolean }).showCorrectAnswer,
       };
     });
   });
@@ -260,7 +258,10 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
       expect(invocation[1]).toBeNull();
       expect(invocation[3]).toMatchObject({
         issuesLoadExtraData: false,
-        renderMode: 'blank',
+        includeSubmissions: false,
+        showCorrectAnswer: false,
+        requireOpenVariant: false,
+        throwOnFatalError: true,
       });
     }
   });
@@ -317,7 +318,10 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
       expect(invocation[1]).toBeNull();
       expect(invocation[3]).toMatchObject({
         issuesLoadExtraData: false,
-        renderMode: 'answer-key',
+        includeSubmissions: false,
+        showCorrectAnswer: true,
+        requireOpenVariant: false,
+        throwOnFatalError: true,
       });
     }
     expect(mocks.getAndRenderVariant).toHaveBeenCalledWith(
@@ -327,7 +331,10 @@ describe('renderAssessmentInstanceQuestionsForPrinting', () => {
       {
         issuesLoadExtraData: false,
         questionRenderContext: 'manual_grading',
-        renderMode: 'answer-key',
+        includeSubmissions: false,
+        showCorrectAnswer: true,
+        requireOpenVariant: false,
+        throwOnFatalError: true,
       },
     );
   });

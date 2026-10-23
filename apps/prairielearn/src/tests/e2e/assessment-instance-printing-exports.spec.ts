@@ -255,7 +255,7 @@ test('refuses incomplete question and answer-key renders and recovers after a co
         `${paperUrl}/preview?paper_size=Letter&document=answer_key`,
       );
       expect(answerKey.status()).toBe(500);
-      expect(await answerKey.text()).toContain('could not be rendered for printing');
+      expect(await answerKey.text()).toContain('could not be rendered.');
     }
   } finally {
     await fs.writeFile(serverPath, original);
