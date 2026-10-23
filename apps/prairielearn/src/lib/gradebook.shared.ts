@@ -14,9 +14,12 @@ import {
 const StudentGradebookRowSchema = z
   .object({
     assessment: RawStudentAssessmentSchema,
-    assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
+    // `null` for an assessment the student has not started.
+    assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE.nullable(),
     assessment_set: RawStudentAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
+    // Whether the assessment is currently available. Used to filter unstarted rows.
+    authorized: z.boolean().nullable(),
     modern_access_control: z.boolean(),
     assessment_id: IdSchema,
   })
@@ -27,7 +30,11 @@ const StudentGradebookRowSchema = z
 
     // Legacy access control computes this in SQL. Modern access control needs
     // instance-aware visibility, so `gradebook.ts` applies it after parsing.
-    if (!data.modern_access_control && !data.show_closed_assessment_score) {
+    if (
+      data.assessment_instance &&
+      !data.modern_access_control &&
+      !data.show_closed_assessment_score
+    ) {
       data.assessment_instance.points = null;
       data.assessment_instance.score_perc = null;
     }
@@ -53,7 +60,7 @@ function computeTitle({
   assessment,
   assessment_instance,
 }: StudentGradebookRow | StaffGradebookRow) {
-  if (assessment.multiple_instance) {
+  if (assessment.multiple_instance && assessment_instance) {
     return `${assessment.title} instance #${assessment_instance.number}`;
   }
   return assessment.title ?? '';
@@ -64,7 +71,7 @@ function computeLabel({
   assessment_instance,
   assessment_set,
 }: StudentGradebookRow | StaffGradebookRow) {
-  if (assessment.multiple_instance) {
+  if (assessment.multiple_instance && assessment_instance) {
     return `${assessment_set.abbreviation}${assessment.number}#${assessment_instance.number}`;
   }
   return `${assessment_set.abbreviation}${assessment.number}`;
