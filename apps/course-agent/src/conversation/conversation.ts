@@ -74,6 +74,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private internalContinuation = false;
   private liveContinuation: { active: ActiveTurn; result: PushSyncResult } | null = null;
   private cleanup: Promise<void> | null = null;
+  private delivery: { outcome: ReviewOutcome; result: Promise<boolean> } | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -396,6 +397,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       live.active.sdkFinished = Promise.withResolvers<undefined>();
       const stream = live.active.execution.openStream();
       this.setRuntimeState({ ...this.record, lifecycle: { status: 'waiting_for_agent' } });
+      await this.scheduleDeadline('turn');
       this.waiter!.delivered = true;
       this.waiter!.result.resolve(live.result);
       const abort = () => {
@@ -668,6 +670,21 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Authenticated callbacks are accepted only for the frozen call and exact result. */
   async recordReviewOutcome(outcome: ReviewOutcome): Promise<boolean> {
+    if (this.delivery) {
+      return JSON.stringify(this.delivery.outcome) === JSON.stringify(outcome)
+        ? this.delivery.result
+        : false;
+    }
+    const delivery = { outcome, result: this.acceptReviewOutcome(outcome) };
+    this.delivery = delivery;
+    try {
+      return await delivery.result;
+    } finally {
+      this.delivery = null;
+    }
+  }
+
+  private async acceptReviewOutcome(outcome: ReviewOutcome): Promise<boolean> {
     const history = this.messages;
     for (const message of history) {
       for (const part of message.parts) {

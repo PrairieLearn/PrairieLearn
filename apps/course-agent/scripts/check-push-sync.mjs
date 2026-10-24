@@ -356,7 +356,10 @@ try {
       assert.equal(offline.runtime.review.callId, 'review-call');
       assert.equal(offline.runtime.sandboxId, null);
     }
-    assert.deepEqual(await deliver(name, outcome), { accepted: true });
+    assert.deepEqual(await Promise.all([deliver(name, outcome), deliver(name, outcome)]), [
+      { accepted: true },
+      { accepted: true },
+    ]);
     await until(async () => !(await call(name, '/state')).runtime.review, 'review not cleared');
     await state(name, 'waiting_for_user');
     const snapshot = await call(name, '/sandbox');

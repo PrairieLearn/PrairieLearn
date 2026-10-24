@@ -142,7 +142,7 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.exec([
       'sh',
       '-ec',
-      'for pid in $(pgrep -u 1000); do [ "$(cat /proc/$pid/comm)" = codex ] || exit 1; done',
+      'count=0; for pid in $(pgrep -u 1000); do [ "$(cat /proc/$pid/comm)" = codex ] || exit 1; count=$((count + 1)); done; [ "$count" -le 1 ]',
     ]);
   }
 
