@@ -57,6 +57,7 @@ import { safeMustacheRender } from '../../../lib/mustache.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
+import { type QuestionImageContext, loadQuestionImage } from './ai-grading-images.js';
 import { AI_GRADING_MODEL_IDS, AI_GRADING_MODEL_PROVIDERS } from './ai-grading-models.shared.js';
 import {
   type CounterClockwiseRotationDegrees,
@@ -76,6 +77,8 @@ const SubmissionVariantSchema = z.object({
 });
 
 type UserContentParts = Exclude<UserContent, string>;
+
+const MAX_SECTION_FILE_BYTES = 10 * 1024 * 1024;
 
 // Keep this to media types supported as inline file parts by every AI-grading provider.
 const AI_GRADING_BINARY_FILE_MEDIA_TYPES = new Set([
@@ -104,6 +107,66 @@ function textSection(title: string, content: string): TextPart {
   };
 }
 
+export async function prepareQuestionPrompt(
+  prompt: string,
+  imageContext: QuestionImageContext,
+  section: 'question' | 'answer' = 'question',
+): Promise<UserContentParts> {
+  if (section === 'answer') {
+    prompt = prompt.trim();
+    if (!prompt) return [];
+  }
+  const $ = cheerio.load(prompt, null, false);
+  const imageSources = new Set(
+    $('img[src]')
+      .toArray()
+      .map((image) => $(image).attr('src')!)
+      .filter((src) => src.trim()),
+  );
+  let totalFileBytes = 0;
+  const imageFiles = new Map(
+    await Promise.all(
+      [...imageSources].map(async (src) => {
+        const file = await loadQuestionImage(src, imageContext);
+        totalFileBytes += Buffer.byteLength(file.data, 'base64');
+        if (totalFileBytes > MAX_SECTION_FILE_BYTES) {
+          throw new Error(`AI grading ${section} files exceed the size limit of 10 MiB`);
+        }
+        return [src, file] as const;
+      }),
+    ),
+  );
+  const imageParts: UserContentParts = [];
+  const imageNumbers = new Map<string, number>();
+  $('img[src]').each((_, image) => {
+    const src = $(image).attr('src')!;
+    const file = imageFiles.get(src);
+    if (!file) return;
+    const imageNumber = imageNumbers.get(src) ?? imageNumbers.size + 1;
+    const label = `${section === 'question' ? 'Question' : 'Answer'} image ${imageNumber}`;
+    const alt = $(image).attr('alt');
+    imageParts.push({ type: 'text', text: alt ? `${label}: ${alt}` : label });
+    if (!imageNumbers.has(src)) {
+      imageNumbers.set(src, imageNumber);
+      imageParts.push({
+        type: 'file',
+        data: file.data,
+        filename: `${section}-image-${imageNumber}.${mime.getExtension(file.mediaType) ?? 'png'}`,
+        mediaType: file.mediaType,
+        providerOptions: { openai: { imageDetail: 'auto' } },
+      });
+    }
+    $(image).replaceWith(`[${label}]`);
+  });
+  return [
+    textSection(
+      section === 'question' ? 'Question' : 'Instructor reference answer',
+      imageParts.length > 0 ? $.html() : prompt,
+    ),
+    ...imageParts,
+  ];
+}
+
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
@@ -115,8 +178,8 @@ export async function generatePrompt({
   params,
   true_answer,
 }: {
-  questionPrompt: string;
-  questionAnswer: string;
+  questionPrompt: UserContentParts;
+  questionAnswer: UserContentParts;
   /** If true, the prompt will include that rotation correction was applied prior to grading. */
   rotationCorrected?: boolean;
   submission_text: string;
@@ -197,21 +260,28 @@ export async function generatePrompt({
     content.push(textSection('Rubric items', rubricItems));
   }
 
-  content.push(textSection('Question', questionPrompt));
-
-  if (questionAnswer.trim()) {
-    content.push(textSection('Instructor reference answer', questionAnswer.trim()));
+  const submissionContent = generateSubmissionContent({
+    submission_text,
+    submitted_answer,
+  });
+  let totalFileBytes = 0;
+  for (const part of submissionContent) {
+    if (part.type !== 'file') continue;
+    assert(typeof part.data === 'string');
+    totalFileBytes += Buffer.byteLength(part.data, 'base64');
+    if (totalFileBytes > MAX_SECTION_FILE_BYTES) {
+      throw new Error('AI grading submission files exceed the size limit of 10 MiB');
+    }
   }
 
   content.push(
+    ...questionPrompt,
+    ...questionAnswer,
     {
       type: 'text',
       text: '## Student submission',
     },
-    ...generateSubmissionContent({
-      submission_text,
-      submitted_answer,
-    }),
+    ...submissionContent,
     {
       type: 'text',
       text: '## Task\n\nGrade the student submission using the grading context above.',
