@@ -885,7 +885,9 @@ def test_parse_simplifies_submission_exactly_once(
     original_parse = psu.try_parse_string_as_sympy
     original_json_to_sympy = psu.json_to_sympy
 
-    def parse_spy(*args: Any, **kwargs: Any) -> psu.SympyParseResult:
+    def parse_spy(
+        *args: Any, **kwargs: Any
+    ) -> psu.SympyParseResult[sympy.Expr] | psu.SympyParseResult[psu.SympyValue]:
         parse_simplification_flags.append(kwargs["simplify_expression"])
         return original_parse(*args, **kwargs)
 
