@@ -1,3 +1,6 @@
+// Codex ships its protocol generator in the native executable rather than a
+// TypeScript library. Export definitions from the pinned CLI, then adapt its
+// imports and formatting for this repository. CI checks that regeneration agrees.
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -13,8 +16,9 @@ try {
   const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
   const cli = path.join(root, 'node_modules/@openai/codex/bin/codex.js');
   const version = await execa(process.execPath, [cli, '--version']);
-  if (version.stdout !== `codex-cli ${manifest.devDependencies['@openai/codex']}`)
-    {throw new Error('Codex generator version does not match the pinned runtime');}
+  if (version.stdout !== `codex-cli ${manifest.devDependencies['@openai/codex']}`) {
+    throw new Error('Codex generator version does not match the pinned runtime');
+  }
   await rm(output, { recursive: true, force: true });
   await mkdir(output, { recursive: true });
   await execa(process.execPath, [

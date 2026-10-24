@@ -10,6 +10,8 @@ export class CourseAgentOutbound extends WorkerEntrypoint<
   Env,
   { repository: string; model: string }
 > {
+  // Add credentials only after checking that the request targets the bound
+  // repository or model. The container never receives the underlying tokens.
   override async fetch(request: Request) {
     const url = new URL(request.url);
     const headers = new Headers();
@@ -85,6 +87,7 @@ export class CourseSandbox extends DurableObject<Env> {
     return result;
   }
 
+  /** Start an isolated workspace, restore or clone its files, and configure Codex. */
   async prepare(
     config: { repository: string; branch: string; model: string },
     checkpoint: DirectoryBackupRecord | null,
@@ -124,6 +127,7 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
   }
 
+  /** Start the private stdio bridge; this does not submit a prompt. */
   async openNative(): Promise<Response> {
     if (!this.container.running || this.process) {
       throw new Error('Native runner is unavailable or already connected');
@@ -136,6 +140,7 @@ export class CourseSandbox extends DurableObject<Env> {
     return new Response(this.process.stdout);
   }
 
+  /** Send one protocol message through the existing private process connection. */
   async command(frame: string) {
     if (!this.process?.stdin) throw new Error('Native runner connection was lost');
     const writer = this.process.stdin.getWriter();
@@ -146,8 +151,12 @@ export class CourseSandbox extends DurableObject<Env> {
     }
   }
 
-  async quiesce() {
-    if (!this.container.running) throw new Error('Live workspace is unavailable');
+  /** Stop all agent/tool processes and verify none can keep editing files. */
+  async stopProcesses() {
+    if (!this.container.running) {
+      this.process = null;
+      return;
+    }
     // A terminal Codex event does not prove detached tools stopped. Kill and verify
     // every process of the dedicated uid before admitting a successor or backup.
     await this.exec(['sh', '-c', 'pkill -KILL -u 1000; code=$?; [ "$code" -le 1 ]']);
@@ -158,8 +167,9 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.exec(['sh', '-c', 'pgrep -u 1000 >/dev/null; code=$?; [ "$code" -eq 1 ]']);
   }
 
+  /** Create a new archive without changing the conversation's committed backup. */
   async checkpoint() {
-    await this.quiesce();
+    await this.stopProcesses();
     return this.backups.backup({
       dir: SESSION,
       exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json'],

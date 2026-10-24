@@ -1,6 +1,6 @@
 # Course agent service
 
-A Cloudflare Worker hosts private course-editing conversations behind PrairieLearn’s Enterprise `course-agent` flag. PrairieLearn owns authorization and the conversation catalog; `AIChatAgent` owns chat history, streaming, replay and Stop. The Conversation Durable Object owns sandbox lifecycle, and CourseSandbox owns container, native process and directory-backup operations.
+A Cloudflare Worker hosts private course-editing conversations behind PrairieLearn’s Enterprise `course-agent` flag. PrairieLearn owns authorization and the conversation catalog; `AIChatAgent` owns chat history, streaming, replay and Stop. The Conversation Durable Object owns sandbox lifecycle and one private persisted record. SandboxTurn owns each in-memory execution, and CourseSandbox owns container, native process and directory-backup operations. See [the execution contract](CONTRACT.md).
 
 ## Configuration
 
@@ -14,11 +14,11 @@ Run `pnpm --filter @prairielearn/course-agent dev` with Docker running. In Prair
 
 ## Lifecycle and recovery
 
-Creation binds a repository and branch without starting a container. First send clones that branch; later turns reuse the native thread. Only the newest input is submitted. Stop interrupts native work and confirms quiescence before another turn is admitted. Closing or switching the panel leaves execution running.
+Creation binds a repository and branch without starting a container. First send clones that branch; later turns reuse the native thread. Only the newest input is submitted. Stop interrupts native work and verifies that agent/tool processes have stopped before another turn is admitted. Turn deadline expiry also backs up and shuts down the workspace. Closing or switching the panel leaves execution running.
 
 After idle expiry, the service stops native writers, backs up `/workspace/session` with `DirectoryBackup`, commits its returned reference, then destroys the container. A later send restores that checkpoint before resuming the native thread. A fresh random sandbox ID identifies every newly provisioned runtime. Caches, dependencies and native authentication files are excluded from backups.
 
-Uncertain execution enters `blocked`. Resume durably admits recovery; it never repeats the old prompt. Startup failures discard incomplete setup while preserving the committed checkpoint. Runtime and checkpoint failures require quiescence and a new checkpoint. Cleanup failures retain the sandbox ID and committed archive for destruction retry. Missing live workspace data stays blocked rather than silently restoring older edits. Existing text-only conversations retain readable history; start a new conversation to edit files.
+Uncertain execution enters `blocked`. Resume waits for recovery to finish; it never repeats the old prompt. Concurrent recovery is rejected. A failed or interrupted recovery requires another explicit Resume. Startup failures discard incomplete setup while preserving the committed checkpoint. Runtime and checkpoint failures require stopped processes and a new checkpoint. Cleanup failures retain the sandbox ID and committed archive for destruction retry. Missing live workspace data stays blocked rather than silently restoring older edits.
 
 Only SDK-buffered output can be replayed after a restart. Native output that never reached the SDK cannot be recovered through reconnect.
 
@@ -27,7 +27,7 @@ Only SDK-buffered output can be replayed after a restart. Native output that nev
 All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 
 - `POST /conversations` accepts `{ repository: "owner/name", branch: "branch" }` and returns `201 { id }` after initialization.
-- `POST /conversations/{uuid}/resume` returns `202 { accepted: true }` for durably admitted recovery, `409` when unavailable or already admitted, and `503` if scheduling fails.
+- `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
 - `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.
 - `GET /conversations/{uuid}/get-messages` returns SDK history.
 

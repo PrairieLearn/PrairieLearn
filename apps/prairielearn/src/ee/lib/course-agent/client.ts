@@ -38,7 +38,7 @@ export async function createCourseAgentConversation(binding: {
   return CreatedConversationSchema.parse(await response.json()).id;
 }
 
-/** Durably admits recovery; lifecycle updates report its eventual outcome. */
+/** Wait for workspace recovery; lifecycle updates keep connected browsers informed. */
 export async function resumeCourseAgentConversation(agentConversationId: string) {
   const { url, headers } = buildCourseAgentServiceRequest(
     `conversations/${encodeURIComponent(agentConversationId)}/resume`,
@@ -46,15 +46,14 @@ export async function resumeCourseAgentConversation(agentConversationId: string)
   const response = await fetch(url, {
     method: 'POST',
     headers,
-    signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) {
     throw new error.HttpStatusError(
       response.status === 409 ? 409 : 503,
       response.status === 409
         ? 'Conversation is not blocked or is already recovering.'
-        : 'Could not start workspace recovery.',
+        : 'Could not recover the workspace.',
     );
   }
-  return z.strictObject({ accepted: z.literal(true) }).parse(await response.json());
+  return z.strictObject({ recovered: z.literal(true) }).parse(await response.json());
 }
