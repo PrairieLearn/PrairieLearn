@@ -1,1 +1,3 @@
-This question displays a randomly generated graph with nodes and edges. Students are asked to provide the corresponding adjacency matrix. Matrix entries that are left blank are considered as zero. Students can get partial credit for each correct matrix entry.
+This question asks students to enter the adjacency matrix of a randomly generated graph. Blank entries count as zero, and partial credit is awarded for correct entries.
+
+Provide an [equivalent question](https://docs.prairielearn.com/elements/pl-graph/#graphs-that-are-the-question) for students who cannot access the graph.
