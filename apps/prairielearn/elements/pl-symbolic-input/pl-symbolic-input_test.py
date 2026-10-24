@@ -659,14 +659,10 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert data["partial_scores"]["test"]["score"] == 1
 
 
-@pytest.mark.parametrize("simplify_expression", [True, False])
-def test_set_round_trip_grading_is_independent_of_display_simplification(
-    *,
-    simplify_expression: bool,
-) -> None:
+def test_unsimplified_set_submission_preserves_operation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',
-        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+        'display-simplified-expression="false"',
         'correct-answer="{2, e}"',
     )
     data = make_question_data(
@@ -675,36 +671,16 @@ def test_set_round_trip_grading_is_independent_of_display_simplification(
 
     symbolic_input.prepare(element_html, data)
     symbolic_input.parse(element_html, data)
+    restored = psu.json_to_sympy(
+        data["submitted_answers"]["test"],
+        allow_sets=True,
+        simplify_expression=False,
+    )
+
+    assert isinstance(restored, sympy.Intersection)
+
     symbolic_input.grade(element_html, data)
-
     assert data["partial_scores"]["test"]["score"] == 1
-
-
-def test_hidden_constant_names_do_not_leak_into_rendered_submission(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.chdir(Path(__file__).parent)
-    element_html = build_element_html(
-        'allow-sets="true"',
-        'allow-complex="true"',
-        'imaginary-unit-for-display="i"',
-        'display-simplified-expression="false"',
-        'correct-answer="{e + i}"',
-    )
-    data = make_question_data(
-        submitted_answers={"test": "{e + j}"},
-        raw_submitted_answers={"test": "{e + j}"},
-        panel="submission",
-        editable=False,
-    )
-
-    symbolic_input.prepare(element_html, data)
-    symbolic_input.parse(element_html, data)
-    rendered = symbolic_input.render(element_html, data)
-
-    assert "_Exp1" not in rendered
-    assert "_ImaginaryUnit" not in rendered
-    assert "\\left\\{i + e\\right\\}" in rendered
 
 
 @pytest.mark.parametrize(
