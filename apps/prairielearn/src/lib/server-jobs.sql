@@ -61,7 +61,8 @@ WITH
         authn_user_id,
         type,
         description,
-        status
+        status,
+        data
       )
     SELECT
       $course_id,
@@ -76,7 +77,8 @@ WITH
       $authn_user_id,
       $type,
       $description,
-      'Running'
+      'Running',
+      $data
     FROM
       new_job_sequence
     RETURNING
@@ -339,3 +341,10 @@ SET
   heartbeat_at = CURRENT_TIMESTAMP
 WHERE
   j.id = ANY ($job_ids::bigint[]);
+
+-- BLOCK update_job_data
+UPDATE jobs
+SET
+  data = $data
+WHERE
+  id = $job_id;

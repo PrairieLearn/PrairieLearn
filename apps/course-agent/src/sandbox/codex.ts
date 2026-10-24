@@ -1,36 +1,17 @@
 import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
-import { z } from 'zod';
 
-import type { InitializeParams } from '../../generated/types/InitializeParams.js';
-import type { ThreadResumeParams } from '../../generated/types/v2/ThreadResumeParams.js';
-import type { ThreadStartParams } from '../../generated/types/v2/ThreadStartParams.js';
-import type { TurnInterruptParams } from '../../generated/types/v2/TurnInterruptParams.js';
-import type { TurnStartParams } from '../../generated/types/v2/TurnStartParams.js';
+import { type PushSyncResult, type ReviewOutcome } from '@prairielearn/course-agent-types';
+
+import { notifications, requests, serverRequests } from '../generated/protocol.js';
+import type { AgentMessageDeltaNotification } from '../generated/types/v2/AgentMessageDeltaNotification.js';
+import type { DynamicToolCallParams } from '../generated/types/v2/DynamicToolCallParams.js';
+import type { DynamicToolSpec } from '../generated/types/v2/DynamicToolSpec.js';
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
 
-// Validate only fields consumed by this adapter; Codex may return additional data.
-const EmptyResult = z.object({});
-const ThreadResult = z.object({ thread: z.object({ id: z.string() }) });
-const TurnResult = z.object({ turn: z.object({ id: z.string() }) });
-const TextDelta = z.object({
-  threadId: z.string(),
-  turnId: z.string(),
-  itemId: z.string(),
-  delta: z.string(),
-});
-const TurnCompleted = z.object({
-  threadId: z.string(),
-  turn: z.object({
-    id: z.string(),
-    status: z.enum(['inProgress', 'completed', 'interrupted', 'failed']),
-    error: z.object({ message: z.string() }).nullable(),
-  }),
-});
-
-/** A workspace's app-server connection, reused across turns until Stop or workspace cleanup. */
+/** One app-server connection and its conversion into the chat SDK's output format. */
 export class CodexAppServerClient {
   private rpc: MessageConnection | null = null;
   private controller: ReadableStreamDefaultController<UIMessageChunk> | null = null;
@@ -38,31 +19,37 @@ export class CodexAppServerClient {
   private turnId: string | null = null;
   private threadId: string | null = null;
   private parts = new Map<string, 'text' | 'reasoning'>();
-  private failure: Error | null = null;
+  stream: ReadableStream<UIMessageChunk>;
 
-  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
-
-  beginTurn(messageId: string) {
-    this.terminal = Promise.withResolvers<undefined>();
-    this.turnId = null;
-    this.parts.clear();
+  constructor(
+    private sandbox: DurableObjectStub<CourseSandbox>,
+    readonly messageId: string,
+    private onReview?: (
+      call: DynamicToolCallParams,
+      ready: (revision: string) => void,
+    ) => Promise<PushSyncResult>,
+  ) {
     // Setup can fail before the execution helper starts waiting for completion.
     void this.terminal.promise.catch(() => {});
-    return new ReadableStream<UIMessageChunk>({
+    this.stream = this.openStream();
+  }
+
+  /** A review ends one SDK response while retaining the live native connection. */
+  openStream() {
+    if (this.controller) throw new Error('An SDK response is already open');
+    this.stream = new ReadableStream<UIMessageChunk>({
       start: (controller) => {
         this.controller = controller;
-        controller.enqueue({ type: 'start', messageId });
+        controller.enqueue({ type: 'start', messageId: this.messageId });
       },
-      // The SDK may cancel its reader before native execution has stopped.
       cancel: () => {
         this.controller = null;
       },
     });
+    return this.stream;
   }
 
   async connect() {
-    if (this.failure) throw this.failure;
-    if (this.rpc) return;
     const response = await this.sandbox.fetch('http://codex.internal/', {
       headers: { Upgrade: 'websocket' },
     });
@@ -73,25 +60,53 @@ export class CodexAppServerClient {
     const rpc = createCodexConnection(socket, (error) => this.fail(error));
     this.rpc = rpc;
     const onNotification = <P>(
-      method: string,
-      schema: z.ZodType<P>,
+      event: { method: string; params: (value: unknown) => value is P },
       handler: (params: P) => void,
     ) =>
-      rpc.onNotification(method, (value: unknown) => {
+      rpc.onNotification(event.method, (value: unknown) => {
         try {
-          const parsed = schema.safeParse(value);
-          if (!parsed.success) throw new Error(`Invalid notification: ${method}`);
-          handler(parsed.data);
+          if (!event.params(value)) throw new Error(`Invalid notification: ${event.method}`);
+          handler(value);
         } catch (error) {
           this.fail(error instanceof Error ? error : new Error(String(error)));
         }
       });
+    rpc.onRequest('item/tool/call', async (value: unknown) => {
+      const method = serverRequests['item/tool/call'];
+      if (
+        !method.params(value) ||
+        value.threadId !== this.threadId ||
+        value.tool !== 'push_sync' ||
+        value.namespace !== null ||
+        !this.onReview ||
+        JSON.stringify(value.arguments) !== '{}'
+      ) {
+        throw new Error('Invalid push_sync call');
+      }
+      const result = await this.onReview(value, (revision) => {
+        this.emit({
+          type: 'tool-input-available',
+          toolCallId: value.callId,
+          toolName: 'push_sync',
+          input: { revision },
+        });
+        this.finishResponse();
+      });
+      const response = {
+        success: result.publication.status === 'published' && result.sync.status === 'succeeded',
+        contentItems: [{ type: 'inputText' as const, text: JSON.stringify(result) }],
+      };
+      if (!method.result(response)) throw new Error('Invalid push_sync result');
+      return response;
+    });
     rpc.listen();
-    onNotification('item/agentMessage/delta', TextDelta, (params) => this.delta('text', params));
-    onNotification('item/reasoning/summaryTextDelta', TextDelta, (params) =>
+    onNotification(notifications['item/agentMessage/delta'], (params) =>
+      this.delta('text', params),
+    );
+    onNotification(notifications['item/reasoning/summaryTextDelta'], (params) =>
       this.delta('reasoning', params),
     );
-    onNotification('turn/completed', TurnCompleted, (params) => {
+    onNotification(notifications['turn/completed'], (params) => {
       if (params.threadId !== this.threadId || (this.turnId && params.turn.id !== this.turnId)) {
         return;
       }
@@ -101,15 +116,28 @@ export class CodexAppServerClient {
         this.terminal.resolve(undefined);
       }
     });
+    onNotification(notifications['item/completed'], ({ threadId, item }) => {
+      if (
+        threadId !== this.threadId ||
+        item.type !== 'dynamicToolCall' ||
+        item.tool !== 'push_sync'
+      ) {
+        return;
+      }
+      const text = item.contentItems?.find((part) => part.type === 'inputText');
+      if (text?.type === 'inputText') {
+        this.emit({
+          type: 'tool-output-available',
+          toolCallId: item.id,
+          output: JSON.parse(text.text),
+        });
+      }
+    });
     socket.accept();
-    await this.request(
-      'initialize',
-      {
-        clientInfo: { name: 'prairielearn', title: 'PrairieLearn', version: '1' },
-        capabilities: { experimentalApi: true, requestAttestation: false },
-      } satisfies InitializeParams,
-      EmptyResult,
-    );
+    await this.request(requests.initialize, {
+      clientInfo: { name: 'prairielearn', title: 'PrairieLearn', version: '1' },
+      capabilities: { experimentalApi: true, requestAttestation: false },
+    });
     await rpc.sendNotification('initialized');
   }
 
@@ -119,32 +147,37 @@ export class CodexAppServerClient {
   }
 
   private fail(error: Error) {
-    this.failure = error;
     this.terminal.reject(error);
     this.rpc?.dispose();
-    this.rpc = null;
   }
 
-  private async request<R>(method: string, params: unknown, schema: z.ZodType<R>): Promise<R> {
+  private async request<P, R>(
+    method: {
+      method: string;
+      params: (value: unknown) => value is P;
+      result: (value: unknown) => value is R;
+    },
+    params: NoInfer<P>,
+  ): Promise<R> {
+    if (!method.params(params)) throw new Error(`Invalid parameters for ${method.method}`);
     const connection = this.connection;
     // A timeout means acceptance is unknown. Dispose pending work without replaying the command.
     const timeout = setTimeout(
-      () => this.fail(new Error(`Native command did not settle: ${method}`)),
+      () => this.fail(new Error(`Native command did not settle: ${method.method}`)),
       30_000,
     );
     try {
       const result = await connection.sendRequest<unknown>(
-        method,
+        method.method,
         ParameterStructures.byName,
         params,
       );
-      const parsed = schema.safeParse(result);
-      if (!parsed.success) {
-        const error = new Error(`Invalid result for ${method}`);
+      if (!method.result(result)) {
+        const error = new Error(`Invalid result for ${method.method}`);
         this.fail(error);
         throw error;
       }
-      return parsed.data;
+      return result;
     } finally {
       clearTimeout(timeout);
     }
@@ -157,45 +190,61 @@ export class CodexAppServerClient {
       approvalPolicy: 'never' as const,
       sandbox: 'danger-full-access' as const,
       developerInstructions: config.instructions,
-    } satisfies ThreadStartParams;
+    };
     const result = config.threadId
-      ? await this.request(
-          'thread/resume',
-          {
-            ...settings,
-            threadId: config.threadId,
-            excludeTurns: true,
-          } satisfies ThreadResumeParams,
-          ThreadResult,
-        )
-      : await this.request('thread/start', settings, ThreadResult);
+      ? await this.request(requests['thread/resume'], {
+          ...settings,
+          threadId: config.threadId,
+          excludeTurns: true,
+        })
+      : await this.request(requests['thread/start'], { ...settings, dynamicTools: [pushSyncTool] });
     this.threadId = result.thread.id;
     return result.thread.id;
   }
 
-  async run(text: string, accepted: (turnId: string) => void) {
-    const result = await this.request(
-      'turn/start',
-      {
+  async run(text: string | ReviewOutcome, accepted: (turnId: string) => void) {
+    if (typeof text !== 'string') {
+      const saved = await this.request(requests['thread/read'], {
         threadId: this.threadId!,
-        input: [{ type: 'text', text, text_elements: [] }],
-      } satisfies TurnStartParams,
-      TurnResult,
-    );
+        includeTurns: true,
+      });
+      const incorporated = saved.thread.turns.some((turn) =>
+        turn.items.some(
+          (item) =>
+            item.type === 'functionCallOutput' &&
+            item.name === 'push_sync' &&
+            item.output === JSON.stringify(text),
+        ),
+      );
+      if (incorporated) {
+        this.terminal.resolve(undefined);
+        return;
+      }
+    }
+    const result = await this.request(requests['turn/start'], {
+      threadId: this.threadId!,
+      input: typeof text === 'string' ? [{ type: 'text', text, text_elements: [] }] : [],
+      ...(typeof text !== 'string'
+        ? {
+            toolOutput: {
+              name: 'push_sync',
+              namespace: null,
+              output: JSON.stringify(text),
+              retain: true,
+            },
+          }
+        : {}),
+    });
     this.turnId = result.turn.id;
     accepted(this.turnId);
   }
 
   async interrupt() {
     if (!this.turnId) throw new Error('Native turn acceptance is unknown');
-    await this.request(
-      'turn/interrupt',
-      {
-        threadId: this.threadId!,
-        turnId: this.turnId,
-      } satisfies TurnInterruptParams,
-      EmptyResult,
-    );
+    await this.request(requests['turn/interrupt'], {
+      threadId: this.threadId!,
+      turnId: this.turnId,
+    });
     const timeout = AbortSignal.timeout(30_000);
     const expired = Promise.withResolvers<never>();
     const fail = () => expired.reject(new Error('Native interruption did not settle'));
@@ -211,7 +260,7 @@ export class CodexAppServerClient {
     return this.terminal.promise;
   }
 
-  private delta(type: 'text' | 'reasoning', params: z.infer<typeof TextDelta>) {
+  private delta(type: 'text' | 'reasoning', params: AgentMessageDeltaNotification) {
     if (
       params.threadId !== this.threadId ||
       (this.turnId && params.turnId !== this.turnId) ||
@@ -231,8 +280,17 @@ export class CodexAppServerClient {
     });
   }
 
+  emit(chunk: UIMessageChunk) {
+    this.controller?.enqueue(chunk);
+  }
+
   closeStream(error?: unknown) {
     if (error) this.terminal.reject(error);
+    this.rpc?.dispose();
+    this.finishResponse(error);
+  }
+
+  private finishResponse(error?: unknown) {
     if (!this.controller) return;
     for (const [id, type] of this.parts) {
       this.controller.enqueue({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
@@ -247,12 +305,14 @@ export class CodexAppServerClient {
     this.controller.enqueue({ type: 'finish' });
     this.controller.close();
     this.controller = null;
-  }
-
-  close() {
-    // Forced cleanup must release a turn still waiting for a terminal notification.
-    this.terminal.reject(new Error('Native runner was stopped'));
-    this.rpc?.dispose();
-    this.rpc = null;
+    this.parts.clear();
   }
 }
+
+const pushSyncTool: DynamicToolSpec = {
+  type: 'function',
+  name: 'push_sync',
+  description:
+    'Request instructor review, Git publication, and Course Sync of the current course edits. Wait for the result; do not push yourself.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+};

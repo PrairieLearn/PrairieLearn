@@ -11,6 +11,8 @@ export const requiredTableFields = {
   course_instances: ['course_instance_id'],
   course_instance_ai_grading_credentials: ['course_instance_id'],
   courses: ['course_id'],
+  jobs: ['course_id'],
+  course_agent_conversations: ['course_id'],
   users: ['subject_user_id'],
   teams: ['team_id'],
   assessment_instances: ['assessment_instance_id'],
@@ -29,6 +31,8 @@ export const requiredTableFields = {
  * This lists all the possible table+action_detail combinations that are supported.
  */
 export type SupportedTableActionCombination =
+  | { tableName: 'course_agent_conversations'; actionDetail: 'push_sync_review' }
+  | { tableName: 'jobs'; actionDetail?: null }
   | {
       tableName: 'ai_grading_credit_checkout_sessions';
       actionDetail?: 'refund' | null;
