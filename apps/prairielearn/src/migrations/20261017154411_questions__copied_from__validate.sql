@@ -1,0 +1,1 @@
+ALTER TABLE questions VALIDATE CONSTRAINT questions_copied_from_question_id_fkey;

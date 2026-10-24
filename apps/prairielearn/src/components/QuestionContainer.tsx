@@ -66,11 +66,17 @@ export function QuestionContainer({
     course_instance,
     authz_data,
     is_administrator,
-    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
   } = resLocals;
+
+  const isAiGradingPreview = questionRenderContext === 'ai_grading';
+  // The AI grader always receives the answer when it is non-blank, regardless of `showCorrectAnswer`.
+  const answerVisible = isAiGradingPreview ? !!answerHtml.trim() : resLocals.showCorrectAnswer;
+  const answerBody = isAiGradingPreview
+    ? AiGradingHtmlPreview(answerHtml.trim())
+    : unsafeHtml(answerHtml);
 
   return html`
     <div
@@ -106,16 +112,15 @@ export function QuestionContainer({
           : QuestionPanel({ resLocals, showFooter, questionContext })
       }
       ${
-        // The correct answer isn't used when performing AI grading, so we hide
-        // it here to avoid confusion.
-        questionRenderContext !== 'ai_grading'
+        // The AI grader omits a blank answer, so the preview omits the card entirely.
+        !isAiGradingPreview || answerVisible
           ? html`
-              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
+              <div class="card mb-3 grading-block${answerVisible ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${answerVisible ? answerBody : ''}
                 </div>
               </div>
             `
@@ -128,6 +133,7 @@ export function QuestionContainer({
                 ${
                   aiGradingInfo
                     ? AIGradingExplanation({
+                        model: aiGradingInfo.model,
                         explanation: aiGradingInfo.explanation,
                         hasImage: aiGradingInfo.hasImage,
                         rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
@@ -222,10 +228,12 @@ export function AIGradingPrompt({ prompt }: { prompt: string }) {
 }
 
 export function AIGradingExplanation({
+  model,
   explanation,
   hasImage,
   rotationCorrectionDegrees,
 }: {
+  model: InstanceQuestionAIGradingInfo['model'];
   explanation: string | null;
   hasImage: boolean;
   rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
@@ -245,7 +253,7 @@ export function AIGradingExplanation({
         <h2>AI grading explanation</h2>
         <button
           type="button"
-          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto"
+          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto flex-shrink-0"
           data-bs-toggle="collapse"
           data-bs-target="#ai-grading-explanation-body"
           aria-expanded="true"
@@ -297,6 +305,13 @@ ${explanation}
 </pre>
                 `
               : ''
+          }
+        </div>
+        <div class="card-footer small text-body-secondary">
+          ${
+            model
+              ? html`Graded with <span class="font-monospace text-break">${model}</span>`
+              : 'Model not recorded'
           }
         </div>
       </div>
