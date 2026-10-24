@@ -61,7 +61,15 @@ const threadResult: ThreadStartResponse = {
   },
 };
 
-function runner(loseAcceptance = false) {
+function runner({
+  loseAcceptance = false,
+  initializeResult = {
+    userAgent: 'test',
+    codexHome: '/workspace/session/home/.codex',
+    platformFamily: 'unix',
+    platformOs: 'linux',
+  },
+}: { loseAcceptance?: boolean; initializeResult?: unknown } = {}) {
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -83,12 +91,7 @@ function runner(loseAcceptance = false) {
       if (frame.method === 'initialize') {
         emit({
           id: frame.id,
-          result: {
-            userAgent: 'test',
-            codexHome: '/workspace/session/home/.codex',
-            platformFamily: 'unix',
-            platformOs: 'linux',
-          },
+          result: initializeResult,
         });
       }
       if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
@@ -116,6 +119,13 @@ function runner(loseAcceptance = false) {
 }
 
 describe('Codex native stream', () => {
+  it('rejects invalid native results before continuing setup', async () => {
+    const { native, commands } = runner({ initializeResult: {} });
+    await expect(native.connect()).rejects.toThrow('Invalid result for initialize');
+    await expect(native.finished).rejects.toThrow('Invalid result for initialize');
+    expect(commands.map((command) => command.method)).toEqual(['initialize']);
+  });
+
   it('waits for terminal confirmation after SDK cancellation and interrupt acknowledgement', async () => {
     const { native, commands, emit, disconnect } = runner();
     await native.connect();
@@ -141,13 +151,14 @@ describe('Codex native stream', () => {
   });
 
   it('does not repeat submission when the acceptance response is lost', async () => {
-    const { native, commands, disconnect } = runner(true);
+    const { native, commands, disconnect } = runner({ loseAcceptance: true });
     await native.connect();
     await native.thread({ model: 'test', instructions: 'Edit course', threadId: null });
     const submission = native.run('Edit', () => {});
     await new Promise<void>((resolve) => setImmediate(resolve));
     disconnect();
-    await expect(submission).rejects.toThrow('disconnected');
+    await expect(submission).rejects.toThrow();
+    await expect(native.finished).rejects.toThrow('disconnected');
     expect(commands.filter((command) => command.method === 'turn/start')).toHaveLength(1);
   });
 });
