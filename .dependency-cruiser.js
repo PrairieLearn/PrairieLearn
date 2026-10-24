@@ -85,7 +85,7 @@ module.exports = {
     tsPreCompilationDeps: true,
     enhancedResolveOptions: {
       exportsFields: ['exports'],
-      conditionNames: ['import', 'require', 'node', 'default'],
+      conditionNames: ['import', 'require', 'node', 'browser', 'default'],
       mainFields: ['module', 'main', 'types', 'typings'],
     },
     reporterOptions: { text: { highlightFocused: true } },

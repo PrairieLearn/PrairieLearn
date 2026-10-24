@@ -17,6 +17,7 @@
     "@prairielearn/course-agent-types": "workspace:^",
     "agents": "0.28.0",
     "ai": "^7.0.116",
+    "vscode-jsonrpc": "^9.0.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {

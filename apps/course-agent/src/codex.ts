@@ -1,14 +1,15 @@
 import type { UIMessageChunk } from 'ai';
+import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 
 import { notifications, requests } from '../generated/protocol.js';
 import type { AgentMessageDeltaNotification } from '../generated/types/v2/AgentMessageDeltaNotification.js';
 
-import { RpcConnection } from './rpc.js';
+import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
 
 /** One app-server connection and its conversion into the chat SDK's output format. */
 export class CodexAppServerClient {
-  private rpc: RpcConnection | null = null;
+  private rpc: MessageConnection | null = null;
   private controller: ReadableStreamDefaultController<UIMessageChunk> | null = null;
   private terminal = Promise.withResolvers<undefined>();
   private turnId: string | null = null;
@@ -42,15 +43,28 @@ export class CodexAppServerClient {
       throw new Error('Native runner supplied no WebSocket');
     }
     const socket = response.webSocket;
-    const rpc = new RpcConnection(socket, (error) => this.terminal.reject(error));
+    const rpc = createCodexConnection(socket, (error) => this.fail(error));
     this.rpc = rpc;
-    rpc.onNotification(notifications['item/agentMessage/delta'], (params) =>
+    const onNotification = <P>(
+      event: { method: string; params: (value: unknown) => value is P },
+      handler: (params: P) => void,
+    ) =>
+      rpc.onNotification(event.method, (value: unknown) => {
+        try {
+          if (!event.params(value)) throw new Error(`Invalid notification: ${event.method}`);
+          handler(value);
+        } catch (error) {
+          this.fail(error instanceof Error ? error : new Error(String(error)));
+        }
+      });
+    rpc.listen();
+    onNotification(notifications['item/agentMessage/delta'], (params) =>
       this.delta('text', params),
     );
-    rpc.onNotification(notifications['item/reasoning/summaryTextDelta'], (params) =>
+    onNotification(notifications['item/reasoning/summaryTextDelta'], (params) =>
       this.delta('reasoning', params),
     );
-    rpc.onNotification(notifications['turn/completed'], (params) => {
+    onNotification(notifications['turn/completed'], (params) => {
       if (params.threadId !== this.threadId || (this.turnId && params.turn.id !== this.turnId)) {
         return;
       }
@@ -61,16 +75,53 @@ export class CodexAppServerClient {
       }
     });
     socket.accept();
-    await rpc.request(requests.initialize, {
+    await this.request(requests.initialize, {
       clientInfo: { name: 'prairielearn', title: 'PrairieLearn', version: '1' },
       capabilities: null,
     });
-    rpc.notify('initialized');
+    await rpc.sendNotification('initialized');
   }
 
   private get connection() {
     if (!this.rpc) throw new Error('Native runner is not connected');
     return this.rpc;
+  }
+
+  private fail(error: Error) {
+    this.terminal.reject(error);
+    this.rpc?.dispose();
+  }
+
+  private async request<P, R>(
+    method: {
+      method: string;
+      params: (value: unknown) => value is P;
+      result: (value: unknown) => value is R;
+    },
+    params: NoInfer<P>,
+  ): Promise<R> {
+    if (!method.params(params)) throw new Error(`Invalid parameters for ${method.method}`);
+    const connection = this.connection;
+    // A timeout means acceptance is unknown. Dispose pending work without replaying the command.
+    const timeout = setTimeout(
+      () => this.fail(new Error(`Native command did not settle: ${method.method}`)),
+      30_000,
+    );
+    try {
+      const result = await connection.sendRequest<unknown>(
+        method.method,
+        ParameterStructures.byName,
+        params,
+      );
+      if (!method.result(result)) {
+        const error = new Error(`Invalid result for ${method.method}`);
+        this.fail(error);
+        throw error;
+      }
+      return result;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   async thread(config: { model: string; instructions: string; threadId: string | null }) {
@@ -82,18 +133,18 @@ export class CodexAppServerClient {
       developerInstructions: config.instructions,
     };
     const result = config.threadId
-      ? await this.connection.request(requests['thread/resume'], {
+      ? await this.request(requests['thread/resume'], {
           ...settings,
           threadId: config.threadId,
           excludeTurns: true,
         })
-      : await this.connection.request(requests['thread/start'], settings);
+      : await this.request(requests['thread/start'], settings);
     this.threadId = result.thread.id;
     return result.thread.id;
   }
 
   async run(text: string, accepted: (turnId: string) => void) {
-    const result = await this.connection.request(requests['turn/start'], {
+    const result = await this.request(requests['turn/start'], {
       threadId: this.threadId!,
       input: [{ type: 'text', text, text_elements: [] }],
     });
@@ -103,7 +154,7 @@ export class CodexAppServerClient {
 
   async interrupt() {
     if (!this.turnId) throw new Error('Native turn acceptance is unknown');
-    await this.connection.request(requests['turn/interrupt'], {
+    await this.request(requests['turn/interrupt'], {
       threadId: this.threadId!,
       turnId: this.turnId,
     });
@@ -144,7 +195,7 @@ export class CodexAppServerClient {
 
   closeStream(error?: unknown) {
     if (error) this.terminal.reject(error);
-    this.rpc?.close(error instanceof Error ? error : undefined);
+    this.rpc?.dispose();
     if (!this.controller) return;
     for (const [id, type] of this.parts) {
       this.controller.enqueue({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
