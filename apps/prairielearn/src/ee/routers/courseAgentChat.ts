@@ -21,6 +21,11 @@ const RequestSchemas = {
   params: z.object({ course_id: IdSchema, conversation_id: IdSchema }),
   query: z.object({ csrfToken: z.string().optional() }),
 };
+/**
+ * Holds references to bytes Node already read beyond the HTTP upgrade headers.
+ * Keep them while Express authorizes the request, then pass them to the proxy
+ * so no initial WebSocket data is lost. An entry also identifies an upgrade request.
+ */
 const upgradeHeads = new WeakMap<IncomingMessage, Buffer>();
 const proxy = createProxyMiddleware<Request, Response>({
   // Upgrades are forwarded explicitly, after the Express authorization chain.
