@@ -128,7 +128,7 @@ router.get(
 
     // Transfer ownership of the socket to the proxy.
     res.detachSocket(req.socket);
-    // Finish Express request accounting before the proxy takes over.
+    // Status code 101 means Switching Protocols.
     res.statusCode = 101;
     res.emit('close');
     proxy.upgrade(req, req.socket, head);
