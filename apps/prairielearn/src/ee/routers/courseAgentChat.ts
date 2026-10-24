@@ -85,6 +85,8 @@ router.get(
       user_id: authn_user.id,
     });
     if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
+    // WebSocket handshakes are GET requests too; router.get does not guarantee an upgrade.
+    // Ordinary HTTP GET is supported only for the saved-history endpoint.
     if (!head && !req.path.endsWith('/get-messages')) {
       res.sendStatus(426);
       return;
@@ -92,7 +94,7 @@ router.get(
     const path = `conversations/${conversation.agent_conversation_id}${head ? '' : '/get-messages'}`;
     const { url, headers } = buildCourseAgentServiceRequest(path);
     // Keep the SDK connection ID, but never forward the browser's CSRF token or cookies.
-    url.search = new URL(req.originalUrl, 'http://localhost').search;
+    url.search = new URL(req.originalUrl, url).search;
     url.searchParams.delete('csrfToken');
     req.url = url.pathname + url.search;
     delete req.headers.cookie;
