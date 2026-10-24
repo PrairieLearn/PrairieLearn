@@ -22,9 +22,8 @@ const RequestSchemas = {
   query: z.object({ csrfToken: z.string().optional() }),
 };
 /**
- * Holds references to bytes Node already read beyond the HTTP upgrade headers.
- * Keep them while Express authorizes the request, then pass them to the proxy
- * so no initial WebSocket data is lost. An entry also identifies an upgrade request.
+ * Saves any bytes Node already received after an upgrade request until the proxy takes over.
+ * Every upgrade request gets an entry, even when its buffer is empty.
  */
 const upgradeHeads = new WeakMap<IncomingMessage, Buffer>();
 const proxy = createProxyMiddleware<Request, Response>({
@@ -90,8 +89,9 @@ router.get(
       user_id: authn_user.id,
     });
     if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
-    // WebSocket handshakes are GET requests too; router.get does not guarantee an upgrade.
-    // Ordinary HTTP GET is supported only for the saved-history endpoint.
+    // No map entry means this is an ordinary HTTP request, not a WebSocket upgrade.
+    // /get-messages returns saved history over HTTP; the bare conversation URL opens
+    // live chat and requires a WebSocket upgrade request.
     if (!head && !req.path.endsWith('/get-messages')) {
       res.sendStatus(426);
       return;
