@@ -23,6 +23,7 @@ export function renderCourseAgentPanel({
     <Hydrate>
       <CourseAgentPanel
         courseId={courseId}
+        isDevMode={config.devMode}
         trpcCsrfToken={csrfToken(getCourseTrpcUrl(courseId))}
         chatCsrfToken={csrfToken(`/pl/course/${courseId}/course_agent`)}
         initialOpen={initialOpen}

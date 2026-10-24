@@ -9,7 +9,11 @@ import type { Connection, ConnectionContext } from 'agents';
 import { createUIMessageStreamResponse } from 'ai';
 import { z } from 'zod';
 
-import { type BlockedReason, type ConversationState } from '@prairielearn/course-agent-types';
+import {
+  type BlockedReason,
+  type ConversationLifecycle,
+  type ConversationState,
+} from '@prairielearn/course-agent-types';
 
 import { SandboxTurn } from '../sandbox-turn.js';
 
@@ -35,9 +39,9 @@ interface RuntimeData {
 // before container removal can be attempted.
 type Runtime = RuntimeData &
   (
-    | { lifecycle: Extract<ConversationState, { status: 'offline' }>; sandboxId: null }
+    | { lifecycle: Extract<ConversationLifecycle, { status: 'offline' }>; sandboxId: null }
     | {
-        lifecycle: Exclude<ConversationState, { status: 'offline' }> | { status: 'destroying' };
+        lifecycle: Exclude<ConversationLifecycle, { status: 'offline' }> | { status: 'destroying' };
         sandboxId: string | null;
       }
   );
@@ -48,9 +52,9 @@ interface ActiveTurn {
   shutdown: boolean;
 }
 
-/** The private record is authoritative; SDK state exposes only lifecycle to browsers. */
+/** The private record is authoritative; SDK state exposes lifecycle and its deadline to browsers. */
 export class Conversation extends AIChatAgent<Env, ConversationState> {
-  override initialState: ConversationState = { status: 'offline' };
+  override initialState: ConversationState = { status: 'offline', deadlineAt: null };
   private runtime: Runtime | null = null;
   // Process connections and completion promises exist only in this DO instance.
   private active: ActiveTurn | null = null;
@@ -68,7 +72,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   private get publicState(): ConversationState {
     const lifecycle = this.record.lifecycle;
-    return lifecycle.status === 'destroying' ? { status: 'suspending' } : lifecycle;
+    return {
+      ...(lifecycle.status === 'destroying' ? { status: 'suspending' as const } : lifecycle),
+      deadlineAt: this.record.deadline?.at ?? null,
+    };
   }
 
   /** Save a complete private record before publishing its public projection. */
