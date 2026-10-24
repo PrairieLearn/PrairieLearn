@@ -44,12 +44,14 @@ export function CourseAgentPanel({
   trpcCsrfToken,
   chatCsrfToken,
   initialOpen,
+  isDevMode,
   search,
 }: {
   courseId: string;
   trpcCsrfToken: string;
   chatCsrfToken: string;
   initialOpen: boolean;
+  isDevMode: boolean;
   search: string;
 }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -60,7 +62,12 @@ export function CourseAgentPanel({
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-          <Panel courseId={courseId} chatCsrfToken={chatCsrfToken} initialOpen={initialOpen} />
+          <Panel
+            courseId={courseId}
+            chatCsrfToken={chatCsrfToken}
+            initialOpen={initialOpen}
+            isDevMode={isDevMode}
+          />
         </TRPCProvider>
       </QueryClientProviderDebug>
     </NuqsAdapter>
@@ -73,10 +80,12 @@ function Panel({
   courseId,
   chatCsrfToken,
   initialOpen,
+  isDevMode,
 }: {
   courseId: string;
   chatCsrfToken: string;
   initialOpen: boolean;
+  isDevMode: boolean;
 }) {
   const [open, setOpen] = useState(initialOpen);
   // Keep the picker and its query state mounted after the first open.
@@ -163,7 +172,12 @@ function Panel({
           </Button>
         </div>
         {hasEverOpened && (
-          <Conversations courseId={courseId} chatCsrfToken={chatCsrfToken} active={open} />
+          <Conversations
+            courseId={courseId}
+            chatCsrfToken={chatCsrfToken}
+            active={open}
+            isDevMode={isDevMode}
+          />
         )}
       </Offcanvas>
     </>

@@ -19,15 +19,19 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import { ConversationStats } from './ConversationStats.js';
+
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
   courseId,
   chatCsrfToken,
   active,
+  isDevMode,
 }: {
   courseId: string;
   chatCsrfToken: string;
   active: boolean;
+  isDevMode: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -117,6 +121,7 @@ export function Conversations({
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
+          isDevMode={isDevMode}
           chatCsrfToken={chatCsrfToken}
         />
       ) : (
@@ -145,9 +150,11 @@ function Chat({
   courseId,
   conversationId,
   chatCsrfToken,
+  isDevMode,
 }: {
   courseId: string;
   conversationId: string;
+  isDevMode: boolean;
   chatCsrfToken: string;
 }) {
   const trpc = useTRPC();
@@ -310,7 +317,8 @@ function Chat({
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
         />
-        <div className="d-flex justify-content-end mt-2">
+        <div className="d-flex justify-content-end gap-2 mt-2">
+          {isDevMode && <ConversationStats state={lifecycle} />}
           {!pendingReview && (responseActive || canStop) ? (
             <Button
               variant="outline-secondary"

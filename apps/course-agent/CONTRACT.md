@@ -6,7 +6,7 @@
 
 ## State ownership
 
-The conversation's private `conversation` storage record is authoritative. It contains lifecycle, repository/model configuration, sandbox and native thread IDs, the latest committed checkpoint reference, the current deadline, the original publication base commit, and a nullable native call/revision review slot. Updates synchronously save a replacement record before publishing status/recovery information to browsers through SDK state. SDK public state is a projection, republished on wake; it is not a second source of lifecycle decisions.
+The conversation's private `conversation` storage record is authoritative. It contains lifecycle, repository/model configuration, sandbox and native thread IDs, the latest committed checkpoint reference, the current deadline, the original publication base commit, and a nullable native call/revision review slot. Updates synchronously save a replacement record before publishing status/recovery information and `deadlineAt` (an ISO timestamp or `null`) to browsers through SDK state. SDK public state is a projection, republished on wake; it is not a second source of lifecycle decisions.
 
 Active execution handles and SDK completion promises exist only in memory. An unfinished turn cannot be reconstructed from those handles after a restart. Stable wake states are `offline`, `waiting_for_user`, and `blocked`; interrupted operations become blocked without resubmitting the prompt.
 
