@@ -180,26 +180,27 @@ function Chat({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
   });
   const titleError = getAppError<CourseAgentError['SetTitle']>(title.error);
-  // Do not send an empty client transcript before the SDK's initial history arrives.
-  const connected = agent.readyState === 1 && historyReady;
   const [draft, setDraft] = useState('');
-  const isBusy = ['submitted', 'streaming'].includes(status) || isServerStreaming || isRecovering;
-  // Show loading while a turn is submitted, streaming, or recovering with no visible output.
-  // When a turn finishes or fails, isBusy is false, so isLoading is false.
-  const isLoading = run(() => {
-    if (!isBusy) return false;
+  const chatState = run(() => {
+    // Wait for initial history before sending the SDK's client transcript.
+    const connection = agent.readyState === 1 && historyReady ? 'connected' : 'connecting';
+    if (!['submitted', 'streaming'].includes(status) && !isServerStreaming && !isRecovering) {
+      return { connection, reply: 'idle' } as const;
+    }
     const lastMessage = messages.at(-1);
-    if (lastMessage?.role !== 'assistant') return true;
-    return !lastMessage.parts.some(
-      (part) => (part.type === 'text' || part.type === 'reasoning') && part.text.trim(),
-    );
+    const hasOutput =
+      lastMessage?.role === 'assistant' &&
+      lastMessage.parts.some(
+        (part) => (part.type === 'text' || part.type === 'reasoning') && part.text.trim(),
+      );
+    return { connection, reply: hasOutput ? 'streaming' : 'thinking' } as const;
   });
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || isBusy || !connected) return;
+    if (!text || chatState.reply !== 'idle' || chatState.connection !== 'connected') return;
     void sendMessage({ text });
     title.mutate({ conversationId, text });
     setDraft('');
@@ -223,13 +224,15 @@ function Chat({
           {messages.map((message) => (
             <Message key={message.id} message={message} />
           ))}
-          {isLoading && (
+          {chatState.reply === 'thinking' && (
             <div className="text-muted small">
               <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
               Thinking…
             </div>
           )}
-          {!connected && <div className="small text-muted">Connecting…</div>}
+          {chatState.connection === 'connecting' && (
+            <div className="small text-muted">Connecting…</div>
+          )}
           {connectionError && (
             <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
@@ -254,11 +257,11 @@ function Chat({
           onKeyDown={onKeyDown}
         />
         <div className="d-flex justify-content-end mt-2">
-          {isBusy ? (
+          {chatState.reply !== 'idle' ? (
             <Button
               variant="outline-secondary"
               size="sm"
-              disabled={!connected}
+              disabled={chatState.connection !== 'connected'}
               onClick={() => void stop()}
             >
               <i className="bi bi-stop-fill me-1" aria-hidden="true" />
@@ -269,7 +272,7 @@ function Chat({
               type="submit"
               size="sm"
               aria-label="Send"
-              disabled={!draft.trim() || !connected}
+              disabled={!draft.trim() || chatState.connection !== 'connected'}
             >
               <i className="bi bi-send" aria-hidden="true" />
             </Button>
