@@ -61,6 +61,12 @@ body:has(.course-agent-panel) .app-main {
     margin-right: var(--course-agent-width);
   }
 
+  /* Keep navbar dropdowns above the desktop chat panel. */
+  body:has(.course-agent-panel) .app-top-nav {
+    position: relative;
+    z-index: 1031;
+  }
+
   .course-agent-panel {
     width: var(--course-agent-width);
     top: var(--course-agent-top, var(--navbar-height));

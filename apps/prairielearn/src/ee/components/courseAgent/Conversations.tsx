@@ -221,7 +221,8 @@ function Chat({
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
-          {messages.length === 0 && (
+          {!historyReady && !connectionError && <Loading />}
+          {historyReady && messages.length === 0 && (
             <p className="text-muted text-center my-4">
               Ask the course agent about your course or about PrairieLearn.
             </p>
@@ -235,7 +236,6 @@ function Chat({
               Thinking…
             </div>
           )}
-          {!connected && <div className="small text-muted">Connecting…</div>}
           {connectionError && (
             <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
