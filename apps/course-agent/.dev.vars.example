@@ -1,0 +1,3 @@
+# Local development only. Copy to .dev.vars, which is gitignored.
+PL_SERVICE_TOKEN=replace-with-a-random-token-of-at-least-32-characters
+OPENAI_API_KEY=replace-with-your-openai-api-key

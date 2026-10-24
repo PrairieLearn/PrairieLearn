@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prairielearn-course-agent",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-17",
+  "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],
+  "vars": {
+    "OPENAI_MODEL": "gpt-6-luna"
+  },
+  "secrets": {
+    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "Conversation", "class_name": "Conversation" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Conversation"] }]
+}
