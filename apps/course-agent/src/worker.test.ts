@@ -10,6 +10,8 @@ const lookupConversation = vi.hoisted(() =>
   vi.fn<() => Promise<{ fetch: (request: Request) => Promise<Response> }>>(),
 );
 vi.mock('agents', () => ({ getAgentByName: lookupConversation }));
+vi.mock('@cloudflare/sandbox', () => ({ DirectoryBackupGateway: vi.fn() }));
+vi.mock('./sandbox.js', () => ({ CourseSandbox: vi.fn(), CourseAgentOutbound: vi.fn() }));
 vi.mock('./conversation/conversation.js', () => ({ Conversation: vi.fn() }));
 
 const env = { PL_SERVICE_TOKEN: 'test-token' } as Env;

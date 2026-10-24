@@ -1,9 +1,11 @@
 const CONVERSATION_ROUTE = new URLPattern({
   pathname:
-    '/conversations/:conversationId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){/get-messages}?',
+    '/conversations/:conversationId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){/:action(get-messages|resume)}?',
 });
 
-/** The native SDK WebSocket and its initial-history HTTP route. */
-export function parseRoute(url: string): string | null {
-  return CONVERSATION_ROUTE.exec(url)?.pathname.groups.conversationId ?? null;
+/** Native SDK routes and the private recovery operation. */
+export function parseRoute(url: string) {
+  const groups = CONVERSATION_ROUTE.exec(url)?.pathname.groups;
+  if (!groups?.conversationId) return null;
+  return { conversationId: groups.conversationId, action: groups.action ?? 'chat' };
 }

@@ -288,6 +288,7 @@ export default [
     'apps/course-agent/.wrangler/*',
     // Wrangler owns this declaration, including its generated lint directives.
     'apps/course-agent/src/env.d.ts',
+    'apps/course-agent/generated/**',
     'apps/prairielearn/public/build/*',
     'packages/*/dist/*',
 

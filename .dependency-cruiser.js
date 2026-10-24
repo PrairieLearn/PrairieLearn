@@ -43,7 +43,8 @@ module.exports = {
       comment: "Depends on a module that cannot be found ('resolved to disk').",
       severity: 'error',
       from: {},
-      to: { couldNotResolve: true },
+      // Cloudflare provides this module at runtime.
+      to: { couldNotResolve: true, pathNot: '^cloudflare:workers$' },
     },
     {
       name: 'no-duplicate-dep-types',
