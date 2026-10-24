@@ -1,4 +1,4 @@
-import { Codex } from './codex.js';
+import { CodexAppServerClient } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 
 interface TurnResult {
@@ -10,7 +10,7 @@ interface TurnResult {
 /** One in-memory execution, including setup, cancellation, streaming and cleanup. */
 export class SandboxTurn {
   private abort = new AbortController();
-  private native: Codex;
+  private native: CodexAppServerClient;
   private interruptible = false;
   private stopping: Promise<void> | null = null;
   readonly finished: Promise<TurnResult>;
@@ -28,7 +28,7 @@ export class SandboxTurn {
       onAccepted: (id: string) => void;
     },
   ) {
-    this.native = new Codex(sandbox, options.messageId);
+    this.native = new CodexAppServerClient(sandbox, options.messageId);
     this.finished = this.execute(options);
   }
 

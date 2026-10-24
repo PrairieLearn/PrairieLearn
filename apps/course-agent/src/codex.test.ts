@@ -1,42 +1,117 @@
 import { describe, expect, it } from 'vitest';
 
-import { Codex } from './codex.js';
+import type { ThreadStartResponse } from '../generated/types/v2/ThreadStartResponse.js';
+import type { Turn } from '../generated/types/v2/Turn.js';
+
+import { CodexAppServerClient } from './codex.js';
 import { SandboxTurn } from './sandbox-turn.js';
 import type { CourseSandbox } from './sandbox.js';
 
+const turn: Turn = {
+  id: 'turn',
+  rootTurnId: null,
+  items: [],
+  itemsView: 'full',
+  status: 'inProgress',
+  error: null,
+  startedAt: null,
+  completedAt: null,
+  durationMs: null,
+};
+const threadResult: ThreadStartResponse = {
+  model: 'test',
+  modelProvider: 'test',
+  serviceTier: null,
+  cwd: '/workspace/session/course',
+  approvalPolicy: 'never',
+  approvalsReviewer: 'user',
+  sandbox: { type: 'dangerFullAccess' },
+  reasoningEffort: null,
+  disabledPluginIds: [],
+  instructionSources: [],
+  thread: {
+    id: 'thread',
+    sessionId: 'session',
+    forkedFromId: null,
+    parentThreadId: null,
+    preview: '',
+    ephemeral: false,
+    section: null,
+    sectionEnteredAt: null,
+    projectId: null,
+    historyMode: 'legacy',
+    modelProvider: 'test',
+    model: 'test',
+    reasoningEffort: null,
+    createdAt: 0,
+    updatedAt: 0,
+    recencyAt: null,
+    status: { type: 'idle' },
+    path: null,
+    cwd: '/workspace/session/course',
+    cliVersion: 'test',
+    originator: null,
+    source: 'appServer',
+    threadSource: null,
+    agentNickname: null,
+    agentRole: null,
+    gitInfo: null,
+    name: null,
+    turns: [],
+  },
+};
+
 function runner(loseAcceptance = false) {
-  let output!: ReadableStreamDefaultController<Uint8Array>;
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
-    output.enqueue(new TextEncoder().encode(`${JSON.stringify(frame)}\n`));
-  const sandbox = {
-    openNative: async () =>
-      new Response(
-        new ReadableStream<Uint8Array>({
-          start(controller) {
-            output = controller;
-          },
-        }),
-      ),
-    command: async (text: string) => {
+    socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
+  let interruptFails = false;
+  let closed = false;
+  const socket = Object.assign(new EventTarget(), {
+    accept() {},
+    close() {
+      if (closed) return;
+      closed = true;
+      socket.dispatchEvent(new Event('close'));
+    },
+    send(text: string) {
       const frame = JSON.parse(text) as { id: number; method: string; params: unknown };
       commands.push(frame);
-      if (frame.method === 'initialize') emit({ id: frame.id, result: {} });
+      if (frame.method === 'turn/interrupt' && interruptFails) {
+        throw new Error('Lost native connection');
+      }
+      if (frame.method === 'initialize') {
+        emit({
+          id: frame.id,
+          result: {
+            userAgent: 'test',
+            codexHome: '/workspace/session/home/.codex',
+            platformFamily: 'unix',
+            platformOs: 'linux',
+          },
+        });
+      }
       if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
-        emit({ id: frame.id, result: { thread: { id: 'thread' } } });
+        emit({ id: frame.id, result: threadResult });
       }
       if (frame.method === 'turn/start' && !loseAcceptance) {
-        emit({ id: frame.id, result: { turn: { id: 'turn' } } });
+        emit({ id: frame.id, result: { turn } });
       }
       if (frame.method === 'turn/interrupt') emit({ id: frame.id, result: {} });
     },
+  });
+  const sandbox = {
+    fetch: async () => ({ status: 101, webSocket: socket }),
   } as unknown as DurableObjectStub<CourseSandbox>;
   return {
     sandbox,
-    native: new Codex(sandbox, 'assistant'),
+    native: new CodexAppServerClient(sandbox, 'assistant'),
     commands,
     emit,
-    disconnect: () => output.close(),
+    disconnect: () => socket.close(),
+    failInterrupt: () => {
+      interruptFails = true;
+    },
   };
 }
 
@@ -58,7 +133,7 @@ describe('Codex native stream', () => {
     await native.stream.cancel();
     emit({
       method: 'turn/completed',
-      params: { threadId: 'thread', turn: { id: 'turn', status: 'interrupted' } },
+      params: { threadId: 'thread', turn: { ...turn, status: 'interrupted' } },
     });
     await stop;
     native.closeStream();
@@ -112,12 +187,8 @@ describe('Sandbox turn cancellation', () => {
   });
 
   it('settles the response when interruption and process cleanup both fail', async () => {
-    const { sandbox } = runner();
-    const command = sandbox.command;
-    sandbox.command = async (frame) => {
-      if (JSON.parse(frame).method === 'turn/interrupt') throw new Error('Lost native connection');
-      await command(frame);
-    };
+    const { sandbox, failInterrupt } = runner();
+    failInterrupt();
     sandbox.stopProcesses = async () => {
       throw new Error('Could not stop processes');
     };
