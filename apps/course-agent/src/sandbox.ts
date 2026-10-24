@@ -18,11 +18,9 @@ export class CourseAgentOutbound extends WorkerEntrypoint<
     const headers = new Headers();
     let target: URL;
     if (url.hostname === 'repository.internal') {
-      // Allow Git smart-HTTP reads only: clone, fetch, ls-remote, and the fetch part of pull.
-      // Pull's merge/rebase and other local Git operations do not need network access.
-      // GET info/refs discovers the upload-pack service; POST git-upload-pack negotiates
-      // refs and downloads objects. Both are restricted to this conversation's repository.
-      // Push uses git-receive-pack, which is denied along with other repositories and GitHub APIs.
+      // GET info/refs supports clone, fetch, pull, and ls-remote.
+      // POST git-upload-pack supports downloading objects for clone, fetch, and pull.
+      // Only this repository is allowed; push (git-receive-pack) and GitHub APIs are denied.
       const path = `/${this.ctx.props.repository}.git`;
       const discovery =
         request.method === 'GET' &&
