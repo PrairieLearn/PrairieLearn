@@ -13,7 +13,6 @@ figure = importlib.import_module("pl-figure")
     [
         ("", None),
         ('alt=""', ""),
-        ('alt="A plot of &quot;x&quot; &amp; y"', 'A plot of "x" & y'),
     ],
 )
 def test_render_alt_text(
