@@ -1,1 +1,3 @@
-This question uses `<pl-figure>` to present images as multiple-choice options. One correct answer and three distractors are randomly selected from a list of seven images. The images are served from `clientFilesQuestion` in the question directory.
+This question uses `<pl-figure>` to present images as multiple-choice options. One correct answer and three distractors are randomly selected from a pool of thirteen images. The images are served from `clientFilesQuestion` in the question directory.
+
+Each image has a text alternative describing visible features without naming the species or identifying the correct answer. Update these descriptions when replacing the images. If the learning objective specifically requires visual recognition, an instructor must decide on an equivalent assessment for students who cannot see the images; feature descriptions change how that skill is assessed.
