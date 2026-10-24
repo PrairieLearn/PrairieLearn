@@ -59,7 +59,7 @@ export const courseAgentRouter = t.router({
 
   resume: courseAgentProcedure
     .input(z.object({ conversationId: IdSchema }))
-    .output(z.strictObject({ accepted: z.literal(true) }))
+    .output(z.strictObject({ recovered: z.literal(true) }))
     .mutation(async ({ ctx, input }) => {
       const conversation = await selectOptionalCourseAgentConversation({
         id: input.conversationId,

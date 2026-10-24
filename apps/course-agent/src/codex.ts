@@ -26,7 +26,23 @@ export class Codex {
   private parts = new Map<string, 'text' | 'reasoning'>();
   private threadId: string | null = null;
 
-  constructor(private sandbox: Sandbox) {}
+  readonly stream: ReadableStream<UIMessageChunk>;
+
+  constructor(
+    private sandbox: Sandbox,
+    messageId: string,
+  ) {
+    this.stream = new ReadableStream<UIMessageChunk>({
+      start: (controller) => {
+        this.controller = controller;
+        controller.enqueue({ type: 'start', messageId });
+      },
+      // The SDK may cancel its reader before native execution has stopped.
+      cancel: () => {
+        this.controller = null;
+      },
+    });
+  }
 
   async connect() {
     const response = await this.sandbox.openNative();
@@ -64,23 +80,13 @@ export class Codex {
     return result.thread.id;
   }
 
-  async run(text: string, messageId: string, accepted: (turnId: string) => void) {
-    const stream = new ReadableStream<UIMessageChunk>({
-      start: (controller) => {
-        this.controller = controller;
-        controller.enqueue({ type: 'start', messageId });
-      },
-      cancel: () => {
-        this.controller = null;
-      },
-    });
+  async run(text: string, accepted: (turnId: string) => void) {
     const result = await this.request<TurnStartResponse, 'turn/start'>('turn/start', {
       threadId: this.threadId!,
       input: [{ type: 'text', text, text_elements: [] }],
     });
     this.turnId = result.turn.id;
     accepted(this.turnId);
-    return stream;
   }
 
   async interrupt() {
@@ -200,6 +206,12 @@ export class Codex {
   }
 
   closeStream(error?: unknown) {
+    if (error) {
+      const failure = error instanceof Error ? error : new Error(String(error));
+      for (const pending of this.pending.values()) pending.reject(failure);
+      this.pending.clear();
+      this.terminal.reject(failure);
+    }
     if (!this.controller) return;
     for (const [id, type] of this.parts) {
       this.controller.enqueue({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });

@@ -29,19 +29,21 @@ export default {
     const conversation = await getAgentByName(env.Conversation, route.conversationId);
     if (route.action === 'resume' && request.method === 'POST') {
       try {
-        if (!(await conversation.resume()))
-          {return Response.json(
+        if (!(await conversation.resume())) {
+          return Response.json(
             { error: 'Conversation is not blocked or is already recovering' },
             { status: 409 },
-          );}
-        return Response.json({ accepted: true }, { status: 202 });
+          );
+        }
+        return Response.json({ recovered: true });
       } catch (error) {
         console.error(error);
-        return Response.json({ error: 'Could not schedule recovery' }, { status: 503 });
+        return Response.json({ error: 'Could not recover workspace' }, { status: 503 });
       }
     }
-    if (route.action === 'resume' || request.method !== 'GET')
-      {return new Response('Not found', { status: 404 });}
+    if (route.action === 'resume' || request.method !== 'GET') {
+      return new Response('Not found', { status: 404 });
+    }
     return conversation.fetch(request);
   },
 } satisfies ExportedHandler<Env>;

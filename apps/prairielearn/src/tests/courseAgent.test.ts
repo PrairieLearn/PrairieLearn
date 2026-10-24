@@ -60,10 +60,10 @@ describe('Course agent access and conversation privacy', () => {
       authorization: request.headers.authorization,
     });
     response.setHeader('Content-Type', 'application/json');
-    response.statusCode = request.url === '/conversations' ? 201 : 202;
+    response.statusCode = request.url === '/conversations' ? 201 : 200;
     response.end(
       JSON.stringify(
-        request.url === '/conversations' ? { id: serviceConversationId } : { accepted: true },
+        request.url === '/conversations' ? { id: serviceConversationId } : { recovered: true },
       ),
     );
   });
@@ -249,7 +249,7 @@ describe('Course agent access and conversation privacy', () => {
         client.courseAgent.resume.mutate({ conversationId: other.id }),
       ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
       expect(await client.courseAgent.resume.mutate({ conversationId: own.id })).toEqual({
-        accepted: true,
+        recovered: true,
       });
     });
     expect(serviceRequests).toEqual([
