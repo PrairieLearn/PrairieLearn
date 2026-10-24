@@ -1,3 +1,3 @@
 This question selects a random shape (either a diamond or a circle) and asks students to submit the length of the diagonal or diameter of the shape. The shape is drawn dynamically with Matplotlib via the `file()` function in `server.py` and is displayed with the `<pl-figure>` element.
 
-The figure's text alternative uses the generated shape and axis intercepts, so it stays consistent with each variant without giving the diagonal length or diameter. Keep the description synchronized with the figure when changing the plot.
+The figure's text alternative uses the generated shape and axis intercepts, so it stays consistent with each variant without giving the diagonal length or diameter.
