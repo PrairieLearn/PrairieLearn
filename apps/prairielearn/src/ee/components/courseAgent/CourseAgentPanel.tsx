@@ -1,52 +1,24 @@
+import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import {
   type ComponentRef,
-  Suspense,
-  lazy,
-  startTransition,
   useCallback,
   useEffect,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Alert, Button, Offcanvas, Spinner } from 'react-bootstrap';
+import { Button, Offcanvas } from 'react-bootstrap';
+
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
+import { NuqsAdapter } from '@prairielearn/ui';
+
+import { createCourseTrpcClient } from '../../../trpc/course/client.js';
+import { TRPCProvider } from '../../../trpc/course/context.js';
+
+import { Conversations } from './Conversations.js';
 
 const MOBILE_QUERY = '(max-width: 767.98px)';
-
-function loadChat() {
-  return import('./CourseAgentChat.js');
-}
-
-function preloadChat() {
-  // Failed speculative loads are reported when the panel is opened.
-  void loadChat().catch(() => {});
-}
-
-const LazyCourseAgentChat = lazy(() =>
-  loadChat().then(
-    ({ CourseAgentChat }) => ({ default: CourseAgentChat }),
-    () => ({ default: ChatLoadError }),
-  ),
-);
-
-function ChatLoadError() {
-  return (
-    <Alert variant="danger" className="m-3">
-      Could not load the course agent. Reload this page to try again.
-    </Alert>
-  );
-}
-
-function ChatLoading() {
-  return (
-    <div className="d-flex flex-grow-1 justify-content-center align-items-center">
-      <Spinner animation="border" size="sm" role="status">
-        <span className="visually-hidden">Loading course agent</span>
-      </Spinner>
-    </div>
-  );
-}
 
 function subscribeMobile(onChange: () => void) {
   const query = window.matchMedia(MOBILE_QUERY);
@@ -69,24 +41,54 @@ function saveOpenState(open: boolean) {
 
 export function CourseAgentPanel({
   courseId,
-  authnUserId,
   trpcCsrfToken,
   chatCsrfToken,
   initialOpen,
+  isDevMode,
+  search,
 }: {
   courseId: string;
-  authnUserId: string;
   trpcCsrfToken: string;
   chatCsrfToken: string;
   initialOpen: boolean;
+  isDevMode: boolean;
+  search: string;
 }) {
-  const [hydrated, setHydrated] = useState(false);
-  // Keep server markup during hydration, then reveal the lazy chat without delaying its ready state.
-  useEffect(() => {
-    startTransition(() => setHydrated(true));
-  }, []);
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    createCourseTrpcClient({ courseId, csrfToken: trpcCsrfToken }),
+  );
+  return (
+    <NuqsAdapter search={search}>
+      <QueryClientProviderDebug client={queryClient}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <Panel
+            courseId={courseId}
+            chatCsrfToken={chatCsrfToken}
+            initialOpen={initialOpen}
+            isDevMode={isDevMode}
+          />
+        </TRPCProvider>
+      </QueryClientProviderDebug>
+    </NuqsAdapter>
+  );
+}
+
+CourseAgentPanel.displayName = 'CourseAgentPanel';
+
+function Panel({
+  courseId,
+  chatCsrfToken,
+  initialOpen,
+  isDevMode,
+}: {
+  courseId: string;
+  chatCsrfToken: string;
+  initialOpen: boolean;
+  isDevMode: boolean;
+}) {
   const [open, setOpen] = useState(initialOpen);
-  // Keep the picker and its draft mounted after the first open.
+  // Keep the picker and its query state mounted after the first open.
   const [hasEverOpened, setHasEverOpened] = useState(initialOpen);
   // Animate only after the user toggles, so a panel restored open on page load doesn't slide in.
   const [animate, setAnimate] = useState(false);
@@ -117,10 +119,7 @@ export function CourseAgentPanel({
     (nextOpen: boolean) => {
       setAnimate(true);
       setOpen(nextOpen);
-      if (nextOpen) {
-        preloadChat();
-        startTransition(() => setHasEverOpened(true));
-      }
+      if (nextOpen) setHasEverOpened(true);
       saveOpenState(nextOpen);
       if (!nextOpen && !mobile) requestAnimationFrame(() => toggleRef.current?.focus());
     },
@@ -136,8 +135,6 @@ export function CourseAgentPanel({
         variant="primary"
         title="Open course agent"
         aria-label="Open course agent"
-        onPointerEnter={preloadChat}
-        onFocus={preloadChat}
         onClick={() => changeOpen(true)}
       >
         <i className="bi bi-stars" aria-hidden="true" />
@@ -174,23 +171,15 @@ export function CourseAgentPanel({
             <i className="bi bi-x-lg" aria-hidden="true" />
           </Button>
         </div>
-        {/* Keep the boundary mounted so the first open avoids Suspense's fallback delay. */}
-        <Suspense fallback={<ChatLoading />}>
-          {hasEverOpened && hydrated ? (
-            <LazyCourseAgentChat
-              courseId={courseId}
-              authnUserId={authnUserId}
-              trpcCsrfToken={trpcCsrfToken}
-              chatCsrfToken={chatCsrfToken}
-              active={open}
-            />
-          ) : (
-            <ChatLoading />
-          )}
-        </Suspense>
+        {hasEverOpened && (
+          <Conversations
+            courseId={courseId}
+            chatCsrfToken={chatCsrfToken}
+            active={open}
+            isDevMode={isDevMode}
+          />
+        )}
       </Offcanvas>
     </>
   );
 }
-
-CourseAgentPanel.displayName = 'CourseAgentPanel';

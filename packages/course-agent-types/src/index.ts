@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ConversationStateSchema = z.discriminatedUnion('status', [
+const ConversationLifecycleSchema = z.discriminatedUnion('status', [
   // No live container. The next message clones the repository or restores the committed checkpoint.
   z.object({ status: z.literal('offline') }),
   // Creating or restoring the sandbox and configuring it before submitting the new input.
@@ -19,6 +19,10 @@ export const ConversationStateSchema = z.discriminatedUnion('status', [
     reason: z.enum(['startup_failed', 'runtime_failed', 'checkpoint_failed', 'cleanup_failed']),
   }),
 ]);
+export type ConversationLifecycle = z.infer<typeof ConversationLifecycleSchema>;
+export const ConversationStateSchema = ConversationLifecycleSchema.and(
+  z.object({ deadlineAt: z.iso.datetime().nullable() }),
+);
 /**
  * Public workspace lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.
  * Other states represent in-flight operations and require recovery if their owning DO restarts.
