@@ -36,6 +36,7 @@ from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
+from prairielearn.internal import symbolic_input as internal_symbolic_input
 from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
@@ -1925,6 +1926,16 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
+    normalized_expr = internal_symbolic_input.normalize_absolute_value_bars(
+        expr, allow_sets=allow_sets
+    )
+    if normalized_expr is None:
+        return SympyParseFailure(
+            "The absolute value bars in your answer are mismatched or ambiguous: "
+            f"<code>{expr}</code>."
+        )
+    expr = normalized_expr
+
     if allowed_types is None:
         allowed_types = {"all"} if allow_sets else {"expression"}
 
@@ -2057,6 +2068,100 @@ def try_parse_string_as_sympy(
         return type_failure
 
     return SympyParseSuccess(expr_parsed)
+
+
+def _build_formula_editor_tokens(
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    allow_trig_functions: bool,
+    allow_sets: bool,
+) -> list[str]:
+    tokens = (
+        list(STANDARD_OPERATORS)
+        + list(
+            get_builtin_functions(
+                allow_trig_functions=allow_trig_functions,
+                allow_sets=allow_sets,
+            )
+        )
+        + list(custom_functions)
+        + list(variables)
+    )
+    tokens += [
+        greek_unicode_transform(token)
+        for token in tokens
+        if greek_unicode_transform(token) != token
+    ]
+    return [token for token in tokens if len(token) > 1 and token != "**"]
+
+
+@overload
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str: ...
+
+
+@overload
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    latex: str | None,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str | None: ...
+
+
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    latex: str | None = None,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str | None:
+    r"""Normalize MathLive formula-editor output for symbolic parsing.
+
+    The optional LaTeX representation recovers information lost in MathLive's
+    plain-text representation, such as the distinction between ``\pm`` and a
+    typed ``+-``.
+
+    Returns:
+        The normalized output, or ``None`` if the plain-text and LaTeX
+        representations cannot be matched.
+    """
+    variable_names = tuple(variables or ())
+    custom_function_names = tuple(custom_functions)
+    known_tokens = _build_formula_editor_tokens(
+        variable_names,
+        custom_function_names,
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    )
+    function_names = frozenset(
+        greek_unicode_transform(name)
+        for name in (
+            get_builtin_callable_functions(
+                allow_trig_functions=allow_trig_functions,
+                allow_sets=allow_sets,
+            )
+            | set(custom_function_names)
+        )
+    )
+    return internal_symbolic_input.normalize_formula_editor_submission(
+        submission,
+        known_tokens,
+        function_names,
+        latex=latex,
+    )
 
 
 def validate_string_as_sympy(
@@ -2463,59 +2568,6 @@ def validate_names_for_conflicts(
         )
 
 
-# From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
-_GREEK_ALPHABET = {
-    0x0391: "Alpha",
-    0x0392: "Beta",
-    0x0393: "Gamma",
-    0x0394: "Delta",
-    0x0395: "Epsilon",
-    0x0396: "Zeta",
-    0x0397: "Eta",
-    0x0398: "Theta",
-    0x0399: "Iota",
-    0x039A: "Kappa",
-    0x039B: "Lambda",
-    0x039C: "Mu",
-    0x039D: "Nu",
-    0x039E: "Xi",
-    0x039F: "Omicron",
-    0x03A0: "Pi",
-    0x03A1: "Rho",
-    0x03A3: "Sigma",
-    0x03A4: "Tau",
-    0x03A5: "Upsilon",
-    0x03A6: "Phi",
-    0x03A7: "Chi",
-    0x03A8: "Psi",
-    0x03A9: "Omega",
-    0x03B1: "alpha",
-    0x03B2: "beta",
-    0x03B3: "gamma",
-    0x03B4: "delta",
-    0x03B5: "epsilon",
-    0x03B6: "zeta",
-    0x03B7: "eta",
-    0x03B8: "theta",
-    0x03B9: "iota",
-    0x03BA: "kappa",
-    0x03BB: "lambda",
-    0x03BC: "mu",
-    0x03BD: "nu",
-    0x03BE: "xi",
-    0x03BF: "omicron",
-    0x03C0: "pi",
-    0x03C1: "rho",
-    0x03C3: "sigma",
-    0x03C4: "tau",
-    0x03C5: "upsilon",
-    0x03C6: "phi",
-    0x03C7: "chi",
-    0x03C8: "psi",
-    0x03C9: "omega",
-}
-
-
 def greek_unicode_transform(input_str: str) -> str:
     """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
-    return input_str.translate(_GREEK_ALPHABET)
+    return internal_symbolic_input.greek_unicode_transform(input_str)
