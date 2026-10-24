@@ -181,26 +181,31 @@ function Chat({
   });
   const titleError = getAppError<CourseAgentError['SetTitle']>(title.error);
   const [draft, setDraft] = useState('');
-  const chatState = run(() => {
-    // Wait for initial history before sending the SDK's client transcript.
-    const connection = agent.readyState === 1 && historyReady ? 'connected' : 'connecting';
-    if (!['submitted', 'streaming'].includes(status) && !isServerStreaming && !isRecovering) {
-      return { connection, reply: 'idle' } as const;
+  // Wait for initial history before allowing messages to be sent.
+  const connected = agent.readyState === 1 && historyReady;
+  const responseActive =
+    status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
+  const showThinking = run(() => {
+    if (!responseActive) {
+      return false;
     }
     const lastMessage = messages.at(-1);
-    const hasOutput =
-      lastMessage?.role === 'assistant' &&
-      lastMessage.parts.some(
-        (part) => (part.type === 'text' || part.type === 'reasoning') && part.text.trim(),
-      );
-    return { connection, reply: hasOutput ? 'streaming' : 'thinking' } as const;
+    if (lastMessage?.role !== 'assistant') {
+      return true;
+    }
+    return !lastMessage.parts.some((part) => {
+      if (part.type === 'text' || part.type === 'reasoning') {
+        return part.text.trim().length > 0;
+      }
+      return false;
+    });
   });
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || chatState.reply !== 'idle' || chatState.connection !== 'connected') return;
+    if (!text || responseActive || !connected) return;
     void sendMessage({ text });
     title.mutate({ conversationId, text });
     setDraft('');
@@ -224,15 +229,13 @@ function Chat({
           {messages.map((message) => (
             <Message key={message.id} message={message} />
           ))}
-          {chatState.reply === 'thinking' && (
+          {showThinking && (
             <div className="text-muted small">
               <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
               Thinking…
             </div>
           )}
-          {chatState.connection === 'connecting' && (
-            <div className="small text-muted">Connecting…</div>
-          )}
+          {!connected && <div className="small text-muted">Connecting…</div>}
           {connectionError && (
             <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
@@ -257,11 +260,11 @@ function Chat({
           onKeyDown={onKeyDown}
         />
         <div className="d-flex justify-content-end mt-2">
-          {chatState.reply !== 'idle' ? (
+          {responseActive ? (
             <Button
               variant="outline-secondary"
               size="sm"
-              disabled={chatState.connection !== 'connected'}
+              disabled={!connected}
               onClick={() => void stop()}
             >
               <i className="bi bi-stop-fill me-1" aria-hidden="true" />
@@ -272,7 +275,7 @@ function Chat({
               type="submit"
               size="sm"
               aria-label="Send"
-              disabled={!draft.trim() || chatState.connection !== 'connected'}
+              disabled={!draft.trim() || !connected}
             >
               <i className="bi bi-send" aria-hidden="true" />
             </Button>
