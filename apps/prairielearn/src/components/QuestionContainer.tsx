@@ -365,10 +365,16 @@ function IssuePanel({
             ${
               showUserName
                 ? html`
-                    <tr>
-                      <th>User:</th>
-                      <td>${issue.user_name || '-'} (${userUidLink})</td>
-                    </tr>
+                    ${
+                      issue.user_id != null
+                        ? html`
+                            <tr>
+                              <th>User:</th>
+                              <td>${issue.user_name || '-'} (${userUidLink})</td>
+                            </tr>
+                          `
+                        : ''
+                    }
                     <tr>
                       <th>Student message:</th>
                       <td style="white-space: pre-wrap;">${issue.student_message}</td>
