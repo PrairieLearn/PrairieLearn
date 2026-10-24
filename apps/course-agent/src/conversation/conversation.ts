@@ -18,10 +18,13 @@ const CourseContextSchema = z.object({
   courseShortName: z.string().max(100),
 });
 
-interface ConversationState {
-  model?: string;
-  courseContext: z.infer<typeof CourseContextSchema> | null;
-}
+type ConversationState =
+  | { model?: never; courseContext: null }
+  | {
+      model: string;
+      /** The model is pinned at creation; course context arrives on first connect. */
+      courseContext: z.infer<typeof CourseContextSchema> | null;
+    };
 
 /** The SDK owns message persistence, streaming, reconnect replay, and Stop. */
 export class Conversation extends AIChatAgent<Env, ConversationState> {
@@ -43,7 +46,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const courseContext = CourseContextSchema.parse(
       JSON.parse(context.request.headers.get('X-PL-Course-Context') ?? 'null'),
     );
-    this.setState({ ...this.state, courseContext });
+    this.setState({ model: this.getModel(), courseContext });
     // Load history on the same connection as resume, so an earlier HTTP snapshot
     // cannot race the SDK's startup recovery. Use the SDK's transcript message.
     connection.send(
