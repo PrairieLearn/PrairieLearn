@@ -2,6 +2,7 @@ import { DirectoryBackup, type DirectoryBackupRecord, Files } from '@cloudflare/
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
 const SESSION = '/workspace/session';
+const NATIVE_PORT = 4500;
 const lifetimeMs = (env: Env) =>
   (Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS) + 3600) * 1000;
 
@@ -60,6 +61,7 @@ export class CourseAgentOutbound extends WorkerEntrypoint<
 /** Container, process and archive operations only; lifecycle policy lives in Conversation. */
 export class CourseSandbox extends DurableObject<Env> {
   private process: ExecProcess | null = null;
+  private nativeToken: string | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -127,27 +129,56 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
   }
 
-  /** Start the private stdio bridge; this does not submit a prompt. */
-  async openNative(): Promise<Response> {
-    if (!this.container.running || this.process) {
+  /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */
+  override async fetch(request: Request): Promise<Response> {
+    if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
+      return new Response('WebSocket required', { status: 426 });
+    }
+    if (!this.container.running || this.process || this.nativeToken) {
       throw new Error('Native runner is unavailable or already connected');
     }
-    this.process = await this.container.exec(['node', '/opt/course-agent/relay.mjs'], {
-      stdin: 'pipe',
-      stdout: 'pipe',
-      stderr: 'ignore',
-    });
-    return new Response(this.process.stdout);
-  }
-
-  /** Send one protocol message through the existing private process connection. */
-  async command(frame: string) {
-    if (!this.process?.stdin) throw new Error('Native runner connection was lost');
-    const writer = this.process.stdin.getWriter();
-    try {
-      await writer.write(new TextEncoder().encode(`${frame}\n`));
-    } finally {
-      writer.releaseLock();
+    this.nativeToken = crypto.randomUUID();
+    const digest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(this.nativeToken),
+    );
+    const hash = Array.from(new Uint8Array(digest), (byte) =>
+      byte.toString(16).padStart(2, '0'),
+    ).join('');
+    this.process = await this.container.exec(
+      [
+        'codex',
+        'app-server',
+        '--listen',
+        `ws://0.0.0.0:${NATIVE_PORT}`,
+        '--ws-auth',
+        'capability-token',
+        '--ws-token-sha256',
+        hash,
+      ],
+      {
+        user: 'node',
+        cwd: `${SESSION}/course`,
+        env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
+        stdout: 'ignore',
+        stderr: 'ignore',
+      },
+    );
+    const port = this.container.getTcpPort(NATIVE_PORT);
+    const forwarded = new Request('http://container/', request);
+    forwarded.headers.delete('host');
+    forwarded.headers.set('Authorization', `Bearer ${this.nativeToken}`);
+    const deadline = Date.now() + 30_000;
+    // Use the upgrade for readiness: an empty health response can break the next pooled request.
+    // https://github.com/cloudflare/workerd/issues/7597
+    // Only connection establishment is retried; protocol commands have not been sent yet.
+    for (;;) {
+      try {
+        return await port.fetch(forwarded);
+      } catch (error) {
+        if (Date.now() >= deadline) throw error;
+        await scheduler.wait(100);
+      }
     }
   }
 
@@ -155,6 +186,7 @@ export class CourseSandbox extends DurableObject<Env> {
   async stopProcesses() {
     if (!this.container.running) {
       this.process = null;
+      this.nativeToken = null;
       return;
     }
     // A terminal Codex event does not prove detached tools stopped. Kill and verify
@@ -164,6 +196,7 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.process.exitCode;
       this.process = null;
     }
+    this.nativeToken = null;
     await this.exec(['sh', '-c', 'pgrep -u 1000 >/dev/null; code=$?; [ "$code" -eq 1 ]']);
   }
 
@@ -183,5 +216,6 @@ export class CourseSandbox extends DurableObject<Env> {
   async destroy() {
     await this.container.destroy();
     this.process = null;
+    this.nativeToken = null;
   }
 }

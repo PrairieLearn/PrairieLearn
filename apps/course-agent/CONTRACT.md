@@ -45,6 +45,14 @@ An older checkpoint does not prove the latest edits are backed up. Never discard
 
 Resume directly awaits recovery and rejects overlapping recovery or unfinished execution. It discards incomplete startup, backs up interrupted execution, or retries destruction of an already checkpointed container, depending on the recorded failure. Failure remains actionable through another explicit Resume; no interrupted prompt is replayed. The PL recovery request waits for the result rather than using the short conversation-creation timeout.
 
+## Native protocol boundary
+
+Each execution starts Codex app-server under the dedicated agent user with an authenticated WebSocket listener. The Conversation DO connects through the private CourseSandbox binding. The sandbox forwards the upgrade to the container port, injecting a fresh per-runner capability token; the runner receives only its SHA-256 hash. The public Worker does not route requests to this endpoint. Tokens remain outside the checkpoint directory and are discarded with the runner.
+
+JSON-RPC messages preserve Codex's wire format, with one object per WebSocket text message. RpcConnection validates envelopes, correlates responses, and dispatches registered notifications and server requests. Generated validators check registered payloads before typed application code consumes them. A small catalog supplies the request-to-result associations missing from the upstream schema; payload fields remain generated from the pinned runtime. The chat adapter subscribes only to the text, reasoning, and completion events it needs.
+
+A malformed message or invalid response/subscribed-notification payload fails the connection and rejects pending requests. Registered server-request handlers validate inputs and results and return an error on failure. Unsupported server requests receive an error; unknown notifications and late responses are ignored. Timeouts and disconnects do not retry a potentially accepted command. An interrupt response acknowledges the request; terminal confirmation and process cleanup are still required before admitting another execution.
+
 ## Streaming and reconnect
 
 Codex output flows through the adapter into the SDK response stream, then into SDK buffering/persistence and browser delivery. A browser disconnect leaves server execution running. The SDK replays buffered output and resumes live delivery when the browser reconnects.

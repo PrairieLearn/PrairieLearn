@@ -1,0 +1,10 @@
+{
+  "requests": {
+    "initialize": "InitializeResponse",
+    "thread/start": "v2/ThreadStartResponse",
+    "thread/resume": "v2/ThreadResumeResponse",
+    "turn/start": "v2/TurnStartResponse",
+    "turn/interrupt": "v2/TurnInterruptResponse"
+  },
+  "notifications": ["item/agentMessage/delta", "item/reasoning/summaryTextDelta", "turn/completed"]
+}
