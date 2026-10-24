@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc --noEmit && wrangler deploy --dry-run --outdir dist",
+    "check-push-sync": "node scripts/check-push-sync.mjs && node scripts/check-native-push-sync.mjs",
     "check-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false --check",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --port 8790 --persist-to .wrangler/local",
@@ -32,6 +33,7 @@
     "prettier": "^3.9.9",
     "ts-morph": "^28.0.0",
     "vitest": "^5.0.2",
-    "wrangler": "^4.134.0"
+    "wrangler": "^4.134.0",
+    "ws": "^8.21.1"
   }
 }

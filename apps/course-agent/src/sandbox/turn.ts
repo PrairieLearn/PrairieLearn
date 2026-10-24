@@ -1,28 +1,35 @@
-import type { UIMessageChunk } from 'ai';
+import type { PushSyncResult, ReviewOutcome } from '@prairielearn/course-agent-types';
 
-import type { CodexAppServerClient } from './codex.js';
+import type { DynamicToolCallParams } from '../generated/types/v2/DynamicToolCallParams.js';
+
+import { CodexAppServerClient } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 
 interface TurnResult {
   phase: 'startup' | 'execution';
   stopped: boolean;
+  parked: boolean;
   error?: unknown;
 }
 
-/** One turn's cancellation and output; the workspace owns the longer-lived native connection. */
+/** One in-memory execution, including setup, cancellation, streaming and cleanup. */
 export class SandboxTurn {
   private abort = new AbortController();
+  private native: CodexAppServerClient;
   private interruptible = false;
+  private parked = false;
   private stopping: Promise<void> | null = null;
   readonly finished: Promise<TurnResult>;
-  readonly stream: ReadableStream<UIMessageChunk>;
 
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
-    private native: CodexAppServerClient,
     options: {
       messageId: string;
-      text: string;
+      text: string | ReviewOutcome;
+      onReview?: (
+        call: DynamicToolCallParams,
+        ready: (revision: string) => void,
+      ) => Promise<PushSyncResult>;
       startup: boolean;
       prepare: () => Promise<void>;
       thread: { model: string; instructions: string; threadId: string | null };
@@ -31,8 +38,28 @@ export class SandboxTurn {
       onAccepted: (id: string) => void;
     },
   ) {
-    this.stream = native.beginTurn(options.messageId);
+    this.native = new CodexAppServerClient(sandbox, options.messageId, options.onReview);
     this.finished = this.execute(options);
+  }
+
+  openStream() {
+    return this.native.openStream();
+  }
+
+  get messageId() {
+    return this.native.messageId;
+  }
+
+  /** Release the SDK stream before checkpointing destroys the native waiter. */
+  async park() {
+    this.parked = true;
+    await this.sandbox.stopProcesses();
+    this.native.closeStream();
+    await this.finished;
+  }
+
+  get stream() {
+    return this.native.stream;
   }
 
   private get stopped() {
@@ -48,7 +75,6 @@ export class SandboxTurn {
           await this.native.interrupt();
         } catch {
           // Acceptance may be unknown, or Codex may fail to acknowledge Stop.
-          this.native.close();
           await this.sandbox.stopProcesses();
         }
       }
@@ -61,18 +87,17 @@ export class SandboxTurn {
       this.native.closeStream(error);
       throw error;
     }
-    const result = await this.finished;
-    // Stop may arrive after native completion while the SDK is still finishing its response.
-    if (!result.stopped) {
-      this.native.close();
-      await this.sandbox.stopProcesses();
-    }
+    await this.finished;
   }
 
   private async execute(
-    options: ConstructorParameters<typeof SandboxTurn>[2],
+    options: ConstructorParameters<typeof SandboxTurn>[1],
   ): Promise<TurnResult> {
-    const result: TurnResult = { phase: options.startup ? 'startup' : 'execution', stopped: false };
+    const result: TurnResult = {
+      phase: options.startup ? 'startup' : 'execution',
+      stopped: false,
+      parked: false,
+    };
     try {
       await options.prepare();
       this.abort.signal.throwIfAborted();
@@ -87,19 +112,15 @@ export class SandboxTurn {
       await this.native.run(options.text, options.onAccepted);
       await this.native.finished;
     } catch (error) {
-      if (!this.stopped) result.error = error;
+      if (!this.stopped && !this.parked) result.error = error;
     } finally {
-      // Normal completion keeps Codex and background tools available for the next message.
-      // Explicit Stop and failures must leave no old tools able to keep editing.
-      if (this.stopped || result.error) {
-        this.native.close();
-        try {
-          await this.sandbox.stopProcesses();
-        } catch (error) {
-          result.error = error;
-        }
+      try {
+        await this.sandbox.stopProcesses();
+      } catch (error) {
+        result.error = error;
       }
       result.stopped = this.stopped;
+      result.parked = this.parked;
       this.native.closeStream(result.error);
     }
     return result;

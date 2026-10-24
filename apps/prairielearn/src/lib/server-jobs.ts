@@ -20,6 +20,8 @@ import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
+import { insertAuditEvent } from '../models/audit-event.js';
+
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
 import { EnumJobStatusSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
@@ -32,6 +34,10 @@ const sql = loadSqlEquiv(import.meta.url);
 interface CreateServerJobOptionsBase {
   /** The type of the job (lowercase, snake_case, no spaces) */
   type: string;
+  /** Durable stage data required before the job can start external work. */
+  initialData?: Record<string, unknown>;
+  /** When supplied, audit the job insertion in its creation transaction. */
+  auditContext?: Record<string, unknown>;
   /** A description of the job. */
   description: string;
   /** The effective user ID (res.locals.authz_data.user.id) */
@@ -98,6 +104,8 @@ export interface ServerJobLogger {
 }
 
 export interface ServerJob extends ServerJobLogger {
+  readonly output: string;
+  saveData(): Promise<void>;
   fail(msg: string): never;
   /**
    * Terminates the job as a successful cancellation. The inner job row and
@@ -175,6 +183,10 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.reportErrorsToSentry = options.reportErrorsToSentry;
     this.jobType = options.type;
     this.jobDescription = options.description;
+  }
+
+  async saveData() {
+    await execute(sql.update_job_data, { job_id: this.jobId, data: this.data });
   }
 
   fail(msg: string): never {
@@ -424,7 +436,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     // up to date. We can't just do this in the `insert_job_sequence` block.
     await execute(sql.course_advisory_lock, { course_id: options.courseId ?? null });
 
-    return await queryRow(
+    const ids = await queryRow(
       sql.insert_job_sequence,
       {
         course_id: options.courseId,
@@ -436,12 +448,27 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
         authn_user_id: options.authnUserId,
         type: options.type,
         description: options.description,
+        data: options.initialData ?? {},
       },
       z.object({
         job_sequence_id: z.string(),
         job_id: z.string(),
       }),
     );
+    if (options.auditContext) {
+      const [job] = await selectJobsByJobSequenceId(ids.job_sequence_id);
+      await insertAuditEvent({
+        tableName: 'jobs',
+        rowId: ids.job_id,
+        newRow: job,
+        courseId: options.courseId ?? null,
+        action: 'insert',
+        agentAuthnUserId: options.authnUserId,
+        agentUserId: options.userId,
+        context: options.auditContext,
+      });
+    }
+    return ids;
   });
 
   const serverJob = new ServerJobImpl(job_sequence_id, job_id, {
@@ -449,6 +476,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     type: options.type,
     description: options.description,
   });
+  serverJob.data = options.initialData ?? {};
   liveJobs[job_id] = serverJob;
   return serverJob;
 }
