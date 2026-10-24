@@ -31,8 +31,8 @@ interface RuntimeData {
   checkpoint: DirectoryBackupRecord | null;
   deadline: Deadline | null;
 }
-// Offline means there is no live container. Destruction is a private phase
-// because the new backup is committed before container removal can be attempted.
+// Destruction is a private phase because the replacement checkpoint is committed
+// before container removal can be attempted.
 type Runtime = RuntimeData &
   (
     | { lifecycle: Extract<ConversationState, { status: 'offline' }>; sandboxId: null }
@@ -78,35 +78,51 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.setState(this.publicState);
   }
 
-  /** SDK wake hook: restore stable states and flag interrupted work for recovery. */
+  /**
+   * Built-in SDK hook when this Durable Object starts or wakes after idling.
+   * getAgentByName() runs this before initialize() for a newly addressed object.
+   * Restore saved state and flag operations that lost their in-memory execution handles.
+   */
   override async onStart() {
     this.runtime = this.ctx.storage.kv.get<Runtime>('conversation') ?? null;
-    // A newly addressed DO has not yet received initialize().
+    // A new object has no saved conversation yet. Leave runtime null until initialize()
+    // creates the record; this hook does not provision a sandbox.
     if (!this.runtime) return;
     this.setState(this.publicState);
+    // offline, blocked, and waiting_for_user are stable across wakes: none requires
+    // reconstructing an in-flight operation. The remaining states need explicit recovery.
     switch (this.record.lifecycle.status) {
       case 'offline':
       case 'blocked':
+        // Offline awaits a message; blocked awaits Resume. Neither should start work on wake.
         return;
       case 'waiting_for_user':
+        // The workspace is ready for input; restore its idle shutdown using the saved expiry.
         await this.scheduleDeadline('idle', this.record.deadline?.at);
         return;
       case 'starting':
+        // Setup lost its execution handle. Resume must discard the incomplete container.
         this.block('startup_failed');
         return;
       case 'waiting_for_agent':
       case 'stopping':
+        // Native work may still be running. Resume must stop writers and checkpoint their edits.
         this.block('runtime_failed');
         return;
       case 'destroying':
+        // The checkpoint is committed. Resume retries destruction without making another backup.
         this.block('cleanup_failed');
         return;
       case 'suspending':
+        // Backup was interrupted. Retain the workspace and previous checkpoint for Resume to retry.
         this.block('checkpoint_failed');
     }
   }
 
-  /** Bind a new conversation without starting a container. */
+  /**
+   * Set up conversation state and pin the repository, branch, and model.
+   * The sandbox is created or restored when the first message arrives.
+   */
   initialize(config: { repository: string; branch: string }) {
     if (this.runtime) throw new Error('Conversation is already initialized');
     this.setRuntimeState({
@@ -120,7 +136,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
   }
 
-  /** SDK connection hook: accept trusted PL context and send persisted chat history. */
+  /**
+   * Built-in SDK hook when a chat WebSocket connects.
+   * Accept trusted course context from PL and send the persisted chat history to that connection.
+   */
   override async onConnect(connection: Connection, context: ConnectionContext) {
     const courseContext = CourseContextSchema.parse(
       JSON.parse(context.request.headers.get('X-PL-Course-Context') ?? 'null'),
@@ -152,7 +171,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
   }
 
-  /** Persist expiry and schedule its wakeup together at the call site. */
+  /**
+   * Save a turn or idle deadline for the current workspace and schedule onDeadline().
+   * Use the supplied expiry when restoring an idle deadline; otherwise start the configured budget now.
+   */
   private async scheduleDeadline(kind: Deadline['kind'], at?: string) {
     const sandboxId = this.record.sandboxId;
     if (!sandboxId) throw new Error('Deadline requires a live workspace');
