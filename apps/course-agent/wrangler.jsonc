@@ -5,13 +5,52 @@
   "compatibility_date": "2026-09-17",
   "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],
   "vars": {
-    "OPENAI_MODEL": "gpt-6-luna"
+    "OPENAI_MODEL": "gpt-6-luna",
+    "AGENT_TURN_SECONDS": "21600",
+    "USER_IDLE_SECONDS": "600"
   },
   "secrets": {
-    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
+    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
   },
   "durable_objects": {
-    "bindings": [{ "name": "Conversation", "class_name": "Conversation" }]
+    "bindings": [
+      {
+        "name": "Conversation",
+        "class_name": "Conversation"
+      },
+      {
+        "name": "CourseSandbox",
+        "class_name": "CourseSandbox"
+      }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Conversation"] }]
+  "exports": {
+    "Conversation": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "CourseSandbox": {
+      "type": "durable-object",
+      "storage": "sqlite",
+      "container": "course-agent"
+    }
+  },
+  "containers": [
+    {
+      "name": "course-agent",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "courseAgent": {
+          "dockerfile": "container/Dockerfile",
+          "build_context": "."
+        }
+      }
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CHECKPOINTS",
+      "bucket_name": "prairielearn-course-agent-checkpoints"
+    }
+  ]
 }

@@ -53,6 +53,7 @@
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/compiled-assets": "workspace:^",
     "@prairielearn/config": "workspace:^",
+    "@prairielearn/course-agent-types": "workspace:^",
     "@prairielearn/csv": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/encrypted-storage": "workspace:^",

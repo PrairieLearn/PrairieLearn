@@ -1,3 +1,6 @@
+import { once } from 'node:events';
+import { createServer } from 'node:http';
+
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -12,6 +15,7 @@ import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
+import { updateCourseColumn } from '../models/course.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -44,6 +48,25 @@ function historyUrl(conversationId: string) {
 }
 
 describe('Course agent access and conversation privacy', () => {
+  const serviceConversationId = crypto.randomUUID();
+  const serviceRequests: { path: string; body: unknown; authorization: string | undefined }[] = [];
+  const service = createServer(async (request, response) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const body = Buffer.concat(chunks).toString();
+    serviceRequests.push({
+      path: request.url!,
+      body: body ? JSON.parse(body) : null,
+      authorization: request.headers.authorization,
+    });
+    response.setHeader('Content-Type', 'application/json');
+    response.statusCode = request.url === '/conversations' ? 201 : 202;
+    response.end(
+      JSON.stringify(
+        request.url === '/conversations' ? { id: serviceConversationId } : { accepted: true },
+      ),
+    );
+  });
   let owner: User;
   let otherOwner: User;
   const originalConfig = {
@@ -53,12 +76,15 @@ describe('Course agent access and conversation privacy', () => {
     features: config.features,
   };
 
-  // Enterprise routes must be mounted before starting the test server. These
-  // tests reject history requests in PL and never connect to the agent service.
-  beforeAll(() => {
+  // Enterprise routes must be mounted before starting the test server.
+  beforeAll(async () => {
+    service.listen(0, '127.0.0.1');
+    await once(service, 'listening');
+    const address = service.address();
+    if (!address || typeof address === 'string') throw new Error('Expected a service TCP address');
     Object.assign(config, {
       isEnterprise: true,
-      courseAgentServiceUrl: 'https://course-agent.invalid',
+      courseAgentServiceUrl: `http://127.0.0.1:${address.port}`,
       courseAgentServiceToken: 'test-token',
       features: { ...config.features, 'course-agent': true },
     });
@@ -81,6 +107,7 @@ describe('Course agent access and conversation privacy', () => {
     }
   });
   beforeEach(async () => {
+    serviceRequests.length = 0;
     await updateCoursePermissionsRole({
       course_id: '1',
       user_id: owner.id,
@@ -89,6 +116,10 @@ describe('Course agent access and conversation privacy', () => {
     });
   });
   afterAll(helperServer.after);
+  afterAll(async () => {
+    service.close();
+    await once(service, 'close');
+  });
   afterAll(() => Object.assign(config, originalConfig));
 
   test('rejects API and history access when the feature is disabled', async () => {
@@ -99,6 +130,9 @@ describe('Course agent access and conversation privacy', () => {
           data: { code: 'FORBIDDEN' },
         });
         expect((await fetch(historyUrl(conversation.id))).status).toBe(403);
+        await expect(
+          createClient(owner).courseAgent.resume.mutate({ conversationId: conversation.id }),
+        ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
       }),
     );
   });
@@ -116,6 +150,9 @@ describe('Course agent access and conversation privacy', () => {
         data: { code: 'FORBIDDEN' },
       });
       expect((await fetch(historyUrl(conversation.id))).status).toBe(403);
+      await expect(
+        createClient(owner).courseAgent.resume.mutate({ conversationId: conversation.id }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     });
   });
 
@@ -152,6 +189,76 @@ describe('Course agent access and conversation privacy', () => {
       user_id: otherOwner.id,
     });
     expect(stored!.title).toBe(conversation.title);
+  });
+
+  test('binds creation to the authorized course repository and branch', async () => {
+    await updateCourseColumn({
+      courseId: '1',
+      columnName: 'repository',
+      value: 'git@github.com:PrairieLearn/test-course.git',
+      authnUserId: owner.id,
+    });
+    await updateCourseColumn({
+      courseId: '1',
+      columnName: 'branch',
+      value: 'pilot-edits',
+      authnUserId: owner.id,
+    });
+    const conversation = await withUser(owner, () =>
+      createClient(owner).courseAgent.create.mutate(),
+    );
+    expect(serviceRequests).toEqual([
+      {
+        path: '/conversations',
+        body: { repository: 'PrairieLearn/test-course', branch: 'pilot-edits' },
+        authorization: 'Bearer test-token',
+      },
+    ]);
+    const stored = await selectOptionalCourseAgentConversation({
+      id: conversation.id,
+      course_id: '1',
+      user_id: owner.id,
+    });
+    expect(stored!.agent_conversation_id).toBe(serviceConversationId);
+  });
+
+  test('rejects unbound creation before calling the service or recording a conversation', async () => {
+    await updateCourseColumn({
+      courseId: '1',
+      columnName: 'repository',
+      value: 'https://gitlab.com/course/repo',
+      authnUserId: owner.id,
+    });
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      const before = await client.courseAgent.list.query();
+      await expect(client.courseAgent.create.mutate()).rejects.toMatchObject({
+        data: { code: 'BAD_REQUEST' },
+      });
+      expect(await client.courseAgent.list.query()).toEqual(before);
+    });
+    expect(serviceRequests).toEqual([]);
+  });
+
+  test('admits recovery only for the authenticated creator', async () => {
+    const own = await createConversation(owner);
+    const other = await createConversation(otherOwner);
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      await expect(
+        client.courseAgent.resume.mutate({ conversationId: other.id }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      expect(await client.courseAgent.resume.mutate({ conversationId: own.id })).toEqual({
+        accepted: true,
+      });
+    });
+    expect(serviceRequests).toEqual([
+      {
+        path: `/conversations/${own.agent_conversation_id}/resume`,
+        body: null,
+        authorization: 'Bearer test-token',
+      },
+    ]);
   });
 
   test('preserves the first-message title after a follow-up', async () => {

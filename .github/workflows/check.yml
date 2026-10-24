@@ -75,6 +75,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
 
+      - name: Check course agent protocol generation
+        run: |
+          pnpm --filter @prairielearn/course-agent generate-protocol
+          test -z "$(git status --porcelain -- apps/course-agent/generated)"
+
       - name: Build all code
         run: make build
 

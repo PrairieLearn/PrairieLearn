@@ -8,6 +8,7 @@ import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
+import type { ConversationState } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
@@ -151,11 +152,16 @@ function Chat({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [historyReady, setHistoryReady] = useState(false);
-  const agent = useAgent({
+  const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
+  const agent = useAgent<ConversationState>({
     agent: 'Conversation',
     basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
     query: { csrfToken: chatCsrfToken },
-    onClose: () => setHistoryReady(false),
+    onStateUpdate: setLifecycle,
+    onClose: () => {
+      setHistoryReady(false);
+      setLifecycle(null);
+    },
     onMessage: (event) => {
       const message = JSON.parse(event.data) as OutgoingMessage;
       if (message.type === MessageType.CF_AGENT_CHAT_MESSAGES) setHistoryReady(true);
@@ -179,6 +185,10 @@ function Chat({
     ...trpc.courseAgent.setTitle.mutationOptions(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
   });
+  const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
+  const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
+  const readyToSend = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
+  const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
   const titleError = getAppError<CourseAgentError['SetTitle']>(title.error);
   const [draft, setDraft] = useState('');
   // Wait for initial history before allowing messages to be sent.
@@ -205,7 +215,7 @@ function Chat({
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || responseActive || !connected) return;
+    if (!text || responseActive || !connected || !readyToSend) return;
     void sendMessage({ text });
     title.mutate({ conversationId, text });
     setDraft('');
@@ -236,6 +246,29 @@ function Chat({
               Thinking…
             </div>
           )}
+          {lifecycle?.status === 'blocked' && (
+            <Alert variant="warning">
+              <p>{blockedMessage[lifecycle.reason]}</p>
+              <Button
+                variant="outline-dark"
+                size="sm"
+                disabled={!connected || resume.isPending}
+                onClick={() => resume.mutate({ conversationId })}
+              >
+                Resume
+              </Button>
+            </Alert>
+          )}
+          {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
+            <p className="text-muted" role="status">
+              {lifecycle.status === 'stopping'
+                ? 'Stopping the course agent…'
+                : 'Saving your workspace…'}
+            </p>
+          )}
+          {resume.isError && (
+            <AppErrorAlert error={resumeError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
           {connectionError && (
             <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
@@ -260,11 +293,11 @@ function Chat({
           onKeyDown={onKeyDown}
         />
         <div className="d-flex justify-content-end mt-2">
-          {responseActive ? (
+          {responseActive || canStop ? (
             <Button
               variant="outline-secondary"
               size="sm"
-              disabled={!connected}
+              disabled={!connected || !canStop}
               onClick={() => void stop()}
             >
               <i className="bi bi-stop-fill me-1" aria-hidden="true" />
@@ -275,7 +308,7 @@ function Chat({
               type="submit"
               size="sm"
               aria-label="Send"
-              disabled={!draft.trim() || !connected}
+              disabled={!draft.trim() || !connected || !readyToSend}
             >
               <i className="bi bi-send" aria-hidden="true" />
             </Button>
@@ -306,3 +339,12 @@ function Message({ message }: { message: UIMessage }) {
     </div>
   );
 }
+
+const blockedMessage = {
+  startup_failed:
+    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
+  runtime_failed:
+    'The course agent was interrupted. Resume to recover and save your workspace. Your previous message will not run again.',
+  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
+  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
+} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
