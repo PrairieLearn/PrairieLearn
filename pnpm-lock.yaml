@@ -394,6 +394,9 @@ importers:
       wrangler:
         specifier: ^4.134.0
         version: 4.149.0(@cloudflare/workers-types@5.20260917.1)(@types/node@24.19.0)
+      ws:
+        specifier: ^8.21.1
+        version: 8.21.1
 
   apps/grader-host:
     dependencies:

@@ -1,9 +1,14 @@
+import type { PushSyncResult, ReviewOutcome } from '@prairielearn/course-agent-types';
+
+import type { DynamicToolCallParams } from '../generated/types/v2/DynamicToolCallParams.js';
+
 import { CodexAppServerClient } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 
 interface TurnResult {
   phase: 'startup' | 'execution';
   stopped: boolean;
+  parked: boolean;
   error?: unknown;
 }
 
@@ -12,6 +17,7 @@ export class SandboxTurn {
   private abort = new AbortController();
   private native: CodexAppServerClient;
   private interruptible = false;
+  private parked = false;
   private stopping: Promise<void> | null = null;
   readonly finished: Promise<TurnResult>;
 
@@ -19,7 +25,11 @@ export class SandboxTurn {
     private sandbox: DurableObjectStub<CourseSandbox>,
     options: {
       messageId: string;
-      text: string;
+      text: string | ReviewOutcome;
+      onReview?: (
+        call: DynamicToolCallParams,
+        ready: (revision: string) => void,
+      ) => Promise<PushSyncResult>;
       startup: boolean;
       prepare: () => Promise<void>;
       thread: { model: string; instructions: string; threadId: string | null };
@@ -28,8 +38,24 @@ export class SandboxTurn {
       onAccepted: (id: string) => void;
     },
   ) {
-    this.native = new CodexAppServerClient(sandbox, options.messageId);
+    this.native = new CodexAppServerClient(sandbox, options.messageId, options.onReview);
     this.finished = this.execute(options);
+  }
+
+  openStream() {
+    return this.native.openStream();
+  }
+
+  get messageId() {
+    return this.native.messageId;
+  }
+
+  /** Release the SDK stream before checkpointing destroys the native waiter. */
+  async park() {
+    this.parked = true;
+    await this.sandbox.stopProcesses();
+    this.native.closeStream();
+    await this.finished;
   }
 
   get stream() {
@@ -67,7 +93,11 @@ export class SandboxTurn {
   private async execute(
     options: ConstructorParameters<typeof SandboxTurn>[1],
   ): Promise<TurnResult> {
-    const result: TurnResult = { phase: options.startup ? 'startup' : 'execution', stopped: false };
+    const result: TurnResult = {
+      phase: options.startup ? 'startup' : 'execution',
+      stopped: false,
+      parked: false,
+    };
     try {
       await options.prepare();
       this.abort.signal.throwIfAborted();
@@ -82,7 +112,7 @@ export class SandboxTurn {
       await this.native.run(options.text, options.onAccepted);
       await this.native.finished;
     } catch (error) {
-      if (!this.stopped) result.error = error;
+      if (!this.stopped && !this.parked) result.error = error;
     } finally {
       try {
         await this.sandbox.stopProcesses();
@@ -90,6 +120,7 @@ export class SandboxTurn {
         result.error = error;
       }
       result.stopped = this.stopped;
+      result.parked = this.parked;
       this.native.closeStream(result.error);
     }
     return result;

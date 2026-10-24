@@ -28,10 +28,18 @@ try {
     cli,
     'app-server',
     'generate-ts',
+    '--experimental',
     '--out',
     path.join(output, 'types'),
   ]);
-  await execa(process.execPath, [cli, 'app-server', 'generate-json-schema', '--out', temporary]);
+  await execa(process.execPath, [
+    cli,
+    'app-server',
+    'generate-json-schema',
+    '--experimental',
+    '--out',
+    temporary,
+  ]);
   // The CLI's aggregate schema already includes the individual schema files.
   await writeFile(
     path.join(output, 'protocol.schema.json'),
@@ -62,9 +70,11 @@ try {
   const exports = {};
   const declarations = [
     "import type { ClientRequest } from './types/ClientRequest.js';",
+    "import type { ServerRequest } from './types/ServerRequest.js';",
     "import type { ServerNotification } from './types/ServerNotification.js';",
   ];
   const requests = [];
+  const serverRequests = [];
   const notifications = [];
   const addValidator = (name, ref, type) => {
     ajv.addSchema({ $id: name, $ref: `codex${ref}` });
@@ -96,6 +106,24 @@ try {
       `${JSON.stringify(method)}: { method: ${JSON.stringify(method)}, params: validators.${paramsName}, result: validators.${resultName} }`,
     );
   }
+  for (const [index, [method, result]] of Object.entries(catalog.serverRequests).entries()) {
+    const entry = findMethod('ServerRequest', method);
+    const paramsName = `serverRequest${index}Params`;
+    const resultName = `serverRequest${index}Result`;
+    const resultType = `ServerResult${index}`;
+    declarations.push(
+      `import type { ${path.basename(result)} as ${resultType} } from './types/${result}.js';`,
+    );
+    addValidator(
+      paramsName,
+      entry.properties.params.$ref,
+      `Extract<ServerRequest, { method: ${JSON.stringify(method)} }>['params']`,
+    );
+    addValidator(resultName, `#/definitions/${path.basename(result)}`, resultType);
+    serverRequests.push(
+      `${JSON.stringify(method)}: { method: ${JSON.stringify(method)}, params: validators.${paramsName}, result: validators.${resultName} }`,
+    );
+  }
   for (const [index, method] of catalog.notifications.entries()) {
     const entry = findMethod('ServerNotification', method);
     const name = `notification${index}`;
@@ -123,6 +151,7 @@ try {
     banner +
       "import * as validators from './validators.js';\n" +
       `export const requests = { ${requests.join(',\n')} } as const;\n` +
+      `export const serverRequests = { ${serverRequests.join(',\n')} } as const;\n` +
       `export const notifications = { ${notifications.join(',\n')} } as const;\n`,
   );
   const options = await resolveConfig(root);

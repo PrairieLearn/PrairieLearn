@@ -29,6 +29,9 @@ const threadResult: ThreadStartResponse = {
   reasoningEffort: null,
   disabledPluginIds: [],
   instructionSources: [],
+  runtimeWorkspaceRoots: [],
+  activePermissionProfile: null,
+  multiAgentMode: 'explicitRequestOnly',
   thread: {
     id: 'thread',
     sessionId: 'session',
@@ -58,6 +61,10 @@ const threadResult: ThreadStartResponse = {
     gitInfo: null,
     name: null,
     turns: [],
+    environments: [],
+    extra: null,
+    canAcceptDirectInput: true,
+    daybreakEnabled: false,
   },
 };
 
@@ -194,7 +201,7 @@ describe('Sandbox turn cancellation', () => {
     expect(stopped).toBe(false);
     cleaned.resolve(undefined);
     await stop;
-    expect(await turn.finished).toEqual({ phase: 'startup', stopped: true });
+    expect(await turn.finished).toEqual({ phase: 'startup', stopped: true, parked: false });
   });
 
   it('settles the response when interruption and process cleanup both fail', async () => {

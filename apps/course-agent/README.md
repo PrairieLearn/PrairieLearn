@@ -42,3 +42,7 @@ Run `pnpm --filter @prairielearn/course-agent generate-protocol` after changing 
 Malformed messages and invalid response or subscribed-notification payloads fail the connection and pending work. Unknown notifications and late replies are ignored. Connection loss and command timeouts never replay a prompt. Codex currently labels WebSocket transport experimental and unsupported for production; deployed validation is required before enabling a pilot.
 
 Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Publication, push sync, approvals, accounting and rich tool cards remain separate work.
+
+### Push-sync verification
+
+After building the workspace, run `pnpm --filter @prairielearn/course-agent check-push-sync` for the local SDK and pinned-native review/recovery checks. The scripted model uses no OpenAI credentials or production course. See [CONTRACT.md](CONTRACT.md#parked-reviews-and-publication-outcomes) for the review lifecycle and remaining deployment validation.

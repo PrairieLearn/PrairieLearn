@@ -117,6 +117,11 @@ export async function init() {
   if (isEnterprise()) {
     jobs.push(
       {
+        name: 'courseAgentReviewDeliveries',
+        module: await import('../ee/cron/courseAgentReviewDeliveries.js'),
+        intervalSec: 60,
+      },
+      {
         name: 'externalGraderLoad',
         module: await import('../ee/cron/externalGraderLoad.js'),
         intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,

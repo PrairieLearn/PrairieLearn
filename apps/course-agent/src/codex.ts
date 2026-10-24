@@ -1,8 +1,12 @@
 import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 
-import { notifications, requests } from '../generated/protocol.js';
+import { type PushSyncResult, type ReviewOutcome } from '@prairielearn/course-agent-types';
+
+import { notifications, requests, serverRequests } from '../generated/protocol.js';
 import type { AgentMessageDeltaNotification } from '../generated/types/v2/AgentMessageDeltaNotification.js';
+import type { DynamicToolCallParams } from '../generated/types/v2/DynamicToolCallParams.js';
+import type { DynamicToolSpec } from '../generated/types/v2/DynamicToolSpec.js';
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
@@ -15,24 +19,34 @@ export class CodexAppServerClient {
   private turnId: string | null = null;
   private threadId: string | null = null;
   private parts = new Map<string, 'text' | 'reasoning'>();
-  readonly stream: ReadableStream<UIMessageChunk>;
+  stream: ReadableStream<UIMessageChunk>;
 
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
-    messageId: string,
+    readonly messageId: string,
+    private onReview?: (
+      call: DynamicToolCallParams,
+      ready: (revision: string) => void,
+    ) => Promise<PushSyncResult>,
   ) {
     // Setup can fail before the execution helper starts waiting for completion.
     void this.terminal.promise.catch(() => {});
+    this.stream = this.openStream();
+  }
+
+  /** A review ends one SDK response while retaining the live native connection. */
+  openStream() {
+    if (this.controller) throw new Error('An SDK response is already open');
     this.stream = new ReadableStream<UIMessageChunk>({
       start: (controller) => {
         this.controller = controller;
-        controller.enqueue({ type: 'start', messageId });
+        controller.enqueue({ type: 'start', messageId: this.messageId });
       },
-      // The SDK may cancel its reader before native execution has stopped.
       cancel: () => {
         this.controller = null;
       },
     });
+    return this.stream;
   }
 
   async connect() {
@@ -57,6 +71,34 @@ export class CodexAppServerClient {
           this.fail(error instanceof Error ? error : new Error(String(error)));
         }
       });
+    rpc.onRequest('item/tool/call', async (value: unknown) => {
+      const method = serverRequests['item/tool/call'];
+      if (
+        !method.params(value) ||
+        value.threadId !== this.threadId ||
+        value.tool !== 'push_sync' ||
+        value.namespace !== null ||
+        !this.onReview ||
+        JSON.stringify(value.arguments) !== '{}'
+      ) {
+        throw new Error('Invalid push_sync call');
+      }
+      const result = await this.onReview(value, (revision) => {
+        this.emit({
+          type: 'tool-input-available',
+          toolCallId: value.callId,
+          toolName: 'push_sync',
+          input: { revision },
+        });
+        this.finishResponse();
+      });
+      const response = {
+        success: result.publication.status === 'published' && result.sync.status === 'succeeded',
+        contentItems: [{ type: 'inputText' as const, text: JSON.stringify(result) }],
+      };
+      if (!method.result(response)) throw new Error('Invalid push_sync result');
+      return response;
+    });
     rpc.listen();
     onNotification(notifications['item/agentMessage/delta'], (params) =>
       this.delta('text', params),
@@ -74,10 +116,27 @@ export class CodexAppServerClient {
         this.terminal.resolve(undefined);
       }
     });
+    onNotification(notifications['item/completed'], ({ threadId, item }) => {
+      if (
+        threadId !== this.threadId ||
+        item.type !== 'dynamicToolCall' ||
+        item.tool !== 'push_sync'
+      ) {
+        return;
+      }
+      const text = item.contentItems?.find((part) => part.type === 'inputText');
+      if (text?.type === 'inputText') {
+        this.emit({
+          type: 'tool-output-available',
+          toolCallId: item.id,
+          output: JSON.parse(text.text),
+        });
+      }
+    });
     socket.accept();
     await this.request(requests.initialize, {
       clientInfo: { name: 'prairielearn', title: 'PrairieLearn', version: '1' },
-      capabilities: null,
+      capabilities: { experimentalApi: true, requestAttestation: false },
     });
     await rpc.sendNotification('initialized');
   }
@@ -138,15 +197,43 @@ export class CodexAppServerClient {
           threadId: config.threadId,
           excludeTurns: true,
         })
-      : await this.request(requests['thread/start'], settings);
+      : await this.request(requests['thread/start'], { ...settings, dynamicTools: [pushSyncTool] });
     this.threadId = result.thread.id;
     return result.thread.id;
   }
 
-  async run(text: string, accepted: (turnId: string) => void) {
+  async run(text: string | ReviewOutcome, accepted: (turnId: string) => void) {
+    if (typeof text !== 'string') {
+      const saved = await this.request(requests['thread/read'], {
+        threadId: this.threadId!,
+        includeTurns: true,
+      });
+      const incorporated = saved.thread.turns.some((turn) =>
+        turn.items.some(
+          (item) =>
+            item.type === 'functionCallOutput' &&
+            item.name === 'push_sync' &&
+            item.output === JSON.stringify(text),
+        ),
+      );
+      if (incorporated) {
+        this.terminal.resolve(undefined);
+        return;
+      }
+    }
     const result = await this.request(requests['turn/start'], {
       threadId: this.threadId!,
-      input: [{ type: 'text', text, text_elements: [] }],
+      input: typeof text === 'string' ? [{ type: 'text', text, text_elements: [] }] : [],
+      ...(typeof text !== 'string'
+        ? {
+            toolOutput: {
+              name: 'push_sync',
+              namespace: null,
+              output: JSON.stringify(text),
+              retain: true,
+            },
+          }
+        : {}),
     });
     this.turnId = result.turn.id;
     accepted(this.turnId);
@@ -193,9 +280,17 @@ export class CodexAppServerClient {
     });
   }
 
+  emit(chunk: UIMessageChunk) {
+    this.controller?.enqueue(chunk);
+  }
+
   closeStream(error?: unknown) {
     if (error) this.terminal.reject(error);
     this.rpc?.dispose();
+    this.finishResponse(error);
+  }
+
+  private finishResponse(error?: unknown) {
     if (!this.controller) return;
     for (const [id, type] of this.parts) {
       this.controller.enqueue({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
@@ -210,5 +305,14 @@ export class CodexAppServerClient {
     this.controller.enqueue({ type: 'finish' });
     this.controller.close();
     this.controller = null;
+    this.parts.clear();
   }
 }
+
+const pushSyncTool: DynamicToolSpec = {
+  type: 'function',
+  name: 'push_sync',
+  description:
+    'Request instructor review, Git publication, and Course Sync of the current course edits. Wait for the result; do not push yourself.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+};

@@ -9,6 +9,8 @@ export const ConversationStateSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('waiting_for_agent') }),
   // The live workspace is ready for input; idle expiry will checkpoint it and shut it down.
   z.object({ status: z.literal('waiting_for_user') }),
+  // Incorporating a reviewed publication outcome before allowing another turn.
+  z.object({ status: z.literal('refreshing_workspace') }),
   // Stop was requested; native execution and SDK response completion must settle before reuse.
   z.object({ status: z.literal('stopping') }),
   // Creating a replacement checkpoint or destroying its container; new input is not admitted.
@@ -30,3 +32,56 @@ export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
 });
+
+export const PushSyncResultSchema = z
+  .strictObject({
+    decision: z.enum(['approved', 'denied']),
+    publication: z.discriminatedUnion('status', [
+      z.strictObject({ status: z.literal('not_attempted') }),
+      z.strictObject({
+        status: z.literal('published'),
+        commitSha: z.string().regex(/^[0-9a-f]{40}$/),
+      }),
+      z.strictObject({ status: z.literal('failed'), error: z.string() }),
+    ]),
+    sync: z.discriminatedUnion('status', [
+      z.strictObject({ status: z.literal('not_attempted') }),
+      z.strictObject({ status: z.literal('succeeded') }),
+      z.strictObject({ status: z.literal('failed'), error: z.string() }),
+    ]),
+  })
+  .refine((result) => {
+    if (result.decision === 'denied') {
+      return (
+        result.publication.status === 'not_attempted' && result.sync.status === 'not_attempted'
+      );
+    }
+    if (result.publication.status === 'published') return result.sync.status !== 'not_attempted';
+    return result.publication.status === 'failed' && result.sync.status === 'not_attempted';
+  });
+export type PushSyncResult = z.infer<typeof PushSyncResultSchema>;
+export const PendingReviewSchema = z.strictObject({
+  callId: z.string(),
+  card: z.strictObject({ messageId: z.string(), partId: z.string() }),
+  revision: z.string().regex(/^[0-9a-f]{64}$/),
+  repository: CreateConversationInput.shape.repository,
+  branch: CreateConversationInput.shape.branch,
+  baseCommit: z.string().regex(/^[0-9a-f]{40}$/),
+  patch: z.string(),
+});
+export type PendingReview = z.infer<typeof PendingReviewSchema>;
+export const ReviewOutcomeSchema = z.strictObject({
+  callId: z.string(),
+  revision: PendingReviewSchema.shape.revision,
+  result: PushSyncResultSchema,
+});
+export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
+
+/** Hash the base and exact patch bytes identically in Workers and Node. */
+export async function reviewRevision(baseCommit: string, patch: string) {
+  const hash = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${baseCommit}\n${patch}`),
+  );
+  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}

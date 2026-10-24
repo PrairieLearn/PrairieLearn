@@ -2,18 +2,19 @@ import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
-import type { UIMessage } from 'ai';
+import { type UIMessage, isToolUIPart } from 'ai';
 import { useQueryState } from 'nuqs';
 import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
-import type { ConversationState } from '@prairielearn/course-agent-types';
+import { type ConversationState, PushSyncResultSchema } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { JobSequenceResults } from '../../../components/JobSequenceResults.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
@@ -187,7 +188,14 @@ function Chat({
   });
   const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
   const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
-  const readyToSend = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
+  const pendingReview = messages.some((message) =>
+    message.parts.some(
+      (part) =>
+        isToolUIPart(part) && part.type === 'tool-push_sync' && part.state !== 'output-available',
+    ),
+  );
+  const readyToSend =
+    !pendingReview && (lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user');
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
   const titleError = getAppError<CourseAgentError['SetTitle']>(title.error);
   const [draft, setDraft] = useState('');
@@ -196,7 +204,7 @@ function Chat({
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive) {
+    if (!responseActive || pendingReview) {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -238,7 +246,14 @@ function Chat({
             </p>
           )}
           {messages.map((message) => (
-            <Message key={message.id} message={message} />
+            <Message
+              key={message.id}
+              message={message}
+              conversationId={conversationId}
+              canReview={
+                lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline'
+              }
+            />
           ))}
           {showThinking && (
             <div className="text-muted small">
@@ -258,6 +273,9 @@ function Chat({
                 Resume
               </Button>
             </Alert>
+          )}
+          {lifecycle?.status === 'refreshing_workspace' && (
+            <p role="status">Updating your workspace…</p>
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
             <p className="text-muted" role="status">
@@ -293,7 +311,7 @@ function Chat({
           onKeyDown={onKeyDown}
         />
         <div className="d-flex justify-content-end mt-2">
-          {responseActive || canStop ? (
+          {!pendingReview && (responseActive || canStop) ? (
             <Button
               variant="outline-secondary"
               size="sm"
@@ -319,7 +337,15 @@ function Chat({
   );
 }
 
-function Message({ message }: { message: UIMessage }) {
+function Message({
+  message,
+  conversationId,
+  canReview,
+}: {
+  message: UIMessage;
+  conversationId: string;
+  canReview: boolean;
+}) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     return (
@@ -334,6 +360,18 @@ function Message({ message }: { message: UIMessage }) {
         const key = `part-${index}`;
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+        if (isToolUIPart(part) && part.type === 'tool-push_sync') {
+          return (
+            <ReviewCard
+              key={key}
+              conversationId={conversationId}
+              messageId={message.id}
+              canReview={canReview}
+              partId={part.toolCallId}
+              output={part.state === 'output-available' ? part.output : undefined}
+            />
+          );
+        }
         return null;
       })}
     </div>
@@ -348,3 +386,147 @@ const blockedMessage = {
   checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
   cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
 } satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
+
+function ReviewCard({
+  conversationId,
+  messageId,
+  partId,
+  output,
+  canReview,
+}: {
+  conversationId: string;
+  messageId: string;
+  partId: string;
+  output: unknown;
+  canReview: boolean;
+}) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [jobSequenceId, setJobSequenceId] = useState<string | null>(null);
+  const review = useQuery({
+    ...trpc.courseAgent.getPendingReview.queryOptions({ conversationId }),
+    enabled: canReview && output === undefined && jobSequenceId === null,
+    retry: false,
+  });
+  const job = useQuery({
+    ...trpc.courseAgent.reviewJob.queryOptions({
+      conversationId,
+      jobSequenceId: jobSequenceId ?? '',
+    }),
+    enabled: jobSequenceId !== null,
+    retry: false,
+  });
+  const decision = useMutation({
+    ...trpc.courseAgent.postReviewDecision.mutationOptions(),
+    retry: false,
+    onSuccess: async (result) => {
+      setJobSequenceId(result.jobSequenceId);
+      await queryClient.invalidateQueries({
+        queryKey: trpc.courseAgent.getPendingReview.queryKey({ conversationId }),
+      });
+    },
+  });
+  const result = output === undefined ? null : PushSyncResultSchema.parse(output);
+  const current =
+    review.data?.card.messageId === messageId && review.data.card.partId === partId
+      ? review.data
+      : null;
+  const failure = result
+    ? null
+    : (getAppError<CourseAgentError['GetPendingReview']>(review.error) ??
+      getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
+      getAppError<CourseAgentError['ReviewJob']>(job.error));
+  return (
+    <div className="card">
+      <div className="card-body">
+        <h3 className="h6">Publish course edits</h3>
+        {result ? (
+          <div role="status">
+            <p>
+              {result.decision === 'denied'
+                ? 'Changes kept in your workspace.'
+                : result.publication.status === 'published'
+                  ? result.sync.status === 'succeeded'
+                    ? 'Changes published and course synced.'
+                    : 'Changes published. Course Sync failed.'
+                  : 'Changes could not be published.'}
+            </p>
+            {result.publication.status === 'failed' && (
+              <pre className="small text-wrap">{result.publication.error}</pre>
+            )}
+            {result.sync.status === 'failed' && (
+              <pre className="small text-wrap">{result.sync.error}</pre>
+            )}
+          </div>
+        ) : (
+          <>
+            <p>
+              Review these changes before publishing them to your course and running Course Sync.
+            </p>
+            {review.isLoading && (
+              <Spinner animation="border" size="sm" role="status">
+                <span className="visually-hidden">Loading review</span>
+              </Spinner>
+            )}
+            {review.isError && (
+              <Button size="sm" variant="outline-secondary" onClick={() => void review.refetch()}>
+                Reload review
+              </Button>
+            )}
+            {current && (
+              <>
+                <pre
+                  className="small border rounded p-2 overflow-auto"
+                  style={{ maxHeight: '30rem' }}
+                  aria-label="Reviewed course changes"
+                >
+                  {current.diff.patch || 'No file changes'}
+                </pre>
+                <div className="d-flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={decision.isPending || jobSequenceId !== null}
+                    onClick={() =>
+                      decision.mutate({
+                        conversationId,
+                        reviewToken: current.reviewToken,
+                        decision: 'approved',
+                      })
+                    }
+                  >
+                    Publish and sync
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline-secondary"
+                    disabled={decision.isPending || jobSequenceId !== null}
+                    onClick={() =>
+                      decision.mutate({
+                        conversationId,
+                        reviewToken: current.reviewToken,
+                        decision: 'denied',
+                      })
+                    }
+                  >
+                    Keep editing
+                  </Button>
+                </div>
+              </>
+            )}
+            {!current && !review.isLoading && !failure && jobSequenceId === null && (
+              <p className="text-muted mb-0">This review is no longer pending.</p>
+            )}
+          </>
+        )}
+        {job.data && <JobSequenceResults {...job.data} />}
+        {failure && (
+          <AppErrorAlert
+            className="mt-2"
+            error={failure}
+            render={{ UNKNOWN: ({ message }) => message }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

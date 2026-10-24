@@ -1,6 +1,6 @@
 import { getAgentByName } from 'agents';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { CreateConversationInput, ReviewOutcomeSchema } from '@prairielearn/course-agent-types';
 
 import { isAuthorized } from './http/auth.js';
 import { parseRoute } from './http/routes.js';
@@ -27,6 +27,25 @@ export default {
     // PL's catalog is the existence/ownership authority. Both SDK routes are
     // reachable only through its authenticated proxy.
     const conversation = await getAgentByName(env.Conversation, route.conversationId);
+    if (route.action === 'pending-review' && request.method === 'GET') {
+      return Response.json(await conversation.getPendingReview());
+    }
+    if (route.action === 'pending-review/outcome' && request.method === 'POST') {
+      const outcome = ReviewOutcomeSchema.safeParse(await request.json().catch(() => null));
+      if (!outcome.success) return new Response('Invalid outcome', { status: 400 });
+      try {
+        if (!(await conversation.recordReviewOutcome(outcome.data))) {
+          return new Response('Review has changed', { status: 409 });
+        }
+        return Response.json({ outcomeRecorded: true });
+      } catch (error) {
+        console.error(error);
+        return new Response('Could not incorporate review result', { status: 503 });
+      }
+    }
+    if (!['chat', 'get-messages', 'resume'].includes(route.action)) {
+      return new Response('Not found', { status: 404 });
+    }
     if (route.action === 'resume' && request.method === 'POST') {
       try {
         if (!(await conversation.resume())) {
