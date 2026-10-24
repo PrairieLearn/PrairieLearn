@@ -16,7 +16,8 @@ export default defineConfig({
     {
       name: 'course-agent-websocket',
       configureServer(server) {
-        // Vite owns the listening server in HMR mode; resolve the current app on each upgrade.
+        // During local Vite development, upgrades reach Vite's HTTP server instead of PL's.
+        // Forward them to PL's authorization/proxy handler, loading current modules after hot updates.
         server.httpServer?.on('upgrade', async (req, _socket, head) => {
           if (!req.url?.includes('/course_agent/conversations/')) return;
           const environment = server.environments.ssr;
