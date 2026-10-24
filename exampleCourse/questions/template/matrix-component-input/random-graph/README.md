@@ -1,3 +1,3 @@
-This question displays a randomly generated graph with nodes and edges. Students are asked to provide the corresponding adjacency matrix. Matrix entries that are left blank are considered as zero. Students can get partial credit for each correct matrix entry.
+This question asks students to enter the adjacency matrix of a randomly generated graph. Blank entries count as zero, and partial credit is awarded for correct entries.
 
-This template requires students to interpret a visual graph. An instructor must design an equivalent question for students who cannot access that graph; a generic graph label does not provide the information needed to answer. Choose a text representation and learning objective together rather than labeling the graph with its correct adjacency matrix. See the [graph accessibility guidance](https://docs.prairielearn.com/elements/pl-graph/#graphs-that-are-the-question).
+Provide an [equivalent question](https://docs.prairielearn.com/elements/pl-graph/#graphs-that-are-the-question) for students who cannot access the graph.
