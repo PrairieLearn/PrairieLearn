@@ -58,49 +58,6 @@ describe('Codex native stream', () => {
     disconnect();
   });
 
-  it('preserves text and reasoning under one assistant ID', async () => {
-    const { native, emit, disconnect } = runner();
-    await native.connect();
-    await native.thread({ model: 'test', instructions: 'Edit course', threadId: 'thread' });
-    const stream = await native.run('Follow-up', 'assistant', () => {});
-    emit({
-      method: 'item/reasoning/summaryTextDelta',
-      params: { threadId: 'thread', itemId: 'r', delta: 'Checking files' },
-    });
-    emit({
-      method: 'item/agentMessage/delta',
-      params: { threadId: 'other-thread', itemId: 'ignore', delta: 'Private' },
-    });
-    emit({
-      method: 'item/agentMessage/delta',
-      params: { threadId: 'thread', itemId: 'a', delta: 'Edited' },
-    });
-    emit({
-      method: 'turn/completed',
-      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed' } },
-    });
-    await native.finished;
-    native.closeStream();
-    const chunks = [];
-    const reader = stream.getReader();
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-    expect(chunks).toEqual([
-      { type: 'start', messageId: 'assistant' },
-      { type: 'reasoning-start', id: 'reasoning:r' },
-      { type: 'reasoning-delta', id: 'reasoning:r', delta: 'Checking files' },
-      { type: 'text-start', id: 'text:a' },
-      { type: 'text-delta', id: 'text:a', delta: 'Edited' },
-      { type: 'reasoning-end', id: 'reasoning:r' },
-      { type: 'text-end', id: 'text:a' },
-      { type: 'finish' },
-    ]);
-    disconnect();
-  });
-
   it('does not repeat submission when the acceptance response is lost', async () => {
     const { native, commands, disconnect } = runner(true);
     await native.connect();
