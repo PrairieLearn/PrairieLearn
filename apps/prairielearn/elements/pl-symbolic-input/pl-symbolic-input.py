@@ -558,7 +558,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             allow_sets=allow_sets,
         )
 
-        # Convert safely to sympy
+        # Convert safely to sympy, simplifying *exactly once* throughout parsing
         psu.json_to_sympy(
             a_sub_json,
             allow_complex=allow_complex,
