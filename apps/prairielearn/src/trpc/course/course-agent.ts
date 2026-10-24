@@ -48,7 +48,7 @@ export const courseAgentRouter = t.router({
       const title = input.text.replaceAll(/\s+/g, ' ');
       await updateCourseAgentConversationTitleIfDefault({
         id: conversation.id,
-        title: title.length > 80 ? `${title.slice(0, 79)}…` : title,
+        title: title.length > 80 ? `${title.slice(0, 77)}...` : title,
       });
     }),
 
