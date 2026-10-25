@@ -98,6 +98,7 @@ export class CourseSandbox extends DurableObject {
   }
   async freezeReview() { return this.readReview(); }
   readReview() { return 'frozen patch'; }
+  async resumeReview() {}
   async reconcilePublication(commitSha) { this.ctx.storage.kv.put('reconciled',commitSha); }
   reviewTest() { this.emit({id:900,method:'item/tool/call',params:{threadId:'native-thread',turnId:'turn',callId:'review-call',namespace:null,tool:'push_sync',arguments:{}}}); }
   releaseDestroyTest() { this.releaseDestroy?.(); }
