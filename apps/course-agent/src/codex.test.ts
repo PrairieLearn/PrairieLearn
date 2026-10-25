@@ -29,6 +29,9 @@ const threadResult: ThreadStartResponse = {
   reasoningEffort: null,
   disabledPluginIds: [],
   instructionSources: [],
+  runtimeWorkspaceRoots: [],
+  activePermissionProfile: null,
+  multiAgentMode: 'explicitRequestOnly',
   thread: {
     id: 'thread',
     sessionId: 'session',
@@ -58,6 +61,10 @@ const threadResult: ThreadStartResponse = {
     gitInfo: null,
     name: null,
     turns: [],
+    environments: [],
+    extra: null,
+    canAcceptDirectInput: true,
+    daybreakEnabled: false,
   },
 };
 

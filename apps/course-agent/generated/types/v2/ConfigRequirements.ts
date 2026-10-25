@@ -5,6 +5,8 @@ import type { ForcedLoginMethod } from '../ForcedLoginMethod.js';
 import type { PathUri } from '../PathUri.js';
 import type { WebSearchMode } from '../WebSearchMode.js';
 import type { JsonValue } from '../serde_json/JsonValue.js';
+import type { ApplicationRequirements } from './ApplicationRequirements.js';
+import type { ApprovalsReviewer } from './ApprovalsReviewer.js';
 import type { AskForApproval } from './AskForApproval.js';
 import type { AutoReviewRequirements } from './AutoReviewRequirements.js';
 import type { BrowserUseRequirements } from './BrowserUseRequirements.js';
@@ -12,7 +14,9 @@ import type { CliAuthCredentialsStoreMode } from './CliAuthCredentialsStoreMode.
 import type { ComputerUseRequirements } from './ComputerUseRequirements.js';
 import type { FeedbackRequirements } from './FeedbackRequirements.js';
 import type { InAppBrowserRequirements } from './InAppBrowserRequirements.js';
+import type { ManagedHooksRequirements } from './ManagedHooksRequirements.js';
 import type { ModelsRequirements } from './ModelsRequirements.js';
+import type { NetworkRequirements } from './NetworkRequirements.js';
 import type { ResidencyRequirement } from './ResidencyRequirement.js';
 import type { SandboxMode } from './SandboxMode.js';
 import type { WindowsSandboxImplementation } from './WindowsSandboxImplementation.js';
@@ -21,10 +25,12 @@ export type ConfigRequirements = {
   /**
    * Exact provider selection required by managed policy.
    */
-  modelProvider: string | null; /**
+  modelProvider: string | null;
+  /**
    * Complete required provider definitions, using config.toml field names.
    */
-  modelProviders: { [key in string]?: JsonValue } | null; /**
+  modelProviders: { [key in string]?: JsonValue } | null;
+  /**
    * Effective login methods after managed, forced-login, and workspace restrictions.
    * An empty list permits no login method. Older servers may omit this field.
    */
@@ -33,6 +39,7 @@ export type ConfigRequirements = {
   chatgptBaseUrl: string | null;
   additionalDeveloperInstructions: string | null;
   allowedApprovalPolicies: Array<AskForApproval> | null;
+  allowedApprovalsReviewers: Array<ApprovalsReviewer> | null;
   allowedSandboxModes: Array<SandboxMode> | null;
   allowedWindowsSandboxImplementations: Array<WindowsSandboxImplementation> | null;
   allowedPermissionProfiles: { [key in string]?: boolean } | null;
@@ -46,7 +53,10 @@ export type ConfigRequirements = {
   browserUse: BrowserUseRequirements | null;
   inAppBrowser: InAppBrowserRequirements | null;
   featureRequirements: { [key in string]?: boolean } | null;
+  hooks: ManagedHooksRequirements | null;
   enforceResidency: ResidencyRequirement | null;
+  network: NetworkRequirements | null;
+  application: ApplicationRequirements | null;
   autoReview: AutoReviewRequirements | null;
   models: ModelsRequirements | null;
   sqliteHome: PathUri | null;
