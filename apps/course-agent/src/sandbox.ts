@@ -137,12 +137,42 @@ export class CourseSandbox extends DurableObject<Env> {
     return new TextDecoder().decode(head.stdout).trim();
   }
 
-  /** Refuse review while a native command could still change the checkout. */
+  /** Pause Codex tool orchestration and reject other commands that could change the checkout. */
   private async checkReviewWriters() {
     await this.exec([
       'sh',
       '-ec',
-      'count=0; for pid in $(pgrep -u 1000); do [ "$(cat /proc/$pid/comm)" = codex ] || exit 1; count=$((count + 1)); done; [ "$count" -le 1 ]',
+      `
+        native=''; helper=''
+        for pid in $(pgrep -u 1000); do
+          case $(cat /proc/$pid/comm) in
+            codex) [ -z "$native" ]; native=$pid ;;
+            codex-code-mode) [ -z "$helper" ]; helper=$pid ;;
+            *) echo 'Another agent command is still running' >&2; exit 1 ;;
+          esac
+        done
+        # The native JS helper can request more tools even while push_sync is pending.
+        if [ -n "$helper" ]; then
+          [ -n "$native" ]
+          [ "$(ps -o ppid= -p "$helper" | tr -d ' ')" = "$native" ]
+          kill -STOP "$helper"
+          for attempt in $(seq 1 100); do
+            case $(ps -o stat= -p "$helper") in T*) exit 0 ;; esac
+            sleep 0.01
+          done
+          echo 'Could not pause the native tool runtime' >&2
+          exit 1
+        fi
+      `,
+    ]);
+  }
+
+  /** Resume the isolated tool runtime after publication reconciliation and before delivering the result. */
+  async resumeReview() {
+    await this.exec([
+      'sh',
+      '-c',
+      'pkill -CONT -u 1000 -x codex-code-mode; code=$?; [ "$code" -le 1 ]',
     ]);
   }
 

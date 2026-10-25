@@ -398,6 +398,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       const stream = live.active.execution.openStream();
       this.setRuntimeState({ ...this.record, lifecycle: { status: 'waiting_for_agent' } });
       await this.scheduleDeadline('turn');
+      await this.sandbox.resumeReview();
       this.waiter!.delivered = true;
       this.waiter!.result.resolve(live.result);
       const abort = () => {
@@ -459,6 +460,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           await this.scheduleDeadline('idle');
         } catch (error) {
           this.waiter = null;
+          await this.sandbox.resumeReview();
           throw error;
         }
         return result.promise;

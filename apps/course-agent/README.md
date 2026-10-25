@@ -4,11 +4,11 @@ A Cloudflare Worker hosts private course-editing conversations behind PrairieLea
 
 ## Configuration
 
-Set `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and `GITHUB_READ_TOKEN` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). The repository token needs read access to the pilot repositories. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. Git publication is unavailable.
+Set `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and `GITHUB_READ_TOKEN` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). The repository token needs read access to the pilot repositories. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. The container cannot publish; PrairieLearn performs approved publication and Course Sync outside it.
 
 Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings. Container SDK and helper image are both pinned to 1.0.2; the native runtime and protocol generator are both Codex 0.163.0.
 
-`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after native termination and chat persistence. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
+`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after normal turn cleanup and chat persistence, or after a review card has been persisted while the native tool waits for a decision. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
 
 Run `pnpm --filter @prairielearn/course-agent dev` with Docker running. In PrairieLearn, set `courseAgentServiceUrl`, set `courseAgentServiceToken` to exactly match `PL_SERVICE_TOKEN`, and enable `features: { "course-agent": true }`. Use a course owner and a course configured with a GitHub repository and branch.
 
@@ -30,6 +30,8 @@ All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 - `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
 - `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.
 - `GET /conversations/{uuid}/get-messages` returns SDK history.
+- `GET /conversations/{uuid}/pending-review` returns the frozen review, or `null`.
+- `POST /conversations/{uuid}/pending-review/outcome` accepts the native call ID, revision, and publication/sync result after a PrairieLearn review decision. It acknowledges SDK persistence; conflicting redelivery returns `409`.
 
 PrairieLearn’s owner- and creator-scoped tRPC routes create and recover conversations. Its existing authenticated proxy carries SDK traffic without parsing native Codex messages. The conversation connects to Codex over a private WebSocket through the CourseSandbox DO binding. CourseSandbox forwards upgrades to the container port and injects a fresh capability token; only its hash reaches the runner, and neither value enters a checkpoint. There is no public native-server route. Process execution still uses private Container exec.
 
@@ -41,7 +43,7 @@ Run `pnpm --filter @prairielearn/course-agent generate-protocol` after changing 
 
 Malformed messages and invalid response or subscribed-notification payloads fail the connection and pending work. Unknown notifications and late replies are ignored. Connection loss and command timeouts never replay a prompt. Codex currently labels WebSocket transport experimental and unsupported for production; deployed validation is required before enabling a pilot.
 
-Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Publication, push sync, approvals, accounting and rich tool cards remain separate work.
+Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Review cards pause native work until PrairieLearn delivers an approval or denial result. Idle expiry checkpoints a pending review; the saved result continues the restored native thread without repeating the user prompt. Accounting remains separate work.
 
 ### Push-sync verification
 
