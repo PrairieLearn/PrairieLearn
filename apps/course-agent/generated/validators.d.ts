@@ -1,5 +1,6 @@
 // GENERATED CODE! DO NOT MODIFY BY HAND!
 import type { ClientRequest } from './types/ClientRequest.js';
+import type { ServerRequest } from './types/ServerRequest.js';
 import type { ServerNotification } from './types/ServerNotification.js';
 import type { InitializeResponse as Result0 } from './types/InitializeResponse.js';
 export declare function request0Params(
@@ -26,6 +27,16 @@ export declare function request4Params(
   value: unknown,
 ): value is Extract<ClientRequest, { method: 'turn/interrupt' }>['params'];
 export declare function request4Result(value: unknown): value is Result4;
+import type { ThreadReadResponse as Result5 } from './types/v2/ThreadReadResponse.js';
+export declare function request5Params(
+  value: unknown,
+): value is Extract<ClientRequest, { method: 'thread/read' }>['params'];
+export declare function request5Result(value: unknown): value is Result5;
+import type { DynamicToolCallResponse as ServerResult0 } from './types/v2/DynamicToolCallResponse.js';
+export declare function serverRequest0Params(
+  value: unknown,
+): value is Extract<ServerRequest, { method: 'item/tool/call' }>['params'];
+export declare function serverRequest0Result(value: unknown): value is ServerResult0;
 export declare function notification0(
   value: unknown,
 ): value is Extract<ServerNotification, { method: 'item/agentMessage/delta' }>['params'];
@@ -35,3 +46,9 @@ export declare function notification1(
 export declare function notification2(
   value: unknown,
 ): value is Extract<ServerNotification, { method: 'turn/completed' }>['params'];
+export declare function notification3(
+  value: unknown,
+): value is Extract<ServerNotification, { method: 'item/started' }>['params'];
+export declare function notification4(
+  value: unknown,
+): value is Extract<ServerNotification, { method: 'item/completed' }>['params'];

@@ -7,6 +7,7 @@ import type { RequestId } from './RequestId.js';
 import type { AttestationGenerateParams } from './v2/AttestationGenerateParams.js';
 import type { ChatgptAuthTokensRefreshParams } from './v2/ChatgptAuthTokensRefreshParams.js';
 import type { CommandExecutionRequestApprovalParams } from './v2/CommandExecutionRequestApprovalParams.js';
+import type { CurrentTimeReadParams } from './v2/CurrentTimeReadParams.js';
 import type { DynamicToolCallParams } from './v2/DynamicToolCallParams.js';
 import type { FileChangeRequestApprovalParams } from './v2/FileChangeRequestApprovalParams.js';
 import type { McpServerElicitationRequestParams } from './v2/McpServerElicitationRequestParams.js';
@@ -45,5 +46,6 @@ export type ServerRequest =
       params: ChatgptAuthTokensRefreshParams;
     }
   | { method: 'attestation/generate'; id: RequestId; params: AttestationGenerateParams }
+  | { method: 'currentTime/read'; id: RequestId; params: CurrentTimeReadParams }
   | { method: 'applyPatchApproval'; id: RequestId; params: ApplyPatchApprovalParams }
   | { method: 'execCommandApproval'; id: RequestId; params: ExecCommandApprovalParams };

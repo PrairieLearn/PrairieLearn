@@ -10,6 +10,7 @@ import type { WebSearchMode } from '../WebSearchMode.js';
 import type { JsonValue } from '../serde_json/JsonValue.js';
 import type { AnalyticsConfig } from './AnalyticsConfig.js';
 import type { ApprovalsReviewer } from './ApprovalsReviewer.js';
+import type { AppsConfig } from './AppsConfig.js';
 import type { AskForApproval } from './AskForApproval.js';
 import type { BrowserUseConfig } from './BrowserUseConfig.js';
 import type { ComputerUseConfig } from './ComputerUseConfig.js';
@@ -25,7 +26,8 @@ export type Config = {
   model_auto_compact_token_limit: bigint | null;
   model_auto_compact_token_limit_scope: AutoCompactTokenLimitScope | null;
   model_provider: string | null;
-  approval_policy: AskForApproval | null; /**
+  approval_policy: AskForApproval | null;
+  /**
    * [UNSTABLE] Optional default for where approval requests are routed for
    * review.
    */
@@ -44,6 +46,7 @@ export type Config = {
   model_verbosity: Verbosity | null;
   service_tier: string | null;
   analytics: AnalyticsConfig | null;
+  apps: AppsConfig | null;
   browser_use: BrowserUseConfig | null;
   computer_use: ComputerUseConfig | null;
   desktop: { [key in string]?: JsonValue } | null;

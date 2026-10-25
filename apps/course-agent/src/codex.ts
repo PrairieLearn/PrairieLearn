@@ -77,7 +77,7 @@ export class CodexAppServerClient {
     socket.accept();
     await this.request(requests.initialize, {
       clientInfo: { name: 'prairielearn', title: 'PrairieLearn', version: '1' },
-      capabilities: null,
+      capabilities: { experimentalApi: true, requestAttestation: false },
     });
     await rpc.sendNotification('initialized');
   }

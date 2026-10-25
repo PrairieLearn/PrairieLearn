@@ -4,7 +4,17 @@
     "thread/start": "v2/ThreadStartResponse",
     "thread/resume": "v2/ThreadResumeResponse",
     "turn/start": "v2/TurnStartResponse",
-    "turn/interrupt": "v2/TurnInterruptResponse"
+    "turn/interrupt": "v2/TurnInterruptResponse",
+    "thread/read": "v2/ThreadReadResponse"
   },
-  "notifications": ["item/agentMessage/delta", "item/reasoning/summaryTextDelta", "turn/completed"]
+  "notifications": [
+    "item/agentMessage/delta",
+    "item/reasoning/summaryTextDelta",
+    "turn/completed",
+    "item/started",
+    "item/completed"
+  ],
+  "serverRequests": {
+    "item/tool/call": "v2/DynamicToolCallResponse"
+  }
 }

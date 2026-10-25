@@ -26,6 +26,18 @@ export const requests = {
     params: validators.request4Params,
     result: validators.request4Result,
   },
+  'thread/read': {
+    method: 'thread/read',
+    params: validators.request5Params,
+    result: validators.request5Result,
+  },
+} as const;
+export const serverRequests = {
+  'item/tool/call': {
+    method: 'item/tool/call',
+    params: validators.serverRequest0Params,
+    result: validators.serverRequest0Result,
+  },
 } as const;
 export const notifications = {
   'item/agentMessage/delta': {
@@ -37,4 +49,6 @@ export const notifications = {
     params: validators.notification1,
   },
   'turn/completed': { method: 'turn/completed', params: validators.notification2 },
+  'item/started': { method: 'item/started', params: validators.notification3 },
+  'item/completed': { method: 'item/completed', params: validators.notification4 },
 } as const;
