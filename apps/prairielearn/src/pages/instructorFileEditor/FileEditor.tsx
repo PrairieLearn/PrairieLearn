@@ -46,8 +46,6 @@ enum SaveErrorCode {
 
 const EDITOR_OPTIONS = {
   autoScrollEditorIntoView: true,
-  maxLines: Infinity,
-  minLines: 10,
   wrap: true,
 } satisfies Partial<ace.Ace.EditorOptions>;
 
@@ -380,10 +378,16 @@ export function FileEditor({
 
   return (
     <>
-      <form ref={formRef} name="editor-form" method="POST" onSubmit={handleSubmit}>
+      <form
+        ref={formRef}
+        name="editor-form"
+        method="POST"
+        className="d-flex flex-column flex-grow-1"
+        onSubmit={handleSubmit}
+      >
         <input type="hidden" name="__csrf_token" value={csrfToken} />
         <input type="hidden" name="__action" value="save_and_sync" />
-        <div className="card mb-4">
+        <div className="card flex-grow-1">
           <div className="card-header bg-primary">
             <div className="row align-items-center justify-content-between">
               <div className="col-auto">
@@ -458,8 +462,8 @@ export function FileEditor({
               </div>
             </div>
           </Collapse>
-          <div className="card-body p-0">
-            <div className="container-fluid">
+          <div className="card-body p-0 d-flex flex-column">
+            <div className="container-fluid flex-shrink-0">
               {draftEditResult != null
                 ? run(() => {
                     const syncAlert = getSyncAlert(
@@ -521,11 +525,11 @@ export function FileEditor({
                 </Alert>
               ) : null}
             </div>
-            <div className="row">
-              <div id="file-editor-draft" className="col">
+            <div className="row flex-grow-1">
+              <div id="file-editor-draft" className="col d-flex flex-column">
                 {/* Only the comparison panes need borders inside the outer editor card. */}
                 <div
-                  className={clsx('card p-0', {
+                  className={clsx('card p-0 flex-grow-1', {
                     'border-0 rounded-0 bg-transparent': !showVersionChoice,
                   })}
                 >
@@ -537,7 +541,10 @@ export function FileEditor({
                       </button>
                     </div>
                   ) : null}
-                  <div className="card-body p-0 position-relative">
+                  <div
+                    className="card-body p-0 position-relative d-flex flex-column"
+                    style={{ minHeight: '12rem' }}
+                  >
                     <input type="hidden" name="file_edit_orig_hash" value={editorData.diskHash} />
                     <input
                       ref={fileContentsInputRef}
@@ -551,7 +558,7 @@ export function FileEditor({
                       value={contents}
                       mode={editorData.aceMode}
                       readOnly={readOnly}
-                      className="editor"
+                      className="flex-grow-1"
                       options={EDITOR_OPTIONS}
                       focusOnMount
                       onChange={setContents}
@@ -612,20 +619,23 @@ export function FileEditor({
                 </div>
               </div>
               {showVersionChoice ? (
-                <div className="col">
-                  <div className="card p-0">
+                <div className="col d-flex flex-column">
+                  <div className="card p-0 flex-grow-1">
                     <div className="card-header text-center">
                       <h4 className="mb-4">Their version</h4>
                       <button className="btn btn-primary" type="button" onClick={discardDraft}>
                         Choose their version (discard my changes)
                       </button>
                     </div>
-                    <div className="card-body p-0">
+                    <div
+                      className="card-body p-0 d-flex flex-column"
+                      style={{ minHeight: '12rem' }}
+                    >
                       <AceFileEditor
                         label={`Their version of ${editorData.fileName}`}
                         value={diskContents}
                         mode={editorData.aceMode}
-                        className="editor"
+                        className="flex-grow-1"
                         options={EDITOR_OPTIONS}
                         readOnly
                       />

@@ -109,51 +109,8 @@ window.PLFileEditor = function (uuid, options) {
   this.initSettingsButton(uuid);
 
   if (!options.readOnly) {
-    this.initKeyboardHint();
     this.initRestoreOriginalButton();
   }
-};
-
-window.PLFileEditor.prototype.initKeyboardHint = function () {
-  const hint = this.element.find('.editor-keyboard-hint')[0];
-  const updateHintPosition = () => {
-    // Questions can be replaced without unloading the page.
-    if (!hint.isConnected) {
-      window.removeEventListener('scroll', updateHintPosition, true);
-      window.removeEventListener('resize', updateHintPosition);
-      return;
-    }
-    if (!hint.offsetHeight) return;
-    // The question body's horizontal overflow creates a scroll container that traps
-    // CSS sticky positioning. Translate within the editor instead, preserving that overflow.
-    const parentTop = hint.parentElement.getBoundingClientRect().top;
-    const naturalBottom = parentTop + hint.offsetTop + hint.offsetHeight;
-    const bottom = Math.max(parentTop + hint.offsetHeight, window.innerHeight);
-    hint.style.transform = `translateY(${Math.min(0, bottom - naturalBottom)}px)`;
-  };
-  window.addEventListener('scroll', updateHintPosition, { capture: true });
-  window.addEventListener('resize', updateHintPosition);
-  this.editor.container.addEventListener('focusin', updateHintPosition);
-  updateHintPosition();
-
-  let cursorMoved = false;
-  this.editor.on('changeSelection', () => {
-    cursorMoved = true;
-  });
-  this.editor.renderer.on('afterRender', () => {
-    updateHintPosition();
-    if (!cursorMoved) return;
-    cursorMoved = false;
-    if (!this.editor.isFocused()) return;
-    const cursor = this.editor.container.querySelector('.ace_cursor');
-    if (!cursor) return;
-    const cursorBounds = cursor.getBoundingClientRect();
-    const hintBounds = hint.getBoundingClientRect();
-    // Ace's automatic scrolling does not account for the sticky hint's height.
-    if (cursorBounds.bottom > hintBounds.top && cursorBounds.top < hintBounds.bottom) {
-      cursor.scrollIntoView({ block: 'center', inline: 'nearest' });
-    }
-  });
 };
 
 window.PLFileEditor.prototype.setKeyboardHandler = function (handler) {

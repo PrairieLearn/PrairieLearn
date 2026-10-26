@@ -2,8 +2,6 @@
 
 .editor-keyboard-hint {
   display: none;
-  /* Ace's gutter uses z-index 4; pinned guidance must cover it too. */
-  z-index: 5;
 }
 
 /* Ace's scroller accepts Enter; its text input accepts typing. Gutter focus needs neither hint.

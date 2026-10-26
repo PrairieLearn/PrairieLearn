@@ -89,7 +89,6 @@ export function AceFileEditor({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const keyboardHintId = useId();
-  const keyboardHintRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ace.Ace.Editor | null>(null);
   const valueRef = useRef(value);
   const initialModeRef = useRef(mode);
@@ -135,35 +134,11 @@ export function AceFileEditor({
       onChangeRef.current?.(nextValue);
     };
 
-    let cursorMoved = false;
-    const handleCursorChange = () => {
-      cursorMoved = true;
-    };
-    const keepCursorAboveHint = () => {
-      if (!cursorMoved) return;
-      cursorMoved = false;
-      if (!editor.isFocused() || !keyboardHintRef.current) return;
-      const cursor = editor.container.querySelector<HTMLElement>('.ace_cursor');
-      if (!cursor) return;
-
-      const cursorBounds = cursor.getBoundingClientRect();
-      const hintBounds = keyboardHintRef.current.getBoundingClientRect();
-      // Ace scrolls against the viewport edge, so it can leave the caret behind our sticky hint.
-      // Only move an overlapping caret; manually scrolling away from it should remain possible.
-      if (cursorBounds.bottom > hintBounds.top && cursorBounds.top < hintBounds.bottom) {
-        cursor.scrollIntoView({ block: 'center', inline: 'nearest' });
-      }
-    };
-
-    editor.on('changeSelection', handleCursorChange);
-    editor.renderer.on('afterRender', keepCursorAboveHint);
     editor.getSession().on('change', handleChange);
     editorRef.current = editor;
     onReadyRef.current?.(editor);
 
     return () => {
-      editor.off('changeSelection', handleCursorChange);
-      editor.renderer.off('afterRender', keepCursorAboveHint);
       editor.getSession().off('change', handleChange);
       editor.destroy();
       editor.container.replaceChildren();
@@ -213,10 +188,7 @@ export function AceFileEditor({
     <>
       <div ref={containerRef} className={className} />
       {!readOnly && (
-        <div
-          ref={keyboardHintRef}
-          className="editor-keyboard-hint sticky-bottom small text-body-secondary bg-body border-top rounded-bottom px-2 py-1 flex-shrink-0"
-        >
+        <div className="editor-keyboard-hint small text-body-secondary bg-body border-top rounded-bottom px-2 py-1 flex-shrink-0">
           <span id={`${keyboardHintId}-entry`} className="keyboard-entry-hint">
             Press <kbd>Enter</kbd> to edit.
           </span>
