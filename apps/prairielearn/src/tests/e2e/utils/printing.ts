@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 
+import { serializePrintDocument } from '../../../lib/client/print-document.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { expect } from '../fixtures.js';
@@ -18,15 +19,7 @@ export async function downloadPrintableWord(page: Page, printUrl: string, search
   const source = await page.evaluate(() =>
     JSON.parse(document.getElementById('pl-print-docx-source')!.textContent),
   );
-  const html = await page.evaluate(() => {
-    const copy = document.documentElement.cloneNode(true) as HTMLElement;
-    copy
-      .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
-      .forEach((node) => {
-        node.remove();
-      });
-    return `<!doctype html>\n${copy.outerHTML}`;
-  });
+  const html = await page.locator(':root').evaluate(serializePrintDocument);
   const { id } = await getConfiguredUser();
   return await page.request.post(`${printUrl}/docx?${search}`, {
     headers: {

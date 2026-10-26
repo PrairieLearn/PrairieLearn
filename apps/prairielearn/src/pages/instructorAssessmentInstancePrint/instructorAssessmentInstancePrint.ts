@@ -12,6 +12,7 @@ import {
   PrintGradingTableSchema,
   PrintIdentityFieldsSchema,
 } from '../../lib/client/print-cover.js';
+import { serializePrintDocument } from '../../lib/client/print-document.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
 import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
@@ -292,24 +293,15 @@ router.get(
         },
         {
           label: 'preview',
-          produce: async (page) =>
-            await page.evaluate(() => {
-              const source = Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as
-                DocxSource | undefined;
-              if (!source) {
-                throw new Error('The preview did not capture editable question content.');
-              }
-              const copy = globalThis.document.documentElement.cloneNode(true) as HTMLElement;
-              copy
-                .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
-                .forEach((node) => node.remove());
-              const data = globalThis.document.createElement('script');
-              data.id = 'pl-print-docx-source';
-              data.type = 'application/json';
-              data.textContent = JSON.stringify(source).replaceAll('<', '\\u003c');
-              copy.querySelector('head')?.append(data);
-              return { html: `<!doctype html>\n${copy.outerHTML}`, source };
-            }),
+          produce: async (page) => {
+            const source = await page.evaluate(
+              () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
+            );
+            if (!source) {
+              throw new Error('The preview did not capture editable question content.');
+            }
+            return { html: await page.locator(':root').evaluate(serializePrintDocument), source };
+          },
         },
       );
       remainingTimeoutMs();
@@ -320,7 +312,12 @@ router.get(
         "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
       );
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      res.send(html);
+      res.send(
+        html.replace(
+          '</head>',
+          `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(source).replaceAll('<', '\\u003c')}</script></head>`,
+        ),
+      );
     });
   }),
 );
