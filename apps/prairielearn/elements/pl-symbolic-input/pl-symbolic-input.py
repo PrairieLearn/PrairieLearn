@@ -1265,6 +1265,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
+                    simplify_expression=simplify_expression,
                 )
 
             a_tru_str = _TestSubmissionPrinter(imaginary_unit).doprint(a_tru_sympy)
