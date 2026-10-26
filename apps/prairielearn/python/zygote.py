@@ -120,8 +120,10 @@ import numpy as np
 import pint
 import prairielearn
 import sklearn
+from prairielearn.internal.pygraphviz_compat import patch_pygraphviz
 
 mpl.use("PDF")
+patch_pygraphviz()
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()
