@@ -121,18 +121,16 @@ export async function prepareQuestionPrompt(
       .filter((src) => src.trim()),
   );
   let totalFileBytes = 0;
-  const imageFiles = new Map(
-    await Promise.all(
-      [...imageSources].map(async (src) => {
-        const file = await loadQuestionImage(src, imageContext);
-        totalFileBytes += Buffer.byteLength(file.data, 'base64');
-        if (totalFileBytes > MAX_SECTION_FILE_BYTES) {
-          throw new Error(`AI grading ${section} files exceed the size limit of 10 MiB`);
-        }
-        return [src, file] as const;
-      }),
-    ),
-  );
+  const imageFiles = new Map<string, Awaited<ReturnType<typeof loadQuestionImage>>>();
+  // Keep image work inside the submission's grading slot, including on failure.
+  for (const src of imageSources) {
+    const file = await loadQuestionImage(src, imageContext);
+    totalFileBytes += Buffer.byteLength(file.data, 'base64');
+    if (totalFileBytes > MAX_SECTION_FILE_BYTES) {
+      throw new Error(`AI grading ${section} files exceed the size limit of 10 MiB`);
+    }
+    imageFiles.set(src, file);
+  }
   const imageParts: UserContentParts = [];
   const imageNumbers = new Map<string, number>();
   $('img[src]').each((_, image) => {

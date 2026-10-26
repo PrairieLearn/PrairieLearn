@@ -629,10 +629,12 @@ export async function aiGrade({
         userId: user_id,
         authnUserId: authn_user_id,
       };
-      const [questionPromptParts, answerPromptParts] = await Promise.all([
-        prepareQuestionPrompt(questionPrompt, imageContext, 'question'),
-        prepareQuestionPrompt(questionAnswer, imageContext, 'answer'),
-      ]);
+      const questionPromptParts = await prepareQuestionPrompt(
+        questionPrompt,
+        imageContext,
+        'question',
+      );
+      const answerPromptParts = await prepareQuestionPrompt(questionAnswer, imageContext, 'answer');
 
       const render_submission_results = await questionModule.render({
         renderSelection: { question: false, submissions: true, answer: false },

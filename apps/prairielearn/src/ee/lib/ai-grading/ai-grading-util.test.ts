@@ -669,8 +669,21 @@ describe('extractAiGradingTextFromCompletion', () => {
 describe('prepareQuestionPrompt', () => {
   afterEach(() => vi.restoreAllMocks());
 
+  it('does not start remaining image loads after a failure', async () => {
+    const failure = new Error('Image not found');
+    const loadImage = vi.spyOn(questionImages, 'loadQuestionImage').mockRejectedValue(failure);
+
+    await expect(
+      prepareQuestionPrompt(
+        '<img src="missing.png"><img src="next.png">',
+        {} as questionImages.QuestionImageContext,
+      ),
+    ).rejects.toBe(failure);
+    expect(loadImage.mock.calls.map(([src]) => src)).toEqual(['missing.png']);
+  });
+
   it.each(['question', 'answer'] as const)(
-    'limits the combined image size in the %s section',
+    'stops loading images when the %s section exceeds its combined size limit',
     async (section) => {
       const data = Buffer.alloc(6 * 1024 * 1024).toString('base64');
       const loadImage = vi
@@ -679,12 +692,12 @@ describe('prepareQuestionPrompt', () => {
 
       await expect(
         prepareQuestionPrompt(
-          '<img src="first.png"><img src="second.png">',
+          '<img src="first.png"><img src="second.png"><img src="next.png">',
           {} as questionImages.QuestionImageContext,
           section,
         ),
       ).rejects.toThrow(`AI grading ${section} files exceed the size limit of 10 MiB`);
-      expect(loadImage).toHaveBeenCalledTimes(2);
+      expect(loadImage.mock.calls.map(([src]) => src)).toEqual(['first.png', 'second.png']);
     },
   );
 
