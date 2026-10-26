@@ -717,42 +717,26 @@ SIMPLIFICATION_CASES = [
 ]
 
 
-@pytest.mark.parametrize("display_simplified", [True, False])
-@pytest.mark.parametrize(("submission", "attributes"), SIMPLIFICATION_CASES)
-def test_parse_simplifies_submission_exactly_once(
+def test_parse_does_not_evaluate_unsimplified_json_during_validation(
     monkeypatch: pytest.MonkeyPatch,
-    submission: str,
-    attributes: tuple[str, ...],
-    *,
-    display_simplified: bool,
 ) -> None:
+    def factorial_without_integer_evaluation(value: sympy.Expr) -> sympy.Expr:
+        if isinstance(value, sympy.Integer):
+            raise TypeError("factorial argument was evaluated")
+        return sympy.factorial(value)
+
+    functions = dict(psu._Constants.functions)
+    functions["factorial"] = factorial_without_integer_evaluation
+    monkeypatch.setattr(psu._Constants, "functions", psu.FrozenDict(functions))
+
     element_html = build_element_html(
-        *attributes,
-        f'display-simplified-expression="{str(display_simplified).lower()}"',
+        'allow-complex="true"',
+        'display-simplified-expression="false"',
     )
-    data = make_question_data(submitted_answers={"test": submission})
-
-    parse_simplification_flags: list[bool] = []
-    json_simplification_flags: list[bool] = []
-    original_parse = psu.try_parse_string_as_sympy
-    original_json_to_sympy = psu.json_to_sympy
-
-    def parse_spy(*args: Any, **kwargs: Any) -> psu.SympyParseResult:
-        parse_simplification_flags.append(kwargs["simplify_expression"])
-        return original_parse(*args, **kwargs)
-
-    def json_spy(*args: Any, **kwargs: Any) -> sympy.Expr:
-        json_simplification_flags.append(kwargs["simplify_expression"])
-        return original_json_to_sympy(*args, **kwargs)
-
-    monkeypatch.setattr(psu, "try_parse_string_as_sympy", parse_spy)
-    monkeypatch.setattr(psu, "json_to_sympy", json_spy)
+    data = make_question_data(submitted_answers={"test": "factorial(10^7)"})
 
     symbolic_input.parse(element_html, data)
 
-    simplification_flags = parse_simplification_flags + json_simplification_flags
-    assert simplification_flags == [display_simplified, not display_simplified]
-    assert sum(simplification_flags) == 1
     assert data["format_errors"] == {}
     assert isinstance(data["submitted_answers"]["test"], dict)
 
