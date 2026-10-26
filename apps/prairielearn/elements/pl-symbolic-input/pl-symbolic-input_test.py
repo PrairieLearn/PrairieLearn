@@ -847,6 +847,41 @@ def test_grade_uses_configured_simplification_for_string_values(
     ]
 
 
+@pytest.mark.parametrize("display_simplified", [True, False])
+def test_test_uses_configured_simplification_for_stored_correct_answer(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    display_simplified: bool,
+) -> None:
+    correct_answer = psu.sympy_to_json(
+        sympy.Union(sympy.FiniteSet(1), sympy.FiniteSet(2), evaluate=False),
+        allow_sets=True,
+    )
+    element_html = build_element_html(
+        'allow-complex="true"',
+        'allow-sets="true"',
+        f'display-simplified-expression="{str(display_simplified).lower()}"',
+    )
+    data = make_question_data(
+        raw_submitted_answers={},
+        correct_answers={"test": correct_answer},
+    )
+    data["test_type"] = "correct"
+
+    simplification_flags: list[bool] = []
+    original_json_to_sympy = psu.json_to_sympy
+
+    def json_spy(*args: Any, **kwargs: Any) -> sympy.Expr:
+        simplification_flags.append(kwargs["simplify_expression"])
+        return original_json_to_sympy(*args, **kwargs)
+
+    monkeypatch.setattr(psu, "json_to_sympy", json_spy)
+
+    symbolic_input.test(element_html, data)
+
+    assert simplification_flags == [display_simplified]
+
+
 def test_unsimplified_set_submission_preserves_operation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',
