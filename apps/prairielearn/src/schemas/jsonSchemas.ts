@@ -24,7 +24,11 @@ import {
 } from './infoAssessment.js';
 import { ColorJsonSchema, type CourseJson, CourseJsonSchema } from './infoCourse.js';
 import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseInstance.js';
-import { type ElementCoreJson, ElementCoreJsonSchema } from './infoElementCore.js';
+import {
+  type ElementCoreJson,
+  ElementCoreJsonSchema,
+  ElementLocalFilePathJsonSchema,
+} from './infoElementCore.js';
 import { type ElementCourseJson, ElementCourseJsonSchema } from './infoElementCourse.js';
 import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoElementExtension.js';
 import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
@@ -54,6 +58,7 @@ import {
 // inlining. Multiple roots can share the same registered subschemas.
 const namedDefinitions = {
   CommentJsonSchema,
+  ElementLocalFilePathJsonSchema,
   DatetimeLocalStringSchema,
   AccessControlJsonSchema,
   DeadlineEntryJsonSchema,

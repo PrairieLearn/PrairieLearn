@@ -68,6 +68,9 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
+// Each grading inference call gets one deadline, including SDK retries.
+export const AI_GRADING_INFERENCE_TIMEOUT_MS = 5 * 60 * 1000;
+
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
@@ -1006,6 +1009,7 @@ async function correctImageOrientation({
 
   const response = await generateText({
     model,
+    abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
     instructions: formatPrompt([
       'Of the four labeled images provided, select the one that is closest to being upright.',
       'Upright (0 degrees): The handwriting is in a standard reading position already.',
@@ -1095,6 +1099,7 @@ export async function correctImagesOrientation({
 
 const AiGradingJobDataForSubmissionSchema = z.object({
   manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+  model: AiGradingJobSchema.shape.model.nullable(),
   prompt: AiGradingJobSchema.shape.prompt,
   completion: AiGradingJobSchema.shape.completion,
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
@@ -1205,6 +1210,7 @@ export async function buildAiGradingInfo({
   });
 
   const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
+    model: aiGradingJobData.model,
     submissionManuallyGraded,
     prompt: formattedPrompt,
     selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
