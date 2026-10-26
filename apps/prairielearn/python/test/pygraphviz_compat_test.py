@@ -14,7 +14,7 @@ def test_draw_file_like_output():
                 import io
 
                 import pygraphviz
-                from prairielearn.internal.pygraphviz_compat import patch_pygraphviz
+                from _pygraphviz_compat import patch_pygraphviz
 
                 patch_pygraphviz()
                 graph = pygraphviz.AGraph()

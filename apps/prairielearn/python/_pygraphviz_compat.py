@@ -1,3 +1,5 @@
+"""Temporary executor compatibility patch for PyGraphviz file-like output."""
+
 import os
 from functools import wraps
 from typing import Any
@@ -6,6 +8,7 @@ import pygraphviz
 
 
 def patch_pygraphviz() -> None:
+    """Restore Python-level writes for PyGraphviz file-like outputs."""
     # PyGraphviz 2.0 passes file-like outputs to a FILE* typemap that segfaults
     # for BytesIO. Render to bytes and use Python's write() as 1.14 did until
     # upstream fixes this conversion: https://github.com/pygraphviz/pygraphviz/issues/548
