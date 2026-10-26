@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs';
 
-import { load } from 'cheerio';
 import { chromium } from 'playwright';
 import { z } from 'zod';
 
@@ -19,6 +18,7 @@ import {
 import { getAndRenderVariant } from '../question-render.js';
 import type { ResLocalsForPage } from '../res-locals.js';
 
+import { combineQuestionHeaders } from './combine-question-headers.js';
 import { namespaceQuestionHtmls } from './namespace-question-htmls.js';
 import { PrintRenderer } from './print-renderer.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
@@ -42,19 +42,6 @@ const BROKEN_QUESTION_FAILURE_STAGE = 'variant_creation';
 const BROKEN_QUESTION_FAILURE_MESSAGE =
   'Question could not be rendered due to an error in question code.';
 const UNSUPPORTED_QUESTION_CODE = 'unsupported_question_type';
-
-/** Development asset URLs use a fresh UUID for each render, even for the same package file. */
-function sameDevelopmentModuleAsset(first: string, second: string): boolean {
-  const pattern = /^(.*\/node_modules\/)[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}\/(.+)$/i;
-  const firstMatch = pattern.exec(first);
-  const secondMatch = pattern.exec(second);
-  return (
-    firstMatch !== null &&
-    secondMatch !== null &&
-    firstMatch[1] === secondMatch[1] &&
-    firstMatch[2] === secondMatch[2]
-  );
-}
 
 export const PRINT_DOCUMENTS = ['assessment', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
@@ -273,7 +260,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   const questions = await selectPrintableQuestions(resLocals.assessment_instance.id);
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
   const includedQuestions = selectIncludedQuestions(questions, excludedQuestionNumbers);
-  const extraHeaderHtmls = new Set<string>();
+  const extraHeaderHtmls: string[] = [];
   const renderedQuestions: { html: string; namespace: string }[] = [];
   const questionResults: PrintingQuestionResult[] = [];
   let maxPoints = 0;
@@ -355,10 +342,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       extraHeadersHtml += `\n${manualGradingRenderState.extraHeadersHtml}`;
     }
 
-    for (const extraHeaderHtml of extraHeadersHtml.split('\n')) {
-      const trimmedExtraHeaderHtml = extraHeaderHtml.trim();
-      if (trimmedExtraHeaderHtml) extraHeaderHtmls.add(trimmedExtraHeaderHtml);
-    }
+    extraHeaderHtmls.push(extraHeadersHtml);
 
     const questionHtml = QuestionContainer({
       resLocals: {
@@ -395,40 +379,10 @@ async function renderAssessmentInstanceQuestionsUnbounded(
     maxPoints += printableQuestion.assessment_question.max_points ?? 0;
   }
 
-  // Some browsers only support one import map per document. Combine the question maps
-  // before any element scripts run, so later questions can resolve their dependencies.
-  const headers = load([...extraHeaderHtmls].join('\n'), null, false);
-  const imports: Record<string, string> = {};
-  headers('script[type="importmap"]').each((_, element) => {
-    const importMap = z
-      .object({ imports: z.record(z.string(), z.string()) })
-      .parse(JSON.parse(headers(element).text()));
-    for (const [specifier, url] of Object.entries(importMap.imports)) {
-      if (
-        imports[specifier] &&
-        imports[specifier] !== url &&
-        !sameDevelopmentModuleAsset(imports[specifier], url)
-      ) {
-        throw new Error(`Questions use conflicting import maps for ${specifier}`);
-      }
-      imports[specifier] = url;
-    }
-    headers(element).remove();
-  });
-
   return {
     questionHtmls: namespaceQuestionHtmls(renderedQuestions),
     questionResults,
-    extraHeadersHtml: html`
-      ${
-        Object.keys(imports).length > 0
-          ? html`<script type="importmap">
-              ${unsafeHtml(JSON.stringify({ imports }))}
-            </script>`
-          : ''
-      }
-      ${unsafeHtml(headers.html())}
-    `.toString(),
+    extraHeadersHtml: combineQuestionHeaders(extraHeaderHtmls),
     maxPoints,
   };
 }
