@@ -154,7 +154,7 @@ interface AssessmentEditorInnerProps {
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
-  printableExamsAvailable: boolean;
+  printableAssessmentsAvailable: boolean;
   courseHasQuestions: boolean;
   csrfToken: string;
   origHash: string;
@@ -179,7 +179,7 @@ function AssessmentEditorInner({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
-  printableExamsAvailable,
+  printableAssessmentsAvailable,
   courseHasQuestions,
   csrfToken,
   origHash,
@@ -1138,7 +1138,7 @@ function AssessmentEditorInner({
                           setEditMode(false);
                         }}
                       />
-                      {!editMode && printableExamsAvailable && (
+                      {!editMode && printableAssessmentsAvailable && (
                         <Button
                           variant="outline-secondary"
                           size="sm"

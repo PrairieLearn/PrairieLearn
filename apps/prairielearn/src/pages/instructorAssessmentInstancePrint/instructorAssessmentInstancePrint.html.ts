@@ -1,21 +1,21 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.js';
+import { BaseHeadContents } from '../../components/HeadContents.js';
 import {
   compiledScriptTag,
+  compiledStylesheetPath,
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
 import { PAPER_DIMENSIONS, type PaperSize } from '../../lib/printing/paper-size.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
 import {
-  DEFAULT_EXAM_INSTRUCTIONS,
+  DEFAULT_ASSESSMENT_INSTRUCTIONS,
   answerKeyDescription,
   getDefaultHonorCodePledge,
   getPrintCoverFields,
   getPrintFooterLabel,
-} from './print-cover.js';
+} from '../../lib/printing/print-cover.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function InstructorAssessmentInstancePrint({
   resLocals,
@@ -35,7 +35,7 @@ export function InstructorAssessmentInstancePrint({
   includeHonorCode,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
-  document: 'exam' | 'answer_key';
+  document: 'assessment' | 'answer_key';
   formLabel?: string;
   paperSize: PaperSize;
   includeCoverPage: boolean;
@@ -72,160 +72,51 @@ export function InstructorAssessmentInstancePrint({
       data-print-max-points="${maxPoints}"
     >
       <head>
-        ${HeadContents({
+        ${BaseHeadContents({
           resLocals,
           pageTitle: isAnswerKey
             ? `${resLocals.assessment_label} answer key`
             : `${resLocals.assessment_label} printable assessment`,
-          includeApplicationScripts: false,
         })}
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
           window.PagedConfig = { auto: false };
           window.__PL_PRINT_READINESS_PROMISES__ = [];
-          window.PrairieLearnExamPrinting = {
+          window.PrairieLearnAssessmentPrinting = {
             waitUntil(promise) {
               void promise.catch(() => undefined);
               window.__PL_PRINT_READINESS_PROMISES__.push(promise);
             },
           };
         </script>
-        ${compiledScriptTag('exam-printing-client.ts')}
+        ${compiledScriptTag('assessment-printing-client.ts')}
         <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>
         <style>
           :root {
-            --exam-print-page-width: ${paperWidth};
-            --exam-print-page-height: ${paperHeight};
+            --assessment-print-page-width: ${paperWidth};
+            --assessment-print-page-height: ${paperHeight};
           }
 
           @page {
             size: ${paperWidth} ${paperHeight};
           }
         </style>
+        <link
+          rel="stylesheet"
+          href="${compiledStylesheetPath('assessment-printing-preview.css')}"
+          data-pagedjs-ignore
+        />
         <style data-pagedjs-ignore>
-          #exam-print-status {
-            background: #fff;
-            border: 1px solid #bbb;
-            border-radius: 0.25rem;
-            box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 12%);
-            left: 50%;
-            padding: 0.65rem 1rem;
-            position: fixed;
-            top: 1rem;
-            transform: translateX(-50%);
-            z-index: 1000;
-          }
-
-          html[data-print-status='ready'] #exam-print-status {
-            display: none;
-          }
-
-          html[data-print-status='error'] #exam-print-status {
-            background: #f8d7da;
-            border-color: #842029;
-            color: #842029;
-          }
-
-          .exam-grading-table {
-            flex-shrink: 0;
-            margin-bottom: 12px;
-          }
-          .exam-grading-grid {
-            display: grid;
-            column-gap: 20px;
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(0, 1fr);
-          }
-          .exam-grading-row {
-            display: flex;
-            align-items: flex-end;
-            gap: 8px;
-            padding-bottom: 6px;
-            font-size: 10pt;
-          }
-          .exam-grading-score {
-            flex: 0 1 150px;
-            border-bottom: 1px solid #111;
-            margin-bottom: 3px;
-          }
-
-          @media screen {
-            html,
-            body {
-              background: #e7eaee;
-              margin: 0;
-            }
-
-            #exam-print-pages {
-              overflow-x: auto;
-            }
-
-            #exam-print-pages .pagedjs_pages {
-              align-items: center;
-              box-sizing: border-box;
-              display: flex;
-              flex-direction: column;
-              gap: 1.25rem;
-              min-width: 100%;
-              padding: 1.75rem 0;
-              width: max-content;
-            }
-
-            #exam-print-pages .pagedjs_page {
-              background: #fff;
-              box-shadow: 0 0.25rem 1.25rem rgb(0 0 0 / 18%);
-              margin: 0;
-            }
-          }
-
           @media print {
             @page {
               size: ${paperWidth} ${paperHeight};
               margin: 0;
             }
-
-            html,
-            body {
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-
-            #exam-print-status {
-              display: none !important;
-            }
-
-            #exam-print-pages .pagedjs_pages {
-              display: block !important;
-            }
-
-            #exam-print-pages .pagedjs_page {
-              break-after: page;
-              box-shadow: none !important;
-              margin: 0 !important;
-            }
-
-            #exam-print-pages .exam-cover {
-              break-after: auto !important;
-              page: auto !important;
-            }
-
-            #exam-print-pages .pagedjs_page:last-child {
-              break-after: auto;
-            }
           }
         </style>
-        ${unsafeHtml(extraHeadersHtml)} ${compiledStylesheetTag('exam-printing.css')}
+        ${unsafeHtml(extraHeadersHtml)} ${compiledStylesheetTag('assessment-printing.css')}
         <style>
           @page {
-            @bottom-right {
-              color: #555;
-              content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
-              font-family: system-ui, sans-serif;
-              font-size: 8pt;
-            }
-          }
-
-          @page exam-cover {
             @bottom-right {
               color: #555;
               content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
@@ -242,40 +133,42 @@ export function InstructorAssessmentInstancePrint({
         ${compiledScriptTag('question.ts')}
       </head>
       <body>
-        <div id="exam-print-status" role="status">
+        <div id="assessment-print-status" role="status">
           Preparing ${paperSize} ${documentLabel.toLowerCase()} pages…
         </div>
-        <div id="exam-print-source" class="exam-print-document">
+        <div id="assessment-print-source" class="assessment-print-document">
           ${
             includeCoverPage
               ? html`
-                  <article class="exam-cover" aria-label="${documentLabel} cover page">
-                    <header class="exam-cover-header">
-                      <div class="exam-cover-course">${resLocals.course.short_name}</div>
-                      <div class="exam-cover-course-title">
+                  <article class="assessment-cover" aria-label="${documentLabel} cover page">
+                    <header class="assessment-cover-header">
+                      <div class="assessment-cover-course">${resLocals.course.short_name}</div>
+                      <div class="assessment-cover-course-title">
                         ${resLocals.course.title ?? resLocals.course_instance.long_name ?? ''}
                       </div>
                       <h1>${resLocals.assessment_label}</h1>
                       ${
                         resLocals.assessment.title
-                          ? html`<div class="exam-cover-title">${resLocals.assessment.title}</div>`
+                          ? html`<div class="assessment-cover-title">
+                              ${resLocals.assessment.title}
+                            </div>`
                           : ''
                       }
-                      ${isAnswerKey ? html`<div class="exam-cover-document-label">Answer key</div>` : ''}
+                      ${isAnswerKey ? html`<div class="assessment-cover-document-label">Answer key</div>` : ''}
                     </header>
 
                     ${
                       isAnswerKey
                         ? ''
                         : html`
-                            <div class="exam-cover-fields">
+                            <div class="assessment-cover-fields">
                               ${getPrintCoverFields({
                                 identityFields,
                                 teamWork: resLocals.assessment.team_work,
                               }).map(
                                 (field) => html`
                                   <div
-                                    class="exam-cover-field${field.wide ? ' exam-cover-field-wide' : ''}"
+                                    class="assessment-cover-field${field.wide ? ' assessment-cover-field-wide' : ''}"
                                   >
                                     <span>${field.label}</span>
                                   </div>
@@ -285,7 +178,7 @@ export function InstructorAssessmentInstancePrint({
                           `
                     }
 
-                    <dl class="exam-cover-summary">
+                    <dl class="assessment-cover-summary">
                       <div>
                         <dt>Questions</dt>
                         <dd>${questionHtmls.length}</dd>
@@ -301,10 +194,10 @@ export function InstructorAssessmentInstancePrint({
                     </dl>
 
                     <section
-                      class="exam-cover-instructions"
-                      aria-labelledby="exam-instructions-heading"
+                      class="assessment-cover-instructions"
+                      aria-labelledby="assessment-instructions-heading"
                     >
-                      <h2 id="exam-instructions-heading">
+                      <h2 id="assessment-instructions-heading">
                         ${isAnswerKey ? 'About this answer key' : 'Instructions'}
                       </h2>
                       ${
@@ -313,12 +206,12 @@ export function InstructorAssessmentInstancePrint({
                               ${answerKeyDescription(resLocals.assessment_instance.id, formLabel)}
                             </p>`
                           : html`<ol>
-                              ${DEFAULT_EXAM_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
+                              ${DEFAULT_ASSESSMENT_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
                             </ol>`
                       }
                       ${
                         assessmentTextHtml
-                          ? html`<div class="exam-cover-custom-instructions">
+                          ? html`<div class="assessment-cover-custom-instructions">
                               ${unsafeHtml(assessmentTextHtml)}
                             </div>`
                           : ''
@@ -329,7 +222,7 @@ export function InstructorAssessmentInstancePrint({
                       !isAnswerKey && includeHonorCode
                         ? html`
                             <section
-                              class="exam-cover-honor-code"
+                              class="assessment-cover-honor-code"
                               aria-labelledby="honor-code-heading"
                             >
                               <h2 id="honor-code-heading">Academic integrity pledge</h2>
@@ -342,7 +235,7 @@ export function InstructorAssessmentInstancePrint({
                                       ).map((item) => html`<li>${item}</li>`)}
                                     </ul>`
                               }
-                              <div class="exam-cover-signature"><span>Signature</span></div>
+                              <div class="assessment-cover-signature"><span>Signature</span></div>
                             </section>
                           `
                         : ''
@@ -350,9 +243,13 @@ export function InstructorAssessmentInstancePrint({
                     ${
                       !isAnswerKey && includeGradingTable
                         ? html`
-                            <section class="exam-grading-table" aria-label="Grading table" hidden>
+                            <section
+                              class="assessment-grading-table"
+                              aria-label="Grading table"
+                              hidden
+                            >
                               <h2>Grading</h2>
-                              <div class="exam-grading-grid"></div>
+                              <div class="assessment-grading-grid"></div>
                             </section>
                           `
                         : ''
@@ -362,7 +259,7 @@ export function InstructorAssessmentInstancePrint({
                       ${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}
                       <span
                         >${getPrintFooterLabel({
-                          document: 'exam',
+                          document: 'assessment',
                           formId: resLocals.assessment_instance.id,
                           formLabel,
                         })}</span
@@ -373,12 +270,11 @@ export function InstructorAssessmentInstancePrint({
               : ''
           }
 
-          <div class="exam-questions">
+          <div class="assessment-questions">
             ${questionHtmls.map((questionHtml) => unsafeHtml(questionHtml))}
           </div>
         </div>
-        <main id="exam-print-pages"></main>
-        <noscript>This printable assessment requires JavaScript to paginate its pages.</noscript>
+        <main id="assessment-print-pages"></main>
       </body>
     </html>`;
 }

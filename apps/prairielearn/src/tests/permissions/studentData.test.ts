@@ -246,11 +246,11 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
   });
 
   test('instructor (student data viewer) cannot print an E1 answer key', async () => {
-    await features.enable('printable-exams');
-    const paperUrl = context.examAssessmentInstanceUrl
+    await features.enable('printable-assessments');
+    const printUrl = context.examAssessmentInstanceUrl
       .replace('/assessment_instance/', '/instructor/assessment_instance/')
       .replace(/\/$/, '');
-    const url = `${paperUrl}/paper/preview?paper_size=Letter&document=answer_key`;
+    const url = `${printUrl}/print/preview?paper_size=Letter&document=answer_key`;
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
@@ -260,7 +260,12 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
 
     const docxResponse = await helperClient.fetchCheerio(url.replace('/preview?', '/docx?'), {
       method: 'POST',
-      headers,
+      headers: { ...headers, 'Content-Type': 'application/octet-stream' },
+      body: JSON.stringify({
+        id: 'unused',
+        html: '<html></html>',
+        source: { html: '', figures: [] },
+      }),
     });
     assert.equal(docxResponse.status, 403);
   });

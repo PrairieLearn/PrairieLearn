@@ -8,11 +8,11 @@ import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js
 import { inspectPrintPreparationQuestions } from '../../lib/print-preparation.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 
-import { requireCoursePermissionPreview, requirePrintableExams, t } from './init.js';
+import { requireCoursePermissionPreview, requirePrintableAssessments, t } from './init.js';
 
 const printableAssessmentProcedure = t.procedure
   .use(requireCoursePermissionPreview)
-  .use(requirePrintableExams);
+  .use(requirePrintableAssessments);
 
 const createInstanceProcedure = printableAssessmentProcedure.use(async ({ ctx, next }) => {
   if (ctx.assessment.team_work) {
@@ -41,7 +41,7 @@ const ownedInstanceProcedure = printableAssessmentProcedure
     return next();
   });
 
-export const printableExamsRouter = t.router({
+export const printableAssessmentsRouter = t.router({
   questions: ownedInstanceProcedure.query(async ({ input }) => {
     return await inspectPrintPreparationQuestions(input.assessmentInstanceId);
   }),

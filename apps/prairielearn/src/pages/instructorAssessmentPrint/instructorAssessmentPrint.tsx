@@ -11,11 +11,11 @@ import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { assessmentHasPrintRandomization } from '../../lib/print-preparation.js';
-import { isBrowserRenderingAvailable } from '../../lib/printing.js';
+import { isBrowserRenderingAvailable } from '../../lib/printing/index.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { requirePrintableExams } from '../../middlewares/requirePrintableExams.js';
+import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js';
 
@@ -23,7 +23,7 @@ import { InstructorAssessmentPrint } from './instructorAssessmentPrint.html.js';
 
 const router = Router();
 
-router.use(requirePrintableExams);
+router.use(requirePrintableAssessments);
 
 router.get(
   '/',

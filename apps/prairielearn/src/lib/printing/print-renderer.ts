@@ -25,7 +25,7 @@ export class QuestionBlockSizeOverflowError extends Error {
   }
 }
 
-const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
+const DEFAULT_RENDER_TIMEOUT_MS = 45_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 50;
 const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 50;
 const DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS = 4;
@@ -100,6 +100,10 @@ export interface PrintRendererOptions {
 }
 
 export interface RenderPageOptions {
+  /**
+   * Page URL on the local application server. Cloudflare uses a separate navigation origin,
+   * but protected assets are fetched from this URL's origin, including in production.
+   */
   url: string;
   /** Public page origin used by Cloudflare; the request itself is intercepted. */
   browserOrigin?: string;
@@ -111,6 +115,8 @@ export interface RenderPageOptions {
   runScripts?: boolean;
   /** Overrides the renderer's default deadline. `0` disables the deadline. */
   timeoutMs?: number;
+  /** Cancels queued work and closes any browser context already rendering this page. */
+  signal?: AbortSignal;
 }
 
 export type RenderPdfOptions = RenderPageOptions;
@@ -211,6 +217,7 @@ export class PrintRenderer {
         timeoutMs,
         output.label,
         kind,
+        options.signal,
       )
       .catch((error: unknown) => {
         if (acquiredAt === null) queueWait.record(performance.now() - startedAt, { kind });
@@ -305,9 +312,11 @@ export class PrintRenderer {
       assetAccess,
       runScripts = false,
       timeoutMs = DEFAULT_RENDER_TIMEOUT_MS,
+      signal: requestSignal,
     }: ActiveRenderPageOptions,
     output: PrintablePageOutput<T>,
   ): Promise<T> {
+    requestSignal?.throwIfAborted();
     const deadline = timeoutMs === 0 ? null : Date.now() + timeoutMs;
     const remainingTimeoutMs = () => (deadline === null ? 0 : Math.max(1, deadline - Date.now()));
     const localUrl = new URL(url);
@@ -315,36 +324,57 @@ export class PrintRenderer {
       ? urlAtOrigin(localUrl, browserOrigin ?? 'https://example.com').href
       : localUrl.href;
     const renderOrigin = new URL(navigationUrl).origin;
-    let startupTimer: ReturnType<typeof setTimeout> | undefined;
-    const browser = await (deadline === null
-      ? this.getBrowser(0)
-      : Promise.race([
-          this.getBrowser(remainingTimeoutMs()),
-          new Promise<never>((_resolve, reject) => {
-            startupTimer = setTimeout(
-              () =>
-                reject(new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`)),
-              remainingTimeoutMs(),
-            );
-          }),
-        ]).finally(() => {
-          if (startupTimer) clearTimeout(startupTimer);
-        }));
+    const deadlineController = new AbortController();
+    const signal = requestSignal
+      ? AbortSignal.any([requestSignal, deadlineController.signal])
+      : deadlineController.signal;
+    let onAbort!: () => void;
+    const canceled = new Promise<never>((_resolve, reject) => {
+      onAbort = () => reject(signal.reason);
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+    const deadlineTimer =
+      deadline === null
+        ? undefined
+        : setTimeout(
+            () =>
+              deadlineController.abort(
+                new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`),
+              ),
+            remainingTimeoutMs(),
+          );
+    const clearDeadline = () => {
+      if (deadlineTimer) clearTimeout(deadlineTimer);
+      signal.removeEventListener('abort', onAbort);
+    };
+    const browser = await Promise.race([this.getBrowser(remainingTimeoutMs()), canceled])
+      .then((browser) => {
+        signal.throwIfAborted();
+        return browser;
+      })
+      .catch((error: unknown) => {
+        // Other renders may still be waiting for this shared browser connection.
+        clearDeadline();
+        throw error;
+      });
 
-    const state: { context: BrowserContext | null; timedOut: boolean } = {
+    const state: { context: BrowserContext | null; outputPromise?: Promise<T> } = {
       context: null,
-      timedOut: false,
     };
     const assetController = new AbortController();
-    let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
 
     const render = async () => {
+      signal.throwIfAborted();
       const context = await browser.newContext({
         ignoreHTTPSErrors: true,
         serviceWorkers: 'block',
         javaScriptEnabled: runScripts,
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
       });
+      if (signal.aborted) {
+        await this.discardContext(browser, context);
+        signal.throwIfAborted();
+      }
       state.context = context;
 
       // Only required same-origin assets may be loaded. Realtime traffic is refused
@@ -462,26 +492,26 @@ export class PrintRenderer {
         );
       });
 
-      return await output.produce(page);
+      signal.throwIfAborted();
+      state.outputPromise = output.produce(page);
+      return await state.outputPromise;
     };
 
     try {
-      if (deadline === null) return await render();
-      const deadlineExpired = new Promise<never>((_resolve, reject) => {
-        deadlineTimer = setTimeout(() => {
-          state.timedOut = true;
-          reject(new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`));
-        }, remainingTimeoutMs());
-      });
-      return await Promise.race([render(), deadlineExpired]);
+      return await Promise.race([render(), canceled]);
     } finally {
-      if (deadlineTimer) clearTimeout(deadlineTimer);
+      clearDeadline();
       assetController.abort();
       const openContext = state.context;
-      // A context created after the deadline may still be pending, so discard its browser.
-      if (state.timedOut && !openContext) this.discardBrowser(browser);
+      // A context created after cancellation may still be pending, so discard its browser.
+      if (signal.aborted && !openContext) this.discardBrowser(browser);
       if (openContext) {
         await this.discardContext(browser, openContext);
+      }
+      if (signal.aborted) {
+        // Closing the context cancels Playwright work, but output generation may already be
+        // packing a Word document in Node. Keep the permit until that work actually settles.
+        await state.outputPromise?.catch(() => undefined);
       }
     }
   }

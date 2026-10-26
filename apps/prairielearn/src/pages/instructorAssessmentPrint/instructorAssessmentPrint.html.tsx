@@ -35,8 +35,8 @@ import {
   getCourseInstanceJobSequenceUrl,
   getQuestionUrl,
 } from '../../lib/client/url.js';
+import type { PrintDocument } from '../../lib/printing/index.js';
 import type { QuestionBlockSize } from '../../lib/printing/question-block-size.js';
-import type { PrintDocument } from '../../lib/printing.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
@@ -104,7 +104,7 @@ function PrintPreparation({
 }: PrintPreparationProps) {
   const trpc = useTRPC();
   const instances = useQuery(
-    trpc.printableExams.list.queryOptions(undefined, { initialData: initialInstances }),
+    trpc.printableAssessments.list.queryOptions(undefined, { initialData: initialInstances }),
   );
   const [selectedInstance, setSelectedInstance] = useQueryState('instance', parseAsString);
   const [selectedInstances, setSelectedInstances] = useQueryState(
@@ -131,7 +131,7 @@ function PrintPreparation({
   const [showBookletModal, setShowBookletModal] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const validInstance = instances.data.some((instance) => instance.id === instanceId);
-  const [document, setDocument] = useState<PrintDocument>('exam');
+  const [document, setDocument] = useState<PrintDocument>('assessment');
   const defaultSettings = { ...DEFAULT_PRINT_SETTINGS, includeHonorCode: requireHonorCode };
   const [settings, setSettings] = useState<PrintSettings>(defaultSettings);
   const [selectedQuestion, setSelectedQuestion] = useState<{ number: string } | null>(null);
@@ -165,34 +165,34 @@ function PrintPreparation({
   const excludedQuestions = watch('excludedQuestions');
   const excludedQuestionNumbers = new Set(excludedQuestions);
   const layout = `${printLayoutSearch(settings)}&form_label=${formLabel}`;
-  const paperBase = instanceId
-    ? `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: instanceId })}/paper`
+  const printBase = instanceId
+    ? `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: instanceId })}/print`
     : '';
-  const previewUrl = `${paperBase}/preview?${layout}&document=${document}`;
+  const previewUrl = `${printBase}/preview?${layout}&document=${document}`;
   const questions = useQuery(
-    trpc.printableExams.questions.queryOptions(
+    trpc.printableAssessments.questions.queryOptions(
       { assessmentInstanceId: instanceId ?? '1' },
       { enabled: validInstance },
     ),
   );
   const create = useMutation(
-    trpc.printableExams.create.mutationOptions({
+    trpc.printableAssessments.create.mutationOptions({
       onSuccess: async () => {
         await instances.refetch();
       },
     }),
   );
   const regenerate = useMutation(
-    trpc.printableExams.regenerate.mutationOptions({
+    trpc.printableAssessments.regenerate.mutationOptions({
       onSuccess: async () => {
         await instances.refetch();
       },
     }),
   );
-  const packet = useMutation(trpc.printableExamExport.pdf.mutationOptions());
-  const booklet = useMutation(trpc.printableExamExport.pdf.mutationOptions());
+  const packet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
+  const booklet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
   const exportStatus = useQuery(
-    trpc.printableExamExport.status.queryOptions(
+    trpc.printableAssessmentExport.status.queryOptions(
       { jobSequenceId: exportJobId ?? '1' },
       {
         enabled: exportJobId !== null,
@@ -271,7 +271,7 @@ function PrintPreparation({
     appliedSettings: PrintSettings,
     printDocument: PrintDocument,
   ) {
-    const base = `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: id })}/paper`;
+    const base = `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: id })}/print`;
     const url = `${base}/preview?${printLayoutSearch(appliedSettings)}&form_label=${label}&document=${printDocument}`;
     const cached = snapshotsRef.current.get(url);
     if (cached) return cached;
@@ -298,10 +298,10 @@ function PrintPreparation({
     }
     const snapshotRequests = metadata.instances.flatMap((instance, index) =>
       (metadata.document === 'booklet'
-        ? (['exam', 'answer_key'] as const)
+        ? (['assessment', 'answer_key'] as const)
         : ([metadata.document] as PrintDocument[])
       )
-        .filter((printDocument) => printDocument !== 'exam' || index < metadata.copies)
+        .filter((printDocument) => printDocument !== 'assessment' || index < metadata.copies)
         .map((printDocument) => ({ instance, printDocument })),
     );
     setPdfPreparationProgress({ completed: 0, total: snapshotRequests.length });
@@ -420,10 +420,10 @@ function PrintPreparation({
   const download = useMutation({
     mutationFn: async (id: string) => {
       const label = String.fromCharCode(65 + instanceIds.indexOf(id));
-      const base = `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: id })}/paper`;
+      const base = `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: id })}/print`;
       const appliedSettings = settingsForInstance(id);
       const search = `${printLayoutSearch(appliedSettings)}&form_label=${label}`;
-      const url = `${base}/preview?${search}&document=exam`;
+      const url = `${base}/preview?${search}&document=assessment`;
       const livePreview = previewDocumentRef.current;
       const snapshot =
         livePreview?.url === url && livePreview.doc.documentElement.dataset.printStatus === 'ready'
@@ -435,7 +435,7 @@ function PrintPreparation({
         'X-CSRF-Token': docxCsrfToken,
         'Content-Type': 'application/octet-stream',
       });
-      const response = await fetch(`${base}/docx?${search}&document=exam`, {
+      const response = await fetch(`${base}/docx?${search}&document=assessment`, {
         method: 'POST',
         headers,
         body: JSON.stringify(snapshot),
@@ -1213,9 +1213,9 @@ function PrintPreparation({
                   <ButtonGroup size="sm" aria-label="Preview document">
                     <Button
                       type="button"
-                      variant={document === 'exam' ? 'primary' : 'outline-secondary'}
-                      aria-pressed={document === 'exam'}
-                      onClick={() => switchDocument('exam')}
+                      variant={document === 'assessment' ? 'primary' : 'outline-secondary'}
+                      aria-pressed={document === 'assessment'}
+                      onClick={() => switchDocument('assessment')}
                     >
                       Student copy
                     </Button>
@@ -1308,7 +1308,7 @@ function PrintPreparation({
                                 <Dropdown.Item
                                   disabled={!renderingAvailable}
                                   onClick={() =>
-                                    void downloadPacket([id], 1, 'exam').catch(() => {})
+                                    void downloadPacket([id], 1, 'assessment').catch(() => {})
                                   }
                                 >
                                   Download Form {label} (PDF)
@@ -1334,9 +1334,11 @@ function PrintPreparation({
                             <Dropdown.Item
                               disabled={!renderingAvailable}
                               onClick={() =>
-                                void downloadPacket(instanceIds, instanceIds.length, 'exam').catch(
-                                  () => {},
-                                )
+                                void downloadPacket(
+                                  instanceIds,
+                                  instanceIds.length,
+                                  'assessment',
+                                ).catch(() => {})
                               }
                             >
                               Download all forms (PDF)

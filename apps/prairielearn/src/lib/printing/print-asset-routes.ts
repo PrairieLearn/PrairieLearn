@@ -60,7 +60,7 @@ export function applyPrintAssetRoutes(app: Express): void {
       }
       const course = await selectCourseById(courseInstance.course_id);
       if (
-        !(await features.enabled('printable-exams', {
+        !(await features.enabled('printable-assessments', {
           institution_id: course.institution_id,
           course_id: course.id,
           course_instance_id: courseInstance.id,

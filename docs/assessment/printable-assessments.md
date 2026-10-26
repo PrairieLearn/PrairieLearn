@@ -1,29 +1,29 @@
-# Printable exams
+# Printable assessments
 
 You can prepare paper copies of an existing exam or homework assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. If you have permission to edit the course instance, you can also preview and download answer keys.
 
 For assessments with randomization, you can prepare several versions, called _forms_. Each form has its own questions and matching answer key. Printable forms are not currently supported for group assessments.
 
-## Prepare an exam
+## Prepare an assessment
 
 1. Open the assessment's **Questions** page and select **Print**.
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
 3. Choose what to include on the [cover page](#cover-pages), then select **Create preview**.
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
 5. Select **Update preview** to apply your changes. Check the **Student copy** and, if available, the **Answer key** above the preview.
-6. When you are satisfied with the exam, open **Download** and [choose a file](#download-files).
+6. When you are satisfied with the assessment, open **Download** and [choose a file](#download-files).
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
 
 ## Review questions
 
-Review every question in the preview, including its instructions, figures, and answer choices. Questions that work well online may need changes for a paper exam. Expandable sections print in full, even when they are closed in the online question.
+Review every question in the preview, including its instructions, figures, and answer choices. Questions that work well online may need changes for a paper assessment. Expandable sections print in full, even when they are closed in the online question.
 
 If your course uses custom elements in questions, check those questions in both the preview and downloaded files. Some elements designed for the screen may not print as expected.
 
 The question list highlights two kinds of items to check:
 
-- **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the exam.
+- **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the assessment.
 - **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of this form. Then select **Update preview**. Downloads are unavailable while included questions have these errors.
 
 Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and, if you can access it, the answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.

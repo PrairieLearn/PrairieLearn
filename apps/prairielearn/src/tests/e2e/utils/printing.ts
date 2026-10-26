@@ -22,7 +22,7 @@ export async function createPrintableAssessmentInstance(courseInstanceId: string
 
 export async function waitForPrintablePage(page: Page): Promise<void> {
   const root = page.locator(':root');
-  await expect(root).toHaveAttribute('data-print-status', /^(ready|error)$/, { timeout: 120_000 });
+  await expect(root).toHaveAttribute('data-print-status', /^(ready|error)$/);
   const state = await root.evaluate((element) => ({
     status: element.dataset.printStatus,
     error: element.dataset.printError,
@@ -30,7 +30,7 @@ export async function waitForPrintablePage(page: Page): Promise<void> {
   expect(state).toEqual({ status: 'ready', error: undefined });
 }
 
-export async function downloadPrintableWord(page: Page, paperUrl: string, search: string) {
+export async function downloadPrintableWord(page: Page, printUrl: string, search: string) {
   const source = await page.evaluate(() =>
     JSON.parse(document.getElementById('pl-print-docx-source')!.textContent),
   );
@@ -46,13 +46,13 @@ export async function downloadPrintableWord(page: Page, paperUrl: string, search
     return { id, html: `<!doctype html>\n${copy.outerHTML}` };
   });
   const { id: authnUserId } = await getConfiguredUser();
-  return await page.request.post(`${paperUrl}/docx?${search}`, {
+  return await page.request.post(`${printUrl}/docx?${search}`, {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/octet-stream',
-      'X-CSRF-Token': generateCsrfToken({ url: `${paperUrl}/docx`, authnUserId }),
+      'X-CSRF-Token': generateCsrfToken({ url: `${printUrl}/docx`, authnUserId }),
     },
     data: JSON.stringify({ id, html, source }),
-    timeout: 120_000,
+    timeout: 30_000,
   });
 }

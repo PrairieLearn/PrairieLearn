@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Spinner } from 'react-bootstrap';
 
 import { type PrintSnapshot, capturePrintSnapshot } from '../../lib/client/print-snapshot.js';
-import type { PrintDocument } from '../../lib/printing.js';
+import type { PrintDocument } from '../../lib/printing/index.js';
 
 export type PreviewState =
   | { status: 'loading' }
@@ -131,7 +131,7 @@ export function PrintPreview({
         cleanupRef.current();
         update({
           status: 'error',
-          message: root.dataset.printError ?? 'Unable to lay out this exam.',
+          message: root.dataset.printError ?? 'Unable to lay out this assessment.',
         });
       }
     }
@@ -159,7 +159,7 @@ export function PrintPreview({
       {state.status === 'loading' && (
         <div className="print-preparation-overlay" role="status">
           <Spinner size="sm" className="me-2" /> Laying out your{' '}
-          {document === 'answer_key' ? 'answer key' : 'exam'}…
+          {document === 'answer_key' ? 'answer key' : 'assessment'}…
         </div>
       )}
       {state.status === 'error' && (

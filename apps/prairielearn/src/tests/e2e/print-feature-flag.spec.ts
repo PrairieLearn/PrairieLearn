@@ -22,7 +22,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
   ).toBe(404);
   expect(
     (
-      await page.request.get(`${base}/assessment_instance/1/paper/preview?paper_size=Letter`)
+      await page.request.get(`${base}/assessment_instance/1/print/preview?paper_size=Letter`)
     ).status(),
   ).toBe(404);
 });

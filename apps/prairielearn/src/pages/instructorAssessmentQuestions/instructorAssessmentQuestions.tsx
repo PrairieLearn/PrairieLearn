@@ -23,7 +23,7 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { isBrowserRenderingAvailable } from '../../lib/printing.js';
+import { isBrowserRenderingAvailable } from '../../lib/printing/index.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
@@ -196,9 +196,9 @@ router.get(
                 pageContext.authz_data.has_course_instance_permission_edit
               }
               canEdit={canEdit}
-              printableExamsAvailable={
+              printableAssessmentsAvailable={
                 isBrowserRenderingAvailable() &&
-                (await features.enabledFromLocals('printable-exams', res.locals))
+                (await features.enabledFromLocals('printable-assessments', res.locals))
               }
               courseHasQuestions={courseHasQuestions}
               csrfToken={res.locals.__csrf_token}

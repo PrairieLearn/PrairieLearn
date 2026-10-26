@@ -45,14 +45,14 @@ export async function waitForPrintExportWorkers() {
 }
 
 const PersistedWorkSchema = z.object({
-  document: z.enum(['exam', 'answer_key', 'booklet']),
+  document: z.enum(['assessment', 'answer_key', 'booklet']),
   copies: z.number().int().positive(),
   filename: z.string(),
   snapshots: z.array(
     z.object({
       formLabel: z.string(),
-      printDocument: z.enum(['exam', 'answer_key']),
-      previewUrl: z.url(),
+      printDocument: z.enum(['assessment', 'answer_key']),
+      localPreviewUrl: z.url(),
       html: z.string(),
       assetScope: PrintAssetScopeDataSchema,
     }),
@@ -340,7 +340,7 @@ export async function processQueuedPrintExports(): Promise<void> {
         job_sequence_id: IdSchema,
         queued_at: DateFromISOString,
         input_key: z.string(),
-        document: z.enum(['exam', 'answer_key', 'booklet']),
+        document: z.enum(['assessment', 'answer_key', 'booklet']),
       }),
     );
     return { claimed, exhausted };
@@ -398,7 +398,7 @@ export async function selectPrintExportJob({
     .object({
       key: z.string(),
       filename: z.string(),
-      document: z.enum(['exam', 'answer_key', 'booklet']),
+      document: z.enum(['assessment', 'answer_key', 'booklet']),
       exportLabel: z.string().optional(),
       sizeBytes: z.number().int().nonnegative().optional(),
     })

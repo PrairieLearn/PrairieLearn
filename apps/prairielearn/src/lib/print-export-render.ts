@@ -4,18 +4,18 @@ import { HttpStatusError } from '@prairielearn/error';
 
 import { config } from './config.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
+import { type PrintDocument, getPrintRenderer, validatePrintDocument } from './printing/index.js';
 import { createPdfOutput } from './printing/pdf-output.js';
 import type { PrintAssetScope } from './printing/print-asset-access.js';
-import { type PrintDocument, getPrintRenderer, validatePrintDocument } from './printing.js';
 
 export interface PrintExportWork {
-  document: 'exam' | 'answer_key' | 'booklet';
+  document: 'assessment' | 'answer_key' | 'booklet';
   copies: number;
   filename: string;
   snapshots: {
     formLabel: string;
     printDocument: PrintDocument;
-    previewUrl: string;
+    localPreviewUrl: string;
     html: string;
     assetScope: PrintAssetScope;
   }[];
@@ -44,10 +44,11 @@ export async function renderPrintExport(
     const pdfOutput = createPdfOutput();
     const rendered = await renderer.render(
       {
-        url: snapshot.previewUrl,
+        url: snapshot.localPreviewUrl,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: snapshot.html,
         assetScope: snapshot.assetScope,
+        signal: shutdownSignal,
       },
       {
         label: work.document === 'booklet' ? 'booklet PDF' : 'PDF',
@@ -56,6 +57,7 @@ export async function renderPrintExport(
             document: document.documentElement.dataset.printDocument,
             formLabel: document.documentElement.dataset.printFormLabel,
           }));
+          shutdownSignal?.throwIfAborted();
           if (
             identity.document !== snapshot.printDocument ||
             identity.formLabel !== snapshot.formLabel
@@ -63,6 +65,7 @@ export async function renderPrintExport(
             throw new HttpStatusError(400, 'The printable pages do not match the selected form.');
           }
           const state = await validatePrintDocument(page);
+          shutdownSignal?.throwIfAborted();
           return { pdf: await pdfOutput.produce(page), coverPageCount: state.coverPageCount };
         },
       },

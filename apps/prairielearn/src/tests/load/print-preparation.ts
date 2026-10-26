@@ -85,7 +85,7 @@ async function captureScenario(
   const page = await context.newPage();
   const previews: Promise<CapturedRequest>[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.endsWith('/paper/preview')) {
+    if (new URL(request.url()).pathname.endsWith('/print/preview')) {
       previews.push(capturedRequest(request));
     }
   });
@@ -100,7 +100,7 @@ async function captureScenario(
       resolveExport = resolve;
       rejectExport = reject;
     });
-    await page.route('**/printableExamExport.pdf', async (route) => {
+    await page.route('**/printableAssessmentExport.pdf', async (route) => {
       try {
         const captured = await capturedRequest(route.request());
         await route.abort();
@@ -229,7 +229,7 @@ async function runUser(
       if (status.ready === true) {
         downloadUrl = new URL(
           workload.exportCall.url.replace(
-            '/trpc/printableExamExport.pdf',
+            '/trpc/printableAssessmentExport.pdf',
             `/print_preparation/exports/${jobSequenceId}.pdf`,
           ),
         );

@@ -1,6 +1,6 @@
 import { makeAssessmentInstance } from '../../lib/assessment.js';
+import { getPrintableInstanceQuestionIds } from '../../lib/printing/index.js';
 import { PrintRenderer } from '../../lib/printing/print-renderer.js';
-import { getPrintableInstanceQuestionIds } from '../../lib/printing.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
@@ -12,11 +12,11 @@ const cloudflareApiToken = process.env.CF_API_TOKEN;
 const test = createTest(
   cloudflareAccountId && cloudflareApiToken
     ? {
-        features: { 'printable-exams': true },
+        features: { 'printable-assessments': true },
         printingCloudflareAccountId: cloudflareAccountId,
         printingCloudflareApiToken: cloudflareApiToken,
       }
-    : { features: { 'printable-exams': true } },
+    : { features: { 'printable-assessments': true } },
 );
 
 test.describe.configure({ timeout: 180_000 });
@@ -36,8 +36,8 @@ test('loads course assets in the rendering browser', async ({ page, courseInstan
     date: new Date(),
     client_fingerprint_id: null,
   });
-  const paperUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper`;
-  await page.goto(`${paperUrl}/preview?paper_size=Letter`);
+  const printUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print`;
+  await page.goto(`${printUrl}/preview?paper_size=Letter`);
   await waitForPrintablePage(page);
 
   const renderer = new PrintRenderer({

@@ -32,7 +32,7 @@ function digestHtml(html: string): string {
 
 function normalizedSearch(search: URLSearchParams): string {
   const params = new URLSearchParams(search);
-  params.set('document', params.get('document') ?? 'exam');
+  params.set('document', params.get('document') ?? 'assessment');
   params.sort();
   return params.toString();
 }

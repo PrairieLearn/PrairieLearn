@@ -12,11 +12,11 @@ import {
   waitForPrintablePage,
 } from './utils/printing.js';
 
-const test = createTest({ features: { 'printable-exams': true } });
+const test = createTest({ features: { 'printable-assessments': true } });
 
-async function paperBase(courseInstanceId: string, tid: string) {
+async function printBase(courseInstanceId: string, tid: string) {
   const instanceId = await createPrintableAssessmentInstance(courseInstanceId, tid);
-  return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${instanceId}/paper`;
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${instanceId}/print`;
 }
 
 test('fills the cover grading table down columns using only included questions', async ({
@@ -24,14 +24,14 @@ test('fills the cover grading table down columns using only included questions',
   courseInstance,
 }) => {
   test.setTimeout(180_000);
-  const base = await paperBase(courseInstance.id, 'exam23-printing');
+  const base = await printBase(courseInstance.id, 'exam23-printing');
   await page.goto(`${base}/preview?paper_size=Letter&grading_table=true&exclude_question=2`);
   await waitForPrintablePage(page);
   const cover = page.getByRole('article', { name: 'Exam cover page' });
   const table = cover.getByRole('region', { name: 'Grading table' });
   await expect(table).toBeVisible();
   const layout = await table.evaluate((element) => {
-    const grid = element.querySelector('.exam-grading-grid')!;
+    const grid = element.querySelector('.assessment-grading-grid')!;
     const bounds = grid.getBoundingClientRect();
     const pageBounds = element
       .closest('.pagedjs_page')!
@@ -91,7 +91,7 @@ test('uses the configured honor code for printed pledges even when it is disable
       }),
     );
     await syncCourse(testCoursePath);
-    const base = await paperBase(courseInstance.id, tid);
+    const base = await printBase(courseInstance.id, tid);
     await page.goto(`${base}/preview?paper_size=Letter&include_honor_code=true`);
     await waitForPrintablePage(page);
     const pledge = page.getByRole('region', { name: 'Academic integrity pledge' });

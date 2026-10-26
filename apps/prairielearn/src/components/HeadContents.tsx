@@ -27,10 +27,17 @@ interface TitleOptions {
   };
   pageTitle?: string;
   pageNote?: string;
-  includeApplicationScripts?: boolean;
 }
 
 export function HeadContents(titleOptions: TitleOptions) {
+  return html`
+    ${BaseHeadContents(titleOptions)} ${compiledScriptTag('application.ts')}
+    ${compiledScriptTag('navbarClient.ts')}
+  `;
+}
+
+/** Shared head content for pages that provide their own application initialization. */
+export function BaseHeadContents(titleOptions: TitleOptions) {
   return html`
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -55,11 +62,6 @@ export function HeadContents(titleOptions: TitleOptions) {
       rel="stylesheet"
     />
     ${compiledStylesheetTag('prairielearn-ui.css')}
-    ${
-      titleOptions.includeApplicationScripts === false
-        ? ''
-        : html`${compiledScriptTag('application.ts')} ${compiledScriptTag('navbarClient.ts')}`
-    }
   `;
 }
 

@@ -12,7 +12,7 @@ import { syncCourse } from '../helperCourse.js';
 
 import { createTest, expect } from './fixtures.js';
 
-const test = createTest({ features: { 'printable-exams': true } });
+const test = createTest({ features: { 'printable-assessments': true } });
 
 test.describe.configure({ timeout: 180_000 });
 
@@ -48,7 +48,9 @@ async function preparePreview(page: Page) {
 }
 
 test('recovers when creating the first preview fails', async ({ page, courseInstance }) => {
-  await page.route('**/printableExams.create', (route) => route.abort('failed'), { times: 1 });
+  await page.route('**/printableAssessments.create', (route) => route.abort('failed'), {
+    times: 1,
+  });
   const assessment = await openPrintPreparation(page, courseInstance.id);
 
   const createPreview = page.getByRole('button', { name: 'Create preview', exact: true });
@@ -78,7 +80,7 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
   await preparePreview(page);
 
   await page.route(
-    '**/paper/docx?*',
+    '**/print/docx?*',
     async (route) => {
       const snapshot = JSON.parse(route.request().postData()!) as {
         id: string;
@@ -104,7 +106,7 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
 
-  await page.route('**/paper/preview?*', async (route) => {
+  await page.route('**/print/preview?*', async (route) => {
     if (new URL(route.request().url()).searchParams.get('document') !== 'answer_key') {
       return await route.continue();
     }
@@ -122,7 +124,7 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   await expect(downloadMenu(page)).toBeEnabled();
 });
 
-test('prepares an exam and key with consistent variants and downloads', async ({
+test('prepares an assessment and key with consistent variants and downloads', async ({
   page,
   courseInstance,
 }) => {
@@ -131,7 +133,7 @@ test('prepares an exam and key with consistent variants and downloads', async ({
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
   const instancesLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableExams.list'),
+    new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
   );
   await page.getByRole('button', { name: 'Print', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Paper and layout', exact: true })).toBeVisible();
@@ -148,7 +150,7 @@ test('prepares an exam and key with consistent variants and downloads', async ({
   const previewUrl = await page
     .getByTitle('Printable document preview', { exact: true })
     .getAttribute('src');
-  const form = previewUrl!.match(/\/assessment_instance\/(\d+)\/paper\//)![1];
+  const form = previewUrl!.match(/\/assessment_instance\/(\d+)\/print\//)![1];
   const url = new URL(page.url());
   url.searchParams.set('instances', form);
   url.searchParams.set('instance', form);
@@ -260,7 +262,7 @@ test('prepares homework with matching student copies, answer keys, and Word expo
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
   const instancesLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableExams.list'),
+    new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
   );
   await page.getByRole('button', { name: 'Print', exact: true }).click();
   await instancesLoaded;
@@ -308,12 +310,12 @@ test('prepares homework with matching student copies, answer keys, and Word expo
   expect(documentXml).not.toContain('Question HW15.2');
 });
 
-test('combines exam copies with custom covers and appends every form’s answer key', async ({
+test('combines assessment copies with custom covers and appends every form’s answer key', async ({
   page,
   courseInstance,
 }) => {
   const instancesLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableExams.list'),
+    new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
   );
   await openPrintPreparation(page, courseInstance.id);
   await instancesLoaded;
@@ -391,7 +393,7 @@ test('combines exam copies with custom covers and appends every form’s answer 
   // Every form, one copy each, before any cover pages are uploaded.
   const allForms = page.waitForEvent('download', { timeout: 120_000 });
   const allFormsResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableExamExport.pdf'),
+    new URL(response.url()).pathname.endsWith('/printableAssessmentExport.pdf'),
   );
   await chooseDownload(page, 'Download all forms (PDF)');
   expect((await allFormsResponse).status()).toBe(200);
@@ -402,7 +404,7 @@ test('combines exam copies with custom covers and appends every form’s answer 
   ).toBe(pageCounts.reduce((total, count) => total + count, 0));
 
   const cover = await PDFDocument.create();
-  cover.addPage([400, 600]).drawText('Extended exam instructions');
+  cover.addPage([400, 600]).drawText('Extended assessment instructions');
   await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
     name: 'extended-instructions.pdf',
     mimeType: 'application/pdf',
@@ -460,7 +462,7 @@ test('distinguishes paper review flags from broken questions omitted from the do
   courseInstance,
 }) => {
   const instancesLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableExams.list'),
+    new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
   );
   await openPrintPreparation(page, courseInstance.id, 'exam23-printing');
   await instancesLoaded;
@@ -522,11 +524,11 @@ test('validates a booklet count and retries a failed download', async ({
   await expect(modal.getByText('Enter a whole number between 1 and 500.')).toBeVisible();
 
   await students.fill('2');
-  await page.route('**/printableExamExport.pdf', (route) => route.abort(), { times: 1 });
+  await page.route('**/printableAssessmentExport.pdf', (route) => route.abort(), { times: 1 });
   await submit.click();
   await expect(modal.getByRole('alert')).toBeVisible();
   await expect(submit).toBeEnabled();
-  await page.unroute('**/printableExamExport.pdf');
+  await page.unroute('**/printableAssessmentExport.pdf');
 
   const downloaded = page.waitForEvent('download', { timeout: 120_000 });
   await submit.click();
@@ -617,5 +619,5 @@ test('lets instructors choose grading and pledge content on the cover', async ({
   await expect(grading).toHaveCount(0);
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(frame.locator('.exam-cover')).toHaveCount(0);
+  await expect(frame.locator('.assessment-cover')).toHaveCount(0);
 });

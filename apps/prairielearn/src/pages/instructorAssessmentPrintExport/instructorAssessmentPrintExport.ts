@@ -9,10 +9,10 @@ import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 import { getPrintExportStream, selectPrintExportJob } from '../../lib/print-export-jobs.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { requirePrintableExams } from '../../middlewares/requirePrintableExams.js';
+import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
 
 const router = Router();
-router.use(requirePrintableExams);
+router.use(requirePrintableAssessments);
 const ParamsSchema = z.object({ jobSequenceId: IdSchema });
 
 router.get(
@@ -30,7 +30,7 @@ router.get(
     });
     if (!job?.result) throw new HttpStatusError(404, 'PDF not found or no longer available');
     if (
-      job.result.document !== 'exam' &&
+      job.result.document !== 'assessment' &&
       !res.locals.authz_data.has_course_instance_permission_edit
     ) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');

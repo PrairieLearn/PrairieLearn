@@ -7,7 +7,7 @@ interface RenderWaiter {
   queuedAt: number;
   resolve: (acquired: { queueWaitMs: number; release: () => void }) => void;
   reject: (error: Error) => void;
-  timeout?: ReturnType<typeof setTimeout>;
+  cleanup: () => void;
 }
 
 export type RenderPriority = 'preview' | 'export';
@@ -40,9 +40,11 @@ export class RenderQueue {
     timeoutMs: number,
     outputLabel: string,
     priority: RenderPriority = 'export',
+    signal?: AbortSignal,
   ): Promise<T> {
-    const { queueWaitMs, release } = await this.acquire(timeoutMs, outputLabel, priority);
+    const { queueWaitMs, release } = await this.acquire(timeoutMs, outputLabel, priority, signal);
     try {
+      signal?.throwIfAborted();
       return await callback(queueWaitMs);
     } finally {
       this.release(release);
@@ -53,7 +55,7 @@ export class RenderQueue {
     const waiters = [...this.waiters];
     this.waiters.length = 0;
     for (const waiter of waiters) {
-      if (waiter.timeout) clearTimeout(waiter.timeout);
+      waiter.cleanup();
       waiter.reject(error);
     }
   }
@@ -62,7 +64,9 @@ export class RenderQueue {
     timeoutMs: number,
     outputLabel: string,
     priority: RenderPriority,
+    signal?: AbortSignal,
   ): Promise<{ queueWaitMs: number; release: () => void }> {
+    signal?.throwIfAborted();
     if (!this.permits.isLocked()) {
       const [, release] = await this.permits.acquire();
       this.active += 1;
@@ -86,16 +90,34 @@ export class RenderQueue {
     // withTimeout() leaves expired acquisitions in async-mutex's queue until a permit is
     // released. Keep waiters here so a timed-out render immediately frees its queue slot.
     return new Promise<{ queueWaitMs: number; release: () => void }>((resolve, reject) => {
-      const waiter: RenderWaiter = { priority, queuedAt: Date.now(), resolve, reject };
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      const rejectWaiter = (error: unknown) => {
+        const index = this.waiters.indexOf(waiter);
+        if (index === -1) return;
+        this.waiters.splice(index, 1);
+        waiter.cleanup();
+        reject(error);
+      };
+      const onAbort = () => rejectWaiter(signal?.reason);
+      const waiter: RenderWaiter = {
+        priority,
+        queuedAt: Date.now(),
+        resolve,
+        reject,
+        cleanup: () => {
+          if (timeout) clearTimeout(timeout);
+          signal?.removeEventListener('abort', onAbort);
+        },
+      };
       if (timeoutMs > 0) {
-        waiter.timeout = setTimeout(() => {
-          const index = this.waiters.indexOf(waiter);
-          if (index === -1) return;
-          this.waiters.splice(index, 1);
-          reject(new Error(`Timed out after ${timeoutMs} ms waiting to render the ${outputLabel}`));
+        timeout = setTimeout(() => {
+          rejectWaiter(
+            new Error(`Timed out after ${timeoutMs} ms waiting to render the ${outputLabel}`),
+          );
         }, timeoutMs);
       }
       this.waiters.push(waiter);
+      signal?.addEventListener('abort', onAbort, { once: true });
     });
   }
 
@@ -112,7 +134,7 @@ export class RenderQueue {
     const next = this.waiters.splice(choosePreview ? previewIndex : exportIndex, 1)[0];
     this.previewsSinceExport = choosePreview ? this.previewsSinceExport + 1 : 0;
     // Transfer the permit directly so a new render cannot pass the oldest waiter.
-    if (next.timeout) clearTimeout(next.timeout);
+    next.cleanup();
     next.resolve({ queueWaitMs: Date.now() - next.queuedAt, release });
   }
 }

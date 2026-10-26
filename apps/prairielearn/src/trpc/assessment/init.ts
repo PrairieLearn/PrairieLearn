@@ -37,8 +37,8 @@ export const requireCoursePermissionPreview = t.middleware(async (opts) => {
   return opts.next();
 });
 
-export const requirePrintableExams = t.middleware(async (opts) => {
-  if (!(await features.enabledFromLocals('printable-exams', opts.ctx.locals))) {
+export const requirePrintableAssessments = t.middleware(async (opts) => {
+  if (!(await features.enabledFromLocals('printable-assessments', opts.ctx.locals))) {
     throw new TRPCError({ code: 'NOT_FOUND' });
   }
   return opts.next();
