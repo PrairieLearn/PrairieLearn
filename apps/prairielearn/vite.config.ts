@@ -30,6 +30,8 @@ export default defineConfig({
         './src/cron/index.ts',
         './src/lib/externalGraderDeadLetters.ts',
         './src/lib/externalGraderResults.ts',
+        './src/lib/printing/index.ts',
+        './src/lib/printing/print-request.ts',
         './src/lib/server-jobs.ts',
         './src/lib/serverJobProgressSocket.ts',
         './src/lib/socket-server.ts',
