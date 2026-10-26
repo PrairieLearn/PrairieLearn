@@ -450,17 +450,7 @@ The `user` dict has the keys `uid` (always present), `uin`, `name` (the latter t
 
 Labels come from the variant's course instance. The list is empty if the user has no labels or enrollment in that course instance, or if there is no course instance (for example, a course-level instructor preview).
 
-For example, to offer an alternative input when an individual student has a `needs-accessible-input` label, choose the input in `generate()` and save the choice in `params` so it remains consistent for that variant:
-
-```python
-def generate(data):
-    user = data["options"]["user"]
-    data["params"]["accessible_inputs"] = (
-        user is not None and "needs-accessible-input" in user["labels"]
-    )
-```
-
-The question's `question.html` can then use Mustache sections such as `{{#params.accessible_inputs}}` and `{{^params.accessible_inputs}}` to show the appropriate input.
+For an example using labels to offer alternative inputs, see [Authoring accessible questions](accessibility.md#alternatives-to-drawing-input).
 
 ??? info "Whose identity is provided"
 
