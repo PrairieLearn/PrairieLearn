@@ -5,6 +5,7 @@ type QuestionAccessMode =
 
 export function QuestionNavSideGroup({
   urlPrefix,
+  assessmentInstanceId,
   prevInstanceQuestionId,
   nextInstanceQuestionId,
   nextQuestionAccessMode,
@@ -14,6 +15,7 @@ export function QuestionNavSideGroup({
   userGroupRoles,
 }: {
   urlPrefix: string;
+  assessmentInstanceId: string;
   prevInstanceQuestionId: string | null;
   nextInstanceQuestionId: string | null;
   nextQuestionAccessMode: QuestionAccessMode | null;
@@ -27,6 +29,7 @@ export function QuestionNavSideGroup({
       ${QuestionNavSideButton({
         instanceQuestionId: prevInstanceQuestionId,
         urlPrefix,
+        assessmentInstanceId,
         whichButton: 'previous',
         groupRolePermissions: prevGroupRolePermissions,
         userGroupRoles,
@@ -35,6 +38,7 @@ export function QuestionNavSideGroup({
         instanceQuestionId: nextInstanceQuestionId,
         nextQuestionAccessMode,
         urlPrefix,
+        assessmentInstanceId,
         whichButton: 'next',
         groupRolePermissions: nextGroupRolePermissions,
         advanceScorePerc,
@@ -48,6 +52,7 @@ export function QuestionNavSideButton({
   instanceQuestionId,
   nextQuestionAccessMode,
   urlPrefix,
+  assessmentInstanceId,
   whichButton,
   groupRolePermissions,
   advanceScorePerc,
@@ -58,6 +63,7 @@ export function QuestionNavSideButton({
   groupRolePermissions: { can_view?: boolean } | null | undefined;
   whichButton: 'next' | 'previous';
   urlPrefix: string;
+  assessmentInstanceId: string;
   advanceScorePerc?: number | null;
   userGroupRoles: string | null;
 }) {
@@ -76,8 +82,9 @@ export function QuestionNavSideButton({
         to this question in order to unlock the next. If you run out of attempts, the next question
         will unlock automatically.`;
     } else if (nextQuestionAccessMode === 'blocked_lockpoint') {
-      disabledExplanation = html`You must cross the lockpoint on the assessment overview page before
-      you can proceed to the next question.`;
+      disabledExplanation = html`Cross the lockpoint on
+        <a href="${urlPrefix}/assessment_instance/${assessmentInstanceId}/">the assessment page</a>
+        to proceed to the next question.`;
     }
   }
 
@@ -119,7 +126,7 @@ export function QuestionNavSideButton({
       ${
         disabledExplanation != null
           ? html`
-              <span id="${buttonId}-reason" class="d-block small text-muted mt-1">
+              <span id="${buttonId}-reason" class="d-block small lh-sm text-muted mt-2">
                 ${disabledExplanation}
               </span>
             `

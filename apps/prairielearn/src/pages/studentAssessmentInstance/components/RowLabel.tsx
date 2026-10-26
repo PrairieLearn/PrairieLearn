@@ -62,7 +62,7 @@ export function RowLabel({
         : lockMessage != null
           ? html`
               <span
-                class="d-block small text-muted mt-1"
+                class="d-block small lh-sm text-muted mt-1"
                 data-testid="locked-instance-question-row"
               >
                 ${lockMessage}
