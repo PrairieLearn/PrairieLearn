@@ -450,8 +450,6 @@ The `user` dict has the keys `uid` (always present), `uin`, `name` (the latter t
 
 Labels come from the variant's course instance. The list is empty if the user has no labels or enrollment in that course instance, or if there is no course instance (for example, a course-level instructor preview).
 
-For an example using labels to offer alternative inputs, see [Authoring accessible questions](accessibility.md#alternatives-to-drawing-input).
-
 ??? info "Whose identity is provided"
 
     When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member or current viewer. Group assessments receive `None` because the shared variant has no single owner.

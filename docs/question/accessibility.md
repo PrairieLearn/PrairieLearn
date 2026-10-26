@@ -74,18 +74,6 @@ Drawing inputs such as [`pl-drawing`](../pl-drawing/index.md), [`pl-excalidraw`]
 
 Alternative responses need their own grading approach, often [manual grading](../manualGrading/index.md). Students should only need to complete one response format.
 
-One approach to offering an alternative input only to selected students is to use a [student label](../courseInstance/index.md#student-labels) such as `needs-accessible-input`, with [user-data access enabled for the course](server.md#accessing-user-and-group-identity). Choose the input in `generate()` and save the choice in `params` so it remains consistent for that variant:
-
-```python
-def generate(data):
-    user = data["options"]["user"]
-    data["params"]["accessible_inputs"] = (
-        user is not None and "needs-accessible-input" in user["labels"]
-    )
-```
-
-The question's `question.html` can then use Mustache sections such as `{{#params.accessible_inputs}}` and `{{^params.accessible_inputs}}` to show the appropriate input.
-
 ## Understandable content
 
 - **Clear language**: Use clear and concise language. Avoid jargon where possible, or provide explanations.
