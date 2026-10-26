@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { makeAssessmentInstance } from '../../lib/assessment.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
-import { syncCourse } from '../helperCourse.js';
-import { getConfiguredUser } from '../utils/auth.js';
+import { makeAssessmentInstance } from '../../../lib/assessment.js';
+import { selectAssessmentByTid } from '../../../models/assessment.js';
+import { syncCourse } from '../../helperCourse.js';
+import { getConfiguredUser } from '../../utils/auth.js';
+import { test as base, expect } from '../fixtures.js';
 
-import { test as base, expect } from './fixtures.js';
-import { waitForPrintablePage } from './utils/printing.js';
+import { waitForPrintablePage } from './utils.js';
 
 const test = base.extend<{
   imageQuestion: (html: string) => Promise<string>;

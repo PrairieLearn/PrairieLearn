@@ -3,13 +3,13 @@ import path from 'node:path';
 
 import * as unzipper from 'unzipper';
 
-import { makeAssessmentInstance } from '../../lib/assessment.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
-import { syncCourse } from '../helperCourse.js';
-import { getConfiguredUser } from '../utils/auth.js';
+import { makeAssessmentInstance } from '../../../lib/assessment.js';
+import { selectAssessmentByTid } from '../../../models/assessment.js';
+import { syncCourse } from '../../helperCourse.js';
+import { getConfiguredUser } from '../../utils/auth.js';
+import { expect, test } from '../fixtures.js';
 
-import { expect, test } from './fixtures.js';
-import { downloadPrintableWord, waitForPrintablePage } from './utils/printing.js';
+import { downloadPrintableWord, waitForPrintablePage } from './utils.js';
 
 test('fills the cover grading table down columns using only included questions', async ({
   page,

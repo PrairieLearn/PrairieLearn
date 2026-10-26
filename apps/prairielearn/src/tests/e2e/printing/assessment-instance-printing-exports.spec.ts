@@ -4,14 +4,14 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
-import { makeAssessmentInstance } from '../../lib/assessment.js';
-import type { CourseInstance } from '../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
-import { syncCourse } from '../helperCourse.js';
-import { getConfiguredUser } from '../utils/auth.js';
+import { makeAssessmentInstance } from '../../../lib/assessment.js';
+import type { CourseInstance } from '../../../lib/db-types.js';
+import { selectAssessmentByTid } from '../../../models/assessment.js';
+import { syncCourse } from '../../helperCourse.js';
+import { getConfiguredUser } from '../../utils/auth.js';
+import { expect, test } from '../fixtures.js';
 
-import { expect, test } from './fixtures.js';
-import { downloadPrintableWord, waitForPrintablePage } from './utils/printing.js';
+import { downloadPrintableWord, waitForPrintablePage } from './utils.js';
 
 // Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
 test.describe.configure({ timeout: 180_000 });
