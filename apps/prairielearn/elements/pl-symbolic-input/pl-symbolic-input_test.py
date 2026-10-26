@@ -743,6 +743,37 @@ def test_parse_does_not_evaluate_unsimplified_json_during_validation(
     assert isinstance(data["submitted_answers"]["test"], dict)
 
 
+@pytest.mark.parametrize("display_simplified", [True, False])
+@pytest.mark.parametrize(
+    ("correct_answer", "submission"),
+    [
+        ("[0, e)", "{0} U (1-1, e^1)"),
+        ("(1, 3]", "(sin(pi/2), 9/3] - ((log(1), exp(0)) U {})"),
+    ],
+)
+def test_reported_crash_submissions_grade_in_both_display_modes(
+    correct_answer: str,
+    submission: str,
+    *,
+    display_simplified: bool,
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        f'display-simplified-expression="{str(display_simplified).lower()}"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 @pytest.mark.parametrize(
     ("display_simplified", "expected_submission"),
     [
