@@ -8,8 +8,13 @@ import * as unzipper from 'unzipper';
 
 import type { AssetsManifest } from '@prairielearn/compiled-assets';
 
+import { serializePrintDocument } from '../../lib/client/print-document.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxDocument } from '../../lib/printing/docx-document.js';
+import {
+  checkPrintSnapshotId,
+  createPrintSnapshotId,
+} from '../../lib/printing/print-snapshot-id.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -38,11 +43,7 @@ async function loadPrintClient(page: Page) {
   await expect(page.locator(':root')).toHaveAttribute('data-print-status', 'ready');
 }
 
-async function readWordOutput(page: Page) {
-  const source = await page.evaluate(
-    () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
-  );
-  expect(source).toBeDefined();
+async function readWordOutput(page: Page, source: DocxSource) {
   const geometry = await page.evaluate(() => {
     const sheet = document.querySelector('.pagedjs_page')!.getBoundingClientRect();
     const area = document.querySelector('.pagedjs_area')!.getBoundingClientRect();
@@ -56,7 +57,7 @@ async function readWordOutput(page: Page) {
     };
   });
   const figures = await Promise.all(
-    source!.figures.map(async (figure) => ({
+    source.figures.map(async (figure) => ({
       ...figure,
       png: await page.locator(`[data-docx-figure="${figure.id}"]`).first().screenshot(),
     })),
@@ -64,14 +65,14 @@ async function readWordOutput(page: Page) {
   const docx = createDocxDocument({
     geometry,
     footerLabel: 'Browser Word test',
-    source: source!,
+    source,
     figures,
   });
   const zip = await unzipper.Open.buffer(await Packer.toBuffer(docx));
   const documentXml = (
     await zip.files.find((file) => file.path === 'word/document.xml')!.buffer()
   ).toString('utf8');
-  return { source: source!, zip, documentXml };
+  return { source, zip, documentXml };
 }
 
 // Question content inside shadow roots can be missed when we copy the page for Word.
@@ -114,7 +115,47 @@ test('exports shadow-root figures and visible slotted text from a paginated page
       '<p>Nested question text</p>';
   });
   await loadPrintClient(page);
-  const { zip, documentXml } = await readWordOutput(page);
+  const source = await page.evaluate(
+    () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
+  );
+  expect(source).toBeDefined();
+  const html = await page.locator(':root').evaluate(serializePrintDocument);
+  const snapshot = {
+    assessmentInstanceId: '123',
+    authnUserId: '45',
+    search: new URLSearchParams('paper_size=Letter&form_label=A&document=assessment'),
+    questionListDigest: 'question-list-1',
+    html,
+    source: source!,
+  };
+  const secretKey = 'print-snapshot-browser-test-key';
+  const id = createPrintSnapshotId(snapshot, secretKey);
+  await page.route('http://print.test/snapshot', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: html.replace('<html', `<html data-print-snapshot-id="${id}"`),
+    }),
+  );
+  await page.goto('http://print.test/snapshot');
+  const reloadedHtml = await page.locator(':root').evaluate(serializePrintDocument);
+  expect(reloadedHtml).toBe(html);
+  expect(
+    checkPrintSnapshotId(
+      {
+        ...snapshot,
+        id: (await page.locator(':root').getAttribute('data-print-snapshot-id'))!,
+        html: reloadedHtml,
+      },
+      secretKey,
+    ),
+  ).toBe(true);
+  await expect(
+    page.locator('.pagedjs_page').getByText('Nested question text', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.pagedjs_page').getByText('Hidden answer', { exact: true }),
+  ).toBeHidden();
+  const { zip, documentXml } = await readWordOutput(page, source!);
   expect(documentXml).toContain('Shadow question');
   expect(documentXml.match(/Assigned text/g)).toHaveLength(1);
   expect(documentXml).toContain('Fallback instructions');

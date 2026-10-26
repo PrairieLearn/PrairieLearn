@@ -13,6 +13,7 @@ import {
   PrintGradingTableSchema,
   PrintIdentityFieldsSchema,
 } from '../../lib/client/print-cover.js';
+import { serializePrintDocument } from '../../lib/client/print-document.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { config } from '../../lib/config.js';
@@ -349,23 +350,15 @@ router.get(
         },
         {
           label: 'preview',
-          produce: async (page) =>
-            await page.evaluate(() => {
-              const source = Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as
-                DocxSource | undefined;
-              if (!source) {
-                throw new Error('The preview did not capture editable question content.');
-              }
-              const copy = globalThis.document.documentElement.cloneNode(true) as HTMLElement;
-              copy
-                .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
-                .forEach((node) => node.remove());
-              const normalized = new DOMParser().parseFromString(
-                `<!doctype html>\n${copy.outerHTML}`,
-                'text/html',
-              );
-              return { html: `<!doctype html>\n${normalized.documentElement.outerHTML}`, source };
-            }),
+          produce: async (page) => {
+            const source = await page.evaluate(
+              () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
+            );
+            if (!source) {
+              throw new Error('The preview did not capture editable question content.');
+            }
+            return { html: await page.locator(':root').evaluate(serializePrintDocument), source };
+          },
         },
       );
       remainingTimeoutMs();

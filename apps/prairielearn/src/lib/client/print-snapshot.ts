@@ -1,5 +1,7 @@
 import type { DocxSource } from '../printing/docx-browser.js';
 
+import { serializePrintDocument } from './print-document.js';
+
 export interface PrintSnapshot {
   id: string;
   html: string;
@@ -21,14 +23,7 @@ export function capturePrintSnapshot(doc: Document): PrintSnapshot {
   const id = root.dataset.printSnapshotId;
   if (!id) throw new Error('The printable preview has no snapshot ID.');
 
-  const copy = root.cloneNode(true) as HTMLElement;
-  copy.removeAttribute('data-print-snapshot-id');
-  copy
-    .querySelectorAll('script, noscript, iframe, meta[http-equiv="refresh"]')
-    .forEach((element) => {
-      element.remove();
-    });
-  return { id, html: `<!doctype html>\n${copy.outerHTML}`, source };
+  return { id, html: serializePrintDocument(root), source };
 }
 
 /** Lay out another form in an offscreen frame when it is needed for a download. */
