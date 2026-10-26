@@ -25,8 +25,8 @@ export function combineQuestionHeaders(questionHeaders: readonly string[]): stri
     }
   }
 
-  // Some browsers only support one import map per document. Combine the question maps
-  // before any element scripts run, so later questions can resolve their dependencies.
+  // Questions share one module namespace. Reject conflicting mappings and register
+  // all question dependencies before their element scripts run.
   const headers = load([...extraHeaderHtmls].join('\n'), null, false);
   const imports: Record<string, string> = {};
   headers('script[type="importmap"]').each((_, element) => {
