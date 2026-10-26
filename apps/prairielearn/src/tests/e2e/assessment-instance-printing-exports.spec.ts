@@ -127,55 +127,6 @@ test('reports omitted questions and exports the selected Word content', async ({
   }
 });
 
-test('prints details content in visible boxes and preserves it in Word', async ({
-  page,
-  courseInstance,
-}) => {
-  const { printUrl } = await createPrintableAssessment(courseInstance, 'exam26-printingDetails');
-  await page.goto(`${printUrl}/preview?paper_size=Letter`);
-  await waitForPrintablePage(page);
-
-  const boxes = page.locator('.pagedjs_page .printing-question .printing-details');
-  await expect(boxes).toHaveCount(2);
-  await expect(page.locator('.pagedjs_page .printing-question details')).toHaveCount(0);
-  await expect(boxes.first().getByText('Reference values')).toBeVisible();
-  await expect(boxes.first().getByText('The values are one and two.')).toBeVisible();
-  await expect(boxes.last().getByText('Count both values.')).toBeVisible();
-  const figurePage = await page
-    .getByText('Reference figure')
-    .evaluate((element) =>
-      Number(element.closest('.pagedjs_page')?.getAttribute('data-page-number')),
-    );
-  const detailsPage = await boxes
-    .first()
-    .evaluate((element) =>
-      Number(element.closest('.pagedjs_page')?.getAttribute('data-page-number')),
-    );
-  expect(detailsPage).toBeGreaterThan(figurePage);
-  expect(
-    await boxes.first().evaluate((element) => ({
-      background: getComputedStyle(element).backgroundColor,
-      border: getComputedStyle(element).borderTopStyle,
-    })),
-  ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
-
-  const response = await downloadPrintableWord(page, printUrl, 'paper_size=Letter');
-  expect(response.status()).toBe(200);
-  const archive = await unzipper.Open.buffer(await response.body());
-  const documentFile = archive.files.find((file) => file.path === 'word/document.xml');
-  expect(documentFile).toBeDefined();
-  const documentXml = (await documentFile!.buffer()).toString();
-  for (const text of [
-    'Reference values',
-    'The values are one and two.',
-    'Additional context',
-    'Count both values.',
-  ]) {
-    expect(documentXml).toContain(text);
-  }
-  expect(documentXml.match(/<w:shd w:fill="F7F7F7"\/>/g)).toHaveLength(2);
-});
-
 test('prints representative controls, editable Word content, and an ordered answer key', async ({
   page,
   courseInstance,
@@ -202,6 +153,37 @@ test('prints representative controls, editable Word content, and an ordered answ
   ).not.toHaveCount(0);
   await expect(questions.locator('svg.printing-sketch')).not.toHaveCount(0);
 
+  const detailsQuestionNumber = await questions
+    .filter({ hasText: 'Use the reference below to enter the number of listed values.' })
+    .first()
+    .getAttribute('data-question-number');
+  const detailsQuestion = page.locator(
+    `.pagedjs_page .printing-question[data-question-number="${detailsQuestionNumber}"]`,
+  );
+  const boxes = detailsQuestion.locator('.printing-details');
+  await expect(boxes).toHaveCount(2);
+  await expect(detailsQuestion.locator('details')).toHaveCount(0);
+  await expect(boxes.first().getByText('Reference values')).toBeVisible();
+  await expect(boxes.first().getByText('The values are one and two.')).toBeVisible();
+  await expect(boxes.last().getByText('Count both values.')).toBeVisible();
+  const figurePage = await detailsQuestion
+    .getByText('Reference figure')
+    .evaluate((element) =>
+      Number(element.closest('.pagedjs_page')?.getAttribute('data-page-number')),
+    );
+  const detailsPage = await boxes
+    .first()
+    .evaluate((element) =>
+      Number(element.closest('.pagedjs_page')?.getAttribute('data-page-number')),
+    );
+  expect(detailsPage).toBeGreaterThan(figurePage);
+  expect(
+    await boxes.first().evaluate((element) => ({
+      background: getComputedStyle(element).backgroundColor,
+      border: getComputedStyle(element).borderTopStyle,
+    })),
+  ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
+
   const response = await downloadPrintableWord(page, printUrl, String(search));
   expect(response.status()).toBe(200);
   const archive = await unzipper.Open.buffer(await response.body());
@@ -211,6 +193,15 @@ test('prints representative controls, editable Word content, and an ordered answ
   expect(documentXml).toContain('Choose only one block from this group');
   expect(documentXml).toContain('Find the derivative');
   expect(documentXml).not.toContain('Solution with indentation');
+  for (const text of [
+    'Reference values',
+    'The values are one and two.',
+    'Additional context',
+    'Count both values.',
+  ]) {
+    expect(documentXml).toContain(text);
+  }
+  expect(documentXml.match(/<w:shd w:fill="F7F7F7"\/>/g)).toHaveLength(2);
 
   await page.goto(`${printUrl}/preview?${search}&document=answer_key`);
   await waitForPrintablePage(page);
