@@ -557,12 +557,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             allow_sets=allow_sets,
         )
 
-        # Convert safely to sympy, simplifying *exactly once* throughout parsing
+        # This reparses serialized text rather than simplifying the same tree. In
+        # simplified mode, the first parse already evaluated the expression, so
+        # evaluating the serialized form is idempotent and restores canonical form.
         psu.json_to_sympy(
             a_sub_json,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
-            simplify_expression=not simplify_expression,
+            simplify_expression=simplify_expression,
         )
 
         # Finally, store the result
