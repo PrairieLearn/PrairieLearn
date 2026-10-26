@@ -581,6 +581,32 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 
 
 @pytest.mark.parametrize(
+    ("submission", "expected_latex"),
+    [
+        ("1/x", r"\frac{1}{x}"),
+        ("x^(1/3)", r"\sqrt[3]{x}"),
+    ],
+)
+def test_simplified_submission_renders_after_json_round_trip(
+    monkeypatch: pytest.MonkeyPatch,
+    submission: str,
+    expected_latex: str,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": submission},
+        panel="submission",
+        editable=False,
+    )
+
+    symbolic_input.parse(element_html, data)
+    rendered = symbolic_input.render(element_html, data)
+
+    assert f"${expected_latex}$" in rendered
+
+
+@pytest.mark.parametrize(
     ("answer", "expected_expr"),
     [
         (
