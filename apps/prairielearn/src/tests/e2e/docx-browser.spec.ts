@@ -23,17 +23,17 @@ async function loadPrintClient(page: Page) {
     await fs.readFile(path.join(buildDirectory, 'manifest.json'), 'utf8'),
   );
   await page.addStyleTag({
-    path: path.join(buildDirectory, manifest['stylesheets/exam-printing.css'].assetPath),
+    path: path.join(buildDirectory, manifest['stylesheets/assessment-printing.css'].assetPath),
   });
   await page.addStyleTag({
     content:
-      ':root { --exam-print-page-width: 8.5in; --exam-print-page-height: 11in; } @page { size: Letter; }',
+      ':root { --assessment-print-page-width: 8.5in; --assessment-print-page-height: 11in; } @page { size: Letter; }',
   });
   await page.addScriptTag({
     path: fileURLToPath(new URL('../dist/paged.polyfill.min.js', import.meta.resolve('pagedjs'))),
   });
   await page.addScriptTag({
-    path: path.join(buildDirectory, manifest['scripts/exam-printing-client.ts'].assetPath),
+    path: path.join(buildDirectory, manifest['scripts/assessment-printing-client.ts'].assetPath),
   });
   await expect(page.locator(':root')).toHaveAttribute('data-print-status', 'ready');
 }
@@ -81,9 +81,9 @@ test('exports shadow-root figures and visible slotted text from a paginated page
 }) => {
   await page.goto('about:blank');
   await page.setContent(`
-    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="exam" data-print-paper-size="Letter"><body>
-      <main id="exam-print-source" class="exam-print-document">
-        <div class="exam-questions">
+    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="assessment" data-print-paper-size="Letter"><body>
+      <main id="assessment-print-source" class="assessment-print-document">
+        <div class="assessment-questions">
           <section class="printing-question printing-question-freeform" data-question-number="1">
             <div class="question-block"><div class="question-body">
               <div id="xss-test"><strong slot="term">Assigned text</strong><span>Unassigned content</span></div>
@@ -91,7 +91,7 @@ test('exports shadow-root figures and visible slotted text from a paginated page
           </section>
         </div>
       </main>
-      <div id="exam-print-pages"></div>
+      <div id="assessment-print-pages"></div>
     </body></html>
   `);
   await page.evaluate(() => {
@@ -128,9 +128,9 @@ test('exports shadow-root figures and visible slotted text from a paginated page
 test('keeps printing when an equation cannot become editable Word math', async ({ page }) => {
   await page.goto('about:blank');
   await page.setContent(`
-    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="exam" data-print-paper-size="Letter"><body>
-      <main id="exam-print-source" class="exam-print-document">
-        <div class="exam-questions">
+    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="assessment" data-print-paper-size="Letter"><body>
+      <main id="assessment-print-source" class="assessment-print-document">
+        <div class="assessment-questions">
           <section class="printing-question printing-question-freeform" data-question-number="1">
             <div class="question-block"><div class="question-body">
               <p>Solve <mjx-container>Rendered equation</mjx-container></p>
@@ -138,7 +138,7 @@ test('keeps printing when an equation cannot become editable Word math', async (
           </section>
         </div>
       </main>
-      <div id="exam-print-pages"></div>
+      <div id="assessment-print-pages"></div>
     </body></html>
   `);
   await page.evaluate(() => {

@@ -39,7 +39,7 @@ const ownedInstanceProcedure = printableAssessmentProcedure
     return next();
   });
 
-export const printableExamsRouter = t.router({
+export const printableAssessmentsRouter = t.router({
   questions: ownedInstanceProcedure.query(async ({ input }) => {
     return await inspectPrintPreparationQuestions(input.assessmentInstanceId);
   }),

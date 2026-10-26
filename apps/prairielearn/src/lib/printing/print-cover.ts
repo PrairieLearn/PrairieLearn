@@ -1,13 +1,18 @@
+import type { ResLocalsForPage } from '../res-locals.js';
+
 import {
   type PrintableCover,
   type PrintableCoverField,
   type PrintableTextBlock,
   htmlToTextBlocks,
-} from '../../lib/printing/printable-cover.js';
-import type { PrintDocument } from '../../lib/printing.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
+} from './printable-cover.js';
 
-export const DEFAULT_EXAM_INSTRUCTIONS: readonly string[] = [
+import type { PrintDocument } from './index.js';
+
+/** Leaves space for a handwritten name on printed honor-code pledges. */
+export const BLANK_NAME_PLACEHOLDER = '____________________________';
+
+export const DEFAULT_ASSESSMENT_INSTRUCTIONS: readonly string[] = [
   'Write your name and identifying information clearly above.',
   'Show your work and place each final answer in the space provided.',
   'If you need more room, identify the question number on any additional page.',
@@ -34,7 +39,7 @@ export function getPrintCoverFields({
 
 export function getDefaultHonorCodePledge(teamWork: boolean): string[] {
   return [
-    `I certify that I am ____________________________ and ${teamWork ? 'our group is' : 'I am'} allowed to take this assessment.`,
+    `I certify that I am ${BLANK_NAME_PLACEHOLDER} and ${teamWork ? 'our group is' : 'I am'} allowed to take this assessment.`,
     `${teamWork ? 'We' : 'I'} pledge on ${teamWork ? 'our' : 'my'} honor that ${teamWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this assessment and that all work will be ${teamWork ? 'our' : 'my'} own.`,
   ];
 }
@@ -86,7 +91,7 @@ export function buildPrintableCover({
   const instructionBlocks: PrintableTextBlock[] = [
     isAnswerKey
       ? { type: 'paragraph', text: answerKeyDescription(formId, formLabel) }
-      : { type: 'list', ordered: true, items: [...DEFAULT_EXAM_INSTRUCTIONS] },
+      : { type: 'list', ordered: true, items: [...DEFAULT_ASSESSMENT_INSTRUCTIONS] },
     ...(assessmentTextHtml ? htmlToTextBlocks(assessmentTextHtml) : []),
   ];
   const sections: PrintableCover['sections'] = [
@@ -116,6 +121,6 @@ export function buildPrintableCover({
     ],
     sections,
     gradingTable: isAnswerKey ? undefined : gradingTable,
-    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  ${getPrintFooterLabel({ document: 'exam', formId, formLabel })}`,
+    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  ${getPrintFooterLabel({ document: 'assessment', formId, formLabel })}`,
   };
 }

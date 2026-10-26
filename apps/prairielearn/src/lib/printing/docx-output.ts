@@ -7,8 +7,6 @@ import { type PrintedPageGeometry, createDocxDocument } from './docx-document.js
 import type { PrintableCover } from './printable-cover.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 
-const IMAGE_DEVICE_SCALE_FACTOR = 2;
-
 export interface DocxOutputOptions {
   /** Editable source captured by the preview before pagination. */
   source: DocxSource;
@@ -31,7 +29,8 @@ export function createDocxOutput({
 }: DocxOutputOptions): PrintablePageOutput<Buffer> {
   return {
     label: 'DOCX',
-    deviceScaleFactor: IMAGE_DEVICE_SCALE_FACTOR,
+    // Use 2x resolution to improve figure sharpness without changing their size in Word.
+    deviceScaleFactor: 2,
     produce: async (page) => {
       const pageDataset = await page.evaluate(() => ({ ...document.documentElement.dataset }));
       const geometry = await readPrintedPageGeometry(page);

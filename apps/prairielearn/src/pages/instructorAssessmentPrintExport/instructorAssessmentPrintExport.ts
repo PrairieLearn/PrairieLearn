@@ -28,7 +28,7 @@ router.get(
     });
     if (!job?.result) throw new HttpStatusError(404, 'PDF not found or no longer available');
     if (
-      job.result.document !== 'exam' &&
+      job.result.document !== 'assessment' &&
       !res.locals.authz_data.has_course_instance_permission_edit
     ) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');

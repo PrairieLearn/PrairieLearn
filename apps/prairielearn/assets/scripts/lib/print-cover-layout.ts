@@ -1,8 +1,13 @@
+/**
+ * Fits the optional grading table into the cover's remaining space before pagination.
+ * Call after fonts and images have loaded, with the printable content height in CSS pixels.
+ * Throws if the table cannot fit and saves the successful layout for the Word cover.
+ */
 export function layoutPrintGradingTable(source: HTMLElement, pageHeight: number): void {
-  const table = source.querySelector<HTMLElement>('.exam-grading-table');
+  const table = source.querySelector<HTMLElement>('.assessment-grading-table');
   if (!table) return;
-  const grid = table.querySelector<HTMLElement>('.exam-grading-grid')!;
-  const cover = table.closest<HTMLElement>('.exam-cover')!;
+  const grid = table.querySelector<HTMLElement>('.assessment-grading-grid')!;
+  const cover = table.closest<HTMLElement>('.assessment-cover')!;
   const footer = cover.querySelector('footer')!;
   const questionNumbers = [...source.querySelectorAll<HTMLElement>('.printing-question')].map(
     (question) => question.dataset.questionNumber!,
@@ -22,16 +27,16 @@ export function layoutPrintGradingTable(source: HTMLElement, pageHeight: number)
   const columns = Math.ceil(labels.length / rowsPerColumn);
   for (const label of labels) {
     const row = document.createElement('div');
-    row.className = 'exam-grading-row';
+    row.className = 'assessment-grading-row';
     const number = document.createElement('span');
     number.textContent = label;
     const line = document.createElement('span');
-    line.className = 'exam-grading-score';
+    line.className = 'assessment-grading-score';
     row.append(number, line);
     grid.append(row);
   }
   const labelWidth = Math.max(
-    ...[...grid.querySelectorAll('.exam-grading-row > span:first-child')].map(
+    ...[...grid.querySelectorAll('.assessment-grading-row > span:first-child')].map(
       (label) => label.getBoundingClientRect().width,
     ),
   );

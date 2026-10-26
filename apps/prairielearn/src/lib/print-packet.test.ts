@@ -127,7 +127,7 @@ describe('print packets', () => {
 
 describe('print packet settings', () => {
   const instance = { assessmentInstanceId: '1', formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS };
-  const metadata = { instances: [instance], copies: 45, document: 'exam' };
+  const metadata = { instances: [instance], copies: 45, document: 'assessment' };
 
   test('rejects duplicate instance IDs or labels, unknown settings, and invalid layout values', () => {
     for (const instances of [

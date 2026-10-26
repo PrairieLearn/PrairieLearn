@@ -35,20 +35,20 @@ import {
 import { type PrintExportWork, renderPrintExport } from '../../lib/print-export-render.js';
 import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
 import { PrintPacketError, readPrintCoverPages } from '../../lib/print-packet.js';
-import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import {
   type PrintDocument,
   getPrintRenderer,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
-} from '../../lib/printing.js';
+} from '../../lib/printing/index.js';
+import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
 
-export const printableExamExportRouter = t.router({
+export const printableAssessmentExportRouter = t.router({
   pdf: t.procedure
     .use(requireCoursePermissionPreview)
     .input(z.instanceof(FormData))
@@ -68,7 +68,10 @@ export const printableExamExportRouter = t.router({
           cause: error,
         });
       }
-      if (metadata.document !== 'exam' && !ctx.authz_data.has_course_instance_permission_edit) {
+      if (
+        metadata.document !== 'assessment' &&
+        !ctx.authz_data.has_course_instance_permission_edit
+      ) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Access denied (must be a student data editor)',
@@ -113,10 +116,10 @@ export const printableExamExportRouter = t.router({
           metadata.document === 'answer_key' ? [] : await readPrintCoverPages(files.data);
         const plan = run(() => {
           switch (metadata.document) {
-            case 'exam':
+            case 'assessment':
               return {
                 filename: 'assessment',
-                documents: ['exam'] as PrintDocument[],
+                documents: ['assessment'] as PrintDocument[],
                 appendAnswerKeys: false,
               };
             case 'answer_key':
@@ -128,7 +131,7 @@ export const printableExamExportRouter = t.router({
             case 'booklet':
               return {
                 filename: 'booklet',
-                documents: ['exam', 'answer_key'] as PrintDocument[],
+                documents: ['assessment', 'answer_key'] as PrintDocument[],
                 appendAnswerKeys: true,
               };
             default:
@@ -141,8 +144,9 @@ export const printableExamExportRouter = t.router({
         const expectedPageFiles = selectedInstances.reduce(
           (count, _instance, index) =>
             count +
-            plan.documents.filter((document) => document !== 'exam' || index < metadata.copies)
-              .length,
+            plan.documents.filter(
+              (document) => document !== 'assessment' || index < metadata.copies,
+            ).length,
           0,
         );
         if (pages.data.length !== expectedPageFiles) {
@@ -163,7 +167,7 @@ export const printableExamExportRouter = t.router({
         let pageCountIndex = 0;
         for (const index of selectedInstances.keys()) {
           for (const printDocument of plan.documents) {
-            if (printDocument === 'exam' && index >= metadata.copies) continue;
+            if (printDocument === 'assessment' && index >= metadata.copies) continue;
             const count = pageCounts[pageCountIndex++];
             if (plan.appendAnswerKeys && printDocument === 'answer_key') {
               answerKeyPageCounts.push(count);
@@ -204,12 +208,12 @@ export const printableExamExportRouter = t.router({
             excludedQuestions,
           );
           for (const printDocument of plan.documents) {
-            if (printDocument === 'exam' && index >= metadata.copies) continue;
+            if (printDocument === 'assessment' && index >= metadata.copies) continue;
             const search = new URLSearchParams(printLayoutSearch(instance.settings));
             search.set('document', printDocument);
             search.set('form_label', instance.formLabel);
-            const previewUrl = new URL(
-              `${getAssessmentInstanceUrl({ courseInstanceId: ctx.course_instance.id, assessmentInstanceId: instance.assessmentInstanceId })}/paper/preview?${search}`,
+            const localPreviewUrl = new URL(
+              `${getAssessmentInstanceUrl({ courseInstanceId: ctx.course_instance.id, assessmentInstanceId: instance.assessmentInstanceId })}/print/preview?${search}`,
               `${config.serverType}://localhost:${config.serverPort}`,
             );
             const html = pageHtmls[pageFileIndex];
@@ -220,7 +224,7 @@ export const printableExamExportRouter = t.router({
                   id,
                   assessmentInstanceId: instance.assessmentInstanceId,
                   authnUserId: ctx.authn_user.id,
-                  search: previewUrl.searchParams,
+                  search: localPreviewUrl.searchParams,
                   questionListDigest,
                   html,
                 },
@@ -233,7 +237,7 @@ export const printableExamExportRouter = t.router({
               formLabel: instance.formLabel,
               paperSize: instance.settings.paperSize,
               printDocument,
-              previewUrl: previewUrl.href,
+              localPreviewUrl: localPreviewUrl.href,
               html,
             });
           }
@@ -363,7 +367,7 @@ export const printableExamExportRouter = t.router({
       });
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
       if (
-        job.result?.document !== 'exam' &&
+        job.result?.document !== 'assessment' &&
         job.result &&
         !ctx.authz_data.has_course_instance_permission_edit
       ) {

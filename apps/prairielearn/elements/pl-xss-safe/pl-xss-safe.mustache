@@ -16,7 +16,7 @@
       code = DOMPurify.sanitize(code);
       const shadowRoot = element.attachShadow({
         mode: 'open',
-        clonable: window.PrairieLearnExamPrinting != null,
+        clonable: window.PrairieLearnAssessmentPrinting != null,
       });
       shadowRoot.innerHTML = code;
 
@@ -33,9 +33,9 @@
       }
       await MathJax.typesetPromise(shadowRoot.children);
     };
-    if (window.PrairieLearnExamPrinting) {
+    if (window.PrairieLearnAssessmentPrinting) {
       const initializationPromise = new Promise((resolve) => $(resolve)).then(initialize);
-      window.PrairieLearnExamPrinting.waitUntil(initializationPromise);
+      window.PrairieLearnAssessmentPrinting.waitUntil(initializationPromise);
     } else {
       $(initialize);
     }

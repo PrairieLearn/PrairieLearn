@@ -26,8 +26,8 @@ interface AnswerKeyQuestionPresentation {
   visibleStudentResponseCount: number;
 }
 
-function paperUrl(courseInstance: CourseInstance, assessmentInstanceId: string): string {
-  return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper/preview?paper_size=Letter`;
+function printUrl(courseInstance: CourseInstance, assessmentInstanceId: string): string {
+  return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print/preview?paper_size=Letter`;
 }
 
 async function readPaginatedQuestionLayout(page: Page): Promise<PaginatedQuestionLayout> {
@@ -87,7 +87,7 @@ test('reuses closed homework variants for student copies and answer keys', async
     courseInstance.id,
     'hw20-afterCompleteVisibility',
   );
-  const url = paperUrl(courseInstance, assessmentInstanceId);
+  const url = printUrl(courseInstance, assessmentInstanceId);
   await page.goto(url);
   await readPaginatedQuestionLayout(page);
   await expect(page.locator(':root')).toHaveAttribute('data-print-warnings', '[]');
@@ -97,7 +97,7 @@ test('reuses closed homework variants for student copies and answer keys', async
   expect(variants).toHaveLength(1);
   await execute(sql.close_variants, { assessment_instance_id: assessmentInstanceId });
 
-  for (const document of ['exam', 'answer_key']) {
+  for (const document of ['assessment', 'answer_key']) {
     await page.goto(`${url}&document=${document}`);
     const layout = await readPaginatedQuestionLayout(page);
     expect(Object.keys(layout.questionPages)).toHaveLength(1);
@@ -118,13 +118,13 @@ test('renders accessible previews and readable answer keys for every student que
     courseInstance.id,
     'exam20-assessmentTools',
   );
-  const endpoint = `${paperUrl(courseInstance, assessmentInstanceId)}&identity_field=Section&identity_field=Student%20ID`;
+  const endpoint = `${printUrl(courseInstance, assessmentInstanceId)}&identity_field=Section&identity_field=Student%20ID`;
 
-  const examResponse = await page.goto(endpoint);
-  const examLayout = await readPaginatedQuestionLayout(page);
+  const assessmentResponse = await page.goto(endpoint);
+  const assessmentLayout = await readPaginatedQuestionLayout(page);
   await expectAccessiblePreview(page);
-  expect(examResponse?.headers()['content-security-policy']).toContain("script-src 'none'");
-  expect(Object.keys(examLayout.questionPages).length).toBeGreaterThan(1);
+  expect(assessmentResponse?.headers()['content-security-policy']).toContain("script-src 'none'");
+  expect(Object.keys(assessmentLayout.questionPages).length).toBeGreaterThan(1);
   const coverPage = page.locator('.pagedjs_page').first();
   await expect(coverPage.getByText('Name', { exact: true })).toBeVisible();
   await expect(coverPage.getByText('Section', { exact: true })).toBeVisible();
@@ -136,7 +136,9 @@ test('renders accessible previews and readable answer keys for every student que
   await expectAccessiblePreview(page);
   expect(answerKeyResponse?.headers()['content-security-policy']).toContain("script-src 'none'");
 
-  expect(Object.keys(answerKeyLayout.questionPages)).toEqual(Object.keys(examLayout.questionPages));
+  expect(Object.keys(answerKeyLayout.questionPages)).toEqual(
+    Object.keys(assessmentLayout.questionPages),
+  );
   const answerContents = await page
     .locator('.printing-answer-key-content')
     .evaluateAll((contents) =>
@@ -153,7 +155,7 @@ test('renders accessible previews and readable answer keys for every student que
   }
 
   const presentations = await readAnswerKeyQuestionPresentations(page);
-  expect(presentations).toHaveLength(Object.keys(examLayout.questionPages).length);
+  expect(presentations).toHaveLength(Object.keys(assessmentLayout.questionPages).length);
   for (const presentation of presentations) {
     expect(presentation).toMatchObject({
       answerRegionCount: 1,

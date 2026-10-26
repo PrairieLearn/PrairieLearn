@@ -51,13 +51,13 @@ export async function waitForPrintImages(source: HTMLElement): Promise<void> {
           image.addEventListener('load', () => resolve(), { once: true });
           image.addEventListener(
             'error',
-            () => reject(new Error('An image in the printable exam could not be loaded')),
+            () => reject(new Error('An image in the printable assessment could not be loaded')),
             { once: true },
           );
         });
       }
       if (image.naturalWidth === 0) {
-        throw new Error('An image in the printable exam could not be loaded');
+        throw new Error('An image in the printable assessment could not be loaded');
       }
       await image.decode();
     }),

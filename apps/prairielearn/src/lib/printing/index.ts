@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 
-import { load } from 'cheerio';
 import { chromium } from 'playwright';
 import { z } from 'zod';
 
@@ -9,22 +8,23 @@ import { HttpStatusError } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
-import { QuestionContainer } from '../components/QuestionContainer.js';
-
-import { config } from './config.js';
+import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { config } from '../config.js';
 import {
   AssessmentQuestionSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SprocQuestionOrderSchema,
-} from './db-types.js';
-import { namespaceQuestionHtmls } from './printing/namespace-question-htmls.js';
-import { PrintRenderer } from './printing/print-renderer.js';
-import type { PrintablePageOutput } from './printing/printable-page-output.js';
-import type { QuestionBlockSize } from './printing/question-block-size.js';
-import { RenderQueue } from './printing/render-queue.js';
-import { getAndRenderVariant } from './question-render.js';
-import type { ResLocalsForPage } from './res-locals.js';
+} from '../db-types.js';
+import { getAndRenderVariant } from '../question-render.js';
+import type { ResLocalsForPage } from '../res-locals.js';
+
+import { combineQuestionHeaders } from './combine-question-headers.js';
+import { namespaceQuestionHtmls } from './namespace-question-htmls.js';
+import { PrintRenderer } from './print-renderer.js';
+import type { PrintablePageOutput } from './printable-page-output.js';
+import type { QuestionBlockSize } from './question-block-size.js';
+import { RenderQueue } from './render-queue.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -44,20 +44,7 @@ const BROKEN_QUESTION_FAILURE_MESSAGE =
   'Question could not be rendered due to an error in question code.';
 const UNSUPPORTED_QUESTION_CODE = 'unsupported_question_type';
 
-/** Development asset URLs use a fresh UUID for each render, even for the same package file. */
-function sameDevelopmentModuleAsset(first: string, second: string): boolean {
-  const pattern = /^(.*\/node_modules\/)[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}\/(.+)$/i;
-  const firstMatch = pattern.exec(first);
-  const secondMatch = pattern.exec(second);
-  return (
-    firstMatch !== null &&
-    secondMatch !== null &&
-    firstMatch[1] === secondMatch[1] &&
-    firstMatch[2] === secondMatch[2]
-  );
-}
-
-export const PRINT_DOCUMENTS = ['exam', 'answer_key'] as const;
+export const PRINT_DOCUMENTS = ['assessment', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
 
 let printRenderer: PrintRenderer | null = null;
@@ -269,6 +256,8 @@ export async function validateQuestionsForPrinting(
 }
 
 export interface RenderAssessmentInstanceQuestionsForPrintingOptions {
+  /** Shared request cancellation for queueing and preparing questions. */
+  signal: AbortSignal;
   defaultQuestionBlockSize?: QuestionBlockSize;
   questionBlockSizeOverrides?: ReadonlyMap<string, QuestionBlockSize>;
   excludedQuestionNumbers?: ReadonlySet<string>;
@@ -278,11 +267,12 @@ export interface RenderAssessmentInstanceQuestionsForPrintingOptions {
 async function renderAssessmentInstanceQuestionsUnbounded(
   resLocals: ResLocalsForPage<'assessment-instance'>,
   {
+    signal,
     defaultQuestionBlockSize = 'auto',
     questionBlockSizeOverrides = new Map(),
     excludedQuestionNumbers = new Set(),
-    document = 'exam',
-  }: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
+    document = 'assessment',
+  }: RenderAssessmentInstanceQuestionsForPrintingOptions,
 ): Promise<{
   questionHtmls: string[];
   questionListDigest: string;
@@ -290,15 +280,18 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   extraHeadersHtml: string;
   maxPoints: number;
 }> {
+  signal.throwIfAborted();
   const questions = await selectPrintableQuestions(resLocals.assessment_instance.id);
+  signal.throwIfAborted();
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
   const includedQuestions = selectIncludedQuestions(questions, excludedQuestionNumbers);
-  const extraHeaderHtmls = new Set<string>();
+  const extraHeaderHtmls: string[] = [];
   const renderedQuestions: { html: string; namespace: string }[] = [];
   const questionResults: PrintingQuestionResult[] = [];
   let maxPoints = 0;
 
   for (const printableQuestion of includedQuestions) {
+    signal.throwIfAborted();
     const base: PrintingQuestionResultBase = {
       questionNumber: printableQuestion.question_number,
       questionId: printableQuestion.question.id,
@@ -330,9 +323,14 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       authz_result: resLocals.authz_result,
     };
     const renderState = await getAndRenderVariant(null, null, renderLocals, {
-      renderMode: document === 'exam' ? 'blank' : 'answer-key',
+      includeSubmissions: false,
+      showCorrectAnswer: document === 'answer_key',
+      // Printed copies and answer keys must reuse saved variants, including closed homework variants.
+      requireOpenVariant: false,
+      throwOnFatalError: true,
       issuesLoadExtraData: false,
     });
+    signal.throwIfAborted();
 
     if (renderState.variant.broken_at != null) {
       questionResults.push({
@@ -354,24 +352,26 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       printableQuestion.question.grading_method === 'Manual' &&
       answerHtml.trim() === ''
     ) {
+      signal.throwIfAborted();
       const manualGradingRenderState = await getAndRenderVariant(
         renderState.variant.id,
         null,
         renderLocals,
         {
-          renderMode: 'answer-key',
+          includeSubmissions: false,
+          showCorrectAnswer: true,
+          requireOpenVariant: false,
+          throwOnFatalError: true,
           questionRenderContext: 'manual_grading',
           issuesLoadExtraData: false,
         },
       );
+      signal.throwIfAborted();
       answerHtml = manualGradingRenderState.answerHtml;
       extraHeadersHtml += `\n${manualGradingRenderState.extraHeadersHtml}`;
     }
 
-    for (const extraHeaderHtml of extraHeadersHtml.split('\n')) {
-      const trimmedExtraHeaderHtml = extraHeaderHtml.trim();
-      if (trimmedExtraHeaderHtml) extraHeaderHtmls.add(trimmedExtraHeaderHtml);
-    }
+    extraHeaderHtmls.push(extraHeadersHtml);
 
     const questionHtml = QuestionContainer({
       resLocals: {
@@ -408,41 +408,12 @@ async function renderAssessmentInstanceQuestionsUnbounded(
     maxPoints += printableQuestion.assessment_question.max_points ?? 0;
   }
 
-  // Some browsers only support one import map per document. Combine the question maps
-  // before any element scripts run, so later questions can resolve their dependencies.
-  const headers = load([...extraHeaderHtmls].join('\n'), null, false);
-  const imports: Record<string, string> = {};
-  headers('script[type="importmap"]').each((_, element) => {
-    const importMap = z
-      .object({ imports: z.record(z.string(), z.string()) })
-      .parse(JSON.parse(headers(element).text()));
-    for (const [specifier, url] of Object.entries(importMap.imports)) {
-      if (
-        imports[specifier] &&
-        imports[specifier] !== url &&
-        !sameDevelopmentModuleAsset(imports[specifier], url)
-      ) {
-        throw new Error(`Questions use conflicting import maps for ${specifier}`);
-      }
-      imports[specifier] = url;
-    }
-    headers(element).remove();
-  });
-
+  signal.throwIfAborted();
   return {
     questionHtmls: namespaceQuestionHtmls(renderedQuestions),
     questionListDigest: digestPrintableQuestions(includedQuestions),
     questionResults,
-    extraHeadersHtml: html`
-      ${
-        Object.keys(imports).length > 0
-          ? html`<script type="importmap">
-              ${unsafeHtml(JSON.stringify({ imports }))}
-            </script>`
-          : ''
-      }
-      ${unsafeHtml(headers.html())}
-    `.toString(),
+    extraHeadersHtml: combineQuestionHeaders(extraHeaderHtmls),
     maxPoints,
   };
 }
@@ -450,11 +421,14 @@ async function renderAssessmentInstanceQuestionsUnbounded(
 /** Limit question preparation as well as browser pagination during a preview burst. */
 export async function renderAssessmentInstanceQuestionsForPrinting(
   resLocals: ResLocalsForPage<'assessment-instance'>,
-  options: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
+  options: RenderAssessmentInstanceQuestionsForPrintingOptions,
 ) {
   return await questionPreparationQueue.run(
     async () => await renderAssessmentInstanceQuestionsUnbounded(resLocals, options),
-    120_000,
+    // The request signal bounds both queueing and execution with the same deadline.
+    0,
     'print preview',
+    'preview',
+    options.signal,
   );
 }
