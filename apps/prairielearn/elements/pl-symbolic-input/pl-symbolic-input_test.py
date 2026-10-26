@@ -659,40 +659,40 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+SIMPLIFICATION_CASES = [
+    pytest.param("1 + 1", (), id="scalar"),
+    pytest.param("{1 + 1, 3}", ('allow-sets="true"',), id="finite-set"),
+    pytest.param("{}", ('allow-sets="true"',), id="empty-set"),
+    pytest.param("(0, 1 + 1]", ('allow-sets="true"',), id="interval"),
+    pytest.param("{1} U {2}", ('allow-sets="true"',), id="union"),
+    pytest.param("{1, 2} & {2}", ('allow-sets="true"',), id="intersection"),
+    pytest.param("{1, 2} - {2}", ('allow-sets="true"',), id="complement"),
+    pytest.param("1 + i", ('allow-complex="true"',), id="imaginary"),
+    pytest.param(
+        "{1 + i, 2}",
+        ('allow-sets="true"', 'allow-complex="true"'),
+        id="finite-set-imaginary",
+    ),
+    pytest.param(
+        "{1 + i} U {2}",
+        ('allow-sets="true"', 'allow-complex="true"'),
+        id="union-imaginary",
+    ),
+    pytest.param(
+        "{1 + i, 2} & {1 + i}",
+        ('allow-sets="true"', 'allow-complex="true"'),
+        id="intersection-imaginary",
+    ),
+    pytest.param(
+        "{1 + i, 2} - {2}",
+        ('allow-sets="true"', 'allow-complex="true"'),
+        id="complement-imaginary",
+    ),
+]
+
+
 @pytest.mark.parametrize("display_simplified", [True, False])
-@pytest.mark.parametrize(
-    ("submission", "attributes"),
-    [
-        pytest.param("1 + 1", (), id="scalar"),
-        pytest.param("{1 + 1, 3}", ('allow-sets="true"',), id="finite-set"),
-        pytest.param("{}", ('allow-sets="true"',), id="empty-set"),
-        pytest.param("(0, 1 + 1]", ('allow-sets="true"',), id="interval"),
-        pytest.param("{1} U {2}", ('allow-sets="true"',), id="union"),
-        pytest.param("{1, 2} & {2}", ('allow-sets="true"',), id="intersection"),
-        pytest.param("{1, 2} - {2}", ('allow-sets="true"',), id="complement"),
-        pytest.param("1 + i", ('allow-complex="true"',), id="imaginary"),
-        pytest.param(
-            "{1 + i, 2}",
-            ('allow-sets="true"', 'allow-complex="true"'),
-            id="finite-set-imaginary",
-        ),
-        pytest.param(
-            "{1 + i} U {2}",
-            ('allow-sets="true"', 'allow-complex="true"'),
-            id="union-imaginary",
-        ),
-        pytest.param(
-            "{1 + i, 2} & {1 + i}",
-            ('allow-sets="true"', 'allow-complex="true"'),
-            id="intersection-imaginary",
-        ),
-        pytest.param(
-            "{1 + i, 2} - {2}",
-            ('allow-sets="true"', 'allow-complex="true"'),
-            id="complement-imaginary",
-        ),
-    ],
-)
+@pytest.mark.parametrize(("submission", "attributes"), SIMPLIFICATION_CASES)
 def test_parse_simplifies_submission_exactly_once(
     monkeypatch: pytest.MonkeyPatch,
     submission: str,
@@ -731,6 +731,47 @@ def test_parse_simplifies_submission_exactly_once(
     assert isinstance(data["submitted_answers"]["test"], dict)
 
 
+@pytest.mark.parametrize("display_simplified", [True, False])
+@pytest.mark.parametrize(("submission", "attributes"), SIMPLIFICATION_CASES)
+def test_grade_simplifies_values_exactly_once(
+    monkeypatch: pytest.MonkeyPatch,
+    submission: str,
+    attributes: tuple[str, ...],
+    *,
+    display_simplified: bool,
+) -> None:
+    correct_answer = psu.sympy_to_json(sympy.Integer(42))
+    element_html = build_element_html(
+        *attributes,
+        f'display-simplified-expression="{str(display_simplified).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": submission},
+        correct_answers={"test": correct_answer},
+    )
+    symbolic_input.parse(element_html, data)
+    assert data["format_errors"] == {}
+
+    simplification_calls: list[tuple[bool, bool]] = []
+    original_json_to_sympy = psu.json_to_sympy
+
+    def json_spy(a: psu.SympyJson, *args: Any, **kwargs: Any) -> sympy.Expr:
+        simplification_calls.append((
+            a is correct_answer,
+            kwargs["simplify_expression"],
+        ))
+        return original_json_to_sympy(a, *args, **kwargs)
+
+    monkeypatch.setattr(psu, "json_to_sympy", json_spy)
+
+    symbolic_input.grade(element_html, data)
+
+    assert simplification_calls == [
+        (True, True),
+        (False, not display_simplified),
+    ]
+
+
 def test_unsimplified_set_submission_preserves_operation() -> None:
     element_html = build_element_html(
         'allow-sets="true"',
@@ -750,6 +791,26 @@ def test_unsimplified_set_submission_preserves_operation() -> None:
     )
 
     assert isinstance(restored, sympy.Intersection)
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_unsimplified_json_correct_answer_is_graded_by_value() -> None:
+    correct_answer = sympy.Union(sympy.FiniteSet(1), sympy.FiniteSet(2), evaluate=False)
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "{1} U {2}"},
+        correct_answers={
+            "test": psu.sympy_to_json(correct_answer, allow_sets=True),
+        },
+    )
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1
