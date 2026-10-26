@@ -1095,7 +1095,7 @@ export async function initExpress(): Promise<Express> {
   );
 
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)/paper',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)/print',
     (await import('./pages/instructorAssessmentInstancePrint/instructorAssessmentInstancePrint.js'))
       .default,
   );

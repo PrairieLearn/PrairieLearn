@@ -14,7 +14,7 @@ export async function waitForPrintablePage(page: Page): Promise<void> {
   expect(state).toEqual({ status: 'ready', error: undefined });
 }
 
-export async function downloadPrintableWord(page: Page, paperUrl: string, search: string) {
+export async function downloadPrintableWord(page: Page, printUrl: string, search: string) {
   const source = await page.evaluate(() =>
     JSON.parse(document.getElementById('pl-print-docx-source')!.textContent),
   );
@@ -28,11 +28,11 @@ export async function downloadPrintableWord(page: Page, paperUrl: string, search
     return `<!doctype html>\n${copy.outerHTML}`;
   });
   const { id } = await getConfiguredUser();
-  return await page.request.post(`${paperUrl}/docx?${search}`, {
+  return await page.request.post(`${printUrl}/docx?${search}`, {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/octet-stream',
-      'X-CSRF-Token': generateCsrfToken({ url: `${paperUrl}/docx`, authnUserId: id }),
+      'X-CSRF-Token': generateCsrfToken({ url: `${printUrl}/docx`, authnUserId: id }),
     },
     data: JSON.stringify({ html, source }),
     timeout: 30_000,

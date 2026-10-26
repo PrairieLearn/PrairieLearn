@@ -249,7 +249,7 @@ const SKIP_ROUTES = [
 
   // The printable preview requires browser-side transformations and pagination.
   // Accessibility is checked after rendering in assessment-instance-printing.spec.ts.
-  '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/paper/preview',
+  '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/print/preview',
 
   // Static assets.
   '/assets/elements/:cachebuster/*',

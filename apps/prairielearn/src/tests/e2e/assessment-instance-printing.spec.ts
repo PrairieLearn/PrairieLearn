@@ -44,8 +44,8 @@ async function makePrintableAssessmentInstance(
   });
 }
 
-function paperUrl(courseInstance: CourseInstance, assessmentInstanceId: string): string {
-  return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/paper/preview?paper_size=Letter`;
+function printUrl(courseInstance: CourseInstance, assessmentInstanceId: string): string {
+  return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print/preview?paper_size=Letter`;
 }
 
 async function readPaginatedQuestionLayout(page: Page): Promise<PaginatedQuestionLayout> {
@@ -106,7 +106,7 @@ test('renders accessible previews and readable answer keys for every student que
     courseInstance,
     'exam20-assessmentTools',
   );
-  const endpoint = `${paperUrl(courseInstance, assessmentInstanceId)}&identity_field=Section&identity_field=Student%20ID`;
+  const endpoint = `${printUrl(courseInstance, assessmentInstanceId)}&identity_field=Section&identity_field=Student%20ID`;
 
   const assessmentResponse = await page.goto(endpoint);
   const assessmentLayout = await readPaginatedQuestionLayout(page);

@@ -245,10 +245,10 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
   });
 
   test('instructor (student data viewer) cannot print an E1 answer key', async () => {
-    const paperUrl = context.examAssessmentInstanceUrl
+    const printUrl = context.examAssessmentInstanceUrl
       .replace('/assessment_instance/', '/instructor/assessment_instance/')
       .replace(/\/$/, '');
-    const url = `${paperUrl}/paper/preview?paper_size=Letter&document=answer_key`;
+    const url = `${printUrl}/print/preview?paper_size=Letter&document=answer_key`;
     const headers = { cookie: 'pl_test_user=test_instructor' };
     const previewResponse = await helperClient.fetchCheerio(url, { headers });
     assert.equal(previewResponse.status, 403);

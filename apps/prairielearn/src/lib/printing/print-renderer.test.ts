@@ -206,7 +206,7 @@ describe('PrintRenderer', () => {
 
   it('prints pre-paginated HTML without running page scripts or loading the preview route', async () => {
     const harness = createBrowserHarness();
-    const url = 'http://localhost:3000/paper/preview?paper_size=Letter';
+    const url = 'http://localhost:3000/print/preview?paper_size=Letter';
     const html = '<html data-print-status="ready"><body>Prepared pages</body></html>';
 
     await renderPdf(new PrintRenderer(), { url, html });

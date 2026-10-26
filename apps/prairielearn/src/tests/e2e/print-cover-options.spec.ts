@@ -30,7 +30,7 @@ test('fills the cover grading table down columns using only included questions',
     date: new Date(),
     client_fingerprint_id: null,
   });
-  const base = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/paper`;
+  const base = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/print`;
   await page.goto(`${base}/preview?paper_size=Letter&grading_table=true&exclude_question=2`);
   await waitForPrintablePage(page);
   const cover = page.getByRole('article', { name: 'Exam cover page' });
@@ -108,7 +108,7 @@ test('uses the configured honor code for printed pledges even when it is disable
       date: new Date(),
       client_fingerprint_id: null,
     });
-    const base = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/paper`;
+    const base = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/print`;
     await page.goto(`${base}/preview?paper_size=Letter&include_honor_code=true`);
     await waitForPrintablePage(page);
     const pledge = page.getByRole('region', { name: 'Academic integrity pledge' });

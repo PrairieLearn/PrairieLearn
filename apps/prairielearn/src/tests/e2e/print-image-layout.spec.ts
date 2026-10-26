@@ -43,7 +43,7 @@ const test = base.extend<{
           date: new Date(),
           client_fingerprint_id: null,
         });
-        return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/paper/preview`;
+        return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/print/preview`;
       });
     } finally {
       await fs.writeFile(questionPath, original);
