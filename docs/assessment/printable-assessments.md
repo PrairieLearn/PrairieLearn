@@ -1,6 +1,6 @@
 # Printable assessments
 
-You can prepare paper copies of an existing exam or homework assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. If you have permission to edit the course instance, you can also preview and download answer keys.
+With course preview permission, you can prepare paper copies of an existing exam or homework assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. You can also preview and download answer keys.
 
 For assessments with randomization, you can prepare several versions, called _forms_. Each form has its own questions and matching answer key. Printable forms are not currently supported for group assessments.
 
@@ -10,7 +10,7 @@ For assessments with randomization, you can prepare several versions, called _fo
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
 3. Choose what to include on the [cover page](#cover-pages), then select **Create preview**.
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
-5. Select **Update preview** to apply your changes. Check the **Student copy** and, if available, the **Answer key** above the preview.
+5. Select **Update preview** to apply your changes. Check the **Student copy** and **Answer key** above the preview.
 6. When you are satisfied with the assessment, open **Download** and [choose a file](#download-files).
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
@@ -26,7 +26,7 @@ The question list highlights two kinds of items to check:
 - **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the assessment.
 - **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of this form. Then select **Update preview**. Downloads are unavailable while included questions have these errors.
 
-Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and, if you can access it, the answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
+Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
 
 ## Prepare multiple forms
 
@@ -55,7 +55,7 @@ Uploaded covers do not appear in the preview. Download a student PDF or booklet 
 
 ## Download files
 
-Select **Update preview** after making changes, then open **Download**. The available files depend on your forms and permissions:
+Select **Update preview** after making changes, then open **Download**. The available files depend on your forms:
 
 | Option                               | What you get                                                                     |
 | ------------------------------------ | -------------------------------------------------------------------------------- |
@@ -65,7 +65,7 @@ Select **Update preview** after making changes, then open **Download**. The avai
 | **Download all forms (PDF)**         | One student copy of each form, in order. Available when you have multiple forms. |
 | **Download booklet PDF…**            | A student copy for each student, followed by the answer keys.                    |
 
-Answer key and booklet downloads require permission to edit the course instance. If a download says the preview has expired or changed, select **Update preview** and try again.
+If a download says the preview has expired or changed, select **Update preview** and try again.
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 

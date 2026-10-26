@@ -8,7 +8,9 @@ import * as unzipper from 'unzipper';
 import { MAX_INLINE_PRINT_PACKET_PAGES } from '../../lib/client/print-packet.js';
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
 import { syncCourse } from '../helperCourse.js';
+import { getOrCreateUser } from '../utils/auth.js';
 
 import { createTest, expect } from './fixtures.js';
 
@@ -312,8 +314,24 @@ test('prepares homework with matching student copies, answer keys, and Word expo
 
 test('combines assessment copies with custom covers and appends every form’s answer key', async ({
   page,
+  baseURL,
   courseInstance,
 }) => {
+  const instructor = await getOrCreateUser({
+    uid: 'instructor@example.com',
+    name: 'Instructor User',
+    uin: '100000000',
+  });
+  await insertCoursePermissionsByUserUid({
+    course_id: courseInstance.course_id,
+    uid: instructor.uid,
+    course_role: 'Previewer',
+    authn_user_id: instructor.id,
+  });
+  await page
+    .context()
+    .addCookies([{ name: 'pl_test_user', value: 'test_instructor', url: baseURL }]);
+
   const instancesLoaded = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
   );

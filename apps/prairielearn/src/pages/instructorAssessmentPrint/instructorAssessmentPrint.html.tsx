@@ -62,7 +62,6 @@ interface PrintPreparationProps {
   enrolledStudents: number;
   defaultCopies: number;
   renderingAvailable: boolean;
-  canEditStudentData: boolean;
   trpcCsrfToken: string;
   docxCsrfToken: string;
   search: string;
@@ -99,7 +98,6 @@ function PrintPreparation({
   enrolledStudents,
   defaultCopies,
   renderingAvailable,
-  canEditStudentData,
   docxCsrfToken,
 }: PrintPreparationProps) {
   const trpc = useTRPC();
@@ -1218,16 +1216,14 @@ function PrintPreparation({
                     >
                       Student copy
                     </Button>
-                    {canEditStudentData && (
-                      <Button
-                        type="button"
-                        variant={document === 'answer_key' ? 'primary' : 'outline-secondary'}
-                        aria-pressed={document === 'answer_key'}
-                        onClick={() => switchDocument('answer_key')}
-                      >
-                        Answer key
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant={document === 'answer_key' ? 'primary' : 'outline-secondary'}
+                      aria-pressed={document === 'answer_key'}
+                      onClick={() => switchDocument('answer_key')}
+                    >
+                      Answer key
+                    </Button>
                   </ButtonGroup>
                 </div>
                 <div className="small text-muted d-flex align-items-center gap-3">
@@ -1315,16 +1311,14 @@ function PrintPreparation({
                                 <Dropdown.Item onClick={() => download.mutate(id)}>
                                   Download Form {label} Word (.docx)
                                 </Dropdown.Item>
-                                {canEditStudentData && (
-                                  <Dropdown.Item
-                                    disabled={!renderingAvailable}
-                                    onClick={() =>
-                                      void downloadPacket([id], 1, 'answer_key').catch(() => {})
-                                    }
-                                  >
-                                    Download Form {label} answer key (PDF)
-                                  </Dropdown.Item>
-                                )}
+                                <Dropdown.Item
+                                  disabled={!renderingAvailable}
+                                  onClick={() =>
+                                    void downloadPacket([id], 1, 'answer_key').catch(() => {})
+                                  }
+                                >
+                                  Download Form {label} answer key (PDF)
+                                </Dropdown.Item>
                               </Fragment>
                             );
                           })}
@@ -1343,18 +1337,16 @@ function PrintPreparation({
                               Download all forms (PDF)
                             </Dropdown.Item>
                           )}
-                          {canEditStudentData && (
-                            <Dropdown.Item
-                              disabled={!renderingAvailable}
-                              onClick={() => {
-                                booklet.reset();
-                                setPdfPreparationError(null);
-                                setShowBookletModal(true);
-                              }}
-                            >
-                              Download booklet PDF…
-                            </Dropdown.Item>
-                          )}
+                          <Dropdown.Item
+                            disabled={!renderingAvailable}
+                            onClick={() => {
+                              booklet.reset();
+                              setPdfPreparationError(null);
+                              setShowBookletModal(true);
+                            }}
+                          >
+                            Download booklet PDF…
+                          </Dropdown.Item>
                         </Dropdown.Menu>
                       </Dropdown>
                     </div>

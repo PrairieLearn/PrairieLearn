@@ -10,6 +10,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
@@ -245,29 +246,46 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
     assert.isTrue(response.ok);
   });
 
-  test('instructor (student data viewer) cannot print an E1 answer key', async () => {
+  test('instructor (student data viewer) is authorized to print an E1 answer key', async () => {
     await features.enable('printable-assessments');
     const printUrl = context.examAssessmentInstanceUrl
       .replace('/assessment_instance/', '/instructor/assessment_instance/')
       .replace(/\/$/, '');
-    const url = `${printUrl}/print/preview?paper_size=Letter&document=answer_key`;
+    // An invalid question selection verifies authorization without starting the renderer.
+    const url = `${printUrl}/print/preview?paper_size=Letter&document=answer_key&exclude_question=nonexistent`;
     const headers = {
       cookie:
-        'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
+        'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student%20Data%20Viewer',
     };
     const previewResponse = await helperClient.fetchCheerio(url, { headers });
-    assert.equal(previewResponse.status, 403);
+    assert.equal(previewResponse.status, 400);
+    assert.include(
+      await previewResponse.text(),
+      'Question exclusion references nonexistent question numbers: nonexistent',
+    );
 
-    const docxResponse = await helperClient.fetchCheerio(url.replace('/preview?', '/docx?'), {
+    const docxUrl = new URL(url.replace('/preview?', '/docx?'));
+    const docxResponse = await helperClient.fetchCheerio(docxUrl, {
       method: 'POST',
-      headers: { ...headers, 'Content-Type': 'application/octet-stream' },
+      headers: {
+        ...headers,
+        'Content-Type': 'application/octet-stream',
+        'X-CSRF-Token': generateCsrfToken({
+          url: docxUrl.pathname,
+          authnUserId: String(context.userIdInstructor),
+        }),
+      },
       body: JSON.stringify({
         id: 'unused',
         html: '<html></html>',
         source: { html: '', figures: [] },
       }),
     });
-    assert.equal(docxResponse.status, 403);
+    assert.equal(docxResponse.status, 400);
+    assert.include(
+      await docxResponse.text(),
+      'Question exclusion references nonexistent question numbers: nonexistent',
+    );
   });
 
   test('instructor (student data viewer) can view E1/Q* instance of student', async () => {

@@ -80,7 +80,6 @@ router.get(
               enrolledStudents={studentCount}
               defaultCopies={Math.min(MAX_PRINT_COPIES, Math.max(1, studentCount))}
               renderingAvailable={isBrowserRenderingAvailable()}
-              canEditStudentData={authz_data.has_course_instance_permission_edit}
               trpcCsrfToken={trpcCsrfToken}
               docxCsrfToken={docxCsrfToken}
               search={getUrl(req).search}

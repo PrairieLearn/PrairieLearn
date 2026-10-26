@@ -655,7 +655,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect(exportResponse.status).toBe(403);
   });
 
-  test('requires student data edit permission for PDFs containing answer keys', async () => {
+  test('authorizes course previewers to export PDFs containing answer keys', async () => {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const instructor = await getOrCreateUser({
@@ -694,20 +694,17 @@ describe('print preparation', { timeout: 60_000 }, () => {
         config.secretKey,
       ),
       cookie:
-        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=Student Data Viewer',
+        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=None',
     };
 
-    for (const [document, expectedStatus] of [
-      ['assessment', 400],
-      ['answer_key', 403],
-      ['booklet', 403],
-    ] as const) {
+    for (const document of ['assessment', 'answer_key', 'booklet'] as const) {
       const response = await fetch(`${siteUrl}${trpcUrl}/printableAssessmentExport.pdf`, {
         method: 'POST',
         headers,
         body: packetInput(instanceId, 1, document),
       });
-      expect(response.status).toBe(expectedStatus);
+      expect(response.status).toBe(400);
+      expect(await response.text()).toContain('The printable pages are incomplete.');
     }
   });
 });

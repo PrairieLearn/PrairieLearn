@@ -70,15 +70,6 @@ export const printableAssessmentExportRouter = t.router({
           cause: error,
         });
       }
-      if (
-        metadata.document !== 'assessment' &&
-        !ctx.authz_data.has_course_instance_permission_edit
-      ) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Access denied (must be a student data editor)',
-        });
-      }
       const instances = await selectAssessmentInstancesForUser({
         assessment_id: ctx.assessment.id,
         user_id: ctx.locals.user.id,
@@ -379,13 +370,6 @@ export const printableAssessmentExportRouter = t.router({
         authnUserId: ctx.authn_user.id,
       });
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
-      if (
-        job.result?.document !== 'assessment' &&
-        job.result &&
-        !ctx.authz_data.has_course_instance_permission_edit
-      ) {
-        throw new TRPCError({ code: 'FORBIDDEN' });
-      }
       return {
         status: job.status,
         ready: !!job.result,
