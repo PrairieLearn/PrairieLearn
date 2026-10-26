@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { makeAssessmentInstance } from '../../lib/assessment.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
-import { syncCourse } from '../helperCourse.js';
-import { getConfiguredUser } from '../utils/auth.js';
+import { makeAssessmentInstance } from '../../../lib/assessment.js';
+import { selectAssessmentByTid } from '../../../models/assessment.js';
+import { syncCourse } from '../../helperCourse.js';
+import { getConfiguredUser } from '../../utils/auth.js';
+import { createTest, expect } from '../fixtures.js';
 
-import { createTest, expect } from './fixtures.js';
-import { waitForPrintablePage } from './utils/printing.js';
+import { waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } }).extend<{
   imageQuestion: (html: string) => Promise<string>;

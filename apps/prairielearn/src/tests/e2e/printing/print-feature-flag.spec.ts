@@ -1,6 +1,5 @@
-import { selectAssessmentByTid } from '../../models/assessment.js';
-
-import { expect, test } from './fixtures.js';
+import { selectAssessmentByTid } from '../../../models/assessment.js';
+import { expect, test } from '../fixtures.js';
 
 test('hides Print and blocks printable pages when the feature is disabled', async ({
   page,

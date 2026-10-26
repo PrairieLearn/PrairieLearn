@@ -3,14 +3,14 @@ import path from 'node:path';
 
 import * as unzipper from 'unzipper';
 
-import { syncCourse } from '../helperCourse.js';
+import { syncCourse } from '../../helperCourse.js';
+import { createTest, expect } from '../fixtures.js';
 
-import { createTest, expect } from './fixtures.js';
 import {
   createPrintableAssessmentInstance,
   downloadPrintableWord,
   waitForPrintablePage,
-} from './utils/printing.js';
+} from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 

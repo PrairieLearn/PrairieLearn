@@ -1,10 +1,9 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { config } from '../../lib/config.js';
-import { PrintRenderer } from '../../lib/printing/print-renderer.js';
-
-import { expect, test } from './fixtures.js';
+import { config } from '../../../lib/config.js';
+import { PrintRenderer } from '../../../lib/printing/print-renderer.js';
+import { expect, test } from '../fixtures.js';
 
 // These browser-only tests do not need the application server.
 test.use({ baseURL: '' });

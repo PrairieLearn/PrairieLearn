@@ -3,11 +3,11 @@ import axe from 'axe-core';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
-import type { CourseInstance } from '../../lib/db-types.js';
-import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
+import type { CourseInstance } from '../../../lib/db-types.js';
+import { selectVariantsByInstanceQuestion } from '../../../models/variant.js';
+import { createTest, expect } from '../fixtures.js';
 
-import { createTest, expect } from './fixtures.js';
-import { createPrintableAssessmentInstance, waitForPrintablePage } from './utils/printing.js';
+import { createPrintableAssessmentInstance, waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 

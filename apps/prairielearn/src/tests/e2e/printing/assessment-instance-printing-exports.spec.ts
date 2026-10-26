@@ -4,15 +4,15 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
-import type { CourseInstance } from '../../lib/db-types.js';
-import { syncCourse } from '../helperCourse.js';
+import type { CourseInstance } from '../../../lib/db-types.js';
+import { syncCourse } from '../../helperCourse.js';
+import { createTest, expect } from '../fixtures.js';
 
-import { createTest, expect } from './fixtures.js';
 import {
   createPrintableAssessmentInstance,
   downloadPrintableWord,
   waitForPrintablePage,
-} from './utils/printing.js';
+} from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
