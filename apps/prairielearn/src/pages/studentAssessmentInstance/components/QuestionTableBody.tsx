@@ -138,18 +138,20 @@ export function QuestionTableBody({
               }"
             >
               <td>
-                ${RowLabel({
-                  courseInstanceId,
-                  row,
-                  userGroupRoles,
-                  hasStatusColumn: assessmentType === 'Exam',
-                  rowLabelText: formatStudentQuestionTitle({
-                    assessmentType,
-                    questionNumber: row.question_number,
-                    questionTitle: row.question.title,
-                    showQuestionTitles,
-                  }),
-                })}
+                <div class="d-flex align-items-center">
+                  ${RowLabel({
+                    courseInstanceId,
+                    row,
+                    userGroupRoles,
+                    hasStatusColumn: assessmentType === 'Exam',
+                    rowLabelText: formatStudentQuestionTitle({
+                      assessmentType,
+                      questionNumber: row.question_number,
+                      questionTitle: row.question.title,
+                      showQuestionTitles,
+                    }),
+                  })}
+                </div>
               </td>
               ${
                 assessmentType === 'Exam'

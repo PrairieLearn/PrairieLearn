@@ -293,8 +293,9 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       assert.lengthOf(lockedRows, 2);
 
       lockedRows.each((_, element) => {
+        const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
-          $(element).text().trim(),
+          popoverText,
           'Your current group role (Manager) restricts access to this question.',
         );
       });

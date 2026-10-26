@@ -61,22 +61,35 @@ export function RowLabel({
           `
         : lockMessage != null
           ? html`
-              <span
-                class="d-block small lh-sm text-muted mt-1"
+              <button
+                type="button"
+                class="btn btn-xs border text-secondary ms-1"
+                data-bs-toggle="popover"
+                data-bs-container="body"
+                data-bs-html="true"
+                data-bs-content="${lockMessage}"
                 data-testid="locked-instance-question-row"
+                aria-label="Locked"
               >
-                ${lockMessage}
-              </span>
+                <i class="fas fa-lock" aria-hidden="true"></i>
+              </button>
             `
           : ''
     }
     ${
       row.file_count > 0
         ? html`
-            <span class="small text-muted ms-1">
-              Personal notes: ${row.file_count}
-              ${row.file_count === 1 ? 'attachment' : 'attachments'}
-            </span>
+            <button
+              type="button"
+              class="btn btn-xs border text-secondary ms-1"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-content="Personal notes: ${row.file_count}"
+              aria-label="Has personal note attachments"
+            >
+              <i class="fas fa-paperclip"></i>
+            </button>
           `
         : ''
     }
