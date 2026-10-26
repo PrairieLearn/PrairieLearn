@@ -26,6 +26,18 @@ async function fillFormulaEditor(formulaEditor: Locator, latex: string): Promise
   }, latex);
 }
 
+async function expectNavigationWithoutUnloadDialog(page: Page): Promise<void> {
+  const dialogs: string[] = [];
+  page.on('dialog', async (dialog) => {
+    dialogs.push(dialog.type());
+    await dialog.accept();
+  });
+
+  await page.getByRole('link', { name: 'Files', exact: true }).click();
+  await expect(page).toHaveURL(/\/file_view$/);
+  expect(dialogs).toEqual([]);
+}
+
 async function expectPrefixInsertion(
   page: Page,
   formulaEditor: Locator,
@@ -183,6 +195,28 @@ test.describe('pl-symbolic-input unicode multiplication keys', () => {
   });
 });
 
+test('does not mark a whitespace-only formula editor update as unsaved', async ({
+  page,
+  courseInstance,
+}) => {
+  await openSymbolicInputEditorQuestion(page, courseInstance);
+
+  const formulaEditor = page.locator('#symbolic-input-x');
+  await formulaEditor.click();
+  await formulaEditor.evaluate((element) => {
+    const field = element as HTMLElement & { getValue(format: string): string };
+    const originalGetValue = field.getValue.bind(field);
+    field.getValue = (format: string) =>
+      format === 'latex' ? '\n                \n            ' : '';
+    field.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    field.getValue = originalGetValue;
+  });
+
+  await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('');
+  await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('');
+  await expectNavigationWithoutUnloadDialog(page);
+});
+
 test('does not mark restored formula editor answers as unsaved', async ({
   page,
   courseInstance,
@@ -246,6 +280,23 @@ test('does not mark restored formula editor answers as unsaved', async ({
     x: 'y',
     'x-latex': 'y',
   });
+  await expectNavigationWithoutUnloadDialog(page);
+});
+
+test('marks a changed formula editor answer as unsaved', async ({ page, courseInstance }) => {
+  await openSymbolicInputEditorQuestion(page, courseInstance);
+
+  const formulaEditor = page.locator('#symbolic-input-x');
+  await formulaEditor.click();
+  await fillFormulaEditor(formulaEditor, 'y');
+
+  const dialogPromise = page.waitForEvent('dialog');
+  const navigationPromise = page.getByRole('link', { name: 'Files', exact: true }).click();
+  const dialog = await dialogPromise;
+  expect(dialog.type()).toBe('beforeunload');
+  await dialog.dismiss();
+  await navigationPromise;
+  await expect(page).toHaveURL(/\/preview/);
 });
 
 test.describe('pl-symbolic-input plus-minus', () => {
