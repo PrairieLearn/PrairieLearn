@@ -1121,7 +1121,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_tru,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
-                simplify_expression=simplify_expression,
+                # Correct answers must be evaluated for grading independently
+                # of their display state.
+                simplify_expression=True,
             )
 
         # Parse submitted answer
