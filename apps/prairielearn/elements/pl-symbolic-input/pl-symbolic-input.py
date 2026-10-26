@@ -1014,9 +1014,12 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
     """Compare set components by symbolic equivalence instead of structure."""
-    # Set operations stay unevaluated for display. Evaluate them for comparison
-    # here, while grading is protected by SYMPY_TIMEOUT.
     if isinstance(a, sympy.Set) and isinstance(b, sympy.Set):
+        if a == b:
+            return True
+
+        # Set operations stay unevaluated for display. Evaluate nonidentical sets
+        # for comparison here, while grading is protected by SYMPY_TIMEOUT.
         a = a.doit(deep=True)
         b = b.doit(deep=True)
 
