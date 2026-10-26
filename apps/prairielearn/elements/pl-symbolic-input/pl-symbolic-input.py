@@ -290,8 +290,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
-                    # The stored tree already has the requested display state.
-                    simplify_expression=False,
+                    simplify_expression=simplify_expression,
                 ),
                 imaginary_unit,
             )
