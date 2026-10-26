@@ -434,9 +434,9 @@ Courses can opt in so that `server.py` receives user and group identity. A cours
 ```python
 def generate(data):
     user = data["options"]["user"]  # Variant owner; None on group assessments
-    # { "uid": "student@example.com", "uin": "123456", "name": "John Doe" }
+    # { "uid": "student@example.com", "uin": "123456", "name": "John Doe", "labels": ["section-a"] }
     group = data["options"]["group"]  # None on individual assessments
-    # { "name": "Group 1", "members": [ { "uid": "student@example.com", "uin": "123456", "name": "John Doe" } ] }
+    # { "name": "Group 1", "members": [ { "uid": "student@example.com", "uin": "123456", "name": "John Doe", "labels": ["section-a"] } ] }
 
     if user is not None:
         data["params"]["greeting"] = f"Hello, {user['name']}!"
@@ -446,14 +446,27 @@ def generate(data):
         data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
 ```
 
-The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is `None` on group assessments.
-The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
+The `user` dict has the keys `uid` (always present), `uin`, `name` (the latter two may be `None`), and `labels` (a list of student label names, sorted by name). It is `None` on group assessments. The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
+
+Labels come from the variant's course instance. The list is empty if the user has no labels or enrollment in that course instance, or if there is no course instance (for example, a course-level instructor preview).
+
+For example, to offer an alternative input when an individual student has a `needs-accessible-input` label, choose the input in `generate()` and save the choice in `params` so it remains consistent for that variant:
+
+```python
+def generate(data):
+    user = data["options"]["user"]
+    data["params"]["accessible_inputs"] = (
+        user is not None and "needs-accessible-input" in user["labels"]
+    )
+```
+
+The question's `question.html` can then use Mustache sections such as `{{#params.accessible_inputs}}` and `{{^params.accessible_inputs}}` to show the appropriate input.
 
 ??? info "Whose identity is provided"
 
     When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member or current viewer. Group assessments receive `None` because the shared variant has no single owner.
 
-    A group's members can change over time: the members when a question was generated may be different than when a question is graded. Similarly, a user's name, UID, and UIN may also change over time. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
+    A group's members can change over time: the members when a question was generated may be different than when a question is graded. Similarly, a user's name, UID, UIN, and labels may also change over time. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
 
 User and group data are provided to `server.py` only when **all** of the following are true:
 

@@ -1,12 +1,14 @@
-import { type Course, type Question } from '../lib/db-types.js';
+import { type Course, type Question, type User } from '../lib/db-types.js';
 import { selectGroupMembers, selectOptionalGroupById } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import { selectStudentLabelNamesForUsers } from '../models/student-label.js';
 import { selectOptionalUserById } from '../models/user.js';
 
 export interface QuestionUser {
   uid: string;
   uin: string | null;
   name: string | null;
+  labels: string[];
 }
 
 export interface QuestionGroup {
@@ -33,20 +35,29 @@ export interface QuestionCaller {
   groupId: string | null;
   /** The course in which the variant lives. Differs from the question's course for shared questions. */
   variantCourse: Pick<Course, 'id'>;
+  /** The variant's course instance, or `null` for course-level previews. */
+  courseInstanceId: string | null;
 }
 
 const EMPTY_USER_CONTEXT: QuestionUserContext = { user: null, group: null };
 
-function toQuestionUser({
-  uid,
-  uin,
-  name,
-}: {
-  uid: string;
-  uin: string | null;
-  name: string | null;
-}): QuestionUser {
-  return { uid, uin, name };
+async function toQuestionUsers(
+  users: User[],
+  courseInstanceId: string | null,
+): Promise<QuestionUser[]> {
+  const labelsByUserId =
+    courseInstanceId == null
+      ? new Map<string, string[]>()
+      : await selectStudentLabelNamesForUsers({
+          userIds: users.map((user) => user.id),
+          courseInstanceId,
+        });
+  return users.map(({ id, uid, uin, name }) => ({
+    uid,
+    uin,
+    name,
+    labels: labelsByUserId.get(id) ?? [],
+  }));
 }
 
 /**
@@ -89,15 +100,24 @@ export async function buildQuestionUserContext({
       ? await selectOptionalUserById(caller.userId)
       : null;
 
-  const group = caller.groupId != null ? await selectActiveQuestionGroup(caller.groupId) : null;
+  const group =
+    caller.groupId != null
+      ? await selectActiveQuestionGroup(caller.groupId, caller.courseInstanceId)
+      : null;
 
   if (user == null && group == null) return EMPTY_USER_CONTEXT;
-  return { user: user != null ? toQuestionUser(user) : null, group };
+  return {
+    user: user != null ? (await toQuestionUsers([user], caller.courseInstanceId))[0] : null,
+    group,
+  };
 }
 
-async function selectActiveQuestionGroup(group_id: string): Promise<QuestionGroup | null> {
+async function selectActiveQuestionGroup(
+  group_id: string,
+  courseInstanceId: string | null,
+): Promise<QuestionGroup | null> {
   const group = await selectOptionalGroupById(group_id);
   if (group == null || group.deleted_at != null) return null;
   const members = await selectGroupMembers(group_id);
-  return { name: group.name, members: members.map(toQuestionUser) };
+  return { name: group.name, members: await toQuestionUsers(members, courseInstanceId) };
 }
