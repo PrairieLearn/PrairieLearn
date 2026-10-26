@@ -1,7 +1,12 @@
 <pl-question-panel>
   <p>What is the {{params.dimension_name}} of the {{params.shape}}?</p>
 
-  <pl-figure file-name="shape.png" type="dynamic" width="400"></pl-figure>
+  <pl-figure
+    file-name="shape.png"
+    type="dynamic"
+    width="400"
+    alt="Coordinate plot of a {{params.shape}} centered at the origin, intersecting the axes at ({{params.radius}}, 0), (-{{params.radius}}, 0), (0, {{params.radius}}), and (0, -{{params.radius}})."
+  ></pl-figure>
 </pl-question-panel>
 
 <pl-integer-input
