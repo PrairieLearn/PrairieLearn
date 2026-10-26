@@ -7,11 +7,12 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
+import { getDefaultHonorCodePledge } from '../../lib/honor-code.js';
 import type { PaperSize } from '../../lib/printing/pdf-output.js';
 import {
+  BLANK_NAME_PLACEHOLDER,
   DEFAULT_ASSESSMENT_INSTRUCTIONS,
   answerKeyDescription,
-  getDefaultHonorCodePledge,
   getPrintCoverFields,
   getPrintFooterLabel,
 } from '../../lib/printing/print-cover.js';
@@ -236,9 +237,10 @@ export function InstructorAssessmentInstancePrint({
                                 honorCodeHtml
                                   ? unsafeHtml(honorCodeHtml)
                                   : html`<ul>
-                                      ${getDefaultHonorCodePledge(
-                                        resLocals.assessment.team_work,
-                                      ).map((item) => html`<li>${item}</li>`)}
+                                      ${getDefaultHonorCodePledge({
+                                        name: BLANK_NAME_PLACEHOLDER,
+                                        groupWork: resLocals.assessment.team_work,
+                                      }).map((item) => html`<li>${item}</li>`)}
                                     </ul>`
                               }
                               <div class="assessment-cover-signature"><span>Signature</span></div>
