@@ -60,11 +60,13 @@ function createBrowserHarness({
   let peakOpenContexts = 0;
   const pages: Page[] = [];
   const contexts: BrowserContext[] = [];
+  const pendingPdfFailures = new Set<(error: Error) => void>();
 
   const browser = {
     newContext: vi.fn(async () => {
       openContexts += 1;
       peakOpenContexts = Math.max(peakOpenContexts, openContexts);
+      let rejectPdf: ((error: Error) => void) | undefined;
       const page = {
         emulateMedia: vi.fn(async () => undefined),
         goto: vi.fn(async () => (goto ? await goto() : response)),
@@ -74,7 +76,18 @@ function createBrowserHarness({
           error: printError,
           errorCode: printErrorCode,
         })),
-        pdf: vi.fn(async () => await pdf(renderIndex++)),
+        pdf: vi.fn(async () => {
+          const closed = new Promise<Buffer>((_resolve, reject) => {
+            rejectPdf = reject;
+            pendingPdfFailures.add(reject);
+          });
+          try {
+            return await Promise.race([pdf(renderIndex++), closed]);
+          } finally {
+            pendingPdfFailures.delete(rejectPdf!);
+            rejectPdf = undefined;
+          }
+        }),
       } as unknown as Page;
       const context = {
         route: vi.fn(async (_pattern, handler) => {
@@ -86,6 +99,7 @@ function createBrowserHarness({
         unrouteAll: vi.fn(async () => undefined),
         newPage: vi.fn(async () => page),
         close: vi.fn(async () => {
+          rejectPdf?.(new Error('Browser context closed'));
           await contextClose();
           openContexts -= 1;
         }),
@@ -94,7 +108,9 @@ function createBrowserHarness({
       contexts.push(context);
       return context;
     }),
-    close: vi.fn(async () => undefined),
+    close: vi.fn(async () => {
+      for (const reject of pendingPdfFailures) reject(new Error('Browser closed'));
+    }),
     on: vi.fn(),
   } as unknown as Browser;
   playwrightMocks.connectOverCDP.mockResolvedValue(browser);
@@ -506,32 +522,48 @@ describe('PrintRenderer', () => {
     expect(harness.pages).toHaveLength(5);
   });
 
-  it('keeps each render deadline while sharing a browser connection', async () => {
-    const gate = createGate();
-    const harness = createBrowserHarness();
-    playwrightMocks.launch.mockImplementation(async () => {
-      await gate.opened;
-      return harness.browser;
-    });
-    const renderer = new PrintRenderer({ maxConcurrentRenders: 2 });
-    const first = renderPdf(renderer, {
-      url: 'http://localhost:3000/print/first',
-      timeoutMs: 2000,
-    });
-    const second = renderPdf(renderer, {
-      url: 'http://localhost:3000/print/second',
-      timeoutMs: 20,
-    });
+  it.each(['timeout', 'abort'] as const)(
+    'stops an expired render while sharing a browser connection (%s)',
+    async (cancellation) => {
+      const gate = createGate();
+      const controller = new AbortController();
+      const harness = createBrowserHarness();
+      playwrightMocks.launch.mockImplementation(async () => {
+        await gate.opened;
+        return harness.browser;
+      });
+      const renderer = new PrintRenderer({ maxConcurrentRenders: 2 });
+      const first = renderPdf(renderer, {
+        url: 'http://localhost:3000/print/first',
+        timeoutMs: 2000,
+      });
+      const second = renderPdf(renderer, {
+        url: 'http://localhost:3000/print/second',
+        timeoutMs: cancellation === 'timeout' ? 20 : 0,
+        signal: controller.signal,
+      });
+      const failure = second.catch((error: unknown) => error);
 
-    try {
-      await expect(second).rejects.toThrow('Timed out after 20 ms rendering the PDF');
-      expect(harness.browser.newContext).not.toHaveBeenCalled();
-    } finally {
-      gate.open();
-      await first;
-    }
-    expect(harness.browser.newContext).toHaveBeenCalledOnce();
-  });
+      try {
+        await vi.waitFor(() => expect(playwrightMocks.launch).toHaveBeenCalledOnce());
+        if (cancellation === 'abort') {
+          controller.abort(new Error('Request aborted'));
+        }
+        expect(await failure).toMatchObject({
+          message:
+            cancellation === 'timeout'
+              ? 'Timed out after 20 ms rendering the PDF'
+              : 'Request aborted',
+        });
+        expect(harness.browser.newContext).not.toHaveBeenCalled();
+        expect(harness.browser.close).not.toHaveBeenCalled();
+      } finally {
+        gate.open();
+        await first;
+      }
+      expect(harness.browser.newContext).toHaveBeenCalledOnce();
+    },
+  );
 
   it('renders one page at a time and queues the rest', async () => {
     const gate = createGate();
@@ -583,56 +615,90 @@ describe('PrintRenderer', () => {
     }
   });
 
-  it('times out while waiting for the worker', async () => {
-    const gate = createGate();
-    createBrowserHarness({
-      pdf: async () => {
-        await gate.opened;
-        return Buffer.from('%PDF-test');
-      },
-    });
-    const renderer = new PrintRenderer({ maxQueuedRenders: 1 });
-    const active = renderPdf(renderer, { url: 'http://localhost:3000/print/active', timeoutMs: 0 });
-
-    try {
-      await expect(
-        renderPdf(renderer, { url: 'http://localhost:3000/print/waiting', timeoutMs: 10 }),
-      ).rejects.toThrow('Timed out after 10 ms waiting to render the PDF');
-      const next = renderPdf(renderer, {
-        url: 'http://localhost:3000/print/next',
+  it.each(['timeout', 'abort'] as const)(
+    'removes an expired render while waiting for the worker (%s)',
+    async (cancellation) => {
+      const gate = createGate();
+      const controller = new AbortController();
+      const harness = createBrowserHarness({
+        pdf: async () => {
+          await gate.opened;
+          return Buffer.from('%PDF-test');
+        },
+      });
+      const renderer = new PrintRenderer({ maxQueuedRenders: 1 });
+      const active = renderPdf(renderer, {
+        url: 'http://localhost:3000/print/active',
         timeoutMs: 0,
       });
-      gate.open();
-      await next;
-    } finally {
-      gate.open();
-      await active;
-    }
-  });
 
-  it('times out a stalled render, closes its context, and keeps serving', async () => {
-    const harness = createBrowserHarness({
-      pdf: async (renderIndex) => {
-        if (renderIndex === 0) await new Promise<never>(() => undefined);
-        return Buffer.from('%PDF-test');
-      },
-    });
-    const renderer = new PrintRenderer();
+      try {
+        await vi.waitFor(() => expect(harness.pages).toHaveLength(1));
+        const waiting = renderPdf(renderer, {
+          url: 'http://localhost:3000/print/waiting',
+          timeoutMs: cancellation === 'timeout' ? 10 : 0,
+          signal: controller.signal,
+        });
+        if (cancellation === 'abort') controller.abort(new Error('Request aborted'));
+        await expect(waiting).rejects.toThrow(
+          cancellation === 'timeout'
+            ? 'Timed out after 10 ms waiting to render the PDF'
+            : 'Request aborted',
+        );
+        const next = renderPdf(renderer, {
+          url: 'http://localhost:3000/print/next',
+          timeoutMs: 0,
+        });
+        gate.open();
+        await next;
+        expect(harness.pages).toHaveLength(2);
+      } finally {
+        gate.open();
+        await active;
+      }
+    },
+  );
 
-    const results = await Promise.allSettled([
-      renderPdf(renderer, { url: 'http://localhost:3000/print/stalled', timeoutMs: 20 }),
-      renderPdf(renderer, { url: 'http://localhost:3000/print/succeeds', timeoutMs: 2000 }),
-    ]);
+  it.each(['timeout', 'abort'] as const)(
+    'stops a stalled render, closes its context, and keeps serving (%s)',
+    async (cancellation) => {
+      const controller = new AbortController();
+      const harness = createBrowserHarness({
+        pdf: async (renderIndex) => {
+          if (renderIndex === 0) await new Promise<never>(() => undefined);
+          return Buffer.from('%PDF-test');
+        },
+      });
+      const renderer = new PrintRenderer();
 
-    expect(results[0]).toMatchObject({
-      status: 'rejected',
-      reason: new Error('Timed out after 20 ms rendering the PDF'),
-    });
-    expect(results[1]).toEqual({ status: 'fulfilled', value: Buffer.from('%PDF-test') });
-    expect(harness.contexts[0].close).toHaveBeenCalledOnce();
-    expect(harness.browser.close).not.toHaveBeenCalled();
-    expect(playwrightMocks.launch).toHaveBeenCalledOnce();
-  });
+      const renders = Promise.allSettled([
+        renderPdf(renderer, {
+          url: 'http://localhost:3000/print/stalled',
+          timeoutMs: cancellation === 'timeout' ? 20 : 0,
+          signal: controller.signal,
+        }),
+        renderPdf(renderer, { url: 'http://localhost:3000/print/succeeds', timeoutMs: 2000 }),
+      ]);
+      await vi.waitFor(() => expect(harness.pages[0].pdf).toHaveBeenCalledOnce());
+      if (cancellation === 'abort') {
+        controller.abort(new Error('Request aborted'));
+      }
+      const results = await renders;
+
+      expect(results[0]).toMatchObject({
+        status: 'rejected',
+        reason: new Error(
+          cancellation === 'timeout'
+            ? 'Timed out after 20 ms rendering the PDF'
+            : 'Request aborted',
+        ),
+      });
+      expect(results[1]).toEqual({ status: 'fulfilled', value: Buffer.from('%PDF-test') });
+      expect(harness.contexts[0].close).toHaveBeenCalledOnce();
+      expect(harness.browser.close).not.toHaveBeenCalled();
+      expect(playwrightMocks.launch).toHaveBeenCalledOnce();
+    },
+  );
 
   it('waits for timed-out context cleanup before starting another render', async () => {
     const closeGate = createGate();
@@ -664,6 +730,75 @@ describe('PrintRenderer', () => {
     await expect(first).rejects.toThrow('Timed out after 20 ms rendering the PDF');
     await expect(second).resolves.toEqual(Buffer.from('%PDF-test'));
     expect(harness.getPeakOpenContexts()).toBe(1);
+  });
+
+  it('holds the permit until canceled output generation settles', async () => {
+    const outputStarted = createGate();
+    const outputFinished = createGate();
+    const controller = new AbortController();
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer();
+    const first = renderer.render(
+      {
+        url: 'http://localhost:3000/print/packing',
+        html: READY_HTML,
+        timeoutMs: 0,
+        signal: controller.signal,
+      },
+      {
+        label: 'DOCX',
+        produce: async () => {
+          outputStarted.open();
+          await outputFinished.opened;
+          return Buffer.from('packed');
+        },
+      },
+    );
+    const failure = first.catch((error: unknown) => error);
+    await outputStarted.opened;
+    controller.abort(new Error('Request aborted'));
+    const next = renderPdf(renderer, { url: 'http://localhost:3000/print/next' });
+
+    try {
+      await vi.waitFor(() => expect(harness.contexts[0].close).toHaveBeenCalledOnce());
+      expect(harness.browser.newContext).toHaveBeenCalledOnce();
+    } finally {
+      outputFinished.open();
+    }
+
+    expect(await failure).toMatchObject({ message: 'Request aborted' });
+    await expect(next).resolves.toEqual(Buffer.from('%PDF-test'));
+    expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
+  });
+
+  it('closes a context that finishes opening after cancellation', async () => {
+    const contextStarted = createGate();
+    const contextFinished = createGate();
+    const controller = new AbortController();
+    const harness = createBrowserHarness();
+    const createContext = vi.mocked(harness.browser.newContext).getMockImplementation()!;
+    vi.mocked(harness.browser.newContext).mockImplementation(async (options) => {
+      contextStarted.open();
+      await contextFinished.opened;
+      return await createContext(options);
+    });
+    const render = renderPdf(new PrintRenderer(), {
+      url: 'http://localhost:3000/print',
+      signal: controller.signal,
+    });
+    const failure = render.catch((error: unknown) => error);
+    await contextStarted.opened;
+    controller.abort(new Error('Request aborted'));
+
+    try {
+      expect(await failure).toMatchObject({ message: 'Request aborted' });
+      expect(harness.browser.close).toHaveBeenCalledOnce();
+    } finally {
+      contextFinished.open();
+    }
+    await vi.waitFor(() => expect(harness.contexts[0].close).toHaveBeenCalledOnce());
+    expect(harness.contexts[0].newPage).not.toHaveBeenCalled();
+    expect(harness.getOpenContexts()).toBe(0);
   });
 
   it('discards the browser when closing a context fails', async () => {
@@ -793,8 +928,9 @@ describe('PrintRenderer', () => {
     });
     const renderer = new PrintRenderer();
     const active = renderPdf(renderer, { url: 'http://localhost:3000/print/active', timeoutMs: 0 });
+    const activeFailure = active.catch((error: unknown) => error);
     const queued = renderPdf(renderer, { url: 'http://localhost:3000/print/queued', timeoutMs: 0 });
-    await vi.waitFor(() => expect(harness.pages).toHaveLength(1));
+    await vi.waitFor(() => expect(harness.pages[0].pdf).toHaveBeenCalledOnce());
 
     await renderer.close();
 
@@ -804,6 +940,6 @@ describe('PrintRenderer', () => {
       'The print renderer has been closed',
     );
     gate.open();
-    await expect(active).resolves.toEqual(Buffer.from('%PDF-test'));
+    expect(await activeFailure).toMatchObject({ message: 'Browser closed' });
   });
 });

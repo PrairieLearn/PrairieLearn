@@ -237,6 +237,8 @@ export async function validateQuestionsForPrinting(
 }
 
 export interface RenderAssessmentInstanceQuestionsForPrintingOptions {
+  /** Shared request cancellation for queueing and preparing questions. */
+  signal: AbortSignal;
   defaultQuestionBlockSize?: QuestionBlockSize;
   questionBlockSizeOverrides?: ReadonlyMap<string, QuestionBlockSize>;
   excludedQuestionNumbers?: ReadonlySet<string>;
@@ -246,18 +248,21 @@ export interface RenderAssessmentInstanceQuestionsForPrintingOptions {
 async function renderAssessmentInstanceQuestionsUnbounded(
   resLocals: ResLocalsForPage<'assessment-instance'>,
   {
+    signal,
     defaultQuestionBlockSize = 'auto',
     questionBlockSizeOverrides = new Map(),
     excludedQuestionNumbers = new Set(),
     document = 'assessment',
-  }: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
+  }: RenderAssessmentInstanceQuestionsForPrintingOptions,
 ): Promise<{
   questionHtmls: string[];
   questionResults: PrintingQuestionResult[];
   extraHeadersHtml: string;
   maxPoints: number;
 }> {
+  signal.throwIfAborted();
   const questions = await selectPrintableQuestions(resLocals.assessment_instance.id);
+  signal.throwIfAborted();
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
   const includedQuestions = selectIncludedQuestions(questions, excludedQuestionNumbers);
   const extraHeaderHtmls: string[] = [];
@@ -266,6 +271,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   let maxPoints = 0;
 
   for (const printableQuestion of includedQuestions) {
+    signal.throwIfAborted();
     const base: PrintingQuestionResultBase = {
       questionNumber: printableQuestion.question_number,
       questionId: printableQuestion.question.id,
@@ -304,6 +310,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       throwOnFatalError: true,
       issuesLoadExtraData: false,
     });
+    signal.throwIfAborted();
 
     if (renderState.variant.broken_at != null) {
       questionResults.push({
@@ -325,6 +332,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       printableQuestion.question.grading_method === 'Manual' &&
       answerHtml.trim() === ''
     ) {
+      signal.throwIfAborted();
       const manualGradingRenderState = await getAndRenderVariant(
         renderState.variant.id,
         null,
@@ -338,6 +346,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
           issuesLoadExtraData: false,
         },
       );
+      signal.throwIfAborted();
       answerHtml = manualGradingRenderState.answerHtml;
       extraHeadersHtml += `\n${manualGradingRenderState.extraHeadersHtml}`;
     }
@@ -379,6 +388,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
     maxPoints += printableQuestion.assessment_question.max_points ?? 0;
   }
 
+  signal.throwIfAborted();
   return {
     questionHtmls: namespaceQuestionHtmls(renderedQuestions),
     questionResults,
@@ -390,11 +400,13 @@ async function renderAssessmentInstanceQuestionsUnbounded(
 /** Limit question preparation as well as browser pagination during a preview burst. */
 export async function renderAssessmentInstanceQuestionsForPrinting(
   resLocals: ResLocalsForPage<'assessment-instance'>,
-  options: RenderAssessmentInstanceQuestionsForPrintingOptions = {},
+  options: RenderAssessmentInstanceQuestionsForPrintingOptions,
 ) {
   return await questionPreparationQueue.run(
     async () => await renderAssessmentInstanceQuestionsUnbounded(resLocals, options),
-    120_000,
+    // The request signal bounds both queueing and execution with the same deadline.
+    0,
     'print preview',
+    options.signal,
   );
 }
