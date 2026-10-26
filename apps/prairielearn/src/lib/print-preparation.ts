@@ -81,9 +81,7 @@ export async function inspectPrintPreparationQuestions(
   );
   const uniqueQuestions = new Map(rows.map((row) => [row.question.id, row]));
   const questionsByCourse = groupBy(
-    [...uniqueQuestions.values()].filter(
-      ({ question }) => question.type === 'Freeform' && question.directory,
-    ),
+    [...uniqueQuestions.values()].filter(({ question }) => question.directory),
     ({ course }) => course.id,
   );
   // Download each course's chunks together so the chunk downloader can enforce
@@ -102,11 +100,7 @@ export async function inspectPrintPreparationQuestions(
       if (question.workspace_image) {
         concerns.push('Requires an online workspace. Provide a paper alternative.');
       }
-      if (question.type !== 'Freeform') {
-        concerns.push(
-          'Uses a question type that cannot be printed. Exclude it or replace it with a Freeform question.',
-        );
-      } else if (question.directory) {
+      if (question.directory) {
         try {
           const html = await fs.readFile(
             path.join(
@@ -140,7 +134,6 @@ export async function inspectPrintPreparationQuestions(
     title: question.title ?? question.qid ?? `Question ${question_number}`,
     questionId: question.id,
     points: assessment_question.max_points ?? 0,
-    supported: question.type === 'Freeform',
     concerns: concernsByQuestion.get(question.id)!,
   }));
 }

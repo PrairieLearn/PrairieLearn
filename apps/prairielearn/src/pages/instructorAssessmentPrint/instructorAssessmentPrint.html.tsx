@@ -1027,14 +1027,13 @@ function PrintPreparation({
                     .map((question) => {
                       const excluded = excludedQuestionNumbers.has(question.number);
                       const error = excluded ? undefined : omitted.get(question.number);
-                      const unsupported = !excluded && !question.supported;
                       return (
                         <div
                           key={question.number}
                           role="group"
                           aria-label={`Question ${question.number}: ${question.title}`}
                           className={clsx('print-preparation-question', {
-                            'bg-danger-subtle': error || unsupported,
+                            'bg-danger-subtle': error,
                             'bg-body-tertiary': excluded,
                             'print-preparation-question-selected':
                               selectedQuestion?.number === question.number,
@@ -1069,7 +1068,7 @@ function PrintPreparation({
                               type="button"
                               variant="link"
                               className="p-0 text-start fw-semibold text-decoration-none"
-                              disabled={!!error || excluded || unsupported}
+                              disabled={!!error || excluded}
                               onClick={() => {
                                 setSelectedQuestion({ number: question.number });
                                 window.document
@@ -1081,14 +1080,14 @@ function PrintPreparation({
                             </Button>
                             <div className="text-muted small mt-1">{question.points} points</div>
                           </div>
-                          {(error || unsupported || question.concerns.length > 0) && (
+                          {(error || question.concerns.length > 0) && (
                             <div className="print-preparation-question-review small">
-                              {error || unsupported ? (
+                              {error ? (
                                 <>
                                   <Badge bg="danger" className="mb-1">
-                                    {error ? 'Omitted' : 'Unsupported'}
+                                    Omitted
                                   </Badge>
-                                  <div>{error ?? question.concerns.join(' ')}</div>
+                                  <div>{error}</div>
                                 </>
                               ) : (
                                 <>

@@ -42,7 +42,6 @@ const BROKEN_QUESTION_FAILURE_CODE = 'broken_variant';
 const BROKEN_QUESTION_FAILURE_STAGE = 'variant_creation';
 const BROKEN_QUESTION_FAILURE_MESSAGE =
   'Question could not be rendered due to an error in question code.';
-const UNSUPPORTED_QUESTION_CODE = 'unsupported_question_type';
 
 export const PRINT_DOCUMENTS = ['assessment', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
@@ -120,7 +119,7 @@ export const validatePrintDocument: PrintablePageOutput<{
 };
 
 export interface OmittedQuestionWarning {
-  code: typeof BROKEN_QUESTION_FAILURE_CODE | typeof UNSUPPORTED_QUESTION_CODE;
+  code: typeof BROKEN_QUESTION_FAILURE_CODE;
   question_number: string;
   qid: string | null;
   message: string;
@@ -140,10 +139,7 @@ export function describeOmittedQuestions(
         code: result.code,
         question_number: result.questionNumber,
         qid: result.qid,
-        message:
-          result.status === 'unsupported'
-            ? `${label} uses a question type that cannot be printed. Exclude it or replace it with a Freeform question.`
-            : `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
+        message: `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
       },
     ];
   });
@@ -160,10 +156,6 @@ interface PrintingQuestionResultBase {
 export type PrintingQuestionResult =
   | (PrintingQuestionResultBase & {
       status: 'rendered';
-    })
-  | (PrintingQuestionResultBase & {
-      status: 'unsupported';
-      code: typeof UNSUPPORTED_QUESTION_CODE;
     })
   | (PrintingQuestionResultBase & {
       status: 'failed';
@@ -248,9 +240,9 @@ export async function getPrintableInstanceQuestionIds(
   excludedQuestionNumbers: ReadonlySet<string>,
 ): Promise<string[]> {
   const questions = await selectPrintableQuestions(assessmentInstanceId);
-  return selectIncludedQuestions(questions, excludedQuestionNumbers)
-    .filter(({ question }) => question.type === 'Freeform')
-    .map(({ instance_question }) => instance_question.id);
+  return selectIncludedQuestions(questions, excludedQuestionNumbers).map(
+    ({ instance_question }) => instance_question.id,
+  );
 }
 
 export async function validateQuestionsForPrinting(
@@ -309,10 +301,6 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       assessmentQuestionId: printableQuestion.assessment_question.id,
       instanceQuestionId: printableQuestion.instance_question.id,
     };
-    if (printableQuestion.question.type !== 'Freeform') {
-      questionResults.push({ ...base, status: 'unsupported', code: UNSUPPORTED_QUESTION_CODE });
-      continue;
-    }
     const renderLocals = {
       urlPrefix: resLocals.urlPrefix,
       authn_user: resLocals.authn_user,

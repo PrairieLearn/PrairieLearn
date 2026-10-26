@@ -10,7 +10,6 @@ export interface PrintPreparationQuestion {
   title: string;
   questionId: string;
   points: number;
-  supported: boolean;
   concerns: string[];
 }
 
