@@ -1014,6 +1014,12 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
     """Compare set components by symbolic equivalence instead of structure."""
+    # Set operations stay unevaluated for display. Evaluate them for comparison
+    # here, while grading is protected by SYMPY_TIMEOUT.
+    if isinstance(a, sympy.Set) and isinstance(b, sympy.Set):
+        a = a.doit(deep=True)
+        b = b.doit(deep=True)
+
     comparison_cache: dict[tuple[sympy.Basic, sympy.Basic], bool] = {}
 
     def compare(left: sympy.Basic, right: sympy.Basic) -> bool:
@@ -1114,17 +1120,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
-                # Correct-answer strings have not been evaluated or serialized yet.
-                simplify_expression=True,
+                simplify_expression=simplify_expression,
             )
         else:
             a_tru_sympy = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
-                # Correct answers must be evaluated for grading independently
-                # of their display state.
-                simplify_expression=True,
+                simplify_expression=simplify_expression,
             )
 
         # Parse submitted answer
@@ -1146,9 +1149,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
-                # Unsimplified submissions need one evaluation for grading;
-                # simplified submissions must not be evaluated a second time.
-                simplify_expression=not simplify_expression,
+                simplify_expression=simplify_expression,
             )
 
         for simplification in additional_simplifications:
