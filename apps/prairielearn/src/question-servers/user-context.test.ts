@@ -189,11 +189,6 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     assert.deepEqual(ctx.user?.labels, []);
   });
 
-  it('returns null user when the user does not exist', async () => {
-    const ctx = await call({ courseOptedIn: true, userId: '999999999', groupId: null });
-    assert.deepEqual(ctx, { user: null, group: null });
-  });
-
   it('omits the individual user but exposes the group on group variants, even with an effective user', async () => {
     const [u1, u2] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
     const groupName = `testgroup${u1.id}`;

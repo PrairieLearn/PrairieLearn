@@ -65,8 +65,8 @@ export async function getGroupId(assessmentId: string, userId: string): Promise<
   );
 }
 
-export async function selectOptionalGroupById(group_id: string): Promise<Group | null> {
-  return await sqldb.queryOptionalRow(sql.select_group, { group_id }, GroupSchema);
+export async function selectGroupById(group_id: string): Promise<Group> {
+  return await sqldb.queryRow(sql.select_group, { group_id }, GroupSchema);
 }
 
 export async function selectGroupMembers(group_id: string): Promise<User[]> {
