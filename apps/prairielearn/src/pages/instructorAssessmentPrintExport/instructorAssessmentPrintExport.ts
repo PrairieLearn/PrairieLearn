@@ -27,12 +27,6 @@ router.get(
       authnUserId: res.locals.authn_user.id,
     });
     if (!job?.result) throw new HttpStatusError(404, 'PDF not found or no longer available');
-    if (
-      job.result.document !== 'assessment' &&
-      !res.locals.authz_data.has_course_instance_permission_edit
-    ) {
-      throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
-    }
     const stream = await getPrintExportStream(job.result.key);
     res.setHeader('Cache-Control', 'private, no-store');
     res.type('application/pdf');

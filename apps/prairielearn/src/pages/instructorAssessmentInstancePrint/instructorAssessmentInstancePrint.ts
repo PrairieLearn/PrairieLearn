@@ -177,12 +177,6 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
   };
 }
 
-function authorizePrintDocument(document: PrintDocument, canEdit: boolean) {
-  if (document === 'answer_key' && !canEdit) {
-    throw new HttpStatusError(403, 'Access denied');
-  }
-}
-
 function buildPrintSearchParams(layout: PrintLayout, document: PrintDocument): URLSearchParams {
   const params = new URLSearchParams({ paper_size: layout.paperSize });
   if (!layout.includeCoverPage) params.set('include_cover', 'false');
@@ -233,7 +227,7 @@ const router = Router({ mergeParams: true });
 
 router.use(
   createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_preview'],
+    oneOfPermissions: ['has_course_permission_preview', 'has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
 );
@@ -246,7 +240,6 @@ router.get(
       const query = parseRequestQuery(req, DocumentQuerySchema);
       const layout = parsePrintLayout(query);
       const { document } = query;
-      authorizePrintDocument(document, res.locals.authz_data.has_course_instance_permission_edit);
 
       res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
@@ -390,7 +383,6 @@ router.post(
       const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
       const layout = parsePrintLayout(query);
       const { document } = query;
-      authorizePrintDocument(document, res.locals.authz_data.has_course_instance_permission_edit);
 
       await validateQuestionsForPrinting(
         res.locals.assessment_instance.id,
