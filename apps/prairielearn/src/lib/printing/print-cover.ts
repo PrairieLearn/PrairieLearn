@@ -1,3 +1,4 @@
+import { getDefaultHonorCodePledge } from '../honor-code.js';
 import type { ResLocalsForPage } from '../res-locals.js';
 
 import {
@@ -34,13 +35,6 @@ export function getPrintCoverFields({
     ...identityFields.map((label) => ({ label })),
     ...(teamWork ? [{ label: 'Team' }] : []),
     { label: 'Date', wide: !teamWork && identityFields.length === 0 },
-  ];
-}
-
-export function getDefaultHonorCodePledge(teamWork: boolean): string[] {
-  return [
-    `I certify that I am ${BLANK_NAME_PLACEHOLDER} and ${teamWork ? 'our group is' : 'I am'} allowed to take this assessment.`,
-    `${teamWork ? 'We' : 'I'} pledge on ${teamWork ? 'our' : 'my'} honor that ${teamWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this assessment and that all work will be ${teamWork ? 'our' : 'my'} own.`,
   ];
 }
 
@@ -102,7 +96,16 @@ export function buildPrintableCover({
       heading: 'Academic integrity pledge',
       blocks: honorCodeHtml
         ? htmlToTextBlocks(honorCodeHtml)
-        : [{ type: 'list', ordered: false, items: getDefaultHonorCodePledge(teamWork) }],
+        : [
+            {
+              type: 'list',
+              ordered: false,
+              items: getDefaultHonorCodePledge({
+                name: BLANK_NAME_PLACEHOLDER,
+                groupWork: teamWork,
+              }),
+            },
+          ],
       signatureLabel: 'Signature',
     });
   }
