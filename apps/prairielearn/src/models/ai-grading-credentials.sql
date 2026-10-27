@@ -49,13 +49,16 @@ RETURNING
   *;
 
 -- BLOCK lock_course_instance
+-- Serialize configuration changes while allowing grading jobs' foreign-key checks.
+-- FOR UPDATE can deadlock with platform-provider grading: it updates assessment_questions
+-- before the grading job checks its course-instance foreign key.
 SELECT
   id
 FROM
   course_instances
 WHERE
   id = $course_instance_id
-FOR UPDATE;
+FOR NO KEY UPDATE;
 
 -- BLOCK select_optional_custom_credential
 SELECT

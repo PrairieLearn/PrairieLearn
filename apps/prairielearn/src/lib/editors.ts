@@ -1032,6 +1032,7 @@ export class CourseInstanceCopyEditor extends Editor {
           from_course: this.from_course,
           from_path,
           from_qid,
+          source_qid: question.qid,
           uuid,
           existingTitles: existingQuestionTitles,
           existingQids: existingQuestionQids,
@@ -2103,6 +2104,7 @@ async function copyQuestion({
   from_course,
   from_path,
   from_qid,
+  source_qid = from_qid,
   uuid,
   existingTitles: oldLongNames,
   existingQids: oldShortNames,
@@ -2111,6 +2113,7 @@ async function copyQuestion({
   from_course: Course | StaffCourse;
   from_path: string;
   from_qid: string;
+  source_qid?: string;
   uuid: string;
   existingTitles: string[];
   existingQids: string[];
@@ -2152,6 +2155,11 @@ async function copyQuestion({
   debug('Write info.json with new title and uuid');
   infoJson.title = questionTitle;
   infoJson.uuid = uuid;
+
+  if (!idsEqual(course.id, from_course.id)) {
+    infoJson.copiedFrom = `${from_course.uuid}/${sourceInfoJson.uuid}/${source_qid}`;
+    delete infoJson.authors;
+  }
 
   // When transferring a question from an example/template course, drop the tags. They
   // are likely undesirable in the template course.

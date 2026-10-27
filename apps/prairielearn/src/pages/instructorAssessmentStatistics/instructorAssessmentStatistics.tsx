@@ -246,29 +246,32 @@ router.get(
       ];
 
       res.attachment(req.params.filename);
-      stringify(csvData, {
-        header: true,
-        columns: [
-          'Course',
-          'Instance',
-          'Set',
-          'Number',
-          'Assessment',
-          'Title',
-          'AID',
-          'NStudents',
-          'Mean',
-          'Std',
-          'Min',
-          'Max',
-          'Median',
-          'NZero',
-          'NHundred',
-          'NZeroPerc',
-          'NHundredPerc',
-          ...res.locals.assessment.score_stat_hist.map((_, i) => `Hist ${i + 1}`),
-        ],
-      }).pipe(res);
+      await pipeline(
+        stringify(csvData, {
+          header: true,
+          columns: [
+            'Course',
+            'Instance',
+            'Set',
+            'Number',
+            'Assessment',
+            'Title',
+            'AID',
+            'NStudents',
+            'Mean',
+            'Std',
+            'Min',
+            'Max',
+            'Median',
+            'NZero',
+            'NHundred',
+            'NZeroPerc',
+            'NHundredPerc',
+            ...res.locals.assessment.score_stat_hist.map((_, i) => `Hist ${i + 1}`),
+          ],
+        }),
+        res,
+      );
     } else if (req.params.filename === filenames.durationStatsCsvFilename) {
       const csvData = [
         [
@@ -291,26 +294,29 @@ router.get(
       ];
 
       res.attachment(req.params.filename);
-      stringify(csvData, {
-        header: true,
-        columns: [
-          'Course',
-          'Instance',
-          'Set',
-          'Number',
-          'Assessment',
-          'Title',
-          'AID',
-          'Mean duration (min)',
-          'Median duration (min)',
-          'Min duration (min)',
-          'Max duration (min)',
-          ...res.locals.assessment.duration_stat_thresholds.map(
-            (_, i) => `Hist boundary ${i + 1} (s)`,
-          ),
-          ...res.locals.assessment.duration_stat_hist.map((_, i) => `Hist ${i + 1}`),
-        ],
-      }).pipe(res);
+      await pipeline(
+        stringify(csvData, {
+          header: true,
+          columns: [
+            'Course',
+            'Instance',
+            'Set',
+            'Number',
+            'Assessment',
+            'Title',
+            'AID',
+            'Mean duration (min)',
+            'Median duration (min)',
+            'Min duration (min)',
+            'Max duration (min)',
+            ...res.locals.assessment.duration_stat_thresholds.map(
+              (_, i) => `Hist boundary ${i + 1} (s)`,
+            ),
+            ...res.locals.assessment.duration_stat_hist.map((_, i) => `Hist ${i + 1}`),
+          ],
+        }),
+        res,
+      );
     } else if (req.params.filename === filenames.statsByDateCsvFilename) {
       const histByDateResult = await selectAssessmentScoreHistogramByDate(
         res.locals.assessment.id,
@@ -344,15 +350,18 @@ router.get(
       }
 
       res.attachment(req.params.filename);
-      stringify(csvData, {
-        header: true,
-        columns: [
-          'Date',
-          // These values represent local calendar dates as UTC midnight solely
-          // so they can be formatted without applying another timezone conversion.
-          ...scoresByDay.map((day) => formatDateYMD(day.date, 'UTC')),
-        ],
-      }).pipe(res);
+      await pipeline(
+        stringify(csvData, {
+          header: true,
+          columns: [
+            'Date',
+            // These values represent local calendar dates as UTC midnight solely
+            // so they can be formatted without applying another timezone conversion.
+            ...scoresByDay.map((day) => formatDateYMD(day.date, 'UTC')),
+          ],
+        }),
+        res,
+      );
     } else if (req.params.filename === filenames.questionStatsCsvFilename) {
       const cursor = await sqldb.queryCursor(
         sql.questions,
