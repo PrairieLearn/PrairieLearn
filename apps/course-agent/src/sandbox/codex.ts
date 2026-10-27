@@ -24,10 +24,7 @@ export class CodexAppServerClient {
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
     readonly messageId: string,
-    private onReview?: (
-      call: DynamicToolCallParams,
-      ready: (revision: string) => void,
-    ) => Promise<PushSyncResult>,
+    private onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<PushSyncResult>,
   ) {
     // Setup can fail before the execution helper starts waiting for completion.
     void this.terminal.promise.catch(() => {});
@@ -83,12 +80,12 @@ export class CodexAppServerClient {
       ) {
         throw new Error('Invalid push_sync call');
       }
-      const result = await this.onReview(value, (revision) => {
+      const result = await this.onReview(value, () => {
         this.emit({
           type: 'tool-input-available',
           toolCallId: value.callId,
           toolName: 'push_sync',
-          input: { revision },
+          input: {},
         });
         this.finishResponse();
       });
@@ -106,6 +103,16 @@ export class CodexAppServerClient {
     onNotification(notifications['item/reasoning/summaryTextDelta'], (params) =>
       this.delta('reasoning', params),
     );
+    onNotification(notifications['item/completed'], ({ threadId, item }) => {
+      if (threadId !== this.threadId) return;
+      const type =
+        item.type === 'agentMessage' ? 'text' : item.type === 'reasoning' ? 'reasoning' : null;
+      if (!type) return;
+      const id = `${type}:${item.id}`;
+      if (this.parts.delete(id)) {
+        this.emit({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
+      }
+    });
     onNotification(notifications['turn/completed'], (params) => {
       if (params.threadId !== this.threadId || (this.turnId && params.turn.id !== this.turnId)) {
         return;
@@ -114,23 +121,6 @@ export class CodexAppServerClient {
         this.terminal.reject(new Error(params.turn.error?.message ?? 'Native turn failed'));
       } else if (params.turn.status === 'completed' || params.turn.status === 'interrupted') {
         this.terminal.resolve(undefined);
-      }
-    });
-    onNotification(notifications['item/completed'], ({ threadId, item }) => {
-      if (
-        threadId !== this.threadId ||
-        item.type !== 'dynamicToolCall' ||
-        item.tool !== 'push_sync'
-      ) {
-        return;
-      }
-      const text = item.contentItems?.find((part) => part.type === 'inputText');
-      if (text?.type === 'inputText') {
-        this.emit({
-          type: 'tool-output-available',
-          toolCallId: item.id,
-          output: JSON.parse(text.text),
-        });
       }
     });
     socket.accept();

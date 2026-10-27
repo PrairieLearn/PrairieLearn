@@ -1,23 +1,37 @@
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+const DEFAULT_COURSE_AGENT_CONVERSATION_TITLE = 'New conversation';
+
+export async function selectOptionalCourseAgentConversationByAgentId(agentConversationId: string) {
+  return queryOptionalRow(
+    sql.select_course_agent_conversation_by_agent_id,
+    { agent_conversation_id: agentConversationId },
+    CourseAgentConversationSchema,
+  );
+}
+
 export async function insertCourseAgentConversation({
   course_id,
   user_id,
   agent_conversation_id,
-  title,
 }: {
   course_id: string;
   user_id: string;
   agent_conversation_id: string;
-  title: string;
 }) {
   return await queryRow(
     sql.insert_course_agent_conversation,
-    { course_id, user_id, agent_conversation_id, title },
+    { course_id, user_id, agent_conversation_id, title: DEFAULT_COURSE_AGENT_CONVERSATION_TITLE },
     CourseAgentConversationSchema,
   );
 }
@@ -54,4 +68,19 @@ export async function selectOptionalCourseAgentConversation({
     { id, course_id, user_id },
     CourseAgentConversationSchema,
   );
+}
+
+/** Sets the title unless the conversation already has a non-default one. */
+export async function updateCourseAgentConversationTitleIfDefault({
+  id,
+  title,
+}: {
+  id: string;
+  title: string;
+}) {
+  await execute(sql.update_course_agent_conversation_title_if_default, {
+    id,
+    title,
+    default_title: DEFAULT_COURSE_AGENT_CONVERSATION_TITLE,
+  });
 }

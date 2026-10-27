@@ -1,6 +1,6 @@
 const CONVERSATION_ROUTE = new URLPattern({
   pathname:
-    '/conversations/:conversationId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){/:action(get-messages|resume|pending-review|pending-review/outcome)}?',
+    '/conversations/:conversationId([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){/:action(get-messages|resume|pending-review|pending-review/decision|pending-review/outcome)}?',
 });
 
 /** Native SDK routes and the private recovery operation. */

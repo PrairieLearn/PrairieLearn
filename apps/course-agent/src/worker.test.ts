@@ -6,6 +6,7 @@ import worker from './worker.js';
 const conversation = vi.hoisted(() => ({
   getPendingReview: vi.fn(async () => null),
   recordReviewOutcome: vi.fn(async () => true),
+  recordReviewDecision: vi.fn(async () => true),
   fetch: vi.fn<(request: Request) => Promise<Response>>(),
 }));
 const lookupConversation = vi.hoisted(() =>
@@ -65,7 +66,6 @@ describe('conversation routing', () => {
         },
         body: JSON.stringify({
           callId: 'call',
-          revision: 'a'.repeat(64),
           result: {
             decision: 'denied',
             publication: { status: 'not_attempted' },

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { PushSyncResult } from '@prairielearn/course-agent-types';
+
 import type { ThreadStartResponse } from '../generated/types/v2/ThreadStartResponse.js';
 import type { Turn } from '../generated/types/v2/Turn.js';
 
@@ -126,6 +128,110 @@ function runner({
 }
 
 describe('Codex native stream', () => {
+  it('parks the review stream and leaves result persistence to the host before continuing', async () => {
+    const { sandbox, commands, emit, disconnect } = runner();
+    const outcome = Promise.withResolvers<PushSyncResult>();
+    const native = new CodexAppServerClient(sandbox, 'assistant', async (_call, ready) => {
+      ready();
+      return outcome.promise;
+    });
+    await native.connect();
+    await native.thread({ model: 'test', instructions: 'Edit course', threadId: null });
+    await native.run('Edit', () => {});
+    emit({
+      id: 100,
+      method: 'item/tool/call',
+      params: {
+        threadId: 'thread',
+        turnId: 'turn',
+        callId: 'review',
+        namespace: null,
+        tool: 'push_sync',
+        arguments: {},
+      },
+    });
+    const reviewChunks = [];
+    for await (const chunk of native.stream) reviewChunks.push(chunk);
+    expect(reviewChunks).toContainEqual({
+      type: 'tool-input-available',
+      toolCallId: 'review',
+      toolName: 'push_sync',
+      input: {},
+    });
+    const continuation = native.openStream();
+    const result: PushSyncResult = {
+      decision: 'approved',
+      publication: { status: 'published', commitSha: 'a'.repeat(40) },
+      sync: { status: 'succeeded' },
+    };
+    outcome.resolve(result);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(commands).toContainEqual({
+      id: 100,
+      result: {
+        success: true,
+        contentItems: [{ type: 'inputText', text: JSON.stringify(result) }],
+      },
+    });
+    emit({
+      method: 'item/completed',
+      params: {
+        threadId: 'thread',
+        turnId: 'turn',
+        completedAtMs: Date.now(),
+        item: {
+          type: 'dynamicToolCall',
+          id: 'review',
+          namespace: null,
+          tool: 'push_sync',
+          arguments: {},
+          status: 'completed',
+          success: true,
+          durationMs: 1,
+          contentItems: [{ type: 'inputText', text: JSON.stringify(result) }],
+        },
+      },
+    });
+    for (const itemId of ['progress', 'answer']) {
+      emit({
+        method: 'item/agentMessage/delta',
+        params: { threadId: 'thread', turnId: 'turn', itemId, delta: 'Published' },
+      });
+      emit({
+        method: 'item/completed',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          completedAtMs: Date.now(),
+          item: {
+            type: 'agentMessage',
+            id: itemId,
+            text: 'Published',
+            phase: null,
+            memoryCitation: null,
+            delivery: null,
+            questions: null,
+          },
+        },
+      });
+    }
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    native.closeStream();
+    const continuationTypes = [];
+    for await (const chunk of continuation) continuationTypes.push(chunk.type);
+    expect(continuationTypes).toEqual([
+      'start',
+      'text-start',
+      'text-delta',
+      'text-end',
+      'text-start',
+      'text-delta',
+      'text-end',
+      'finish',
+    ]);
+    disconnect();
+  });
+
   it('rejects invalid native results before continuing setup', async () => {
     const { native, commands } = runner({ initializeResult: {} });
     await expect(native.connect()).rejects.toThrow('Invalid result for initialize');

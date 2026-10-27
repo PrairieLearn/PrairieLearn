@@ -5,19 +5,20 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { Octokit } from '@octokit/rest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { type PendingReview, reviewRevision } from '@prairielearn/course-agent-types';
+import { type PendingReview, ReviewDecisionSchema } from '@prairielearn/course-agent-types';
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import { retryReviewDeliveries } from '../ee/lib/course-agent/review.js';
 import {
   insertCourseAgentConversation,
   selectOptionalCourseAgentConversation,
 } from '../ee/models/course-agent-conversation.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
+import * as github from '../lib/github.js';
 import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import {
   insertCoursePermissionsByUserUid,
@@ -72,6 +73,21 @@ describe('Course agent access and conversation privacy', () => {
     response.setHeader('Content-Type', 'application/json');
     if (request.url?.endsWith('/pending-review')) {
       response.end(JSON.stringify(pendingReview));
+      return;
+    }
+    if (request.url?.endsWith('/pending-review/decision')) {
+      const decision = ReviewDecisionSchema.parse(JSON.parse(body));
+      if (pendingReview?.callId !== decision.callId || pendingReview.status !== 'pending') {
+        response.statusCode = 409;
+        response.end('{}');
+        return;
+      }
+      pendingReview = {
+        ...pendingReview,
+        status: 'running',
+        jobSequenceId: decision.decision === 'approved' ? decision.jobSequenceId : null,
+      };
+      response.end(JSON.stringify({ decisionRecorded: true }));
       return;
     }
     if (request.url?.endsWith('/pending-review/outcome')) {
@@ -192,7 +208,10 @@ describe('Course agent access and conversation privacy', () => {
     await withUser(owner, async () => {
       expect((await fetch(historyUrl(others.id))).status).toBe(404);
       await expect(
-        createClient(owner).courseAgent.getPendingReview.query({ conversationId: others.id }),
+        createClient(owner).courseAgent.getPendingReview.query({
+          conversationId: others.id,
+          callId: 'other-call',
+        }),
       ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
       await expect(
         createClient(owner).courseAgent.postReviewDecision.mutate({
@@ -312,7 +331,7 @@ describe('Course agent access and conversation privacy', () => {
     });
     expect(stored!.title).toBe('First message');
   });
-  test('binds approval to the displayed revision, preserves published commits on real sync errors, and retries only outcome delivery', async () => {
+  test('publishes the reviewed files through GitHub, preserves sync errors, and exposes the saved outcome after a failed callback', async () => {
     const original = await selectCourseById('1');
     const dir = await mkdtemp(path.join(tmpdir(), 'course-agent-publication-'));
     const source = path.join(dir, 'source');
@@ -323,17 +342,19 @@ describe('Course agent access and conversation privacy', () => {
     const git = (args: string[], cwd = dir) =>
       execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
     const sql = loadSqlEquiv(import.meta.url);
+    let publications = 0;
+    const publicationInputs: unknown[] = [];
+    let api: ReturnType<typeof createServer> | undefined;
     try {
       git(['init', '--quiet', '--initial-branch=master', source]);
       git(['config', 'user.name', 'Test'], source);
       git(['config', 'user.email', 'test@example.com'], source);
-      await writeFile(
-        path.join(source, 'infoCourse.json'),
-        await readFile(path.join(original.path, 'infoCourse.json')),
-      );
+      const originalContents = await readFile(path.join(original.path, 'infoCourse.json'));
+      await writeFile(path.join(source, 'infoCourse.json'), originalContents);
       git(['add', '.'], source);
       git(['commit', '--quiet', '-m', 'base'], source);
       const baseCommit = git(['rev-parse', 'HEAD'], source);
+      const blobSha = git(['rev-parse', 'HEAD:infoCourse.json'], source);
       git(['clone', '--quiet', '--bare', source, remote]);
       git(['clone', '--quiet', remote, checkout]);
       const gitConfig = path.join(dir, 'gitconfig');
@@ -345,25 +366,89 @@ describe('Course agent access and conversation privacy', () => {
         branch: 'master',
         path: checkout,
       });
-      await writeFile(path.join(source, 'infoCourse.json'), '{ invalid JSON');
-      const patch = git(['diff', '--binary', '--full-index'], source) + '\n';
+      api = createServer(async (request, response) => {
+        response.setHeader('Content-Type', 'application/json');
+        if (request.url?.startsWith('/repos/PrairieLearn/test-course/git/trees/')) {
+          response.end(
+            JSON.stringify({
+              truncated: false,
+              tree: [
+                {
+                  path: 'infoCourse.json',
+                  type: 'blob',
+                  mode: '100644',
+                  sha: blobSha,
+                  size: originalContents.length,
+                },
+              ],
+            }),
+          );
+        } else if (request.url?.includes('/git/blobs/')) {
+          response.end(
+            JSON.stringify({ content: originalContents.toString('base64'), encoding: 'base64' }),
+          );
+        } else if (request.url?.endsWith('/branches/master')) {
+          response.end(JSON.stringify({ commit: { sha: git(['rev-parse', 'master'], remote) } }));
+        } else if (request.url === '/graphql') {
+          const chunks: Buffer[] = [];
+          for await (const chunk of request) chunks.push(chunk);
+          const input = JSON.parse(Buffer.concat(chunks).toString()).variables.input;
+          publicationInputs.push(input);
+          await writeFile(
+            path.join(source, 'infoCourse.json'),
+            Buffer.from(input.fileChanges.additions[0].contents, 'base64'),
+          );
+          git(['add', '.'], source);
+          git(['commit', '--quiet', '-m', input.message.headline], source);
+          git(['push', '--quiet', remote, 'master'], source);
+          publications++;
+          response.end(
+            JSON.stringify({
+              data: {
+                createCommitOnBranch: { commit: { oid: git(['rev-parse', 'HEAD'], source) } },
+              },
+            }),
+          );
+        } else {
+          response.statusCode = 404;
+          response.end('{}');
+        }
+      });
+      api.listen(0, '127.0.0.1');
+      await once(api, 'listening');
+      const address = api.address();
+      if (!address || typeof address === 'string') {
+        throw new Error('Expected a GitHub fixture TCP address');
+      }
+      vi.spyOn(github, 'getGithubClient').mockReturnValue(
+        new Octokit({ auth: 'github-test-token', baseUrl: `http://127.0.0.1:${address.port}` }),
+      );
       const conversation = await createConversation(owner);
-      pendingReview = {
-        callId: 'native-review',
-        card: { messageId: 'assistant', partId: 'native-review' },
-        revision: await reviewRevision(baseCommit, patch),
+      const snapshot = {
         repository: 'PrairieLearn/test-course',
         branch: 'master',
         baseCommit,
-        patch,
+        additions: [
+          { path: 'infoCourse.json', contents: Buffer.from('{ invalid JSON').toString('base64') },
+        ],
+        deletions: [],
+      };
+      pendingReview = {
+        callId: 'native-review',
+        card: { messageId: 'assistant', partId: 'native-review' },
+        snapshot,
+        status: 'pending',
+        jobSequenceId: null,
+        error: null,
       };
       await withUser(owner, async () => {
         const client = createClient(owner);
         const displayed = (await client.courseAgent.getPendingReview.query({
           conversationId: conversation.id,
+          callId: 'native-review',
         }))!;
         expect(displayed.diff.patch).toContain('invalid JSON');
-        pendingReview = { ...pendingReview!, revision: 'f'.repeat(64) };
+        pendingReview = { ...pendingReview!, callId: 'different-call' };
         await expect(
           client.courseAgent.postReviewDecision.mutate({
             conversationId: conversation.id,
@@ -371,8 +456,8 @@ describe('Course agent access and conversation privacy', () => {
             decision: 'approved',
           }),
         ).rejects.toThrow();
-        expect(git(['rev-parse', 'master'], remote)).toBe(baseCommit);
-        pendingReview = { ...pendingReview, revision: await reviewRevision(baseCommit, patch) };
+        expect(publications).toBe(0);
+        pendingReview = { ...pendingReview, callId: 'native-review' };
         failDelivery = true;
         const approved = await client.courseAgent.postReviewDecision.mutate({
           conversationId: conversation.id,
@@ -382,30 +467,64 @@ describe('Course agent access and conversation privacy', () => {
         await helperServer.waitForJobSequence(approved.jobSequenceId!);
         const [job] = await selectJobsByJobSequenceId(approved.jobSequenceId!);
         expect(job.status).toBe('Error');
-        const outcome = job.data.outcome;
-        expect(outcome.result.publication.status).toBe('published');
-        expect(outcome.result.sync.status).toBe('failed');
-        expect(outcome.result.sync.error).toContain('infoCourse.json');
-        expect(outcome.result.sync.error).toContain('JSON');
+        expect(job.data.result.publication.status).toBe('published');
+        expect(job.data.result.sync.status).toBe('failed');
+        expect(job.data.result.sync.error).toContain('infoCourse.json');
+        expect(job.data.result.sync.error).toContain('JSON');
         const published = git(['rev-parse', 'master'], remote);
-        expect(published).toBe(outcome.result.publication.commitSha);
+        expect(published).toBe(job.data.result.publication.commitSha);
+        const outcomeUrl = `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/jobs/${approved.jobSequenceId}/outcome`;
+        expect((await fetch(outcomeUrl)).status).toBe(401);
+        const recovered = await fetch(outcomeUrl, {
+          headers: { Authorization: 'Bearer test-token' },
+        });
+        expect(recovered.status).toBe(200);
+        expect(await recovered.json()).toMatchObject({
+          callId: 'native-review',
+          status: 'completed',
+          result: job.data.result,
+        });
+        const unrelated = await createConversation(owner);
+        const unrelatedUrl = outcomeUrl.replace(
+          conversation.agent_conversation_id,
+          unrelated.agent_conversation_id,
+        );
+        expect(
+          (await fetch(unrelatedUrl, { headers: { Authorization: 'Bearer test-token' } })).status,
+        ).toBe(404);
+        const input = publicationInputs[0] as {
+          expectedHeadOid: string;
+          branch: unknown;
+          fileChanges: unknown;
+        };
+        expect(input.expectedHeadOid).toBe(baseCommit);
+        expect(input.branch).toEqual({
+          repositoryNameWithOwner: 'PrairieLearn/test-course',
+          branchName: 'master',
+        });
+        expect(input.fileChanges).toEqual({
+          additions: [
+            {
+              path: 'infoCourse.json',
+              contents: Buffer.from('{ invalid JSON').toString('base64'),
+            },
+          ],
+          deletions: [],
+        });
+        expect(publications).toBe(1);
         failDelivery = false;
-        await retryReviewDeliveries();
-        expect(git(['rev-parse', 'master'], remote)).toBe(published);
-        expect(
-          (await selectJobsByJobSequenceId(approved.jobSequenceId!))[0].data.callbackDelivered,
-        ).toBe(true);
-        expect(
-          serviceRequests.filter((request) => request.path.endsWith('/outcome')).at(-1)!.body,
-        ).toEqual(outcome);
         const staleConversation = await createConversation(owner);
         pendingReview = {
-          ...pendingReview,
           callId: 'stale-head-review',
           card: { messageId: 'stale-card', partId: 'stale-head-review' },
+          snapshot,
+          status: 'pending',
+          jobSequenceId: null,
+          error: null,
         };
         const stale = (await client.courseAgent.getPendingReview.query({
           conversationId: staleConversation.id,
+          callId: 'stale-head-review',
         }))!;
         const staleApproval = await client.courseAgent.postReviewDecision.mutate({
           conversationId: staleConversation.id,
@@ -414,11 +533,17 @@ describe('Course agent access and conversation privacy', () => {
         });
         await helperServer.waitForJobSequence(staleApproval.jobSequenceId!);
         const [rejected] = await selectJobsByJobSequenceId(staleApproval.jobSequenceId!);
-        expect(rejected.data.outcome.result.publication.status).toBe('failed');
-        expect(rejected.data.outcome.result.sync.status).toBe('not_attempted');
-        expect(git(['rev-parse', 'master'], remote)).toBe(published);
+        expect(rejected.data.result.publication.status).toBe('failed');
+        expect(rejected.data.result.sync.status).toBe('not_attempted');
+        expect(publications).toBe(1);
       });
     } finally {
+      vi.restoreAllMocks();
+      if (api) {
+        await new Promise<void>((resolve, reject) =>
+          api!.close((error) => (error ? reject(error) : resolve())),
+        );
+      }
       if (oldGitConfig === undefined) delete process.env.GIT_CONFIG_GLOBAL;
       else process.env.GIT_CONFIG_GLOBAL = oldGitConfig;
       await execute(sql.set_review_course, {

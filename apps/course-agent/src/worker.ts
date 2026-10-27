@@ -1,6 +1,10 @@
 import { getAgentByName } from 'agents';
 
-import { CreateConversationInput, ReviewOutcomeSchema } from '@prairielearn/course-agent-types';
+import {
+  CreateConversationInput,
+  ReviewDecisionSchema,
+  ReviewOutcomeSchema,
+} from '@prairielearn/course-agent-types';
 
 import { isAuthorized } from './http/auth.js';
 import { parseRoute } from './http/routes.js';
@@ -29,6 +33,14 @@ export default {
     const conversation = await getAgentByName(env.Conversation, route.conversationId);
     if (route.action === 'pending-review' && request.method === 'GET') {
       return Response.json(await conversation.getPendingReview());
+    }
+    if (route.action === 'pending-review/decision' && request.method === 'POST') {
+      const decision = ReviewDecisionSchema.safeParse(await request.json().catch(() => null));
+      if (!decision.success) return new Response('Invalid decision', { status: 400 });
+      if (!(await conversation.recordReviewDecision(decision.data))) {
+        return new Response('Review has changed', { status: 409 });
+      }
+      return Response.json({ decisionRecorded: true });
     }
     if (route.action === 'pending-review/outcome' && request.method === 'POST') {
       const outcome = ReviewOutcomeSchema.safeParse(await request.json().catch(() => null));
