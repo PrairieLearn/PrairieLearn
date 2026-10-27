@@ -28,7 +28,7 @@ The private `destroying` phase means that a replacement checkpoint has been comm
 
 Only `offline` and `waiting_for_user` without a pending review accept new input. A pending review blocks new messages even after shutdown. Capture the input before asynchronous setup. Only the newest message is submitted to the native thread; SDK history is not resubmitted as another prompt.
 
-SDK response completion and sandbox process termination are separate events. Explicit Stop may complete the SDK response first. One completion path waits for both before releasing the active operation. Manual Stop retains an established workspace for another message; Stop during initial setup discards the incomplete sandbox.
+SDK response completion and sandbox process termination are separate events. Explicit Stop may complete the SDK response first. One completion path waits for both and for any admitted model request to settle usage before releasing the active operation. Stop does not abort the provider stream: the native process stops immediately, while the response observer continues accounting independently. Manual Stop retains an established workspace for another message; Stop during initial setup discards the incomplete sandbox.
 
 The turn deadline includes setup. Expiry stops the active operation, then backs up and shuts down without an intervening admission window. Idle expiry backs up and shuts down directly. Persisted deadlines identify the expected expiry and workspace so superseded callbacks do nothing. Scheduling and record persistence are separate SDK operations: wake reconciliation restores idle scheduling or blocks an interrupted active operation.
 
@@ -77,4 +77,4 @@ Idle expiry uses the ordinary execution stop path before checkpoint/destruction.
 
 The agent receives the published SHA and owns fetching/reconciling its checkout before further edits. The host does not reset the sandbox; private edits are preserved on denial and publication failure. Settled cards retain outcomes and diagnostics without a historical diff viewer.
 
-Focused normal-suite tests cover snapshot capture, native transport behavior, PL authorization, GitHub API publication, stale heads, actual Course Sync diagnostics, and the saved-outcome endpoint. Before enabling the pilot, validate real credentials, publication, sandbox checkpoint/result-only continuation, and reconnect/Resume through PL's proxy in the deployed environment.
+Focused normal-suite tests cover native transport and review continuation, PL authorization, publication decisions and stale heads, sync-error forwarding, usage delivery, and provider accounting after native Stop. Before enabling the pilot, validate real credentials, publication, sandbox checkpoint/result-only continuation, and reconnect/Resume through PL's proxy in the deployed environment.

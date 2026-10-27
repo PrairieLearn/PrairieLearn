@@ -4,8 +4,11 @@ import { createServer } from 'node:http';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
-import { type BudgetRequest, BudgetResponseSchema, emptyUsage } from '@prairielearn/course-agent-types';
-
+import {
+  type BudgetRequest,
+  BudgetResponseSchema,
+  emptyUsage,
+} from '@prairielearn/course-agent-types';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import {
@@ -15,7 +18,6 @@ import {
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import { RedisRateLimiter } from '../lib/redis-rate-limiter.js';
-
 import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
@@ -178,7 +180,7 @@ describe('Course agent access and conversation privacy', () => {
     expect(denied.status).toBe(403);
     expect(await denied.json()).toEqual({
       sequence: 2,
-      allocation: { status: 'denied', reason: 'not_allowed', retryAt: null },
+      allocation: { status: 'denied', reason: 'not_allowed' },
     });
     expect(
       (
@@ -406,5 +408,4 @@ describe('Course agent access and conversation privacy', () => {
     });
     expect(stored!.title).toBe('First message');
   });
-
 });

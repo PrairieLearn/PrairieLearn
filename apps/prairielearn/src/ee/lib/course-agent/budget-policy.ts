@@ -28,8 +28,7 @@ export async function allocateCourseAgentBudget(userId: string, reportedCostMill
       used + reportedCostMilliDollars < COURSE_AGENT_HOURLY_USAGE_LIMIT_MILLI_DOLLARS
         ? COURSE_AGENT_CREDIT_CHUNK_MILLI_DOLLARS
         : 0,
-    startsAt: new Date(start).toISOString(),
-    endsAt: new Date(start + 3_600_000).toISOString(),
+    resetsAt: new Date(start + 3_600_000).toISOString(),
   };
 }
 

@@ -1,12 +1,13 @@
+import { parseJsonEventStream } from 'ai';
 import { z } from 'zod';
 
-import { type UsageDelta, UsageDeltaSchema } from '@prairielearn/course-agent-types';
+import { type UsageDelta, UsageDeltaSchema, emptyUsage } from '@prairielearn/course-agent-types';
 
 // gpt-6-luna's fixed input/output prices. Cached input uses the input rate in this pilot.
 const INPUT_MILLI_DOLLARS_PER_MILLION_TOKENS = 100;
 const OUTPUT_MILLI_DOLLARS_PER_MILLION_TOKENS = 500;
 
-export const ModelEventSchema = z.looseObject({
+const ModelEventSchema = z.looseObject({
   type: z.string(),
   response: z
     .looseObject({
@@ -27,7 +28,7 @@ export const ModelEventSchema = z.looseObject({
     .optional(),
 });
 
-export function requestUsage(event: z.infer<typeof ModelEventSchema>): UsageDelta | null {
+function requestUsage(event: z.infer<typeof ModelEventSchema>): UsageDelta | null {
   const usage = event.response?.usage;
   if (!usage) return null;
   return UsageDeltaSchema.parse({
@@ -41,4 +42,88 @@ export function requestUsage(event: z.infer<typeof ModelEventSchema>): UsageDelt
         1_000_000,
     ),
   });
+}
+
+/** Observe provider usage before forwarding completion, even if the native reader disconnects. */
+export async function observeModelUsage(
+  response: Response,
+  {
+    settle,
+    missingUsage,
+  }: {
+    settle: (usage: UsageDelta) => void;
+    missingUsage: () => void;
+  },
+) {
+  if (!response.ok) {
+    // These HTTP rejections did not admit generation. A transport/server failure is uncertain.
+    if ([400, 401, 403, 404, 413, 422, 429].includes(response.status)) settle(emptyUsage());
+    else missingUsage();
+    return { response, finished: Promise.resolve() };
+  }
+  if (!response.headers.get('Content-Type')?.includes('text/event-stream')) {
+    const value: unknown = await response.json();
+    const event = ModelEventSchema.parse({ type: 'response.completed', response: value });
+    const usage = requestUsage(event);
+    if (usage) settle(usage);
+    else missingUsage();
+    return { response: Response.json(value), finished: Promise.resolve() };
+  }
+  if (!response.body) throw new Error('Provider returned no response stream');
+  const reader = parseJsonEventStream({
+    stream: response.body,
+    schema: ModelEventSchema,
+  }).getReader();
+  let downstream!: ReadableStreamDefaultController<Uint8Array>;
+  let cancelled = false;
+  let settled = false;
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      downstream = controller;
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const finished = (async () => {
+    try {
+      for (;;) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        if (!chunk.value.success) throw new Error('Invalid provider stream');
+        const event = chunk.value.value;
+        if (
+          ['response.completed', 'response.incomplete', 'response.failed'].includes(event.type) &&
+          !settled
+        ) {
+          const usage = requestUsage(event);
+          if (usage) {
+            settle(usage);
+            settled = true;
+          }
+        }
+        if (!cancelled) {
+          downstream.enqueue(
+            encoder.encode(
+              `event: ${event.type}\ndata: ${JSON.stringify(chunk.value.rawValue)}\n\n`,
+            ),
+          );
+        }
+      }
+      if (!cancelled) downstream.close();
+    } catch (error) {
+      if (!cancelled) downstream.error(error);
+    } finally {
+      reader.releaseLock();
+      if (!settled) missingUsage();
+    }
+  })();
+  const headers = new Headers(response.headers);
+  headers.delete('Content-Length');
+  headers.delete('Content-Encoding');
+  return {
+    response: new Response(stream, { headers, status: response.status }),
+    finished,
+  };
 }

@@ -22,7 +22,7 @@ sequenceDiagram
 
 - PL's `allocateCourseAgentBudget()` in `ee/lib/course-agent/budget-policy.ts` grants `COURSE_AGENT_CREDIT_CHUNK_MILLI_DOLLARS` ($3) while a user's reported spending across all courses/conversations is below `COURSE_AGENT_HOURLY_USAGE_LIMIT_MILLI_DOLLARS` ($50). Both amounts are editable code constants. A refill decision includes the current report's cost before checking the limit.
 - Like AI grading, this uses the existing `RedisRateLimiter` read/increment operations and `nonVolatileRedisUrl`. One key per user/hour counts actual reported milli-dollar costs, snapped to the last UTC `XX:00`, and expires at the hour boundary. Grants do not increment the counter. There are no allocation scripts or per-request Redis keys.
-- The Conversation DO's synchronous SQLite KV `budget` entry stores its signed balance, grant expiry, buffered usage, next report state, and in-flight request identity. Positive unused credit expires at the hour boundary; debt survives. The hourly spending limit is soft: already-funded conversations and concurrent work may overshoot it.
+- The Conversation DO's synchronous SQLite KV `budget` entry stores its signed balance, credit expiry, buffered usage, report sequence, and in-flight request ID. Budget blocking is stored here and projected into the public conversation state. Positive unused credit expires at the hour boundary; debt survives. The hourly spending limit is soft: already-funded conversations and concurrent work may overshoot it.
 - Each completed **model request**, including intermediate requests between tools, deducts its full cost before its completion reaches the native agent. Tool execution has no separate model charge. No maximum-cost reservation, stream estimate, or whole-turn accounting is used.
 - `model-usage.ts` fixes input/output prices at 100/500 milli-dollars per million tokens and rounds each request's cost up to a whole milli-dollar. Cached input is counted at the input rate; reasoning tokens are a subset of output. Update these constants when changing the pilot model.
 - A request may leave a negative balance. Before the next inference, request more credit; a grant repays debt first. Repeat only while the balance is nonpositive. An hourly denial interrupts native work and preserves history/workspace. The chat disables Send and shows a persisted countdown; explicit Resume after the deadline obtains a fresh decision without repeating the previous prompt.
@@ -59,11 +59,11 @@ Acknowledgement body:
   sequence: number; // Echoes the accepted report.
   allocation:
     | { status: 'not_requested' } // HTTP 200; requestCredit: false.
-    | { status: 'granted'; grantedMilliDollars: number; window: Window } // HTTP 200.
-    | { status: 'denied'; reason: 'hourly_limit'; retryAt: string; window: Window } // HTTP 429.
-    | { status: 'denied'; reason: 'not_allowed'; retryAt: null }; // HTTP 403.
+    | { status: 'granted'; grantedMilliDollars: number; expiresAt: string } // HTTP 200.
+    | { status: 'denied'; reason: 'hourly_limit'; retryAt: string } // HTTP 429.
+    | { status: 'denied'; reason: 'not_allowed' }; // HTTP 403.
 }
-type Window = { startsAt: string; endsAt: string }; // ISO UTC timestamps.
+// expiresAt and retryAt are ISO UTC timestamps.
 ```
 
 The 429 also sends `Retry-After` seconds. **200, 403, and 429 all acknowledge committed usage.** Even after access revocation, the final usage delta is recorded; only further credit is denied.
@@ -78,7 +78,7 @@ After committing a new report's SQL usage totals and acknowledgement, PL increme
 
 Report-only network failures may lag while already-funded inference continues. A refill failure blocks until explicit Resume replays the pending report. An expired replayed grant cannot fund new work; an expired replayed hourly denial requires a new sequence for a fresh decision. Protocol conflicts remain blocked for investigation.
 
-The DO consumes provider SSE independently of the native reader. Confirmed final usage survives a downstream disconnect. A DO restart, aborted provider request, or truncated stream without final usage leaves an unresolved in-flight request and blocks further inference (`usage_unavailable`). Recovery requires operator investigation; the service cannot reconstruct stateless provider usage or safely replay paid inference. No operator recovery UI is included in this pilot.
+The existing outbound proxy routes model requests through the DO, which forwards to the provider and observes usage in the response. It consumes provider SSE independently of the native reader. Confirmed final usage survives a downstream disconnect. Stop interrupts native work immediately; the already-admitted provider request continues through final usage, and execution ownership is retained until accounting settles. New inference is rejected while stopping. A DO restart, provider transport failure, or truncated stream without final usage leaves an unresolved in-flight request and blocks further inference (`usage_unavailable`). Recovery requires operator investigation; the service cannot reconstruct stateless provider usage or safely replay paid inference. No operator recovery UI is included in this pilot.
 
 PR #5's publication and outcome persistence can finish without credit. Any native continuation that needs another model request passes through the same inference gate. Before enabling the pilot, exercise the real container outbound binding → DO → provider stream path, denial/Resume, and process termination in a deployed sandbox.
 
