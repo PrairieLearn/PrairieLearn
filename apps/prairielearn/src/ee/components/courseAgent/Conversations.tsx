@@ -3,7 +3,7 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import type { UIMessage } from 'ai';
-import { type KeyboardEvent, type SyntheticEvent, useEffect, useState } from 'react';
+import { type KeyboardEvent, type SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -91,13 +91,26 @@ function ConversationPicker({
   const selectedId = pickedId === NEW_CONVERSATION ? null : pickedId;
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
+  const [draft, setDraft] = useState('');
   const create = useMutation({
     ...trpc.courseAgent.create.mutationOptions(),
-    onSuccess: async (conversation) => {
-      await queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+    onSuccess: (conversation) => {
+      queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) => [
+        conversation,
+        ...(current ?? []),
+      ]);
       setPickedId(conversation.id);
+      setDraft('');
+      void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
   });
+
+  const submitNew = (event?: SyntheticEvent) => {
+    event?.preventDefault();
+    const text = draft.trim();
+    if (!text || create.isPending) return;
+    create.mutate({ text });
+  };
 
   const createError = getAppError<CourseAgentError['Create']>(create.error);
   return (
@@ -108,10 +121,10 @@ function ConversationPicker({
             variant="light"
             className="border bg-white w-100 d-flex justify-content-between align-items-center gap-2"
             aria-label="Conversation"
-            disabled={conversations.length === 0}
+            disabled={conversations.length === 0 || create.isPending}
           >
             <span className="text-truncate">
-              {selectedConversation?.title ?? 'No conversations yet'}
+              {selectedConversation?.title ?? 'New conversation'}
             </span>
           </Dropdown.Toggle>
           <Dropdown.Menu className="w-100 overflow-y-auto" style={{ maxHeight: '50vh' }}>
@@ -136,33 +149,44 @@ function ConversationPicker({
             className="flex-shrink-0"
             aria-label="New conversation"
             disabled={create.isPending}
-            onClick={() => create.mutate()}
+            onClick={() => {
+              setPickedId(NEW_CONVERSATION);
+              setDraft('');
+              create.reset();
+            }}
           >
             <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
         </OverlayTrigger>
       </div>
-      {create.isError ? (
-        <AppErrorAlert
-          className="m-3"
-          error={createError}
-          render={{ UNKNOWN: ({ message }) => message }}
-        />
-      ) : selectedId && active ? (
+      {selectedId && active ? (
         <Chat
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
           chatCsrfToken={chatCsrfToken}
+          initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
+          onInitialMessageSent={create.reset}
         />
-      ) : (
-        <div className="d-flex flex-column flex-grow-1 justify-content-center align-items-center text-muted p-3 text-center">
-          <p>Ask the course agent about your course or about PrairieLearn.</p>
-          <Button disabled={create.isPending} onClick={() => create.mutate()}>
-            Start a conversation
-          </Button>
-        </div>
-      )}
+      ) : active ? (
+        <>
+          <div className="flex-grow-1 p-3">
+            <p className="text-muted text-center my-4">
+              Ask the course agent about your course or about PrairieLearn.
+            </p>
+            {create.isError && (
+              <AppErrorAlert error={createError} render={{ UNKNOWN: ({ message }) => message }} />
+            )}
+          </div>
+          <Composer
+            draft={draft}
+            disabled={create.isPending}
+            pending={create.isPending}
+            onDraftChange={setDraft}
+            onSubmit={submitNew}
+          />
+        </>
+      ) : null}
     </div>
   );
 }
@@ -181,13 +205,15 @@ function Chat({
   courseId,
   conversationId,
   chatCsrfToken,
+  initialMessage,
+  onInitialMessageSent,
 }: {
   courseId: string;
   conversationId: string;
   chatCsrfToken: string;
+  initialMessage: string | undefined;
+  onInitialMessageSent: () => void;
 }) {
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const [historyReady, setHistoryReady] = useState(false);
   const agent = useAgent({
     agent: 'Conversation',
@@ -213,14 +239,18 @@ function Chat({
     throttle: 100,
     getInitialMessages: null,
   });
-  const title = useMutation({
-    ...trpc.courseAgent.setTitle.mutationOptions(),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
-  });
-  const titleError = getAppError<CourseAgentError['SetTitle']>(title.error);
   const [draft, setDraft] = useState('');
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
+  const initialMessageSentRef = useRef(false);
+  // A newly created conversation must receive history before its first prompt is handed to the SDK.
+  useEffect(() => {
+    if (!connected || !initialMessage || initialMessageSentRef.current) return;
+    initialMessageSentRef.current = true;
+    void sendMessage({ text: initialMessage });
+    onInitialMessageSent();
+  }, [connected, initialMessage, onInitialMessageSent, sendMessage]);
+
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
@@ -245,14 +275,7 @@ function Chat({
     const text = draft.trim();
     if (!text || responseActive || !connected) return;
     void sendMessage({ text });
-    title.mutate({ conversationId, text });
     setDraft('');
-  };
-
-  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-      submit(event);
-    }
   };
 
   return (
@@ -277,9 +300,6 @@ function Chat({
           {connectionError && (
             <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
-          {title.isError && (
-            <AppErrorAlert error={titleError} render={{ UNKNOWN: ({ message }) => message }} />
-          )}
           {error && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
@@ -287,40 +307,63 @@ function Chat({
           )}
         </div>
       </div>
-      <Form className="border-top p-3" onSubmit={submit}>
-        <Form.Control
-          as="textarea"
-          rows={3}
-          value={draft}
-          placeholder="Ask the course agent…"
-          aria-label="Message"
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={onKeyDown}
-        />
-        <div className="d-flex justify-content-end mt-2">
-          {responseActive ? (
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              disabled={!connected}
-              onClick={() => void stop()}
-            >
-              <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-              Stop
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              size="sm"
-              aria-label="Send"
-              disabled={!draft.trim() || !connected}
-            >
-              <i className="bi bi-send" aria-hidden="true" />
-            </Button>
-          )}
-        </div>
-      </Form>
+      <Composer
+        draft={draft}
+        disabled={!connected}
+        onDraftChange={setDraft}
+        onSubmit={submit}
+        onStop={responseActive ? () => void stop() : undefined}
+      />
     </div>
+  );
+}
+
+function Composer({
+  draft,
+  onDraftChange,
+  onSubmit,
+  disabled,
+  pending = false,
+  onStop,
+}: {
+  draft: string;
+  onDraftChange: (draft: string) => void;
+  onSubmit: (event?: SyntheticEvent) => void;
+  disabled: boolean;
+  pending?: boolean;
+  onStop?: () => void;
+}) {
+  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+      onSubmit(event);
+    }
+  };
+
+  return (
+    <Form className="border-top p-3" onSubmit={onSubmit}>
+      <Form.Control
+        as="textarea"
+        rows={3}
+        value={draft}
+        placeholder="Ask the course agent…"
+        aria-label="Message"
+        disabled={pending}
+        onChange={(event) => onDraftChange(event.target.value)}
+        onKeyDown={onKeyDown}
+      />
+      <div className="d-flex justify-content-end mt-2">
+        {onStop ? (
+          <Button variant="outline-secondary" size="sm" disabled={disabled} onClick={onStop}>
+            <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+            Stop
+          </Button>
+        ) : (
+          <Button type="submit" size="sm" aria-label="Send" disabled={!draft.trim() || disabled}>
+            <i className="bi bi-send" aria-hidden="true" />
+          </Button>
+        )}
+      </div>
+    </Form>
   );
 }
 

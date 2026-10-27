@@ -2,10 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import {
-  insertCourseAgentConversation,
-  selectOptionalCourseAgentConversation,
-} from '../ee/models/course-agent-conversation.js';
+import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import {
@@ -36,6 +33,7 @@ function createConversation(user: User) {
     course_id: '1',
     user_id: user.id,
     agent_conversation_id: crypto.randomUUID(),
+    title: 'Test conversation',
   });
 }
 
@@ -134,44 +132,5 @@ describe('Course agent access and conversation privacy', () => {
     await withUser(owner, async () => {
       expect((await fetch(historyUrl(others.id))).status).toBe(404);
     });
-  });
-
-  test('rejects changing another owner’s conversation title', async () => {
-    const conversation = await createConversation(otherOwner);
-    await withUser(owner, async () => {
-      await expect(
-        createClient(owner).courseAgent.setTitle.mutate({
-          conversationId: conversation.id,
-          text: 'Someone else',
-        }),
-      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
-    });
-    const stored = await selectOptionalCourseAgentConversation({
-      id: conversation.id,
-      course_id: '1',
-      user_id: otherOwner.id,
-    });
-    expect(stored!.title).toBe(conversation.title);
-  });
-
-  test('preserves the first-message title after a follow-up', async () => {
-    const conversation = await createConversation(owner);
-    await withUser(owner, async () => {
-      const client = createClient(owner);
-      await client.courseAgent.setTitle.mutate({
-        conversationId: conversation.id,
-        text: 'First message',
-      });
-      await client.courseAgent.setTitle.mutate({
-        conversationId: conversation.id,
-        text: 'Follow-up',
-      });
-    });
-    const stored = await selectOptionalCourseAgentConversation({
-      id: conversation.id,
-      course_id: '1',
-      user_id: owner.id,
-    });
-    expect(stored!.title).toBe('First message');
   });
 });

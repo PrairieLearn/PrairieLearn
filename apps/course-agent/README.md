@@ -14,12 +14,11 @@ There is one SDK-owned message history and its native temporary stream buffer. T
 
 The browser uses `useAgent()` from `agents/react` and `useAgentChat()` from `@cloudflare/ai-chat/react`. The browser connects through PrairieLearn. On each connection, the DO sends saved history using the SDK's `CF_AGENT_CHAT_MESSAGES` message, then the SDK handles replay and live output. The hook sets `getInitialMessages: null` to avoid a separate HTTP history fetch racing startup recovery. Send stays disabled until that initial transcript arrives. The SDK's history HTTP route remains available:
 
-| Browser route                                                   | Internal service route                   | Behavior                                                           |
-| --------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------ |
-| tRPC `courseAgent.create`                                       | `POST /conversations`                    | Create a Cloudflare-generated UUID, then record it in PL's catalog |
-| WebSocket `/pl/course/{course}/course_agent/conversations/{id}` | WebSocket `/conversations/{uuid}`        | Native Cloudflare chat protocol: send, stream, resume, Stop        |
-| `GET .../conversations/{id}/get-messages`                       | `GET /conversations/{uuid}/get-messages` | SDK-owned saved history                                            |
-| tRPC `courseAgent.setTitle`                                     | None                                     | Set the catalog title from the first submitted message             |
+| Browser route                                                   | Internal service route                   | Behavior                                                                  |
+| --------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------- |
+| tRPC `courseAgent.create`                                       | `POST /conversations`                    | On first send, create a UUID and record it with the title in PL's catalog |
+| WebSocket `/pl/course/{course}/course_agent/conversations/{id}` | WebSocket `/conversations/{uuid}`        | Native Cloudflare chat protocol: send, stream, resume, Stop               |
+| `GET .../conversations/{id}/get-messages`                       | `GET /conversations/{uuid}/get-messages` | SDK-owned saved history                                                   |
 
 Browser IDs are PL catalog IDs. Service IDs are Cloudflare-generated UUIDs. The service requires `Authorization: Bearer <PL_SERVICE_TOKEN>` on every request, including upgrades. It trusts PrairieLearn's catalog/ownership checks when routing a valid UUID.
 
