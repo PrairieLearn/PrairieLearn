@@ -70,20 +70,14 @@ export class CodexAppServerClient {
       });
     rpc.onRequest('item/tool/call', async (value: unknown) => {
       const method = serverRequests['item/tool/call'];
-      if (
-        !method.params(value) ||
-        value.threadId !== this.threadId ||
-        value.tool !== 'push_sync' ||
-        value.namespace !== null ||
-        !this.onReview ||
-        JSON.stringify(value.arguments) !== '{}'
-      ) {
-        throw new Error('Invalid push_sync call');
-      }
-      const result = await this.onReview(value, () => {
+      const call = this.parseReviewCall(value);
+      if (!this.onReview) throw new Error('Review handling is not configured');
+      const result = await this.onReview(call, () => {
+        // The frontend uses this tool part to load the saved review from PL.
+        // File contents stay in DO storage instead of entering chat history.
         this.emit({
           type: 'tool-input-available',
-          toolCallId: value.callId,
+          toolCallId: call.callId,
           toolName: 'push_sync',
           input: {},
         });
@@ -134,6 +128,19 @@ export class CodexAppServerClient {
   private get connection() {
     if (!this.rpc) throw new Error('Native runner is not connected');
     return this.rpc;
+  }
+
+  private parseReviewCall(value: unknown): DynamicToolCallParams {
+    if (
+      !serverRequests['item/tool/call'].params(value) ||
+      value.threadId !== this.threadId ||
+      value.tool !== 'push_sync' ||
+      value.namespace !== null ||
+      JSON.stringify(value.arguments) !== '{}'
+    ) {
+      throw new Error('Invalid push_sync call');
+    }
+    return value;
   }
 
   private fail(error: Error) {
