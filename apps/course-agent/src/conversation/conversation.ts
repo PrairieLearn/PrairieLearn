@@ -85,17 +85,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           lifecycle: { status: 'blocked', ...blocked },
           deadline: null,
         });
-        const active = this.active;
-        if (changed && active) {
-          // Let the provider-facing error return before interrupting its waiting native caller.
-          void this.keepAliveWhile(async () => {
-            await scheduler.wait(0);
-            await active.execution.stop();
-          }).catch(console.error);
-        }
+        if (changed) this.interruptForBudget();
       }
     });
     return this.budgetInstance;
+  }
+
+  private interruptForBudget() {
+    const active = this.active;
+    if (!active) return;
+    // Let the provider-facing error return before interrupting its waiting native caller.
+    void this.keepAliveWhile(async () => {
+      await scheduler.wait(0);
+      await active.execution.stop();
+    }).catch(console.error);
   }
 
   /** Binding-only inference entrypoint; the public Worker never routes requests here. */
@@ -112,6 +115,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     try {
       if (!(await this.budget.ensureCredit())) {
         release();
+        this.interruptForBudget();
         return Response.json(
           {
             error: {
@@ -165,75 +169,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private liveContinuation: { active: ActiveTurn; result: PushSyncResult } | null = null;
   private cleanup: Promise<void> | null = null;
   private delivery: { outcome: ReviewOutcome; result: Promise<boolean> } | null = null;
-
-  constructor(ctx: DurableObjectState, env: Env) {
-    super(ctx, env);
-    const handleMessage = this.onMessage.bind(this);
-    // SDK chat submits can replace history before onChatMessage runs. Accept only
-    // a new text message and derive its history here; clients cannot forge tool results.
-    this.onMessage = async (connection, message) => {
-      if (typeof message !== 'string') return;
-      const frame = z.object({ type: z.string() }).passthrough().safeParse(JSON.parse(message));
-      if (!frame.success) return;
-      if (frame.data.type === MessageType.CF_AGENT_USE_CHAT_REQUEST) {
-        if (
-          this.active ||
-          this.budget.blocked ||
-          this.recovering ||
-          this.record.review ||
-          !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status)
-        ) {
-          throw new Error('The course agent workspace is not ready.');
-        }
-        const request = z
-          .object({
-            id: z.string(),
-            init: z.object({ method: z.literal('POST'), body: z.string() }),
-          })
-          .parse(frame.data);
-        const body = z
-          .object({
-            messages: z.array(
-              z.object({
-                id: z.string(),
-                role: z.enum(['user', 'assistant', 'system']),
-                parts: z.array(z.unknown()),
-              }),
-            ),
-          })
-          .parse(JSON.parse(request.init.body));
-        const input = z
-          .object({
-            id: z.string(),
-            role: z.literal('user'),
-            parts: z.array(z.object({ type: z.literal('text'), text: z.string() })).min(1),
-          })
-          .parse(body.messages.at(-1));
-        return handleMessage(
-          connection,
-          JSON.stringify({
-            type: frame.data.type,
-            id: request.id,
-            init: {
-              method: 'POST',
-              body: JSON.stringify({
-                messages: [...(await this.sessions.session().getHistory()), input],
-              }),
-            },
-          }),
-        );
-      }
-      if (
-        [
-          'cf_agent_stream_resume_request',
-          'cf_agent_stream_resume_ack',
-          'cf_agent_chat_request_cancel',
-        ].includes(frame.data.type)
-      ) {
-        return handleMessage(connection, message);
-      }
-    };
-  }
 
   private get record() {
     if (!this.runtime) throw new Error('Conversation is not initialized');
@@ -500,6 +435,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (continuation && this.cleanup) await this.cleanup;
     if (
       this.active ||
+      (!continuation && this.budget.blocked) ||
       (!continuation && this.record.review) ||
       (!continuation && this.recovering) ||
       (!continuation && !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status))
@@ -720,8 +656,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       }
     }
     // Another Resume or an unfinished turn must not modify this workspace concurrently.
-    if (this.record.lifecycle.status !== 'blocked' || this.active || this.recovering) return false;
-    const reason = this.budget.blocked?.reason ?? this.record.lifecycle.reason;
+    const blocked =
+      this.budget.blocked ??
+      (this.record.lifecycle.status === 'blocked' ? this.record.lifecycle : null);
+    if (!blocked || this.active || this.recovering) return false;
+    const reason = blocked.reason;
     this.recovering = true;
     try {
       switch (reason) {

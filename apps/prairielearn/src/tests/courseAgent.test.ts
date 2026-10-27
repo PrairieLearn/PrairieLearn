@@ -571,6 +571,20 @@ describe('Course agent access and conversation privacy', () => {
           reviewToken: displayed.reviewToken,
           decision: 'approved',
         });
+        expect(
+          await client.courseAgent.postReviewDecision.mutate({
+            conversationId: conversation.id,
+            reviewToken: displayed.reviewToken,
+            decision: 'approved',
+          }),
+        ).toEqual(approved);
+        await expect(
+          client.courseAgent.postReviewDecision.mutate({
+            conversationId: conversation.id,
+            reviewToken: displayed.reviewToken,
+            decision: 'denied',
+          }),
+        ).rejects.toThrow('This review already has a different decision.');
         await helperServer.waitForJobSequence(approved.jobSequenceId!);
         const [job] = await selectJobsByJobSequenceId(approved.jobSequenceId!);
         expect(job.status).toBe('Error');
