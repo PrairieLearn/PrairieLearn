@@ -583,7 +583,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             "partial": score_type == "partial",
             "incorrect": score_type == "incorrect",
             "missing": {},
-            "matches": matches,
+            "matches": {
+                str(element_id): matched for element_id, matched in matches.items()
+            },
         },
     }
 
@@ -621,7 +623,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 "incorrect": False,
                 "missing": {},
                 "matches": {
-                    element["id"]: True
+                    str(element["id"]): True
                     for element in a_tru
                     if elements.is_gradable(element["gradingName"])
                     and element["graded"]
@@ -699,7 +701,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 "incorrect": True,
                 "missing": {},
                 "matches": {
-                    element["id"]: False
+                    str(element["id"]): False
                     for element in a_tru
                     if elements.is_gradable(element["gradingName"])
                     and element["graded"]

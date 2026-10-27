@@ -27,6 +27,16 @@ def make_question_data() -> dict[str, Any]:
     }
 
 
+def test_prepare_stores_json_compatible_display_state() -> None:
+    data = make_question_data()
+
+    pl_matching.prepare(matching_html(), data)
+
+    display_state = data["params"]["match"]
+    assert isinstance(display_state, list)
+    assert all(isinstance(value, list) for value in display_state)
+
+
 def test_grade_defaults_to_partial_credit() -> None:
     data = make_question_data()
     element_html = matching_html()

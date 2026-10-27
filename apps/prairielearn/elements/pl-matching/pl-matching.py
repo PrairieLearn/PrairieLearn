@@ -245,7 +245,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         display_statements.append(keyed_statement)
         correct_matches.append(match_index)
 
-    data["params"][name] = (display_statements, display_options)
+    data["params"][name] = [display_statements, display_options]
     data["correct_answers"][name] = correct_matches
 
 

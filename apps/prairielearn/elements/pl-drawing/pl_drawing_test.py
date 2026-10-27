@@ -202,6 +202,53 @@ def test_grade_blank_submission_with_allow_blank_feedback_structure() -> None:
     assert "matches" in feedback
 
 
+def test_grade_feedback_uses_string_match_keys() -> None:
+    element_html = build_element_html()
+    reference = [
+        {
+            "id": 0,
+            "type": "pl-point",
+            "gradingName": "pl-point",
+            "graded": True,
+            "left": 100,
+            "top": 100,
+        }
+    ]
+    data = make_question_data(
+        submitted_answers={"test": reference},
+        correct_answers={"test": reference},
+    )
+
+    pl_drawing.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["feedback"]["matches"] == {"0": True}
+
+
+def test_element_test_feedback_uses_string_match_keys() -> None:
+    element_html = build_element_html()
+    reference = [
+        {
+            "id": 0,
+            "type": "pl-point",
+            "gradingName": "pl-point",
+            "graded": True,
+            "left": 100,
+            "top": 100,
+        }
+    ]
+
+    for test_type, expected_match in (("correct", True), ("incorrect", False)):
+        data = make_question_data(correct_answers={"test": reference})
+        data["raw_submitted_answers"] = {}
+        data["test_type"] = test_type
+
+        pl_drawing.test(element_html, data)
+
+        assert data["partial_scores"]["test"]["feedback"]["matches"] == {
+            "0": expected_match
+        }
+
+
 def test_grade_uses_custom_weight() -> None:
     element_html = build_element_html(weight=3, allow_blank=True)
     data = make_question_data(
