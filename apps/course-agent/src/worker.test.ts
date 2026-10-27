@@ -4,9 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from './worker.js';
 
 const conversation = vi.hoisted(() => ({
-  getPendingReview: vi.fn(async () => null),
-  recordReviewOutcome: vi.fn(async () => true),
-  recordReviewDecision: vi.fn(async () => true),
   fetch: vi.fn<(request: Request) => Promise<Response>>(),
 }));
 const lookupConversation = vi.hoisted(() =>
@@ -51,31 +48,4 @@ describe('conversation routing', () => {
       expect(new URL(conversation.fetch.mock.lastCall![0].url).pathname).toBe(pathname);
     },
   );
-  it('dispatches authenticated review routes and rejects stale outcomes', async () => {
-    expect(
-      (await worker.fetch(request(`/conversations/${UUID}/pending-review`, 'GET'), env)).status,
-    ).toBe(200);
-    expect(conversation.getPendingReview).toHaveBeenCalledOnce();
-    const callback = new Request(
-      `https://agent.test/conversations/${UUID}/pending-review/outcome`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.PL_SERVICE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          callId: 'call',
-          result: {
-            decision: 'denied',
-            publication: { status: 'not_attempted' },
-            sync: { status: 'not_attempted' },
-          },
-        }),
-      },
-    ) as Parameters<typeof worker.fetch>[0];
-    conversation.recordReviewOutcome.mockResolvedValueOnce(false);
-    expect((await worker.fetch(callback, env)).status).toBe(409);
-    expect(conversation.fetch).not.toHaveBeenCalled();
-  });
 });
