@@ -769,7 +769,7 @@ export async function aiGrade({
           feedback: z
             .string()
             .describe(
-              'Student-facing feedback on their submission. Address the student as "you". Follow the instructions in the grader guideline for how to provide feedback. Use an empty string if the student\'s response is entirely correct or if the grader guideline says so explicitly.',
+              'Student-facing feedback on their submission. Address the student as "you". Follow the instructions in the grader guideline for how to provide feedback, and do not provide anything unless the grade guideline says so explicitly.',
             ),
           rubric_items: RubricGradingItemsSchema,
         });
