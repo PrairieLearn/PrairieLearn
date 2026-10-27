@@ -1,9 +1,7 @@
-import type { PDFDocument } from 'pdf-lib';
-
 import { HttpStatusError } from '@prairielearn/error';
 
 import { config } from './config.js';
-import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
+import { type PrintCover, assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
 import { type PrintDocument, getPrintRenderer, validatePrintDocument } from './printing/index.js';
 import { createPdfOutput } from './printing/pdf-output.js';
 import type { PrintAssetScope } from './printing/print-asset-access.js';
@@ -24,7 +22,7 @@ export interface PrintExportWork {
 
 export async function renderPrintExport(
   work: PrintExportWork,
-  parsedCovers?: PDFDocument[],
+  parsedCovers?: PrintCover[],
   shutdownSignal?: AbortSignal,
 ): Promise<Buffer> {
   const covers =
@@ -34,6 +32,7 @@ export async function renderPrintExport(
         ({ name, base64 }) =>
           new File([Buffer.from(base64, 'base64')], name, { type: 'application/pdf' }),
       ),
+      shutdownSignal,
     ));
   if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
   const renderer = getPrintRenderer();
@@ -52,7 +51,7 @@ export async function renderPrintExport(
       },
       {
         label: work.document === 'booklet' ? 'booklet PDF' : 'PDF',
-        produce: async (page) => {
+        produce: async (page, signal) => {
           const identity = await page.evaluate(() => ({
             document: document.documentElement.dataset.printDocument,
             formLabel: document.documentElement.dataset.printFormLabel,
@@ -66,7 +65,10 @@ export async function renderPrintExport(
           }
           const state = await validatePrintDocument(page);
           shutdownSignal?.throwIfAborted();
-          return { pdf: await pdfOutput.produce(page), coverPageCount: state.coverPageCount };
+          return {
+            pdf: await pdfOutput.produce(page, signal),
+            coverPageCount: state.coverPageCount,
+          };
         },
       },
     );
@@ -77,5 +79,11 @@ export async function renderPrintExport(
     }
   }
   if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
-  return await assemblePrintPacket({ forms, covers, copies: work.copies, answerKeys });
+  return await assemblePrintPacket({
+    forms,
+    covers,
+    copies: work.copies,
+    answerKeys,
+    signal: shutdownSignal,
+  });
 }

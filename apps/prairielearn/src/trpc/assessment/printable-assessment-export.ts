@@ -43,6 +43,7 @@ import {
   isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
+import { PrintPdfAccessibilityError } from '../../lib/printing/pdf-tools.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
@@ -169,7 +170,7 @@ export const printableAssessmentExportRouter = t.router({
             }
           }
         }
-        const coverPageCount = covers.reduce((count, cover) => count + cover.getPageCount(), 0);
+        const coverPageCount = covers.reduce((count, cover) => count + cover.pageCount, 0);
         const estimatedPages =
           Array.from({ length: metadata.copies }, (_, index) =>
             formPageCounts.length > 0
@@ -352,6 +353,7 @@ export const printableAssessmentExportRouter = t.router({
         }
         if (
           error instanceof PrintPacketError ||
+          error instanceof PrintPdfAccessibilityError ||
           (error instanceof HttpStatusError && error.status === 400)
         ) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });

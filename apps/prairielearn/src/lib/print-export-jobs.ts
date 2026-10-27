@@ -20,6 +20,7 @@ import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
+import { PrintPdfAccessibilityError } from './printing/pdf-tools.js';
 import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -89,6 +90,7 @@ function printableFailureMessage(error: unknown): string | null {
   }
   if (
     error instanceof PrintPacketError ||
+    error instanceof PrintPdfAccessibilityError ||
     (error instanceof HttpStatusError && [400, 503].includes(error.status)) ||
     (error instanceof TRPCError && error.code === 'BAD_REQUEST')
   ) {

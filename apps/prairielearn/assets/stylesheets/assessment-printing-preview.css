@@ -40,8 +40,12 @@ html[data-print-status='error'] #assessment-print-status {
 }
 .assessment-grading-score {
   flex: 0 1 150px;
-  border-bottom: 1px solid #111;
+  height: 1px;
   margin-bottom: 3px;
+}
+.assessment-grading-score > span {
+  display: block;
+  border-bottom: 1px solid #111;
 }
 
 @media screen {
