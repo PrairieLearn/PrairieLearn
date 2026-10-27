@@ -1,10 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+
 import { selectQuestionByQid } from '../../models/question.js';
 import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 test('edits authors with keyboard entry, cancellation, and persistence', async ({
   page,
@@ -55,6 +59,41 @@ test('edits authors with keyboard entry, cancellation, and persistence', async (
       'saved-author',
       'dev@example.com',
     ]);
+  } finally {
+    await fs.writeFile(infoPath, originalInfo);
+    await syncCourse(testCoursePath);
+  }
+});
+
+test('preserves unknown authors on unrelated saves and accepts an explicit author edit', async ({
+  page,
+  courseInstance,
+  testCoursePath,
+}) => {
+  const question = await selectQuestionByQid({
+    qid: 'addNumbers',
+    course_id: courseInstance.course_id,
+  });
+  const url = `/pl/course/${courseInstance.course_id}/question/${question.id}/settings`;
+  const infoPath = path.join(testCoursePath, 'questions', 'addNumbers', 'info.json');
+  const originalInfo = await fs.readFile(infoPath, 'utf8');
+  const original = JSON.parse(originalInfo);
+  try {
+    await execute(sql.set_authors_unknown, { question_id: question.id });
+    await page.goto(url);
+    await page.getByLabel('Title', { exact: true }).fill(`${original.title} updated`);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.waitForLoadState('load');
+    expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).toEqual(original.authors);
+
+    await execute(sql.set_authors_unknown, { question_id: question.id });
+    await page.reload();
+    const input = page.getByRole('combobox', { name: 'Authors', exact: true });
+    await input.fill('replacement-author');
+    await input.press('Enter');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.waitForLoadState('load');
+    expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).toEqual(['replacement-author']);
   } finally {
     await fs.writeFile(infoPath, originalInfo);
     await syncCourse(testCoursePath);

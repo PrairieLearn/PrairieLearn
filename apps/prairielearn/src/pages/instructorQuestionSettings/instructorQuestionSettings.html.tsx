@@ -305,7 +305,7 @@ export const InstructorQuestionSettingsForm = ({
     clearErrors,
     control,
     reset,
-    formState: { errors, isDirty, isSubmitting },
+    formState: { errors, isDirty, dirtyFields, isSubmitting },
   } = useForm<QuestionSettingsFormValues>({
     mode: 'onChange',
     defaultValues,
@@ -538,7 +538,9 @@ export const InstructorQuestionSettingsForm = ({
               </label>
               {canEdit ? (
                 <>
-                  <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
+                  {(question.authors !== null || dirtyFields.authors) && (
+                    <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
+                  )}
                   <TagPicker
                     id="authors"
                     aria-labelledby="authors-label"
