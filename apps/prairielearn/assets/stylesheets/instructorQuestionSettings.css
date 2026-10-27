@@ -44,11 +44,24 @@
 }
 
 .preferences-grid-row {
+  grid-template-rows: min-content 1fr;
   border-bottom: 1px solid var(--bs-border-color);
 }
 
 .preferences-grid-row:last-child {
   border-bottom: none;
+}
+
+/* Values can wrap below the controls without increasing the first grid row's
+   height or moving the validation messages away from their inputs. */
+.preferences-grid-values {
+  grid-row: 1 / span 2;
+  align-self: start;
+  padding-top: 0.25rem;
+}
+
+.preferences-grid-row > .invalid-feedback {
+  align-self: start;
 }
 
 /* Enum value badges */
