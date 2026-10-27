@@ -19,8 +19,6 @@ const test = createTest(
     : { features: { 'printable-assessments': true } },
 );
 
-test.describe.configure({ timeout: 180_000 });
-
 test('loads course assets in the rendering browser', async ({ page, courseInstance }) => {
   const user = await getConfiguredUser();
   const assessment = await selectAssessmentByTid({
