@@ -3,7 +3,16 @@ import { Dropdown } from 'react-bootstrap';
 
 import type { ConversationState } from '@prairielearn/course-agent-types';
 
-export function ConversationStats({ state }: { state: ConversationState | null }) {
+import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
+import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
+
+export function ConversationStats({
+  state,
+  usage,
+}: {
+  state: ConversationState | null;
+  usage: StaffCourseAgentConversation;
+}) {
   const [show, setShow] = useState(false);
   return (
     <Dropdown drop="up" show={show} autoClose="outside" onToggle={setShow}>
@@ -11,14 +20,24 @@ export function ConversationStats({ state }: { state: ConversationState | null }
         Stats
       </Dropdown.Toggle>
       {show && (
-        <Dropdown.Menu className="p-3 text-nowrap">
+        <Dropdown.Menu align="end" className="p-3 text-nowrap">
           <dl className="mb-0">
             <dt>State</dt>
             <dd>{state?.status ?? 'Connecting'}</dd>
             <dt>Time to next deadline</dt>
-            <dd className="mb-0">
+            <dd>
               <DeadlineCountdown key={state?.deadlineAt} deadlineAt={state?.deadlineAt ?? null} />
             </dd>
+            <dt>Input tokens</dt>
+            <dd>{usage.usage_input_tokens.toLocaleString()}</dd>
+            <dt>Cached input tokens</dt>
+            <dd>{usage.usage_input_tokens_cache_read.toLocaleString()}</dd>
+            <dt>Output tokens</dt>
+            <dd>{usage.usage_output_tokens.toLocaleString()}</dd>
+            <dt>Reasoning tokens</dt>
+            <dd>{usage.usage_output_tokens_reasoning.toLocaleString()}</dd>
+            <dt>Model cost</dt>
+            <dd className="mb-0">{formatMilliDollars(usage.usage_cost_milli_dollars)}</dd>
           </dl>
         </Dropdown.Menu>
       )}
