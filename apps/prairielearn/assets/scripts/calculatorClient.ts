@@ -388,7 +388,7 @@ export function initCalculator(
 
           const evaluated = parsed.evaluate();
           const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
-          let displayed = numericValue.toLatex(latexOptions);
+          let displayed = numericValue.toLatex({ ...latexOptions, repeatingDecimal: 'vinculum' });
           // Compute Engine guesses recurrence from digit patterns, even for finite
           // decimals. Keep an overbar only if it round-trips to the exact result;
           // isSame avoids the tolerance used by numeric equality checks.
