@@ -265,7 +265,7 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
     );
 
     const docxUrl = new URL(url.replace('/preview?', '/docx?'));
-    const docxResponse = await helperClient.fetchCheerio(docxUrl, {
+    const docxRequest = {
       method: 'POST',
       headers: {
         ...headers,
@@ -280,12 +280,17 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
         html: '<html></html>',
         source: { html: '', figures: [] },
       }),
-    });
+    };
+    const docxResponse = await helperClient.fetchCheerio(docxUrl, docxRequest);
     assert.equal(docxResponse.status, 400);
     assert.include(
       await docxResponse.text(),
       'Question exclusion references nonexistent question numbers: nonexistent',
     );
+
+    await features.disable('printable-assessments');
+    assert.equal((await helperClient.fetchCheerio(url, { headers })).status, 404);
+    assert.equal((await helperClient.fetchCheerio(docxUrl, docxRequest)).status, 404);
   });
 
   test('instructor (student data viewer) can view E1/Q* instance of student', async () => {

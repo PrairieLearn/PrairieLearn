@@ -48,7 +48,8 @@ import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 
-import { requireCoursePermissionPreview, requirePrintableAssessments, t } from './init.js';
+import { requireCoursePermissionPreview, t } from './init.js';
+import { requirePrintableAssessments } from './printable-assessments.js';
 
 export const printableAssessmentExportRouter = t.router({
   pdf: t.procedure
