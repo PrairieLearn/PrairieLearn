@@ -5,11 +5,11 @@ import { makeAssessmentInstance } from '../../../lib/assessment.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { syncCourse } from '../../helperCourse.js';
 import { getConfiguredUser } from '../../utils/auth.js';
-import { test as base, expect } from '../fixtures.js';
+import { createTest, expect } from '../fixtures.js';
 
 import { waitForPrintablePage } from './utils.js';
 
-const test = base.extend<{
+const test = createTest({ features: { 'printable-assessments': true } }).extend<{
   imageQuestion: (html: string) => Promise<string>;
 }>({
   imageQuestion: async ({ testCoursePath, courseInstance }, use) => {
