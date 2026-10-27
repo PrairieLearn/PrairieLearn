@@ -3,7 +3,7 @@ ARG CACHEBUST=2026-09-15-14-09-16
 
 WORKDIR /PrairieLearn
 
-COPY --parents scripts/pl-install.sh /PrairieLearn/
+COPY --parents scripts/pl-install.sh scripts/install-print-pdf-tools.sh /PrairieLearn/
 
 RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
 

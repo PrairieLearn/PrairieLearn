@@ -10,6 +10,7 @@ dnf update -y
 # Notes:
 # - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
 # - `libjpeg-devel` is needed by the Pillow package
+# - The JDK is needed by the PDF accessibility tools and their Java source launcher
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
 dnf -y install \
@@ -20,6 +21,7 @@ dnf -y install \
     graphviz \
     graphviz-devel \
     ImageMagick \
+    java-21-amazon-corretto-devel \
     libjpeg-devel \
     lsof \
     make \
@@ -33,7 +35,10 @@ dnf -y install \
     texlive \
     texlive-dvipng \
     texlive-type1cm \
-    tmux
+    tmux \
+    unzip
+
+/bin/bash /PrairieLearn/scripts/install-print-pdf-tools.sh
 
 # Valkey uses different executable names than Redis. Symlink them to the names
 # expected by the existing startup scripts.
