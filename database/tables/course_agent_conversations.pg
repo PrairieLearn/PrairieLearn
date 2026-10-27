@@ -9,6 +9,9 @@ columns
     usage_input_tokens_cache_read: bigint not null default 0
     usage_output_tokens: bigint not null default 0
     usage_output_tokens_reasoning: bigint not null default 0
+    usage_report_request: jsonb
+    usage_report_response: jsonb
+    usage_report_sequence: bigint not null default 0
     user_id: bigint not null
 
 indexes
@@ -22,10 +25,8 @@ check constraints
     course_agent_conversations_usage_input_tokens_check: CHECK (usage_input_tokens >= 0)
     course_agent_conversations_usage_output_tokens_check: CHECK (usage_output_tokens >= 0)
     course_agent_conversations_usage_output_tokens_reasoning_check: CHECK (usage_output_tokens_reasoning >= 0)
+    course_agent_conversations_usage_report_sequence_check: CHECK (usage_report_sequence >= 0)
 
 foreign-key constraints
     course_agent_conversations_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_agent_conversations_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
-
-referenced by
-    course_agent_budget_requests: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

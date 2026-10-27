@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { Octokit } from '@octokit/rest';
-import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
   type BudgetRequest,
@@ -18,10 +18,7 @@ import {
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import {
-  insertCourseAgentConversation,
-  selectOptionalCourseAgentConversation,
-} from '../ee/models/course-agent-conversation.js';
+import * as courseAgentConversations from '../ee/models/course-agent-conversation.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import * as github from '../lib/github.js';
@@ -52,7 +49,7 @@ function createClient(user: User) {
 }
 
 function createConversation(user: User) {
-  return insertCourseAgentConversation({
+  return courseAgentConversations.insertCourseAgentConversation({
     course_id: '1',
     user_id: user.id,
     agent_conversation_id: crypto.randomUUID(),
@@ -116,6 +113,7 @@ describe('Course agent access and conversation privacy', () => {
     courseAgentServiceUrl: config.courseAgentServiceUrl,
     courseAgentServiceToken: config.courseAgentServiceToken,
     features: config.features,
+    cacheKeyPrefix: config.cacheKeyPrefix,
   };
 
   // Enterprise routes must be mounted before starting the test server.
@@ -149,7 +147,7 @@ describe('Course agent access and conversation privacy', () => {
     }
   });
   beforeEach(async () => {
-    await execute(sql.clear_budget_requests);
+    config.cacheKeyPrefix = `${originalConfig.cacheKeyPrefix}course-agent-test:${crypto.randomUUID()}:`;
     serviceRequests.length = 0;
     pendingReview = null;
     failDelivery = false;
@@ -160,6 +158,7 @@ describe('Course agent access and conversation privacy', () => {
       authn_user_id: '1',
     });
   });
+  afterEach(() => vi.restoreAllMocks());
   afterAll(helperServer.after);
   afterAll(async () => {
     service.close();
@@ -191,7 +190,7 @@ describe('Course agent access and conversation privacy', () => {
       (await report({ ...request, usageDelta: { ...request.usageDelta, costMilliDollars: 80 } }))
         .status,
     ).toBe(409);
-    let saved = await selectOptionalCourseAgentConversation({
+    let saved = await courseAgentConversations.selectOptionalCourseAgentConversation({
       id: conversation.id,
       course_id: '1',
       user_id: owner.id,
@@ -227,15 +226,16 @@ describe('Course agent access and conversation privacy', () => {
         })
       ).status,
     ).toBe(200);
-    saved = await selectOptionalCourseAgentConversation({
+    saved = await courseAgentConversations.selectOptionalCourseAgentConversation({
       id: conversation.id,
       course_id: '1',
       user_id: owner.id,
     });
     expect(saved).toMatchObject({ usage_output_tokens: 2500, usage_cost_milli_dollars: 55 });
+    expect((await report(request)).status).toBe(409);
   });
 
-  test('serializes grants across conversations competing for the same hourly allowance', async () => {
+  test('retries allocation after a database failure and serializes competing hourly grants', async () => {
     const initial = await createConversation(owner);
     const report = (agentId: string, sequence: number) =>
       fetch(`${siteUrl}/pl/api/course-agent/conversations/${agentId}/usage`, {
@@ -243,6 +243,10 @@ describe('Course agent access and conversation privacy', () => {
         headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
         body: JSON.stringify({ sequence, usageDelta: emptyUsage(), requestCredit: true }),
       });
+    vi.spyOn(courseAgentConversations, 'recordCourseAgentConversationUsage').mockRejectedValueOnce(
+      new Error('Database write failed'),
+    );
+    expect((await report(initial.agent_conversation_id, 1)).status).toBe(503);
     for (let sequence = 1; sequence <= 16; sequence++) {
       expect((await report(initial.agent_conversation_id, sequence)).status).toBe(200);
     }
@@ -341,7 +345,7 @@ describe('Course agent access and conversation privacy', () => {
         }),
       ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
     });
-    const stored = await selectOptionalCourseAgentConversation({
+    const stored = await courseAgentConversations.selectOptionalCourseAgentConversation({
       id: conversation.id,
       course_id: '1',
       user_id: otherOwner.id,
@@ -372,7 +376,7 @@ describe('Course agent access and conversation privacy', () => {
         authorization: 'Bearer test-token',
       },
     ]);
-    const stored = await selectOptionalCourseAgentConversation({
+    const stored = await courseAgentConversations.selectOptionalCourseAgentConversation({
       id: conversation.id,
       course_id: '1',
       user_id: owner.id,
@@ -432,7 +436,7 @@ describe('Course agent access and conversation privacy', () => {
         text: 'Follow-up',
       });
     });
-    const stored = await selectOptionalCourseAgentConversation({
+    const stored = await courseAgentConversations.selectOptionalCourseAgentConversation({
       id: conversation.id,
       course_id: '1',
       user_id: owner.id,
