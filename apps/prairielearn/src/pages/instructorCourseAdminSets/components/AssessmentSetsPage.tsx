@@ -264,8 +264,9 @@ export function AssessmentSetsPage({
   return (
     <>
       <FormProvider {...form}>
-        <form
-          method="POST"
+        <Form
+          as={editMode ? 'form' : 'div'}
+          method={editMode ? 'POST' : undefined}
           onSubmit={(event) => {
             const element = event.currentTarget;
             void form.handleSubmit(() => element.submit())(event);
@@ -335,7 +336,7 @@ export function AssessmentSetsPage({
               />
             </div>
           </div>
-        </form>
+        </Form>
       </FormProvider>
 
       <AssessmentUsageModal {...usageModalState} entityLabel="assessment set" />

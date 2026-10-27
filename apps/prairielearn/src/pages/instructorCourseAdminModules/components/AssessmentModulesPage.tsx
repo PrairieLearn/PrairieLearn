@@ -1,6 +1,6 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { Alert, Form } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm, useFormContext } from 'react-hook-form';
 
 import { getAppError } from '@prairielearn/trpc/client';
@@ -316,8 +316,9 @@ function AssessmentModulesCard({
   return (
     <>
       <FormProvider {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <Form as={editMode ? 'form' : 'div'} onSubmit={form.handleSubmit(handleSubmit)}>
           <fieldset disabled={saveMutation.isPending}>
+            <legend className="visually-hidden">Assessment modules</legend>
             <div className="card mb-4">
               <div className="card-header bg-primary text-white d-flex align-items-center">
                 <h1>Modules</h1>
@@ -424,7 +425,7 @@ function AssessmentModulesCard({
               </div>
             </div>
           </fieldset>
-        </form>
+        </Form>
       </FormProvider>
 
       {allowEdit && origHash === null && (
