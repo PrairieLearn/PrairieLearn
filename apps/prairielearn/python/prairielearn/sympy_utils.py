@@ -2064,7 +2064,7 @@ def try_parse_string_as_sympy(
     if normalized_expr is None:
         return SympyParseFailure(
             "The absolute value bars in your answer are mismatched or ambiguous: "
-            f"<code>{expr}</code>."
+            f"<code>{html.escape(expr)}</code>."
         )
     expr = normalized_expr
 
