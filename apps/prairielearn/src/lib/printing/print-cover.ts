@@ -53,7 +53,7 @@ export function getPrintFooterLabel({
 /**
  * Builds the cover content used by non-HTML outputs. The HTML cover in
  * `instructorAssessmentInstancePrint.html.ts` renders the same labels, instructions, and pledge
- * through the helpers above; author-provided HTML is reduced to plain text blocks here.
+ * through the helpers above; author-provided HTML is converted to formatted text blocks here.
  */
 export function buildPrintableCover({
   resLocals,
@@ -84,8 +84,12 @@ export function buildPrintableCover({
 
   const instructionBlocks: PrintableTextBlock[] = [
     isAnswerKey
-      ? { type: 'paragraph', text: answerKeyDescription(formId, formLabel) }
-      : { type: 'list', ordered: true, items: [...DEFAULT_ASSESSMENT_INSTRUCTIONS] },
+      ? { type: 'paragraph', runs: [{ text: answerKeyDescription(formId, formLabel) }] }
+      : {
+          type: 'list',
+          ordered: true,
+          items: DEFAULT_ASSESSMENT_INSTRUCTIONS.map((text) => [{ text }]),
+        },
     ...(assessmentTextHtml ? htmlToTextBlocks(assessmentTextHtml) : []),
   ];
   const sections: PrintableCover['sections'] = [
@@ -103,7 +107,7 @@ export function buildPrintableCover({
               items: getDefaultHonorCodePledge({
                 name: BLANK_NAME_PLACEHOLDER,
                 groupWork: teamWork,
-              }),
+              }).map((text) => [{ text }]),
             },
           ],
       signatureLabel: 'Signature',

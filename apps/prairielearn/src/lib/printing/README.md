@@ -50,7 +50,7 @@ The browser saves question text and equations before it splits them into pages, 
 
 `cover` may also be a function. It receives the page's root `data-*` attributes, so values known only after rendering, such as the number of questions that rendered successfully, can appear on the cover.
 
-`htmlToTextBlocks` turns HTML content, such as assessment instructions, into headings, paragraphs, and simple lists for the cover.
+`htmlToTextBlocks` turns HTML content, such as assessment instructions, into headings, paragraphs, and simple lists for the cover, preserving bold, italics, underline, strikethrough, code, subscripts, and superscripts from HTML tags.
 
 Omit the `cover` option to start with questions on the first page.
 
