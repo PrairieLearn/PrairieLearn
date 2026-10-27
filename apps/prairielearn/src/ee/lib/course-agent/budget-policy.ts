@@ -6,7 +6,7 @@ import { config } from '../../../lib/config.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 const COURSE_AGENT_CREDIT_CHUNK_MILLI_DOLLARS = 3_000;
-const COURSE_AGENT_HOURLY_ALLOCATION_LIMIT_MILLI_DOLLARS = 50_000;
+const COURSE_AGENT_HOURLY_USAGE_LIMIT_MILLI_DOLLARS = 50_000;
 
 const rateLimiter = new RedisRateLimiter({
   redis: () => {
@@ -15,23 +15,24 @@ const rateLimiter = new RedisRateLimiter({
     redis.on('error', (error) => logger.error('Course agent Redis error', error));
     return redis;
   },
-  keyPrefix: () => config.cacheKeyPrefix + 'course-agent-credit:',
+  keyPrefix: () => config.cacheKeyPrefix + 'course-agent-usage:',
   intervalSeconds: 3600,
 });
 
-export async function allocateCourseAgentBudget({
-  userId,
-  agentId,
-  sequence,
-}: {
-  userId: string;
-  agentId: string;
-  sequence: number;
-}) {
-  return rateLimiter.allocateIntervalUsage({
-    key: `user:${userId}`,
-    allocationId: `${agentId}:${sequence}`,
-    amount: COURSE_AGENT_CREDIT_CHUNK_MILLI_DOLLARS,
-    limit: COURSE_AGENT_HOURLY_ALLOCATION_LIMIT_MILLI_DOLLARS,
-  });
+export async function allocateCourseAgentBudget(userId: string, reportedCostMilliDollars: number) {
+  const start = Math.floor(Date.now() / 3_600_000) * 3_600_000;
+  const used = await rateLimiter.getIntervalUsage(`user:${userId}`);
+  // Include this report's cost before deciding; it reaches Redis after the SQL commit.
+  return {
+    amount:
+      used + reportedCostMilliDollars < COURSE_AGENT_HOURLY_USAGE_LIMIT_MILLI_DOLLARS
+        ? COURSE_AGENT_CREDIT_CHUNK_MILLI_DOLLARS
+        : 0,
+    startsAt: new Date(start).toISOString(),
+    endsAt: new Date(start + 3_600_000).toISOString(),
+  };
+}
+
+export async function addCourseAgentCostToIntervalUsage(userId: string, costMilliDollars: number) {
+  await rateLimiter.addToIntervalUsage(`user:${userId}`, costMilliDollars);
 }
