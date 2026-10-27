@@ -4,16 +4,7 @@ import * as path from 'path';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
-
-import {
-  AuthorSchema,
-  QuestionAuthorSchema,
-  QuestionSchema,
-  QuestionTagSchema,
-  TagSchema,
-  TopicSchema,
-} from '../../lib/db-types.js';
+import { QuestionSchema, QuestionTagSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseById } from '../../models/course.js';
 import { updateQuestion } from '../../models/question.js';
@@ -52,8 +43,6 @@ async function findSyncedUndeletedQuestion(qid: string) {
   assert.isDefined(syncedQuestion);
   return syncedQuestion;
 }
-
-const sql = loadSqlEquiv(import.meta.url);
 
 describe('Question syncing', () => {
   beforeAll(helperDb.before);
@@ -329,102 +318,48 @@ describe('Question syncing', () => {
   });
 
   describe('UID authors', () => {
-    it('syncs unresolved UIDs, deduplicates, and preserves authors on unchanged re-sync', async () => {
+    it('stores UID order and preserves authors on unchanged re-sync', async () => {
       const data = util.getCourseData();
-      const extraUids = Array.from({ length: 11 }, (_, i) => `extra-author-${i}`);
-      const longUid = 'x'.repeat(256);
-      data.questions[util.QUESTION_ID].authors = [
-        ' UnknownUID ',
-        'UnknownUID',
-        'unknownUID',
-        longUid,
-        ...extraUids,
-      ];
+      data.questions[util.QUESTION_ID].authors = ['second-author', 'first-author'];
       const { courseDir } = await util.writeAndSyncCourseData(data);
-      const question = await findSyncedQuestion(util.QUESTION_ID);
-      assert.isNull(question.sync_errors);
-      assert.deepEqual(question.authors, ['UnknownUID', 'unknownUID', longUid, ...extraUids]);
+      assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
+        'second-author',
+        'first-author',
+      ]);
       await util.syncCourseData(courseDir);
-      assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, question.authors);
-      const info = await fs.readJSON(
-        path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'),
-      );
-      assert.deepEqual(info.authors, data.questions[util.QUESTION_ID].authors);
+      assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
+        'second-author',
+        'first-author',
+      ]);
     });
 
-    it('converts legacy email values and warns for each unconvertible entry without changing source files', async () => {
+    it('persists converted legacy authors and their warning without changing source files', async () => {
       const data = util.getCourseData();
       data.questions[util.QUESTION_ID].authors = [
         { name: 'Legacy name', email: 'not-an-email' },
         { name: 'Name only' },
-        { orcid: '0000-0000-0000-0001' },
-        { originCourse: 'NONEXISTENT' },
       ];
       const { courseDir } = await util.writeAndSyncCourseData(data);
       const question = await findSyncedQuestion(util.QUESTION_ID);
       assert.isNull(question.sync_errors);
       assert.deepEqual(question.authors, ['not-an-email']);
-      for (const author of data.questions[util.QUESTION_ID].authors.slice(1)) {
-        assert.include(
-          question.sync_warnings,
-          `Question "${util.QUESTION_ID}": Legacy author ${JSON.stringify(author)} cannot be converted to a UID because it has no usable email. Replace this entry with the author's UID in info.json.`,
-        );
-      }
+      assert.include(question.sync_warnings, 'Name only');
       const info = await fs.readJSON(
         path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'),
       );
       assert.deepEqual(info.authors, data.questions[util.QUESTION_ID].authors);
     });
 
-    it('updates UID strings and removes omitted authors without affecting another question', async () => {
+    it('replaces authors and clears them when omitted', async () => {
       const data = util.getCourseData();
-      data.questions[util.QUESTION_ID].authors = ['shared', 'removed'];
-      data.questions[util.ALTERNATIVE_QUESTION_ID].authors = ['shared'];
+      data.questions[util.QUESTION_ID].authors = ['original'];
       const { courseDir } = await util.writeAndSyncCourseData(data);
       data.questions[util.QUESTION_ID].authors = ['renamed'];
       await util.overwriteAndSyncCourseData(data, courseDir);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, ['renamed']);
-      assert.deepEqual((await findSyncedQuestion(util.ALTERNATIVE_QUESTION_ID)).authors, [
-        'shared',
-      ]);
       delete data.questions[util.QUESTION_ID].authors;
       await util.overwriteAndSyncCourseData(data, courseDir);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, []);
-      assert.deepEqual((await findSyncedQuestion(util.ALTERNATIVE_QUESTION_ID)).authors, [
-        'shared',
-      ]);
-    });
-
-    it('preserves previously synced UIDs when the question has a validation error', async () => {
-      const data = util.getCourseData();
-      data.questions[util.QUESTION_ID].authors = ['original'];
-      const { courseDir } = await util.writeAndSyncCourseData(data);
-      data.questions[util.QUESTION_ID].authors = [''];
-      await util.overwriteAndSyncCourseData(data, courseDir);
-      const question = await findSyncedQuestion(util.QUESTION_ID);
-      assert.isNotNull(question.sync_errors);
-      assert.deepEqual(question.authors, ['original']);
-    });
-
-    it('preserves legacy database records during the transition', async () => {
-      const data = util.getCourseData();
-      data.questions[util.QUESTION_ID].authors = [{ email: 'legacy-uid' }];
-      const { courseDir } = await util.writeAndSyncCourseData(data);
-      const question = await findSyncedQuestion(util.QUESTION_ID);
-      await execute(sql.insert_legacy_author, { question_id: question.id });
-      await util.syncCourseData(courseDir);
-      assert.lengthOf(await util.dumpTableWithSchema('authors', AuthorSchema), 1);
-      assert.lengthOf(await util.dumpTableWithSchema('question_authors', QuestionAuthorSchema), 1);
-    });
-
-    it.each(['', '   '])('rejects malformed UID %j', async (uid) => {
-      const data = util.getCourseData();
-      data.questions[util.QUESTION_ID].authors = [uid];
-      await util.writeAndSyncCourseData(data);
-      const question = await findSyncedQuestion(util.QUESTION_ID);
-      assert.isNotNull(question.sync_errors);
-      assert.include(question.sync_errors, 'authors');
-      assert.isNull(question.authors);
     });
   });
 

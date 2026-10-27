@@ -179,11 +179,11 @@ describe('course database', () => {
         const legacyAuthor = { name: 'Name only' };
         await writeQuestion(dir, qid, {
           ...getQuestion(),
-          authors: [' author ', { email: 'author' }, legacyAuthor],
+          authors: [' Author ', { email: 'Author' }, legacyAuthor],
         });
         const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
         assert.isEmpty(result[qid].errors);
-        assert.deepEqual(result[qid].data!.authors, ['author']);
+        assert.deepEqual(result[qid].data!.authors, ['Author']);
         assert.deepEqual(result[qid].warnings, [
           `Question "${qid}": Legacy author ${JSON.stringify(legacyAuthor)} cannot be converted to a UID because it has no usable email. Replace this entry with the author's UID in info.json.`,
         ]);
