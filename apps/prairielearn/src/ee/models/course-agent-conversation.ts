@@ -1,4 +1,4 @@
-import type { UsageDelta } from '@prairielearn/course-agent-types';
+import type { BudgetRequest, BudgetResponse } from '@prairielearn/course-agent-types';
 import {
   execute,
   loadSqlEquiv,
@@ -13,7 +13,12 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const DEFAULT_COURSE_AGENT_CONVERSATION_TITLE = 'New conversation';
 
-export async function addCourseAgentConversationUsage(id: string, usage: UsageDelta) {
+export async function recordCourseAgentConversationUsage(
+  id: string,
+  request: BudgetRequest,
+  response: BudgetResponse,
+) {
+  const usage = request.usageDelta;
   await execute(sql.add_usage, {
     id,
     input: usage.inputTokens,
@@ -21,16 +26,27 @@ export async function addCourseAgentConversationUsage(id: string, usage: UsageDe
     output: usage.outputTokens,
     reasoning: usage.reasoningTokens,
     cost: usage.costMilliDollars,
+    sequence: request.sequence,
+    request,
+    response,
   });
 }
 
-export async function selectOptionalCourseAgentConversationByAgentId(
-  agentConversationId: string,
-  { includeDeletedCourse = false }: { includeDeletedCourse?: boolean } = {},
-) {
+export async function selectOptionalCourseAgentConversationByAgentId(agentConversationId: string) {
   return queryOptionalRow(
     sql.select_course_agent_conversation_by_agent_id,
-    { agent_conversation_id: agentConversationId, include_deleted_course: includeDeletedCourse },
+    { agent_conversation_id: agentConversationId },
+    CourseAgentConversationSchema,
+  );
+}
+
+/** Accounting may finish after a course is soft-deleted. Lock the row to serialize reports. */
+export async function selectOptionalCourseAgentConversationByAgentIdForUpdate(
+  agentConversationId: string,
+) {
+  return queryOptionalRow(
+    sql.select_course_agent_conversation_by_agent_id_for_update,
+    { agent_conversation_id: agentConversationId },
     CourseAgentConversationSchema,
   );
 }

@@ -18,7 +18,10 @@ SET
   usage_input_tokens_cache_read = usage_input_tokens_cache_read + $cached,
   usage_output_tokens = usage_output_tokens + $output,
   usage_output_tokens_reasoning = usage_output_tokens_reasoning + $reasoning,
-  usage_cost_milli_dollars = usage_cost_milli_dollars + $cost
+  usage_cost_milli_dollars = usage_cost_milli_dollars + $cost,
+  usage_report_sequence = $sequence,
+  usage_report_request = $request::jsonb,
+  usage_report_response = $response::jsonb
 WHERE
   id = $id;
 
@@ -58,9 +61,15 @@ SELECT
 FROM
   course_agent_conversations AS cac
   JOIN courses AS c ON c.id = cac.course_id
-  AND (
-    $include_deleted_course
-    OR c.deleted_at IS NULL
-  )
+  AND c.deleted_at IS NULL
 WHERE
   cac.agent_conversation_id = $agent_conversation_id;
+
+-- BLOCK select_course_agent_conversation_by_agent_id_for_update
+SELECT
+  *
+FROM
+  course_agent_conversations
+WHERE
+  agent_conversation_id = $agent_conversation_id
+FOR UPDATE;

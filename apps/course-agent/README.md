@@ -48,7 +48,7 @@ Focused tests cover native termination, stream adaptation, lost acceptance, and 
 
 ### Usage and rate limits
 
-The Conversation DO deducts confirmed token costs after each model request, including requests between tool calls during long turns. At zero credit it asks PL for another allocation before admitting inference. PL owns the hourly allowance and conversation usage columns. The development Stats menu shows token and cost totals; the chat shows a persistent retry time when limited. See [the accounting contract](BUDGET.md) for the policy, endpoint schemas, and failure handling.
+The Conversation DO deducts confirmed token costs after each model request, including requests between tool calls during long turns. At zero credit it asks PL for another allocation before admitting inference. PL owns the hourly allowance in expiring per-user Redis buckets and stores usage totals plus the latest report receipt on each conversation. New credit requires `nonVolatileRedisUrl`, as with AI grading. The development Stats menu shows token and cost totals; the chat shows a persistent retry time when limited. See [the accounting contract](BUDGET.md) for the policy, endpoint schemas, and failure handling.
 
 ### Push sync
 
