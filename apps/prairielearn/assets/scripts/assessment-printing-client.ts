@@ -141,6 +141,11 @@ function createAnswerKeyArea(answerBody: HTMLElement, responseHeight: number): H
   const content = document.createElement('div');
   content.className = 'printing-answer-key-content answer-body';
   content.append(...answerBody.childNodes);
+  // CSS supplies spacing between answer labels and values; Chromium leaves this whitespace untagged.
+  for (const value of content.querySelectorAll('span + samp, span + code, span + mjx-container')) {
+    const spacing = value.previousSibling;
+    if (spacing instanceof Text && !spacing.textContent.trim()) spacing.remove();
+  }
   if (content.querySelector('pre')) answerKey.classList.add('printing-answer-key-code');
   viewport.append(content);
   answerKey.append(label, viewport);
@@ -207,7 +212,26 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
     image.className = `${canvas.className} printing-canvas-image`;
     image.id = canvas.id;
     image.style.cssText = canvas.style.cssText;
-    image.alt = canvas.getAttribute('aria-label') ?? '';
+    for (const attribute of [
+      'aria-label',
+      'aria-labelledby',
+      'aria-describedby',
+      'aria-hidden',
+      'role',
+    ]) {
+      const value = canvas.getAttribute(attribute);
+      if (value !== null) image.setAttribute(attribute, value);
+    }
+    const labelledBy = canvas.getAttribute('aria-labelledby');
+    const description =
+      labelledBy
+        ?.split(/\s+/)
+        .map((id) => document.getElementById(id)?.textContent ?? '')
+        .join(' ')
+        .trim() ||
+      canvas.getAttribute('aria-label')?.trim() ||
+      canvas.textContent.trim();
+    if (description) image.alt = description;
     image.src = canvas.toDataURL('image/png');
     const bounds = canvas.getBoundingClientRect();
     image.width = bounds.width || canvas.width;
@@ -463,6 +487,33 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
   }
 }
 
+/** Declare only template-owned decoration, after editable Word content has been captured. */
+function annotatePdfSemantics(output: HTMLElement, totalPages: number): void {
+  const decorativeContainers = output.querySelectorAll<HTMLElement>(
+    '.assessment-cover-field > span, .assessment-cover-signature > span, ' +
+      '.assessment-cover-summary > div, .printing-question .question-block > .card-header, ' +
+      '.printing-answer-key, .printing-details',
+  );
+  for (const container of decorativeContainers) {
+    container.dataset.printPdfRole = 'Div';
+    container.dataset.printPdfDecorativePaint = '';
+  }
+  for (const heading of output.querySelectorAll(
+    '.printing-question .question-block > .card-header h1',
+  )) {
+    heading.setAttribute('aria-level', '2');
+  }
+  const footerLabel = document.documentElement.dataset.printFooterLabel!;
+  for (const [index, page] of output.querySelectorAll('.pagedjs_page').entries()) {
+    const footer = page.querySelector<HTMLElement>(
+      '.pagedjs_margin-bottom-right > .pagedjs_margin-content',
+    )!;
+    footer.dataset.printFooter = '';
+    footer.dataset.printPdfRole = 'Artifact';
+    footer.textContent = `${footerLabel}  |  Page ${index + 1} of ${totalPages}`;
+  }
+}
+
 /**
  * Prepares question content, captures editable Word content, and paginates the assessment.
  * Waits for asynchronous elements, math, fonts, and images before measuring; captures Word
@@ -513,6 +564,7 @@ async function paginateAssessment(): Promise<{ totalPages: number }> {
 
   const flow = await window.PagedPolyfill.preview(source, undefined, output);
   validatePagedLayout(output, layout);
+  annotatePdfSemantics(output, flow.total);
   source.remove();
   document.documentElement.dataset.printStatus = 'ready';
   document.documentElement.dataset.printPageCount = String(flow.total);

@@ -7,6 +7,8 @@ export function layoutPrintGradingTable(source: HTMLElement, pageHeight: number)
   const table = source.querySelector<HTMLElement>('.assessment-grading-table');
   if (!table) return;
   const grid = table.querySelector<HTMLElement>('.assessment-grading-grid')!;
+  grid.setAttribute('role', 'table');
+  grid.setAttribute('aria-label', 'Question scores');
   const cover = table.closest<HTMLElement>('.assessment-cover')!;
   const footer = cover.querySelector('footer')!;
   const questionNumbers = [...source.querySelectorAll<HTMLElement>('.printing-question')].map(
@@ -28,10 +30,17 @@ export function layoutPrintGradingTable(source: HTMLElement, pageHeight: number)
   for (const label of labels) {
     const row = document.createElement('div');
     row.className = 'assessment-grading-row';
+    row.setAttribute('role', 'row');
     const number = document.createElement('span');
     number.textContent = label;
+    number.setAttribute('role', 'rowheader');
     const line = document.createElement('span');
     line.className = 'assessment-grading-score';
+    line.setAttribute('role', 'cell');
+    line.setAttribute('aria-label', 'Score');
+    const rule = document.createElement('span');
+    rule.dataset.printPdfRole = 'Artifact';
+    line.append(rule);
     row.append(number, line);
     grid.append(row);
   }
