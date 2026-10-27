@@ -18,7 +18,7 @@ import {
 } from '../../models/course-agent-conversation.js';
 
 import { courseAgentEnabled } from './access.js';
-import { allocateCourseAgentBudget } from './budget-policy.js';
+import { addCourseAgentCostToIntervalUsage, allocateCourseAgentBudget } from './budget-policy.js';
 
 function budgetResult(body: BudgetResponse) {
   const allocation = body.allocation;
@@ -28,7 +28,7 @@ function budgetResult(body: BudgetResponse) {
 }
 
 export async function applyCourseAgentBudgetRequest(agentId: string, request: BudgetRequest) {
-  return runInTransactionAsync(async () => {
+  const report = await runInTransactionAsync(async () => {
     const conversation = await selectOptionalCourseAgentConversationByAgentIdForUpdate(agentId);
     if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
     // The DO sends one report at a time, so only its latest acknowledgement is needed.
@@ -36,7 +36,11 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
       if (!isDeepStrictEqual(conversation.usage_report_request, request)) {
         throw new HttpStatusError(409, 'The usage report changed.');
       }
-      return budgetResult(BudgetResponseSchema.parse(conversation.usage_report_response));
+      return {
+        ...budgetResult(BudgetResponseSchema.parse(conversation.usage_report_response)),
+        userId: conversation.user_id,
+        costMilliDollars: 0,
+      };
     }
     if (request.sequence !== conversation.usage_report_sequence + 1) {
       throw new HttpStatusError(409, 'The usage report is out of order.');
@@ -64,11 +68,10 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
       if (!allowed) {
         allocation = { status: 'denied', reason: 'not_allowed', retryAt: null };
       } else {
-        const credit = await allocateCourseAgentBudget({
-          userId: user.id,
-          agentId,
-          sequence: request.sequence,
-        });
+        const credit = await allocateCourseAgentBudget(
+          user.id,
+          request.usageDelta.costMilliDollars,
+        );
         const window = { startsAt: credit.startsAt, endsAt: credit.endsAt };
         allocation =
           credit.amount > 0
@@ -78,6 +81,16 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
     }
     const body: BudgetResponse = { sequence: request.sequence, allocation };
     await recordCourseAgentConversationUsage(conversation.id, request, body);
-    return budgetResult(body);
+    return {
+      ...budgetResult(body),
+      userId: conversation.user_id,
+      costMilliDollars: request.usageDelta.costMilliDollars,
+    };
   });
+  // SQL is authoritative. Commit before updating the soft Redis limit so a retry
+  // cannot double-count durable usage. Redis failures may leave the hour undercounted.
+  if (report.costMilliDollars > 0) {
+    await addCourseAgentCostToIntervalUsage(report.userId, report.costMilliDollars);
+  }
+  return { status: report.status, body: report.body };
 }
