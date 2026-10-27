@@ -2258,7 +2258,7 @@ function getPostgresConfig() {
   };
 }
 
-if (config.startServer && esMain(import.meta)) {
+if (esMain(import.meta)) {
   try {
     logger.verbose('PrairieLearn server start');
 

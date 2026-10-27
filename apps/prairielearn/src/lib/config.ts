@@ -60,7 +60,6 @@ export const STANDARD_COURSE_DIRS = [
 ];
 
 export const ConfigSchema = z.object({
-  startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
   postgresqlDatabase: z.string().default('postgres'),
