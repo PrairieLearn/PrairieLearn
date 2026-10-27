@@ -25,12 +25,12 @@ function fixture() {
   };
 }
 
-const window = { startsAt: '2026-10-27T03:00:00Z', endsAt: '2026-10-27T04:00:00Z' };
+const expiresAt = '2026-10-27T04:00:00Z';
 
-function grant(sequence: number, grantWindow = window) {
+function grant(sequence: number, creditExpiresAt = expiresAt) {
   return Response.json({
     sequence,
-    allocation: { status: 'granted', grantedMilliDollars: 3000, window: grantWindow },
+    allocation: { status: 'granted', grantedMilliDollars: 3000, expiresAt: creditExpiresAt },
   } satisfies BudgetResponse);
 }
 
@@ -62,10 +62,10 @@ describe('durable usage delivery', () => {
     const state = fixture();
     let budget = state.restart();
     expect(await budget.ensureCredit()).toBe(true);
-    budget.begin('a', 'execution');
+    budget.begin('a');
     budget.settle('a', { ...emptyUsage(), inputTokens: 100, costMilliDollars: 400 });
     await budget.report(false);
-    budget.begin('b', 'execution');
+    budget.begin('b');
     budget.settle('a', { ...emptyUsage(), costMilliDollars: 400 });
     budget.settle('b', { ...emptyUsage(), outputTokens: 200, costMilliDollars: 2800 });
     budget = state.restart();
@@ -117,19 +117,18 @@ describe('durable usage delivery', () => {
             allocation: {
               status: 'denied',
               reason: 'hourly_limit',
-              retryAt: window.endsAt,
-              window,
+              retryAt: expiresAt,
             },
           },
           { status: 429 },
         ),
       )
-      .mockResolvedValueOnce(grant(3, { startsAt: window.endsAt, endsAt: '2026-10-27T05:00:00Z' }));
+      .mockResolvedValueOnce(grant(3, '2026-10-27T05:00:00Z'));
     vi.stubGlobal('fetch', fetch);
     const state = fixture();
     const budget = state.restart();
     await budget.ensureCredit();
-    budget.begin('a', 'execution');
+    budget.begin('a');
     budget.settle('a', { ...emptyUsage(), costMilliDollars: 3400 });
     await budget.reportCompletedRequest();
     expect(fetch).toHaveBeenCalledOnce();
@@ -158,7 +157,7 @@ describe('durable usage delivery', () => {
     const state = fixture();
     const budget = state.restart();
     await budget.ensureCredit();
-    budget.begin('unresolved', 'execution');
+    budget.begin('unresolved');
     const restored = state.restart();
     restored.recover();
     expect(await restored.ensureCredit()).toBe(false);

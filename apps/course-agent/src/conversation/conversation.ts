@@ -23,7 +23,7 @@ import {
 } from '@prairielearn/course-agent-types';
 
 import { ConversationBudget } from '../budget.js';
-import { proxyModelResponse } from '../model-proxy.js';
+import { observeModelUsage } from '../model-usage.js';
 import { SandboxTurn } from '../sandbox-turn.js';
 
 import { buildInstructions } from './instructions.js';
@@ -67,51 +67,57 @@ interface ActiveTurn {
   sdkFinished: PromiseWithResolvers<undefined>;
   shutdown: boolean;
 }
+interface ReviewOperation {
+  callId: string;
+  /** Present while the original native tool call is still waiting for its answer. */
+  resolveNativeCall: ((result: PushSyncResult) => void) | null;
+  /** Once PL supplies a result, duplicate callbacks share its persistence and continuation promise. */
+  delivery: { result: PushSyncResult; done: Promise<boolean> } | null;
+}
 
 /** The private record is authoritative; SDK state exposes lifecycle and its deadline to browsers. */
 export class Conversation extends AIChatAgent<Env, ConversationState> {
   private budgetInstance: ConversationBudget | null = null;
-  private modelAbort: AbortController | null = null;
+  /** Admission/settlement ownership; Stop waits for confirmed usage before releasing execution. */
+  private modelRequest: Promise<undefined> | null = null;
 
   private get budget() {
     this.budgetInstance ??= new ConversationBudget(this.ctx.storage, this.env, this.name, () => {
-      const blocked = this.budgetInstance?.blocked;
-      if (this.runtime && blocked) {
-        const changed =
-          this.record.lifecycle.status !== 'blocked' ||
-          this.record.lifecycle.reason !== blocked.reason;
-        this.setRuntimeState({
-          ...this.record,
-          lifecycle: { status: 'blocked', ...blocked },
-          deadline: null,
-        });
-        const active = this.active;
-        if (changed && active) {
-          // Let the provider-facing error return before interrupting its waiting native caller.
-          void this.keepAliveWhile(async () => {
-            await scheduler.wait(0);
-            await active.execution.stop();
-          }).catch(console.error);
-        }
+      if (this.runtime && this.budgetInstance?.blocked) {
+        this.setRuntimeState({ ...this.record, deadline: null });
       }
     });
     return this.budgetInstance;
   }
 
-  /** Binding-only inference entrypoint; the public Worker never routes requests here. */
+  private interruptForBudget() {
+    const active = this.active;
+    if (!active) return;
+    // Let the provider-facing error return before interrupting its waiting native caller.
+    void this.keepAliveWhile(async () => {
+      await scheduler.wait(0);
+      if (this.active === active) await this.stopLive();
+    }).catch(console.error);
+  }
+
+  /** Existing outbound proxy entrypoint; only the sandbox binding can call it. */
   async proxyModelRequest(request: Request, executionId: string): Promise<Response> {
     if (!this.active || this.active.executionId !== executionId) {
       return new Response('Forbidden', { status: 403 });
     }
-    if (this.modelAbort) return new Response('A model request is already running', { status: 409 });
-    const abort = new AbortController();
-    this.modelAbort = abort;
+    if (this.modelRequest) {
+      return new Response('A model request is already running', { status: 409 });
+    }
+    const pending = Promise.withResolvers<undefined>();
+    this.modelRequest = pending.promise;
     const release = () => {
-      if (this.modelAbort === abort) this.modelAbort = null;
+      if (this.modelRequest === pending.promise) this.modelRequest = null;
+      pending.resolve(undefined);
     };
     try {
       if (!(await this.budget.ensureCredit())) {
         release();
+        this.interruptForBudget();
         return Response.json(
           {
             error: {
@@ -122,30 +128,48 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           { status: 429 },
         );
       }
-      if (this.active?.executionId !== executionId || abort.signal.aborted) {
+      if (
+        this.active?.executionId !== executionId ||
+        this.record.lifecycle.status === 'stopping' ||
+        this.workspaceShutdown
+      ) {
         release();
         return new Response('Execution stopped', { status: 409 });
       }
       const requestId = crypto.randomUUID();
-      this.budget.begin(requestId, executionId);
-      const result = await proxyModelResponse(request, {
-        key: this.env.OPENAI_API_KEY,
-        signal: abort.signal,
+      this.budget.begin(requestId);
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: request.body,
+        redirect: 'manual',
+      });
+      const result = await observeModelUsage(response, {
         settle: (usage) => {
           this.budget.settle(requestId, usage);
           release();
         },
-        missingUsage: () => this.budget.fail('usage_unavailable'),
+        missingUsage: () => {
+          this.budget.fail('usage_unavailable');
+          this.interruptForBudget();
+        },
       });
       void this.keepAliveWhile(async () => {
-        await result.finished;
-        release();
-        await this.budget.reportCompletedRequest();
+        try {
+          await result.finished;
+          await this.budget.reportCompletedRequest();
+        } finally {
+          release();
+        }
       }).catch(console.error);
       return result.response;
     } catch (error) {
       this.budget.fail('usage_unavailable');
       release();
+      this.interruptForBudget();
       throw error;
     }
   }
@@ -155,85 +179,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   // Process connections and completion promises exist only in this DO instance.
   private active: ActiveTurn | null = null;
   private recovering = false;
-  private waiter: {
-    callId: string;
-    result: PromiseWithResolvers<PushSyncResult>;
-    delivered: boolean;
-  } | null = null;
-
-  private internalContinuation = false;
-  private liveContinuation: { active: ActiveTurn; result: PushSyncResult } | null = null;
-  private cleanup: Promise<void> | null = null;
-  private delivery: { outcome: ReviewOutcome; result: Promise<boolean> } | null = null;
-
-  constructor(ctx: DurableObjectState, env: Env) {
-    super(ctx, env);
-    const handleMessage = this.onMessage.bind(this);
-    // SDK chat submits can replace history before onChatMessage runs. Accept only
-    // a new text message and derive its history here; clients cannot forge tool results.
-    this.onMessage = async (connection, message) => {
-      if (typeof message !== 'string') return;
-      const frame = z.object({ type: z.string() }).passthrough().safeParse(JSON.parse(message));
-      if (!frame.success) return;
-      if (frame.data.type === MessageType.CF_AGENT_USE_CHAT_REQUEST) {
-        if (
-          this.active ||
-          this.budget.blocked ||
-          this.recovering ||
-          this.record.review ||
-          !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status)
-        ) {
-          throw new Error('The course agent workspace is not ready.');
-        }
-        const request = z
-          .object({
-            id: z.string(),
-            init: z.object({ method: z.literal('POST'), body: z.string() }),
-          })
-          .parse(frame.data);
-        const body = z
-          .object({
-            messages: z.array(
-              z.object({
-                id: z.string(),
-                role: z.enum(['user', 'assistant', 'system']),
-                parts: z.array(z.unknown()),
-              }),
-            ),
-          })
-          .parse(JSON.parse(request.init.body));
-        const input = z
-          .object({
-            id: z.string(),
-            role: z.literal('user'),
-            parts: z.array(z.object({ type: z.literal('text'), text: z.string() })).min(1),
-          })
-          .parse(body.messages.at(-1));
-        return handleMessage(
-          connection,
-          JSON.stringify({
-            type: frame.data.type,
-            id: request.id,
-            init: {
-              method: 'POST',
-              body: JSON.stringify({
-                messages: [...(await this.sessions.session().getHistory()), input],
-              }),
-            },
-          }),
-        );
-      }
-      if (
-        [
-          'cf_agent_stream_resume_request',
-          'cf_agent_stream_resume_ack',
-          'cf_agent_chat_request_cancel',
-        ].includes(frame.data.type)
-      ) {
-        return handleMessage(connection, message);
-      }
-    };
-  }
+  private reviewOperation: ReviewOperation | null = null;
+  /** Continuations wait for the current checkpoint/destruction before starting execution. */
+  private workspaceShutdown: Promise<void> | null = null;
 
   private get record() {
     if (!this.runtime) throw new Error('Conversation is not initialized');
@@ -274,17 +222,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // creates the record; this hook does not provision a sandbox.
     if (!this.runtime) return;
     this.budget.recover();
-    if (this.budget.blocked) {
-      this.setRuntimeState({
-        ...this.record,
-        lifecycle: { status: 'blocked', ...this.budget.blocked },
-        deadline: null,
-      });
-    }
     if (this.record.review) {
       await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
     }
     this.setState(this.publicState);
+    if (this.budget.blocked) return;
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
     // reconstructing an in-flight operation. The remaining states need explicit recovery.
     switch (this.record.lifecycle.status) {
@@ -365,7 +307,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Restore a card that SDK restart recovery persisted after the wake hook. */
   async recoverReviewCard() {
-    if (!this.record.review || this.active || this.cleanup) return;
+    if (!this.record.review || this.active || this.workspaceShutdown) return;
     if (
       this.record.lifecycle.status === 'blocked' &&
       this.record.lifecycle.reason !== 'runtime_failed'
@@ -436,12 +378,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       return;
     }
     if (expected.kind === 'idle') {
-      this.cleanup = this.parkAndShutdown();
-      try {
-        await this.cleanup;
-      } finally {
-        this.cleanup = null;
-      }
+      await this.backupAndShutdown();
     } else {
       await this.stopLive(true);
     }
@@ -449,20 +386,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Stop retains admission until both sandbox cleanup and SDK completion finish. */
   private async stopLive(shutdown = false) {
-    this.modelAbort?.abort();
     const active = this.active;
     if (!active) {
       this.block('runtime_failed');
       return;
     }
     if (this.record.review) {
-      if (this.cleanup) return;
-      this.cleanup = this.parkAndShutdown();
-      try {
-        await this.cleanup;
-      } finally {
-        this.cleanup = null;
-      }
+      await this.backupAndShutdown();
       return;
     }
     active.shutdown ||= shutdown;
@@ -473,16 +403,28 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** SDK inbound-message hook: admit one input and return its sandbox output stream. */
   override async onChatMessage(_onFinish: unknown, options?: OnChatMessageOptions) {
     if (!options) throw new Error('Missing SDK chat options');
-    const live = this.liveContinuation;
-    this.liveContinuation = null;
-    if (live) {
-      live.active.requestId = options.requestId;
-      live.active.sdkFinished = Promise.withResolvers<undefined>();
-      const stream = live.active.execution.openStream();
+    // The SDK identifies continuations; saved tool history supplies their result.
+    const continuation = options.continuation === true;
+    if (continuation && this.workspaceShutdown) await this.workspaceShutdown;
+    const outcome = continuation ? this.savedOutcome() : null;
+    if (continuation && !outcome) throw new Error('No saved review outcome');
+    const operation = this.reviewOperation;
+    const live = this.active;
+    if (
+      continuation &&
+      outcome &&
+      live &&
+      operation?.resolveNativeCall &&
+      operation.callId === this.record.review?.callId
+    ) {
+      live.requestId = options.requestId;
+      live.sdkFinished = Promise.withResolvers<undefined>();
+      const stream = live.execution.openStream();
       this.setRuntimeState({ ...this.record, lifecycle: { status: 'waiting_for_agent' } });
       await this.scheduleDeadline('turn');
-      this.waiter!.delivered = true;
-      this.waiter!.result.resolve(live.result);
+      const resolve = operation.resolveNativeCall;
+      operation.resolveNativeCall = null;
+      resolve(outcome);
       const abort = () => {
         void this.stopLive().catch((error: unknown) => {
           console.error(error);
@@ -490,16 +432,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         });
       };
       options.abortSignal?.addEventListener('abort', abort, { once: true });
-      void live.active.execution.finished.finally(() =>
+      void live.execution.finished.finally(() =>
         options.abortSignal?.removeEventListener('abort', abort),
       );
       return createUIMessageStreamResponse({ stream });
     }
-    const continuation = this.internalContinuation;
-    this.internalContinuation = false;
-    if (continuation && this.cleanup) await this.cleanup;
     if (
       this.active ||
+      (!continuation && this.budget.blocked) ||
       (!continuation && this.record.review) ||
       (!continuation && this.recovering) ||
       (!continuation && !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status))
@@ -510,8 +450,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const message = this.messages.at(-1);
     if (!continuation && message?.role !== 'user') throw new Error('Expected a new user message');
     const text = message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
-    const outcome = continuation ? this.savedOutcome() : null;
-    if (continuation && !outcome) throw new Error('No saved review outcome');
     const startup = this.record.sandboxId === null;
     this.setRuntimeState({
       ...this.record,
@@ -524,11 +462,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       text: outcome ? { callId: this.record.review!.callId, result: outcome } : text,
       startup,
       onReview: async ({ callId }, ready) => {
-        if (this.waiter && !this.waiter.delivered) {
+        if (this.reviewOperation?.resolveNativeCall) {
           throw new Error('A review is already pending');
         }
         const result = Promise.withResolvers<PushSyncResult>();
-        this.waiter = { callId, result, delivered: false };
+        const operation: ReviewOperation = {
+          callId,
+          resolveNativeCall: result.resolve,
+          delivery: null,
+        };
+        this.reviewOperation = operation;
         try {
           const snapshot: ReviewSnapshot = await this.sandbox.captureReview(
             this.record.config.repository,
@@ -562,7 +505,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           });
           await this.scheduleDeadline('idle');
         } catch (error) {
-          this.waiter = null;
+          if (this.reviewOperation === operation) this.reviewOperation = null;
           throw error;
         }
         return result.promise;
@@ -635,18 +578,24 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
     }
     await active.sdkFinished.promise;
+    // Stop terminates native work, but admitted inference finishes accounting before reuse.
+    // Aborting the provider stream here would discard its final usage.
+    if (this.modelRequest) await this.modelRequest;
     await this.budget.report(false);
     if (this.active !== active) return;
     this.active = null;
-    this.waiter = null;
+    if (this.reviewOperation) {
+      this.reviewOperation.resolveNativeCall = null;
+      if (!this.reviewOperation.delivery) this.reviewOperation = null;
+    }
     if (this.record.review) {
-      if (!result.parked && this.savedOutcome() && !result.error && !result.stopped) {
+      if (this.savedOutcome() && !result.error && !result.stopped) {
         this.clearReview();
       } else {
         return;
       }
     }
-    if (this.record.lifecycle.status === 'blocked') return;
+    if (this.budget.blocked || this.record.lifecycle.status === 'blocked') return;
     if (result.stopped && result.phase === 'startup') {
       await this.discardStartup();
     } else if (active.shutdown) {
@@ -661,7 +610,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   async resume(): Promise<boolean> {
     const review = this.record.review;
     if (review?.decision && !this.savedOutcome()) {
-      if (this.recovering || this.delivery) return false;
+      if (this.recovering || this.reviewOperation?.delivery) return false;
       this.recovering = true;
       try {
         if (review.decision.decision === 'denied') {
@@ -720,8 +669,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       }
     }
     // Another Resume or an unfinished turn must not modify this workspace concurrently.
-    if (this.record.lifecycle.status !== 'blocked' || this.active || this.recovering) return false;
-    const reason = this.budget.blocked?.reason ?? this.record.lifecycle.reason;
+    const blocked =
+      this.budget.blocked ??
+      (this.record.lifecycle.status === 'blocked' ? this.record.lifecycle : null);
+    if (!blocked || this.active || this.recovering) return false;
+    const reason = blocked.reason;
     this.recovering = true;
     try {
       switch (reason) {
@@ -775,19 +727,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
   }
 
-  /** Park the native waiter and settle SDK persistence before backing up its files. */
-  private async parkAndShutdown() {
-    const active = this.active;
-    if (active) {
-      await active.execution.park();
-      await active.sdkFinished.promise;
-      await active.execution.finished;
-      // finishTurn also waits on these promises; give its completion path ownership.
-      while (this.active === active) await scheduler.wait(0);
-    }
-    await this.backupAndShutdown();
-  }
-
   private reviewPart() {
     const callId = this.record.review?.callId;
     for (const message of this.messages) {
@@ -817,7 +756,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (
       !review ||
       !['waiting_for_user', 'offline', 'blocked'].includes(this.record.lifecycle.status) ||
-      this.waiter?.delivered ||
       !this.reviewPart() ||
       this.savedOutcome()
     ) {
@@ -875,17 +813,30 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Authenticated callbacks are accepted only for the frozen call and exact result. */
   async recordReviewOutcome(outcome: ReviewOutcome): Promise<boolean> {
-    if (this.delivery) {
-      return JSON.stringify(this.delivery.outcome) === JSON.stringify(outcome)
-        ? this.delivery.result
+    const pending = this.reviewOperation;
+    // Old callbacks are checked against saved history without replacing a newer review.
+    if (pending && pending.callId !== outcome.callId) return this.acceptReviewOutcome(outcome);
+    const operation: ReviewOperation = pending ?? {
+      callId: outcome.callId,
+      resolveNativeCall: null,
+      delivery: null,
+    };
+    if (operation.delivery) {
+      return JSON.stringify(operation.delivery.result) === JSON.stringify(outcome.result)
+        ? operation.delivery.done
         : false;
     }
-    const delivery = { outcome, result: this.acceptReviewOutcome(outcome) };
-    this.delivery = delivery;
+    this.reviewOperation = operation;
+    const delivery = { result: outcome.result, done: this.acceptReviewOutcome(outcome) };
+    operation.delivery = delivery;
     try {
-      return await delivery.result;
+      return await delivery.done;
     } finally {
-      this.delivery = null;
+      // Continuing the agent can create its next review before this delivery returns.
+      if (this.reviewOperation === operation) {
+        operation.delivery = null;
+        if (!operation.resolveNativeCall) this.reviewOperation = null;
+      }
     }
   }
 
@@ -919,7 +870,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ) {
       return false;
     }
-    if (!this.cleanup) {
+    if (!this.workspaceShutdown) {
       this.setRuntimeState({
         ...this.record,
         lifecycle: { status: 'waiting_for_agent' },
@@ -944,19 +895,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         ),
       })),
     );
-    const active = this.active;
-    if (active && !this.cleanup && this.waiter?.callId === outcome.callId) {
-      this.liveContinuation = { active, result: outcome.result };
-      const response = await this.continueLastTurn();
-      if (response.status !== 'completed') {
-        throw new Error('Could not persist native review response');
-      }
-      await active.sdkFinished.promise;
-    } else {
-      this.internalContinuation = true;
-      const result = await this.continueLastTurn();
-      if (result.status !== 'completed') throw new Error('Could not incorporate review result');
-    }
+    const response = await this.continueLastTurn();
+    if (response.status !== 'completed') throw new Error('Could not incorporate review result');
     const stored = this.messages
       .flatMap((message) => message.parts)
       .find(
@@ -971,21 +911,42 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Scheduled and explicit recovery uses only the saved tool result, never old user input. */
   async continueReview() {
-    if (!this.record.review || this.active || this.cleanup || !this.savedOutcome()) return;
+    if (!this.record.review || this.active || this.workspaceShutdown || !this.savedOutcome()) {
+      return;
+    }
     this.setRuntimeState({
       ...this.record,
       lifecycle: { status: 'waiting_for_agent' },
       deadline: null,
     });
-    this.internalContinuation = true;
     const result = await this.continueLastTurn();
     if (result.status !== 'completed') this.block('runtime_failed');
   }
 
   /** Commit a replacement backup before shutdown; cleanup of the old archive is independent. */
   private async backupAndShutdown() {
+    // Outcome delivery must await the same shutdown started by idle expiry or recovery.
+    if (this.workspaceShutdown) return this.workspaceShutdown;
+    const shutdown = this.checkpointAndDestroy();
+    this.workspaceShutdown = shutdown;
+    try {
+      await shutdown;
+    } finally {
+      this.workspaceShutdown = null;
+    }
+  }
+
+  private async checkpointAndDestroy() {
     this.setRuntimeState({ ...this.record, lifecycle: { status: 'suspending' }, deadline: null });
     try {
+      const active = this.active;
+      if (active) {
+        await active.execution.stop();
+        await active.sdkFinished.promise;
+        await active.execution.finished;
+        // finishTurn releases execution ownership before checkpointing can proceed.
+        while (this.active === active) await scheduler.wait(0);
+      }
       const previous = this.record.checkpoint;
       const checkpoint = await this.sandbox.checkpoint();
       this.setRuntimeState({ ...this.record, checkpoint, lifecycle: { status: 'destroying' } });

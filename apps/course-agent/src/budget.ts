@@ -5,6 +5,7 @@ import {
   BudgetResponseSchema,
   type UsageDelta,
   addUsage,
+  budgetResponseStatus,
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
@@ -17,11 +18,11 @@ export interface BudgetBlock {
 }
 export interface BudgetState {
   balanceMilliDollars: number;
-  windowEndsAt: string | null;
+  creditExpiresAt: string | null;
   unreportedUsage: UsageDelta;
   lastAcknowledgedSequence: number;
   pendingRequest: BudgetRequest | null;
-  inFlight: { requestId: string; executionId: string } | null;
+  inFlightRequestId: string | null;
   blocked: BudgetBlock | null;
 }
 
@@ -38,11 +39,11 @@ export class ConversationBudget {
   ) {
     this.state = storage.kv.get<BudgetState>('budget') ?? {
       balanceMilliDollars: 0,
-      windowEndsAt: null,
+      creditExpiresAt: null,
       unreportedUsage: emptyUsage(),
       lastAcknowledgedSequence: 0,
       pendingRequest: null,
-      inFlight: null,
+      inFlightRequestId: null,
       blocked: null,
     };
   }
@@ -62,15 +63,15 @@ export class ConversationBudget {
   }
 
   recover() {
-    if (this.state.inFlight) this.fail('usage_unavailable');
+    if (this.state.inFlightRequestId) this.fail('usage_unavailable');
   }
 
   private expire() {
-    if (this.state.windowEndsAt && Date.parse(this.state.windowEndsAt) <= Date.now()) {
+    if (this.state.creditExpiresAt && Date.parse(this.state.creditExpiresAt) <= Date.now()) {
       this.save({
         ...this.state,
         balanceMilliDollars: Math.min(0, this.state.balanceMilliDollars),
-        windowEndsAt: null,
+        creditExpiresAt: null,
       });
     }
   }
@@ -113,17 +114,17 @@ export class ConversationBudget {
     return this.ensureCredit();
   }
 
-  begin(requestId: string, executionId: string) {
-    if (this.state.inFlight) throw new Error('A model request is already running');
-    this.save({ ...this.state, inFlight: { requestId, executionId } });
+  begin(requestId: string) {
+    if (this.state.inFlightRequestId) throw new Error('A model request is already running');
+    this.save({ ...this.state, inFlightRequestId: requestId });
   }
 
   settle(requestId: string, usage: UsageDelta) {
-    if (this.state.inFlight?.requestId !== requestId) return;
+    if (this.state.inFlightRequestId !== requestId) return;
     this.expire();
     this.save({
       ...this.state,
-      inFlight: null,
+      inFlightRequestId: null,
       balanceMilliDollars: this.state.balanceMilliDollars - usage.costMilliDollars,
       unreportedUsage: addUsage(this.state.unreportedUsage, usage),
     });
@@ -199,8 +200,7 @@ export class ConversationBudget {
       }
       result = parsed.data;
       const allocation = result.allocation;
-      const expectedStatus =
-        allocation.status !== 'denied' ? 200 : allocation.reason === 'hourly_limit' ? 429 : 403;
+      const expectedStatus = budgetResponseStatus(result);
       const requestedCredit = allocation.status !== 'not_requested';
       if (
         result.sequence !== request.sequence ||
@@ -223,9 +223,9 @@ export class ConversationBudget {
       lastAcknowledgedSequence: request.sequence,
       pendingRequest: null,
     };
-    if (allocation.status === 'granted' && Date.parse(allocation.window.endsAt) > Date.now()) {
+    if (allocation.status === 'granted' && Date.parse(allocation.expiresAt) > Date.now()) {
       next.balanceMilliDollars += allocation.grantedMilliDollars;
-      next.windowEndsAt = allocation.window.endsAt;
+      next.creditExpiresAt = allocation.expiresAt;
     } else if (allocation.status === 'denied') {
       next.blocked =
         allocation.reason === 'hourly_limit'

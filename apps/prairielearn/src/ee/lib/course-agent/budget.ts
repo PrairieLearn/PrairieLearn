@@ -4,6 +4,7 @@ import {
   type BudgetRequest,
   type BudgetResponse,
   BudgetResponseSchema,
+  budgetResponseStatus,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
@@ -20,13 +21,6 @@ import {
 import { courseAgentEnabled } from './access.js';
 import { addCourseAgentCostToIntervalUsage, allocateCourseAgentBudget } from './budget-policy.js';
 
-function budgetResult(body: BudgetResponse) {
-  const allocation = body.allocation;
-  const status =
-    allocation.status !== 'denied' ? 200 : allocation.reason === 'hourly_limit' ? 429 : 403;
-  return { status, body };
-}
-
 export async function applyCourseAgentBudgetRequest(agentId: string, request: BudgetRequest) {
   const report = await runInTransactionAsync(async () => {
     const conversation = await selectOptionalCourseAgentConversationByAgentIdForUpdate(agentId);
@@ -37,7 +31,7 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
         throw new HttpStatusError(409, 'The usage report changed.');
       }
       return {
-        ...budgetResult(BudgetResponseSchema.parse(conversation.usage_report_response)),
+        body: BudgetResponseSchema.parse(conversation.usage_report_response),
         userId: conversation.user_id,
         costMilliDollars: 0,
       };
@@ -66,23 +60,22 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
           },
         }));
       if (!allowed) {
-        allocation = { status: 'denied', reason: 'not_allowed', retryAt: null };
+        allocation = { status: 'denied', reason: 'not_allowed' };
       } else {
         const credit = await allocateCourseAgentBudget(
           user.id,
           request.usageDelta.costMilliDollars,
         );
-        const window = { startsAt: credit.startsAt, endsAt: credit.endsAt };
         allocation =
           credit.amount > 0
-            ? { status: 'granted', grantedMilliDollars: credit.amount, window }
-            : { status: 'denied', reason: 'hourly_limit', retryAt: window.endsAt, window };
+            ? { status: 'granted', grantedMilliDollars: credit.amount, expiresAt: credit.resetsAt }
+            : { status: 'denied', reason: 'hourly_limit', retryAt: credit.resetsAt };
       }
     }
     const body: BudgetResponse = { sequence: request.sequence, allocation };
     await recordCourseAgentConversationUsage(conversation.id, request, body);
     return {
-      ...budgetResult(body),
+      body,
       userId: conversation.user_id,
       costMilliDollars: request.usageDelta.costMilliDollars,
     };
@@ -92,5 +85,5 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
   if (report.costMilliDollars > 0) {
     await addCourseAgentCostToIntervalUsage(report.userId, report.costMilliDollars);
   }
-  return { status: report.status, body: report.body };
+  return { status: budgetResponseStatus(report.body), body: report.body };
 }

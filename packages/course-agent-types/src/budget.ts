@@ -21,7 +21,6 @@ export const BudgetRequestSchema = z.strictObject({
   requestCredit: z.boolean(),
 });
 export type BudgetRequest = z.infer<typeof BudgetRequestSchema>;
-const WindowSchema = z.strictObject({ startsAt: z.iso.datetime(), endsAt: z.iso.datetime() });
 export const BudgetResponseSchema = z.strictObject({
   sequence: Sequence,
   allocation: z.union([
@@ -29,22 +28,24 @@ export const BudgetResponseSchema = z.strictObject({
     z.strictObject({
       status: z.literal('granted'),
       grantedMilliDollars: Amount.positive(),
-      window: WindowSchema,
+      expiresAt: z.iso.datetime(),
     }),
     z.strictObject({
       status: z.literal('denied'),
       reason: z.literal('hourly_limit'),
       retryAt: z.iso.datetime(),
-      window: WindowSchema,
     }),
     z.strictObject({
       status: z.literal('denied'),
       reason: z.literal('not_allowed'),
-      retryAt: z.null(),
     }),
   ]),
 });
 export type BudgetResponse = z.infer<typeof BudgetResponseSchema>;
+
+export function budgetResponseStatus({ allocation }: BudgetResponse): number {
+  return allocation.status !== 'denied' ? 200 : allocation.reason === 'hourly_limit' ? 429 : 403;
+}
 
 export const BudgetErrorSchema = z.strictObject({
   error: z.strictObject({
