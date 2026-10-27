@@ -10,6 +10,8 @@ import {
 
 import type { PrintDocument } from './index.js';
 
+export const HONOR_CODE_HEADING = 'Academic integrity pledge';
+
 /** Leaves space for a handwritten name on printed honor-code pledges. */
 export const BLANK_NAME_PLACEHOLDER = '____________________________';
 
@@ -97,7 +99,7 @@ export function buildPrintableCover({
   ];
   if (!isAnswerKey && includeHonorCode) {
     sections.push({
-      heading: 'Academic integrity pledge',
+      heading: HONOR_CODE_HEADING,
       blocks: honorCodeHtml
         ? htmlToTextBlocks(honorCodeHtml)
         : [

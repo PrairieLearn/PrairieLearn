@@ -12,6 +12,7 @@ import type { PaperSize } from '../../lib/printing/pdf-output.js';
 import {
   BLANK_NAME_PLACEHOLDER,
   DEFAULT_ASSESSMENT_INSTRUCTIONS,
+  HONOR_CODE_HEADING,
   answerKeyDescription,
   getPrintCoverFields,
   getPrintFooterLabel,
@@ -237,7 +238,7 @@ export function InstructorAssessmentInstancePrint({
                               class="assessment-cover-honor-code"
                               aria-labelledby="honor-code-heading"
                             >
-                              <h2 id="honor-code-heading">Academic integrity pledge</h2>
+                              <h2 id="honor-code-heading">${HONOR_CODE_HEADING}</h2>
                               ${
                                 honorCodeHtml
                                   ? unsafeHtml(honorCodeHtml)

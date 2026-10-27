@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
+import { escapeRegExp } from '@prairielearn/sanitize';
 import { JsonFromStringSchema, parseRequest, parseRequestQuery } from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
@@ -33,6 +34,7 @@ import {
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
 import {
   BLANK_NAME_PLACEHOLDER,
+  HONOR_CODE_HEADING,
   buildPrintableCover,
   getPrintFooterLabel,
 } from '../../lib/printing/print-cover.js';
@@ -212,7 +214,7 @@ function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
             user_name: BLANK_NAME_PLACEHOLDER,
           }),
           { allowHtml: false, interpretMath: false },
-        ).replace(/^<h([1-6])>Academic integrity pledge<\/h\1>\s*/i, '')
+        ).replace(new RegExp(`^<h([1-6])>${escapeRegExp(HONOR_CODE_HEADING)}</h\\1>\\s*`, 'i'), '')
       : null,
   };
 }
