@@ -59,7 +59,7 @@ Codex output flows through the adapter into the SDK response stream, then into S
 
 A Worker/DO restart loses the native connection. SDK-recorded output remains readable, but output that never reached the SDK cannot be recovered through browser reconnect. Explicit Resume recovers ordinary interrupted work without replaying its prompt. Reviewed tool outcomes use the separate result-only continuation described below.
 
-## Parked reviews and publication outcomes
+## Pending reviews and publication outcomes
 
 `push_sync({})` is a native dynamic tool handled in the Conversation DO. `CourseSandbox.captureReview()` lists tracked changes against the remote base with Git and adds untracked paths separately. SDK file operations read metadata and bytes for those affected paths directly in TypeScript, including local commits and working-tree edits without changing staging. Capture does not pause agent tools: concurrent writes may produce a mixed snapshot, and the instructor reviews the exact saved contents that will be published. The DO stores file contents in separate durable entries (at most 64 KiB decoded per file, 100 changed files, and 1 MiB total base64 contents); its private review record contains their paths and the exact base commit. The snapshot survives container destruction and cannot be replaced for an existing call ID. There is no frozen patch file or DO-managed publication base.
 
@@ -73,7 +73,7 @@ The existing job API persists the call identity and outcome in ordinary final jo
 
 Every callback saves and broadcasts the result in the SDK tool part before continuing. One in-memory review operation holds the native call's resolver and any in-flight outcome delivery; duplicate callbacks share that delivery promise. The SDK's continuation flag and saved tool history select the path: a live call opens another output stream and receives its result, while a cold call restores the native thread and starts a result-only continuation using empty user input and toolOutput tagged with the native call. Check persisted native history before incorporation; an identical result must not start another turn. Never replay the original prompt or answer a dead RPC ID. Keep the review until SDK persistence and native incorporation settle. Result delivery failures remain recoverable through explicit Resume.
 
-Idle expiry stops the parked execution before checkpoint/destruction. Pending snapshots remain in DO storage. All shutdown callers share one backup-and-shutdown promise. Outcomes arriving during shutdown are persisted through the SDK before continuation waits for that promise. Ordinary process cleanup and SDK completion still gate new messages.
+Idle expiry uses the ordinary execution stop path before checkpoint/destruction. The pending review remains saved independently of the stopped execution. All shutdown callers share one backup-and-shutdown promise. Outcomes arriving during shutdown are persisted through the SDK before continuation waits for that promise. Ordinary process cleanup and SDK completion still gate new messages.
 
 The agent receives the published SHA and owns fetching/reconciling its checkout before further edits. The host does not reset the sandbox; private edits are preserved on denial and publication failure. Settled cards retain outcomes and diagnostics without a historical diff viewer.
 

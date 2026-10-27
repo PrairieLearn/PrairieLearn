@@ -223,7 +223,10 @@ function ReviewResult({ result }: { result: PushSyncResult }) {
         <pre className="small text-wrap mt-2 mb-0">{result.publication.error}</pre>
       )}
       {result.sync.status === 'failed' && (
-        <pre className="small text-wrap mt-2 mb-0">{result.sync.error}</pre>
+        <details className="mt-2">
+          <summary>Error</summary>
+          <pre className="small text-wrap mt-2 mb-0">{result.sync.error}</pre>
+        </details>
       )}
     </div>
   );
