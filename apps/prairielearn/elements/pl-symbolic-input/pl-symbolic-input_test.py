@@ -2,6 +2,7 @@ import importlib
 from pathlib import Path
 from typing import Any, Literal
 
+import lxml.html
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -618,6 +619,82 @@ def test_simplified_submission_renders_after_json_round_trip(
     rendered = symbolic_input.render(element_html, data)
 
     assert f"${expected_latex}$" in rendered
+
+
+@pytest.mark.parametrize(
+    ("attributes", "raw_submitted_answers"),
+    [
+        ([], {"test": '<img src="x" onerror="alert(1)">'}),
+        (
+            ['formula-editor="true"'],
+            {
+                "test": "x",
+                "test-latex": '<img src="x" onerror="alert(1)">',
+            },
+        ),
+    ],
+    ids=["text-input", "formula-editor"],
+)
+def test_original_input_popover_escapes_raw_submission(
+    monkeypatch: pytest.MonkeyPatch,
+    attributes: list[str],
+    raw_submitted_answers: dict[str, str],
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    payload = '<img src="x" onerror="alert(1)">'
+    element_html = build_element_html(*attributes)
+    data = make_question_data(
+        submitted_answers={"test": psu.sympy_to_json(sympy.Symbol("x"))},
+        raw_submitted_answers=raw_submitted_answers,
+        panel="submission",
+        editable=False,
+    )
+
+    rendered = symbolic_input.render(element_html, data)
+    document = lxml.html.fragment_fromstring(rendered, create_parent=True)
+    [popover_content] = document.xpath(
+        '//button[@title="Original Input"]/@data-bs-content'
+    )
+    popover = lxml.html.fragment_fromstring(popover_content, create_parent=True)
+
+    assert not popover.xpath(".//img")
+    assert payload in popover.text_content()
+
+
+@pytest.mark.parametrize("panel", ["question", "submission"])
+@pytest.mark.parametrize(
+    ("payload", "expected_text"),
+    [
+        pytest.param(
+            '|<img src="x" onerror="alert(1)">',
+            '|<img src="x" onerror="alert(1)">',
+            id="absolute-value-error",
+        ),
+        pytest.param('<img src="x" onerror="alert(1)">', "<img s", id="syntax-error"),
+    ],
+)
+def test_format_error_popover_escapes_raw_submission(
+    monkeypatch: pytest.MonkeyPatch,
+    panel: str,
+    payload: str,
+    expected_text: str,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = build_element_html()
+    data = make_question_data(
+        submitted_answers={"test": payload},
+        panel=panel,
+        editable=panel == "question",
+    )
+
+    symbolic_input.parse(element_html, data)
+    rendered = symbolic_input.render(element_html, data)
+    document = lxml.html.fragment_fromstring(rendered, create_parent=True)
+    [popover_content] = document.xpath('//a[@title="Format error"]/@data-bs-content')
+    popover = lxml.html.fragment_fromstring(popover_content, create_parent=True)
+
+    assert not popover.xpath(".//img")
+    assert expected_text in popover.text_content()
 
 
 @pytest.mark.parametrize(

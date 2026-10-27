@@ -1,3 +1,4 @@
+import html
 import pathlib
 import random
 from enum import Enum
@@ -510,6 +511,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
+        # Bootstrap reparses data-bs-content as HTML after the browser decodes the
+        # attribute, so these need one escape in addition to Mustache's escaping.
         html_params = {
             "submission": True,
             "label": label,
@@ -519,6 +522,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_sub": a_sub_converted,
             "raw_submitted_answer": raw_submitted_answer,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
+            "escaped_raw_submitted_answer": (
+                html.escape(str(raw_submitted_answer))
+                if raw_submitted_answer is not None
+                else None
+            ),
+            "escaped_raw_submitted_answer_latex": (
+                html.escape(str(raw_submitted_answer_latex))
+                if raw_submitted_answer_latex is not None
+                else None
+            ),
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
