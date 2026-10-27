@@ -50,8 +50,6 @@
           {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255,
-            "pattern": "\\S",
             "description": "A user UID, which need not identify an existing account or be a routable email."
           },
           {

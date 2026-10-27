@@ -780,7 +780,11 @@ async function loadInfoForDirectory<T extends ZodType>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
+  validate: (
+    info: z.infer<T>,
+    rawInfo: z.input<T>,
+    relativeDir: string,
+  ) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -803,7 +807,7 @@ async function loadInfoForDirectory<T extends ZodType>({
         filePath: infoFilePath,
         schema,
         zodSchema,
-        validate,
+        validate: (info, rawInfo) => validate(info, rawInfo, path.join(relativeDir, dir)),
         // If we aren't operating in recursive mode, we want to ensure
         // that missing files are correctly reflected as errors.
         tolerateMissing: recursive,
@@ -985,9 +989,11 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
 }
 
 function validateQuestion({
+  qid,
   question,
   sharingEnabled,
 }: {
+  qid: string;
   question: QuestionJson;
   sharingEnabled: boolean;
 }): { warnings: string[]; errors: string[] } {
@@ -1039,6 +1045,10 @@ function validateQuestion({
   if (question.preferences) {
     errors.push(...validatePreferencesSchema(question.preferences));
   }
+
+  const authors = normalizeQuestionAuthors(question.authors);
+  question.authors = authors.uids;
+  warnings.push(...authors.warnings.map((warning) => `Question "${qid}": ${warning}`));
 
   return { warnings, errors };
 }
@@ -1750,7 +1760,7 @@ export async function loadQuestions({
     infoFilename: 'info.json',
     zodSchema: schemas.QuestionJsonSchema,
     schema: schemas.infoQuestion,
-    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
+    validate: (question, _rawQuestion, qid) => validateQuestion({ qid, question, sharingEnabled }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is
@@ -1759,14 +1769,6 @@ export async function loadQuestions({
     if (qid.startsWith('@')) {
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
-  }
-  for (const [qid, question] of Object.entries(questions)) {
-    if (!question.data) continue;
-    const { warnings } = normalizeQuestionAuthors(question.data.authors);
-    infofile.addWarnings(
-      question,
-      warnings.map((warning) => `Question "${qid}": ${warning}`),
-    );
   }
   checkDuplicateUUIDs(
     questions,

@@ -332,16 +332,18 @@ describe('Question syncing', () => {
     it('syncs unresolved UIDs, deduplicates, and preserves authors on unchanged re-sync', async () => {
       const data = util.getCourseData();
       const extraUids = Array.from({ length: 11 }, (_, i) => `extra-author-${i}`);
+      const longUid = 'x'.repeat(256);
       data.questions[util.QUESTION_ID].authors = [
         ' UnknownUID ',
         'UnknownUID',
         'unknownUID',
+        longUid,
         ...extraUids,
       ];
       const { courseDir } = await util.writeAndSyncCourseData(data);
       const question = await findSyncedQuestion(util.QUESTION_ID);
       assert.isNull(question.sync_errors);
-      assert.deepEqual(question.authors, ['UnknownUID', 'unknownUID', ...extraUids]);
+      assert.deepEqual(question.authors, ['UnknownUID', 'unknownUID', longUid, ...extraUids]);
       await util.syncCourseData(courseDir);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, question.authors);
       const info = await fs.readJSON(
@@ -415,7 +417,7 @@ describe('Question syncing', () => {
       assert.lengthOf(await util.dumpTableWithSchema('question_authors', QuestionAuthorSchema), 1);
     });
 
-    it.each(['', '   ', 'x'.repeat(256)])('rejects malformed UID %j', async (uid) => {
+    it.each(['', '   '])('rejects malformed UID %j', async (uid) => {
       const data = util.getCourseData();
       data.questions[util.QUESTION_ID].authors = [uid];
       await util.writeAndSyncCourseData(data);

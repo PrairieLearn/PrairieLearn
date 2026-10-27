@@ -1,11 +1,6 @@
 import { z } from 'zod';
 
-export const QuestionAuthorUidSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(255)
-  .regex(/\S/, 'Author UID must not be blank');
+export const QuestionAuthorUidSchema = z.string().trim().min(1, 'Author UID must not be blank');
 
 export const QuestionAuthorUidsSchema = z
   .array(QuestionAuthorUidSchema)

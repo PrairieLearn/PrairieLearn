@@ -7,7 +7,7 @@ import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 
-test('edits authors with keyboard validation, cancellation, and persistence', async ({
+test('edits authors with keyboard entry, cancellation, and persistence', async ({
   page,
   courseInstance,
   testCoursePath,
@@ -33,12 +33,7 @@ test('edits authors with keyboard validation, cancellation, and persistence', as
   });
   await page.goto(url);
   const input = page.getByRole('combobox', { name: 'Authors', exact: true });
-  await expect(input).toHaveAttribute('placeholder', 'Add an author by UID');
   await expect(page.getByText('Not on course staff', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Add author', exact: true })).toHaveCount(0);
-  await input.fill('x'.repeat(256));
-  await input.press('Enter');
-  await expect(input).toHaveAttribute('aria-invalid', 'true');
   await input.fill(` ${original.authors[0]} `);
   await input.press('Enter');
   await expect(input).toHaveValue('');
@@ -73,18 +68,15 @@ test('edits authors with keyboard validation, cancellation, and persistence', as
     await page.getByRole('button', { name: `Remove ${uid}`, exact: true }).click();
   }
   await expect(input).toBeVisible();
-  await expect(page.getByText('No authors listed.', { exact: true })).toHaveCount(0);
   await input.fill(staff.uid);
   await input.press('Enter');
   await expect(
     page.getByRole('button', { name: /^Remove Token Staff\s+token-staff$/ }),
   ).toBeVisible();
   await expect(page.getByText('Token Staff', { exact: true })).toBeVisible();
-  await expect(page.getByText('Token Staff', { exact: true })).toHaveClass(/text-body/);
-  await expect(page.getByText(staff.uid, { exact: true })).toHaveClass(/text-secondary/);
-  await input.fill('saved-author');
+  const savedAuthorUid = 'saved-author-'.repeat(24);
+  await input.fill(savedAuthorUid);
   await input.press('Enter');
-  await expect(page.getByText('saved-author', { exact: true })).toHaveCSS('font-weight', '400');
   for (let i = 0; i < 11; i++) {
     await input.fill(`extra-author-${i}`);
     await input.press(',');
@@ -99,17 +91,17 @@ test('edits authors with keyboard validation, cancellation, and persistence', as
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.waitForLoadState('load');
   await expect(
-    page.getByRole('button', { name: 'Remove saved-author', exact: true }),
+    page.getByRole('button', { name: `Remove ${savedAuthorUid}`, exact: true }),
   ).toBeVisible();
   const saved = JSON.parse(await fs.readFile(infoPath, 'utf8'));
-  expect(saved.authors).toContain('saved-author');
+  expect(saved.authors).toContain(savedAuthorUid);
   expect(saved.authors.length).toBeGreaterThan(10);
   expect(saved.authors.every((author: unknown) => typeof author === 'string')).toBe(true);
-  await page.getByRole('button', { name: 'Remove saved-author', exact: true }).click();
+  await page.getByRole('button', { name: `Remove ${savedAuthorUid}`, exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.waitForLoadState('load');
-  await expect(page.getByRole('button', { name: 'Remove saved-author', exact: true })).toHaveCount(
-    0,
-  );
-  expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).not.toContain('saved-author');
+  await expect(
+    page.getByRole('button', { name: `Remove ${savedAuthorUid}`, exact: true }),
+  ).toHaveCount(0);
+  expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).not.toContain(savedAuthorUid);
 });

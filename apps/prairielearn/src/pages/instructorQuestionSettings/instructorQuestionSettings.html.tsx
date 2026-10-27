@@ -522,7 +522,7 @@ export const InstructorQuestionSettingsForm = ({
                     </div>
                   )}
                   renderTagContent={(data) => data.name}
-                  tagClassName={(data) => `badge color-${data.color} fw-normal`}
+                  tagClassName={(data) => `badge color-${data.color}`}
                   onChange={(value) => setValue('tags', value, { shouldDirty: true })}
                 />
               ) : (
@@ -657,7 +657,6 @@ export const InstructorQuestionSettingsForm = ({
                   items={authorItems}
                   value={selectedAuthors}
                   disabled={!canEdit}
-                  tagsPlacement="inside"
                   placeholder="Add an author by UID"
                   tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
                   renderTagContent={({ uid, name }) =>
@@ -698,7 +697,7 @@ export const InstructorQuestionSettingsForm = ({
                   }}
                   onCreate={(uid) => {
                     if (!QuestionAuthorUidSchema.safeParse(uid).success) {
-                      setAuthorError('Enter a UID of at most 255 characters.');
+                      setAuthorError('Enter a nonblank UID.');
                       return false;
                     }
                     setAuthorError(undefined);

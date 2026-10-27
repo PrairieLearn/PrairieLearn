@@ -5,7 +5,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { isDraftQid } from '../../lib/draft-question.js';
-import { normalizeQuestionAuthors } from '../../lib/question-authors.js';
 import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
@@ -38,7 +37,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   return {
     type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,
-    authors: normalizeQuestionAuthors(q.authors).uids,
+    authors: q.authors,
     partial_credit: partialCredit,
     template_directory: q.template,
     options: q.options,

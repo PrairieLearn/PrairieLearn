@@ -173,6 +173,23 @@ describe('course database', () => {
       });
     });
 
+    it('normalizes authors and attaches conversion warnings with the nested question ID', async () => {
+      await withTempDirectory(async (dir) => {
+        const qid = 'nested/question';
+        const legacyAuthor = { name: 'Name only' };
+        await writeQuestion(dir, qid, {
+          ...getQuestion(),
+          authors: [' author ', { email: 'author' }, legacyAuthor],
+        });
+        const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
+        assert.isEmpty(result[qid].errors);
+        assert.deepEqual(result[qid].data!.authors, ['author']);
+        assert.deepEqual(result[qid].warnings, [
+          `Question "${qid}": Legacy author ${JSON.stringify(legacyAuthor)} cannot be converted to a UID because it has no usable email. Replace this entry with the author's UID in info.json.`,
+        ]);
+      });
+    });
+
     it('errors if two questions share a UUID', async () => {
       await withTempDirectory(async (dir) => {
         await writeQuestion(dir, 'question1', getQuestion());
