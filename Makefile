@@ -127,6 +127,8 @@ check-badge-contrast:
 	@node scripts/check-badge-contrast.mjs
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
+check-python-dependencies:
+	@python3 scripts/check_python_dependencies.py
 check-python-helper-dependencies:
 	@uv run python scripts/sync-python-helper-dependencies.py --check
 update-python-helper-dependencies:

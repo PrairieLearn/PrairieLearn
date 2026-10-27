@@ -63,9 +63,16 @@ Consult [the documentation for each specific PrairieLearn element](../elements/i
 
 Most PrairieLearn elements are designed to meet these requirements by default. However, any custom HTML or JavaScript should be tested to ensure that it is also operable via keyboard navigation.
 
-!!! note "Alternative question formats"
+### Alternatives to drawing input
 
-    Some elements that are inherently used for visual input, e.g. `<pl-drawing>`, `<pl-sketch>`, and `<pl-excalidraw>`, are currently not usable via keyboard navigation and screen readers. If you use these elements, consider providing an alternative question format for students who cannot use them, e.g. a freeform text input where they can describe the drawing or diagram.
+Drawing inputs such as [`pl-drawing`](../pl-drawing/index.md), [`pl-excalidraw`](../elements/pl-excalidraw.md), and [`pl-sketch`](../elements/pl-sketch.md) do not fully support keyboard navigation or screen reader interaction. Consider alternatives that assess the same concepts:
+
+- **Text responses** with [`pl-rich-text-editor`](../elements/pl-rich-text-editor.md) let students describe a diagram using typing or speech-to-text. This can help students who use screen readers or have difficulty drawing or handwriting.
+- **Structured inputs**, such as labeled fields for each force's magnitude and direction, avoid precise dragging and break the response into smaller parts.
+- **File uploads** with [`pl-file-upload`](../elements/pl-file-upload.md) allow students to work in familiar software with their preferred assistive tools.
+- **Image capture** with [`pl-image-capture`](../elements/pl-image-capture.md) lets students submit paper drawings if handwriting is easier than using a mouse. It may still be difficult for students with visual or motor disabilities or dysgraphia, so consider offering a text option too.
+
+Alternative responses need their own grading approach, often [manual grading](../manualGrading/index.md). Students should only need to complete one response format.
 
 ## Understandable content
 

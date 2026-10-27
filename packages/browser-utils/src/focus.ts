@@ -10,7 +10,7 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]',
   '[contenteditable="true"]',
 ]
-  .map((selector) => `${selector}:not([tabindex^="-"]):not(.btn-close)`)
+  .map((selector) => `${selector}:not([tabindex^="-"])`)
   .join(',');
 
 function isElement(object: Element) {
@@ -56,9 +56,14 @@ function isDisabled(element: Element) {
   return element.hasAttribute('disabled') && element.getAttribute('disabled') !== 'false';
 }
 
-function focusableChildren(element: Element): HTMLElement[] {
+function focusableChildren(element: Element, includeCloseButtons = false): HTMLElement[] {
   const focusableChildren = element.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-  return Array.from(focusableChildren).filter((child) => !isDisabled(child) && isVisible(child));
+  return Array.from(focusableChildren).filter(
+    (child) =>
+      (includeCloseButtons || !child.classList.contains('btn-close')) &&
+      !isDisabled(child) &&
+      isVisible(child),
+  );
 }
 
 export interface FocusTrap {
@@ -72,7 +77,7 @@ export function trapFocus(element: Element): FocusTrap {
   function keyDown(e: KeyboardEvent) {
     if (e.key !== 'Tab') return;
 
-    const focusable = focusableChildren(element);
+    const focusable = focusableChildren(element, true);
     const firstFocusable = focusable[0];
     const lastFocusable = focusable[focusable.length - 1];
 

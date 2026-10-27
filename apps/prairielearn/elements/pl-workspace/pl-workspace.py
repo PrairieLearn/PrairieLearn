@@ -22,6 +22,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     element = lxml.html.fragment_fromstring(element_html)
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    if not label.strip():
+        label = LABEL_DEFAULT
 
     # Get workspace url
     workspace_url = data["options"].get("workspace_url")

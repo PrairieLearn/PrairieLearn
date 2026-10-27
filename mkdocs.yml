@@ -47,9 +47,10 @@ theme:
     - navigation.sections
     - navigation.indexes
     - navigation.path
+    # Leave navigation.instant.progress disabled: its unnamed progressbar remains
+    # exposed to assistive technology even while idle.
     - navigation.instant
     - navigation.instant.prefetch
-    - navigation.instant.progress
     - navigation.tracking
     - navigation.footer
     - navigation.indexes

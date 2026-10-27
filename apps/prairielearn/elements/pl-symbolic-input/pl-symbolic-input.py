@@ -230,19 +230,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
-    constants_class = psu._Constants
-
     operators: list[str] = list(psu.STANDARD_OPERATORS)
     if allow_sets:
         operators.extend(psu.SET_NOTATION_OPERATORS)
     operators.extend(custom_functions)
-    operators.extend(constants_class.functions.keys())
-    if allow_trig:
-        operators.extend(constants_class.trig_functions.keys())
-    if allow_sets:
-        operators.extend(constants_class.set_functions.keys())
+    operators.extend(
+        sorted(
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+                include_helpers=False,
+            )
+        )
+    )
 
-    constants = list(constants_class.variables.keys())
+    constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
     info_params = {
         "format": True,
@@ -487,6 +489,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             allow_trig,
             variables,
             custom_functions,
+            allow_sets=allow_sets,
             latex=data["raw_submitted_answers"].get(name + "-latex"),
         )
         if submitted_answer is not None and formatted_answer is None:
@@ -675,6 +678,7 @@ def format_formula_editor_submission_for_sympy(
     variables: list[str],
     custom_functions: list[str],
     *,
+    allow_sets: bool = False,
     latex: str | None = None,
 ) -> str | None:
     r"""
@@ -692,6 +696,7 @@ def format_formula_editor_submission_for_sympy(
         allow_trig: Whether trig functions (sin, cos, etc.) are available
         variables: List of allowed variable names
         custom_functions: List of custom function names
+        allow_sets: Whether set operators and constructors are available
         latex: Raw LaTeX from the formula editor
 
     Returns:
@@ -713,7 +718,9 @@ def format_formula_editor_submission_for_sympy(
     text = text.replace("-:", "/").replace(" ** ", " * ")
 
     # Build list of all multi-character tokens that should be recognized as units
-    known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
+    known_tokens = _build_known_tokens(
+        allow_trig, variables, custom_functions, allow_sets=allow_sets
+    )
 
     # Replace Greek unicode letters with spaced ASCII for consistent handling further on
     text = "".join(_greek_transform(char) for char in text)
@@ -726,8 +733,14 @@ def format_formula_editor_submission_for_sympy(
     text = _add_multiplication_spaces(text, known_tokens)
 
     function_names = frozenset(
-        psu.get_builtin_functions(allow_trig_functions=allow_trig)
-        | set(custom_functions)
+        psu.greek_unicode_transform(name)
+        for name in (
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+            )
+            | set(custom_functions)
+        )
     )
     text = _wrap_bare_function_arguments(text, function_names)
 
@@ -738,6 +751,8 @@ def _build_known_tokens(
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
+    *,
+    allow_sets: bool = False,
 ) -> list[str]:
     """
     Build a list of all multi-character tokens that should be recognized as single units.
@@ -745,17 +760,18 @@ def _build_known_tokens(
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
-    constants_class = psu._Constants
-
     # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
     tokens = (
         list(psu.STANDARD_OPERATORS)
-        + list(constants_class.functions.keys())
+        + list(
+            psu.get_builtin_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+            )
+        )
         + custom_functions
         + variables
     )
-    if allow_trig:
-        tokens += list(constants_class.trig_functions.keys())
 
     # Add transformed versions of Greek letters
     tokens += [
@@ -868,6 +884,51 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
+_TRAILING_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_]\w*$")
+
+
+def _is_implicit_multiplication_paren(
+    text: str,
+    argument_start: int,
+    argument_end: int,
+    function_names: frozenset[str],
+) -> bool:
+    """
+    Whether a "(" after an argument multiplies it rather than calling a function
+    or grouping an exponent.
+
+    Returns:
+        True if the argument ends with a number, a closing bracket, or a name
+        that isn't a function.
+    """
+    # An empty candidate provides no left-hand factor for implicit multiplication.
+    if argument_end == argument_start:
+        return False
+
+    # Isolate the final identifier before checking its last character. This keeps
+    # digit-suffixed function names such as atan2 from looking like numbers.
+    name_start = argument_end
+    while name_start > argument_start and (
+        text[name_start - 1].isalnum() or text[name_start - 1] == "_"
+    ):
+        name_start -= 1
+    name = _TRAILING_IDENTIFIER_PATTERN.search(text, name_start, argument_end)
+
+    # Known functions consume the "(" as a call; all other names multiply the
+    # parenthesized factor.
+    if name is not None:
+        return name.group(0) not in function_names
+
+    # Known digit-suffixed functions were handled above, so a remaining digit
+    # ends a numeric argument before the next implicitly multiplied factor.
+    if text[argument_end - 1].isdigit():
+        return True
+
+    # A closing delimiter completes a grouped argument, making the following
+    # "(" the start of a new implicitly multiplied factor.
+    return text[argument_end - 1] in ")]}"
+
+
 @lru_cache(maxsize=128)
 def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
     """
@@ -886,13 +947,15 @@ def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[s
 
 def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
     r"""
-    Parenthesize unparenthesized function arguments that are followed by "*".
+    Parenthesize unparenthesized function arguments that are followed by "*" or "(".
 
     The formula editor displays `{\ln 4}\cdot x` as ln(4)·x but submits it as
     "ln 4 * x". SymPy's implicit function application ends the argument at "+",
-    "-", or "/", but not at "*", so it would parse this as ln(4x).
+    "-", or "/", but not at "*", so it would parse this as ln(4x). It also can't
+    end the argument at a "(" that multiplies it, so "ln 8(x+1)" is a syntax error.
 
-    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)"
+    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)", and "ln 8(x+1)"
+    becomes "ln (8)(x+1)"
 
     Returns:
         The text with those arguments wrapped in parentheses
@@ -905,7 +968,7 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
     # empty argument.
     insertions: list[tuple[int, str]] = []
     # Only the first bare function at a given nesting depth can claim the next
-    # multiplication operator; any later one is inside its implicit argument.
+    # implicit multiplication boundary; any later one is inside its argument.
     pending_arguments: dict[int, int] = {}
     depth = 0
     for match in pattern.finditer(text):
@@ -915,18 +978,24 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
         token = match.group(0)
         match token:
-            case "(" | "[" | "{":
-                depth += 1
-            case ")" | "]" | "}":
-                pending_arguments.pop(depth, None)
-                depth -= 1
-            case "*":
-                start = pending_arguments.pop(depth, None)
+            case "(" | "*":
+                start = pending_arguments.get(depth)
                 if start is not None:
                     argument_end = match.start()
                     while argument_end > start and text[argument_end - 1].isspace():
                         argument_end -= 1
-                    insertions.extend(((start, "("), (argument_end, ")")))
+                    if token == "*" or _is_implicit_multiplication_paren(
+                        text, start, argument_end, function_names
+                    ):
+                        pending_arguments.pop(depth)
+                        insertions.extend(((start, "("), (argument_end, ")")))
+                if token == "(":
+                    depth += 1
+            case "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
             case "+" | "-" | "/" | ",":
                 pending_arguments.pop(depth, None)
             case _:
@@ -939,6 +1008,56 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
         pos = index
     result.append(text[pos:])
     return "".join(result)
+
+
+def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
+    """Compare set components by symbolic equivalence instead of structure."""
+    comparison_cache: dict[tuple[sympy.Basic, sympy.Basic], bool] = {}
+
+    def compare(left: sympy.Basic, right: sympy.Basic) -> bool:
+        pair = (left, right)
+        if pair in comparison_cache:
+            return comparison_cache[pair]
+        reverse_pair = (right, left)
+        if reverse_pair in comparison_cache:
+            return comparison_cache[reverse_pair]
+
+        if left is right or left == right:
+            result = True
+        elif type(left) is type(right) and isinstance(
+            left, (sympy.FiniteSet, sympy.Union, sympy.Intersection)
+        ):
+            result = all(
+                any(compare(value, candidate) for candidate in right.args)
+                for value in left.args
+            ) and all(
+                any(compare(value, candidate) for candidate in left.args)
+                for value in right.args
+            )
+        elif isinstance(left, sympy.Interval) and isinstance(right, sympy.Interval):
+            result = (
+                left.left_open == right.left_open
+                and left.right_open == right.right_open
+                and compare(left.start, right.start)
+                and compare(left.end, right.end)
+            )
+        elif isinstance(left, sympy.Complement) and isinstance(right, sympy.Complement):
+            result = len(left.args) == len(right.args) and all(
+                compare(left_arg, right_arg)
+                for left_arg, right_arg in zip(left.args, right.args, strict=True)
+            )
+        elif isinstance(left, (sympy.Expr, sympy.logic.boolalg.Boolean)) and isinstance(
+            right, (sympy.Expr, sympy.logic.boolalg.Boolean)
+        ):
+            result = left.equals(right) is True
+        else:
+            result = False
+
+        comparison_cache[pair] = result
+        comparison_cache[reverse_pair] = result
+        return result
+
+    return compare(a, b)
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -1033,10 +1152,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             assert isinstance(a_sub_sympy, sympy.Expr)
             assert isinstance(a_tru_sympy, sympy.Expr)
 
-        if isinstance(a_tru_sympy, sympy.Set) or isinstance(a_sub_sympy, sympy.Set):
-            return a_tru_sympy == a_sub_sympy, None
-
-        return a_tru_sympy.equals(a_sub_sympy) is True, None
+        return _sympy_values_equal(a_tru_sympy, a_sub_sympy), None
 
     try:
         pl.grade_answer_parameterized(

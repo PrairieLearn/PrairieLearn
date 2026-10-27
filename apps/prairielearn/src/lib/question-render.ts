@@ -634,23 +634,26 @@ export async function getAndRenderVariant(
     showCorrectAnswer,
   });
 
+  // The AI grading preview mirrors the arguments used by the AI grader: the answer is always
+  // rendered, with no submission and with `showCorrectAnswer` false.
+  const isAiGradingPreview = questionRenderContext === 'ai_grading';
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
-    answer: showCorrectAnswer,
+    answer: showCorrectAnswer || isAiGradingPreview,
   };
   const htmls = await render({
     variant_course: course,
     renderSelection,
     variant,
     question,
-    submission: submission as Submission,
+    submission: isAiGradingPreview ? null : (submission as Submission),
     submissions: submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
     question_course,
     locals: {
       ...urls,
       urlPrefix,
-      showCorrectAnswer,
+      showCorrectAnswer: showCorrectAnswer && !isAiGradingPreview,
       allowAnswerEditing: newLocals.allowAnswerEditing,
       questionRenderContext,
     },
@@ -955,12 +958,18 @@ export async function renderPanelsForSubmission({
       // If there is no assessment, the next question button won't exist, so it
       // does not need to be rendered. If there is no next question, the button
       // is disabled, so it does not need to be replaced.
-      if (variant.instance_question_id == null || next_instance_question.id == null) return;
+      if (
+        variant.instance_question_id == null ||
+        next_instance_question.id == null ||
+        assessment_instance == null
+      ) {
+        return;
+      }
 
       let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
       let userGroupRoles = 'None';
 
-      if (assessment_instance?.team_id && group_config?.has_roles) {
+      if (assessment_instance.team_id && group_config?.has_roles) {
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
           assessment_instance.team_id,
@@ -976,6 +985,7 @@ export async function renderPanelsForSubmission({
         instanceQuestionId: next_instance_question.id,
         nextQuestionAccessMode: next_instance_question.question_access_mode,
         urlPrefix,
+        assessmentInstanceId: assessment_instance.id,
         whichButton: 'next',
         groupRolePermissions: nextQuestionGroupRolePermissions,
         advanceScorePerc: assessment_question?.advance_score_perc,

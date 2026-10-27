@@ -109,7 +109,7 @@ export default class PLFilePreview {
 
         const code = preview.querySelector('code');
         const img = preview.querySelector('img');
-        const iframe = preview.querySelector('iframe');
+        const pdf = preview.querySelector('object');
 
         fetch(path, { method: 'GET' })
           .then((result) => {
@@ -221,12 +221,10 @@ export default class PLFilePreview {
               };
               img.classList.remove('d-none');
             } else if (type === 'application/pdf') {
-              const url = URL.createObjectURL(blob);
-              iframe.src = url;
-              iframe.onload = () => {
-                URL.revokeObjectURL(url);
-              };
-              iframe.closest('.js-file-preview-pdf-container').classList.remove('d-none');
+              // The submission panel may have been replaced while the file was downloading.
+              if (!pdf.isConnected) return;
+              pdf.data = URL.createObjectURL(blob);
+              pdf.closest('.js-file-preview-pdf-container').classList.remove('d-none');
             } else {
               // We can't preview this file.
               showInfoMessage('Content preview is not available for this type of file.');
