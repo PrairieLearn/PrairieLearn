@@ -713,7 +713,7 @@ router.get(
     const origHash = (await getOriginalHash(fullInfoPath)) ?? '';
     const authorStaff = await sqldb.queryRows(
       sql.select_authors,
-      { question_id: question.id, course_id: course.id },
+      { course_id: course.id },
       z.object({ uid: z.string(), name: z.string().nullable() }),
     );
 

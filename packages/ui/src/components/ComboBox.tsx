@@ -66,10 +66,8 @@ export interface ComboBoxProps<T = void> extends Omit<
 }
 
 export interface TagPickerProps<T = void> {
-  /** Accept a trimmed custom value. Return false to keep invalid text for correction. */
-  onCreate?: (value: string) => boolean;
-  /** Called when the user edits the input text, for example to clear a validation error. */
-  onInputChange?: (value: string) => void;
+  /** Accept a trimmed custom value. */
+  onCreate?: (value: string) => void;
   items: ComboBoxItem<T>[];
   value: string[];
   onChange: (value: string[]) => void;
@@ -82,7 +80,7 @@ export interface TagPickerProps<T = void> {
   /** ID of the element whose text labels this component. */
   'aria-labelledby'?: string;
   label?: string;
-  description?: ReactNode;
+  description?: string;
   errorMessage?: string;
   renderItem?: (item: ComboBoxItem<T>) => ReactNode;
   /** Renders just the content inside the tag (text/icon). The badge styling is applied by tagClassName. */
@@ -230,7 +228,6 @@ export function ComboBox<T = void>({
 export function TagPicker<T = void>({
   items,
   onCreate,
-  onInputChange,
   value,
   onChange,
   placeholder = 'Select...',
@@ -315,10 +312,7 @@ export function TagPicker<T = void>({
           setFilterText('');
           onChange(keys as string[]);
         }}
-        onInputChange={(text) => {
-          setFilterText(text);
-          onInputChange?.(text);
-        }}
+        onInputChange={setFilterText}
       >
         {({ isOpen: isComboBoxOpen }) => (
           <>
@@ -345,9 +339,8 @@ export function TagPicker<T = void>({
                   event.preventDefault();
                   event.stopPropagation();
                   const nextValue = filterText.trim();
-                  if (!nextValue || value.includes(nextValue) || onCreate(nextValue)) {
-                    setFilterText('');
-                  }
+                  if (nextValue && !value.includes(nextValue)) onCreate(nextValue);
+                  setFilterText('');
                 }}
               />
               {(!onCreate || filteredItems.length > 0) && (

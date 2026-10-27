@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Form } from 'react-bootstrap';
 import { useController, useForm } from 'react-hook-form';
 
@@ -24,7 +24,6 @@ import type {
   StaffTopic,
 } from '../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { QuestionAuthorUidSchema } from '../../lib/question-authors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import type { QuestionSharingSetRow } from '../../models/sharing-set.js';
 import { coerceToNumber } from '../instructorAssessmentQuestions/utils/formHelpers.js';
@@ -313,7 +312,6 @@ export const InstructorQuestionSettingsForm = ({
   });
 
   const selectedAuthors = watch('authors');
-  const [authorError, setAuthorError] = useState<string>();
   const authorItems = selectedAuthors.map((uid) => {
     const name = authorStaff.find((user) => user.uid === uid)?.name;
     return { id: uid, label: name ? `${name}  ${uid}` : uid, data: { uid, name } };
@@ -558,21 +556,10 @@ export const InstructorQuestionSettingsForm = ({
                         <span className="text-body">{uid}</span>
                       )
                     }
-                    errorMessage={authorError}
-                    onInputChange={() => setAuthorError(undefined)}
-                    onChange={(uids) => {
-                      setAuthorError(undefined);
-                      setValue('authors', uids, { shouldDirty: true });
-                    }}
-                    onCreate={(uid) => {
-                      if (!QuestionAuthorUidSchema.safeParse(uid).success) {
-                        setAuthorError('Enter a nonblank UID.');
-                        return false;
-                      }
-                      setAuthorError(undefined);
-                      setValue('authors', [...selectedAuthors, uid], { shouldDirty: true });
-                      return true;
-                    }}
+                    onChange={(uids) => setValue('authors', uids, { shouldDirty: true })}
+                    onCreate={(uid) =>
+                      setValue('authors', [...selectedAuthors, uid], { shouldDirty: true })
+                    }
                   />
                 </>
               ) : (
@@ -595,7 +582,6 @@ export const InstructorQuestionSettingsForm = ({
                       type="button"
                       className="btn btn-link btn-sm p-0 border-0 align-baseline"
                       onClick={() => {
-                        setAuthorError(undefined);
                         setValue('authors', [...selectedAuthors, currentUid.trim()], {
                           shouldDirty: true,
                         });
