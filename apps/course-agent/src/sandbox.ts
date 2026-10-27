@@ -1,13 +1,19 @@
-import { DirectoryBackup, type DirectoryBackupRecord, Files } from '@cloudflare/sandbox';
+import { Buffer } from 'node:buffer';
+
+import {
+  DirectoryBackup,
+  type DirectoryBackupRecord,
+  Files,
+  SandboxFileError,
+} from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
 import {
   MAX_REVIEW_BYTES,
   MAX_REVIEW_FILE_BYTES,
+  type ReviewSnapshot,
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
-
-import { captureReviewScript } from './review-snapshot.js';
 
 const SESSION = '/workspace/session';
 const NATIVE_PORT = 4500;
@@ -143,25 +149,58 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /** Save the current file contents; the DO owns the snapshot after this returns. */
   async captureReview(repository: string, branch: string) {
-    const result = await this.exec(
-      [
+    const course = `${SESSION}/course`;
+    const files = new Files(this.container);
+    const options = { cwd: course, user: '1000:1000' };
+    const git = async (...args: string[]) => {
+      const result = await this.exec(
+        ['git', '--literal-pathspecs', '-c', 'safe.directory=*', '-C', course, ...args],
         'node',
-        '-e',
-        captureReviewScript,
-        `${SESSION}/course`,
-        branch,
-        String(MAX_REVIEW_FILE_BYTES),
-        String(MAX_REVIEW_BYTES),
-      ],
-      'node',
-    );
-    return ReviewSnapshotSchema.parse({
-      ...JSON.parse(
-        new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout),
-      ),
-      repository,
-      branch,
-    });
+      );
+      return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
+    };
+    await git('check-ref-format', `refs/heads/${branch}`);
+    const baseCommit = (
+      await git('rev-parse', '--verify', `refs/remotes/origin/${branch}^{commit}`)
+    ).trim();
+
+    // Comparing with the remote base includes local commits and staged/unstaged edits.
+    // Untracked files need a separate listing; NUL delimiters preserve spaces in paths.
+    const tracked = await git('diff', '--name-only', '-z', '--no-renames', baseCommit, '--');
+    const untracked = await git('ls-files', '--others', '--exclude-standard', '-z');
+    const paths = [...new Set((tracked + untracked).split('\0').filter(Boolean))];
+    if (paths.length > 100) throw new Error('A review may change at most 100 files');
+
+    const additions: ReviewSnapshot['additions'] = [];
+    const deletions: ReviewSnapshot['deletions'] = [];
+    let total = 0;
+    for (const path of paths) {
+      let info;
+      try {
+        info = await files.lstat(path, options);
+      } catch (error) {
+        if (!SandboxFileError.is(error) || error.code !== 'ENOENT') throw error;
+        deletions.push({ path });
+        continue;
+      }
+      if (info.type !== 'file') throw new Error(`Unsupported course file: ${path}`);
+      if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
+        throw new Error(`Review file is too large: ${path}`);
+      }
+      const old = await git('ls-tree', baseCommit, '--', path);
+      const mode = info.mode & 0o100 ? '100755' : '100644';
+      if (mode !== '100644' || (old && old.slice(0, 6) !== mode)) {
+        throw new Error(`File mode changes are not supported: ${path}`);
+      }
+
+      // Save bytes now: later edits must not change what the instructor approves.
+      const response = await files.readFile(path, options);
+      const contents = Buffer.from(await response.arrayBuffer()).toString('base64');
+      total += contents.length;
+      if (total > MAX_REVIEW_BYTES) throw new Error('Reviewed changes are too large');
+      additions.push({ path, contents });
+    }
+    return ReviewSnapshotSchema.parse({ repository, branch, baseCommit, additions, deletions });
   }
 
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */
