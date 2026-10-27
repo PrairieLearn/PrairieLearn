@@ -1,12 +1,19 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { PrintRenderer } from '../../lib/printing/print-renderer.js';
+import { PrintRenderer, type RenderPageOptions } from '../../lib/printing/print-renderer.js';
 
 import { expect, test } from './fixtures.js';
 
 // These browser-only tests do not need the application server.
 test.use({ baseURL: '' });
+
+function renderPdf(renderer: PrintRenderer, options: RenderPageOptions) {
+  return renderer.render(options, {
+    label: 'PDF',
+    produce: async (page) => await page.pdf(),
+  });
+}
 
 test('renders allowed resources and blocks redirects before requesting their destination', async () => {
   const requests: string[] = [];
@@ -29,14 +36,14 @@ test('renders allowed resources and blocks redirects before requesting their des
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const renderer = new PrintRenderer();
   try {
-    const pdf = await renderer.renderPdf({
+    const pdf = await renderPdf(renderer, {
       url: `${origin}/print`,
       html: '<!doctype html><html data-print-status="ready"><body><img src="/figure.svg"></body></html>',
     });
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(requests).toContain('/figure.svg');
 
-    const pdfWithBlockedImage = await renderer.renderPdf({
+    const pdfWithBlockedImage = await renderPdf(renderer, {
       url: `${origin}/print`,
       html: '<!doctype html><html data-print-status="ready"><body><img src="/redirect"></body></html>',
     });
@@ -69,12 +76,12 @@ test('closes a failed render with an in-flight asset request and renders the nex
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const renderer = new PrintRenderer();
   try {
-    await renderer.renderPdf({
+    await renderPdf(renderer, {
       url: `${origin}/warmup`,
       html: '<!doctype html><html data-print-status="ready"><body>Warmup</body></html>',
     });
 
-    const failedRender = renderer.renderPdf({
+    const failedRender = renderPdf(renderer, {
       url: `${origin}/failed`,
       html: '<!doctype html><html data-print-status="ready"><body><img src="/slow"></body></html>',
       timeoutMs: 5_000,
@@ -89,7 +96,7 @@ test('closes a failed render with an in-flight asset request and renders the nex
     expect(assetRequestStarted).toBe(true);
     await failure;
 
-    const pdf = await renderer.renderPdf({
+    const pdf = await renderPdf(renderer, {
       url: `${origin}/ready`,
       html: '<!doctype html><html data-print-status="ready"><body>Next document</body></html>',
     });

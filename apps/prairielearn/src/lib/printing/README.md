@@ -42,11 +42,13 @@ For outputs that also need metadata from the paginated page, use `renderer.rende
 
 ### Validating PDF accessibility
 
-Install veraPDF **1.30.3** and its Java runtime, then validate the actual downloaded PDFs from the repository root:
+PDF exports require a JDK (Java 17 or newer), PDFBox **3.0.8**, and veraPDF **1.30.3**. Run `./scripts/install-print-pdf-tools.sh` once from the repository root to install the pinned, checksum-verified tools in `.local/print-pdf-tools`. Docker and CI install them automatically. Set `JAVA_HOME` if your Java installation requires it. No tools are downloaded during an export.
+
+Validate the actual downloaded PDFs from the repository root:
 
 ```sh
 node scripts/validate-print-pdfs.mts \
-  --verapdf /path/to/verapdf \
+  --verapdf .local/print-pdf-tools/verapdf/verapdf \
   --output /tmp/print-pdfua-review \
   assessment.pdf answer-key.pdf packet.pdf
 ```
@@ -54,6 +56,10 @@ node scripts/validate-print-pdfs.mts \
 The output directory must be new and its parent must exist. The script checks the veraPDF version, retains the exact input bytes, runs `--flavour ua1`, and saves full JSON reports, validator logs, readable failure details, and a summary. It exits unsuccessfully for validation failures, unreadable inputs, parsing errors, or tool errors. Omit `--verapdf` when the executable is on `PATH`; set `JAVA_HOME` if your Java installation requires it.
 
 Include math, figures, lists, and tables in the assessment and answer key, and repeated forms and an uploaded cover in the final assembled packet. Validate after assembly because page copying can lose document structure and language. A passing automated report covers only machine-verifiable requirements: review the final files with assistive technology for reading order, navigation, mathematical meaning, table relationships, and useful descriptions before claiming PDF/UA-1 compliance.
+
+`createPdfOutput()` preserves browser tags, restores source-declared formulas and decorative content, adds document metadata, and runs veraPDF on its final bytes. It rejects missing descriptions, lost structure, unclassified drawing, and validation failures. Diagnostic JSON and logs from failed validation remain in the server's temporary directory; temporary PDFs are removed. The thrown validation error carries the report path for server-side diagnosis.
+
+The source must provide a title, language, correctly nested headings/lists/tables, and descriptions for meaningful graphics. MathJax SVG output must retain its spoken description. A template can identify wholly decorative content with `data-print-pdf-role="Artifact"`. For a container whose own background/border is decorative, set `data-print-pdf-role="Div"` (or its actual paragraph/heading role) and `data-print-pdf-decorative-paint`; its descendants remain meaningful. Only that container's marked drawing is made decorative, and the processor rejects text or images in it. Materialize repeated CSS-generated footer text as real DOM content before marking it decorative. Never use these annotations to hide meaningful author content.
 
 ## Combining question fragments
 
