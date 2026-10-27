@@ -534,6 +534,81 @@ export const InstructorQuestionSettingsForm = ({
               )}
             </div>
 
+            <div className="mb-3">
+              <label className="form-label" id="authors-label" htmlFor="authors">
+                Authors
+              </label>
+              {canEdit ? (
+                <>
+                  <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
+                  <TagPicker
+                    id="authors"
+                    aria-labelledby="authors-label"
+                    items={authorItems}
+                    value={selectedAuthors}
+                    placeholder="Add an author by UID"
+                    tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
+                    renderTagContent={({ uid, name }) =>
+                      name ? (
+                        <>
+                          <span className="text-body">{name}</span>
+                          <span className="text-secondary fw-normal">{uid}</span>
+                        </>
+                      ) : (
+                        <span className="text-body">{uid}</span>
+                      )
+                    }
+                    errorMessage={authorError}
+                    onInputChange={() => setAuthorError(undefined)}
+                    onChange={(uids) => {
+                      setAuthorError(undefined);
+                      setValue('authors', uids, { shouldDirty: true });
+                    }}
+                    onCreate={(uid) => {
+                      if (!QuestionAuthorUidSchema.safeParse(uid).success) {
+                        setAuthorError('Enter a nonblank UID.');
+                        return false;
+                      }
+                      setAuthorError(undefined);
+                      setValue('authors', [...selectedAuthors, uid], { shouldDirty: true });
+                      return true;
+                    }}
+                  />
+                </>
+              ) : (
+                <div>
+                  {authorItems.map((author) => (
+                    <span key={author.id} className="me-1">
+                      <span className="badge color-gray1 fw-normal text-wrap text-break">
+                        {author.label}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <small className="form-text text-muted">
+                Credit the people who wrote this question by their UID. Names are shown for current
+                course staff.{' '}
+                {canEdit && !selectedAuthors.includes(currentUid.trim()) && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm p-0 border-0 align-baseline"
+                      onClick={() => {
+                        setAuthorError(undefined);
+                        setValue('authors', [...selectedAuthors, currentUid.trim()], {
+                          shouldDirty: true,
+                        });
+                      }}
+                    >
+                      Add myself
+                    </button>
+                    .
+                  </>
+                )}
+              </small>
+            </div>
+
             {courseInstance && (
               <div className="mb-0">
                 <p className="form-label mb-1">Assessments</p>
@@ -625,69 +700,6 @@ export const InstructorQuestionSettingsForm = ({
                 not affected.
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-body">
-            <h2 id="authors-label" className="h5 card-title mb-3">
-              Authors
-            </h2>
-            <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
-            <TagPicker
-              id="authors"
-              aria-labelledby="authors-label"
-              items={authorItems}
-              value={selectedAuthors}
-              disabled={!canEdit}
-              placeholder="Add an author by UID"
-              tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
-              renderTagContent={({ uid, name }) =>
-                name ? (
-                  <>
-                    <span className="text-body">{name}</span>
-                    <span className="text-secondary fw-normal">{uid}</span>
-                  </>
-                ) : (
-                  <span className="text-body">{uid}</span>
-                )
-              }
-              errorMessage={authorError}
-              description={
-                <>
-                  UIDs of the people who wrote this question. Names are shown for current course
-                  staff.{' '}
-                  {canEdit && !selectedAuthors.includes(currentUid.trim()) && (
-                    <button
-                      type="button"
-                      className="btn btn-link btn-sm p-0 border-0 align-baseline"
-                      onClick={() => {
-                        setAuthorError(undefined);
-                        setValue('authors', [...selectedAuthors, currentUid.trim()], {
-                          shouldDirty: true,
-                        });
-                      }}
-                    >
-                      Add myself
-                    </button>
-                  )}
-                </>
-              }
-              onInputChange={() => setAuthorError(undefined)}
-              onChange={(uids) => {
-                setAuthorError(undefined);
-                setValue('authors', uids, { shouldDirty: true });
-              }}
-              onCreate={(uid) => {
-                if (!QuestionAuthorUidSchema.safeParse(uid).success) {
-                  setAuthorError('Enter a nonblank UID.');
-                  return false;
-                }
-                setAuthorError(undefined);
-                setValue('authors', [...selectedAuthors, uid], { shouldDirty: true });
-                return true;
-              }}
-            />
           </div>
         </div>
 
