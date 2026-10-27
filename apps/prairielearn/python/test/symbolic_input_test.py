@@ -1,3 +1,4 @@
+import html
 import string
 
 import prairielearn.sympy_utils as psu
@@ -39,7 +40,7 @@ def test_normalize_absolute_value_bars_handles_long_input() -> None:
     assert result == "abs(x)" * 5000 + "abs(x+" * 2000 + "y" + ")" * 2000
 
 
-@pytest.mark.parametrize("submission", ["|x", "x|"])
+@pytest.mark.parametrize("submission", ["|x", "x|", "|<img src=x onerror=alert(1)>"])
 def test_try_parse_string_as_sympy_reports_ambiguous_absolute_value_bars(
     submission: str,
 ) -> None:
@@ -47,7 +48,7 @@ def test_try_parse_string_as_sympy_reports_ambiguous_absolute_value_bars(
 
     assert result == psu.SympyParseFailure(
         "The absolute value bars in your answer are mismatched or ambiguous: "
-        f"<code>{submission}</code>."
+        f"<code>{html.escape(submission)}</code>."
     )
 
 
