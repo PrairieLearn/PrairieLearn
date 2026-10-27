@@ -54,6 +54,7 @@ import {
 } from './ai-grading-selection.shared.js';
 import { selectGradingResults } from './ai-grading-stats.js';
 import {
+  AI_GRADING_INFERENCE_TIMEOUT_MS,
   type AiGradingPrompt,
   addAiGradingCostToIntervalUsage,
   correctImagesOrientation,
@@ -772,6 +773,7 @@ export async function aiGrade({
             return {
               finalGradingResponse: await generateText({
                 model,
+                abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
                 output: Output.object({ schema: RubricGradingResultSchema }),
                 ...gradingPrompt,
                 providerOptions: {
@@ -784,6 +786,7 @@ export async function aiGrade({
 
           const initialResponse = await generateText({
             model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
             output: Output.object({ schema: RubricImageGradingResultSchema }),
             ...gradingPrompt,
             providerOptions: {
@@ -832,6 +835,7 @@ export async function aiGrade({
           // Perform grading with the rotation-corrected images.
           const finalResponse = await generateText({
             model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
             output: Output.object({ schema: RubricImageGradingResultSchema }),
             ...gradingPrompt,
             providerOptions: {
@@ -1013,6 +1017,7 @@ export async function aiGrade({
             return {
               finalGradingResponse: await generateText({
                 model,
+                abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
                 output: Output.object({ schema: GradingResultSchema }),
                 ...gradingPrompt,
                 providerOptions: {
@@ -1025,6 +1030,7 @@ export async function aiGrade({
 
           const initialResponse = await generateText({
             model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
             output: Output.object({ schema: ImageGradingResultSchema }),
             ...gradingPrompt,
             providerOptions: {
@@ -1062,6 +1068,7 @@ export async function aiGrade({
           // Perform grading with the rotation-corrected images.
           const finalResponse = await generateText({
             model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
             output: Output.object({ schema: ImageGradingResultSchema }),
             ...gradingPrompt,
             providerOptions: {

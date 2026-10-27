@@ -14,6 +14,22 @@ There are three different ways to let a student re-attempt or continue an exam:
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
+## How do I submit an answer on behalf of a student?
+
+In some situations, a student may not be able to submit an answer to a question, for example because of technical difficulties or accessibility needs. In these cases, it may be appropriate for an instructor or TA to submit the answer on the student's behalf. This may be done even if the access control rules block the student from submitting directly. Follow these steps:
+
+1. Open the assessment in **Staff view** and select the **Students** tab.
+2. Find the student's assessment instance and check its status in the **Remaining** column. If it is **Closed**, click the pencil icon in that column. In the **Re-open instance** dialog, choose **Re-open without time limit**, and click **Set**.
+3. Open the user menu in the top-right corner. Enter the student's UID as the effective user and click **Change UID**.
+4. In the same menu, under **View as &lt;student name&gt;**, select **Student view without access restrictions**.
+5. Open the corresponding instance question(s) and submit the answer as the student would.
+6. When you are finished, open the top-right user menu and return to **Staff view**.
+7. If you reopened the instance and need to close it again, return to the assessment's **Students** tab, select the student's instance, and choose **Actions &rarr; Grade & close**.
+
+!!! warning "Overriding access rules"
+
+    Note that submitting an answer using this mode will override access rules like early/late submission. The student's submission will be graded using 100% credit, even if the submission is late.
+
 ## How do I give students access to view their exams after they are over?
 
 With modern access control, configure [After completion](assessment/accessControl.md#after-completion) visibility for the assessment or for the relevant PrairieTest exam.
@@ -345,15 +361,15 @@ Changing total scores via CSV download/upload should only be done after the asse
 
 Some changes in question files do not take effect for students that have already started working on a variant. These include, but are not limited to: changes in the value of correct answers, added or removed graded elements, changes in element type (e.g., replacing string input with integer input), changes in the `answers-name` option for graded elements, some other changes in element settings (e.g., multiple choice answers), changes in file names for gradable files, or updates to the `generate` function in `server.py`.
 
-You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. However, if such a change is necessary, and you expect students to have their variants reset after such a change, you may do so in one of two ways:
+You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. However, if such a change is necessary, you can reset variants for Homework assessments in one of two ways. Both options require course instance editor permissions:
 
-- To reset all variants for a particular assessment question, go to the assessment page, click "Actions" on the relevant question, then "Reset question variants". This will invalidate _every_ variant that has been created so far and that has not yet been completed, and students will be given a new one the next time they load the question.
+- To reset all variants for a particular assessment question, go to the assessment's "Questions" tab and click the question's row (outside the question title link) to open its details panel. Click "Reset question variants" at the bottom of the panel, then confirm in the dialog. The button is available when you are viewing the assessment, outside edit mode. This will invalidate _every_ variant that has been created so far and that has not yet been completed, and students will be given a new one the next time they load the question.
 
-- To reset the variants for an individual student (or a small subset of students), go to the assessment page, select the "Students" tab, click on the assessment for the individual student (or group, for group assessments), then on the Questions list click "Action" on the relevant question, then "Reset question variants". This will invalidate the variants only for the specific student or group.
+- To reset the variants for an individual student (or a small subset of students), go to the assessment page, select the "Students" tab, click on the assessment for the individual student (or group, for group assessments), then on the Questions list click "Action" on the relevant question, then "Reset question variants" and confirm in the dialog. This will invalidate the variants only for the specific student or group.
 
 Neither of these options will affect the score a student may already have obtained in any previous variants. However, any work a student may have started on an open variant but not yet submitted will be lost.
 
-For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](assessment/regrading.md).
+Resetting question variants is not supported for Exam assessments. For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](assessment/regrading.md).
 
 ## When I open some CSV downloads, some data is in the wrong columns
 

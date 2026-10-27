@@ -30,6 +30,39 @@ const NO_RESTRICTED_SYNTAX = [
   },
 ];
 
+const ELEMENT_PARENT_IMPORT_MESSAGE =
+  'Element code must not import from outside its own directory. Use a public API or copy the implementation locally.';
+
+const ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTIONS = [
+  {
+    message: ELEMENT_PARENT_IMPORT_MESSAGE,
+    selector: 'ImportExpression[source.value=/(^|\\/)\\.\\.(\\/|$)/]',
+  },
+  {
+    message: ELEMENT_PARENT_IMPORT_MESSAGE,
+    selector:
+      'ImportExpression[source.type="TemplateLiteral"] TemplateElement[value.raw=/(^|\\/)\\.\\.(\\/|$)/]',
+  },
+];
+
+const RESTRICTED_REACT_BOOTSTRAP_IMPORT = {
+  importNames: ['OverlayTrigger'],
+  message: 'Use OverlayTrigger from @prairielearn/ui.',
+  name: 'react-bootstrap',
+};
+
+const TYPESCRIPT_RESTRICTED_SYNTAX = [
+  {
+    message: 'module.exports should not be used in TypeScript files',
+    selector: 'MemberExpression[object.name="module"][property.name="exports"]',
+  },
+  {
+    message:
+      "Specify a reply-mapping type argument, e.g. `new Redis<'legacy'>(...)`, to avoid expensive TypeScript inference.",
+    selector: "NewExpression[callee.name='Redis']:not([typeArguments])",
+  },
+];
+
 export default [
   // Use the shared PrairieLearn ESLint config
   ...prairielearn({
@@ -110,19 +143,7 @@ export default [
   {
     files: ['**/*.{ts,tsx,mts,cts}'],
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...NO_RESTRICTED_SYNTAX,
-        {
-          message: 'module.exports should not be used in TypeScript files',
-          selector: 'MemberExpression[object.name="module"][property.name="exports"]',
-        },
-        {
-          message:
-            "Specify a reply-mapping type argument, e.g. `new Redis<'legacy'>(...)`, to avoid expensive TypeScript inference.",
-          selector: "NewExpression[callee.name='Redis']:not([typeArguments])",
-        },
-      ],
+      'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX, ...TYPESCRIPT_RESTRICTED_SYNTAX],
     },
   },
 
@@ -132,14 +153,31 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [
+          paths: [RESTRICTED_REACT_BOOTSTRAP_IMPORT],
+        },
+      ],
+    },
+  },
+
+  {
+    files: ['apps/prairielearn/elements/**/*.{js,mjs,cjs}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
             {
-              importNames: ['OverlayTrigger'],
-              message: 'Use OverlayTrigger from @prairielearn/ui.',
-              name: 'react-bootstrap',
+              message:
+                'Element code must not import from outside its own directory. Use a public API or copy the implementation locally.',
+              regex: '(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)',
             },
           ],
         },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        ...NO_RESTRICTED_SYNTAX,
+        ...ELEMENT_PARENT_DYNAMIC_IMPORT_RESTRICTIONS,
       ],
     },
   },
