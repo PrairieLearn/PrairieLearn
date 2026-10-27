@@ -38,7 +38,7 @@ assets
         └── baz.tsx
 ```
 
-The import tree of all files will be analyzed, and any code-split chunks or dynamically-imported files will be marked as preloads.
+In production, each entrypoint's static import tree is included in its manifest preloads, including transitive shared chunks. Dynamic `import()` boundaries are excluded so that lazy code is fetched only when requested. Development serves split ESM bundles without manifest preload hints.
 
 ### Application integration
 
@@ -67,7 +67,7 @@ app.use('/build/', assets.handler());
 
 To include a bundle on your page, you can use the `compiledScriptTag` or `compiledScriptPath` functions. The name of the bundle passed to this function is the filename of your bundle within the `scripts` directory.
 
-If your file is located in the `esm-bundles` folder (and processed with ESM + code splitting), you can use the `compiledScriptModuleTag` function. You can use `compiledScriptModulePreloadTags` to get a list of tags that should be preloaded in the `<head>` of your HTML document.
+If your file is located in the `esm-bundles` folder (and processed with ESM + code splitting), you can use the `compiledScriptModuleTag` function. Use `compiledScriptPreloadPaths` to get the URLs for `<link rel="modulepreload">` hints. `@prairielearn/react` emits these hints automatically for hydrated components.
 
 ```ts
 import { html } from '@prairielearn/html';
@@ -84,7 +84,7 @@ router.get(() => {
         ${compiledScriptTag('foo.ts')}
         <script src="${compiledScriptPath('bar.ts')}"></script>
 
-        ${compiledScriptModuleTag('baz.tsx')}
+        ${compiledScriptModuleTag('esm-bundles/baz.tsx')}
       </head>
       </body>
         Hello, world.
@@ -93,6 +93,25 @@ router.get(() => {
   `;
 });
 ```
+
+### Lazy ESM imports
+
+Use a dynamic import in an ESM bundle to defer both transferring and executing optional code:
+
+```ts
+const loadEditor = () => import('../lib/editor.js');
+
+openButton.addEventListener('click', async () => {
+  const { openEditor } = await loadEditor();
+  openEditor();
+});
+```
+
+Keep optional implementation files outside `esm-bundles/` unless they also need to be independently addressable entrypoints. All files under `esm-bundles/` become entrypoints, but are only fetched when referenced by the page or another module. An eagerly imported dependency is still eager even if another caller imports it dynamically. Classic IIFE bundles do not support splitting and cannot defer transfer this way.
+
+The browser loads a requested module's static dependencies and reuses modules with the same URL. The manifest preloads the full static graph for initial entrypoints to avoid dependency-discovery round trips. For lazy imports, dependencies that are not already loaded are discovered after fetching their importer; this package does not rewrite dynamic imports to preload that graph in parallel. [Vite's async chunk optimization](https://vite.dev/guide/features#async-chunk-loading-optimization) describes that additional optimization. Consider it if measured loading latency warrants the extra build/runtime machinery.
+
+Applications can intentionally start an import on hover or focus by calling the same loader earlier and handling rejection, or use [React's `preloadModule`](https://react.dev/reference/react-dom/preloadModule) when the emitted URL is available. Calling `import()` also evaluates the module; `modulepreload` fetches and prepares it without evaluation. Keep module side effects in mind when choosing a warming strategy. For React UI, standard `React.lazy` and `Suspense` can use the same dynamic import boundary; hydration registration does not need a separate lazy-loading API.
 
 ### Building assets for production
 
