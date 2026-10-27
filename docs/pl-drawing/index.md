@@ -1855,7 +1855,9 @@ A `pl-graph-line` element adds straight or quadratic lines to plots. It wraps th
 
 ## Accessibility
 
-Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
+Interactive `pl-drawing` elements (`gradable="true"`) do not support keyboard or screen reader interaction. See [alternatives to drawing input](../question/accessibility.md#alternatives-to-drawing-input) for other ways students can answer.
+
+For static diagrams (`gradable="false"`), use `aria-label` for a short description and `aria-description` for a longer description read by screen readers. These attributes do not make interactive diagrams accessible.
 
 ## Extension API
 

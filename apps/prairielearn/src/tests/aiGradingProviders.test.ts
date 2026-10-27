@@ -1,24 +1,41 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 
+import { loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import * as publicFetch from '@prairielearn/public-fetch';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { getAppError } from '@prairielearn/trpc/client';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as discovery from '../ee/lib/ai-grading/ai-grading-model-discovery.js';
+import { aiGrade } from '../ee/lib/ai-grading/ai-grading.js';
+import { makeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
+import { AiGradingJobSchema, GradingJobSchema, InstanceQuestionSchema } from '../lib/db-types.js';
 import { decryptFromStorage } from '../lib/encrypted-storage.js';
 import { features } from '../lib/features/index.js';
-import { selectCredentials } from '../models/ai-grading-credentials.js';
+import { saveSubmission } from '../lib/grading.js';
+import { ensureVariant } from '../lib/question-variant.js';
+import * as progress from '../lib/serverJobProgressSocket.js';
+import { selectCredentials, updateUseCustomApiKeys } from '../models/ai-grading-credentials.js';
+import { selectCreditPool } from '../models/ai-grading-credit-pool.js';
+import { selectAssessmentQuestionByQuestionId } from '../models/assessment-question.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectAuditEvents } from '../models/audit-event.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
+import { selectCourseByShortName } from '../models/course.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { selectQuestionByQid } from '../models/question.js';
 import type { AiGradingProvidersError } from '../trpc/courseInstance/ai-grading-providers.js';
 import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
 
 import * as helperServer from './helperServer.js';
 import { type AuthUser, getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
 
+const sql = loadSqlEquiv(import.meta.url);
 const editor: AuthUser = { uid: 'custom-provider-editor', name: 'Editor', uin: '00000123' };
 const base_url = 'https://provider.example/v1/';
 const secret_key = 'test-provider-secret-key';
@@ -140,6 +157,150 @@ describe('custom AI grading provider API', { concurrent: false }, () => {
       courseInstanceId: '1',
     });
   });
+
+  it(
+    'grades a submission and remembers custom identity without using platform credits',
+    { timeout: 30_000 },
+    async () => {
+      const courseInstance = await updateUseCustomApiKeys({
+        course_instance_id: '1',
+        ai_grading_use_custom_api_keys: true,
+      });
+      const model_id = 'gpt-6-sol';
+      discover.mockResolvedValue([model_id]);
+      const course = await selectCourseByShortName('QA 101');
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: courseInstance.id,
+        tid: 'hw10-aiGrading',
+      });
+      const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
+      const assessment_question = await selectAssessmentQuestionByQuestionId({
+        assessment_id: assessment.id,
+        question_id: question.id,
+      });
+      const [student] = await generateAndEnrollUsers({
+        count: 1,
+        course_instance_id: courseInstance.id,
+      });
+      const assessmentInstanceId = await makeAssessmentInstance({
+        assessment,
+        user_id: student.id,
+        authn_user_id: student.id,
+        mode: 'Public',
+        time_limit_min: null,
+        date: new Date(),
+        client_fingerprint_id: null,
+      });
+      const instanceQuestionId = await queryScalar(
+        sql.select_test_instance_question_id,
+        { assessment_instance_id: assessmentInstanceId },
+        IdSchema,
+      );
+      const variant = await ensureVariant({
+        question_id: question.id,
+        instance_question_id: instanceQuestionId,
+        user_id: student.id,
+        authn_user_id: student.id,
+        course_instance: courseInstance,
+        variant_course: course,
+        question_course: course,
+        options: {},
+        require_open: false,
+        client_fingerprint_id: null,
+      });
+      const { submission_id: submissionId } = await saveSubmission(
+        {
+          variant_id: variant.id,
+          user_id: student.id,
+          auth_user_id: student.id,
+          submitted_answer: { explanation: 'The range and the coefficient are incorrect.' },
+        },
+        variant,
+        question,
+        course,
+      );
+      const credits = await selectCreditPool(courseInstance.id);
+      const progressUpdate = vi.spyOn(progress, 'emitServerJobProgressUpdate').mockResolvedValue();
+      const fetch = vi.spyOn(publicFetch, 'publicFetch').mockResolvedValue(
+        Response.json({
+          id: 'test-completion',
+          object: 'chat.completion',
+          created: 0,
+          model: model_id,
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: JSON.stringify({
+                  explanation: 'Mostly correct',
+                  feedback: 'Explain the loop bounds.',
+                  score: 75,
+                }),
+              },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        }) as unknown as Awaited<ReturnType<typeof publicFetch.publicFetch>>,
+      );
+      try {
+        const jobId = await aiGrade({
+          course,
+          course_instance: courseInstance,
+          assessment,
+          question,
+          assessment_question,
+          urlPrefix: '/pl',
+          authn_user_id: authnUserId,
+          user_id: authnUserId,
+          mode: 'selected',
+          instance_question_ids: [instanceQuestionId],
+          model_id,
+          provider: 'openai-compatible',
+          credential_id: credentialId,
+        });
+        await helperServer.waitForJobSequenceSuccess(jobId);
+        const result = await queryRow(
+          sql.select_test_grading_result,
+          { job_sequence_id: jobId },
+          z.object({
+            ai_grading_job: AiGradingJobSchema,
+            grading_job: GradingJobSchema,
+            instance_question: InstanceQuestionSchema,
+          }),
+        );
+        expect(result.ai_grading_job).toMatchObject({
+          provider: 'openai-compatible',
+          base_url: 'https://provider.example/v1',
+          model: model_id,
+          cost: null,
+        });
+        expect(result.grading_job).toMatchObject({
+          grading_method: 'AI',
+          submission_id: submissionId,
+          manual_points: 3,
+        });
+        expect(result.instance_question).toMatchObject({
+          manual_points: 3,
+          is_ai_graded: true,
+        });
+      } finally {
+        fetch.mockRestore();
+        progressUpdate.mockRestore();
+      }
+      expect(
+        await selectAssessmentQuestionByQuestionId({
+          assessment_id: assessment.id,
+          question_id: question.id,
+        }),
+      ).toMatchObject({
+        ai_grading_last_selected_model: model_id,
+        ai_grading_last_selected_credential_id: credentialId,
+      });
+      expect(await selectCreditPool(courseInstance.id)).toEqual(credits);
+    },
+  );
 
   it('keeps the old configuration when provider validation fails', async () => {
     discover.mockRejectedValue(

@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
-  AiGradingModelDiscoveryError,
   discoverAiGradingModels,
   normalizeAiGradingBaseUrl,
 } from '../../ee/lib/ai-grading/ai-grading-model-discovery.js';
@@ -56,30 +55,6 @@ const customProviderMetadataSchema = StaffAiGradingCredentialSchema.pick({
 });
 const modelsSchema = z.object({ models: z.array(z.string()) });
 
-async function discoverModels(input: Parameters<typeof discoverAiGradingModels>[0]) {
-  try {
-    return await discoverAiGradingModels(input);
-  } catch (error) {
-    if (!(error instanceof AiGradingModelDiscoveryError)) throw error;
-    throw new TRPCError({
-      code:
-        error.code === 'timeout'
-          ? 'TIMEOUT'
-          : error.code === 'rate_limit'
-            ? 'TOO_MANY_REQUESTS'
-            : [
-                  'provider_error',
-                  'request_failed',
-                  'invalid_response',
-                  'response_too_large',
-                ].includes(error.code)
-              ? 'BAD_GATEWAY'
-              : 'BAD_REQUEST',
-      message: error.message,
-    });
-  }
-}
-
 async function getCustomCredential(course_instance_id: string, credential_id: string) {
   const credential = await selectOptionalCredential({ course_instance_id, credential_id });
   if (credential?.provider !== 'openai-compatible' || credential.base_url === null) {
@@ -107,7 +82,7 @@ export const aiGradingProvidersRouter = t.router({
     .input(connectionSchema)
     .output(modelsSchema)
     .mutation(async ({ ctx, input }) => ({
-      models: await discoverModels({
+      models: await discoverAiGradingModels({
         baseUrl: input.base_url,
         apiKey: input.secret_key,
         courseInstanceId: ctx.course_instance.id,
@@ -119,7 +94,7 @@ export const aiGradingProvidersRouter = t.router({
     .output(z.object({ credential: StaffAiGradingCredentialSchema }))
     .mutation(async ({ ctx, input }) => {
       // Recheck the submitted connection outside the transaction; never trust the client's catalog.
-      await discoverModels({
+      await discoverAiGradingModels({
         baseUrl: input.base_url,
         apiKey: input.secret_key,
         courseInstanceId: ctx.course_instance.id,
@@ -154,7 +129,7 @@ export const aiGradingProvidersRouter = t.router({
     .query(async ({ ctx, input }) => {
       const credential = await getCustomCredential(ctx.course_instance.id, input.credential_id);
       return {
-        models: await discoverModels({
+        models: await discoverAiGradingModels({
           baseUrl: credential.base_url,
           apiKey: decryptFromStorage(credential.encrypted_secret_key),
           courseInstanceId: ctx.course_instance.id,
