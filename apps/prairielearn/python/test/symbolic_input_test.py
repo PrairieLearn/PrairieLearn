@@ -2,7 +2,6 @@ import string
 
 import prairielearn.sympy_utils as psu
 import pytest
-from prairielearn.internal import symbolic_input
 
 
 @pytest.mark.parametrize(
@@ -28,14 +27,11 @@ from prairielearn.internal import symbolic_input
     ],
 )
 def test_normalize_absolute_value_bars(submission: str, expected: str) -> None:
-    assert (
-        symbolic_input.normalize_absolute_value_bars(submission, allow_sets=False)
-        == expected
-    )
+    assert psu._normalize_absolute_value_bars(submission, allow_sets=False) == expected
 
 
 def test_normalize_absolute_value_bars_handles_long_input() -> None:
-    result = symbolic_input.normalize_absolute_value_bars(
+    result = psu._normalize_absolute_value_bars(
         "|x|" * 5000 + "|x+" * 2000 + "y" + "|" * 2000,
         allow_sets=False,
     )
@@ -72,10 +68,7 @@ def test_try_parse_string_as_sympy_reports_ambiguous_absolute_value_bars(
 def test_normalize_absolute_value_bars_preserves_set_union(
     submission: str, expected: str
 ) -> None:
-    assert (
-        symbolic_input.normalize_absolute_value_bars(submission, allow_sets=True)
-        == expected
-    )
+    assert psu._normalize_absolute_value_bars(submission, allow_sets=True) == expected
 
 
 @pytest.mark.parametrize(
