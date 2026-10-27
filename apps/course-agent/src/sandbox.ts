@@ -1,7 +1,13 @@
 import { DirectoryBackup, type DirectoryBackupRecord, Files } from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
-import { freezeReviewScript } from './review-patch.js';
+import {
+  MAX_REVIEW_BYTES,
+  MAX_REVIEW_FILE_BYTES,
+  ReviewSnapshotSchema,
+} from '@prairielearn/course-agent-types';
+
+import { captureReviewScript } from './review-snapshot.js';
 
 const SESSION = '/workspace/session';
 const NATIVE_PORT = 4500;
@@ -133,8 +139,6 @@ export class CourseSandbox extends DurableObject<Env> {
     );
     await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
     await this.exec(['chown', 'root:root', SESSION]);
-    const head = await this.exec(['git', '-C', `${SESSION}/course`, 'rev-parse', 'HEAD'], 'node');
-    return new TextDecoder().decode(head.stdout).trim();
   }
 
   /** Pause Codex tool orchestration and reject other commands that could change the checkout. */
@@ -176,32 +180,33 @@ export class CourseSandbox extends DurableObject<Env> {
     ]);
   }
 
-  /** Freeze all edits relative to the original publication base, including local commits. */
-  async freezeReview(baseCommit: string) {
-    await this.checkReviewWriters();
-    await this.exec(['mkdir', '-p', `${SESSION}/review`]);
-    const result = await this.exec(
-      ['sh', '-ec', freezeReviewScript, 'review', baseCommit, `${SESSION}/course`],
-      'node',
-    );
-    await this.checkReviewWriters();
-    const patch = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(result.stdout);
-    await new Files(this.container).writeFile(`${SESSION}/review/patch`, patch);
-    return patch;
-  }
-
-  /** This private file is included in the existing workspace checkpoint. */
-  async readReview() {
-    const result = await this.exec(['cat', `${SESSION}/review/patch`]);
-    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(result.stdout);
-  }
-
-  /** Publication is authoritative even if Course Sync failed. Denials retain all edits. */
-  async reconcilePublication(commitSha: string, branch: string) {
-    await this.checkReviewWriters();
-    await this.exec(['git', '-C', `${SESSION}/course`, 'fetch', 'origin', '--', branch], 'node');
-    await this.exec(['git', '-C', `${SESSION}/course`, 'reset', '--hard', commitSha], 'node');
-    await this.exec(['git', '-C', `${SESSION}/course`, 'clean', '-fd'], 'node');
+  /** Snapshot bytes while writers are paused; the DO owns them after this returns. */
+  async captureReview(repository: string, branch: string) {
+    try {
+      await this.checkReviewWriters();
+      const result = await this.exec(
+        [
+          'node',
+          '-e',
+          captureReviewScript,
+          `${SESSION}/course`,
+          branch,
+          String(MAX_REVIEW_FILE_BYTES),
+          String(MAX_REVIEW_BYTES),
+        ],
+        'node',
+      );
+      await this.checkReviewWriters();
+      return ReviewSnapshotSchema.parse({
+        ...JSON.parse(
+          new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout),
+        ),
+        repository,
+        branch,
+      });
+    } finally {
+      await this.resumeReview();
+    }
   }
 
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */

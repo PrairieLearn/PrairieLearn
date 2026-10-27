@@ -40,3 +40,13 @@ SET
 WHERE
   id = $id
   AND title = $default_title;
+
+-- BLOCK select_course_agent_conversation_by_agent_id
+SELECT
+  cac.*
+FROM
+  course_agent_conversations AS cac
+  JOIN courses AS c ON c.id = cac.course_id
+  AND c.deleted_at IS NULL
+WHERE
+  cac.agent_conversation_id = $agent_conversation_id;

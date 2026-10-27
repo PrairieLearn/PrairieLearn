@@ -12,6 +12,14 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const DEFAULT_COURSE_AGENT_CONVERSATION_TITLE = 'New conversation';
 
+export async function selectOptionalCourseAgentConversationByAgentId(agentConversationId: string) {
+  return queryOptionalRow(
+    sql.select_course_agent_conversation_by_agent_id,
+    { agent_conversation_id: agentConversationId },
+    CourseAgentConversationSchema,
+  );
+}
+
 export async function insertCourseAgentConversation({
   course_id,
   user_id,

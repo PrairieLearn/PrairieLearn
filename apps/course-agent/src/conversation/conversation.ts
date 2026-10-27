@@ -13,10 +13,13 @@ import {
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
+  type PendingReview,
   type PushSyncResult,
   PushSyncResultSchema,
+  type ReviewDecision,
   type ReviewOutcome,
-  reviewRevision,
+  type ReviewSnapshot,
+  SavedJobOutcomeSchema,
 } from '@prairielearn/course-agent-types';
 
 import { SandboxTurn } from '../sandbox-turn.js';
@@ -38,8 +41,12 @@ interface RuntimeData {
   nativeThreadId: string | null;
   checkpoint: DirectoryBackupRecord | null;
   deadline: Deadline | null;
-  baseCommit: string | null;
-  review: { callId: string; revision: string } | null;
+  review:
+    | (Omit<PendingReview, 'snapshot'> & {
+        snapshot: Omit<ReviewSnapshot, 'additions'> & { additions: { path: string }[] };
+        decision: ReviewDecision | null;
+      })
+    | null;
 }
 // Destruction is a private phase because the replacement checkpoint is committed
 // before container removal can be attempted.
@@ -179,23 +186,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // A new object has no saved conversation yet. Leave runtime null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this.runtime) return;
-    if (!this.record.review) {
-      const unresolved = this.messages
-        .flatMap((message) => message.parts)
-        .find(
-          (part) =>
-            isToolUIPart(part) &&
-            part.type === 'tool-push_sync' &&
-            part.state === 'input-available',
-        );
-      if (unresolved && isToolUIPart(unresolved)) {
-        const input = z.object({ revision: z.string() }).parse(unresolved.input);
-        this.setRuntimeState({
-          ...this.record,
-          review: { callId: unresolved.toolCallId, revision: input.revision },
-          lifecycle: { status: 'waiting_for_user' },
-        });
-      }
+    if (this.record.review) {
+      await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
     }
     this.setState(this.publicState);
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
@@ -212,9 +204,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       case 'starting':
         // Setup lost its execution handle. Resume must discard the incomplete container.
         this.block('startup_failed');
-        return;
-      case 'refreshing_workspace':
-        await this.schedule(0, 'continueReview', undefined, { idempotent: true });
         return;
       case 'waiting_for_agent':
       case 'stopping':
@@ -244,7 +233,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: null,
       nativeThreadId: null,
       checkpoint: null,
-      baseCommit: null,
       review: null,
       deadline: null,
     });
@@ -282,31 +270,30 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Restore a card that SDK restart recovery persisted after the wake hook. */
   async recoverReviewCard() {
-    if (this.record.review || this.active) return;
-    const part = this.messages
-      .flatMap((message) => message.parts)
-      .find(
-        (part) =>
-          isToolUIPart(part) && part.type === 'tool-push_sync' && part.state !== 'output-available',
-      );
-    if (!part || !isToolUIPart(part)) return;
-    const { revision } = z
-      .object({ revision: z.string().regex(/^[0-9a-f]{64}$/) })
-      .parse(part.input);
-    if (this.record.sandboxId) {
-      this.setRuntimeState({
-        ...this.record,
-        review: { callId: part.toolCallId, revision },
-        lifecycle: { status: 'waiting_for_user' },
-      });
-    } else {
-      this.setRuntimeState({
-        ...this.record,
-        sandboxId: null,
-        review: { callId: part.toolCallId, revision },
-        lifecycle: { status: 'offline' },
-      });
+    if (!this.record.review || this.active || this.cleanup) return;
+    if (
+      this.record.lifecycle.status === 'blocked' &&
+      this.record.lifecycle.reason !== 'runtime_failed'
+    ) {
+      return;
     }
+    if (!this.reviewPart()) return;
+    if (this.savedOutcome()) {
+      await this.continueReview();
+      return;
+    }
+    if (
+      !['waiting_for_agent', 'waiting_for_user', 'blocked', 'offline'].includes(
+        this.record.lifecycle.status,
+      )
+    ) {
+      return;
+    }
+    this.setRuntimeState(
+      this.record.sandboxId
+        ? { ...this.record, lifecycle: { status: 'waiting_for_user' } }
+        : { ...this.record, sandboxId: null, lifecycle: { status: 'offline' } },
+    );
     if (this.record.sandboxId) await this.scheduleDeadline('idle');
   }
 
@@ -398,7 +385,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       const stream = live.active.execution.openStream();
       this.setRuntimeState({ ...this.record, lifecycle: { status: 'waiting_for_agent' } });
       await this.scheduleDeadline('turn');
-      await this.sandbox.resumeReview();
       this.waiter!.delivered = true;
       this.waiter!.result.resolve(live.result);
       const abort = () => {
@@ -428,7 +414,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const message = this.messages.at(-1);
     if (!continuation && message?.role !== 'user') throw new Error('Expected a new user message');
     const text = message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
-    const outcome = continuation ? await this.savedOutcome() : null;
+    const outcome = continuation ? this.savedOutcome() : null;
     if (continuation && !outcome) throw new Error('No saved review outcome');
     const startup = this.record.sandboxId === null;
     this.setRuntimeState({
@@ -438,29 +424,48 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
     const execution = new SandboxTurn(this.sandbox, {
       messageId: crypto.randomUUID(),
-      text: outcome ? { ...this.record.review!, result: outcome } : text,
+      text: outcome ? { callId: this.record.review!.callId, result: outcome } : text,
       startup,
       onReview: async ({ callId }, ready) => {
-        if (!this.record.baseCommit || (this.waiter && !this.waiter.delivered)) {
-          throw new Error('A review is already pending or has no base');
+        if (this.waiter && !this.waiter.delivered) {
+          throw new Error('A review is already pending');
         }
         const result = Promise.withResolvers<PushSyncResult>();
         this.waiter = { callId, result, delivered: false };
         try {
-          const patch = await this.sandbox.freezeReview(this.record.baseCommit);
-          const revision = await reviewRevision(this.record.baseCommit, patch);
-          ready(revision);
+          const snapshot: ReviewSnapshot = await this.sandbox.captureReview(
+            this.record.config.repository,
+            this.record.config.branch,
+          );
+          this.clearReview();
+          snapshot.additions.forEach((file, index) =>
+            this.ctx.storage.kv.put(`review-file:${index}`, file.contents),
+          );
+          this.setRuntimeState({
+            ...this.record,
+            review: {
+              callId,
+              card: { messageId: this.active!.execution.messageId, partId: callId },
+              snapshot: {
+                ...snapshot,
+                additions: snapshot.additions.map(({ path }) => ({ path })),
+              },
+              status: 'pending',
+              jobSequenceId: null,
+              error: null,
+              decision: null,
+            },
+          });
+          ready();
           await this.active!.sdkFinished.promise;
           this.setRuntimeState({
             ...this.record,
-            review: { callId, revision },
             lifecycle: { status: 'waiting_for_user' },
             deadline: null,
           });
           await this.scheduleDeadline('idle');
         } catch (error) {
           this.waiter = null;
-          await this.sandbox.resumeReview();
           throw error;
         }
         return result.promise;
@@ -468,12 +473,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       prepare: async () => {
         await this.scheduleDeadline('turn');
         if (startup) {
-          const head = await this.sandbox.prepare(this.record.config, this.record.checkpoint);
-          if (!this.record.baseCommit) this.setRuntimeState({ ...this.record, baseCommit: head });
+          await this.sandbox.prepare(this.record.config, this.record.checkpoint);
         }
         if (outcome) {
           await this.sandbox.stopProcesses();
-          await this.reconcile(outcome);
         }
       },
       thread: {
@@ -533,8 +536,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.active = null;
     this.waiter = null;
     if (this.record.review) {
-      if (!result.parked && (await this.savedOutcome()) && !result.error && !result.stopped) {
-        this.setRuntimeState({ ...this.record, review: null });
+      if (!result.parked && this.savedOutcome() && !result.error && !result.stopped) {
+        this.clearReview();
       } else {
         return;
       }
@@ -552,6 +555,66 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Explicit Resume repairs the workspace; it never repeats an interrupted prompt. */
   async resume(): Promise<boolean> {
+    const review = this.record.review;
+    if (review?.decision && !this.savedOutcome()) {
+      if (this.recovering || this.delivery) return false;
+      this.recovering = true;
+      try {
+        if (review.decision.decision === 'denied') {
+          return await this.recordReviewOutcome({
+            callId: review.callId,
+            result: {
+              decision: 'denied',
+              publication: { status: 'not_attempted' },
+              sync: { status: 'not_attempted' },
+            },
+          });
+        }
+        const url = new URL(
+          `pl/api/course-agent/conversations/${this.name}/jobs/${review.jobSequenceId}/outcome`,
+          this.env.PL_SERVICE_URL.endsWith('/')
+            ? this.env.PL_SERVICE_URL
+            : `${this.env.PL_SERVICE_URL}/`,
+        );
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}` },
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (!response.ok) {
+          if (response.status === 404) {
+            this.setRuntimeState({
+              ...this.record,
+              review: {
+                ...review,
+                status: 'blocked',
+                error: 'The publication job could not be verified. Inspect it before retrying.',
+              },
+            });
+          }
+          throw new Error('Could not retrieve the publication outcome.');
+        }
+        const saved = SavedJobOutcomeSchema.parse(await response.json());
+        if (
+          (saved.callId !== null && saved.callId !== review.callId) ||
+          saved.jobSequenceId !== review.jobSequenceId
+        ) {
+          throw new Error('Publication job does not match the pending review.');
+        }
+        if (saved.status === 'running') return false;
+        if (saved.status === 'blocked' || !saved.result) {
+          this.setRuntimeState({
+            ...this.record,
+            review: { ...review, status: 'blocked', error: saved.error },
+          });
+          throw new Error(
+            saved.error ?? 'Publication was interrupted. Inspect the job before retrying.',
+          );
+        }
+        return await this.recordReviewOutcome({ callId: review.callId, result: saved.result });
+      } finally {
+        this.recovering = false;
+      }
+    }
     // Another Resume or an unfinished turn must not modify this workspace concurrently.
     if (this.record.lifecycle.status !== 'blocked' || this.active || this.recovering) return false;
     const reason = this.record.lifecycle.reason;
@@ -568,7 +631,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         case 'cleanup_failed':
           await this.destroyCheckpointed();
       }
-      if (this.record.review && (await this.savedOutcome())) await this.continueReview();
+      if (this.record.review && this.savedOutcome()) await this.continueReview();
       return true;
     } finally {
       this.recovering = false;
@@ -605,7 +668,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     await this.backupAndShutdown();
   }
 
-  private async reviewPart() {
+  private reviewPart() {
     const callId = this.record.review?.callId;
     for (const message of this.messages) {
       const part = message.parts.find((part) => isToolUIPart(part) && part.toolCallId === callId);
@@ -614,60 +677,80 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return null;
   }
 
-  private async savedOutcome() {
-    const saved = await this.reviewPart();
+  private savedOutcome() {
+    const saved = this.reviewPart();
     return saved?.part.state === 'output-available'
       ? PushSyncResultSchema.parse(saved.part.output)
       : null;
   }
 
-  /** Read frozen bytes from the live or restored checkpoint, never from the current diff. */
-  async getPendingReview() {
+  private clearReview() {
+    this.record.review?.snapshot.additions.forEach((_, index) =>
+      this.ctx.storage.kv.delete(`review-file:${index}`),
+    );
+    this.setRuntimeState({ ...this.record, review: null });
+  }
+
+  /** The review remains available without restoring or waking a sandbox. */
+  getPendingReview() {
+    const review = this.record.review;
     if (
-      !this.record.review ||
-      !['waiting_for_user', 'offline'].includes(this.record.lifecycle.status) ||
+      !review ||
+      !['waiting_for_user', 'offline', 'blocked'].includes(this.record.lifecycle.status) ||
       this.waiter?.delivered ||
-      (await this.savedOutcome())
+      !this.reviewPart() ||
+      this.savedOutcome()
     ) {
       return null;
     }
-    if (this.cleanup) await this.cleanup;
-    if (!this.record.sandboxId) {
-      this.setRuntimeState({
-        ...this.record,
-        sandboxId: crypto.randomUUID(),
-        lifecycle: { status: 'starting' },
-      });
-      try {
-        await this.sandbox.prepare(this.record.config, this.record.checkpoint);
-        this.setRuntimeState({ ...this.record, lifecycle: { status: 'waiting_for_user' } });
-        await this.scheduleDeadline('idle');
-      } catch (error) {
-        this.block('startup_failed');
-        throw error;
-      }
-    }
-    const saved = await this.reviewPart();
-    const messageId = saved?.message.id ?? this.active?.execution.messageId;
-    if (!messageId || !this.record.baseCommit) throw new Error('Review card is not available');
     return {
-      ...this.record.review,
-      card: { messageId, partId: this.record.review.callId },
-      repository: this.record.config.repository,
-      branch: this.record.config.branch,
-      baseCommit: this.record.baseCommit,
-      patch: await this.sandbox.readReview(),
-    };
+      callId: review.callId,
+      card: review.card,
+      status: review.status,
+      jobSequenceId: review.jobSequenceId,
+      error: review.error,
+      snapshot: {
+        ...review.snapshot,
+        additions: review.snapshot.additions.map((file, index) => ({
+          ...file,
+          contents: this.ctx.storage.kv.get<string>(`review-file:${index}`)!,
+        })),
+      },
+    } satisfies PendingReview;
   }
 
-  private async reconcile(result: PushSyncResult) {
-    if (result.publication.status === 'published') {
-      await this.sandbox.reconcilePublication(
-        result.publication.commitSha,
-        this.record.config.branch,
-      );
-      this.setRuntimeState({ ...this.record, baseCommit: result.publication.commitSha });
+  /** Claim before PL starts external work; conflicting approvals cannot publish twice. */
+  recordReviewDecision(decision: ReviewDecision): boolean {
+    const review = this.record.review;
+    if (!review || review.callId !== decision.callId) return false;
+    if (review.decision) return JSON.stringify(review.decision) === JSON.stringify(decision);
+    if (!['waiting_for_user', 'offline', 'blocked'].includes(this.record.lifecycle.status)) {
+      return false;
     }
+    if (
+      !this.messages.some(
+        (message) =>
+          message.id === review.card.messageId &&
+          message.parts.some(
+            (part) =>
+              isToolUIPart(part) &&
+              part.toolCallId === review.callId &&
+              part.state === 'input-available',
+          ),
+      )
+    ) {
+      return false;
+    }
+    this.setRuntimeState({
+      ...this.record,
+      review: {
+        ...review,
+        status: 'running',
+        decision,
+        jobSequenceId: decision.decision === 'approved' ? decision.jobSequenceId : null,
+      },
+    });
+    return true;
   }
 
   /** Authenticated callbacks are accepted only for the frozen call and exact result. */
@@ -696,12 +779,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           part.state === 'output-available'
         ) {
           if (
-            z.object({ revision: z.literal(outcome.revision) }).safeParse(part.input).success ===
-            false
-          ) {
-            return false;
-          }
-          if (
             JSON.stringify(PushSyncResultSchema.parse(part.output)) !==
             JSON.stringify(outcome.result)
           ) {
@@ -715,19 +792,40 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       }
     }
     const review = this.record.review;
-    if (!review || review.callId !== outcome.callId || review.revision !== outcome.revision) {
+    if (
+      !review ||
+      review.callId !== outcome.callId ||
+      review.decision?.decision !== outcome.result.decision
+    ) {
       return false;
     }
     if (!this.cleanup) {
       this.setRuntimeState({
         ...this.record,
-        lifecycle: { status: 'refreshing_workspace' },
+        lifecycle: { status: 'waiting_for_agent' },
         deadline: null,
       });
     }
+    // Publish the saved result before resuming the native call. Its completion
+    // notification belongs to the closed review stream, not the new response.
+    await this.persistMessages(
+      history.map((message) => ({
+        ...message,
+        parts: message.parts.map((part) =>
+          isToolUIPart(part) && part.toolCallId === outcome.callId
+            ? {
+                type: 'tool-push_sync' as const,
+                toolCallId: part.toolCallId,
+                input: part.input,
+                state: 'output-available' as const,
+                output: outcome.result,
+              }
+            : part,
+        ),
+      })),
+    );
     const active = this.active;
     if (active && !this.cleanup && this.waiter?.callId === outcome.callId) {
-      await this.reconcile(outcome.result);
       this.liveContinuation = { active, result: outcome.result };
       const response = await this.continueLastTurn();
       if (response.status !== 'completed') {
@@ -735,25 +833,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       }
       await active.sdkFinished.promise;
     } else {
-      // saveMessages persists the result before starting the private continuation. SDK
-      // recovery retains it if the DO restarts between that write and native acceptance.
       this.internalContinuation = true;
-      const result = await this.saveMessages((messages) =>
-        messages.map((message) => ({
-          ...message,
-          parts: message.parts.map((part) =>
-            isToolUIPart(part) && part.toolCallId === outcome.callId
-              ? {
-                  type: 'tool-push_sync' as const,
-                  toolCallId: part.toolCallId,
-                  input: part.input,
-                  state: 'output-available' as const,
-                  output: outcome.result,
-                }
-              : part,
-          ),
-        })),
-      );
+      const result = await this.continueLastTurn();
       if (result.status !== 'completed') throw new Error('Could not incorporate review result');
     }
     const stored = this.messages
@@ -770,10 +851,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Scheduled and explicit recovery uses only the saved tool result, never old user input. */
   async continueReview() {
-    if (!this.record.review || this.active || this.cleanup || !(await this.savedOutcome())) return;
+    if (!this.record.review || this.active || this.cleanup || !this.savedOutcome()) return;
     this.setRuntimeState({
       ...this.record,
-      lifecycle: { status: 'refreshing_workspace' },
+      lifecycle: { status: 'waiting_for_agent' },
       deadline: null,
     });
     this.internalContinuation = true;

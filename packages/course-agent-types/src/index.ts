@@ -9,8 +9,6 @@ const ConversationLifecycleSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('waiting_for_agent') }),
   // The live workspace is ready for input; idle expiry will checkpoint it and shut it down.
   z.object({ status: z.literal('waiting_for_user') }),
-  // Incorporating a reviewed publication outcome before allowing another turn.
-  z.object({ status: z.literal('refreshing_workspace') }),
   // Stop was requested; native execution and SDK response completion must settle before reuse.
   z.object({ status: z.literal('stopping') }),
   // Creating a replacement checkpoint or destroying its container; new input is not admitted.
@@ -64,28 +62,73 @@ export const PushSyncResultSchema = z
     return result.publication.status === 'failed' && result.sync.status === 'not_attempted';
   });
 export type PushSyncResult = z.infer<typeof PushSyncResultSchema>;
+export const MAX_REVIEW_FILE_BYTES = 64 * 1024;
+export const MAX_REVIEW_BYTES = 1024 * 1024;
+const ReviewPathSchema = z
+  .string()
+  .min(1)
+  .max(1024)
+  .refine(
+    (path) =>
+      !path.startsWith('/') &&
+      !path.includes('\\') &&
+      [...path].every((character) => character.charCodeAt(0) >= 32) &&
+      path
+        .split('/')
+        .every(
+          (part) => part !== '' && part !== '.' && part !== '..' && part.toLowerCase() !== '.git',
+        ),
+  );
+export const ReviewSnapshotSchema = z
+  .strictObject({
+    repository: CreateConversationInput.shape.repository,
+    branch: CreateConversationInput.shape.branch,
+    baseCommit: z.string().regex(/^[0-9a-f]{40}$/),
+    additions: z
+      .array(
+        z.strictObject({
+          path: ReviewPathSchema,
+          contents: z.base64().max(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3)),
+        }),
+      )
+      .max(100),
+    deletions: z.array(z.strictObject({ path: ReviewPathSchema })).max(100),
+  })
+  .refine((snapshot) => {
+    const paths = [...snapshot.additions, ...snapshot.deletions].map((file) => file.path);
+    return (
+      new Set(paths).size === paths.length &&
+      snapshot.additions.reduce((size, file) => size + file.contents.length, 0) <= MAX_REVIEW_BYTES
+    );
+  });
+export type ReviewSnapshot = z.infer<typeof ReviewSnapshotSchema>;
 export const PendingReviewSchema = z.strictObject({
   callId: z.string(),
   card: z.strictObject({ messageId: z.string(), partId: z.string() }),
-  revision: z.string().regex(/^[0-9a-f]{64}$/),
-  repository: CreateConversationInput.shape.repository,
-  branch: CreateConversationInput.shape.branch,
-  baseCommit: z.string().regex(/^[0-9a-f]{40}$/),
-  patch: z.string(),
+  snapshot: ReviewSnapshotSchema,
+  status: z.enum(['pending', 'running', 'blocked']),
+  jobSequenceId: z.string().regex(/^\d+$/).nullable(),
+  error: z.string().nullable(),
 });
 export type PendingReview = z.infer<typeof PendingReviewSchema>;
+export const ReviewDecisionSchema = z.discriminatedUnion('decision', [
+  z.strictObject({
+    callId: z.string(),
+    decision: z.literal('approved'),
+    jobSequenceId: z.string().regex(/^\d+$/),
+  }),
+  z.strictObject({ callId: z.string(), decision: z.literal('denied') }),
+]);
+export type ReviewDecision = z.infer<typeof ReviewDecisionSchema>;
 export const ReviewOutcomeSchema = z.strictObject({
   callId: z.string(),
-  revision: PendingReviewSchema.shape.revision,
   result: PushSyncResultSchema,
 });
 export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
-
-/** Hash the base and exact patch bytes identically in Workers and Node. */
-export async function reviewRevision(baseCommit: string, patch: string) {
-  const hash = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(`${baseCommit}\n${patch}`),
-  );
-  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
+export const SavedJobOutcomeSchema = z.strictObject({
+  callId: z.string().nullable(),
+  jobSequenceId: z.string().regex(/^\d+$/),
+  status: z.enum(['running', 'completed', 'blocked']),
+  result: PushSyncResultSchema.nullable(),
+  error: z.string().nullable(),
+});

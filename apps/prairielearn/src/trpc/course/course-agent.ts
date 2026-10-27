@@ -8,9 +8,10 @@ import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
 import {
   createCourseAgentConversation,
+  getCourseAgentPendingReview,
   resumeCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
-import { getPendingReview, postReviewDecision } from '../../ee/lib/course-agent/review.js';
+import { getPendingReview, postReviewDecision } from '../../ee/lib/course-agent/push-sync.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
@@ -37,7 +38,7 @@ const courseAgentProcedure = t.procedure.use(requireCoursePermissionOwn).use(req
 
 export const courseAgentRouter = t.router({
   getPendingReview: courseAgentProcedure
-    .input(z.object({ conversationId: IdSchema }))
+    .input(z.object({ conversationId: IdSchema, callId: z.string() }))
     .query(async ({ ctx, input }) => {
       const conversation = await selectOptionalCourseAgentConversation({
         id: input.conversationId,
@@ -45,7 +46,7 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      return getPendingReview(ctx.course, conversation, ctx.locals.authn_user.id);
+      return getPendingReview(ctx.course, conversation, ctx.locals.authn_user.id, input.callId);
     }),
   postReviewDecision: courseAgentProcedure
     .input(
@@ -80,11 +81,17 @@ export const courseAgentRouter = t.router({
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
       const jobSequence = await getJobSequence(input.jobSequenceId, ctx.course.id);
+      const bound =
+        jobSequence.status === 'Running'
+          ? (await getCourseAgentPendingReview(conversation.agent_conversation_id))
+              ?.jobSequenceId === input.jobSequenceId
+          : jobSequence.jobs.some(
+              (job) => job.data.agentConversationId === conversation.agent_conversation_id,
+            );
       if (
         jobSequence.type !== 'course_agent_push_sync' ||
-        !jobSequence.jobs.some(
-          (job) => job.data.agentConversationId === conversation.agent_conversation_id,
-        )
+        jobSequence.authn_user_id !== ctx.locals.authn_user.id ||
+        !bound
       ) {
         throw new TRPCError({ code: 'NOT_FOUND' });
       }

@@ -26,10 +26,7 @@ export class SandboxTurn {
     options: {
       messageId: string;
       text: string | ReviewOutcome;
-      onReview?: (
-        call: DynamicToolCallParams,
-        ready: (revision: string) => void,
-      ) => Promise<PushSyncResult>;
+      onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<PushSyncResult>;
       startup: boolean;
       prepare: () => Promise<void>;
       thread: { model: string; instructions: string; threadId: string | null };

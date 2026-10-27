@@ -394,9 +394,6 @@ importers:
       wrangler:
         specifier: ^4.134.0
         version: 4.149.0(@cloudflare/workers-types@5.20260917.1)(@types/node@24.19.0)
-      ws:
-        specifier: ^8.21.1
-        version: 8.21.1
 
   apps/grader-host:
     dependencies:
@@ -917,6 +914,9 @@ importers:
       delegated-events:
         specifier: ^1.1.2
         version: 1.1.2
+      diff:
+        specifier: ^9.0.0
+        version: 9.0.0
       dockerode:
         specifier: ^5.0.1
         version: 5.0.1(supports-color@10.2.2)
