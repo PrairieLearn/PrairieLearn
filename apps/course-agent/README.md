@@ -35,20 +35,55 @@ Conversation-list activity indicators, unread/read markers, sandbox execution, a
 
 ## Local development
 
-Configure the Worker locally using `.dev.vars.example`, then start it:
+Assumes a working [native PrairieLearn development setup](../../docs/dev-guide/installingNative.md). Run commands from the repository root.
+
+Copy the Worker secrets template:
 
 ```sh
-pnpm --filter @prairielearn/course-agent dev
+cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
 ```
 
-Configure PL's `courseAgentServiceUrl`, `courseAgentServiceToken`, and the `course-agent` feature flag, then run the PL development server. Open the course agent as a course owner. Send a message, refresh or switch conversations during its reply, and return to the same conversation. Stop should cancel execution; simply closing the panel should leave it running.
+Set `OPENAI_API_KEY` and a random `PL_SERVICE_TOKEN` in `.dev.vars` (e.g. generate the token with `openssl rand -hex 32`).
 
-The new chat interface uses the SDK WebSocket protocol, so the previous chat `curl` examples no longer apply. Conversation creation and saved-history requests remain HTTP:
+Merge the following into `apps/prairielearn/config.json`, using the same token:
+
+```json
+{
+  "isEnterprise": true,
+  "courseAgentServiceUrl": "http://127.0.0.1:8790",
+  "courseAgentServiceToken": "paste-the-same-PL_SERVICE_TOKEN-here",
+  "features": {
+    "course-agent": true
+  }
+}
+```
+
+Start the Worker:
+
+```sh
+pnpm --filter @prairielearn/course-agent dev --local
+```
+
+Start PrairieLearn in a second terminal:
+
+```sh
+make dev
+```
+
+Open [http://localhost:3000](http://localhost:3000), navigate to an instructor page in a non-example course (e.g. Test Course), and click the stars button at the bottom right. Both the authenticated and effective user must have Owner permission.
+
+### HTTP requests
+
+Set `PL_SERVICE_TOKEN` in your shell to the value from `.dev.vars`. Create a conversation:
 
 ```sh
 curl --fail-with-body -X POST -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
   http://localhost:8790/conversations
+```
 
+Set `conversation_id` to the returned `id`, then fetch its saved history:
+
+```sh
 curl --fail-with-body -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
   "http://localhost:8790/conversations/$conversation_id/get-messages"
 ```
