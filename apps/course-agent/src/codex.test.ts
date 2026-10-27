@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PushSyncResult } from '@prairielearn/course-agent-types';
+import type { PushSyncResult, ReviewOutcome } from '@prairielearn/course-agent-types';
 
 import type { ThreadStartResponse } from '../generated/types/v2/ThreadStartResponse.js';
 import type { Turn } from '../generated/types/v2/Turn.js';
@@ -72,13 +72,14 @@ const threadResult: ThreadStartResponse = {
 
 function runner({
   loseAcceptance = false,
+  savedReview,
   initializeResult = {
     userAgent: 'test',
     codexHome: '/workspace/session/home/.codex',
     platformFamily: 'unix',
     platformOs: 'linux',
   },
-}: { loseAcceptance?: boolean; initializeResult?: unknown } = {}) {
+}: { loseAcceptance?: boolean; initializeResult?: unknown; savedReview?: ReviewOutcome } = {}) {
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -106,6 +107,27 @@ function runner({
       if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
         emit({ id: frame.id, result: threadResult });
       }
+      if (frame.method === 'thread/read') {
+        const previousTurn: Turn = {
+          ...turn,
+          status: 'completed',
+          items: savedReview
+            ? [
+                {
+                  type: 'functionCallOutput',
+                  id: 'review-output',
+                  name: 'push_sync',
+                  namespace: null,
+                  output: JSON.stringify(savedReview),
+                },
+              ]
+            : [],
+        };
+        emit({
+          id: frame.id,
+          result: { thread: { ...threadResult.thread, turns: [previousTurn] } },
+        });
+      }
       if (frame.method === 'turn/start' && !loseAcceptance) {
         emit({ id: frame.id, result: { turn } });
       }
@@ -128,6 +150,45 @@ function runner({
 }
 
 describe('Codex native stream', () => {
+  it.each([false, true])(
+    'delivers a saved review after shutdown without replaying input (already incorporated: %s)',
+    async (incorporated) => {
+      const outcome: ReviewOutcome = {
+        callId: 'pending-review',
+        result: {
+          decision: 'denied',
+          publication: { status: 'not_attempted' },
+          sync: { status: 'not_attempted' },
+        },
+      };
+      const { native, commands, disconnect } = runner({
+        savedReview: incorporated ? outcome : undefined,
+      });
+      await native.connect();
+      await native.thread({ model: 'test', instructions: 'Edit course', threadId: 'thread' });
+      await native.run(outcome, () => {});
+      const submissions = commands.filter((command) => command.method === 'turn/start');
+      expect(submissions.map((command) => command.params)).toEqual(
+        incorporated
+          ? []
+          : [
+              {
+                threadId: 'thread',
+                input: [],
+                toolOutput: {
+                  name: 'push_sync',
+                  namespace: null,
+                  output: JSON.stringify(outcome),
+                  retain: true,
+                },
+              },
+            ],
+      );
+      native.closeStream();
+      disconnect();
+    },
+  );
+
   it('parks the review stream and leaves result persistence to the host before continuing', async () => {
     const { sandbox, commands, emit, disconnect } = runner();
     const outcome = Promise.withResolvers<PushSyncResult>();
