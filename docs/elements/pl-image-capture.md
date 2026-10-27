@@ -25,8 +25,6 @@ The `pl-image-capture` element is particularly useful for capturing handwritten 
 
 `pl-image-capture` allows users to submit images through their camera, whether it’s a local device like a webcam or an external device such as a mobile phone or tablet camera. Users can submit by capturing a new image with their camera or uploading existing images from their device. Manual uploads are enabled by default; set `manual-upload-enabled="false"` to disable them. `pl-image-capture` does not save images to their device.
 
-Manual uploads improve accessibility for students who have difficulty drawing or writing on paper by allowing them to submit work created with digital tools.
-
 AI grading supports `pl-image-capture`. Handwritten mathematical work, graphs, diagrams, and any other free-form image submissions can be graded automatically. Questions can combine `pl-image-capture` with other supported elements such as [`pl-file-upload`](pl-file-upload.md); each distinct submitted file is sent to the model once. Learn more in the [AI grading docs](../aiGrading/index.md).
 
 A single question page can contain multiple `pl-image-capture` elements, each operating independently and saving files under its specified `file-name`.
@@ -36,6 +34,10 @@ In manual grading mode, staff can view submitted images in the submission panel 
 By default, the `mobile-capture-enabled` setting is `true`. We strongly recommend keeping mobile capture enabled for most questions to allow students to capture high-quality images easily.
 
 Using mobile device capture in a local development environment requires additional setup. To use this feature locally, see the [Setting up external image capture locally](../dev-guide/configJson.md#setting-up-external-image-capture-locally) section of the server configuration guide.
+
+## Accessibility
+
+Manual uploads improve accessibility for students who have difficulty drawing or writing on paper, holding paper in view of a webcam, or positioning and holding a phone steady to photograph their work. Keeping manual uploads enabled lets students submit work created with digital tools or images captured using other equipment, such as a scanner.
 
 ## Example implementations
 
