@@ -11,11 +11,11 @@ export interface PdfAccessibilityManifest {
 }
 
 /** Runs in the export browser after pagination; the preview remains unchanged. */
-export function preparePdfAccessibility(): PdfAccessibilityManifest {
+export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: string } {
   const title = document.title.trim();
   const language = document.documentElement.lang.trim();
   if (!title || !language) {
-    throw new Error('PDF export requires a document title and language.');
+    return { error: 'PDF export requires a document title and language.' };
   }
   const tags: PdfAccessibilityManifest['tags'] = [];
   const links: PdfAccessibilityManifest['links'] = [];
@@ -25,18 +25,29 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest {
     const style = getComputedStyle(element);
     return bounds.width > 0 && bounds.height > 0 && style.visibility === 'visible';
   };
-  const description = (element: Element) => {
-    const labelledBy = element.getAttribute('aria-labelledby');
-    return (
-      element.getAttribute('aria-label') ||
-      labelledBy
+  const description = (element: Element, fallbackName = '') => {
+    const referencedText = (attribute: string) =>
+      element
+        .getAttribute(attribute)
         ?.split(/\s+/)
         .map((id) => document.getElementById(id)?.textContent ?? '')
-        .join(' ') ||
+        .join(' ')
+        .trim();
+    const name = (
+      element.getAttribute('aria-label') ||
+      referencedText('aria-labelledby') ||
       element.getAttribute('alt') ||
+      element.getAttribute('alttext') ||
       element.querySelector(':scope > title')?.textContent ||
+      fallbackName
+    ).trim();
+    const detail = (
+      referencedText('aria-describedby') ||
+      element.getAttribute('aria-description') ||
+      element.querySelector(':scope > desc')?.textContent ||
       ''
     ).trim();
+    return [...new Set([name, detail].filter(Boolean))].join('. ');
   };
   const mark = (
     element: Element,
@@ -57,11 +68,11 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest {
     if (!visible(element)) continue;
     const role = element.getAttribute('data-print-pdf-role')!;
     if (!/^(Artifact|Div|Span|P|H[1-6])$/.test(role)) {
-      throw new Error(`Unsupported PDF structure role: ${role}.`);
+      return { error: `Unsupported PDF structure role: ${role}.` };
     }
     const decorativePaint = element.hasAttribute('data-print-pdf-decorative-paint');
     if (role !== 'Artifact' && !decorativePaint) {
-      throw new Error('PDF container annotations must identify their decorative paint.');
+      return { error: 'PDF container annotations must identify their decorative paint.' };
     }
     mark(element, role, { decorativePaint });
   }
@@ -75,7 +86,7 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest {
     ).trim();
     const svg = container.querySelector('svg');
     if (!speech || !svg) {
-      throw new Error('PDF export requires MathJax SVG output with a spoken math description.');
+      return { error: 'PDF export requires MathJax SVG output with a spoken math description.' };
     }
     container.setAttribute('role', 'presentation');
     container.removeAttribute('aria-label');
@@ -86,9 +97,9 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest {
     if (!visible(element) || element.closest('mjx-container, [data-print-pdf-marked="Formula"]')) {
       continue;
     }
-    const alt = description(element) || element.getAttribute('alttext')?.trim();
+    const alt = description(element);
     if (!alt) {
-      throw new Error('Add a spoken description to mathematical expressions before PDF export.');
+      return { error: 'Add a spoken description to mathematical expressions before PDF export.' };
     }
     mark(element, 'Formula', { alt });
   }
@@ -102,7 +113,7 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest {
       continue;
     }
     if (element.tagName.toLowerCase() === 'canvas') {
-      throw new Error('Convert canvas content to a described image before PDF export.');
+      return { error: 'Convert canvas content to a described image before PDF export.' };
     }
     const alt = description(element);
     const decorative =
@@ -115,15 +126,15 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest {
     } else if (alt) {
       mark(element, 'Figure', { alt });
     } else {
-      throw new Error(
-        'Add an alternative description to each meaningful image or SVG before PDF export.',
-      );
+      return {
+        error: 'Add an alternative description to each meaningful image or SVG before PDF export.',
+      };
     }
   }
   for (const element of document.querySelectorAll<HTMLAnchorElement>('a[href]')) {
     if (!visible(element)) continue;
     const uri = element.href;
-    const alt = description(element) || element.textContent.trim() || uri;
+    const alt = description(element, element.textContent.trim() || uri);
     links.push({ uri, alt });
   }
 

@@ -2,7 +2,12 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { preparePdfAccessibility } from './pdf-accessibility-browser.js';
-import { finalizePrintPdf, validatePrintPdf, withPrintPdfDirectory } from './pdf-tools.js';
+import {
+  PrintPdfAccessibilityError,
+  finalizePrintPdf,
+  validatePrintPdf,
+  withPrintPdfDirectory,
+} from './pdf-tools.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 
 /** Prints the paginated page, restores source-declared PDF semantics, and validates the final bytes. */
@@ -12,6 +17,7 @@ export function createPdfOutput(): PrintablePageOutput<Buffer> {
     produce: async (page, signal) => {
       await page.emulateMedia({ media: 'print' });
       const manifest = await page.evaluate(preparePdfAccessibility);
+      if ('error' in manifest) throw new PrintPdfAccessibilityError(manifest.error);
       return await withPrintPdfDirectory(async (directory) => {
         const input = path.join(directory, 'rendered.pdf');
         const output = path.join(directory, 'accessible.pdf');
