@@ -5,11 +5,13 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import type { CourseInstance } from '../../../lib/db-types.js';
 import { selectVariantsByInstanceQuestion } from '../../../models/variant.js';
-import { expect, test } from '../fixtures.js';
+import { createTest, expect } from '../fixtures.js';
 
 import { createPrintableAssessmentInstance, waitForPrintablePage } from './utils.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const test = createTest({ features: { 'printable-assessments': true } });
 
 // Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
 test.describe.configure({ timeout: 180_000 });

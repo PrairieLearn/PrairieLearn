@@ -48,6 +48,7 @@ import {
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 
 import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
@@ -225,6 +226,8 @@ const parseDocxBody: RequestHandler = (req, res, next) => {
 };
 
 const router = Router({ mergeParams: true });
+
+router.use(requirePrintableAssessments);
 
 router.use(
   createAuthzMiddleware({

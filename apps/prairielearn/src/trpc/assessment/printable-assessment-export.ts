@@ -48,10 +48,12 @@ import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
+import { requirePrintableAssessments } from './printable-assessments.js';
 
 export const printableAssessmentExportRouter = t.router({
   pdf: t.procedure
     .use(requireCoursePermissionPreview)
+    .use(requirePrintableAssessments)
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
       let metadata: z.infer<typeof PrintPacketMetadataSchema>;
@@ -351,6 +353,7 @@ export const printableAssessmentExportRouter = t.router({
     }),
   status: t.procedure
     .use(requireCoursePermissionPreview)
+    .use(requirePrintableAssessments)
     .input(z.object({ jobSequenceId: IdSchema }))
     .query(async ({ ctx, input }) => {
       const job = await selectPrintExportJob({

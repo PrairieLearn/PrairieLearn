@@ -5,12 +5,22 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js';
+import { features } from '../../lib/features/index.js';
 import { inspectPrintPreparationQuestions } from '../../lib/print-preparation.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
 
-const printableAssessmentProcedure = t.procedure.use(requireCoursePermissionPreview);
+export const requirePrintableAssessments = t.middleware(async (opts) => {
+  if (!(await features.enabledFromLocals('printable-assessments', opts.ctx.locals))) {
+    throw new TRPCError({ code: 'NOT_FOUND' });
+  }
+  return opts.next();
+});
+
+const printableAssessmentProcedure = t.procedure
+  .use(requireCoursePermissionPreview)
+  .use(requirePrintableAssessments);
 
 const createInstanceProcedure = printableAssessmentProcedure.use(async ({ ctx, next }) => {
   if (ctx.assessment.team_work) {

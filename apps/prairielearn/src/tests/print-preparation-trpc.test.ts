@@ -14,6 +14,7 @@ import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { getFileStoreS3Bucket } from '../lib/file-store.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
@@ -88,10 +89,35 @@ describe('print preparation', { timeout: 60_000 }, () => {
     courseDirectory = await tmp.dir({ unsafeCleanup: true });
     await fs.cp(TEST_COURSE_PATH, courseDirectory.path, { recursive: true });
     await helperServer.before(courseDirectory.path)();
+    await features.enable('printable-assessments');
   });
   afterAll(async () => {
     await helperServer.after();
     await courseDirectory.cleanup();
+  });
+
+  test('rejects printable assessment procedures while the feature is disabled', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    await features.disable('printable-assessments');
+    try {
+      await expect(api.printableAssessments.list.query()).rejects.toMatchObject({
+        data: { code: 'NOT_FOUND' },
+      });
+      await expect(api.printableAssessments.create.mutate()).rejects.toMatchObject({
+        data: { code: 'NOT_FOUND' },
+      });
+      await expect(
+        api.printableAssessmentExport.pdf.mutate(packetInput('1')),
+      ).rejects.toMatchObject({
+        data: { code: 'NOT_FOUND' },
+      });
+      await expect(
+        api.printableAssessmentExport.status.query({ jobSequenceId: '1' }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+    } finally {
+      await features.enable('printable-assessments');
+    }
   });
 
   test.each(['exam20-assessmentTools', 'hw7-bonusPoints'])(

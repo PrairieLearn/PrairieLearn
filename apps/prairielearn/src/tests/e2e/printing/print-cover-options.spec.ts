@@ -5,7 +5,7 @@ import { load } from 'cheerio';
 import * as unzipper from 'unzipper';
 
 import { syncCourse } from '../../helperCourse.js';
-import { expect, test } from '../fixtures.js';
+import { createTest, expect } from '../fixtures.js';
 
 import {
   createPrintableAssessmentInstance,
@@ -17,6 +17,8 @@ async function printBase(courseInstanceId: string, tid: string) {
   const instanceId = await createPrintableAssessmentInstance(courseInstanceId, tid);
   return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${instanceId}/print`;
 }
+
+const test = createTest({ features: { 'printable-assessments': true } });
 
 test('fills the cover grading table down columns using only included questions', async ({
   page,

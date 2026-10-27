@@ -9,6 +9,7 @@ import {
   SprocUsersSelectOrInsertSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
@@ -246,6 +247,7 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
   });
 
   test('instructor (student data viewer) is authorized to print an E1 answer key', async () => {
+    await features.enable('printable-assessments');
     const printUrl = context.examAssessmentInstanceUrl
       .replace('/assessment_instance/', '/instructor/assessment_instance/')
       .replace(/\/$/, '');
@@ -263,7 +265,7 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
     );
 
     const docxUrl = new URL(url.replace('/preview?', '/docx?'));
-    const docxResponse = await helperClient.fetchCheerio(docxUrl, {
+    const docxRequest = {
       method: 'POST',
       headers: {
         ...headers,
@@ -278,12 +280,17 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
         html: '<html></html>',
         source: { html: '', figures: [] },
       }),
-    });
+    };
+    const docxResponse = await helperClient.fetchCheerio(docxUrl, docxRequest);
     assert.equal(docxResponse.status, 400);
     assert.include(
       await docxResponse.text(),
       'Question exclusion references nonexistent question numbers: nonexistent',
     );
+
+    await features.disable('printable-assessments');
+    assert.equal((await helperClient.fetchCheerio(url, { headers })).status, 404);
+    assert.equal((await helperClient.fetchCheerio(docxUrl, docxRequest)).status, 404);
   });
 
   test('instructor (student data viewer) can view E1/Q* instance of student', async () => {
