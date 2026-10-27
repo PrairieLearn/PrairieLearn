@@ -16,6 +16,8 @@ import {
 } from '@prairielearn/course-agent-types';
 
 const SESSION = '/workspace/session';
+// The node user and group in the base container image both have ID 1000.
+const NODE_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
 const lifetimeMs = (env: Env) =>
   (Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS) + 3600) * 1000;
@@ -122,7 +124,7 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.backups.restore(checkpoint);
     } else {
       await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
-      await this.exec(['chown', '-R', '1000:1000', SESSION]);
+      await this.exec(['chown', '-R', NODE_UID_GID, SESSION]);
       await this.exec(
         [
           'git',
@@ -143,15 +145,16 @@ export class CourseSandbox extends DurableObject<Env> {
       `${SESSION}/home/.codex/config.toml`,
       'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
     );
-    await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
+    await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
+    // Keep the parent root-owned so the agent cannot rename or replace course/home directories.
     await this.exec(['chown', 'root:root', SESSION]);
   }
 
-  /** Save the current file contents; the DO owns the snapshot after this returns. */
+  /** Capture changed-file contents; Conversation persists the returned snapshot. */
   async captureReview(repository: string, branch: string) {
     const course = `${SESSION}/course`;
     const files = new Files(this.container);
-    const options = { cwd: course, user: '1000:1000' };
+    const options = { cwd: course, user: NODE_UID_GID };
     const git = async (...args: string[]) => {
       const result = await this.exec(
         ['git', '--literal-pathspecs', '-c', 'safe.directory=*', '-C', course, ...args],
@@ -160,6 +163,7 @@ export class CourseSandbox extends DurableObject<Env> {
       return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
     };
     await git('check-ref-format', `refs/heads/${branch}`);
+    // Pin the review to the remote-tracking commit; local HEAD may include agent commits.
     const baseCommit = (
       await git('rev-parse', '--verify', `refs/remotes/origin/${branch}^{commit}`)
     ).trim();
@@ -187,13 +191,14 @@ export class CourseSandbox extends DurableObject<Env> {
       if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
         throw new Error(`Review file is too large: ${path}`);
       }
+      // Git records executable bits; the publication API accepts contents, not mode changes.
       const old = await git('ls-tree', baseCommit, '--', path);
       const mode = info.mode & 0o100 ? '100755' : '100644';
       if (mode !== '100644' || (old && old.slice(0, 6) !== mode)) {
         throw new Error(`File mode changes are not supported: ${path}`);
       }
 
-      // Save bytes now: later edits must not change what the instructor approves.
+      // Capture bytes now: later edits must not change what the instructor approves.
       const response = await files.readFile(path, options);
       const contents = Buffer.from(await response.arrayBuffer()).toString('base64');
       total += contents.length;

@@ -68,7 +68,7 @@ interface ReviewOperation {
   callId: string;
   /** Present while the original native tool call is still waiting for its answer. */
   resolveNativeCall: ((result: PushSyncResult) => void) | null;
-  /** Concurrent identical PL callbacks await the same save-and-continue operation. */
+  /** Once PL supplies a result, duplicate callbacks share its persistence and continuation promise. */
   delivery: { result: PushSyncResult; done: Promise<boolean> } | null;
 }
 
@@ -80,6 +80,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private active: ActiveTurn | null = null;
   private recovering = false;
   private reviewOperation: ReviewOperation | null = null;
+  /** Continuations wait for the current checkpoint/destruction before starting execution. */
   private workspaceShutdown: Promise<void> | null = null;
 
   private get record() {
@@ -471,7 +472,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       if (!this.reviewOperation.delivery) this.reviewOperation = null;
     }
     if (this.record.review) {
-      if (!result.parked && this.savedOutcome() && !result.error && !result.stopped) {
+      if (this.savedOutcome() && !result.error && !result.stopped) {
         this.clearReview();
       } else {
         return;
@@ -804,7 +805,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     try {
       const active = this.active;
       if (active) {
-        await active.execution.park();
+        await active.execution.stop();
         await active.sdkFinished.promise;
         await active.execution.finished;
         // finishTurn releases execution ownership before checkpointing can proceed.

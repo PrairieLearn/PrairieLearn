@@ -267,7 +267,7 @@ describe('Sandbox turn cancellation', () => {
     expect(stopped).toBe(false);
     cleaned.resolve(undefined);
     await stop;
-    expect(await turn.finished).toEqual({ phase: 'startup', stopped: true, parked: false });
+    expect(await turn.finished).toEqual({ phase: 'startup', stopped: true });
   });
 
   it('settles the response when interruption and process cleanup both fail', async () => {
