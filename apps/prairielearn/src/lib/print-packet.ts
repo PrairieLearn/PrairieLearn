@@ -1,4 +1,7 @@
-import { PDFDocument, PDFPage } from 'pdf-lib';
+import { readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+import { PDFDocument, PDFHexString, PDFName, PDFString } from 'pdf-lib';
 
 import {
   MAX_COVER_BYTES,
@@ -6,23 +9,37 @@ import {
   MAX_COVER_PAGES,
   MAX_PACKET_PAGES,
 } from './client/print-packet.js';
+import { runPrintPdfTool, validatePrintPdf, withPrintPdfDirectory } from './printing/pdf-tools.js';
 
 export class PrintPacketError extends Error {}
 
+export interface PrintCover {
+  pdf: Uint8Array;
+  pageCount: number;
+}
+
 /** Parse uploads once, before starting any browser renders. */
-export async function readPrintCoverPages(files: File[]): Promise<PDFDocument[]> {
+export async function readPrintCoverPages(
+  files: File[],
+  signal?: AbortSignal,
+): Promise<PrintCover[]> {
   if (files.length > MAX_COVER_FILES) {
     throw new PrintPacketError(`Upload at most ${MAX_COVER_FILES} cover PDFs.`);
   }
   if (files.reduce((total, file) => total + file.size, 0) > MAX_COVER_BYTES) {
     throw new PrintPacketError('Cover PDFs must total at most 10 MB.');
   }
-  const covers: PDFDocument[] = [];
+  const covers: PrintCover[] = [];
   let pageCount = 0;
   for (const file of files) {
+    signal?.throwIfAborted();
     let cover: PDFDocument;
+    const bytes = new Uint8Array(await file.arrayBuffer());
     try {
-      cover = await PDFDocument.load(await file.arrayBuffer(), { throwOnInvalidObject: true });
+      cover = await PDFDocument.load(bytes, {
+        throwOnInvalidObject: true,
+        updateMetadata: false,
+      });
     } catch (error) {
       throw new PrintPacketError(
         `“${file.name}” could not be read. Upload a valid PDF without password protection.`,
@@ -38,7 +55,7 @@ export async function readPrintCoverPages(files: File[]): Promise<PDFDocument[]>
         `Cover PDFs must contain at most ${MAX_COVER_PAGES} pages in total.`,
       );
     }
-    covers.push(cover);
+    covers.push({ pdf: bytes, pageCount: cover.getPageCount() });
   }
   return covers;
 }
@@ -49,20 +66,22 @@ export async function assemblePrintPacket({
   covers,
   copies,
   answerKeys = [],
+  signal,
 }: {
   forms: { pdf: Uint8Array; coverPageCount: number }[];
-  covers: PDFDocument[];
+  covers: PrintCover[];
   copies: number;
   answerKeys?: Uint8Array[];
+  signal?: AbortSignal;
 }): Promise<Buffer> {
   const sources = await Promise.all(
     forms.map(async (form) => ({
-      document: await PDFDocument.load(form.pdf),
-      coverPageCount: form.coverPageCount,
+      ...form,
+      document: await PDFDocument.load(form.pdf, { updateMetadata: false }),
     })),
   );
   const answerKeyDocuments = await Promise.all(answerKeys.map((pdf) => PDFDocument.load(pdf)));
-  const coverPageCount = covers.reduce((total, cover) => total + cover.getPageCount(), 0);
+  const coverPageCount = covers.reduce((total, cover) => total + cover.pageCount, 0);
   let totalPages = answerKeyDocuments.reduce((total, key) => total + key.getPageCount(), 0);
   for (let copy = 0; copy < copies; copy++) {
     const form = sources[copy % sources.length];
@@ -74,32 +93,67 @@ export async function assemblePrintPacket({
     );
   }
 
-  const packet = await PDFDocument.create();
-  const copiedCovers = (
-    await Promise.all(covers.map((cover) => packet.copyPages(cover, cover.getPageIndices())))
-  ).flat();
-  const copiedForms = await Promise.all(
-    sources.map(async ({ document, coverPageCount }) => ({
-      pages: await packet.copyPages(document, document.getPageIndices()),
-      coverPageCount,
-    })),
-  );
-  for (let copy = 0; copy < copies; copy++) {
-    const form = copiedForms[copy % copiedForms.length];
-    const pages = [
-      ...form.pages.slice(0, form.coverPageCount),
-      ...copiedCovers,
-      ...form.pages.slice(form.coverPageCount),
-    ];
-    for (const page of pages) {
-      // Each physical page needs its own page-tree entry, while sharing fonts and images.
-      const node = page.node.clone();
-      packet.addPage(PDFPage.of(node, packet.context.register(node), packet));
+  signal?.throwIfAborted();
+  if (forms.length === 1 && copies === 1 && covers.length === 0 && answerKeys.length === 0) {
+    return Buffer.from(forms[0].pdf);
+  }
+
+  return await withPrintPdfDirectory(async (directory) => {
+    const formPaths = await Promise.all(
+      forms.map(async ({ pdf }, index) => {
+        const filename = path.join(directory, `form-${index}.pdf`);
+        await writeFile(filename, pdf);
+        return filename;
+      }),
+    );
+    const coverPaths = await Promise.all(
+      covers.map(async (cover, index) => {
+        const filename = path.join(directory, `cover-${index}.pdf`);
+        await writeFile(filename, cover.pdf);
+        return filename;
+      }),
+    );
+    const keyPaths = await Promise.all(
+      answerKeys.map(async (pdf, index) => {
+        const filename = path.join(directory, `answer-key-${index}.pdf`);
+        await writeFile(filename, pdf);
+        return filename;
+      }),
+    );
+    const parts: string[] = [];
+    const append = (filename: string, first = 0, last = 0) => {
+      parts.push(`${filename}\t${first}\t${last}`);
+    };
+    for (let copy = 0; copy < copies; copy++) {
+      const index = copy % sources.length;
+      const form = sources[index];
+      const filename = formPaths[index];
+      if (covers.length === 0) {
+        append(filename);
+        continue;
+      }
+      if (form.coverPageCount > 0) append(filename, 1, form.coverPageCount);
+      for (const cover of coverPaths) append(cover);
+      if (form.coverPageCount < form.document.getPageCount()) {
+        append(filename, form.coverPageCount + 1, form.document.getPageCount());
+      }
     }
-  }
-  for (const key of answerKeyDocuments) {
-    const pages = await packet.copyPages(key, key.getPageIndices());
-    for (const page of pages) packet.addPage(page);
-  }
-  return Buffer.from(await packet.save());
+    for (const key of keyPaths) append(key);
+    const manifest = path.join(directory, 'parts.tsv');
+    await writeFile(manifest, parts.join('\n'));
+    const title = `${sources[0].document.getTitle() ?? 'Assessment'} — print packet`;
+    const language = sources[0].document.catalog
+      .lookup(PDFName.of('Lang'), PDFString, PDFHexString)
+      .decodeText();
+    const merged = path.join(directory, 'merged.pdf');
+    const output = path.join(directory, 'packet.pdf');
+    await runPrintPdfTool('PrintPdf', ['merge', merged, title, language, manifest], signal);
+    await runPrintPdfTool(
+      'PrintPdfFinalize',
+      ['metadata', merged, output, title, language],
+      signal,
+    );
+    await validatePrintPdf(output, signal);
+    return await readFile(output);
+  });
 }

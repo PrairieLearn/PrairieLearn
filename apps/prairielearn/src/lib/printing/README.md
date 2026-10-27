@@ -40,7 +40,9 @@ The browser permits only same-origin `GET` requests during rendering; mutating r
 
 The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative for the physical paper size.
 
-For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
+For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page, signal)` callback can inspect the DOM and then call `createPdfOutput().produce(page, signal)` to reuse the standard PDF output.
+
+`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use PDFBox's structure-aware merger and page splitter, with independent structure references for each copy, namespaced table identifiers, and preserved source languages. Final packet metadata is applied before validating the exact downloadable bytes. Automated validation does not judge the accuracy of an uploaded cover's descriptions or reading order. Tagged Form XObjects and internal links that cross a split document section are currently rejected because the merger cannot preserve their relationships safely. Re-export affected covers from a supported source, or omit them.
 
 ### Word output
 
