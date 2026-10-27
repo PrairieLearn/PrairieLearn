@@ -191,7 +191,6 @@ function SharingMessageText({ message }: { message: SharingMessage }) {
 }
 
 export const InstructorQuestionSettingsForm = ({
-  authors,
   authorStaff,
   currentUid,
   question,
@@ -212,7 +211,6 @@ export const InstructorQuestionSettingsForm = ({
   sharing,
   questionTest,
 }: {
-  authors: { uids: string[]; warnings: string[] } | null;
   authorStaff: { uid: string; name: string | null }[];
   currentUid: string;
   question: StaffQuestion;
@@ -257,7 +255,7 @@ export const InstructorQuestionSettingsForm = ({
   );
 
   const defaultValues: QuestionSettingsFormValues = {
-    authors: authors?.uids ?? [],
+    authors: question.authors ?? [],
     qid: question.qid ?? '',
     title: question.title ?? '',
     topic: topic.name,
@@ -635,82 +633,61 @@ export const InstructorQuestionSettingsForm = ({
             <h2 id="authors-label" className="h5 card-title mb-3">
               Authors
             </h2>
-            {authors ? (
-              <>
-                {authors.warnings.length > 0 && (
-                  <div className="alert alert-warning">
-                    <p>
-                      Some legacy authors cannot be converted. Saving these settings will replace
-                      the legacy metadata with the UIDs below.
-                    </p>
-                    <ul className="mb-0">
-                      {authors.warnings.map((warning) => (
-                        <li key={warning}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
-                <TagPicker
-                  id="authors"
-                  aria-labelledby="authors-label"
-                  items={authorItems}
-                  value={selectedAuthors}
-                  disabled={!canEdit}
-                  placeholder="Add an author by UID"
-                  tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
-                  renderTagContent={({ uid, name }) =>
-                    name ? (
-                      <>
-                        <span className="text-body">{name}</span>
-                        <span className="text-secondary fw-normal">{uid}</span>
-                      </>
-                    ) : (
-                      <span className="text-body">{uid}</span>
-                    )
-                  }
-                  errorMessage={authorError}
-                  description={
-                    <>
-                      UIDs of the people who wrote this question. Names are shown for current course
-                      staff.{' '}
-                      {canEdit && !selectedAuthors.includes(currentUid.trim()) && (
-                        <button
-                          type="button"
-                          className="btn btn-link btn-sm p-0 border-0 align-baseline"
-                          onClick={() => {
-                            setAuthorError(undefined);
-                            setValue('authors', [...selectedAuthors, currentUid.trim()], {
-                              shouldDirty: true,
-                            });
-                          }}
-                        >
-                          Add myself
-                        </button>
-                      )}
-                    </>
-                  }
-                  onInputChange={() => setAuthorError(undefined)}
-                  onChange={(uids) => {
-                    setAuthorError(undefined);
-                    setValue('authors', uids, { shouldDirty: true });
-                  }}
-                  onCreate={(uid) => {
-                    if (!QuestionAuthorUidSchema.safeParse(uid).success) {
-                      setAuthorError('Enter a nonblank UID.');
-                      return false;
-                    }
-                    setAuthorError(undefined);
-                    setValue('authors', [...selectedAuthors, uid], { shouldDirty: true });
-                    return true;
-                  }}
-                />
-              </>
-            ) : (
-              <p className="text-muted mb-0">
-                Authors could not be loaded. Check the authors in the question's info.json file.
-              </p>
-            )}
+            <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
+            <TagPicker
+              id="authors"
+              aria-labelledby="authors-label"
+              items={authorItems}
+              value={selectedAuthors}
+              disabled={!canEdit}
+              placeholder="Add an author by UID"
+              tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
+              renderTagContent={({ uid, name }) =>
+                name ? (
+                  <>
+                    <span className="text-body">{name}</span>
+                    <span className="text-secondary fw-normal">{uid}</span>
+                  </>
+                ) : (
+                  <span className="text-body">{uid}</span>
+                )
+              }
+              errorMessage={authorError}
+              description={
+                <>
+                  UIDs of the people who wrote this question. Names are shown for current course
+                  staff.{' '}
+                  {canEdit && !selectedAuthors.includes(currentUid.trim()) && (
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm p-0 border-0 align-baseline"
+                      onClick={() => {
+                        setAuthorError(undefined);
+                        setValue('authors', [...selectedAuthors, currentUid.trim()], {
+                          shouldDirty: true,
+                        });
+                      }}
+                    >
+                      Add myself
+                    </button>
+                  )}
+                </>
+              }
+              onInputChange={() => setAuthorError(undefined)}
+              onChange={(uids) => {
+                setAuthorError(undefined);
+                setValue('authors', uids, { shouldDirty: true });
+              }}
+              onCreate={(uid) => {
+                if (!QuestionAuthorUidSchema.safeParse(uid).success) {
+                  setAuthorError('Enter a nonblank UID.');
+                  return false;
+                }
+                setAuthorError(undefined);
+                setValue('authors', [...selectedAuthors, uid], { shouldDirty: true });
+                return true;
+              }}
+            />
           </div>
         </div>
 

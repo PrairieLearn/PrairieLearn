@@ -15,6 +15,7 @@ import { selectQuestionById, updateQuestion } from '../models/question.js';
 import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -76,29 +77,17 @@ describe('Editing question settings', { concurrent: false }, () => {
       authn_user_id: '1',
     });
     const info = await fs.readJSON(questionLiveInfoPath);
-    info.authors = [
-      { name: 'Old name', email: staff.uid },
-      'author-nonstaff',
-      'author-unknown',
-      { name: 'Unconvertible author' },
-    ];
+    info.authors = [{ name: 'Old name', email: staff.uid }, 'author-nonstaff', 'author-unknown'];
     await fs.writeJSON(
       path.join(courseRepo.courseOriginDir, 'questions/test/question/info.json'),
       info,
     );
-    await execa('git', ['add', '-A'], { cwd: courseRepo.courseOriginDir });
-    await execa('git', ['commit', '-m', 'Add legacy authors'], { cwd: courseRepo.courseOriginDir });
-    await execa('git', ['pull'], { cwd: courseRepo.courseLiveDir });
+    await commitOriginAndSync(courseRepo, 'Add legacy authors');
     const url = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
     const settings = await fetchCheerio(url);
     assert.equal(settings.status, 200);
     assert.include(settings.$('body').text(), staff.name!);
     assert.notInclude(settings.$('body').text(), 'Private Nonstaff Name');
-    assert.include(settings.$('body').text(), 'Unconvertible author');
-    assert.include(
-      settings.$('body').text(),
-      'Saving these settings will replace the legacy metadata',
-    );
     const authors = JSON.parse(settings.$('input[name=authors]').val() as string);
     assert.deepEqual(authors, ['author-staff', 'author-nonstaff', 'author-unknown']);
     const response = await fetch(url, {
