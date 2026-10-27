@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { useController, useForm } from 'react-hook-form';
 
@@ -24,6 +24,7 @@ import type {
   StaffTopic,
 } from '../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { QuestionAuthorUidSchema } from '../../lib/question-authors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import type { QuestionSharingSetRow } from '../../models/sharing-set.js';
 import { coerceToNumber } from '../instructorAssessmentQuestions/utils/formHelpers.js';
@@ -190,6 +191,9 @@ function SharingMessageText({ message }: { message: SharingMessage }) {
 }
 
 export const InstructorQuestionSettingsForm = ({
+  authors,
+  authorStaff,
+  currentUid,
   question,
   topic,
   courseInstance,
@@ -208,6 +212,9 @@ export const InstructorQuestionSettingsForm = ({
   sharing,
   questionTest,
 }: {
+  authors: { uids: string[]; warnings: string[] } | null;
+  authorStaff: { uid: string; name: string | null }[];
+  currentUid: string;
   question: StaffQuestion;
   courseInstance?: StaffCourseInstance | null;
   assessmentsWithQuestion: SelectedAssessments[];
@@ -250,6 +257,7 @@ export const InstructorQuestionSettingsForm = ({
   );
 
   const defaultValues: QuestionSettingsFormValues = {
+    authors: authors?.uids ?? [],
     qid: question.qid ?? '',
     title: question.title ?? '',
     topic: topic.name,
@@ -306,6 +314,12 @@ export const InstructorQuestionSettingsForm = ({
     defaultValues,
   });
 
+  const selectedAuthors = watch('authors');
+  const [authorError, setAuthorError] = useState<string>();
+  const authorItems = selectedAuthors.map((uid) => {
+    const name = authorStaff.find((user) => user.uid === uid)?.name;
+    return { id: uid, label: name ? `${name}  ${uid}` : uid, data: { uid, name } };
+  });
   const selectedTopic = watch('topic');
   const selectedTags = watch('tags');
   const selectedGradingMethod = watch('grading_method');
@@ -508,7 +522,7 @@ export const InstructorQuestionSettingsForm = ({
                     </div>
                   )}
                   renderTagContent={(data) => data.name}
-                  tagClassName={(data) => `badge color-${data.color}`}
+                  tagClassName={(data) => `badge color-${data.color} fw-normal`}
                   onChange={(value) => setValue('tags', value, { shouldDirty: true })}
                 />
               ) : (
@@ -613,6 +627,91 @@ export const InstructorQuestionSettingsForm = ({
                 not affected.
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-body">
+            <h2 id="authors-label" className="h5 card-title mb-3">
+              Authors
+            </h2>
+            {authors ? (
+              <>
+                {authors.warnings.length > 0 && (
+                  <div className="alert alert-warning">
+                    <p>
+                      Some legacy authors cannot be converted. Saving these settings will replace
+                      the legacy metadata with the UIDs below.
+                    </p>
+                    <ul className="mb-0">
+                      {authors.warnings.map((warning) => (
+                        <li key={warning}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
+                <TagPicker
+                  id="authors"
+                  aria-labelledby="authors-label"
+                  items={authorItems}
+                  value={selectedAuthors}
+                  disabled={!canEdit}
+                  tagsPlacement="inside"
+                  placeholder="Add an author by UID"
+                  tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
+                  renderTagContent={({ uid, name }) =>
+                    name ? (
+                      <>
+                        <span className="text-body">{name}</span>
+                        <span className="text-secondary fw-normal">{uid}</span>
+                      </>
+                    ) : (
+                      <span className="text-body">{uid}</span>
+                    )
+                  }
+                  errorMessage={authorError}
+                  description={
+                    <>
+                      UIDs of the people who wrote this question. Names are shown for current course
+                      staff.{' '}
+                      {canEdit && !selectedAuthors.includes(currentUid.trim()) && (
+                        <button
+                          type="button"
+                          className="btn btn-link btn-sm p-0 border-0 align-baseline"
+                          onClick={() => {
+                            setAuthorError(undefined);
+                            setValue('authors', [...selectedAuthors, currentUid.trim()], {
+                              shouldDirty: true,
+                            });
+                          }}
+                        >
+                          Add myself
+                        </button>
+                      )}
+                    </>
+                  }
+                  onInputChange={() => setAuthorError(undefined)}
+                  onChange={(uids) => {
+                    setAuthorError(undefined);
+                    setValue('authors', uids, { shouldDirty: true });
+                  }}
+                  onCreate={(uid) => {
+                    if (!QuestionAuthorUidSchema.safeParse(uid).success) {
+                      setAuthorError('Enter a UID of at most 255 characters.');
+                      return false;
+                    }
+                    setAuthorError(undefined);
+                    setValue('authors', [...selectedAuthors, uid], { shouldDirty: true });
+                    return true;
+                  }}
+                />
+              </>
+            ) : (
+              <p className="text-muted mb-0">
+                Authors could not be loaded. Check the authors in the question's info.json file.
+              </p>
+            )}
           </div>
         </div>
 

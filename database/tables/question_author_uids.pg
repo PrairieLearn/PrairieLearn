@@ -1,0 +1,13 @@
+columns
+    question_id: bigint not null
+    uid: character varying(255) not null
+
+indexes
+    question_author_uids_pkey: PRIMARY KEY (question_id, uid) USING btree (question_id, uid)
+    question_author_uids_uid_question_id_idx: USING btree (uid, question_id)
+
+check constraints
+    question_author_uids_uid_check: CHECK (uid::text ~ '[^[:space:]]'::text)
+
+foreign-key constraints
+    question_author_uids_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

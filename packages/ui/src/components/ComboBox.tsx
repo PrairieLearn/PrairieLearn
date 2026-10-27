@@ -1,6 +1,6 @@
 import clsx from 'clsx';
-import { type ReactNode, useState } from 'react';
-import { useFilter } from 'react-aria';
+import { type ReactNode, useId, useState } from 'react';
+import { useFilter, useFocusWithin } from 'react-aria';
 import {
   ComboBox as AriaComboBox,
   type ComboBoxProps as AriaComboBoxProps,
@@ -66,6 +66,12 @@ export interface ComboBoxProps<T = void> extends Omit<
 }
 
 export interface TagPickerProps<T = void> {
+  /** Accept a trimmed custom value. Return false to keep invalid text for correction. */
+  onCreate?: (value: string) => boolean;
+  /** Called when the user edits the input text, for example to clear a validation error. */
+  onInputChange?: (value: string) => void;
+  /** Where to render the selected tags relative to the input. */
+  tagsPlacement?: 'above' | 'inside';
   items: ComboBoxItem<T>[];
   value: string[];
   onChange: (value: string[]) => void;
@@ -78,7 +84,7 @@ export interface TagPickerProps<T = void> {
   /** ID of the element whose text labels this component. */
   'aria-labelledby'?: string;
   label?: string;
-  description?: string;
+  description?: ReactNode;
   errorMessage?: string;
   renderItem?: (item: ComboBoxItem<T>) => ReactNode;
   /** Renders just the content inside the tag (text/icon). The badge styling is applied by tagClassName. */
@@ -225,6 +231,9 @@ export function ComboBox<T = void>({
  */
 export function TagPicker<T = void>({
   items,
+  onCreate,
+  onInputChange,
+  tagsPlacement = 'above',
   value,
   onChange,
   placeholder = 'Select...',
@@ -240,12 +249,54 @@ export function TagPicker<T = void>({
   tagClassName = defaultTagClassName,
 }: TagPickerProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
+  const generatedId = useId();
+  const descriptionId = `${id ?? generatedId}-description`;
+  const errorId = `${id ?? generatedId}-error`;
+  const inline = tagsPlacement === 'inside';
+  const [isFocusWithin, setIsFocusWithin] = useState(false);
+  const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setIsFocusWithin });
   const [filterText, setFilterText] = useState('');
 
-  const filteredItems = items.filter((item) =>
-    contains(item.searchableText ?? item.label, filterText),
+  const filteredItems = items.filter(
+    (item) =>
+      (!onCreate || !value.includes(item.id)) &&
+      contains(item.searchableText ?? item.label, filterText),
   );
   const selectedItems = items.filter((item) => value.includes(item.id));
+
+  const selectedTags = selectedItems.length > 0 && (
+    <TagGroup
+      aria-label="Selected items"
+      className={tagsPlacement === 'above' ? 'mb-2' : undefined}
+      onRemove={!disabled ? (keys) => onChange(value.filter((v) => !keys.has(v))) : undefined}
+    >
+      <TagList items={selectedItems} className="d-flex flex-wrap align-items-center gap-1">
+        {(item) => (
+          <Tag
+            id={item.id}
+            className={clsx(tagClassName(item.data as T), 'd-inline-flex align-items-center gap-1')}
+            style={{ lineHeight: 1.2, maxWidth: tagsPlacement === 'inside' ? '100%' : undefined }}
+            textValue={item.label}
+          >
+            {renderTagContent(item.data as T) ?? item.label}
+            {!disabled && (
+              <Button
+                className="border-0 bg-transparent p-0 lh-1"
+                slot="remove"
+                style={{ fontSize: '0.75em', marginRight: '-0.25em' }}
+              >
+                <i
+                  className="bi bi-x d-flex align-items-center justify-content-center"
+                  aria-hidden="true"
+                  style={{ width: '1.25em', height: '1.25em' }}
+                />
+              </Button>
+            )}
+          </Tag>
+        )}
+      </TagList>
+    </TagGroup>
+  );
 
   return (
     <div className="position-relative">
@@ -253,143 +304,164 @@ export function TagPicker<T = void>({
         value.length > 0 &&
         value.map((v) => <input key={v} name={name} type="hidden" value={v} />)}
 
-      {/* Render selected tags outside the Select trigger button. The HTML spec prohibits
-          interactive content (buttons) inside buttons: https://adrianroselli.com/2016/12/be-wary-of-nesting-roles.html */}
-      {selectedItems.length > 0 && (
-        <TagGroup
-          aria-label="Selected items"
-          className="mb-2"
-          onRemove={!disabled ? (keys) => onChange(value.filter((v) => !keys.has(v))) : undefined}
+      {/* Keep the two collection contexts as siblings. Nesting TagGroup inside
+          ComboBox mixes their React Aria collection state when the input filters. */}
+      <div
+        {...(inline ? focusWithinProps : {})}
+        className={
+          inline
+            ? clsx(
+                'form-control d-flex flex-wrap align-items-center gap-1',
+                disabled && 'bg-body-secondary',
+                isFocusWithin && 'border-primary shadow-sm',
+                errorMessage && 'is-invalid',
+              )
+            : undefined
+        }
+        style={
+          inline ? { minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' } : undefined
+        }
+      >
+        {selectedTags}
+        <AriaComboBox<ComboBoxItem<T>, 'multiple'>
+          aria-labelledby={ariaLabelledby}
+          className={inline ? 'flex-grow-1' : undefined}
+          style={inline ? { minWidth: 0 } : undefined}
+          isDisabled={disabled}
+          isInvalid={!!errorMessage}
+          items={filteredItems}
+          inputValue={filterText}
+          menuTrigger="focus"
+          selectionMode="multiple"
+          value={value}
+          allowsEmptyCollection={!onCreate}
+          allowsCustomValue={!!onCreate}
+          onChange={(keys) => {
+            setFilterText('');
+            onChange(keys as string[]);
+          }}
+          onInputChange={(text) => {
+            setFilterText(text);
+            onInputChange?.(text);
+          }}
         >
-          <TagList items={selectedItems} className="d-flex flex-wrap align-items-center gap-1">
-            {(item) => (
-              <Tag
-                id={item.id}
+          {({ isOpen: isComboBoxOpen }) => (
+            <>
+              {label && <Label className="form-label">{label}</Label>}
+
+              <Group
                 className={clsx(
-                  tagClassName(item.data as T),
-                  'd-inline-flex align-items-center gap-1',
+                  'd-flex align-items-center gap-1',
+                  !inline && 'form-control',
+                  !inline && disabled && 'bg-body-secondary',
+                  !inline && isComboBoxOpen && 'border-primary shadow-sm',
+                  !inline && errorMessage && 'is-invalid',
                 )}
-                style={{ lineHeight: 1.2 }}
-                textValue={item.label}
+                style={
+                  inline
+                    ? undefined
+                    : { minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' }
+                }
               >
-                {renderTagContent(item.data as T) ?? item.label}
-                {!disabled && (
+                <Input
+                  className="border-0 flex-grow-1 bg-transparent"
+                  id={id}
+                  placeholder={placeholder}
+                  style={{ outline: 'none', minWidth: inline ? 0 : undefined }}
+                  aria-errormessage={inline && errorMessage ? errorId : undefined}
+                  aria-describedby={inline && description ? descriptionId : undefined}
+                  onKeyDown={(event) => {
+                    if (!onCreate || event.nativeEvent.isComposing) return;
+                    if (event.key !== 'Enter' && event.key !== ',') return;
+                    if (event.key === 'Enter' && isComboBoxOpen) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const nextValue = filterText.trim();
+                    if (!nextValue || value.includes(nextValue) || onCreate(nextValue)) {
+                      setFilterText('');
+                    }
+                  }}
+                />
+                {(!onCreate || filteredItems.length > 0) && (
                   <Button
-                    aria-label={`Remove ${item.label}`}
-                    className="border-0 bg-transparent p-0 lh-1"
-                    slot="remove"
-                    style={{ fontSize: '0.75em', marginRight: '-0.25em' }}
+                    aria-label="Show suggestions"
+                    className="border-0 bg-transparent p-0 ms-auto"
                   >
                     <i
-                      className="bi bi-x-lg d-flex align-items-center justify-content-center"
                       aria-hidden="true"
-                      style={{ width: '1.25em', height: '1.25em' }}
+                      className={clsx(
+                        'bi',
+                        isComboBoxOpen ? 'bi-chevron-up' : 'bi-chevron-down',
+                        'text-muted',
+                      )}
                     />
                   </Button>
                 )}
-              </Tag>
-            )}
-          </TagList>
-        </TagGroup>
-      )}
+              </Group>
 
-      <AriaComboBox<ComboBoxItem<T>, 'multiple'>
-        aria-labelledby={ariaLabelledby}
-        isDisabled={disabled}
-        isInvalid={!!errorMessage}
-        items={filteredItems}
-        inputValue={filterText}
-        menuTrigger="focus"
-        selectionMode="multiple"
-        value={value}
-        allowsEmptyCollection
-        onChange={(keys) => {
-          setFilterText('');
-          onChange(keys as string[]);
-        }}
-        onInputChange={setFilterText}
-      >
-        {({ isOpen: isComboBoxOpen }) => (
-          <>
-            {label && <Label className="form-label">{label}</Label>}
-
-            <Group
-              className={clsx(
-                'form-control d-flex align-items-center gap-1',
-                disabled && 'bg-body-secondary',
-                isComboBoxOpen && 'border-primary shadow-sm',
-                errorMessage && 'is-invalid',
+              {!inline && description && (
+                <Text className="form-text text-muted" slot="description">
+                  {description}
+                </Text>
               )}
-              style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' }}
-            >
-              <Input
-                className="border-0 flex-grow-1 bg-transparent"
-                id={id}
-                placeholder={placeholder}
-                style={{ outline: 'none' }}
-              />
-              <Button aria-label="Show suggestions" className="border-0 bg-transparent p-0 ms-auto">
-                <i
-                  aria-hidden="true"
-                  className={clsx(
-                    'bi',
-                    isComboBoxOpen ? 'bi-chevron-up' : 'bi-chevron-down',
-                    'text-muted',
-                  )}
-                />
-              </Button>
-            </Group>
 
-            {description && (
-              <Text className="form-text text-muted" slot="description">
-                {description}
-              </Text>
-            )}
+              {!inline && (
+                <FieldError className="invalid-feedback d-block">{errorMessage}</FieldError>
+              )}
 
-            <FieldError className="invalid-feedback d-block">{errorMessage}</FieldError>
-
-            <Popover
-              className="dropdown-menu show py-0 overflow-auto"
-              offset={2}
-              placement="bottom"
-              shouldFlip={false}
-              style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
-            >
-              <ListBox
-                className="list-unstyled m-0"
-                renderEmptyState={() => (
-                  <div className="dropdown-item text-muted">No options found</div>
-                )}
+              <Popover
+                className="dropdown-menu show py-0 overflow-auto"
+                offset={2}
+                placement="bottom"
+                shouldFlip={false}
+                style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
               >
-                {(item: ComboBoxItem<T>) => (
-                  <ListBoxItem
-                    id={item.id}
-                    className="dropdown-item d-flex align-items-center gap-2"
-                    style={({ isFocused }) => ({
-                      cursor: 'pointer',
-                      backgroundColor: isFocused ? 'var(--bs-primary-bg-subtle)' : undefined,
-                    })}
-                    textValue={item.searchableText ?? item.label}
-                  >
-                    {({ isSelected }) => (
-                      <>
-                        <input
-                          checked={isSelected}
-                          className="form-check-input m-0"
-                          tabIndex={-1}
-                          type="checkbox"
-                          readOnly
-                        />
-                        <div className="flex-grow-1">{renderItem(item)}</div>
-                      </>
-                    )}
-                  </ListBoxItem>
-                )}
-              </ListBox>
-            </Popover>
-          </>
-        )}
-      </AriaComboBox>
+                <ListBox
+                  className="list-unstyled m-0"
+                  renderEmptyState={() => (
+                    <div className="dropdown-item text-muted">No options found</div>
+                  )}
+                >
+                  {(item: ComboBoxItem<T>) => (
+                    <ListBoxItem
+                      id={item.id}
+                      className="dropdown-item d-flex align-items-center gap-2"
+                      style={({ isFocused }) => ({
+                        cursor: 'pointer',
+                        backgroundColor: isFocused ? 'var(--bs-primary-bg-subtle)' : undefined,
+                      })}
+                      textValue={item.searchableText ?? item.label}
+                    >
+                      {({ isSelected }) => (
+                        <>
+                          <input
+                            checked={isSelected}
+                            className="form-check-input m-0"
+                            tabIndex={-1}
+                            type="checkbox"
+                            readOnly
+                          />
+                          <div className="flex-grow-1">{renderItem(item)}</div>
+                        </>
+                      )}
+                    </ListBoxItem>
+                  )}
+                </ListBox>
+              </Popover>
+            </>
+          )}
+        </AriaComboBox>
+      </div>
+      {inline && description && (
+        <small id={descriptionId} className="form-text text-muted d-block mt-3">
+          {description}
+        </small>
+      )}
+      {inline && errorMessage && (
+        <div id={errorId} className="invalid-feedback d-block" role="alert">
+          {errorMessage}
+        </div>
+      )}
     </div>
   );
 }

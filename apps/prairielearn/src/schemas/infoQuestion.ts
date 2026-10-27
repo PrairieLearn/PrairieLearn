@@ -5,6 +5,8 @@ import {
   imageRegistryRestrictionsText,
 } from '@prairielearn/docker-utils/registry';
 
+import { QuestionAuthorUidSchema } from '../lib/question-authors.js';
+
 import { CommentJsonSchema } from './comment.js';
 
 // This schema is intentionally a subset of JSON Schema. The `type`, `default`,
@@ -74,7 +76,7 @@ const QuestionDependencyJsonSchema = z
   .strict()
   .describe("The question's client-side dependencies.");
 
-const QuestionAuthorJsonSchema = z
+const LegacyQuestionAuthorJsonSchema = z
   .object({
     name: z
       .string()
@@ -100,8 +102,9 @@ const QuestionAuthorJsonSchema = z
   })
   .strict()
   .describe(
-    'An author (individual person, or staff of a course of origin) credited with creating a question.',
-  );
+    'Deprecated structured author metadata. Replace with a UID string; legacy email values are treated as UIDs during the transition.',
+  )
+  .meta({ deprecated: true });
 
 const WorkspaceOptionsJsonSchema = z
   .object({
@@ -252,7 +255,17 @@ export const QuestionJsonSchema = z
       .describe("Extra tags associated with the question (e.g., 'Exam Only', 'Broken').")
       .optional()
       .default([]),
-    authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
+    authors: z
+      .array(
+        z.union([
+          QuestionAuthorUidSchema.describe(
+            'A user UID, which need not identify an existing account or be a routable email.',
+          ),
+          LegacyQuestionAuthorJsonSchema,
+        ]),
+      )
+      .optional()
+      .default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
       .describe(

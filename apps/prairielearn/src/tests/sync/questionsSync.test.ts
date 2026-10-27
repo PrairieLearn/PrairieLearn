@@ -3,18 +3,21 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { z } from 'zod';
+
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
   AuthorSchema,
   QuestionAuthorSchema,
+  QuestionAuthorUidSchema,
   QuestionSchema,
   QuestionTagSchema,
   TagSchema,
   TopicSchema,
 } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
-import { selectCourseById, updateCourseSharingName } from '../../models/course.js';
+import { selectCourseById } from '../../models/course.js';
 import { updateQuestion } from '../../models/question.js';
 import {
   type QuestionJsonInput,
@@ -52,21 +55,7 @@ async function findSyncedUndeletedQuestion(qid: string) {
   return syncedQuestion;
 }
 
-async function findAuthorInDatabase(author: {
-  name?: string;
-  email?: string;
-  orcid?: string;
-  originCourseId?: string;
-}) {
-  const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
-  return authors.find(
-    (a) =>
-      a.author_name === (author.name ?? null) &&
-      a.email === (author.email ?? null) &&
-      a.orcid === (author.orcid?.replaceAll('-', '') ?? null) &&
-      a.origin_course === (author.originCourseId ?? null),
-  );
-}
+const sql = loadSqlEquiv(import.meta.url);
 
 describe('Question syncing', () => {
   beforeAll(helperDb.before);
@@ -341,244 +330,116 @@ describe('Question syncing', () => {
     assert.ok(syncedQuestionTag);
   });
 
-  it('syncs authors', async () => {
-    const courseData = util.getCourseData();
-    const newAuthor = {
-      name: 'Example',
-      email: 'example@example.org',
-      orcid: '0000-0000-0000-0001',
-    };
-
-    if (!courseData.questions[util.QUESTION_ID].authors) {
-      courseData.questions[util.QUESTION_ID].authors = [];
+  describe('UID authors', () => {
+    async function readAuthors() {
+      return util.dumpTableWithSchema('question_author_uids', QuestionAuthorUidSchema);
     }
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
 
-    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.ok(originalSyncedQuestion);
-
-    // Check that the author was added to the authors table
-    const author = await findAuthorInDatabase({
-      name: newAuthor.name,
-      email: newAuthor.email,
-      orcid: newAuthor.orcid,
-    });
-    assert.ok(author);
-
-    // Check that the question-author relationship was created
-    const questionAuthors = await util.dumpTableWithSchema(
-      'question_authors',
-      QuestionAuthorSchema,
-    );
-    const questionAuthor = questionAuthors.find(
-      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author.id,
-    );
-    assert.ok(questionAuthor);
-  });
-
-  it('syncs authors with origin course', async () => {
-    await features.enable('question-sharing');
-    const sharingCourseData = util.getCourseData();
-    sharingCourseData.questions = {}; // To prevent duplicate QIDs
-    const sharingCourseSync = await util.writeAndSyncCourseData(sharingCourseData);
-    await updateCourseSharingName({
-      course_id: sharingCourseSync.syncResults.courseId,
-      sharing_name: 'SHARING 101',
-    });
-
-    const consumingCourseData = util.getCourseData();
-    consumingCourseData.course.name = 'CONSUMING 101';
-
-    const newAuthor = {
-      name: 'Example',
-      email: 'example@example.org',
-      orcid: '0000-0000-0000-0001',
-    };
-    const newAuthorWithOriginCourse = {
-      originCourse: 'SHARING 101',
-    };
-
-    if (!consumingCourseData.questions[util.QUESTION_ID].authors) {
-      consumingCourseData.questions[util.QUESTION_ID].authors = [];
-    }
-    consumingCourseData.questions[util.QUESTION_ID].authors.push(
-      newAuthor,
-      newAuthorWithOriginCourse,
-    );
-
-    await util.writeAndSyncCourseData(consumingCourseData);
-
-    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.ok(originalSyncedQuestion);
-    assert.isNull(originalSyncedQuestion.sync_errors);
-
-    // Check that the author was added to the authors table
-    const author1 = await findAuthorInDatabase({
-      name: newAuthor.name,
-      email: newAuthor.email,
-      orcid: newAuthor.orcid,
-    });
-    const author2 = await findAuthorInDatabase({
-      originCourseId: sharingCourseSync.syncResults.courseId,
-    });
-    assert.ok(author1);
-    assert.ok(author2);
-    assert.notDeepEqual(author1, author2);
-
-    // Check that the question-author relationship was created
-    const questionAuthors = await util.dumpTableWithSchema(
-      'question_authors',
-      QuestionAuthorSchema,
-    );
-
-    const questionAuthor1 = questionAuthors.find(
-      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author1.id,
-    );
-    const questionAuthor2 = questionAuthors.find(
-      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author2.id,
-    );
-    assert.ok(questionAuthor1);
-    assert.ok(questionAuthor2);
-  });
-
-  it('records an error if "authors" object is invalid', async () => {
-    const courseData = util.getCourseData();
-    const invalidAuthorTests = [
-      {
-        author: {
-          name: 'Example',
-        },
-        expectedError:
-          /At least one of "email", "orcid", or "originCourse" is required for each author/,
-      },
-      {
-        author: {
-          orcid: '1111-1111-1111-1111',
-        },
-        expectedError: /The author ORCID identifier "1111-1111-1111-1111" has an invalid checksum/,
-      },
-      {
-        author: {
-          email: 'noemail',
-        },
-        expectedError: /The author email address "noemail" is invalid/,
-      },
-      {
-        author: {
-          originCourse: 'NONEXISTENT',
-        },
-        expectedError:
-          /The author origin course with the sharing name "NONEXISTENT" does not exist/,
-      },
-    ];
-
-    for (const testCase of invalidAuthorTests) {
-      await helperDb.resetDatabase();
-      courseData.questions[util.QUESTION_ID].authors = [];
-      courseData.questions[util.QUESTION_ID].authors.push(testCase.author);
-      const courseDir = await util.writeCourseToTempDirectory(courseData);
+    it('syncs unresolved UIDs, deduplicates, and does not rewrite unchanged rows', async () => {
+      const data = util.getCourseData();
+      const extraUids = Array.from({ length: 11 }, (_, i) => `extra-author-${i}`);
+      data.questions[util.QUESTION_ID].authors = [
+        ' UnknownUID ',
+        'UnknownUID',
+        'unknownUID',
+        ...extraUids,
+      ];
+      const { courseDir } = await util.writeAndSyncCourseData(data);
+      const question = await findSyncedQuestion(util.QUESTION_ID);
+      assert.isNull(question.sync_errors);
+      assert.sameDeepMembers(await readAuthors(), [
+        { question_id: question.id, uid: 'UnknownUID' },
+        { question_id: question.id, uid: 'unknownUID' },
+        ...extraUids.map((uid) => ({ question_id: question.id, uid })),
+      ]);
+      const rowSchema = z.object({
+        question_id: z.string(),
+        uid: z.string(),
+        transaction_id: z.string(),
+      });
+      const before = await queryRows(sql.select_author_versions, rowSchema);
       await util.syncCourseData(courseDir);
-      const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
-      const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
-      assert.isDefined(syncedQuestion);
-      assert.isNotNull(syncedQuestion.sync_errors);
-      assert.match(syncedQuestion.sync_errors, testCase.expectedError);
-    }
-  });
-
-  it('syncs authors removed from questions', async () => {
-    const courseData = util.getCourseData();
-    const newAuthor = {
-      name: 'Example',
-      email: 'example@example.org',
-      orcid: '0000-0000-0000-0001',
-    };
-
-    if (!courseData.questions[util.QUESTION_ID].authors) {
-      courseData.questions[util.QUESTION_ID].authors = [];
-    }
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
-
-    // Now remove the author
-    courseData.questions[util.QUESTION_ID].authors = [];
-    await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.isOk(originalSyncedQuestion);
-
-    // Check that the question-author relationship was removed
-    const questionAuthors = await util.dumpTableWithSchema(
-      'question_authors',
-      QuestionAuthorSchema,
-    );
-    const questionAuthor = questionAuthors.find(
-      (qa) => qa.question_id === originalSyncedQuestion.id,
-    );
-    assert.isUndefined(questionAuthor);
-  });
-
-  it('syncs authors that are shared between questions', async () => {
-    const courseData = util.getCourseData();
-    const newAuthor = {
-      name: 'Example',
-      email: 'example@example.org',
-      orcid: '0000-0000-0000-0001',
-    };
-
-    // Add author to first question
-    if (!courseData.questions[util.QUESTION_ID].authors) {
-      courseData.questions[util.QUESTION_ID].authors = [];
-    }
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
-
-    // Add same author to second question
-    if (!courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors) {
-      courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors = [];
-    }
-    courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors.push(newAuthor);
-
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
-
-    const author = await findAuthorInDatabase({
-      name: newAuthor.name,
-      email: newAuthor.email,
-      orcid: newAuthor.orcid,
+      assert.deepEqual(await queryRows(sql.select_author_versions, rowSchema), before);
+      const info = await fs.readJSON(
+        path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'),
+      );
+      assert.deepEqual(info.authors, data.questions[util.QUESTION_ID].authors);
     });
-    assert.isOk(author);
-    // Check that only one author record was created
-    const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
-    assert.equal(
-      authors.filter(
-        (a) =>
-          a.author_name === newAuthor.name &&
-          a.email === newAuthor.email &&
-          a.orcid === newAuthor.orcid.replaceAll('-', ''),
-      ).length,
-      1,
-    );
 
-    // Check that both questions have the author relationship
-    const questionAuthors = await util.dumpTableWithSchema(
-      'question_authors',
-      QuestionAuthorSchema,
-    );
-    const question1 = await findSyncedQuestion(util.QUESTION_ID);
-    const question2 = await findSyncedQuestion(util.ALTERNATIVE_QUESTION_ID);
-    assert.isOk(question1);
-    assert.isOk(question2);
-    const question1Author = questionAuthors.find(
-      (qa) => qa.author_id === author.id && qa.question_id === question1.id,
-    );
-    const question2Author = questionAuthors.find(
-      (qa) => qa.author_id === author.id && qa.question_id === question2.id,
-    );
-    assert.isOk(question1Author);
-    assert.isOk(question2Author);
+    it('converts legacy email values and warns for each unconvertible entry without changing source files', async () => {
+      const data = util.getCourseData();
+      data.questions[util.QUESTION_ID].authors = [
+        { name: 'Legacy name', email: 'not-an-email' },
+        { name: 'Name only' },
+        { orcid: '0000-0000-0000-0001' },
+        { originCourse: 'NONEXISTENT' },
+      ];
+      const { courseDir } = await util.writeAndSyncCourseData(data);
+      const question = await findSyncedQuestion(util.QUESTION_ID);
+      assert.isNull(question.sync_errors);
+      assert.deepEqual(await readAuthors(), [{ question_id: question.id, uid: 'not-an-email' }]);
+      for (const author of data.questions[util.QUESTION_ID].authors.slice(1)) {
+        assert.include(
+          question.sync_warnings,
+          `Question "${util.QUESTION_ID}": Legacy author ${JSON.stringify(author)} cannot be converted to a UID because it has no usable email. Replace this entry with the author's UID in info.json.`,
+        );
+      }
+      const info = await fs.readJSON(
+        path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'),
+      );
+      assert.deepEqual(info.authors, data.questions[util.QUESTION_ID].authors);
+    });
+
+    it('updates UID strings and removes omitted authors without affecting another question', async () => {
+      const data = util.getCourseData();
+      data.questions[util.QUESTION_ID].authors = ['shared', 'removed'];
+      data.questions[util.ALTERNATIVE_QUESTION_ID].authors = ['shared'];
+      const { courseDir } = await util.writeAndSyncCourseData(data);
+      const question = await findSyncedQuestion(util.QUESTION_ID);
+      const other = await findSyncedQuestion(util.ALTERNATIVE_QUESTION_ID);
+      data.questions[util.QUESTION_ID].authors = ['renamed'];
+      await util.overwriteAndSyncCourseData(data, courseDir);
+      assert.sameDeepMembers(await readAuthors(), [
+        { question_id: question.id, uid: 'renamed' },
+        { question_id: other.id, uid: 'shared' },
+      ]);
+      delete data.questions[util.QUESTION_ID].authors;
+      await util.overwriteAndSyncCourseData(data, courseDir);
+      assert.deepEqual(await readAuthors(), [{ question_id: other.id, uid: 'shared' }]);
+    });
+
+    it('preserves previously synced UIDs when the question has a validation error', async () => {
+      const data = util.getCourseData();
+      data.questions[util.QUESTION_ID].authors = ['original'];
+      const { courseDir } = await util.writeAndSyncCourseData(data);
+      const before = await readAuthors();
+      data.questions[util.QUESTION_ID].authors = [''];
+      await util.overwriteAndSyncCourseData(data, courseDir);
+      const question = await findSyncedQuestion(util.QUESTION_ID);
+      assert.isNotNull(question.sync_errors);
+      assert.deepEqual(await readAuthors(), before);
+    });
+
+    it('preserves legacy database records during the transition', async () => {
+      const data = util.getCourseData();
+      data.questions[util.QUESTION_ID].authors = [{ email: 'legacy-uid' }];
+      const { courseDir } = await util.writeAndSyncCourseData(data);
+      const question = await findSyncedQuestion(util.QUESTION_ID);
+      await execute(sql.insert_legacy_author, { question_id: question.id });
+      await util.syncCourseData(courseDir);
+      assert.lengthOf(await util.dumpTableWithSchema('authors', AuthorSchema), 1);
+      assert.lengthOf(await util.dumpTableWithSchema('question_authors', QuestionAuthorSchema), 1);
+    });
+
+    it.each(['', '   ', 'x'.repeat(256)])('rejects malformed UID %j', async (uid) => {
+      const data = util.getCourseData();
+      data.questions[util.QUESTION_ID].authors = [uid];
+      await util.writeAndSyncCourseData(data);
+      const question = await findSyncedQuestion(util.QUESTION_ID);
+      assert.isNotNull(question.sync_errors);
+      assert.include(question.sync_errors, 'authors');
+      assert.isEmpty(await readAuthors());
+    });
   });
 
   it('records an error if "options" object is invalid', async () => {
