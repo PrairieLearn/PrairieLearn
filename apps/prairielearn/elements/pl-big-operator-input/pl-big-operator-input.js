@@ -624,8 +624,9 @@
 
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
+      const latex = mf.getValue('latex');
       $('#big-operator-input-sub-' + name).val(mf.getValue('plain-text'));
-      $('#big-operator-input-latex-' + name).val(mf.getValue('latex'));
+      $('#big-operator-input-latex-' + name).val(latex.trim() === '' ? '' : latex);
     };
 
     updateSubmissionData();
