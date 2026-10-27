@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { load } from 'cheerio';
 import * as unzipper from 'unzipper';
 
 import { syncCourse } from '../../helperCourse.js';
@@ -111,10 +112,17 @@ test('uses the configured honor code for printed pledges even when it is disable
     const xml = (
       await archive.files.find((file) => file.path === 'word/document.xml')!.buffer()
     ).toString();
-    expect(xml).toContain(
+    const word = load(xml, { xmlMode: true });
+    const text = word('w\\:t').text();
+    expect(text).toContain(
       'I, ____________________________, agree to follow the course collaboration policy.',
     );
-    expect(xml).not.toContain('I pledge on my honor');
+    expect(
+      word('w\\:r')
+        .filter((_, run) => word(run).find('w\\:t').text() === 'course collaboration policy')
+        .find('w\\:b'),
+    ).toHaveLength(1);
+    expect(text).not.toContain('I pledge on my honor');
   } finally {
     await fs.writeFile(infoPath, original);
     await syncCourse(testCoursePath);
