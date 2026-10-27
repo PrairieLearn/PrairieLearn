@@ -487,6 +487,63 @@ def test_unevaluated_real_subexpression_ignores_false_complex_assumption(
 
 
 @pytest.mark.parametrize("simplify_expression", [True, False])
+@pytest.mark.parametrize(
+    ("a_sub", "expected_error"),
+    [
+        ("m*0", 'invalid symbol "m"'),
+        ("0*m", 'invalid symbol "m"'),
+        ("x + m - m", 'invalid symbol "m"'),
+        ("i - i", 'invalid symbol "i"'),
+        ("0*1.5", "floating-point number 1.5"),
+        ("1.5 - 1.5", "floating-point number 1.5"),
+    ],
+)
+def test_structural_errors_are_independent_of_simplification(
+    a_sub: str, expected_error: str, *, simplify_expression: bool
+) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": a_sub},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(42))},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert expected_error in data["format_errors"]["test"]
+    assert data["submitted_answers"]["test"] is None
+
+
+@pytest.mark.parametrize(
+    ("a_sub", "simplify_expression", "expected"),
+    [
+        ("x*0", True, "0"),
+        ("x-x", True, "0"),
+        ("x*0", False, "x*0"),
+        ("x-x", False, "-x + x"),
+    ],
+)
+def test_valid_cancellations_preserve_simplification_setting(
+    a_sub: str, *, simplify_expression: bool, expected: str
+) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": a_sub},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(0))},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert data["submitted_answers"]["test"]["_value"] == expected
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
 def test_adjacent_decimal_points_report_source(*, simplify_expression: bool) -> None:
     element_html = build_element_html(
         'variables="x"',
