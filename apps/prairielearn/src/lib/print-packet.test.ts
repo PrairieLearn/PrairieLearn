@@ -141,11 +141,14 @@ describe('print packets', () => {
     ]);
   }, 60_000);
 
-  test('rejects invalid, empty, and encrypted cover documents', async () => {
+  test('rejects invalid, empty, encrypted, and untagged cover documents', async () => {
     await expect(readPrintCoverPages([new File(['not a PDF'], 'bad.pdf')])).rejects.toThrow(
       'valid PDF without password protection',
     );
     await expect(readPrintCoverPages([await coverFile([])])).rejects.toThrow('contains no pages');
+    await expect(readPrintCoverPages([await coverFile([100])])).rejects.toThrow(
+      'instructions.pdf” did not pass PDF/UA-1',
+    );
     const encrypted = await PDFDocument.create();
     encrypted.addPage();
     encrypted.context.trailerInfo.Encrypt = encrypted.context.obj({});

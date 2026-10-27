@@ -22,6 +22,7 @@ import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
 import { PAPER_SIZES } from './printing/pdf-output.js';
+import { PrintPdfAccessibilityError } from './printing/pdf-tools.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
@@ -91,6 +92,7 @@ function printableFailureMessage(error: unknown): string | null {
   }
   if (
     error instanceof PrintPacketError ||
+    error instanceof PrintPdfAccessibilityError ||
     (error instanceof HttpStatusError && [400, 503].includes(error.status)) ||
     (error instanceof TRPCError && error.code === 'BAD_REQUEST')
   ) {

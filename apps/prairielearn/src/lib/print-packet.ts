@@ -9,7 +9,12 @@ import {
   MAX_COVER_PAGES,
   MAX_PACKET_PAGES,
 } from './client/print-packet.js';
-import { runPrintPdfTool, validatePrintPdf, withPrintPdfDirectory } from './printing/pdf-tools.js';
+import {
+  PrintPdfValidationError,
+  runPrintPdfTool,
+  validatePrintPdf,
+  withPrintPdfDirectory,
+} from './printing/pdf-tools.js';
 
 export class PrintPacketError extends Error {}
 
@@ -56,6 +61,24 @@ export async function readPrintCoverPages(
       );
     }
     covers.push({ pdf: bytes, pageCount: cover.getPageCount() });
+  }
+  if (covers.length > 0) {
+    await withPrintPdfDirectory(async (directory) => {
+      for (const [index, cover] of covers.entries()) {
+        const filename = path.join(directory, `cover-${index}.pdf`);
+        await writeFile(filename, cover.pdf);
+        try {
+          await validatePrintPdf(filename, signal);
+        } catch (error) {
+          signal?.throwIfAborted();
+          if (!(error instanceof PrintPdfValidationError)) throw error;
+          throw new PrintPacketError(
+            `“${files[index].name}” did not pass PDF/UA-1 accessibility validation. Repair its document tags, image descriptions, table headers, and language in an accessible PDF editor, then upload it again.`,
+            { cause: error },
+          );
+        }
+      }
+    });
   }
   return covers;
 }
