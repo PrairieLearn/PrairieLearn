@@ -24,7 +24,9 @@ export async function renderQuestionReadme(questionPath: string): Promise<string
     if (filename === 'README.md') {
       return markdownToHtml(readme, { allowHtml: false });
     }
-    return html`<pre class="mb-0" style="white-space: pre-wrap;">${readme}</pre>`.toString();
+    return html`
+      <pre class="mb-0 text-break" style="white-space: pre-wrap;">${readme}</pre>
+    `.toString();
   }
   return null;
 }
