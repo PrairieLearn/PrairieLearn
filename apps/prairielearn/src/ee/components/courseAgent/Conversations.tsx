@@ -3,8 +3,7 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import type { UIMessage } from 'ai';
-import { useQueryState } from 'nuqs';
-import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
+import { type KeyboardEvent, type SyntheticEvent, useEffect, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -13,51 +12,93 @@ import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+const NEW_CONVERSATION = 'new';
+
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
   courseId,
+  authnUserId,
   chatCsrfToken,
   active,
 }: {
   courseId: string;
+  authnUserId: string;
+  chatCsrfToken: string;
+  active: boolean;
+}) {
+  const trpc = useTRPC();
+  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
+  const listError = getAppError<CourseAgentError['List']>(conversations.error);
+  if (conversations.isPending) return <Loading />;
+  return (
+    <>
+      {conversations.isError && (
+        <AppErrorAlert
+          className="m-3"
+          error={listError}
+          render={{ UNKNOWN: ({ message }) => message }}
+        />
+      )}
+      {conversations.data && (
+        <ConversationPicker
+          conversations={conversations.data}
+          courseId={courseId}
+          authnUserId={authnUserId}
+          chatCsrfToken={chatCsrfToken}
+          active={active}
+        />
+      )}
+    </>
+  );
+}
+
+function ConversationPicker({
+  conversations,
+  courseId,
+  authnUserId,
+  chatCsrfToken,
+  active,
+}: {
+  conversations: StaffCourseAgentConversation[];
+  courseId: string;
+  authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
-  // Default to the most recent conversation until the user selects one.
-  const [pickedId, setPickedId] = useQueryState('courseAgentConversation');
-  const selectedId = run(() => {
+  const storageKey = `course-agent:${authnUserId}:${courseId}:conversation`;
+  const [pickedId, setPickedId] = useState(() => {
+    const storedId = typeof window === 'undefined' ? null : sessionStorage.getItem(storageKey);
     if (
-      pickedId !== null &&
-      conversations.data?.some((conversation) => conversation.id === pickedId)
+      storedId !== null &&
+      (storedId === NEW_CONVERSATION || conversations.some((c) => c.id === storedId))
     ) {
-      return pickedId;
+      return storedId;
     }
-    if (conversations.data && conversations.data.length > 0) {
-      return conversations.data[0].id;
-    }
-    return null;
+    return conversations[0]?.id ?? NEW_CONVERSATION;
   });
+  // Remember the default selection too, so another tab's new chats don't change this tab's choice.
+  useEffect(() => {
+    sessionStorage.setItem(storageKey, pickedId);
+  }, [pickedId, storageKey]);
 
-  const selectedConversation = conversations.data?.find(
-    (conversation) => conversation.id === selectedId,
-  );
+  const selectedId = pickedId === NEW_CONVERSATION ? null : pickedId;
+  const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const create = useMutation({
     ...trpc.courseAgent.create.mutationOptions(),
     onSuccess: async (conversation) => {
       await queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
-      await setPickedId(conversation.id);
+      setPickedId(conversation.id);
     },
   });
 
-  const listError = getAppError<CourseAgentError['List']>(conversations.error);
   const createError = getAppError<CourseAgentError['Create']>(create.error);
   return (
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
@@ -67,19 +108,19 @@ export function Conversations({
             variant="light"
             className="border bg-white w-100 d-flex justify-content-between align-items-center gap-2"
             aria-label="Conversation"
-            disabled={!conversations.data?.length}
+            disabled={conversations.length === 0}
           >
             <span className="text-truncate">
               {selectedConversation?.title ?? 'No conversations yet'}
             </span>
           </Dropdown.Toggle>
           <Dropdown.Menu className="w-100 overflow-y-auto" style={{ maxHeight: '50vh' }}>
-            {conversations.data?.map((conversation) => (
+            {conversations.map((conversation) => (
               <Dropdown.Item
                 key={conversation.id}
                 as="button"
                 active={conversation.id === selectedId}
-                onClick={() => void setPickedId(conversation.id)}
+                onClick={() => setPickedId(conversation.id)}
               >
                 <span className="d-block text-truncate">{conversation.title}</span>
               </Dropdown.Item>
@@ -94,22 +135,19 @@ export function Conversations({
             variant="outline-primary"
             className="flex-shrink-0"
             aria-label="New conversation"
-            // Wait for the list, so a click can't race the default selection.
-            disabled={!conversations.isSuccess || create.isPending}
+            disabled={create.isPending}
             onClick={() => create.mutate()}
           >
             <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
         </OverlayTrigger>
       </div>
-      {conversations.isError || create.isError ? (
+      {create.isError ? (
         <AppErrorAlert
           className="m-3"
-          error={listError ?? createError}
+          error={createError}
           render={{ UNKNOWN: ({ message }) => message }}
         />
-      ) : conversations.isPending ? (
-        <Loading />
       ) : selectedId && active ? (
         <Chat
           key={selectedId}

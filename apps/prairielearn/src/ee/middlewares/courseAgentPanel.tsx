@@ -37,10 +37,10 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
     <Hydrate>
       <CourseAgentPanel
         courseId={courseId}
+        authnUserId={authnUserId}
         trpcCsrfToken={csrfToken(getCourseTrpcUrl(courseId))}
         chatCsrfToken={csrfToken(`/pl/course/${courseId}/course_agent`)}
         initialOpen={req.session.course_agent_panel_open === true}
-        search={new URL(req.originalUrl, 'http://localhost').search}
       />
     </Hydrate>,
   );
