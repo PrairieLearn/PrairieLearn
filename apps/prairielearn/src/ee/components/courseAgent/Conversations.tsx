@@ -15,7 +15,6 @@ import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
@@ -310,14 +309,6 @@ function Chat({
         </div>
       </div>
       <Form className="border-top p-3" onSubmit={submit}>
-        <div
-          className="small text-muted mb-2"
-          title={`${usage.usage_input_tokens_cache_read.toLocaleString()} cached input tokens; ${usage.usage_output_tokens_reasoning.toLocaleString()} reasoning tokens`}
-        >
-          {usage.usage_input_tokens.toLocaleString()} input ·{' '}
-          {usage.usage_output_tokens.toLocaleString()} output · Model cost{' '}
-          {formatMilliDollars(usage.usage_cost_milli_dollars)}
-        </div>
         <Form.Control
           as="textarea"
           rows={3}
@@ -328,7 +319,7 @@ function Chat({
           onKeyDown={onKeyDown}
         />
         <div className="d-flex justify-content-end gap-2 mt-2">
-          {isDevMode && <ConversationStats state={lifecycle} />}
+          {isDevMode && <ConversationStats state={lifecycle} usage={usage} />}
           {!pendingReview && (responseActive || canStop) ? (
             <Button
               variant="outline-secondary"
