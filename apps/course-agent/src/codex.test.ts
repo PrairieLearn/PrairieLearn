@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PushSyncResult, ReviewOutcome } from '@prairielearn/course-agent-types';
+import type { ReviewOutcome } from '@prairielearn/course-agent-types';
 
 import type { ThreadStartResponse } from '../generated/types/v2/ThreadStartResponse.js';
 import type { Turn } from '../generated/types/v2/Turn.js';
@@ -150,146 +150,45 @@ function runner({
 }
 
 describe('Codex native stream', () => {
-  it.each([false, true])(
-    'delivers a saved review after shutdown without replaying input (already incorporated: %s)',
-    async (incorporated) => {
-      const outcome: ReviewOutcome = {
-        callId: 'pending-review',
-        result: {
-          decision: 'denied',
-          publication: { status: 'not_attempted' },
-          sync: { status: 'not_attempted' },
-        },
-      };
-      const { native, commands, disconnect } = runner({
-        savedReview: incorporated ? outcome : undefined,
-      });
-      await native.connect();
-      await native.thread({ model: 'test', instructions: 'Edit course', threadId: 'thread' });
-      await native.run(outcome, () => {});
-      const submissions = commands.filter((command) => command.method === 'turn/start');
-      expect(submissions.map((command) => command.params)).toEqual(
-        incorporated
-          ? []
-          : [
-              {
-                threadId: 'thread',
-                input: [],
-                toolOutput: {
-                  name: 'push_sync',
-                  namespace: null,
-                  output: JSON.stringify(outcome),
-                  retain: true,
-                },
-              },
-            ],
-      );
-      native.closeStream();
-      disconnect();
+  it.each([
+    {
+      name: 'restored review supplies only its result without replaying the prompt',
+      incorporated: false,
     },
-  );
-
-  it('parks the review stream and leaves result persistence to the host before continuing', async () => {
-    const { sandbox, commands, emit, disconnect } = runner();
-    const outcome = Promise.withResolvers<PushSyncResult>();
-    const native = new CodexAppServerClient(sandbox, 'assistant', async (_call, ready) => {
-      ready();
-      return outcome.promise;
+    { name: 'already-incorporated review does not start another native turn', incorporated: true },
+  ])('$name', async ({ incorporated }) => {
+    const outcome: ReviewOutcome = {
+      callId: 'pending-review',
+      result: {
+        decision: 'denied',
+        publication: { status: 'not_attempted' },
+        sync: { status: 'not_attempted' },
+      },
+    };
+    const { native, commands, disconnect } = runner({
+      savedReview: incorporated ? outcome : undefined,
     });
     await native.connect();
-    await native.thread({ model: 'test', instructions: 'Edit course', threadId: null });
-    await native.run('Edit', () => {});
-    emit({
-      id: 100,
-      method: 'item/tool/call',
-      params: {
-        threadId: 'thread',
-        turnId: 'turn',
-        callId: 'review',
-        namespace: null,
-        tool: 'push_sync',
-        arguments: {},
-      },
-    });
-    const reviewChunks = [];
-    for await (const chunk of native.stream) reviewChunks.push(chunk);
-    expect(reviewChunks).toContainEqual({
-      type: 'tool-input-available',
-      toolCallId: 'review',
-      toolName: 'push_sync',
-      input: {},
-    });
-    const continuation = native.openStream();
-    const result: PushSyncResult = {
-      decision: 'approved',
-      publication: { status: 'published', commitSha: 'a'.repeat(40) },
-      sync: { status: 'succeeded' },
-    };
-    outcome.resolve(result);
-    await new Promise<void>((resolve) => setImmediate(resolve));
-    expect(commands).toContainEqual({
-      id: 100,
-      result: {
-        success: true,
-        contentItems: [{ type: 'inputText', text: JSON.stringify(result) }],
-      },
-    });
-    emit({
-      method: 'item/completed',
-      params: {
-        threadId: 'thread',
-        turnId: 'turn',
-        completedAtMs: Date.now(),
-        item: {
-          type: 'dynamicToolCall',
-          id: 'review',
-          namespace: null,
-          tool: 'push_sync',
-          arguments: {},
-          status: 'completed',
-          success: true,
-          durationMs: 1,
-          contentItems: [{ type: 'inputText', text: JSON.stringify(result) }],
-        },
-      },
-    });
-    for (const itemId of ['progress', 'answer']) {
-      emit({
-        method: 'item/agentMessage/delta',
-        params: { threadId: 'thread', turnId: 'turn', itemId, delta: 'Published' },
-      });
-      emit({
-        method: 'item/completed',
-        params: {
-          threadId: 'thread',
-          turnId: 'turn',
-          completedAtMs: Date.now(),
-          item: {
-            type: 'agentMessage',
-            id: itemId,
-            text: 'Published',
-            phase: null,
-            memoryCitation: null,
-            delivery: null,
-            questions: null,
-          },
-        },
-      });
-    }
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await native.thread({ model: 'test', instructions: 'Edit course', threadId: 'thread' });
+    await native.run(outcome, () => {});
+    const submissions = commands.filter((command) => command.method === 'turn/start');
+    expect(submissions.map((command) => command.params)).toEqual(
+      incorporated
+        ? []
+        : [
+            {
+              threadId: 'thread',
+              input: [],
+              toolOutput: {
+                name: 'push_sync',
+                namespace: null,
+                output: JSON.stringify(outcome),
+                retain: true,
+              },
+            },
+          ],
+    );
     native.closeStream();
-    const continuationTypes = [];
-    for await (const chunk of continuation) continuationTypes.push(chunk.type);
-    expect(continuationTypes).toEqual([
-      'start',
-      'text-start',
-      'text-delta',
-      'text-end',
-      'text-start',
-      'text-delta',
-      'text-end',
-      'finish',
-    ]);
     disconnect();
   });
 
@@ -368,7 +267,7 @@ describe('Sandbox turn cancellation', () => {
     expect(stopped).toBe(false);
     cleaned.resolve(undefined);
     await stop;
-    expect(await turn.finished).toEqual({ phase: 'startup', stopped: true, parked: false });
+    expect(await turn.finished).toEqual({ phase: 'startup', stopped: true });
   });
 
   it('settles the response when interruption and process cleanup both fail', async () => {

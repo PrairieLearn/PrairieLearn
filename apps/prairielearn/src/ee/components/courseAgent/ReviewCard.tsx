@@ -6,7 +6,6 @@ import { type PushSyncResult, PushSyncResultSchema } from '@prairielearn/course-
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
-import { JobSequenceResults } from '../../../components/JobSequenceResults.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 
@@ -136,12 +135,6 @@ export function ReviewCard({
               {current.error}
             </p>
           )}
-          {job.data && (
-            <details className="mt-2">
-              <summary>Publication progress</summary>
-              <JobSequenceResults {...job.data} />
-            </details>
-          )}
           {((job.data && job.data.jobSequence.status !== 'Running') ||
             (current?.status === 'running' && jobSequenceId === null)) && (
             <Button
@@ -230,7 +223,10 @@ function ReviewResult({ result }: { result: PushSyncResult }) {
         <pre className="small text-wrap mt-2 mb-0">{result.publication.error}</pre>
       )}
       {result.sync.status === 'failed' && (
-        <pre className="small text-wrap mt-2 mb-0">{result.sync.error}</pre>
+        <details className="mt-2">
+          <summary>Error</summary>
+          <pre className="small text-wrap mt-2 mb-0">{result.sync.error}</pre>
+        </details>
       )}
     </div>
   );

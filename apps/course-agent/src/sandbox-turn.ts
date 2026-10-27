@@ -8,16 +8,13 @@ import type { CourseSandbox } from './sandbox.js';
 interface TurnResult {
   phase: 'startup' | 'execution';
   stopped: boolean;
-  parked: boolean;
   error?: unknown;
 }
 
 /** One in-memory execution, including setup, cancellation, streaming and cleanup. */
 export class SandboxTurn {
-  private abort = new AbortController();
   private native: CodexAppServerClient;
-  private interruptible = false;
-  private parked = false;
+  private executionStarted = false;
   private stopping: Promise<void> | null = null;
   readonly finished: Promise<TurnResult>;
 
@@ -47,27 +44,18 @@ export class SandboxTurn {
     return this.native.messageId;
   }
 
-  /** Release the SDK stream before checkpointing destroys the native waiter. */
-  async park() {
-    this.parked = true;
-    await this.sandbox.stopProcesses();
-    this.native.closeStream();
-    await this.finished;
-  }
-
   get stream() {
     return this.native.stream;
   }
 
   private get stopped() {
-    return this.abort.signal.aborted;
+    return this.stopping !== null;
   }
 
   /** Stop waits for cleanup, even if the SDK has already cancelled its stream. */
   async stop() {
-    this.abort.abort();
     this.stopping ??= (async () => {
-      if (this.interruptible) {
+      if (this.executionStarted) {
         try {
           await this.native.interrupt();
         } catch {
@@ -93,23 +81,22 @@ export class SandboxTurn {
     const result: TurnResult = {
       phase: options.startup ? 'startup' : 'execution',
       stopped: false,
-      parked: false,
     };
     try {
       await options.prepare();
-      this.abort.signal.throwIfAborted();
+      if (this.stopped) return result;
       await this.native.connect();
-      this.abort.signal.throwIfAborted();
+      if (this.stopped) return result;
       options.onThread(await this.native.thread(options.thread));
-      this.abort.signal.throwIfAborted();
+      if (this.stopped) return result;
       options.onReady();
-      this.abort.signal.throwIfAborted();
-      this.interruptible = true;
+      if (this.stopped) return result;
+      this.executionStarted = true;
       result.phase = 'execution';
       await this.native.run(options.text, options.onAccepted);
       await this.native.finished;
     } catch (error) {
-      if (!this.stopped && !this.parked) result.error = error;
+      if (!this.stopped) result.error = error;
     } finally {
       try {
         await this.sandbox.stopProcesses();
@@ -117,7 +104,6 @@ export class SandboxTurn {
         result.error = error;
       }
       result.stopped = this.stopped;
-      result.parked = this.parked;
       this.native.closeStream(result.error);
     }
     return result;
