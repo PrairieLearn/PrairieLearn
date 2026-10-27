@@ -4,17 +4,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import { type UIMessage, isToolUIPart } from 'ai';
 import { useQueryState } from 'nuqs';
-import { type KeyboardEvent, type SyntheticEvent, useState } from 'react';
+import { type KeyboardEvent, type SyntheticEvent, useEffect, useState } from 'react';
 import { Alert, Button, Dropdown, Form, Modal, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { type ConversationState, PushSyncResultSchema } from '@prairielearn/course-agent-types';
+import { formatIntervalMinutes } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { JobSequenceResults } from '../../../components/JobSequenceResults.js';
+import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
+import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
@@ -35,7 +38,10 @@ export function Conversations({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
+  const conversations = useQuery({
+    ...trpc.courseAgent.list.queryOptions(),
+    refetchInterval: active ? 10_000 : false,
+  });
   // Default to the most recent conversation until the user selects one.
   const [pickedId, setPickedId] = useQueryState('courseAgentConversation');
   const selectedId = run(() => {
@@ -121,6 +127,7 @@ export function Conversations({
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
+          usage={selectedConversation!}
           isDevMode={isDevMode}
           chatCsrfToken={chatCsrfToken}
         />
@@ -151,11 +158,13 @@ function Chat({
   conversationId,
   chatCsrfToken,
   isDevMode,
+  usage,
 }: {
   courseId: string;
   conversationId: string;
   isDevMode: boolean;
   chatCsrfToken: string;
+  usage: StaffCourseAgentConversation;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -211,7 +220,7 @@ function Chat({
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive || pendingReview) {
+    if (!responseActive || pendingReview || lifecycle?.status === 'blocked') {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -271,17 +280,11 @@ function Chat({
             </div>
           )}
           {lifecycle?.status === 'blocked' && (
-            <Alert variant="warning">
-              <p>{blockedMessage[lifecycle.reason]}</p>
-              <Button
-                variant="outline-dark"
-                size="sm"
-                disabled={!connected || resume.isPending}
-                onClick={() => resume.mutate({ conversationId })}
-              >
-                Resume
-              </Button>
-            </Alert>
+            <BlockedNotice
+              state={lifecycle}
+              disabled={!connected || resume.isPending}
+              onResume={() => resume.mutate({ conversationId })}
+            />
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
             <p className="text-muted" role="status">
@@ -299,7 +302,7 @@ function Chat({
           {title.isError && (
             <AppErrorAlert error={titleError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
-          {error && (
+          {error && lifecycle?.status !== 'blocked' && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
             </Alert>
@@ -307,6 +310,14 @@ function Chat({
         </div>
       </div>
       <Form className="border-top p-3" onSubmit={submit}>
+        <div
+          className="small text-muted mb-2"
+          title={`${usage.usage_input_tokens_cache_read.toLocaleString()} cached input tokens; ${usage.usage_output_tokens_reasoning.toLocaleString()} reasoning tokens`}
+        >
+          {usage.usage_input_tokens.toLocaleString()} input ·{' '}
+          {usage.usage_output_tokens.toLocaleString()} output · Model cost{' '}
+          {formatMilliDollars(usage.usage_cost_milli_dollars)}
+        </div>
         <Form.Control
           as="textarea"
           rows={3}
@@ -386,6 +397,11 @@ function Message({
 }
 
 const blockedMessage = {
+  budget_exhausted: 'Hourly AI usage limit reached.',
+  budget_unavailable: 'Could not reach the AI credit service. Resume to try again.',
+  usage_unavailable:
+    'Model usage could not be recorded. Your workspace is preserved. Contact support to recover this conversation.',
+  access_revoked: 'You no longer have access to run the course agent in this course.',
   startup_failed:
     'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
   runtime_failed:
@@ -393,6 +409,48 @@ const blockedMessage = {
   checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
   cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
 } satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
+
+function BlockedNotice({
+  state,
+  disabled,
+  onResume,
+}: {
+  state: Extract<ConversationState, { status: 'blocked' }>;
+  disabled: boolean;
+  onResume: () => void;
+}) {
+  const [now, setNow] = useState(Date.now);
+  const retryAt = state.reason === 'budget_exhausted' ? state.retryAt : undefined;
+  // Derive the countdown from the persisted deadline so refreshes and background tabs stay accurate.
+  useEffect(() => {
+    if (!retryAt) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [retryAt]);
+  const remaining = retryAt ? Math.max(0, Date.parse(retryAt) - now) : 0;
+  const recoverable = !['usage_unavailable', 'access_revoked'].includes(state.reason);
+  return (
+    <Alert variant="warning">
+      <p>
+        {blockedMessage[state.reason]}{' '}
+        {retryAt &&
+          (remaining > 0
+            ? `You can retry in ${formatIntervalMinutes(remaining)}.`
+            : 'You can now retry.')}
+      </p>
+      {recoverable && (
+        <Button
+          variant="outline-dark"
+          size="sm"
+          disabled={disabled || remaining > 0}
+          onClick={onResume}
+        >
+          Resume
+        </Button>
+      )}
+    </Alert>
+  );
+}
 
 function ReviewCard({
   conversationId,

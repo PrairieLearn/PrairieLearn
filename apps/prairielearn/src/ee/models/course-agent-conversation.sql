@@ -11,6 +11,17 @@ VALUES
 RETURNING
   *;
 
+-- BLOCK add_usage
+UPDATE course_agent_conversations
+SET
+  usage_input_tokens = usage_input_tokens + $input,
+  usage_input_tokens_cache_read = usage_input_tokens_cache_read + $cached,
+  usage_output_tokens = usage_output_tokens + $output,
+  usage_output_tokens_reasoning = usage_output_tokens_reasoning + $reasoning,
+  usage_cost_milli_dollars = usage_cost_milli_dollars + $cost
+WHERE
+  id = $id;
+
 -- BLOCK select_course_agent_conversations_for_user
 SELECT
   *
@@ -47,6 +58,9 @@ SELECT
 FROM
   course_agent_conversations AS cac
   JOIN courses AS c ON c.id = cac.course_id
-  AND c.deleted_at IS NULL
+  AND (
+    $include_deleted_course
+    OR c.deleted_at IS NULL
+  )
 WHERE
   cac.agent_conversation_id = $agent_conversation_id;

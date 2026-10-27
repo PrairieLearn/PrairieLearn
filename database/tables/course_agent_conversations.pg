@@ -4,6 +4,11 @@ columns
     created_at: timestamp with time zone not null default now()
     id: bigint not null default nextval('course_agent_conversations_id_seq'::regclass)
     title: text not null
+    usage_cost_milli_dollars: bigint not null default 0
+    usage_input_tokens: bigint not null default 0
+    usage_input_tokens_cache_read: bigint not null default 0
+    usage_output_tokens: bigint not null default 0
+    usage_output_tokens_reasoning: bigint not null default 0
     user_id: bigint not null
 
 indexes
@@ -11,6 +16,16 @@ indexes
     course_agent_conversations_agent_conversation_id_key: UNIQUE (agent_conversation_id) USING btree (agent_conversation_id)
     course_agent_conversations_course_id_user_id_created_at_id_idx: USING btree (course_id, user_id, created_at, id)
 
+check constraints
+    course_agent_conversations_usage_cost_milli_dollars_check: CHECK (usage_cost_milli_dollars >= 0)
+    course_agent_conversations_usage_input_tokens_cache_read_check: CHECK (usage_input_tokens_cache_read >= 0)
+    course_agent_conversations_usage_input_tokens_check: CHECK (usage_input_tokens >= 0)
+    course_agent_conversations_usage_output_tokens_check: CHECK (usage_output_tokens >= 0)
+    course_agent_conversations_usage_output_tokens_reasoning_check: CHECK (usage_output_tokens_reasoning >= 0)
+
 foreign-key constraints
     course_agent_conversations_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_agent_conversations_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    course_agent_budget_requests: FOREIGN KEY (conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

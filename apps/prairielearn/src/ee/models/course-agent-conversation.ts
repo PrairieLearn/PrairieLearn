@@ -1,3 +1,4 @@
+import type { UsageDelta } from '@prairielearn/course-agent-types';
 import {
   execute,
   loadSqlEquiv,
@@ -12,10 +13,24 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const DEFAULT_COURSE_AGENT_CONVERSATION_TITLE = 'New conversation';
 
-export async function selectOptionalCourseAgentConversationByAgentId(agentConversationId: string) {
+export async function addCourseAgentConversationUsage(id: string, usage: UsageDelta) {
+  await execute(sql.add_usage, {
+    id,
+    input: usage.inputTokens,
+    cached: usage.cachedInputTokens,
+    output: usage.outputTokens,
+    reasoning: usage.reasoningTokens,
+    cost: usage.costMilliDollars,
+  });
+}
+
+export async function selectOptionalCourseAgentConversationByAgentId(
+  agentConversationId: string,
+  { includeDeletedCourse = false }: { includeDeletedCourse?: boolean } = {},
+) {
   return queryOptionalRow(
     sql.select_course_agent_conversation_by_agent_id,
-    { agent_conversation_id: agentConversationId },
+    { agent_conversation_id: agentConversationId, include_deleted_course: includeDeletedCourse },
     CourseAgentConversationSchema,
   );
 }

@@ -17,7 +17,7 @@ const lifetimeMs = (env: Env) =>
 /** Only these two private hostnames can leave a container. Secrets stay here. */
 export class CourseAgentOutbound extends WorkerEntrypoint<
   Env,
-  { repository: string; model: string }
+  { repository: string; model: string; conversationId?: string; executionId?: string }
 > {
   // Add credentials only after checking that the request targets the bound
   // repository or model. The container never receives the underlying tokens.
@@ -49,14 +49,16 @@ export class CourseAgentOutbound extends WorkerEntrypoint<
     ) {
       const body = (await request.json()) as { model?: string };
       if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
-      headers.set('Authorization', `Bearer ${this.env.OPENAI_API_KEY}`);
-      headers.set('Content-Type', 'application/json');
-      return fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-        redirect: 'manual',
-      });
+      if (!this.ctx.props.conversationId || !this.ctx.props.executionId) {
+        return new Response('Forbidden', { status: 403 });
+      }
+      return this.env.Conversation.getByName(this.ctx.props.conversationId).proxyModelRequest(
+        new Request('https://model.internal/v1/responses', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }),
+        this.ctx.props.executionId,
+      );
     } else {
       return new Response('Forbidden', { status: 403 });
     }
@@ -73,6 +75,18 @@ export class CourseAgentOutbound extends WorkerEntrypoint<
 export class CourseSandbox extends DurableObject<Env> {
   private process: ExecProcess | null = null;
   private nativeToken: string | null = null;
+
+  async authorizeModel(config: {
+    repository: string;
+    model: string;
+    conversationId: string;
+    executionId: string;
+  }) {
+    await this.container.interceptOutboundHttp(
+      'model.internal:80',
+      this.ctx.exports.CourseAgentOutbound({ props: config }),
+    );
+  }
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);

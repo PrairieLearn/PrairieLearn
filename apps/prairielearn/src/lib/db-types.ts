@@ -711,12 +711,31 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+export const CourseAgentBudgetRequestSchema = z.object({
+  conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  granted_milli_dollars: z.coerce.number(),
+  http_status: z.number(),
+  id: IdSchema,
+  request: z.unknown(),
+  response: z.unknown(),
+  sequence: z.coerce.number(),
+  user_id: IdSchema,
+  window_start: DateFromISOString,
+});
+export type CourseAgentBudgetRequest = z.infer<typeof CourseAgentBudgetRequestSchema>;
+
 export const CourseAgentConversationSchema = z.object({
   agent_conversation_id: z.string(),
   course_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
   title: z.string(),
+  usage_cost_milli_dollars: z.coerce.number(),
+  usage_input_tokens: z.coerce.number(),
+  usage_input_tokens_cache_read: z.coerce.number(),
+  usage_output_tokens: z.coerce.number(),
+  usage_output_tokens_reasoning: z.coerce.number(),
   user_id: IdSchema,
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
@@ -1823,6 +1842,7 @@ export const TableNames = [
   'batched_migrations',
   'chunks',
   'client_fingerprints',
+  'course_agent_budget_requests',
   'course_agent_conversations',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',

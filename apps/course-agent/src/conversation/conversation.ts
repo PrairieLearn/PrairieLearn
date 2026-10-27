@@ -22,6 +22,8 @@ import {
   SavedJobOutcomeSchema,
 } from '@prairielearn/course-agent-types';
 
+import { ConversationBudget } from '../budget.js';
+import { proxyModelResponse } from '../model-proxy.js';
 import { SandboxTurn } from '../sandbox-turn.js';
 
 import { buildInstructions } from './instructions.js';
@@ -59,6 +61,7 @@ type Runtime = RuntimeData &
       }
   );
 interface ActiveTurn {
+  executionId: string;
   requestId: string;
   execution: SandboxTurn;
   sdkFinished: PromiseWithResolvers<undefined>;
@@ -67,6 +70,86 @@ interface ActiveTurn {
 
 /** The private record is authoritative; SDK state exposes lifecycle and its deadline to browsers. */
 export class Conversation extends AIChatAgent<Env, ConversationState> {
+  private budgetInstance: ConversationBudget | null = null;
+  private modelAbort: AbortController | null = null;
+
+  private get budget() {
+    this.budgetInstance ??= new ConversationBudget(this.ctx.storage, this.env, this.name, () => {
+      const blocked = this.budgetInstance?.blocked;
+      if (this.runtime && blocked) {
+        const changed =
+          this.record.lifecycle.status !== 'blocked' ||
+          this.record.lifecycle.reason !== blocked.reason;
+        this.setRuntimeState({
+          ...this.record,
+          lifecycle: { status: 'blocked', ...blocked },
+          deadline: null,
+        });
+        const active = this.active;
+        if (changed && active) {
+          // Let the provider-facing error return before interrupting its waiting native caller.
+          void this.keepAliveWhile(async () => {
+            await scheduler.wait(0);
+            await active.execution.stop();
+          }).catch(console.error);
+        }
+      }
+    });
+    return this.budgetInstance;
+  }
+
+  /** Binding-only inference entrypoint; the public Worker never routes requests here. */
+  async proxyModelRequest(request: Request, executionId: string): Promise<Response> {
+    if (!this.active || this.active.executionId !== executionId) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    if (this.modelAbort) return new Response('A model request is already running', { status: 409 });
+    const abort = new AbortController();
+    this.modelAbort = abort;
+    const release = () => {
+      if (this.modelAbort === abort) this.modelAbort = null;
+    };
+    try {
+      if (!(await this.budget.ensureCredit())) {
+        release();
+        return Response.json(
+          {
+            error: {
+              code: 'course_agent_budget_exhausted',
+              message: 'The course agent has no available credit.',
+            },
+          },
+          { status: 429 },
+        );
+      }
+      if (this.active?.executionId !== executionId || abort.signal.aborted) {
+        release();
+        return new Response('Execution stopped', { status: 409 });
+      }
+      const requestId = crypto.randomUUID();
+      this.budget.begin(requestId, executionId);
+      const result = await proxyModelResponse(request, {
+        key: this.env.OPENAI_API_KEY,
+        signal: abort.signal,
+        settle: (usage) => {
+          this.budget.settle(requestId, usage);
+          release();
+        },
+        missingUsage: () => this.budget.fail('usage_unavailable'),
+      });
+      void this.keepAliveWhile(async () => {
+        await result.finished;
+        release();
+        await this.budget.reportCompletedRequest();
+      }).catch(console.error);
+      return result.response;
+    } catch (error) {
+      this.budget.fail('usage_unavailable');
+      release();
+      throw error;
+    }
+  }
+
   override initialState: ConversationState = { status: 'offline', deadlineAt: null };
   private runtime: Runtime | null = null;
   // Process connections and completion promises exist only in this DO instance.
@@ -95,6 +178,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       if (frame.data.type === MessageType.CF_AGENT_USE_CHAT_REQUEST) {
         if (
           this.active ||
+          this.budget.blocked ||
           this.recovering ||
           this.record.review ||
           !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status)
@@ -162,6 +246,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   private get publicState(): ConversationState {
+    if (this.budgetInstance?.blocked) {
+      return { status: 'blocked', ...this.budgetInstance.blocked, deadlineAt: null };
+    }
     const lifecycle = this.record.lifecycle;
     return {
       ...(lifecycle.status === 'destroying' ? { status: 'suspending' as const } : lifecycle),
@@ -186,6 +273,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // A new object has no saved conversation yet. Leave runtime null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this.runtime) return;
+    this.budget.recover();
+    if (this.budget.blocked) {
+      this.setRuntimeState({
+        ...this.record,
+        lifecycle: { status: 'blocked', ...this.budget.blocked },
+        deadline: null,
+      });
+    }
     if (this.record.review) {
       await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
     }
@@ -354,6 +449,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Stop retains admission until both sandbox cleanup and SDK completion finish. */
   private async stopLive(shutdown = false) {
+    this.modelAbort?.abort();
     const active = this.active;
     if (!active) {
       this.block('runtime_failed');
@@ -422,6 +518,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
     });
+    const executionId = crypto.randomUUID();
     const execution = new SandboxTurn(this.sandbox, {
       messageId: crypto.randomUUID(),
       text: outcome ? { callId: this.record.review!.callId, result: outcome } : text,
@@ -475,6 +572,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         if (startup) {
           await this.sandbox.prepare(this.record.config, this.record.checkpoint);
         }
+        await this.sandbox.authorizeModel({
+          ...this.record.config,
+          conversationId: this.name,
+          executionId,
+        });
         if (outcome) {
           await this.sandbox.stopProcesses();
         }
@@ -490,6 +592,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       onAccepted: (nativeTurnId) => this.stash({ nativeTurnId }),
     });
     const active: ActiveTurn = {
+      executionId,
       requestId: options.requestId,
       execution,
       sdkFinished: Promise.withResolvers<undefined>(),
@@ -532,6 +635,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
     }
     await active.sdkFinished.promise;
+    await this.budget.report(false);
     if (this.active !== active) return;
     this.active = null;
     this.waiter = null;
@@ -617,10 +721,26 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     // Another Resume or an unfinished turn must not modify this workspace concurrently.
     if (this.record.lifecycle.status !== 'blocked' || this.active || this.recovering) return false;
-    const reason = this.record.lifecycle.reason;
+    const reason = this.budget.blocked?.reason ?? this.record.lifecycle.reason;
     this.recovering = true;
     try {
       switch (reason) {
+        case 'budget_exhausted':
+        case 'budget_unavailable':
+          if (!(await this.budget.resume())) return false;
+          if (this.record.sandboxId) {
+            await this.backupAndShutdown();
+          } else {
+            this.setRuntimeState({
+              ...this.record,
+              lifecycle: { status: 'offline' },
+              sandboxId: null,
+            });
+          }
+          break;
+        case 'usage_unavailable':
+        case 'access_revoked':
+          return false;
         case 'startup_failed':
           await this.discardStartup();
           break;

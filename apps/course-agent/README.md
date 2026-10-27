@@ -44,7 +44,11 @@ Run `pnpm --filter @prairielearn/course-agent generate-protocol` after changing 
 
 Malformed messages and invalid response or subscribed-notification payloads fail the connection and pending work. Unknown notifications and late replies are ignored. Connection loss and command timeouts never replay a prompt. Codex currently labels WebSocket transport experimental and unsupported for production; deployed validation is required before enabling a pilot.
 
-Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Review cards wait for a PrairieLearn approval or denial result. Idle expiry checkpoints a pending review; the saved result continues the restored native thread without repeating the user prompt. Accounting remains separate work.
+Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Review cards wait for a PrairieLearn approval or denial result. Idle expiry checkpoints a pending review; the saved result continues the restored native thread without repeating the user prompt.
+
+### Usage and rate limits
+
+The Conversation DO deducts confirmed token costs after each model request, including requests between tool calls during long turns. At zero credit it asks PL for another allocation before admitting inference. PL owns the hourly allowance and conversation usage columns. The chat shows totals and a persistent retry time when limited. See [the accounting contract](BUDGET.md) for the policy, endpoint schemas, and failure handling.
 
 ### Push sync
 

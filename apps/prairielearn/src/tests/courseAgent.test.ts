@@ -8,7 +8,13 @@ import path from 'node:path';
 import { Octokit } from '@octokit/rest';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { type PendingReview, ReviewDecisionSchema } from '@prairielearn/course-agent-types';
+import {
+  type BudgetRequest,
+  BudgetResponseSchema,
+  type PendingReview,
+  ReviewDecisionSchema,
+  emptyUsage,
+} from '@prairielearn/course-agent-types';
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
@@ -32,6 +38,7 @@ import { getOrCreateUser, withUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
+const sql = loadSqlEquiv(import.meta.url);
 
 function createClient(user: User) {
   return createCourseTrpcClient({
@@ -142,6 +149,7 @@ describe('Course agent access and conversation privacy', () => {
     }
   });
   beforeEach(async () => {
+    await execute(sql.clear_budget_requests);
     serviceRequests.length = 0;
     pendingReview = null;
     failDelivery = false;
@@ -158,6 +166,106 @@ describe('Course agent access and conversation privacy', () => {
     await once(service, 'close');
   });
   afterAll(() => Object.assign(config, originalConfig));
+
+  test('records usage and credit once across retries, and preserves final usage after access revocation', async () => {
+    const conversation = await createConversation(owner);
+    const url = `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/usage`;
+    const report = (body: BudgetRequest, token = 'test-token') =>
+      fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    const request: BudgetRequest = {
+      sequence: 1,
+      usageDelta: { ...emptyUsage(), inputTokens: 10000, outputTokens: 2000, costMilliDollars: 40 },
+      requestCredit: true,
+    };
+    expect((await report(request, 'wrong')).status).toBe(401);
+    const accepted = await report(request);
+    expect(accepted.status).toBe(200);
+    const first = BudgetResponseSchema.parse(await accepted.json());
+    expect(first.allocation).toMatchObject({ status: 'granted', grantedMilliDollars: 3000 });
+    expect(await (await report(request)).json()).toEqual(first);
+    expect(
+      (await report({ ...request, usageDelta: { ...request.usageDelta, costMilliDollars: 80 } }))
+        .status,
+    ).toBe(409);
+    let saved = await selectOptionalCourseAgentConversation({
+      id: conversation.id,
+      course_id: '1',
+      user_id: owner.id,
+    });
+    expect(saved).toMatchObject({
+      usage_input_tokens: 10000,
+      usage_output_tokens: 2000,
+      usage_cost_milli_dollars: 40,
+    });
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: owner.id,
+      course_role: 'Editor',
+      authn_user_id: '1',
+    });
+    const final = {
+      sequence: 2,
+      usageDelta: { ...emptyUsage(), outputTokens: 500, costMilliDollars: 10 },
+      requestCredit: true,
+    };
+    const denied = await report(final);
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toEqual({
+      sequence: 2,
+      allocation: { status: 'denied', reason: 'not_allowed', retryAt: null },
+    });
+    expect(
+      (
+        await report({
+          sequence: 3,
+          usageDelta: { ...emptyUsage(), costMilliDollars: 5 },
+          requestCredit: false,
+        })
+      ).status,
+    ).toBe(200);
+    saved = await selectOptionalCourseAgentConversation({
+      id: conversation.id,
+      course_id: '1',
+      user_id: owner.id,
+    });
+    expect(saved).toMatchObject({ usage_output_tokens: 2500, usage_cost_milli_dollars: 55 });
+  });
+
+  test('serializes grants across conversations competing for the same hourly allowance', async () => {
+    const initial = await createConversation(owner);
+    const report = (agentId: string, sequence: number) =>
+      fetch(`${siteUrl}/pl/api/course-agent/conversations/${agentId}/usage`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sequence, usageDelta: emptyUsage(), requestCredit: true }),
+      });
+    for (let sequence = 1; sequence <= 16; sequence++) {
+      expect((await report(initial.agent_conversation_id, sequence)).status).toBe(200);
+    }
+    const a = await createConversation(owner);
+    const b = await createConversation(owner);
+    const results = await Promise.all([
+      report(a.agent_conversation_id, 1),
+      report(b.agent_conversation_id, 1),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([200, 429]);
+    const bodies = await Promise.all(
+      results.map(async (result) => BudgetResponseSchema.parse(await result.json())),
+    );
+    expect(bodies.find((body) => body.allocation.status === 'granted')!.allocation).toMatchObject({
+      grantedMilliDollars: 2000,
+    });
+    expect(bodies.find((body) => body.allocation.status === 'denied')!.allocation).toMatchObject({
+      reason: 'hourly_limit',
+    });
+    expect(
+      results.find((result) => result.status === 429)!.headers.get('Retry-After'),
+    ).not.toBeNull();
+  });
 
   test('rejects API and history access when the feature is disabled', async () => {
     const conversation = await createConversation(owner);
@@ -341,7 +449,6 @@ describe('Course agent access and conversation privacy', () => {
     const oldGitConfig = process.env.GIT_CONFIG_GLOBAL;
     const git = (args: string[], cwd = dir) =>
       execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
-    const sql = loadSqlEquiv(import.meta.url);
     let publications = 0;
     const publicationInputs: unknown[] = [];
     let api: ReturnType<typeof createServer> | undefined;

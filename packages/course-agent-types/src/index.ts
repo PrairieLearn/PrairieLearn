@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './budget.js';
+
 const ConversationLifecycleSchema = z.discriminatedUnion('status', [
   // No live container. The next message clones the repository or restores the committed checkpoint.
   z.object({ status: z.literal('offline') }),
@@ -16,7 +18,17 @@ const ConversationLifecycleSchema = z.discriminatedUnion('status', [
   // An operation failed or was interrupted. Explicit Resume repairs the workspace without replaying input.
   z.object({
     status: z.literal('blocked'),
-    reason: z.enum(['startup_failed', 'runtime_failed', 'checkpoint_failed', 'cleanup_failed']),
+    reason: z.enum([
+      'startup_failed',
+      'runtime_failed',
+      'checkpoint_failed',
+      'cleanup_failed',
+      'budget_exhausted',
+      'budget_unavailable',
+      'usage_unavailable',
+      'access_revoked',
+    ]),
+    retryAt: z.iso.datetime().optional(),
   }),
 ]);
 export type ConversationLifecycle = z.infer<typeof ConversationLifecycleSchema>;
