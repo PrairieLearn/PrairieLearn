@@ -82,8 +82,8 @@ export function QuestionNavSideButton({
         to this question in order to unlock the next. If you run out of attempts, the next question
         will unlock automatically.`;
     } else if (nextQuestionAccessMode === 'blocked_lockpoint') {
-      disabledExplanation = html`Cross the lockpoint on
-        <a href="${urlPrefix}/assessment_instance/${assessmentInstanceId}/">the assessment page</a>
+      disabledExplanation = html`Cross the lockpoint on the
+        <a href="${urlPrefix}/assessment_instance/${assessmentInstanceId}/">assessment overview</a>
         to proceed to the next question.`;
     }
   }

@@ -214,13 +214,13 @@ describe('Assessment lockpoints', { timeout: 60_000, concurrent: false }, functi
     assert.isTrue(response.$('#question-nav-next').is(':disabled'));
     assert.strictEqual(
       response.$('#question-nav-next-reason').text().replaceAll(/\s+/g, ' ').trim(),
-      'Cross the lockpoint on the assessment page to proceed to the next question.',
+      'Cross the lockpoint on the assessment overview to proceed to the next question.',
     );
     assert.strictEqual(
       response.$('#question-nav-next-reason a').attr('href'),
       `${new URL(context.assessmentInstanceUrl).pathname}/`,
     );
-    assert.strictEqual(response.$('#question-nav-next-reason a').text(), 'the assessment page');
+    assert.strictEqual(response.$('#question-nav-next-reason a').text(), 'assessment overview');
   });
 
   test('crossing the first lockpoint makes previous questions read-only', async function () {
