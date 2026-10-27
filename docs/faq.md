@@ -14,6 +14,22 @@ There are three different ways to let a student re-attempt or continue an exam:
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
+## How do I submit an answer on behalf of a student?
+
+In some situations, a student may not be able to submit an answer to a question, for example because of technical difficulties or accessibility needs. In these cases, it may be appropriate for an instructor or TA to submit the answer on the student's behalf. This may be done even if the access control rules block the student from submitting directly. Follow these steps:
+
+1. Open the assessment in **Staff view** and select the **Students** tab.
+2. Find the student's assessment instance and check its status in the **Remaining** column. If it is **Closed**, click the pencil icon in that column. In the **Re-open instance** dialog, choose **Re-open without time limit**, and click **Set**.
+3. Open the user menu in the top-right corner. Enter the student's UID as the effective user and click **Change UID**.
+4. In the same menu, under **View as &lt;student name&gt;**, select **Student view without access restrictions**.
+5. Open the corresponding instance question(s) and submit the answer as the student would.
+6. When you are finished, open the top-right user menu and return to **Staff view**.
+7. If you reopened the instance and need to close it again, return to the assessment's **Students** tab, select the student's instance, and choose **Actions &rarr; Grade & close**.
+
+!!! warning "Overriding access rules"
+
+    Note that submitting an answer using this mode will override access rules like early/late submission. The student's submission will be graded using 100% credit, even if the submission is late.
+
 ## How do I give students access to view their exams after they are over?
 
 With modern access control, configure [After completion](assessment/accessControl.md#after-completion) visibility for the assessment or for the relevant PrairieTest exam.
