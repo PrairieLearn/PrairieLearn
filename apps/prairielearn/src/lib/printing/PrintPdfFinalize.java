@@ -49,7 +49,20 @@ class PrintPdfFinalize {
   private final Map<COSDictionary, Map<Integer, Artifact>> artifacts = new IdentityHashMap<>();
   private final Map<COSDictionary, Set<Integer>> content = new IdentityHashMap<>();
 
+  private static class AccessibilityException extends IOException {
+    AccessibilityException(String message) { super(message); }
+  }
+
   public static void main(String[] args) throws Exception {
+    try {
+      run(args);
+    } catch (AccessibilityException error) {
+      System.err.println("PDF accessibility: " + error.getMessage());
+      System.exit(2);
+    }
+  }
+
+  private static void run(String[] args) throws Exception {
     if (args.length == 5 && args[0].equals("metadata")) {
       try (PDDocument document = Loader.loadPDF(new File(args[1]))) {
         setMetadata(document, args[3], args[4]);
@@ -69,7 +82,7 @@ class PrintPdfFinalize {
     Element source = factory.newDocumentBuilder().parse(new File(manifest)).getDocumentElement();
     String title = source.getAttribute("title");
     String language = source.getAttribute("language");
-    if (title.isBlank() || language.isBlank()) throw new IOException("PDF title and language are required.");
+    if (title.isBlank() || language.isBlank()) throw new AccessibilityException("PDF title and language are required.");
     var sourceTags = source.getElementsByTagName("tag");
     for (int i = 0; i < sourceTags.getLength(); i++) {
       Element element = (Element) sourceTags.item(i);
@@ -77,7 +90,7 @@ class PrintPdfFinalize {
       Tag tag = new Tag(element.getAttribute("role"), element.getAttribute("alt"),
           element.getAttribute("decorativePaint").equals("true"));
       if (marker.isBlank() || tags.put(marker, tag) != null) {
-        throw new IOException("PDF source markers must be unique.");
+        throw new AccessibilityException("PDF source markers must be unique.");
       }
     }
     var sourceLinks = source.getElementsByTagName("link");
@@ -90,12 +103,12 @@ class PrintPdfFinalize {
     try (PDDocument document = Loader.loadPDF(new File(input))) {
       var catalog = document.getDocumentCatalog();
       var tree = catalog.getStructureTreeRoot();
-      if (tree == null) throw new IOException("Chromium did not produce a tagged PDF.");
+      if (tree == null) throw new AccessibilityException("Chromium did not produce a tagged PDF.");
       transformKids(tree.getCOSObject(), null, null, false);
       if (!found.equals(tags.keySet())) {
         Set<String> missing = new HashSet<>(tags.keySet());
         missing.removeAll(found);
-        throw new IOException("Chromium omitted declared PDF structure: " + missing);
+        throw new AccessibilityException("Chromium omitted declared PDF structure: " + missing);
       }
       clearParentTree(tree.getCOSObject().getCOSDictionary(COSName.PARENT_TREE), document);
       int pageNumber = 0;
@@ -113,7 +126,7 @@ class PrintPdfFinalize {
             String description = links.get(uri.getURI());
             if (description == null && link.getContents() != null && !link.getContents().isBlank()) continue;
             if (description == null || description.isBlank()) {
-              throw new IOException("A PDF link has no source description: " + uri.getURI());
+              throw new AccessibilityException("A PDF link has no source description: " + uri.getURI());
             }
             link.setContents(description);
           }
@@ -126,7 +139,7 @@ class PrintPdfFinalize {
   }
 
   private static void setMetadata(PDDocument document, String title, String language) throws IOException {
-    if (title.isBlank() || language.isBlank()) throw new IOException("PDF title and language are required.");
+    if (title.isBlank() || language.isBlank()) throw new AccessibilityException("PDF title and language are required.");
     var catalog = document.getDocumentCatalog();
     document.getDocumentInformation().setTitle(title);
     catalog.setLanguage(language);
@@ -169,11 +182,11 @@ class PrintPdfFinalize {
         Artifact artifact = inheritedArtifact;
         boolean decoration = false;
         if (tag != null) {
-          if (!found.add(marker)) throw new IOException("A PDF source marker was duplicated: " + marker);
+          if (!found.add(marker)) throw new AccessibilityException("A PDF source marker was duplicated: " + marker);
           if (tag.role().equals("Artifact")) artifact = Artifact.ALL;
           else {
             if ((tag.role().equals("Formula") || tag.role().equals("Figure")) && tag.alt().isBlank()) {
-              throw new IOException("A formula or figure has no alternative description.");
+              throw new AccessibilityException("A formula or figure has no alternative description.");
             }
             element.setName(COSName.S, tag.role());
             if (tag.alt().isBlank()) element.removeItem(COSName.ALT);
@@ -192,9 +205,9 @@ class PrintPdfFinalize {
           COSDictionary reference = (COSDictionary) child;
           mcid = reference.getInt(COSName.MCID);
           if (reference.getCOSDictionary(COSName.PG) != null) contentPage = reference.getCOSDictionary(COSName.PG);
-          if (reference.containsKey(COSName.getPDFName("Stm"))) throw new IOException("Nested PDF structure streams are unsupported.");
+          if (reference.containsKey(COSName.getPDFName("Stm"))) throw new AccessibilityException("Nested PDF structure streams are unsupported.");
         }
-        if (contentPage == null || mcid < 0) throw new IOException("PDF content has no page or marked-content identifier.");
+        if (contentPage == null || mcid < 0) throw new AccessibilityException("PDF content has no page or marked-content identifier.");
         Artifact artifact = inheritedArtifact != null ? inheritedArtifact : ownDecoration ? Artifact.DECORATION : null;
         if (artifact != null) artifacts.computeIfAbsent(contentPage, key -> new HashMap<>()).put(mcid, artifact);
         else {
@@ -202,7 +215,7 @@ class PrintPdfFinalize {
           result.add(raw);
         }
       } else {
-        if (inheritedArtifact != null) throw new IOException("A decorative element contains a PDF annotation.");
+        if (inheritedArtifact != null) throw new AccessibilityException("A decorative element contains a PDF annotation.");
         result.add(raw);
       }
     }
@@ -259,23 +272,23 @@ class PrintPdfFinalize {
         } else if (name == COSName.ARTIFACT) artifact = Artifact.ALL;
         marks.push(new Mark(content.getOrDefault(page, Set.of()).contains(mcid), artifact));
       } else if (operation.equals("EMC")) {
-        if (marks.size() <= initialDepth) throw new IOException("Unbalanced marked content in " + location);
+        if (marks.size() <= initialDepth) throw new AccessibilityException("Unbalanced marked content in " + location);
         marks.pop();
       } else if (PAINT_OPERATORS.contains(operation)) {
         boolean tagged = marks.stream().anyMatch(Mark::tagged);
         boolean artifact = marks.stream().anyMatch(mark -> mark.artifact() != null);
         if (!tagged && !artifact) {
-          throw new IOException("Unclassified " + operation + " content in " + location
+          throw new AccessibilityException("Unclassified " + operation + " content in " + location
               + ". Add source semantics or explicitly mark decorative content before PDF export.");
         }
-        if (tagged && artifact) throw new IOException("Tagged content is nested inside an artifact in " + location);
+        if (tagged && artifact) throw new AccessibilityException("Tagged content is nested inside an artifact in " + location);
         if (marks.stream().anyMatch(mark -> mark.artifact() == Artifact.DECORATION)
             && NON_PATH_PAINT_OPERATORS.contains(operation)) {
-          throw new IOException("Declared CSS decoration contains text or graphics in " + location);
+          throw new AccessibilityException("Declared CSS decoration contains text or graphics in " + location);
         }
         if (operation.equals("Do") && resources.getXObject((COSName) operands.get(0)) instanceof PDFormXObject form) {
-          if (!forms.add(form.getCOSObject())) throw new IOException("Recursive PDF form content.");
-          if (form.getStructParents() >= 0) throw new IOException("Nested PDF structure streams are unsupported.");
+          if (!forms.add(form.getCOSObject())) throw new AccessibilityException("Recursive PDF form content.");
+          if (form.getStructParents() >= 0) throw new AccessibilityException("Nested PDF structure streams are unsupported.");
           rewriteContent(form, form.getResources() == null ? resources : form.getResources(), page,
               new ArrayDeque<>(marks), forms, location + " form");
           forms.remove(form.getCOSObject());
@@ -285,7 +298,7 @@ class PrintPdfFinalize {
       output.add(operator);
       operands.clear();
     }
-    if (marks.size() != initialDepth || !operands.isEmpty()) throw new IOException("Unbalanced PDF content in " + location);
+    if (marks.size() != initialDepth || !operands.isEmpty()) throw new AccessibilityException("Unbalanced PDF content in " + location);
     return output;
   }
 }
