@@ -926,7 +926,8 @@ function PrintPreparation({
                     <Form.Text id="print-cover-pages-help">
                       Every printed copy includes all uploaded pages, in this order, before the
                       questions{includeCoverPage ? ' and after the default cover' : ''}. Up to{' '}
-                      {MAX_COVER_FILES} PDFs, 10 MB total, and {MAX_COVER_PAGES} pages.
+                      {MAX_COVER_FILES} PDFs, 10 MB total, and {MAX_COVER_PAGES} pages. Uploaded
+                      PDFs must pass PDF/UA-1 accessibility checks.
                     </Form.Text>
                   </Form.Group>
                   {coverPages.length > 0 && (

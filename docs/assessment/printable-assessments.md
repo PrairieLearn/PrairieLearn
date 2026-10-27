@@ -51,6 +51,8 @@ Use **Custom cover pages (PDF)** to upload your own instructions or other pages.
 
 You can add up to 10 PDFs, with a combined limit of 100 pages and 10 MB. Uploaded covers are excluded from answer keys and Word files. If you reload the page, you will need to add the files again.
 
+Uploaded PDFs must pass PDF/UA-1 accessibility checks before they can be included. Export tagged PDFs from an accessible source document with a title, language, useful image descriptions, and correctly identified table headers. Scanned pages need accessible text and structure. If a cover is rejected, repair the source document and export it again, or remove the upload. Some PDFs with nested tagged content or internal links cannot currently be combined safely, even if the original passes validation.
+
 Uploaded covers do not appear in the preview. Download a student PDF or booklet to check them before printing.
 
 ## Download files
@@ -78,3 +80,9 @@ Select **Download booklet PDF…**, enter the **Number of students** (up to 500)
 The booklet ends with one answer key for each form. Print it single-sided and set aside the answer keys before distributing the student copies.
 
 Always check the downloaded files before printing, including the cover pages and page breaks for every form.
+
+## PDF accessibility
+
+PDF downloads are checked automatically after rendering and assembly. A failed check prevents the download and reports what needs attention. Add useful descriptions to meaningful figures, SVGs, and canvases; provide spoken descriptions for mathematical expressions; use headings, lists, and table headers that express the question's structure. Mark changes of language in authored content. Use decorative markings only for content without meaning, such as borders. Regenerate the preview after making corrections.
+
+Automatic checks do not establish full PDF/UA-1 compliance. Review the final downloaded assessment, answer key, and booklet with assistive technology before claiming compliance. Check question navigation, reading order, mathematical meaning, table relationships, descriptions, and repeated copies. The current implementation has automated coverage for these structures, but a human accessibility review of the supported export paths is still required.

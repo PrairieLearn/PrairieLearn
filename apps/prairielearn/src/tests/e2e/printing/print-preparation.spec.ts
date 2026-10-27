@@ -6,6 +6,7 @@ import { PDFDocument } from 'pdf-lib';
 import * as unzipper from 'unzipper';
 
 import { MAX_INLINE_PRINT_PACKET_PAGES } from '../../../lib/client/print-packet.js';
+import { createPdfOutput } from '../../../lib/printing/pdf-output.js';
 import { selectAssessmentInstanceById } from '../../../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
@@ -315,7 +316,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   page,
   baseURL,
   courseInstance,
-}) => {
+}, testInfo) => {
   const instructor = await getOrCreateUser({
     uid: 'instructor@example.com',
     name: 'Instructor User',
@@ -420,12 +421,21 @@ test('combines assessment copies with custom covers and appends every form’s a
     (await PDFDocument.load(await fs.readFile(await allFormsDownload.path()))).getPageCount(),
   ).toBe(pageCounts.reduce((total, count) => total + count, 0));
 
-  const cover = await PDFDocument.create();
-  cover.addPage([400, 600]).drawText('Extended assessment instructions');
+  const coverPage = await page.context().newPage();
+  const cover = await (async () => {
+    try {
+      await coverPage.setContent(`<!doctype html><html lang="en"><head>
+        <title>Assessment instructions</title><style>@page { size: 432pt 576pt; margin: 24pt; }</style>
+        </head><body><h1>Extended assessment instructions</h1><p>Show your work for every question.</p></body></html>`);
+      return await createPdfOutput().produce(coverPage);
+    } finally {
+      await coverPage.close();
+    }
+  })();
   await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
     name: 'extended-instructions.pdf',
     mimeType: 'application/pdf',
-    buffer: Buffer.from(await cover.save()),
+    buffer: cover,
   });
   await expect(page.getByText('extended-instructions.pdf', { exact: true })).toBeVisible();
   expect(new URL(page.url()).searchParams.get('instances')?.split(',')).toEqual(formIds);
@@ -453,10 +463,14 @@ test('combines assessment copies with custom covers and appends every form’s a
   await preparedPdf.click();
   const download = await downloaded;
   expect(await download.failure()).toBeNull();
+  await testInfo.attach('accessible-booklet.pdf', {
+    path: await download.path(),
+    contentType: 'application/pdf',
+  });
   const packet = await PDFDocument.load(await fs.readFile(await download.path()));
   expect(packet.getPageCount()).toBe(expectedPageCount);
-  expect(packet.getPage(1).getSize()).toEqual({ width: 400, height: 600 });
-  expect(packet.getPage(pageCounts[0] + 2).getSize()).toEqual({ width: 400, height: 600 });
+  expect(packet.getPage(1).getSize()).toEqual({ width: 432, height: 576 });
+  expect(packet.getPage(pageCounts[0] + 2).getSize()).toEqual({ width: 432, height: 576 });
   expect(packet.getPage(expectedStudentPages).getSize()).toEqual({ width: 612, height: 792 });
   await page.getByRole('button', { name: 'Student copy', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({
