@@ -51,3 +51,52 @@ FROM
     ORDER BY
       ci.id
   ) AS result;
+
+-- BLOCK select_authors
+WITH
+  authors AS (
+    SELECT
+      author.uid,
+      author.ordinality
+    FROM
+      questions AS q
+      CROSS JOIN LATERAL unnest(q.authors) WITH ORDINALITY AS author (uid, ordinality)
+    WHERE
+      q.id = $question_id
+      AND q.course_id = $course_id
+  )
+SELECT
+  author.uid,
+  CASE
+    WHEN cp.user_id IS NOT NULL THEN u.name
+    ELSE NULL
+  END AS name,
+  author.ordinality
+FROM
+  authors AS author
+  LEFT JOIN users AS u ON (u.uid = author.uid)
+  LEFT JOIN course_permissions AS cp ON (
+    cp.user_id = u.id
+    AND cp.course_id = $course_id
+  )
+UNION ALL
+-- Resolve newly entered UIDs before the form is saved, too.
+SELECT
+  u.uid,
+  u.name,
+  NULL::bigint AS ordinality
+FROM
+  course_permissions AS cp
+  JOIN users AS u ON (u.id = cp.user_id)
+WHERE
+  cp.course_id = $course_id
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      authors
+    WHERE
+      authors.uid = u.uid
+  )
+ORDER BY
+  ordinality;

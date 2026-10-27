@@ -58,7 +58,6 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
-import { selectCourseUsers } from '../../models/course-permissions.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import {
@@ -727,11 +726,11 @@ router.get(
     const authors = parsedAuthors.success
       ? normalizeQuestionAuthors(parsedAuthors.data.authors)
       : null;
-    // Resolve names only from course staff, never from an arbitrary UID lookup.
-    const authorStaff = (await selectCourseUsers({ course_id: course.id })).map(({ user }) => ({
-      uid: user.uid,
-      name: user.name,
-    }));
+    const authorStaff = await sqldb.queryRows(
+      sql.select_authors,
+      { question_id: question.id, course_id: course.id },
+      z.object({ uid: z.string(), name: z.string().nullable() }),
+    );
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
     const hasCoursePermissionView = authz_data.has_course_permission_view;
