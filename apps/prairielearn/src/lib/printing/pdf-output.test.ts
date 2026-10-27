@@ -35,10 +35,16 @@ it('exports a PDF/UA-1 document with source-declared math, figures, and document
               </svg>
             </mjx-container>.
           </p>
-          <svg xmlns="http://www.w3.org/2000/svg" role="img"
-               aria-label="A square with equal sides" width="48" height="48">
+          <svg xmlns="http://www.w3.org/2000/svg" role="img" width="48" height="48" style="display: block">
+            <title>A square</title>
+            <desc>All four sides are equal</desc>
             <rect x="4" y="4" width="40" height="40" fill="none" stroke="black" />
           </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A circle"
+               aria-describedby="circle-description" width="48" height="48" style="display: block">
+            <circle cx="24" cy="24" r="20" fill="none" stroke="black" />
+          </svg>
+          <p id="circle-description" hidden>The radius is twenty units</p>
           <table>
             <caption>Values</caption>
             <thead><tr><th id="input" scope="col">Input</th><th id="result" scope="col">Result</th></tr></thead>
@@ -69,7 +75,8 @@ it('exports a PDF/UA-1 document with source-declared math, figures, and document
         expect(decoded).toMatch(new RegExp(`/S /${role}\\b`));
       }
       expect(decoded).toContain('/Alt (x squared)');
-      expect(decoded).toContain('/Alt (A square with equal sides)');
+      expect(decoded).toContain('/Alt (A square. All four sides are equal)');
+      expect(decoded).toContain('/Alt (A circle. The radius is twenty units)');
       expect(decoded).toContain('/Lang (fr)');
       expect(decoded).toContain('/Artifact BMC');
       expect(decoded).toContain('/DisplayDocTitle true');
