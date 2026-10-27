@@ -42,7 +42,9 @@ const ValidationReportSchema = z.object({
   }),
 });
 
-export class PrintPdfValidationError extends Error {
+export class PrintPdfAccessibilityError extends Error {}
+
+export class PrintPdfValidationError extends PrintPdfAccessibilityError {
   constructor(
     readonly reportPath: string,
     options?: ErrorOptions,
@@ -59,7 +61,7 @@ export async function runPrintPdfTool(
   args: string[],
   signal?: AbortSignal,
 ) {
-  await execa(
+  const result = await execa(
     java,
     [
       '-Xmx512m',
@@ -69,8 +71,19 @@ export async function runPrintPdfTool(
       path.join(APP_ROOT_PATH, 'src', 'lib', 'printing', `${source}.java`),
       ...args,
     ],
-    { timeout: 120_000, cancelSignal: signal },
+    { timeout: 120_000, cancelSignal: signal, reject: false },
   );
+  if (!result.failed) return;
+  const prefix = 'PDF accessibility: ';
+  if (result.exitCode === 2 && result.stderr.startsWith(prefix)) {
+    const output = source === 'PrintPdfFinalize' && args[0] === 'metadata' ? args[2] : args[1];
+    await writeFile(`${output}.validation.log`, result.stderr);
+    throw new PrintPdfAccessibilityError(
+      `${result.stderr.slice(prefix.length).trim()} Update the source content and try the export again.`,
+      { cause: result },
+    );
+  }
+  throw new Error(result.stderr || result.shortMessage, { cause: result });
 }
 
 let validatorVersion: Promise<void> | undefined;
@@ -97,12 +110,15 @@ export async function validatePrintPdf(filename: string, signal?: AbortSignal): 
   try {
     report = ValidationReportSchema.parse(JSON.parse(result.stdout));
   } catch (error) {
-    throw new PrintPdfValidationError(reportPath, { cause: error });
+    throw new Error(`Could not read the PDF accessibility report at ${reportPath}.`, {
+      cause: error,
+    });
   }
   const validation = report.report.jobs[0].validationResult[0];
-  if (result.failed || !validation.compliant || validation.details.failedChecks !== 0) {
+  if (!validation.compliant || validation.details.failedChecks !== 0) {
     throw new PrintPdfValidationError(reportPath);
   }
+  if (result.failed) throw new Error(`PDF accessibility validation failed; see ${reportPath}.`);
 }
 
 /** Remove temporary PDFs; retain diagnostic reports when validation fails. */
