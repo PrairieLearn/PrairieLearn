@@ -71,6 +71,29 @@ export default class PLFilePreview {
 
       const expandButton = item.querySelector('.file-preview-expand');
 
+      const copyButton = item.querySelector('.file-preview-copy');
+      let copiedTimeout = null;
+      copyButton.addEventListener('click', () => {
+        navigator.clipboard
+          .writeText(pre.querySelector('code').textContent)
+          .then(() => {
+            hideErrorMessage();
+            copyButton.classList.add('copied');
+            copyButton.querySelector('.fa-copy').classList.add('d-none');
+            copyButton.querySelector('.fa-check').classList.remove('d-none');
+            clearTimeout(copiedTimeout);
+            copiedTimeout = setTimeout(() => {
+              copyButton.classList.remove('copied');
+              copyButton.querySelector('.fa-copy').classList.remove('d-none');
+              copyButton.querySelector('.fa-check').classList.add('d-none');
+            }, 1500);
+          })
+          .catch((err) => {
+            console.error(err);
+            showErrorMessage('An error occurred while copying the file contents.');
+          });
+      });
+
       function updateExpandButton(expanded) {
         toggleExpandPreviewText.textContent = expanded ? 'Collapse' : 'Expand';
         if (expanded) {
@@ -196,10 +219,12 @@ export default class PLFilePreview {
                     // back to showing the raw text.
                     code.textContent = text;
                     pre.classList.remove('d-none');
+                    copyButton.classList.remove('d-none');
                   });
               } else {
                 code.textContent = text;
                 pre.classList.remove('d-none');
+                copyButton.classList.remove('d-none');
               }
 
               // Only show the expand/collapse button if the content is tall
