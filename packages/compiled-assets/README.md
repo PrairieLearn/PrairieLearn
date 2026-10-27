@@ -107,11 +107,7 @@ openButton.addEventListener('click', async () => {
 });
 ```
 
-Keep optional implementation files outside `esm-bundles/` unless they also need to be independently addressable entrypoints. All files under `esm-bundles/` become entrypoints, but are only fetched when referenced by the page or another module. An eagerly imported dependency is still eager even if another caller imports it dynamically. Classic IIFE bundles do not support splitting and cannot defer transfer this way.
-
-The browser loads a requested module's static dependencies and reuses modules with the same URL. The manifest preloads the full static graph for initial entrypoints to avoid dependency-discovery round trips. For lazy imports, dependencies that are not already loaded are discovered after fetching their importer; this package does not rewrite dynamic imports to preload that graph in parallel. [Vite's async chunk optimization](https://vite.dev/guide/features#async-chunk-loading-optimization) describes that additional optimization. Consider it if measured loading latency warrants the extra build/runtime machinery.
-
-Applications can intentionally start an import on hover or focus by calling the same loader earlier and handling rejection, or use [React's `preloadModule`](https://react.dev/reference/react-dom/preloadModule) when the emitted URL is available. Calling `import()` also evaluates the module; `modulepreload` fetches and prepares it without evaluation. Keep module side effects in mind when choosing a warming strategy. For React UI, standard `React.lazy` and `Suspense` can use the same dynamic import boundary; hydration registration does not need a separate lazy-loading API.
+Keep optional implementation files outside `esm-bundles/` unless they also need to be independently addressable entrypoints. An eagerly imported dependency is still eager even if another caller imports it dynamically. Classic IIFE bundles do not support splitting and cannot defer transfer this way.
 
 ### Building assets for production
 
