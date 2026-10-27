@@ -411,7 +411,7 @@ export class PrintRenderer {
       });
 
       signal.throwIfAborted();
-      state.outputPromise = output.produce(page);
+      state.outputPromise = output.produce(page, signal);
       return await state.outputPromise;
     };
 
