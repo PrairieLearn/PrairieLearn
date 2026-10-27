@@ -40,6 +40,21 @@ The caller owns the paginated HTML page. It must set `document.documentElement.d
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
+### Validating PDF accessibility
+
+Install veraPDF **1.30.3** and its Java runtime, then validate the actual downloaded PDFs from the repository root:
+
+```sh
+node scripts/validate-print-pdfs.mts \
+  --verapdf /path/to/verapdf \
+  --output /tmp/print-pdfua-review \
+  assessment.pdf answer-key.pdf packet.pdf
+```
+
+The output directory must be new and its parent must exist. The script checks the veraPDF version, retains the exact input bytes, runs `--flavour ua1`, and saves full JSON reports, validator logs, readable failure details, and a summary. It exits unsuccessfully for validation failures, unreadable inputs, parsing errors, or tool errors. Omit `--verapdf` when the executable is on `PATH`; set `JAVA_HOME` if your Java installation requires it.
+
+Include math, figures, lists, and tables in the assessment and answer key, and repeated forms and an uploaded cover in the final assembled packet. Validate after assembly because page copying can lose document structure and language. A passing automated report covers only machine-verifiable requirements: review the final files with assistive technology for reading order, navigation, mathematical meaning, table relationships, and useful descriptions before claiming PDF/UA-1 compliance.
+
 ## Combining question fragments
 
 Questions are normally rendered in separate documents, so author-generated IDs can repeat between questions. Built-in formula-editor symbolic inputs and sketch inputs generate unique DOM IDs when rendered while keeping their answer names stable. Before combining fragments in a preview or print document, use `namespaceQuestionHtmls` with a stable, unique namespace for each question. It renames IDs repeated across fragments and supported references in the rendered HTML: ID-reference attributes, inline `style` attributes and `<style>` blocks, and literal `getElementById`, `querySelector`, `querySelectorAll`, `closest`, `matches`, and `$` calls in inline scripts.
