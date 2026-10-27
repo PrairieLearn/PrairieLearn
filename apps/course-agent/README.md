@@ -1,56 +1,59 @@
-# Course agent
+# Course agent service
 
-A Cloudflare Worker backend that coordinates PrairieLearn course agent conversations, running Codex sessions in Cloudflare Sandboxes to create and modify course content.
+A Cloudflare Worker hosts private course-editing conversations behind PrairieLearn’s Enterprise `course-agent` flag. PrairieLearn owns authorization and the conversation catalog; `AIChatAgent` owns chat history, streaming, replay and Stop. The Conversation Durable Object owns sandbox lifecycle and one private persisted record. SandboxTurn owns each in-memory execution, and CourseSandbox owns container, native process and directory-backup operations. See [the execution contract](CONTRACT.md).
 
-## Local usage
+## Configuration
 
-Start with a working [native PrairieLearn development setup](../../docs/dev-guide/installingNative.md) and Docker running. Run the following commands from the repository root.
+Set `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and `GITHUB_READ_TOKEN` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). The repository token needs read access to the pilot repositories. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. The container cannot publish; PrairieLearn performs approved publication and Course Sync outside it.
 
-Copy the secrets template:
+Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings. Container SDK and helper image are both pinned to 1.0.2; the native runtime and protocol generator are both Codex 0.163.0.
 
-```sh
-cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
-```
+`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after normal turn cleanup and chat persistence, or after a review card has been persisted while the native tool waits for a decision. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
 
-Set `OPENAI_API_KEY` and `PL_SERVICE_TOKEN` in `apps/course-agent/.dev.vars`. Set `PL_SERVICE_URL` to your local PrairieLearn origin if it differs from the template’s `http://localhost:3000`. Generate a service token with:
+Run `pnpm --filter @prairielearn/course-agent dev` with Docker running. In PrairieLearn, set `courseAgentServiceUrl`, set `courseAgentServiceToken` to exactly match `PL_SERVICE_TOKEN`, and enable `features: { "course-agent": true }`. Use a course owner and a course configured with a GitHub repository and branch. Set PL `githubClientToken` to an API credential with write access to that repository. Configure Worker `PL_SERVICE_URL` to the PrairieLearn origin (the local default is `http://localhost:3000`) so Resume can retrieve saved job outcomes.
 
-```sh
-openssl rand -hex 32
-```
+## Lifecycle and recovery
 
-Add the following to `apps/prairielearn/config.json`, replacing `PL_SERVICE_TOKEN` with the same service token:
+Creation binds a repository and branch without starting a container. First send clones that branch; later turns reuse the native thread. Only the newest input is submitted. Stop interrupts native work and verifies that agent/tool processes have stopped before another turn is admitted. Turn deadline expiry also backs up and shuts down the workspace. Closing or switching the panel leaves execution running.
 
-```json
-{
-  "isEnterprise": true,
-  "courseAgentServiceUrl": "http://127.0.0.1:8790",
-  "courseAgentServiceToken": "PL_SERVICE_TOKEN",
-  "features": {
-    "course-agent": true
-  }
-}
-```
+After idle expiry, the service stops native writers, backs up `/workspace/session` with `DirectoryBackup`, commits its returned reference, then destroys the container. A later send restores that checkpoint before resuming the native thread. A fresh random sandbox ID identifies every newly provisioned runtime. Caches, dependencies and native authentication files are excluded from backups.
 
-Start the Worker:
+Uncertain execution enters `blocked`. Resume waits for recovery to finish; it never repeats the old prompt. Concurrent recovery is rejected. A failed or interrupted recovery requires another explicit Resume. Startup failures discard incomplete setup while preserving the committed checkpoint. Runtime and checkpoint failures require stopped processes and a new checkpoint. Cleanup failures retain the sandbox ID and committed archive for destruction retry. Missing live workspace data stays blocked rather than silently restoring older edits.
 
-```sh
-pnpm --filter @prairielearn/course-agent dev
-```
+Only SDK-buffered output can be replayed after a restart. Native output that never reached the SDK cannot be recovered through reconnect.
 
-In another terminal, start PrairieLearn:
+## Private service endpoints
 
-```sh
-make dev
-```
+All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 
-### Testing the course agent
+- `POST /conversations` accepts `{ repository: "owner/name", branch: "branch" }` and returns `201 { id }` after initialization.
+- `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
+- `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.
+- `GET /conversations/{uuid}/get-messages` returns SDK history.
+- `GET /conversations/{uuid}/pending-review` returns the DO-owned full-file snapshot, card identity, status, and PL job reference, or `null`.
+- `POST /conversations/{uuid}/pending-review/decision` accepts `{ callId, decision, jobSequenceId }` for approval or `{ callId, decision }` for denial, and claims the operation before publication. Identical decisions succeed; conflicts return `409`.
+- `POST /conversations/{uuid}/pending-review/outcome` accepts `{ callId, result }` after a PrairieLearn review decision. It acknowledges SDK persistence; conflicting redelivery returns `409`.
 
-You can test the course agent in a course if:
+PrairieLearn’s owner- and creator-scoped tRPC routes create and recover conversations. Its existing authenticated proxy carries SDK traffic without parsing native Codex messages. The conversation connects to Codex over a private WebSocket through the CourseSandbox DO binding. CourseSandbox forwards upgrades to the container port and injects a fresh capability token; only its hash reaches the runner, and neither value enters a checkpoint. There is no public native-server route. Process execution still uses private Container exec.
 
-- It is not an example course.
-- It has the `course-agent` feature enabled.
-- Both the effective and authenticated user have Owner permissions.
+## Protocol generation and validation
 
-Navigate to the course, then click the Course Agent button in the bottom right corner.
+Run `pnpm --filter @prairielearn/course-agent generate-protocol` after changing the exact Codex dependency, and update the Dockerfile to match. The script invokes the pinned CLI, adds ESM import suffixes, and compiles runtime validators from its JSON Schema with Ajv. Types and schemas are exported with `--experimental`, and native connections opt into the experimental API during initialization. Generated validators are bundled during generation, so the Worker does not compile schemas or use dynamic evaluation. CI regenerates and checks tracked changes and new files.
 
-With `fileEditorUseGit: false`, approved changes are saved locally without committing to Git. To commit and push approved changes, set `fileEditorUseGit: true` in `apps/prairielearn/config.json`, configure the course repository and branch, and configure PrairieLearn’s Git credentials with write access. Set `GITHUB_READ_TOKEN` in `apps/course-agent/.dev.vars` to a token with read access to that repository so the agent can clone and fetch it.
+`protocol-methods.json` contains the client/server request-to-result schema associations and notification names available to the chat adapter. Request parameters and notification payloads come directly from the generated protocol. Add a catalog entry to use another method without changing transport code. `vscode-jsonrpc` owns request correlation and notification/server-request dispatch. `codex-connection.ts` adapts the accepted Cloudflare WebSocket and normalizes Codex’s omitted JSON-RPC version field. `CodexAppServerClient` validates generated payloads, bounds command waits, initializes the native session, and converts output to chat chunks. Unsupported server requests receive a method-not-found error.
+
+Malformed messages and invalid response or subscribed-notification payloads fail the connection and pending work. Unknown notifications and late replies are ignored. Connection loss and command timeouts never replay a prompt. Codex currently labels WebSocket transport experimental and unsupported for production; deployed validation is required before enabling a pilot.
+
+Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Review cards wait for a PrairieLearn approval or denial result. Idle expiry checkpoints a pending review; the saved result continues the restored native thread without repeating the user prompt.
+
+### Usage and rate limits
+
+The Conversation DO deducts confirmed token costs after each model request, including requests between tool calls during long turns. At zero credit it asks PL for another allocation before admitting inference. PL owns the hourly allowance and conversation usage columns. The chat shows totals and a persistent retry time when limited. See [the accounting contract](BUDGET.md) for the policy, endpoint schemas, and failure handling.
+
+### Push sync
+
+The Conversation DO owns the pending snapshot; PL adds no table or conversation column. PL publishes the reviewed full-file contents using Octokit GraphQL, runs Course Sync, and stores the outcome in the existing job record before attempting one callback. Native call IDs identify reviews; there is no extra request UUID.
+
+Explicit Resume recovers a missed callback through PL's service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. The route returns `{ callId, jobSequenceId, status, result, error }`; status is running, completed, or blocked. Before ordinary job completion, callId may be null. Interrupted publication requires inspection and is never automatically retried. There is no PL delivery cron.
+
+Snapshot limits are 100 files, 64 KiB decoded per file, and 1 MiB of base64 contents. Only non-executable regular files are supported initially. GitHub attributes commits to the API credential. The agent handles fetching published changes into its sandbox. See [CONTRACT.md](CONTRACT.md#parked-reviews-and-publication-outcomes) for persistence and recovery.

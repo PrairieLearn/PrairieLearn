@@ -250,6 +250,11 @@ export const RawStaffCourseAgentConversationSchema = RawCourseAgentConversationS
   created_at: true,
   id: true,
   title: true,
+  usage_cost_milli_dollars: true,
+  usage_input_tokens: true,
+  usage_input_tokens_cache_read: true,
+  usage_output_tokens: true,
+  usage_output_tokens_reasoning: true,
 });
 export const StaffCourseAgentConversationSchema =
   RawStaffCourseAgentConversationSchema.brand<'StaffCourseAgentConversation'>();

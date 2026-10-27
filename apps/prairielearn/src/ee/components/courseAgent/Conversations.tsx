@@ -3,140 +3,73 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import { type UIMessage, isToolUIPart } from 'ai';
-import {
-  type KeyboardEvent,
-  type ReactNode,
-  type SyntheticEvent,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
+import { useQueryState } from 'nuqs';
+import { type KeyboardEvent, type SyntheticEvent, useEffect, useState } from 'react';
+import { Alert, Button, Dropdown, Form, Modal, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
-import { type ConversationState } from '@prairielearn/course-agent-types';
+import { type ConversationState, PushSyncResultSchema } from '@prairielearn/course-agent-types';
+import { formatIntervalMinutes } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { JobSequenceResults } from '../../../components/JobSequenceResults.js';
+import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
-import { RequestChangesCard } from './RequestChangesCard.js';
-
-const BLOCKED_MESSAGES = {
-  startup_failed:
-    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
-  runtime_failed:
-    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
-  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
-  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
-} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
-
-const NEW_CONVERSATION = 'new';
 
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
   courseId,
-  authnUserId,
   chatCsrfToken,
   active,
-  showConversationStats,
+  isDevMode,
 }: {
   courseId: string;
-  authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
-  showConversationStats: boolean;
-}) {
-  const trpc = useTRPC();
-  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
-  const listError = getAppError<CourseAgentError['List']>(conversations.error);
-  if (conversations.isPending) return <Loading />;
-  return (
-    <>
-      {conversations.isError && (
-        <AppErrorAlert
-          className="m-3"
-          error={listError}
-          render={{ UNKNOWN: ({ message }) => message }}
-        />
-      )}
-      {conversations.data && (
-        <ConversationPicker
-          conversations={conversations.data}
-          courseId={courseId}
-          authnUserId={authnUserId}
-          chatCsrfToken={chatCsrfToken}
-          active={active}
-          showConversationStats={showConversationStats}
-        />
-      )}
-    </>
-  );
-}
-
-function ConversationPicker({
-  conversations,
-  showConversationStats,
-  courseId,
-  authnUserId,
-  chatCsrfToken,
-  active,
-}: {
-  conversations: StaffCourseAgentConversation[];
-  courseId: string;
-  authnUserId: string;
-  chatCsrfToken: string;
-  active: boolean;
-  showConversationStats: boolean;
+  isDevMode: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const storageKey = `course-agent:${authnUserId}:${courseId}:conversation`;
-  const [pickedId, setPickedId] = useState(() => {
-    const storedId = typeof window === 'undefined' ? null : sessionStorage.getItem(storageKey);
-    if (
-      storedId !== null &&
-      (storedId === NEW_CONVERSATION || conversations.some((c) => c.id === storedId))
-    ) {
-      return storedId;
-    }
-    return conversations[0]?.id ?? NEW_CONVERSATION;
+  const conversations = useQuery({
+    ...trpc.courseAgent.list.queryOptions(),
+    refetchInterval: active ? 10_000 : false,
   });
-  // Remember the default selection too, so another tab's new chats don't change this tab's choice.
-  useEffect(() => {
-    sessionStorage.setItem(storageKey, pickedId);
-  }, [pickedId, storageKey]);
+  // Default to the most recent conversation until the user selects one.
+  const [pickedId, setPickedId] = useQueryState('courseAgentConversation');
+  const selectedId = run(() => {
+    if (
+      pickedId !== null &&
+      conversations.data?.some((conversation) => conversation.id === pickedId)
+    ) {
+      return pickedId;
+    }
+    if (conversations.data && conversations.data.length > 0) {
+      return conversations.data[0].id;
+    }
+    return null;
+  });
 
-  const selectedId = pickedId === NEW_CONVERSATION ? null : pickedId;
-  const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
+  const selectedConversation = conversations.data?.find(
+    (conversation) => conversation.id === selectedId,
+  );
 
-  const [draft, setDraft] = useState('');
   const create = useMutation({
     ...trpc.courseAgent.create.mutationOptions(),
-    onSuccess: (conversation) => {
-      queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) => [
-        conversation,
-        ...(current ?? []),
-      ]);
-      setPickedId(conversation.id);
-      setDraft('');
-      void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+    onSuccess: async (conversation) => {
+      await queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+      await setPickedId(conversation.id);
     },
   });
 
-  const submitNew = (event?: SyntheticEvent) => {
-    event?.preventDefault();
-    const text = draft.trim();
-    if (!text || create.isPending) return;
-    create.mutate({ text });
-  };
-
+  const listError = getAppError<CourseAgentError['List']>(conversations.error);
   const createError = getAppError<CourseAgentError['Create']>(create.error);
   return (
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
@@ -146,19 +79,19 @@ function ConversationPicker({
             variant="light"
             className="border bg-white w-100 d-flex justify-content-between align-items-center gap-2"
             aria-label="Conversation"
-            disabled={conversations.length === 0 || create.isPending}
+            disabled={!conversations.data?.length}
           >
             <span className="text-truncate">
-              {selectedConversation?.title ?? 'New conversation'}
+              {selectedConversation?.title ?? 'No conversations yet'}
             </span>
           </Dropdown.Toggle>
           <Dropdown.Menu className="w-100 overflow-y-auto" style={{ maxHeight: '50vh' }}>
-            {conversations.map((conversation) => (
+            {conversations.data?.map((conversation) => (
               <Dropdown.Item
                 key={conversation.id}
                 as="button"
                 active={conversation.id === selectedId}
-                onClick={() => setPickedId(conversation.id)}
+                onClick={() => void setPickedId(conversation.id)}
               >
                 <span className="d-block text-truncate">{conversation.title}</span>
               </Dropdown.Item>
@@ -173,46 +106,39 @@ function ConversationPicker({
             variant="outline-primary"
             className="flex-shrink-0"
             aria-label="New conversation"
-            disabled={create.isPending}
-            onClick={() => {
-              setPickedId(NEW_CONVERSATION);
-              setDraft('');
-              create.reset();
-            }}
+            // Wait for the list, so a click can't race the default selection.
+            disabled={!conversations.isSuccess || create.isPending}
+            onClick={() => create.mutate()}
           >
             <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
         </OverlayTrigger>
       </div>
-      {selectedId && active ? (
+      {conversations.isError || create.isError ? (
+        <AppErrorAlert
+          className="m-3"
+          error={listError ?? createError}
+          render={{ UNKNOWN: ({ message }) => message }}
+        />
+      ) : conversations.isPending ? (
+        <Loading />
+      ) : selectedId && active ? (
         <Chat
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
-          showConversationStats={showConversationStats}
+          usage={selectedConversation!}
+          isDevMode={isDevMode}
           chatCsrfToken={chatCsrfToken}
-          initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
-          onInitialMessageSent={create.reset}
         />
-      ) : active ? (
-        <>
-          <div className="flex-grow-1 p-3">
-            <p className="text-muted text-center my-4">
-              Ask the course agent about your course or about PrairieLearn.
-            </p>
-            {create.isError && (
-              <AppErrorAlert error={createError} render={{ UNKNOWN: ({ message }) => message }} />
-            )}
-          </div>
-          <Composer
-            draft={draft}
-            disabled={create.isPending}
-            pending={create.isPending}
-            onDraftChange={setDraft}
-            onSubmit={submitNew}
-          />
-        </>
-      ) : null}
+      ) : (
+        <div className="d-flex flex-column flex-grow-1 justify-content-center align-items-center text-muted p-3 text-center">
+          <p>Ask the course agent about your course or about PrairieLearn.</p>
+          <Button disabled={create.isPending} onClick={() => create.mutate()}>
+            Start a conversation
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -231,32 +157,27 @@ function Chat({
   courseId,
   conversationId,
   chatCsrfToken,
-  initialMessage,
-  onInitialMessageSent,
-  showConversationStats,
+  isDevMode,
+  usage,
 }: {
   courseId: string;
   conversationId: string;
-  showConversationStats: boolean;
+  isDevMode: boolean;
   chatCsrfToken: string;
-  initialMessage: string | undefined;
-  onInitialMessageSent: () => void;
+  usage: StaffCourseAgentConversation;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
-  const [connectionFailed, setConnectionFailed] = useState(false);
   const agent = useAgent<ConversationState>({
     agent: 'Conversation',
     basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
     query: { csrfToken: chatCsrfToken },
     onStateUpdate: setLifecycle,
-    onOpen: () => setConnectionFailed(false),
-    onError: () => setConnectionFailed(true),
     onClose: () => {
       setHistoryReady(false);
       setLifecycle(null);
-      setConnectionFailed(true);
     },
     onMessage: (event) => {
       const message = JSON.parse(event.data) as OutgoingMessage;
@@ -277,35 +198,29 @@ function Chat({
     throttle: 100,
     getInitialMessages: null,
   });
+  const title = useMutation({
+    ...trpc.courseAgent.setTitle.mutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() }),
+  });
   const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
   const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
   const pendingReview = messages.some((message) =>
     message.parts.some(
       (part) =>
-        isToolUIPart(part) &&
-        part.type === 'tool-request_changes' &&
-        part.state !== 'output-available',
+        isToolUIPart(part) && part.type === 'tool-push_sync' && part.state !== 'output-available',
     ),
   );
   const readyToSend =
     !pendingReview && (lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user');
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
+  const titleError = getAppError<CourseAgentError['SetTitle']>(title.error);
   const [draft, setDraft] = useState('');
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
-  const initialMessageSentRef = useRef(false);
-  // A newly created conversation must receive history before its first prompt is handed to the SDK.
-  useEffect(() => {
-    if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
-    initialMessageSentRef.current = true;
-    void sendMessage({ text: initialMessage });
-    onInitialMessageSent();
-  }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
-
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive || pendingReview || connectionFailed || connectionError) {
+    if (!responseActive || pendingReview || lifecycle?.status === 'blocked') {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -326,14 +241,21 @@ function Chat({
     const text = draft.trim();
     if (!text || responseActive || !connected || !readyToSend) return;
     void sendMessage({ text });
+    title.mutate({ conversationId, text });
     setDraft('');
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+      submit(event);
+    }
   };
 
   return (
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
-          {!historyReady && !connectionError && !connectionFailed && <Loading />}
+          {!historyReady && !connectionError && <Loading />}
           {historyReady && messages.length === 0 && (
             <p className="text-muted text-center my-4">
               Ask the course agent about your course or about PrairieLearn.
@@ -358,17 +280,11 @@ function Chat({
             </div>
           )}
           {lifecycle?.status === 'blocked' && (
-            <Alert variant="warning">
-              <p>{BLOCKED_MESSAGES[lifecycle.reason]}</p>
-              <Button
-                variant="outline-dark"
-                size="sm"
-                disabled={!connected || resume.isPending}
-                onClick={() => resume.mutate({ conversationId })}
-              >
-                Resume
-              </Button>
-            </Alert>
+            <BlockedNotice
+              state={lifecycle}
+              disabled={!connected || resume.isPending}
+              onResume={() => resume.mutate({ conversationId })}
+            />
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
             <p className="text-muted" role="status">
@@ -380,83 +296,62 @@ function Chat({
           {resume.isError && (
             <AppErrorAlert error={resumeError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
-          {(connectionError || connectionFailed) && (
-            <Alert variant="danger">
-              Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
-            </Alert>
+          {connectionError && (
+            <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
-          {error && (
+          {title.isError && (
+            <AppErrorAlert error={titleError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
+          {error && lifecycle?.status !== 'blocked' && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
             </Alert>
           )}
         </div>
       </div>
-      <Composer
-        draft={draft}
-        disabled={!connected || !readyToSend}
-        stopDisabled={!connected || !canStop}
-        onDraftChange={setDraft}
-        onSubmit={submit}
-        onStop={!pendingReview && (responseActive || canStop) ? () => void stop() : undefined}
-      >
-        {showConversationStats && <ConversationStats state={lifecycle} />}
-      </Composer>
+      <Form className="border-top p-3" onSubmit={submit}>
+        <div
+          className="small text-muted mb-2"
+          title={`${usage.usage_input_tokens_cache_read.toLocaleString()} cached input tokens; ${usage.usage_output_tokens_reasoning.toLocaleString()} reasoning tokens`}
+        >
+          {usage.usage_input_tokens.toLocaleString()} input ·{' '}
+          {usage.usage_output_tokens.toLocaleString()} output · Model cost{' '}
+          {formatMilliDollars(usage.usage_cost_milli_dollars)}
+        </div>
+        <Form.Control
+          as="textarea"
+          rows={3}
+          value={draft}
+          placeholder="Ask the course agent…"
+          aria-label="Message"
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={onKeyDown}
+        />
+        <div className="d-flex justify-content-end gap-2 mt-2">
+          {isDevMode && <ConversationStats state={lifecycle} />}
+          {!pendingReview && (responseActive || canStop) ? (
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              disabled={!connected || !canStop}
+              onClick={() => void stop()}
+            >
+              <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+              Stop
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="sm"
+              aria-label="Send"
+              disabled={!draft.trim() || !connected || !readyToSend}
+            >
+              <i className="bi bi-send" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
+      </Form>
     </div>
-  );
-}
-
-function Composer({
-  draft,
-  onDraftChange,
-  onSubmit,
-  disabled,
-  pending = false,
-  stopDisabled = false,
-  children,
-  onStop,
-}: {
-  draft: string;
-  onDraftChange: (draft: string) => void;
-  onSubmit: (event?: SyntheticEvent) => void;
-  disabled: boolean;
-  pending?: boolean;
-  stopDisabled?: boolean;
-  children?: ReactNode;
-  onStop?: () => void;
-}) {
-  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-      onSubmit(event);
-    }
-  };
-
-  return (
-    <Form className="border-top p-3" onSubmit={onSubmit}>
-      <Form.Control
-        as="textarea"
-        rows={3}
-        value={draft}
-        placeholder="Ask the course agent…"
-        aria-label="Message"
-        disabled={pending}
-        onChange={(event) => onDraftChange(event.target.value)}
-        onKeyDown={onKeyDown}
-      />
-      <div className="d-flex justify-content-end gap-2 mt-2">
-        {children}
-        {onStop ? (
-          <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
-            <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-            Stop
-          </Button>
-        ) : (
-          <Button type="submit" size="sm" aria-label="Send" disabled={!draft.trim() || disabled}>
-            <i className="bi bi-send" aria-hidden="true" />
-          </Button>
-        )}
-      </div>
-    </Form>
   );
 }
 
@@ -483,9 +378,9 @@ function Message({
         const key = `part-${index}`;
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-        if (isToolUIPart(part) && part.type === 'tool-request_changes') {
+        if (isToolUIPart(part) && part.type === 'tool-push_sync') {
           return (
-            <RequestChangesCard
+            <ReviewCard
               key={key}
               conversationId={conversationId}
               messageId={message.id}
@@ -497,6 +392,282 @@ function Message({
         }
         return null;
       })}
+    </div>
+  );
+}
+
+const blockedMessage = {
+  budget_exhausted: 'Hourly AI usage limit reached.',
+  budget_unavailable: 'Could not reach the AI credit service. Resume to try again.',
+  usage_unavailable:
+    'Model usage could not be recorded. Your workspace is preserved. Contact support to recover this conversation.',
+  access_revoked: 'You no longer have access to run the course agent in this course.',
+  startup_failed:
+    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
+  runtime_failed:
+    'The course agent was interrupted. Resume to recover and save your workspace. Your previous message will not run again.',
+  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
+  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
+} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
+
+function BlockedNotice({
+  state,
+  disabled,
+  onResume,
+}: {
+  state: Extract<ConversationState, { status: 'blocked' }>;
+  disabled: boolean;
+  onResume: () => void;
+}) {
+  const [now, setNow] = useState(Date.now);
+  const retryAt = state.reason === 'budget_exhausted' ? state.retryAt : undefined;
+  // Derive the countdown from the persisted deadline so refreshes and background tabs stay accurate.
+  useEffect(() => {
+    if (!retryAt) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [retryAt]);
+  const remaining = retryAt ? Math.max(0, Date.parse(retryAt) - now) : 0;
+  const recoverable = !['usage_unavailable', 'access_revoked'].includes(state.reason);
+  return (
+    <Alert variant="warning">
+      <p>
+        {blockedMessage[state.reason]}{' '}
+        {retryAt &&
+          (remaining > 0
+            ? `You can retry in ${formatIntervalMinutes(remaining)}.`
+            : 'You can now retry.')}
+      </p>
+      {recoverable && (
+        <Button
+          variant="outline-dark"
+          size="sm"
+          disabled={disabled || remaining > 0}
+          onClick={onResume}
+        >
+          Resume
+        </Button>
+      )}
+    </Alert>
+  );
+}
+
+function ReviewCard({
+  conversationId,
+  messageId,
+  partId,
+  output,
+  canReview,
+}: {
+  conversationId: string;
+  messageId: string;
+  partId: string;
+  output: unknown;
+  canReview: boolean;
+}) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [showChanges, setShowChanges] = useState(false);
+  const [startedJob, setStartedJob] = useState<string | null>(null);
+  const reviewInput = { conversationId, callId: partId };
+  const review = useQuery({
+    ...trpc.courseAgent.getPendingReview.queryOptions(reviewInput),
+    enabled: canReview && output === undefined,
+    retry: false,
+  });
+  const current =
+    review.data?.card.messageId === messageId && review.data.card.partId === partId
+      ? review.data
+      : null;
+  const jobSequenceId = startedJob ?? current?.jobSequenceId ?? null;
+  const job = useQuery({
+    ...trpc.courseAgent.reviewJob.queryOptions({
+      conversationId,
+      jobSequenceId: jobSequenceId ?? '',
+    }),
+    enabled: jobSequenceId !== null && output === undefined,
+    retry: false,
+    refetchInterval: (query) => (query.state.data?.jobSequence.status === 'Running' ? 2000 : false),
+  });
+  const decision = useMutation({
+    ...trpc.courseAgent.postReviewDecision.mutationOptions(),
+    retry: false,
+    onSuccess: async (result) => {
+      setStartedJob(result.jobSequenceId);
+      await queryClient.invalidateQueries({
+        queryKey: trpc.courseAgent.getPendingReview.queryKey(reviewInput),
+      });
+    },
+  });
+  const resume = useMutation({
+    ...trpc.courseAgent.resume.mutationOptions(),
+    retry: false,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: trpc.courseAgent.getPendingReview.queryKey(reviewInput),
+      });
+    },
+  });
+  const result = output === undefined ? null : PushSyncResultSchema.parse(output);
+  const failure = result
+    ? null
+    : (getAppError<CourseAgentError['GetPendingReview']>(review.error) ??
+      getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
+      getAppError<CourseAgentError['ReviewJob']>(job.error) ??
+      getAppError<CourseAgentError['Resume']>(resume.error));
+  const disabled = current?.status !== 'pending' || decision.isPending || jobSequenceId !== null;
+  return (
+    <div className="border rounded p-2">
+      {result ? (
+        <div role="status">
+          <p className="mb-0">
+            {result.decision === 'denied'
+              ? 'Changes kept in your workspace.'
+              : result.publication.status === 'published'
+                ? result.sync.status === 'succeeded'
+                  ? 'Changes published and course synced.'
+                  : 'Changes published. Course Sync failed.'
+                : 'Changes could not be published.'}
+          </p>
+          {result.publication.status === 'failed' && (
+            <pre className="small text-wrap mt-2 mb-0">{result.publication.error}</pre>
+          )}
+          {result.sync.status === 'failed' && (
+            <pre className="small text-wrap mt-2 mb-0">{result.sync.error}</pre>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            <div className="d-flex align-items-center gap-2">
+              <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
+              <span className="text-nowrap">Review course changes</span>
+              <Button
+                variant="link"
+                size="sm"
+                className="p-0 text-nowrap"
+                onClick={() => setShowChanges(true)}
+              >
+                View changes
+              </Button>
+            </div>
+            <div className="d-flex align-items-center gap-2 flex-shrink-0">
+              <span aria-hidden="true">·</span>
+              <Button
+                size="sm"
+                disabled={disabled}
+                onClick={() =>
+                  current &&
+                  decision.mutate({
+                    conversationId,
+                    reviewToken: current.reviewToken,
+                    decision: 'approved',
+                  })
+                }
+              >
+                Approve
+              </Button>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                disabled={disabled}
+                onClick={() =>
+                  current &&
+                  decision.mutate({
+                    conversationId,
+                    reviewToken: current.reviewToken,
+                    decision: 'denied',
+                  })
+                }
+              >
+                Deny
+              </Button>
+            </div>
+          </div>
+          {current?.status === 'running' && jobSequenceId !== null && (
+            <p className="small text-muted mt-2 mb-0" role="status">
+              Publishing and syncing…
+            </p>
+          )}
+          {current?.error && (
+            <p className="text-danger mt-2 mb-0" role="alert">
+              {current.error}
+            </p>
+          )}
+          {job.data && (
+            <details className="mt-2">
+              <summary>Publication progress</summary>
+              <JobSequenceResults {...job.data} />
+            </details>
+          )}
+          {((job.data && job.data.jobSequence.status !== 'Running') ||
+            (current?.status === 'running' && jobSequenceId === null)) && (
+            <Button
+              className="mt-2"
+              variant="outline-secondary"
+              size="sm"
+              disabled={resume.isPending}
+              onClick={() => resume.mutate({ conversationId })}
+            >
+              Resume
+            </Button>
+          )}
+          {review.isError && (
+            <Button
+              className="mt-2"
+              size="sm"
+              variant="outline-secondary"
+              onClick={() => void review.refetch()}
+            >
+              Reload review
+            </Button>
+          )}
+          <Modal
+            show={showChanges}
+            size="lg"
+            aria-labelledby={`review-title-${partId}`}
+            onHide={() => setShowChanges(false)}
+          >
+            <Modal.Header closeButton>
+              <Modal.Title id={`review-title-${partId}`}>Review course changes</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {review.isLoading && (
+                <Spinner animation="border" size="sm" role="status">
+                  <span className="visually-hidden">Loading changes</span>
+                </Spinner>
+              )}
+              {current && (
+                <pre
+                  className="small mb-0 overflow-auto"
+                  style={{ maxHeight: '60vh' }}
+                  aria-label="Reviewed course changes"
+                >
+                  {current.diff.patch || 'No file changes'}
+                </pre>
+              )}
+              {!current && !review.isLoading && !failure && (
+                <p className="mb-0">This review is no longer pending.</p>
+              )}
+              {failure && (
+                <AppErrorAlert error={failure} render={{ UNKNOWN: ({ message }) => message }} />
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowChanges(false)}>
+                Close
+              </Button>
+            </Modal.Footer>
+          </Modal>
+        </>
+      )}
+      {failure && (
+        <AppErrorAlert
+          className="mt-2"
+          error={failure}
+          render={{ UNKNOWN: ({ message }) => message }}
+        />
+      )}
     </div>
   );
 }
