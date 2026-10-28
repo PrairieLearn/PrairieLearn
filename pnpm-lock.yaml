@@ -218,6 +218,7 @@ overrides:
   linkinator>marked: ^18
   markdownlint-cli2>smol-toml: ^1
   notebookjs>jsdom: '*'
+  jsdom>undici: ^8.12.3
 
 importers:
 
@@ -1143,9 +1144,6 @@ importers:
       socket.io-client:
         specifier: ^4.8.4
         version: 4.8.4(supports-color@7.2.0)
-      streamifier:
-        specifier: ^0.1.1
-        version: 0.1.1
       strip-ansi:
         specifier: ^7.2.0
         version: 7.2.0
@@ -1351,9 +1349,6 @@ importers:
       '@types/serve-static':
         specifier: ^2.2.0 <3
         version: 2.2.0
-      '@types/streamifier':
-        specifier: ^0.1.2
-        version: 0.1.2
       '@types/tmp':
         specifier: ^0.2.6
         version: 0.2.6
@@ -2474,8 +2469,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       undici:
-        specifier: ^8.11.2
-        version: 8.11.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -2557,8 +2552,8 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(vitest@5.0.2)
       undici:
-        specifier: ^8.11.2
-        version: 8.11.2
+        specifier: ^8.12.3
+        version: 8.12.3
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -5834,9 +5829,6 @@ packages:
 
   '@types/ssh2@1.15.5':
     resolution: {integrity: sha512-N1ASjp/nXH3ovBHddRJpli4ozpk6UdDYIX4RJWFa9L1YKnzdhTlVmiGHm4DZnj/jLbqZpes4aeR30EFGQtvhQQ==}
-
-  '@types/streamifier@0.1.2':
-    resolution: {integrity: sha512-W53GwxY5Tunz3JUoP1YWDidrAadenSZKOBKMRl6RO3yThOFd03w7yx3HypI8ABGuUCGDHCHUml/5e45FWRt1TQ==}
 
   '@types/tmp@0.2.6':
     resolution: {integrity: sha512-chhaNf2oKHlRkDGt+tiKE2Z5aJ6qalm7Z9rlLdBwmOiAAf09YQvvoLXjWK4HWPF1xU/fqvMgfNfpVoBscA/tKA==}
@@ -10171,10 +10163,6 @@ packages:
   stream-transform@3.6.0:
     resolution: {integrity: sha512-iDtH6HV1MOQ3Ipva+9g/kke1uVLubZlEbGCxbWWlI+Ak++sDRQRxmPZ1iXlmXdLK6kP5fIziUf79GBB7erbppQ==}
 
-  streamifier@0.1.1:
-    resolution: {integrity: sha512-zDgl+muIlWzXNsXeyUfOk9dChMjlpkq0DRsxujtYPgyJ676yQ8jEm6zzaaWHFDg5BNcLuif0eD2MTyJdZqXpdg==}
-    engines: {node: '>=0.10'}
-
   streamsearch@0.1.2:
     resolution: {integrity: sha512-jos8u++JKm0ARcSUTAZXOVC0mSox7Bhn6sBgty73P1f3JGf7yG2clTbBNHUdde/kdvP2FESam+vM6l8jBrNxHA==}
     engines: {node: '>=0.8.0'}
@@ -10540,16 +10528,16 @@ packages:
   undici-types@8.11.2:
     resolution: {integrity: sha512-iMVNmWZ0leK/goS6eXMizSzmm9CDWtyphwbaCms3DNLqRxDL+mMoNVcZMTyyVgXP0N+Z8neAMzDoUOUJL8veKg==}
 
-  undici@6.28.0:
-    resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
+  undici@6.29.1:
+    resolution: {integrity: sha512-EvRlUt/QqAEvXdQeRMYUfwOQsfzpDztykrG2owGEE/rBOBoYv9uF39ZzsNDh4lTFHhTr2XOZjKkYgueD12ZmGA==}
     engines: {node: '>=18.17'}
 
-  undici@7.29.0:
-    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
+  undici@7.30.1:
+    resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.11.2:
-    resolution: {integrity: sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==}
+  undici@8.12.3:
+    resolution: {integrity: sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==}
     engines: {node: '>=22.19.0'}
 
   unicorn-magic@0.3.0:
@@ -11025,17 +11013,17 @@ snapshots:
       '@octokit/plugin-rest-endpoint-methods': 17.0.0(@octokit/core@7.0.7)
       '@octokit/request': 10.0.13
       '@octokit/request-error': 7.1.1
-      undici: 6.28.0
+      undici: 6.29.1
 
   '@actions/http-client@3.0.2':
     dependencies:
       tunnel: 0.0.6
-      undici: 6.28.0
+      undici: 6.29.1
 
   '@actions/http-client@4.0.1':
     dependencies:
       tunnel: 0.0.6
-      undici: 6.28.0
+      undici: 6.29.1
 
   '@actions/io@3.0.2': {}
 
@@ -11084,7 +11072,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.0
-      undici: 7.29.0
+      undici: 7.30.1
       zod: 4.6.5
 
   '@ai-sdk/provider-utils@5.0.58(zod@4.6.5)':
@@ -11093,7 +11081,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.0
-      undici: 7.29.0
+      undici: 7.30.1
       zod: 4.6.5
 
   '@ai-sdk/provider@4.0.18':
@@ -14019,10 +14007,6 @@ snapshots:
     dependencies:
       '@types/node': 18.19.130
 
-  '@types/streamifier@0.1.2':
-    dependencies:
-      '@types/node': 24.19.0
-
   '@types/tmp@0.2.6': {}
 
   '@types/tough-cookie@4.0.5': {}
@@ -14821,7 +14805,7 @@ snapshots:
       parse5: 7.3.0
       parse5-htmlparser2-tree-adapter: 7.1.0
       parse5-parser-stream: 7.1.2
-      undici: 7.29.0
+      undici: 7.30.1
       whatwg-mimetype: 4.0.0
 
   chokidar@3.6.0:
@@ -16696,7 +16680,7 @@ snapshots:
       parse5: 8.0.1
       saxes: 6.0.0
       tough-cookie: 6.0.2
-      undici: 8.11.2
+      undici: 8.12.3
       w3c-xmlserializer: 6.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -16948,7 +16932,7 @@ snapshots:
       mime: 4.1.0
       saxes: 6.0.0
       srcset: 5.0.3
-      undici: 8.11.2
+      undici: 8.12.3
 
   locate-path@6.0.0:
     dependencies:
@@ -17585,7 +17569,7 @@ snapshots:
       semver: 7.8.5
       tar: 7.5.22
       tinyglobby: 0.2.17
-      undici: 8.11.2
+      undici: 8.12.3
       which: 7.0.0
 
   node-int64@0.4.0: {}
@@ -18816,8 +18800,6 @@ snapshots:
 
   stream-transform@3.6.0: {}
 
-  streamifier@0.1.1: {}
-
   streamsearch@0.1.2: {}
 
   streamsearch@1.1.0: {}
@@ -19247,11 +19229,11 @@ snapshots:
 
   undici-types@8.11.2: {}
 
-  undici@6.28.0: {}
+  undici@6.29.1: {}
 
-  undici@7.29.0: {}
+  undici@7.30.1: {}
 
-  undici@8.11.2: {}
+  undici@8.12.3: {}
 
   unicorn-magic@0.3.0: {}
 
