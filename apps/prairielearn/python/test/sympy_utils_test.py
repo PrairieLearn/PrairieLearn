@@ -937,6 +937,27 @@ class TestSympy:
             == sympy_range
         )
 
+    @pytest.mark.parametrize(
+        ("serialized_value", "expected_error"),
+        [
+            ("Range(0, 3)", psu.HasFunctionArityError),
+            ("Range({}, 3, 1)", psu.HasArgumentTypeError),
+        ],
+    )
+    def test_range_json_conversion_validates_signature(
+        self,
+        serialized_value: str,
+        expected_error: type[psu.BaseSympyError],
+    ) -> None:
+        encoded: psu.SympyJson = {
+            "_type": "sympy",
+            "_value": serialized_value,
+            "_variables": [],
+        }
+
+        with pytest.raises(expected_error):
+            psu.json_to_sympy(encoded, allow_sets=True)
+
     def test_range_is_not_a_builtin_set_function(self) -> None:
         result = psu.try_parse_string_as_sympy(
             "Range(0, 3, 1)",

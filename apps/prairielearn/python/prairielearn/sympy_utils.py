@@ -302,7 +302,7 @@ class _Constants:
         "Complement": sympy.Complement,
     })
 
-    serialized_set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+    serialized_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
         "Range": sympy.Range,
     })
 
@@ -736,10 +736,12 @@ class CheckAST(ast.NodeVisitor):
                 return self._set_type(node, inferred_type)
             case fn if (
                 self.allow_sets
-                and fn in _Constants.serialized_set_functions
-                and resolved_function == _Constants.serialized_set_functions[fn]
+                and fn in _Constants.serialized_functions
+                and resolved_function == _Constants.serialized_functions[fn]
             ):
-                return self._set_type(node, ASTSympyType.SET)
+                return self._set_type(
+                    node, self._infer_serialized_function_type(name, args)
+                )
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
                 arities = _builtin_function_arities(fn) or (len(args),)
                 self._enforce_signature(
@@ -815,6 +817,16 @@ class CheckAST(ast.NodeVisitor):
                 if not args:
                     raise HasFunctionArityError(name, len(args), "1+")
                 self._enforce_signature(name, args, len(args) * [ASTSympyType.SET])
+                return ASTSympyType.SET
+            case _:
+                return None
+
+    def _infer_serialized_function_type(
+        self, name: str, args: list[ast.expr]
+    ) -> ASTSympyType | None:
+        match name:
+            case "Range":
+                self._enforce_signature(name, args, 3 * [ASTSympyType.SCALAR])
                 return ASTSympyType.SET
             case _:
                 return None
@@ -1640,7 +1652,7 @@ def _convert_string_to_sympy_with_source(
     if allow_sets:
         locals_for_eval["functions"].update(const.set_functions)
         if allow_serialized_functions:
-            locals_for_eval["functions"].update(const.serialized_set_functions)
+            locals_for_eval["functions"].update(const.serialized_functions)
 
     for name, (is_var, raw_name) in valid_names.items():
         if is_var:
