@@ -215,6 +215,37 @@ def test_prepare_accepts_simplified_correct_answer_type() -> None:
     assert data["correct_answers"]["test"] == "[0, sin(pi/2)] U {1}"
 
 
+def test_unserializable_simplified_answer_is_rejected_consistently() -> None:
+    answer = "[0, 1] & Integers"
+    element_html = build_element_html(
+        'allowed-types="finite-set"',
+        f'correct-answer="{answer}"',
+    )
+    submission_data = make_question_data(submitted_answers={"test": answer})
+
+    symbolic_input.parse(element_html, submission_data)
+    assert "test" in submission_data["format_errors"]
+
+    with pytest.raises(ValueError, match=r"Serializing correct answer.*failed"):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+def test_serializable_unsimplified_answer_is_accepted_consistently() -> None:
+    answer = "[0, 1] & Integers"
+    element_html = build_element_html(
+        'allowed-types="finite-set"',
+        f'correct-answer="{answer}"',
+        'display-simplified-expression="false"',
+    )
+    data = make_question_data(submitted_answers={"test": answer})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+
 @pytest.mark.parametrize(
     ("allowed_types", "correct_answer", "expected_type"),
     [
