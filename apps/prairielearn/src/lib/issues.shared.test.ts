@@ -44,6 +44,13 @@ describe('buildIssueMailtoLink', () => {
     ).toBeNull();
   });
 
+  it.each(['@', 'user@', '@example.com', 'a b@example.com'])(
+    'rejects the malformed address %j rather than linking it',
+    (bad) => {
+      expect(buildIssueMailtoLink({ ...issue, user_email: bad, user_uid: bad })).toBeNull();
+    },
+  );
+
   it('returns null when the uid is not an address', () => {
     // A uid is an arbitrary institutional identifier. `mailto:alovelace` is
     // not a usable link, so no link should be offered at all.
@@ -60,17 +67,15 @@ describe('buildIssueMailtoLink', () => {
     ).toBeNull();
   });
 
-  it('escapes characters that would otherwise truncate the link', () => {
-    const link = buildIssueMailtoLink({
-      ...issue,
-      user_email: null,
-      user_uid: 'odd?name#tag@example.com',
-    });
-    // Unescaped, the `?` would start the query string and the `#` would start
-    // a fragment, dropping the subject and body.
-    expect(recipientOf(link as string)).toBe('odd%3Fname%23tag@example.com');
-    expect(link).toContain('subject=');
-    expect(link).toContain('body=');
+  it('does not link an address whose characters would truncate the link', () => {
+    // This is the case that originally produced `mailto:odd`: the `?` began
+    // the query string and the `#` a fragment, so the address was cut short
+    // and the subject and body were dropped. It is now rejected before a link
+    // is built at all, which is why the encoding below is a second line of
+    // defence rather than the only one.
+    expect(
+      buildIssueMailtoLink({ ...issue, user_email: null, user_uid: 'odd?name#tag@example.com' }),
+    ).toBeNull();
   });
 
   it('greets the user by name', () => {

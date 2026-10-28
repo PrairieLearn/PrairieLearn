@@ -1,3 +1,11 @@
+import { z } from 'zod';
+
+/**
+ * The same check `student-sync.ts` applies to a uid before accepting it as an
+ * address. Declared at module scope so it is built once.
+ */
+const AddressSchema = z.email();
+
 /** The fields of an issue needed to contact the user who reported it. */
 export interface IssueContact {
   user_name: string | null;
@@ -19,10 +27,10 @@ export interface IssueContact {
  */
 function selectIssueRecipient(user_email: string | null, user_uid: string | null): string | null {
   const email = user_email?.trim();
-  if (email?.includes('@')) return email;
+  if (email && AddressSchema.safeParse(email).success) return email;
 
   const uid = user_uid?.trim();
-  if (uid?.includes('@')) return uid;
+  if (uid && AddressSchema.safeParse(uid).success) return uid;
 
   return null;
 }
@@ -43,8 +51,10 @@ export function buildIssueMailtoLink(issue: IssueContact): string | null {
 
   const body = `Hello ${issue.user_name?.trim() || 'there'},\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`;
 
-  // The recipient sits ahead of the query string, so a `?`, `#` or space in it
-  // would truncate or corrupt the link. `@` is restored afterwards because it
+  // Defence in depth. Nothing that satisfies AddressSchema still needs
+  // escaping, but the recipient sits ahead of the query string, so were that
+  // validation ever loosened a `?` or `#` here would truncate the link and
+  // silently drop the subject and body. `@` is restored afterwards because it
   // is legal unencoded in a mailto address and clients display it as typed.
   const encodedRecipient = encodeURIComponent(recipient).replaceAll('%40', '@');
 
