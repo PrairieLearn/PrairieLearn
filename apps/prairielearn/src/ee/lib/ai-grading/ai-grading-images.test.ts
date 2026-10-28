@@ -107,6 +107,24 @@ describe('loadQuestionImage', () => {
     expect(publicFetchModule.publicFetch).not.toHaveBeenCalled();
   });
 
+  it.each(['foreignObject', 'svg:foreignObject'])(
+    'rejects SVG images containing %s',
+    async (tag) => {
+      const svgWithHtmlLabel =
+        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" width="20" height="10">' +
+        `<${tag} width="20" height="10"><div xmlns="http://www.w3.org/1999/xhtml">Required label</div></${tag}></svg>`;
+
+      await expect(
+        loadQuestionImage(
+          `data:image/svg+xml;base64,${Buffer.from(svgWithHtmlLabel).toString('base64')}`,
+          context,
+        ),
+      ).rejects.toThrow(
+        'SVG question images containing foreignObject are not supported. Export the image as PNG instead.',
+      );
+    },
+  );
+
   it('rejects SVG images exceeding the pixel limit', async () => {
     const oversizedSvg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="5000" height="5000"><rect width="5000" height="5000" fill="red"/></svg>';

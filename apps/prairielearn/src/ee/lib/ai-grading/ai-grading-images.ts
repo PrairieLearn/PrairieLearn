@@ -3,6 +3,8 @@ import { createReadStream } from 'node:fs';
 import { realpath } from 'node:fs/promises';
 import * as path from 'node:path';
 
+import { loadBuffer } from 'cheerio';
+import { isTag } from 'domhandler';
 import sharp from 'sharp';
 
 import { publicFetch } from '@prairielearn/public-fetch';
@@ -143,6 +145,17 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
 
   const { format } = await sharp(image).metadata();
   if (format === 'svg') {
+    const $ = loadBuffer(image, { xml: true });
+    // Sharp drops foreignObject content, which can omit information needed for grading.
+    if (
+      $('*').is(
+        (_, element) => isTag(element) && element.name.split(':').at(-1) === 'foreignObject',
+      )
+    ) {
+      throw new Error(
+        'SVG question images containing foreignObject are not supported. Export the image as PNG instead.',
+      );
+    }
     // AI grading providers do not support SVG image inputs, so convert to PNG.
     const png = await sharp(image, { limitInputPixels: MAX_SVG_PIXELS }).png().toBuffer();
     if (png.length > MAX_IMAGE_BYTES) throw new Error('Question image exceeds the size limit');

@@ -31,6 +31,8 @@ AI grading also includes files saved in the submission from [workspaces](../work
 
 AI grading includes images rendered as `<img src="...">` in the question or instructor reference answer, including images added with [`pl-figure`](../elements/pl-figure.md). Supported formats are **PNG, JPEG (`.jpg` or `.jpeg`), WebP, and SVG**. SVG images are converted to PNG before grading.
 
+SVG files containing `<foreignObject>` are rejected because their embedded content is not preserved during conversion. Export these diagrams as PNG instead.
+
 Supported image sources include:
 
 - Static files in the question's `clientFilesQuestion` directory or the course's `clientFilesCourse` directory.
