@@ -3,13 +3,16 @@ import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
 const SESSION = '/workspace/session';
 const NATIVE_PORT = 4500;
+export type CourseSource =
+  | { type: 'github'; repository: string; branch: string }
+  | { type: 'local'; archiveKey: string; directory: string };
 const lifetimeMs = (env: Env) =>
   (Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS) + 3600) * 1000;
 
 /** Only these two private hostnames can leave a container. Secrets stay here. */
 export class CourseAgentOutbound extends WorkerEntrypoint<
-  Env,
-  { repository: string; model: string }
+  Env & { GITHUB_READ_TOKEN?: string },
+  { repository?: string; model: string }
 > {
   // Add credentials only after checking that the request targets the bound
   // repository or model. The container never receives the underlying tokens.
@@ -18,6 +21,10 @@ export class CourseAgentOutbound extends WorkerEntrypoint<
     const headers = new Headers();
     let target: URL;
     if (url.hostname === 'repository.internal') {
+      if (!this.ctx.props.repository) return new Response('Forbidden', { status: 403 });
+      if (!this.env.GITHUB_READ_TOKEN) {
+        return new Response('Repository access is not configured', { status: 503 });
+      }
       // GET info/refs supports clone, fetch, pull, and ls-remote.
       // POST git-upload-pack supports downloading objects for clone, fetch, and pull.
       // Only this repository is allowed; push (git-receive-pack) and GitHub APIs are denied.
@@ -94,14 +101,21 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /** Start an isolated workspace, restore or clone its files, and configure Codex. */
   async prepare(
-    config: { repository: string; branch: string; model: string },
+    config: CourseSource & { model: string },
     checkpoint: DirectoryBackupRecord | null,
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
     this.container.start({ image: this.container.images.courseAgent, enableInternet: false });
     await this.container.setInactivityTimeout(lifetimeMs(this.env));
-    const outbound = this.ctx.exports.CourseAgentOutbound({ props: config });
-    await this.container.interceptOutboundHttp('repository.internal:80', outbound);
+    const outbound = this.ctx.exports.CourseAgentOutbound({
+      props: {
+        model: config.model,
+        ...(config.type === 'local' ? {} : { repository: config.repository }),
+      },
+    });
+    if (config.type !== 'local') {
+      await this.container.interceptOutboundHttp('repository.internal:80', outbound);
+    }
     await this.container.interceptOutboundHttp('model.internal:80', outbound);
     await this.exec(['mkdir', '-p', '/workspace']);
     if (checkpoint) {
@@ -109,19 +123,57 @@ export class CourseSandbox extends DurableObject<Env> {
     } else {
       await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
       await this.exec(['chown', '-R', '1000:1000', SESSION]);
-      await this.exec(
-        [
-          'git',
-          'clone',
-          '--single-branch',
-          '--branch',
-          config.branch,
-          '--',
-          `http://repository.internal/${config.repository}.git`,
-          `${SESSION}/course`,
-        ],
-        'node',
-      );
+      if (config.type === 'local') {
+        const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
+        if (!archive) throw new Error('The local course snapshot is missing');
+        const files = new Files(this.container);
+        await files.writeFile('/tmp/course-source.tar.gz', archive.body);
+        await this.exec(['mkdir', '-p', `${SESSION}/repository`], 'node');
+        await this.exec(
+          ['tar', '-xzf', '/tmp/course-source.tar.gz', '-C', `${SESSION}/repository`],
+          'node',
+        );
+        await this.exec(['rm', '/tmp/course-source.tar.gz']);
+        await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
+        await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
+        await this.exec(
+          [
+            'git',
+            '-C',
+            `${SESSION}/repository`,
+            '-c',
+            'user.name=PrairieLearn',
+            '-c',
+            'user.email=course-agent@prairielearn.com',
+            '-c',
+            'commit.gpgsign=false',
+            'commit',
+            '--allow-empty',
+            '-m',
+            'Initial local course snapshot',
+          ],
+          'node',
+        );
+        // Preserve the original Git paths while keeping the native runner's course path stable.
+        await this.exec(
+          ['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`],
+          'node',
+        );
+      } else {
+        await this.exec(
+          [
+            'git',
+            'clone',
+            '--single-branch',
+            '--branch',
+            config.branch,
+            '--',
+            `http://repository.internal/${config.repository}.git`,
+            `${SESSION}/course`,
+          ],
+          'node',
+        );
+      }
     }
     // Configuration contains no credentials. It is reapplied after restoration.
     const files = new Files(this.container);
