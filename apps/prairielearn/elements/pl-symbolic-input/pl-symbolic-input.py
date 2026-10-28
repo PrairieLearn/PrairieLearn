@@ -41,6 +41,19 @@ PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
 INITIAL_VALUE_DEFAULT = None
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
+FORMAT_HELP_BY_ALLOWED_TYPE: dict[psu.AllowedSympyType, tuple[str, tuple[str, ...]]] = {
+    "expression": ("symbolic expressions", ("1/2 + pi",)),
+    "finite-set": ("finite sets", ("{ 0, pi/2, 3pi/2, 2pi }",)),
+    "interval": ("intervals", ("[0, +oo)",)),
+    "set": (
+        "sets (including finite sets and intervals)",
+        (
+            "{ 0, pi/2, 3pi/2, 2pi }",
+            "[0, +oo)",
+            "[0, 2] U {4}",
+        ),
+    ),
+}
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
@@ -291,13 +304,38 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
+    format_help_types = allowed_types - {"all"}
+    if "all" in allowed_types:
+        format_help_types.update({"expression", "set"})
+    if "set" in format_help_types:
+        format_help_types.difference_update({"finite-set", "interval"})
+
+    accepted_type_labels = []
+    format_examples = []
+    for allowed_type, (label, examples) in FORMAT_HELP_BY_ALLOWED_TYPE.items():
+        if allowed_type in format_help_types:
+            accepted_type_labels.append(label)
+            format_examples.extend(examples)
+    accepted_types = " and ".join(
+        ", ".join(accepted_type_labels).rsplit(", ", maxsplit=1)
+    )
+
     info_params = {
         "format": True,
         "variables": variables,
         "operators": operators,
         "constants": constants,
+        "accepted_types": accepted_types,
+        "examples": [
+            {
+                "value": example,
+                "separator": ", " if index < len(format_examples) - 1 else ".",
+            }
+            for index, example in enumerate(format_examples)
+        ],
+        "multiple_examples": len(format_examples) > 1,
         "allow_complex": allow_complex,
-        "allow_sets": allow_sets,
+        "allow_set_operations": allow_sets,
     }
 
     with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
