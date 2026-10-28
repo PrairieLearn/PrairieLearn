@@ -2,84 +2,23 @@ import { describe, expect, it } from 'vitest';
 
 import type { ReviewOutcome } from '@prairielearn/course-agent-types';
 
-import type { ThreadStartResponse } from '../generated/types/v2/ThreadStartResponse.js';
-import type { Turn } from '../generated/types/v2/Turn.js';
-
 import { CodexAppServerClient } from './codex.js';
 import { SandboxTurn } from './sandbox-turn.js';
 import type { CourseSandbox } from './sandbox.js';
 
-const turn: Turn = {
-  id: 'turn',
-  rootTurnId: null,
-  items: [],
-  itemsView: 'full',
-  status: 'inProgress',
-  error: null,
-  startedAt: null,
-  completedAt: null,
-  durationMs: null,
-};
-const threadResult: ThreadStartResponse = {
-  model: 'test',
-  modelProvider: 'test',
-  serviceTier: null,
-  cwd: '/workspace/session/course',
-  approvalPolicy: 'never',
-  approvalsReviewer: 'user',
-  sandbox: { type: 'dangerFullAccess' },
-  reasoningEffort: null,
-  disabledPluginIds: [],
-  instructionSources: [],
-  runtimeWorkspaceRoots: [],
-  activePermissionProfile: null,
-  multiAgentMode: 'explicitRequestOnly',
-  thread: {
-    id: 'thread',
-    sessionId: 'session',
-    forkedFromId: null,
-    parentThreadId: null,
-    preview: '',
-    ephemeral: false,
-    section: null,
-    sectionEnteredAt: null,
-    projectId: null,
-    historyMode: 'legacy',
-    modelProvider: 'test',
-    model: 'test',
-    reasoningEffort: null,
-    createdAt: 0,
-    updatedAt: 0,
-    recencyAt: null,
-    status: { type: 'idle' },
-    path: null,
-    cwd: '/workspace/session/course',
-    cliVersion: 'test',
-    originator: null,
-    source: 'appServer',
-    threadSource: null,
-    agentNickname: null,
-    agentRole: null,
-    gitInfo: null,
-    name: null,
-    turns: [],
-    environments: [],
-    extra: null,
-    canAcceptDirectInput: true,
-    daybreakEnabled: false,
-  },
-};
+const turn = { id: 'turn', status: 'inProgress', error: null };
 
 function runner({
   loseAcceptance = false,
   savedReview,
-  initializeResult = {
-    userAgent: 'test',
-    codexHome: '/workspace/session/home/.codex',
-    platformFamily: 'unix',
-    platformOs: 'linux',
-  },
-}: { loseAcceptance?: boolean; initializeResult?: unknown; savedReview?: ReviewOutcome } = {}) {
+  onReview,
+  threadResult = { thread: { id: 'thread' } },
+}: {
+  loseAcceptance?: boolean;
+  threadResult?: unknown;
+  savedReview?: ReviewOutcome;
+  onReview?: ConstructorParameters<typeof CodexAppServerClient>[2];
+} = {}) {
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -101,14 +40,14 @@ function runner({
       if (frame.method === 'initialize') {
         emit({
           id: frame.id,
-          result: initializeResult,
+          result: {},
         });
       }
       if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
         emit({ id: frame.id, result: threadResult });
       }
       if (frame.method === 'thread/read') {
-        const previousTurn: Turn = {
+        const previousTurn = {
           ...turn,
           status: 'completed',
           items: savedReview
@@ -125,7 +64,7 @@ function runner({
         };
         emit({
           id: frame.id,
-          result: { thread: { ...threadResult.thread, turns: [previousTurn] } },
+          result: { thread: { id: 'thread', turns: [previousTurn] } },
         });
       }
       if (frame.method === 'turn/start' && !loseAcceptance) {
@@ -139,7 +78,7 @@ function runner({
   } as unknown as DurableObjectStub<CourseSandbox>;
   return {
     sandbox,
-    native: new CodexAppServerClient(sandbox, 'assistant'),
+    native: new CodexAppServerClient(sandbox, 'assistant', onReview),
     commands,
     emit,
     disconnect: () => socket.close(),
@@ -150,6 +89,78 @@ function runner({
 }
 
 describe('Codex native stream', () => {
+  it('ends the SDK response for review and continues on the retained native connection', async () => {
+    const review = Promise.withResolvers<ReviewOutcome['result']>();
+    const { native, emit, disconnect } = runner({
+      onReview: (_call, ready) => {
+        ready();
+        return review.promise;
+      },
+    });
+    await native.connect();
+    await native.thread({ model: 'test', instructions: 'Edit course', threadId: null });
+    await native.run('Edit', () => {});
+    const collect = async (stream: typeof native.stream) => {
+      const chunks = [];
+      for await (const chunk of stream) chunks.push(chunk);
+      return chunks;
+    };
+    const firstResponse = collect(native.stream);
+    emit({
+      id: 'review',
+      method: 'item/tool/call',
+      params: {
+        threadId: 'thread',
+        turnId: 'turn',
+        callId: 'review',
+        tool: 'push_sync',
+        namespace: null,
+        arguments: {},
+      },
+    });
+    expect(await firstResponse).toContainEqual({
+      type: 'tool-input-available',
+      toolCallId: 'review',
+      toolName: 'push_sync',
+      input: {},
+    });
+
+    const nextResponse = collect(native.openStream());
+    review.resolve({
+      decision: 'denied',
+      publication: { status: 'not_attempted' },
+      sync: { status: 'not_attempted' },
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    emit({
+      method: 'item/agentMessage/delta',
+      params: {
+        threadId: 'thread',
+        turnId: 'turn',
+        itemId: 'reply',
+        delta: 'Continuing after review',
+      },
+    });
+    emit({
+      method: 'item/completed',
+      params: { threadId: 'thread', item: { type: 'agentMessage', id: 'reply' } },
+    });
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { ...turn, status: 'completed' } },
+    });
+    await native.finished;
+    native.closeStream();
+    expect(await nextResponse).toEqual([
+      { type: 'start', messageId: 'assistant' },
+      { type: 'text-start', id: 'text:reply' },
+      { type: 'text-delta', id: 'text:reply', delta: 'Continuing after review' },
+      { type: 'text-end', id: 'text:reply' },
+      { type: 'finish' },
+    ]);
+    disconnect();
+  });
+
   it.each([
     {
       name: 'restored review supplies only its result without replaying the prompt',
@@ -192,11 +203,29 @@ describe('Codex native stream', () => {
     disconnect();
   });
 
-  it('rejects invalid native results before continuing setup', async () => {
-    const { native, commands } = runner({ initializeResult: {} });
-    await expect(native.connect()).rejects.toThrow('Invalid result for initialize');
-    await expect(native.finished).rejects.toThrow('Invalid result for initialize');
-    expect(commands.map((command) => command.method)).toEqual(['initialize']);
+  it('rejects invalid native results before submitting a turn', async () => {
+    const { native, commands } = runner({ threadResult: { thread: { id: 123 } } });
+    await native.connect();
+    await expect(
+      native.thread({ model: 'test', instructions: 'Edit course', threadId: null }),
+    ).rejects.toThrow('Invalid result for thread/start');
+    await expect(native.finished).rejects.toThrow('Invalid result for thread/start');
+    expect(commands.map((command) => command.method)).toEqual([
+      'initialize',
+      'initialized',
+      'thread/start',
+    ]);
+  });
+
+  it('rejects malformed subscribed notifications', async () => {
+    const { native, emit } = runner();
+    await native.connect();
+    await native.thread({ model: 'test', instructions: 'Edit course', threadId: null });
+    emit({
+      method: 'item/agentMessage/delta',
+      params: { threadId: 'thread', turnId: 'turn', itemId: 'item', delta: 123 },
+    });
+    await expect(native.finished).rejects.toThrow('Invalid notification: item/agentMessage/delta');
   });
 
   it('waits for terminal confirmation after SDK cancellation and interrupt acknowledgement', async () => {

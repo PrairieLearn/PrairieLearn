@@ -47,6 +47,7 @@ function createConversation(user: User) {
     course_id: '1',
     user_id: user.id,
     agent_conversation_id: crypto.randomUUID(),
+    title: 'Test conversation',
   });
 }
 
@@ -300,24 +301,6 @@ describe('Course agent access and conversation privacy', () => {
     });
   });
 
-  test('rejects changing another owner’s conversation title', async () => {
-    const conversation = await createConversation(otherOwner);
-    await withUser(owner, async () => {
-      await expect(
-        createClient(owner).courseAgent.setTitle.mutate({
-          conversationId: conversation.id,
-          text: 'Someone else',
-        }),
-      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
-    });
-    const stored = await selectOptionalCourseAgentConversation({
-      id: conversation.id,
-      course_id: '1',
-      user_id: otherOwner.id,
-    });
-    expect(stored!.title).toBe(conversation.title);
-  });
-
   test('binds creation to the authorized course repository and branch', async () => {
     await updateCourseColumn({
       courseId: '1',
@@ -332,7 +315,7 @@ describe('Course agent access and conversation privacy', () => {
       authnUserId: owner.id,
     });
     const conversation = await withUser(owner, () =>
-      createClient(owner).courseAgent.create.mutate(),
+      createClient(owner).courseAgent.create.mutate({ text: 'First message' }),
     );
     expect(serviceRequests).toEqual([
       {
@@ -359,7 +342,9 @@ describe('Course agent access and conversation privacy', () => {
     await withUser(owner, async () => {
       const client = createClient(owner);
       const before = await client.courseAgent.list.query();
-      await expect(client.courseAgent.create.mutate()).rejects.toMatchObject({
+      await expect(
+        client.courseAgent.create.mutate({ text: 'First message' }),
+      ).rejects.toMatchObject({
         data: { code: 'BAD_REQUEST' },
       });
       expect(await client.courseAgent.list.query()).toEqual(before);
@@ -386,26 +371,5 @@ describe('Course agent access and conversation privacy', () => {
         authorization: 'Bearer test-token',
       },
     ]);
-  });
-
-  test('preserves the first-message title after a follow-up', async () => {
-    const conversation = await createConversation(owner);
-    await withUser(owner, async () => {
-      const client = createClient(owner);
-      await client.courseAgent.setTitle.mutate({
-        conversationId: conversation.id,
-        text: 'First message',
-      });
-      await client.courseAgent.setTitle.mutate({
-        conversationId: conversation.id,
-        text: 'Follow-up',
-      });
-    });
-    const stored = await selectOptionalCourseAgentConversation({
-      id: conversation.id,
-      course_id: '1',
-      user_id: owner.id,
-    });
-    expect(stored!.title).toBe('First message');
   });
 });

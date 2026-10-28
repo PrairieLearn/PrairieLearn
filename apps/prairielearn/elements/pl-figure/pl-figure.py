@@ -23,7 +23,7 @@ WIDTH_DEFAULT = None
 FILE_TYPE_DEFAULT = FileType.STATIC
 DIRECTORY_DEFAULT = "clientFilesQuestion"
 DISPLAY_DEFAULT = DisplayType.BLOCK
-ALT_TEXT_DEFAULT = ""
+ALT_TEXT_DEFAULT = None
 
 
 DIRECTORY_URL_DICT = {
@@ -109,7 +109,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     display_type = get_display_type(element)
     inline = display_type is DisplayType.INLINE
 
-    # Get alternate-text text (default is PrairieLearn Image)
+    # Preserve the distinction between missing alt text and decorative images.
     alt_text = pl.get_string_attrib(element, "alt", ALT_TEXT_DEFAULT)
 
     # Get base url, which depends on the type and directory
@@ -135,6 +135,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
 
     # Create and return html
-    html_params = {"src": file_url, "width": width, "inline": inline, "alt": alt_text}
+    html_params = {
+        "src": file_url,
+        "width": width,
+        "inline": inline,
+        "alt": alt_text,
+        "has_alt": alt_text is not None,
+    }
     with open("pl-figure.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

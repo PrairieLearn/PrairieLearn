@@ -47,14 +47,6 @@ WHERE
   AND course_id = $course_id
   AND user_id = $user_id;
 
--- BLOCK update_course_agent_conversation_title_if_default
-UPDATE course_agent_conversations
-SET
-  title = $title
-WHERE
-  id = $id
-  AND title = $default_title;
-
 -- BLOCK select_course_agent_conversation_by_agent_id
 SELECT
   cac.*
