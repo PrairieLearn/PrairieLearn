@@ -7,6 +7,13 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+from prairielearn.internal import sympy_constants
+
+
+def test_constants_compatibility_alias() -> None:
+    assert psu._Constants is sympy_constants
+    assert psu.STANDARD_OPERATORS is sympy_constants.standard_operators
+    assert psu.SET_NOTATION_OPERATORS is sympy_constants.set_notation_operators
 
 
 def _caret_template(template_expr: str) -> tuple[str, str]:
