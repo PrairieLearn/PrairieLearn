@@ -96,7 +96,7 @@ export interface RenderPageOptions {
    * but protected assets are fetched from this URL's origin, including in production.
    */
   url: string;
-  /** Public page origin used by Cloudflare; the request itself is intercepted. */
+  /** Browser page origin, required with Cloudflare and ignored by local Chromium. */
   browserOrigin?: string;
   /** Browser-paginated HTML to serve at `url`. */
   html: string;
@@ -247,9 +247,13 @@ export class PrintRenderer {
     const deadline = timeoutMs === 0 ? null : Date.now() + timeoutMs;
     const remainingTimeoutMs = () => (deadline === null ? 0 : Math.max(1, deadline - Date.now()));
     const localUrl = new URL(url);
-    const navigationUrl = this.cloudflare
-      ? urlAtOrigin(localUrl, browserOrigin ?? 'https://example.com').href
-      : localUrl.href;
+    let navigationUrl = localUrl.href;
+    if (this.cloudflare) {
+      if (!browserOrigin) {
+        throw new Error('browserOrigin is required for Cloudflare print rendering');
+      }
+      navigationUrl = urlAtOrigin(localUrl, browserOrigin).href;
+    }
     const renderOrigin = new URL(navigationUrl).origin;
     const deadlineController = new AbortController();
     const signal = requestSignal
@@ -329,7 +333,6 @@ export class PrintRenderer {
           if (
             this.cloudflare &&
             !config.devMode &&
-            browserOrigin !== undefined &&
             requestUrl.pathname.startsWith(`${config.assetsPrefix}/`)
           ) {
             await route.continue();

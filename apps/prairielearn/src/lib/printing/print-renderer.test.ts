@@ -352,7 +352,11 @@ describe('PrintRenderer', () => {
     });
     const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
 
-    const render = renderPdf(renderer, { url: 'http://localhost:3000/print', timeoutMs: 20 });
+    const render = renderPdf(renderer, {
+      url: 'http://localhost:3000/print',
+      browserOrigin: 'https://example.com',
+      timeoutMs: 20,
+    });
     await assetStarted.opened;
     await expect(render).rejects.toThrow('Timed out after 20 ms rendering the PDF');
     expect(assetSignal?.aborted).toBe(true);
@@ -363,8 +367,14 @@ describe('PrintRenderer', () => {
     const harness = createBrowserHarness();
     const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
 
-    await renderPdf(renderer, { url: 'http://localhost:3000/print?paper_size=Letter' });
-    await renderPdf(renderer, { url: 'http://localhost:3000/print?paper_size=A4' });
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000/print?paper_size=Letter',
+      browserOrigin: 'https://us.prairielearn.com',
+    });
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000/print?paper_size=A4',
+      browserOrigin: 'https://us.prairielearn.com',
+    });
 
     expect(playwrightMocks.connectOverCDP).toHaveBeenCalledExactlyOnceWith(
       'wss://api.cloudflare.com/client/v4/accounts/account/browser-run/devtools/browser?keep_alive=180000',
@@ -512,7 +522,10 @@ describe('PrintRenderer', () => {
     });
     const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
     const renders = Array.from({ length: 5 }, (_, index) =>
-      renderPdf(renderer, { url: `http://localhost:3000/print/${index}` }),
+      renderPdf(renderer, {
+        url: `http://localhost:3000/print/${index}`,
+        browserOrigin: 'https://us.prairielearn.com',
+      }),
     );
     await vi.waitFor(() => expect(harness.pages).toHaveLength(4));
     expect(harness.getPeakOpenContexts()).toBe(4);
