@@ -31,12 +31,13 @@ beforeEach(() => {
 });
 
 describe('conversation creation', () => {
-  it('requires service authentication', async () => {
-    expect((await worker.fetch(request('/conversations', 'POST', 'wrong-token'), env)).status).toBe(
-      401,
-    );
-    expect(getAgentByName).not.toHaveBeenCalled();
-  });
+  it.each(['/conversations', '/conversations/local'])(
+    'requires service authentication for %s',
+    async (path) => {
+      expect((await worker.fetch(request(path, 'POST', 'wrong-token'), env)).status).toBe(401);
+      expect(getAgentByName).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe('conversation routing', () => {

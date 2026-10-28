@@ -14,12 +14,32 @@ export default {
     if (!isAuthorized(request.headers.get('Authorization'), env.PL_SERVICE_TOKEN)) {
       return new Response('Unauthorized', { status: 401 });
     }
+    if (request.method === 'POST' && new URL(request.url).pathname === '/conversations/local') {
+      if (request.headers.get('Content-Type') !== 'application/gzip' || !request.body) {
+        return new Response('Expected a gzip course archive', { status: 400 });
+      }
+      const directory = decodeURIComponent(request.headers.get('X-Course-Directory') ?? '.');
+      if (directory.startsWith('/') || directory.split('/').includes('..')) {
+        return new Response('Expected a relative course directory', { status: 400 });
+      }
+      const id = crypto.randomUUID();
+      const archiveKey = `local-sources/${id}.tar.gz`;
+      await env.CHECKPOINTS.put(archiveKey, request.body);
+      try {
+        const conversation = await getAgentByName(env.Conversation, id);
+        await conversation.initialize({ type: 'local', archiveKey, directory });
+      } catch (error) {
+        await env.CHECKPOINTS.delete(archiveKey);
+        throw error;
+      }
+      return Response.json({ id }, { status: 201 });
+    }
     if (request.method === 'POST' && new URL(request.url).pathname === '/conversations') {
       const input = CreateConversationInput.safeParse(await request.json().catch(() => null));
       if (!input.success) return new Response('Invalid request', { status: 400 });
       const id = crypto.randomUUID();
       const conversation = await getAgentByName(env.Conversation, id);
-      await conversation.initialize(input.data);
+      await conversation.initialize({ type: 'github', ...input.data });
       return Response.json({ id }, { status: 201 });
     }
     const route = parseRoute(request.url);

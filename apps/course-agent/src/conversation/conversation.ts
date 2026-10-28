@@ -16,6 +16,7 @@ import {
 } from '@prairielearn/course-agent-types';
 
 import { SandboxTurn } from '../sandbox-turn.js';
+import type { CourseSource } from '../sandbox.js';
 
 import { buildInstructions } from './instructions.js';
 
@@ -29,7 +30,7 @@ interface Deadline {
   sandboxId: string;
 }
 interface RuntimeData {
-  config: { repository: string; branch: string; model: string };
+  config: CourseSource & { model: string };
   courseContext: z.infer<typeof CourseContextSchema> | null;
   nativeThreadId: string | null;
   checkpoint: DirectoryBackupRecord | null;
@@ -127,10 +128,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Set up conversation state and pin the repository, branch, and model.
+   * Set up conversation state and pin the course source and model.
    * The sandbox is created or restored when the first message arrives.
    */
-  initialize(config: { repository: string; branch: string }) {
+  initialize(config: CourseSource) {
     if (this.runtime) throw new Error('Conversation is already initialized');
     this.setRuntimeState({
       lifecycle: { status: 'offline' },
@@ -374,6 +375,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       const previous = this.record.checkpoint;
       const checkpoint = await this.sandbox.checkpoint();
       this.setRuntimeState({ ...this.record, checkpoint, lifecycle: { status: 'destroying' } });
+      // TODO: Revisit source retention when implementing local save-back baselines.
+      if (!previous && this.record.config.type === 'local') {
+        await this.schedule(0, 'deleteLocalSource', this.record.config.archiveKey, {
+          retry: { maxAttempts: 3 },
+        }).catch(console.error);
+      }
       await this.destroyCheckpointed();
       if (previous) {
         await this.schedule(0, 'deleteCheckpoint', previous, { retry: { maxAttempts: 3 } }).catch(
@@ -394,6 +401,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Scheduled archive cleanup can retry without holding up the conversation. */
   async deleteCheckpoint(checkpoint: DirectoryBackupRecord) {
     await this.env.CourseSandbox.getByName('archive-cleanup').deleteCheckpoint(checkpoint);
+  }
+
+  async deleteLocalSource(archiveKey: string) {
+    await this.env.CHECKPOINTS.delete(archiveKey);
   }
 
   /** A committed backup is required before discarding a workspace containing edits. */
