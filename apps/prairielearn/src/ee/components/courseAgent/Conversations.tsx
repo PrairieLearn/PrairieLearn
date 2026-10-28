@@ -5,8 +5,8 @@ import { useAgent } from 'agents/react';
 import type { UIMessage } from 'ai';
 import {
   type KeyboardEvent,
-  type SyntheticEvent,
   type ReactNode,
+  type SyntheticEvent,
   useEffect,
   useRef,
   useState,
