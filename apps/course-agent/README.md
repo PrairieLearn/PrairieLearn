@@ -10,7 +10,68 @@ Create the private `prairielearn-course-agent-checkpoints` R2 bucket before depl
 
 `OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after normal turn cleanup and chat persistence, or after a review card has been persisted while the native tool waits for a decision. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
 
-Run `pnpm --filter @prairielearn/course-agent dev` with Docker running. In PrairieLearn, set `courseAgentServiceUrl`, set `courseAgentServiceToken` to exactly match `PL_SERVICE_TOKEN`, and enable `features: { "course-agent": true }`. Use a course owner and a course configured with a GitHub repository and branch. Set PL `githubClientToken` to an API credential with write access to that repository. Configure Worker `PL_SERVICE_URL` to the PrairieLearn origin (the local default is `http://localhost:3000`) so Resume can retrieve saved job outcomes.
+## Local development
+
+Assumes a working [native PrairieLearn development setup](../../docs/dev-guide/installingNative.md) and Docker running. Run commands from the repository root.
+
+Copy the Worker secrets template:
+
+```sh
+cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
+```
+
+Set `OPENAI_API_KEY`, `GITHUB_READ_TOKEN` with read access to the course repository, and a random `PL_SERVICE_TOKEN` in `.dev.vars` (e.g. generate the service token with `openssl rand -hex 32`).
+
+Merge the following into `apps/prairielearn/config.json`, using the same service token:
+
+```json
+{
+  "isEnterprise": true,
+  "courseAgentServiceUrl": "http://127.0.0.1:8790",
+  "courseAgentServiceToken": "paste-the-same-PL_SERVICE_TOKEN-here",
+  "features": {
+    "course-agent": true
+  }
+}
+```
+
+Set PrairieLearn `githubClientToken` to an API credential with write access to the course repository. Worker `PL_SERVICE_URL` defaults to `http://localhost:3000`; change it to your PrairieLearn origin if different so Resume can retrieve saved job outcomes.
+
+Start the Worker:
+
+```sh
+pnpm --filter @prairielearn/course-agent dev
+```
+
+Wrangler builds the sandbox image and manages local containers and R2 storage. No deployed Worker or R2 bucket is needed; local state is kept in `apps/course-agent/.wrangler/local`.
+
+Start PrairieLearn in a second terminal:
+
+```sh
+make dev
+```
+
+At [Global Admin → Courses](http://localhost:3000/pl/administrator/courses), set a non-example course's repository to its GitHub URL and its branch to an existing branch. Open an instructor page in that course, click the stars button, and send a message in a new conversation. Both the authenticated and effective user must have Owner permission. The first message starts the sandbox and clones the configured GitHub branch; local course-file changes are not copied into it.
+
+### HTTP requests
+
+Set `PL_SERVICE_TOKEN` in your shell to the value from `.dev.vars`. Create a conversation, replacing the repository and branch with your course's values:
+
+```sh
+curl --fail-with-body -X POST -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data '{"repository":"owner/repo","branch":"main"}' \
+  http://localhost:8790/conversations
+```
+
+Set `conversation_id` to the returned `id`, then fetch its saved history:
+
+```sh
+curl --fail-with-body -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
+  "http://localhost:8790/conversations/$conversation_id/get-messages"
+```
+
+These requests do not start a sandbox or add the conversation to PrairieLearn's catalog. Send messages through PrairieLearn to use the sandbox.
 
 ## Lifecycle and recovery
 
