@@ -356,10 +356,11 @@ router.get(
         config.secretKey,
       );
       const snapshotHtml = html
-        .replace('<html', `<html data-print-snapshot-id="${id}"`)
+        .replace('<html', () => `<html data-print-snapshot-id="${id}"`)
         .replace(
           '</head>',
-          `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(parsedSource).replaceAll('<', '\\u003c')}</script></head>`,
+          () =>
+            `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(parsedSource).replaceAll('<', '\\u003c')}</script></head>`,
         );
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader(
