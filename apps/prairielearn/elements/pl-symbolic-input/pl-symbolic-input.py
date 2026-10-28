@@ -114,6 +114,43 @@ def _allows_sets(allowed_types: set[psu.AllowedSympyType]) -> bool:
     return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
 
 
+def _serialize_and_validate_sympy(
+    answer: psu.SympyValue,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    allow_trig_functions: bool,
+    simplify_expression: bool,
+) -> psu.SympyJson:
+    """Serialize and reparse an answer to validate that it can be stored safely.
+
+    This performs a full SymPy serialization and parse, so callers should use it as
+    a validation gate at answer-ingestion boundaries rather than as a cheap conversion
+    helper.
+
+    Returns:
+        The serialized answer after its representation has been validated.
+    """
+    answer_json = psu.sympy_to_json(
+        answer,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+    )
+
+    # This reparses serialized text rather than simplifying the same tree. In
+    # simplified mode, the first parse already evaluated the expression, so
+    # evaluating the serialized form is idempotent and restores canonical form.
+    psu.json_to_sympy(
+        answer_json,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
+    )
+    return answer_json
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.validate_element(element, SCHEMA_PATH)
@@ -203,6 +240,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f"Parsing correct answer {a_true!r} for {name!r} failed: "
                 f"{type_failure.error}"
             )
+
+        try:
+            _serialize_and_validate_sympy(
+                parsed_answer,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
+            )
+        except Exception as exc:
+            raise ValueError(
+                f"Serializing correct answer {a_true!r} for {name!r} failed."
+            ) from exc
 
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
@@ -634,26 +684,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     a_sub_parsed = result.expr
 
-    # Make sure we can parse the json again
     try:
-        a_sub_json = psu.sympy_to_json(
+        data["submitted_answers"][name] = _serialize_and_validate_sympy(
             a_sub_parsed,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
-        )
-
-        # This reparses serialized text rather than simplifying the same tree. In
-        # simplified mode, the first parse already evaluated the expression, so
-        # evaluating the serialized form is idempotent and restores canonical form.
-        psu.json_to_sympy(
-            a_sub_json,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
             simplify_expression=simplify_expression,
         )
-
-        # Finally, store the result
-        data["submitted_answers"][name] = a_sub_json
     except Exception:
         data["format_errors"][name] = (
             f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
