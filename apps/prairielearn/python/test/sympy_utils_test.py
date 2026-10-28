@@ -665,6 +665,42 @@ class TestSympy:
 
         assert isinstance(result, psu.SympyParseSuccess)
 
+    @pytest.mark.parametrize("reverse_args", [True, False])
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize(
+        "contained_args",
+        [
+            (sympy.S.Naturals0, sympy.Interval(1, 2)),
+            (
+                sympy.Basic.__new__(
+                    sympy.Union,
+                    sympy.S.Rationals,
+                    sympy.Interval.Lopen(sympy.Rational(1, 2), 1),
+                ),
+            ),
+        ],
+    )
+    def test_full_real_line_union_ignores_contained_sets(
+        self,
+        contained_args: tuple[sympy.Set, ...],
+        *,
+        reverse_args: bool,
+        simplify_expression: bool,
+    ) -> None:
+        args = (*contained_args, sympy.S.Reals)
+        if reverse_args:
+            args = tuple(reversed(args))
+        expression = sympy.Basic.__new__(sympy.Union, *args)
+
+        assert (
+            psu.check_sympy_types(
+                expression,
+                {"interval"},
+                simplify_expression=simplify_expression,
+            )
+            is None
+        )
+
     @pytest.mark.parametrize(
         ("text", "allowed_types", "missing_types"),
         [

@@ -113,6 +113,25 @@ type _UsedSympyType = _SympyValueType | Literal["empty-set"]
 type AllowedSympyType = Literal["all"] | _SympyValueType
 
 
+def _maximal_union_args(expr: sympy.Union) -> tuple[sympy.Set, ...]:
+    """Return arguments not provably contained by another union argument."""
+    args = cast(tuple[sympy.Set, ...], expr.args)
+    # SymPy can prove named domains are subsets of Reals, but not always of the
+    # equal Interval(-oo, oo) representation.
+    comparison_args = tuple(
+        sympy.S.Reals if arg == sympy.S.Reals else arg for arg in args
+    )
+    return tuple(
+        arg
+        for index, arg in enumerate(args)
+        if not any(
+            arg != other
+            and comparison_args[index].is_subset(comparison_args[other_index]) is True
+            for other_index, other in enumerate(args)
+        )
+    )
+
+
 def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
@@ -129,7 +148,12 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
             if isinstance(arg, sympy.Set):
                 required_types.update(_used_sympy_types(arg))
         return required_types
-    if isinstance(expr, (sympy.Union, sympy.Intersection, sympy.Complement)):
+    if isinstance(expr, sympy.Union):
+        required_types: set[_UsedSympyType] = set()
+        for arg in _maximal_union_args(expr):
+            required_types.update(_used_sympy_types(arg))
+        return required_types
+    if isinstance(expr, (sympy.Intersection, sympy.Complement)):
         required_types: set[_UsedSympyType] = set()
         for arg in expr.args:
             required_types.update(_used_sympy_types(arg))
