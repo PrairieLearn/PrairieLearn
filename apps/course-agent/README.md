@@ -4,7 +4,7 @@ A Cloudflare Worker hosts private course-editing conversations behind PrairieLea
 
 ## Configuration
 
-Set `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and `GITHUB_READ_TOKEN` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). The repository token needs read access to the pilot repositories. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. The container cannot publish; PrairieLearn performs approved publication and Course Sync outside it.
+Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). GitHub-backed conversations additionally require `GITHUB_READ_TOKEN` with read access to the course repository. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. The container cannot publish; PrairieLearn performs approved publication and Course Sync outside it.
 
 Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings. Container SDK and helper image are both pinned to 1.0.2; the native runtime and protocol generator are both Codex 0.163.0.
 
@@ -20,7 +20,7 @@ Copy the Worker secrets template:
 cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
 ```
 
-Set `OPENAI_API_KEY`, `GITHUB_READ_TOKEN` with read access to the course repository, and a random `PL_SERVICE_TOKEN` in `.dev.vars` (e.g. generate the service token with `openssl rand -hex 32`).
+Set `OPENAI_API_KEY` and a random `PL_SERVICE_TOKEN` in `.dev.vars` (e.g. generate the service token with `openssl rand -hex 32`). The default local setup does not require a GitHub token or a course repository URL.
 
 Merge the following into `apps/prairielearn/config.json`, using the same service token:
 
@@ -35,7 +35,7 @@ Merge the following into `apps/prairielearn/config.json`, using the same service
 }
 ```
 
-Set PrairieLearn `githubClientToken` to an API credential with write access to the course repository. Worker `PL_SERVICE_URL` defaults to `http://localhost:3000`; change it to your PrairieLearn origin if different so Resume can retrieve saved job outcomes.
+For GitHub publication, set `fileEditorUseGit: true`, configure the course repository and branch, and set PrairieLearn `githubClientToken` to an API credential with write access. Worker `PL_SERVICE_URL` defaults to `http://localhost:3000`; change it to your PrairieLearn origin if different so Resume can retrieve saved job outcomes.
 
 Start the Worker:
 
@@ -51,17 +51,20 @@ Start PrairieLearn in a second terminal:
 make dev
 ```
 
-At [Global Admin → Courses](http://localhost:3000/pl/administrator/courses), set a non-example course's repository to its GitHub URL and its branch to an existing branch. Open an instructor page in that course, click the stars button, and send a message in a new conversation. Both the authenticated and effective user must have Owner permission. The first message starts the sandbox and clones the configured GitHub branch; local course-file changes are not copied into it.
+Open [http://localhost:3000](http://localhost:3000), navigate to an instructor page in a non-example course (e.g. Test Course), click the stars button, and send a message in a new conversation. Both the authenticated and effective user must have Owner permission.
+
+In PrairieLearn dev mode with the default `fileEditorUseGit: false`, creation copies current course files, including uncommitted edits, and exports their Git history using standard Git. Nested courses such as `testCourse` include only that directory’s history. Host Git metadata and dependency/cache directories are excluded. The first message unpacks the snapshot into the sandbox and commits a private baseline on top of the imported history. Courses without Git history start with just that baseline. Sandbox edits remain in that conversation; this PR does not save them back to the local course files.
 
 ### HTTP requests
 
-Set `PL_SERVICE_TOKEN` in your shell to the value from `.dev.vars`. Create a conversation, replacing the repository and branch with your course's values:
+Set `PL_SERVICE_TOKEN` in your shell to the value from `.dev.vars`. Create a conversation from local course files:
 
 ```sh
-curl --fail-with-body -X POST -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
-  -H 'Content-Type: application/json' \
-  --data '{"repository":"owner/repo","branch":"main"}' \
-  http://localhost:8790/conversations
+tar --exclude=.git --exclude=node_modules --exclude=.venv --exclude=__pycache__ \
+  -czf - -C testCourse . \
+  | curl --fail-with-body -X POST -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
+    -H 'Content-Type: application/gzip' --data-binary @- \
+    http://localhost:8790/conversations/local
 ```
 
 Set `conversation_id` to the returned `id`, then fetch its saved history:
@@ -75,7 +78,7 @@ These requests do not start a sandbox or add the conversation to PrairieLearn's 
 
 ## Lifecycle and recovery
 
-The + button opens a local draft. First send creates the conversation and its title, binding a repository and branch without starting a container. First send clones that branch; later turns reuse the native thread. Only the newest input is submitted. Stop interrupts native work and verifies that agent/tool processes have stopped before another turn is admitted. Turn deadline expiry also backs up and shuts down the workspace. Closing or switching the panel leaves execution running. The selected conversation is retained per tab in session storage.
+The + button opens a local draft. First send creates the conversation and its title without starting a container. In dev mode it snapshots local course files; otherwise it binds a GitHub repository and branch. Execution unpacks the local snapshot or clones that branch; later turns reuse the native thread. Only the newest input is submitted. Stop interrupts native work and verifies that agent/tool processes have stopped before another turn is admitted. Turn deadline expiry also backs up and shuts down the workspace. Closing or switching the panel leaves execution running. The selected conversation is retained per tab in session storage.
 
 After idle expiry, the service stops native writers, backs up `/workspace/session` with `DirectoryBackup`, commits its returned reference, then destroys the container. A later send restores that checkpoint before resuming the native thread. A fresh random sandbox ID identifies every newly provisioned runtime. Caches, dependencies and native authentication files are excluded from backups.
 
@@ -87,6 +90,7 @@ Only SDK-buffered output can be replayed after a restart. Native output that nev
 
 All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 
+- `POST /conversations/local` accepts a gzip tar archive of course files and optional Git history and returns `201 { id }`. For a course nested in the archived repository, `X-Course-Directory` specifies its URL-encoded relative directory. The initial archive is deleted after the first successful checkpoint.
 - `POST /conversations` accepts `{ repository: "owner/name", branch: "branch" }` and returns `201 { id }` after initialization.
 - `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
 - `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.

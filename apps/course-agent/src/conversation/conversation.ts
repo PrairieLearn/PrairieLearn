@@ -23,6 +23,7 @@ import {
 } from '@prairielearn/course-agent-types';
 
 import { SandboxTurn } from '../sandbox-turn.js';
+import type { CourseSource } from '../sandbox.js';
 
 import { buildInstructions } from './instructions.js';
 
@@ -36,7 +37,7 @@ interface Deadline {
   sandboxId: string;
 }
 interface RuntimeData {
-  config: { repository: string; branch: string; model: string };
+  config: CourseSource & { model: string };
   courseContext: z.infer<typeof CourseContextSchema> | null;
   nativeThreadId: string | null;
   checkpoint: DirectoryBackupRecord | null;
@@ -153,10 +154,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Set up conversation state and pin the repository, branch, and model.
+   * Set up conversation state and pin the course source and model.
    * The sandbox is created or restored when the first message arrives.
    */
-  initialize(config: { repository: string; branch: string }) {
+  initialize(config: CourseSource) {
     if (this.runtime) throw new Error('Conversation is already initialized');
     this.setRuntimeState({
       lifecycle: { status: 'offline' },
@@ -345,6 +346,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!continuation && message?.role !== 'user') throw new Error('Expected a new user message');
     const text = message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
     const startup = this.record.sandboxId === null;
+    const source = this.record.config;
     this.setRuntimeState({
       ...this.record,
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
@@ -354,55 +356,58 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       messageId: crypto.randomUUID(),
       text: outcome ? { callId: this.record.review!.callId, result: outcome } : text,
       startup,
-      onReview: async ({ callId }, ready) => {
-        if (this.reviewOperation?.resolveNativeCall) {
-          throw new Error('A review is already pending');
-        }
-        const result = Promise.withResolvers<PushSyncResult>();
-        const operation: ReviewOperation = {
-          callId,
-          resolveNativeCall: result.resolve,
-          delivery: null,
-        };
-        this.reviewOperation = operation;
-        try {
-          const snapshot: ReviewSnapshot = await this.sandbox.captureReview(
-            this.record.config.repository,
-            this.record.config.branch,
-          );
-          this.clearReview();
-          snapshot.additions.forEach((file, index) =>
-            this.ctx.storage.kv.put(`review-file:${index}`, file.contents),
-          );
-          this.setRuntimeState({
-            ...this.record,
-            review: {
-              callId,
-              card: { messageId: this.active!.execution.messageId, partId: callId },
-              snapshot: {
-                ...snapshot,
-                additions: snapshot.additions.map(({ path }) => ({ path })),
-              },
-              status: 'pending',
-              jobSequenceId: null,
-              error: null,
-              decision: null,
+      onReview:
+        source.type === 'local'
+          ? undefined
+          : async ({ callId }, ready) => {
+              if (this.reviewOperation?.resolveNativeCall) {
+                throw new Error('A review is already pending');
+              }
+              const result = Promise.withResolvers<PushSyncResult>();
+              const operation: ReviewOperation = {
+                callId,
+                resolveNativeCall: result.resolve,
+                delivery: null,
+              };
+              this.reviewOperation = operation;
+              try {
+                const snapshot: ReviewSnapshot = await this.sandbox.captureReview(
+                  source.repository,
+                  source.branch,
+                );
+                this.clearReview();
+                snapshot.additions.forEach((file, index) =>
+                  this.ctx.storage.kv.put(`review-file:${index}`, file.contents),
+                );
+                this.setRuntimeState({
+                  ...this.record,
+                  review: {
+                    callId,
+                    card: { messageId: this.active!.execution.messageId, partId: callId },
+                    snapshot: {
+                      ...snapshot,
+                      additions: snapshot.additions.map(({ path }) => ({ path })),
+                    },
+                    status: 'pending',
+                    jobSequenceId: null,
+                    error: null,
+                    decision: null,
+                  },
+                });
+                ready();
+                await this.active!.sdkFinished.promise;
+                this.setRuntimeState({
+                  ...this.record,
+                  lifecycle: { status: 'waiting_for_user' },
+                  deadline: null,
+                });
+                await this.scheduleDeadline('idle');
+              } catch (error) {
+                if (this.reviewOperation === operation) this.reviewOperation = null;
+                throw error;
+              }
+              return result.promise;
             },
-          });
-          ready();
-          await this.active!.sdkFinished.promise;
-          this.setRuntimeState({
-            ...this.record,
-            lifecycle: { status: 'waiting_for_user' },
-            deadline: null,
-          });
-          await this.scheduleDeadline('idle');
-        } catch (error) {
-          if (this.reviewOperation === operation) this.reviewOperation = null;
-          throw error;
-        }
-        return result.promise;
-      },
       prepare: async () => {
         await this.scheduleDeadline('turn');
         if (startup) {
@@ -414,7 +419,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
       thread: {
         model: this.record.config.model,
-        instructions: buildInstructions(this.record.courseContext ?? undefined),
+        instructions: buildInstructions(this.record.courseContext ?? undefined, source.type),
         threadId: this.record.nativeThreadId,
       },
       onThread: (nativeThreadId) => this.setRuntimeState({ ...this.record, nativeThreadId }),
@@ -814,6 +819,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       const previous = this.record.checkpoint;
       const checkpoint = await this.sandbox.checkpoint();
       this.setRuntimeState({ ...this.record, checkpoint, lifecycle: { status: 'destroying' } });
+      // TODO: Revisit source retention when implementing local save-back baselines.
+      if (!previous && this.record.config.type === 'local') {
+        await this.schedule(0, 'deleteLocalSource', this.record.config.archiveKey, {
+          retry: { maxAttempts: 3 },
+        }).catch(console.error);
+      }
       await this.destroyCheckpointed();
       if (previous) {
         await this.schedule(0, 'deleteCheckpoint', previous, { retry: { maxAttempts: 3 } }).catch(
@@ -834,6 +845,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Scheduled archive cleanup can retry without holding up the conversation. */
   async deleteCheckpoint(checkpoint: DirectoryBackupRecord) {
     await this.env.CourseSandbox.getByName('archive-cleanup').deleteCheckpoint(checkpoint);
+  }
+
+  async deleteLocalSource(archiveKey: string) {
+    await this.env.CHECKPOINTS.delete(archiveKey);
   }
 
   /** A committed backup is required before discarding a workspace containing edits. */
