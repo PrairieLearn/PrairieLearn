@@ -13,6 +13,7 @@ dnf update -y
 # - The JDK is needed by the PDF accessibility tools and their Java source launcher
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
+# - `which` is needed by the veraPDF launcher to find Java
 dnf -y install \
     bash-completion \
     gcc \
@@ -36,7 +37,8 @@ dnf -y install \
     texlive-dvipng \
     texlive-type1cm \
     tmux \
-    unzip
+    unzip \
+    which
 
 /bin/bash /PrairieLearn/scripts/install-print-pdf-tools.sh
 
