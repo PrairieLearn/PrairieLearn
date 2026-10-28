@@ -1181,10 +1181,34 @@ export function PrairieTestExamsTable({
             meta?.pt_course_id && meta.pt_exam_id
               ? `${ptHost}/pt/course/${meta.pt_course_id}/staff/exam/${meta.pt_exam_id}`
               : null;
-          const examName =
-            meta?.pt_course_name && meta.pt_exam_name
-              ? `${meta.pt_course_name}: ${meta.pt_exam_name}`
-              : null;
+          const examName = meta?.pt_exam_name;
+          const courseAndCenters = [
+            ...(meta?.pt_course_name
+              ? [
+                  {
+                    name: meta.pt_course_name,
+                    term: meta.pt_course_term,
+                  },
+                ]
+              : []),
+            ...(meta?.pt_centers ?? []),
+          ].map(({ name, term }) => (term ? `${name} (${term})` : name));
+          const archiveWarning = run(() => {
+            const centers = meta?.pt_centers ?? [];
+            const archivedCenters = centers.filter(({ archived }) => archived);
+            if (centers.length <= 1 && archivedCenters.length > 0) {
+              return meta?.pt_course_archived
+                ? 'This course and testing center are archived in PrairieTest.'
+                : 'This testing center is archived in PrairieTest.';
+            }
+            return [
+              ...(meta?.pt_course_archived ? ['This course is archived in PrairieTest.'] : []),
+              ...archivedCenters.map(
+                ({ name, term }) =>
+                  `${term ? `${name} (${term})` : name} is archived in PrairieTest.`,
+              ),
+            ].join(' ');
+          });
 
           return (
             // We don't use UUID as they might be duplicated in the list.
@@ -1197,9 +1221,21 @@ export function PrairieTestExamsTable({
                     {uuidError}
                   </span>
                 ) : examName && examLink ? (
-                  <a href={examLink} target="_blank" rel="noopener noreferrer">
-                    {examName}
-                  </a>
+                  <>
+                    <a href={examLink} target="_blank" rel="noopener noreferrer">
+                      {examName}
+                    </a>
+                    <div className="small text-body-secondary">{courseAndCenters.join(', ')}</div>
+                    {archiveWarning && (
+                      <div className="small">
+                        <i
+                          className="bi bi-exclamation-triangle-fill text-warning me-1"
+                          aria-hidden="true"
+                        />
+                        {archiveWarning}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <span className="text-body-secondary">Unknown exam</span>
                 )}

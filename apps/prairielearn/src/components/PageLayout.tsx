@@ -295,6 +295,7 @@ export function PageLayout({
     'administrator_institution',
     'administrator',
     'institution',
+    'public',
   ].includes(navContext.type ?? '');
 
   // If additional navigation capabilities are not needed, such as on the

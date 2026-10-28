@@ -383,6 +383,24 @@ export function createColumns({
       },
     }),
 
+    columnHelper.accessor(
+      (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? null,
+      {
+        id: 'ai_grading_model',
+        header: 'AI model',
+        size: 220,
+        cell: (info) => (
+          <span className="font-monospace" title={info.getValue() ?? undefined}>
+            {info.getValue() ?? '—'}
+          </span>
+        ),
+        filterFn: (row, columnId, filter: MultiSelectFilterValue) =>
+          applyMultiSelectFilter(filter, (values) =>
+            values.includes(row.getValue<string | null>(columnId) ?? 'None'),
+          ),
+      },
+    ),
+
     // AI agreement column
     columnHelper.accessor((row) => row.instance_question.rubric_difference, {
       id: 'rubric_difference',

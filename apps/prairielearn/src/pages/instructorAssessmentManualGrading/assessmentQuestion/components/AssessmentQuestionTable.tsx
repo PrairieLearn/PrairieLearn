@@ -71,6 +71,7 @@ const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> 
 };
 const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_AI_MODEL_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
@@ -195,6 +196,11 @@ export function AssessmentQuestionTable({
         parser: parseAsMultiSelectFilter(),
         defaultValue: DEFAULT_GRADED_BY_FILTER,
       },
+      ai_grading_model: {
+        urlKey: 'ai_model',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_AI_MODEL_FILTER,
+      },
       instance_question_group_name: {
         urlKey: 'submission_group',
         parser: parseAsMultiSelectFilter(),
@@ -284,8 +290,7 @@ export function AssessmentQuestionTable({
 
   async function getExportOptions(rows: InstanceQuestionRowWithAIGradingStats[]) {
     const grading_job_ids = rows.flatMap(({ instance_question: iq }) => {
-      const id =
-        iq.ai_grading?.score_source?.grading_job.id ?? iq.ai_grading?.latest_update.grading_job.id;
+      const id = iq.ai_grading?.latest_update.grading_job.id;
       return id ? [id] : [];
     });
     try {
@@ -329,6 +334,18 @@ export function AssessmentQuestionTable({
     });
     return Array.from(graders).sort();
   }, [instanceQuestionsInfo, aiGradingMode]);
+
+  const allAiModels = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          instanceQuestionsInfo.map(
+            (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? 'None',
+          ),
+        ),
+      ).sort(),
+    [instanceQuestionsInfo],
+  );
 
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {
@@ -465,6 +482,7 @@ export function AssessmentQuestionTable({
             'student_labels',
             'points',
             'rubric_grading_item_ids',
+            'ai_grading_model',
           ].includes(col.id)
         ) {
           return [[col.id, false]];
@@ -635,6 +653,7 @@ export function AssessmentQuestionTable({
   const columnFiltersComponents = createColumnFilters({
     studentLabels,
     allGraders,
+    allAiModels,
     allSubmissionGroups,
     allAiAgreementItems,
   });

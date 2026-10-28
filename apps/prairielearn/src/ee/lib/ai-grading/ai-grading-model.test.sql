@@ -69,22 +69,6 @@ FROM
 WHERE
   id = $id;
 
--- BLOCK select_test_job_status
-SELECT
-  status::text
-FROM
-  job_sequences
-WHERE
-  id = $id;
-
--- BLOCK select_test_assessment_question
-SELECT
-  *
-FROM
-  assessment_questions
-WHERE
-  id = $id;
-
 -- BLOCK count_test_job_sequences
 SELECT
   count(*)::integer

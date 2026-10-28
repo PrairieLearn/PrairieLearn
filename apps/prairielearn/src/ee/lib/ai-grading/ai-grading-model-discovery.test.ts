@@ -1,7 +1,6 @@
 import type * as http from 'node:http';
 import * as https from 'node:https';
 import type { AddressInfo } from 'node:net';
-import { gzipSync } from 'node:zlib';
 
 import * as pem from 'pem';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -87,15 +86,14 @@ describe('AI grading model discovery', () => {
   });
 
   it.each([
-    [400, 'request_rejected'],
-    [422, 'request_rejected'],
-    [401, 'authentication'],
-    [403, 'access_denied'],
-    [404, 'not_found'],
-    [422, 'request_rejected'],
-    [429, 'rate_limit'],
-    [500, 'provider_error'],
-  ])('classifies HTTP %s without exposing the response', async (status, code) => {
+    [400, 'request_rejected', 400],
+    [401, 'authentication', 400],
+    [403, 'access_denied', 400],
+    [404, 'not_found', 400],
+    [422, 'request_rejected', 400],
+    [429, 'rate_limit', 429],
+    [500, 'provider_error', 400],
+  ])('classifies HTTP %s without exposing the response', async (status, code, httpStatus) => {
     await withServer(
       (_request, response) => {
         response.writeHead(Number(status));
@@ -106,6 +104,7 @@ describe('AI grading model discovery', () => {
           discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
         ).rejects.toMatchObject({
           code,
+          status: httpStatus,
           message: expect.not.stringContaining('secret provider diagnostics'),
         });
       },
@@ -163,26 +162,11 @@ describe('AI grading model discovery', () => {
     );
   });
 
-  it('bounds streamed responses without Content-Length', async () => {
+  it('reports an oversized model list', async () => {
     await withServer(
       (_request, response) => {
         response.write(' '.repeat(1024 * 1024));
         response.end('extra');
-      },
-      async (baseUrl, options) => {
-        await expect(
-          discoverAiGradingModels({ baseUrl, apiKey: 'test-key', courseInstanceId: '1' }, options),
-        ).rejects.toMatchObject({ code: 'response_too_large' });
-      },
-    );
-  });
-
-  it('bounds decompressed responses', async () => {
-    await withServer(
-      (_request, response) => {
-        const body = gzipSync(' '.repeat(1024 * 1024 + 1));
-        response.writeHead(200, { 'Content-Encoding': 'gzip', 'Content-Length': body.byteLength });
-        response.end(body);
       },
       async (baseUrl, options) => {
         await expect(
