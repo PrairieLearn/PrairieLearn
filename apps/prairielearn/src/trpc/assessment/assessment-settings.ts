@@ -6,7 +6,6 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { throwAppError } from '@prairielearn/trpc/server';
 
@@ -695,70 +694,66 @@ const changeAssessmentType = t.procedure
     const assessmentDir = getAssessmentDir({ course, course_instance, assessment });
     const infoAssessmentPath = getAssessmentInfoJsonPath({ course, course_instance, assessment });
 
-    const newHash = await runInTransactionAsync(async () => {
-      await deletePrintableAssessmentInstancesForAssessment(assessment.id, ctx.authn_user.id);
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+      jsonPath: infoAssessmentPath,
+      conflictCheck: { origHash: input.origHash, scope: settingsScope },
+      applyChanges: (info) => {
+        info.type = input.newType;
+        info.showQuestionTitles = propertyValueWithDefault(
+          info.showQuestionTitles,
+          info.showQuestionTitles,
+          defaultShowQuestionTitles(input.newType),
+        );
 
-      const saveResult = await saveJsonFile<AssessmentJsonInput>({
-        jsonPath: infoAssessmentPath,
-        conflictCheck: { origHash: input.origHash, scope: settingsScope },
-        applyChanges: (info) => {
-          info.type = input.newType;
-          info.showQuestionTitles = propertyValueWithDefault(
-            info.showQuestionTitles,
-            info.showQuestionTitles,
-            defaultShowQuestionTitles(input.newType),
-          );
+        if (input.newType === 'Homework') {
+          delete info.multipleInstance;
+          delete info.autoClose;
+          delete info.requireHonorCode;
+          delete info.honorCode;
+          delete info.advanceScorePerc;
+          delete info.allowRealTimeGrading;
 
-          if (input.newType === 'Homework') {
-            delete info.multipleInstance;
-            delete info.autoClose;
-            delete info.requireHonorCode;
-            delete info.honorCode;
-            delete info.advanceScorePerc;
-            delete info.allowRealTimeGrading;
-
-            for (const { block, location } of iterateAssessmentBlocks(info)) {
-              delete block.allowRealTimeGrading;
-              if (location.kind === 'zone') continue;
-              if (Array.isArray(block.points)) block.points = block.points[0];
-              if (Array.isArray(block.autoPoints)) block.autoPoints = block.autoPoints[0];
-            }
-          } else {
-            delete info.constantQuestionValue;
-
-            for (const { block, location } of iterateAssessmentBlocks(info)) {
-              if (location.kind === 'zone') continue;
-              delete block.maxPoints;
-              delete block.maxAutoPoints;
-            }
+          for (const { block, location } of iterateAssessmentBlocks(info)) {
+            delete block.allowRealTimeGrading;
+            if (location.kind === 'zone') continue;
+            if (Array.isArray(block.points)) block.points = block.points[0];
+            if (Array.isArray(block.autoPoints)) block.autoPoints = block.autoPoints[0];
           }
+        } else {
+          delete info.constantQuestionValue;
 
-          return info;
-        },
-        locals: {
-          authz_data: ctx.authz_data,
-          course: ctx.course,
-          user: ctx.authn_user,
-        },
-        container: { rootPath: assessmentDir, invalidRootPaths: [] },
-      });
-
-      if (!saveResult.success) {
-        if (saveResult.reason === 'conflict') {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message:
-              'The assessment settings have been modified since you loaded this page. Please refresh and try again.',
-          });
+          for (const { block, location } of iterateAssessmentBlocks(info)) {
+            if (location.kind === 'zone') continue;
+            delete block.maxPoints;
+            delete block.maxAutoPoints;
+          }
         }
-        throwAppError<AssessmentSettingsError['ChangeAssessmentType']>({
-          code: 'SYNC_JOB_FAILED',
-          message: 'Failed to change assessment type',
-          jobSequenceId: saveResult.jobSequenceId,
+
+        return info;
+      },
+      locals: {
+        authz_data: ctx.authz_data,
+        course: ctx.course,
+        user: ctx.authn_user,
+      },
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
+
+    if (!saveResult.success) {
+      if (saveResult.reason === 'conflict') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The assessment settings have been modified since you loaded this page. Please refresh and try again.',
         });
       }
-      return saveResult.newHash;
-    });
+      throwAppError<AssessmentSettingsError['ChangeAssessmentType']>({
+        code: 'SYNC_JOB_FAILED',
+        message: 'Failed to change assessment type',
+        jobSequenceId: saveResult.jobSequenceId,
+      });
+    }
+    await deletePrintableAssessmentInstancesForAssessment(assessment.id, ctx.authn_user.id);
 
     const [refreshedAssessment, zonePointsRange] = await Promise.all([
       selectAssessmentById(assessment.id),
@@ -766,7 +761,7 @@ const changeAssessmentType = t.procedure
     ]);
 
     return {
-      origHash: newHash,
+      origHash: saveResult.newHash,
       newType: input.newType,
       assessment: StaffAssessmentSchema.parse(refreshedAssessment),
       zonePointsRange,

@@ -2,22 +2,28 @@ import * as path from 'path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getAppError } from '@prairielearn/trpc/client';
 
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';
+import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import {
   selectAssessmentHasInstances,
   selectAssessmentInstancesForUser,
 } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
-import { settingsScope } from '../trpc/assessment/assessment-settings.js';
+import * as syncFromDisk from '../sync/syncFromDisk.js';
+import {
+  type AssessmentSettingsError,
+  settingsScope,
+} from '../trpc/assessment/assessment-settings.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -452,6 +458,55 @@ describe('Changing assessment type', { concurrent: false }, () => {
           }),
         );
       } finally {
+        await execute(sql.delete_dummy_instances, { assessment_id: assessmentId });
+      }
+    });
+
+    test('preserves printable forms and job logs when the type-change sync fails', async () => {
+      await setupAssessmentInfo({
+        uuid: baseUuid,
+        type: 'Homework',
+        title: 'Type-change test',
+        set: 'Homework',
+        number: '1',
+        zones: [{ questions: [{ ...baseQuestion, autoPoints: 10 }] }],
+      });
+      const devUser = await getConfiguredUser();
+      await execute(sql.insert_dummy_instance, {
+        assessment_id: assessmentId,
+        user_id: devUser.id,
+        for_printing: true,
+      });
+      const trpcClient = await createTrpcClient();
+      const origHash = await getOrigHash();
+      const sync = vi
+        .spyOn(syncFromDisk, 'syncDiskToSqlWithLock')
+        .mockRejectedValueOnce(new Error('Type-change sync failed'));
+
+      try {
+        try {
+          await trpcClient.assessmentSettings.changeAssessmentType.mutate({
+            newType: 'Exam',
+            origHash,
+          });
+          assert.fail('Expected mutation to throw');
+        } catch (err: unknown) {
+          const appError = getAppError<AssessmentSettingsError['ChangeAssessmentType']>(err);
+          assert(appError?.code === 'SYNC_JOB_FAILED');
+          const jobs = await selectJobsByJobSequenceId(appError.jobSequenceId);
+          assert.lengthOf(jobs, 1);
+          assert.equal(jobs[0].status, 'Error');
+          assert.include(jobs[0].output, 'Type-change sync failed');
+        }
+        assert.equal((await readLiveInfo()).type, 'Exam');
+        expect(
+          await selectAssessmentInstancesForUser({
+            assessment_id: assessmentId,
+            user_id: devUser.id,
+          }),
+        ).toMatchObject([{ for_printing: true }]);
+      } finally {
+        sync.mockRestore();
         await execute(sql.delete_dummy_instances, { assessment_id: assessmentId });
       }
     });
