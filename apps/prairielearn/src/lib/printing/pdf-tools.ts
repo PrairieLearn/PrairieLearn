@@ -44,7 +44,7 @@ const ValidationReportSchema = z.object({
 
 export class PrintPdfAccessibilityError extends Error {}
 
-export class PrintPdfValidationError extends PrintPdfAccessibilityError {
+class PrintPdfValidationError extends PrintPdfAccessibilityError {
   constructor(
     readonly reportPath: string,
     options?: ErrorOptions,
@@ -56,7 +56,7 @@ export class PrintPdfValidationError extends PrintPdfAccessibilityError {
   }
 }
 
-export async function runPrintPdfTool(
+async function runPrintPdfTool(
   source: 'PrintPdf' | 'PrintPdfFinalize',
   args: string[],
   signal?: AbortSignal,
