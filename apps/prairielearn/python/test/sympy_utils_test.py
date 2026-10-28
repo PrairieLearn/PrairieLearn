@@ -643,6 +643,29 @@ class TestSympy:
         assert result.expr.doit() == sympy.Interval(0, 1)
 
     @pytest.mark.parametrize(
+        "text",
+        [
+            "Reals",
+            "Reals U Naturals",
+            "(-oo, oo) U Reals",
+            "({} U Reals) U (-oo, infty]",
+        ],
+    )
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_full_real_line_is_classified_as_an_interval(
+        self, text: str, *, simplify_expression: bool
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            text,
+            None,
+            allow_sets=True,
+            simplify_expression=simplify_expression,
+            allowed_types={"interval"},
+        )
+
+        assert isinstance(result, psu.SympyParseSuccess)
+
+    @pytest.mark.parametrize(
         ("text", "allowed_types", "missing_types"),
         [
             ("m + 1", {"set"}, "expression"),
@@ -652,7 +675,7 @@ class TestSympy:
             ("m + 1", {"finite-set", "interval"}, "expression"),
             ("{1, 2}", {"expression", "interval"}, "finite-set"),
             ("[1, 2]", {"expression", "finite-set"}, "interval"),
-            ("Reals", {"interval"}, "set"),
+            ("Integers", {"interval"}, "set"),
             ("[1, 2] U {2, 3}", {"interval"}, "finite-set"),
             ("[1, 4] & {2, 3}", {"interval"}, "finite-set"),
             ("{ [1, 2] }", {"finite-set"}, "interval"),
@@ -710,7 +733,6 @@ class TestSympy:
         ("operation", "expected"),
         [
             ("Reals - Naturals", sympy.Complement(sympy.S.Reals, sympy.S.Naturals)),
-            ("Reals U Naturals", sympy.S.Reals),
             ("Intersection(Reals, Naturals)", sympy.S.Naturals),
         ],
     )
