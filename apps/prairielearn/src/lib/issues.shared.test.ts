@@ -30,6 +30,20 @@ describe('buildIssueMailtoLink', () => {
     expect(recipientOf(link as string)).toBe('ada@example.com');
   });
 
+  it('falls back to the uid when the stored email is not an address', () => {
+    // `users.email` is an unconstrained varchar written from whatever the
+    // authentication provider supplied, so it can hold something that is not
+    // an address at all. Preferring it blindly would reintroduce the bug.
+    const link = buildIssueMailtoLink({ ...issue, user_email: 'alovelace' });
+    expect(recipientOf(link as string)).toBe('ada@example.com');
+  });
+
+  it('returns null when neither the email nor the uid is an address', () => {
+    expect(
+      buildIssueMailtoLink({ ...issue, user_email: 'alovelace', user_uid: 'alovelace' }),
+    ).toBeNull();
+  });
+
   it('returns null when the uid is not an address', () => {
     // A uid is an arbitrary institutional identifier. `mailto:alovelace` is
     // not a usable link, so no link should be offered at all.

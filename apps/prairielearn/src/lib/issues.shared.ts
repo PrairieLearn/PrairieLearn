@@ -9,15 +9,17 @@ export interface IssueContact {
 /**
  * Chooses the address to write to about an issue.
  *
- * `email` is the only field guaranteed to hold an address. A `uid` is an
- * arbitrary institutional identifier that merely happens to be an email
- * address at most institutions, so it is only used when it looks like one.
+ * Neither column is constrained to hold an address. `users.email` is a plain
+ * `varchar(255)` written from whatever the authentication provider supplied,
+ * and a `uid` is an arbitrary institutional identifier that merely happens to
+ * be an email address at most institutions. So both are held to the same test,
+ * and `email` is preferred only when it is actually usable.
  *
  * @returns The address, or null if the issue has none.
  */
 function selectIssueRecipient(user_email: string | null, user_uid: string | null): string | null {
   const email = user_email?.trim();
-  if (email) return email;
+  if (email?.includes('@')) return email;
 
   const uid = user_uid?.trim();
   if (uid?.includes('@')) return uid;
