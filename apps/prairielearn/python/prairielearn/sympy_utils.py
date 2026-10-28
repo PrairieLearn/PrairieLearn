@@ -116,7 +116,9 @@ type AllowedSympyType = Literal["all"] | _SympyValueType
 def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
-    # Reals compares equal to Interval(-oo, oo), but only the domain object is a named set.
+    # SymPy may represent the full real line as either of these equal values.
+    if expr is sympy.S.Reals:
+        expr = sympy.Interval(-sympy.oo, sympy.oo)
     if any(expr is domain for domain in _SET_DOMAINS):
         return {"set"}
     if isinstance(expr, sympy.Interval):
