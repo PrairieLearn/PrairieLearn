@@ -1858,6 +1858,25 @@ def sympy_to_json(
     if isinstance(a, sympy.Set) and not allow_sets:
         raise HasSetNotationError
 
+    return _sympy_to_json_impl(
+        a,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    )
+
+
+def _sympy_to_json_impl(
+    a: sympy.Expr | sympy.Set,
+    *,
+    allow_complex: bool,
+    allow_trig_functions: bool,
+    allow_sets: bool,
+    validate: Callable[[SympyValue], None] | None = None,
+) -> SympyJson:
+    if isinstance(a, sympy.Set) and not allow_sets:
+        raise HasSetNotationError
+
     const = sympy_constants
 
     # Get list of variables in the sympy expression
@@ -1880,6 +1899,8 @@ def sympy_to_json(
             (val, sympy.symbols(key))
             for key, val in const.hidden_complex_variables.items()
         ])
+    if validate is not None:
+        validate(a_sub)
 
     assumptions_dict = {
         str(variable): variable.assumptions0 for variable in a.free_symbols
@@ -2107,6 +2128,11 @@ class _SymbolicInputNormalizationError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
+class _UnsupportedSympyJsonNodeError(Exception):
+    node_type: type[sympy.Basic]
+
+
+@dataclass(frozen=True, slots=True)
 class _SymbolicSubmissionParseSuccess:
     expr: SympyValue | Literal[""]
     json: SympyJson | Literal[""]
@@ -2122,6 +2148,61 @@ def _allowed_sympy_types_include_sets(
     allowed_types: set[AllowedSympyType],
 ) -> bool:
     return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
+
+
+def _validate_symbolic_submission_json_value(expr: SympyValue) -> None:
+    """Validate that the SymPy JSON printer only emits supported structures."""
+    pending: list[sympy.Basic] = [expr]
+    while pending:
+        node = pending.pop()
+
+        if isinstance(node, sympy.Float):
+            raise _UnsupportedSympyJsonNodeError(type(node))
+        if (
+            isinstance(node, (sympy.Symbol, sympy.Number, sympy.NumberSymbol))
+            or node is sympy.I
+            or node is sympy.zoo
+            or any(node is domain for domain in sympy_constants.set_domains)
+            or node is sympy.EmptySet
+        ):
+            continue
+
+        if isinstance(node, sympy.Interval):
+            pending.extend((node.start, node.end))
+            continue
+        if isinstance(
+            node,
+            (
+                sympy.Add,
+                sympy.Mul,
+                sympy.Pow,
+                sympy.Function,
+                sympy.Max,
+                sympy.Min,
+                sympy.FiniteSet,
+                sympy.Union,
+                sympy.Intersection,
+                sympy.Complement,
+            ),
+        ):
+            pending.extend(node.args)
+            continue
+        raise _UnsupportedSympyJsonNodeError(type(node))
+
+
+def _serialize_symbolic_submission(
+    expr: SympyValue,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+) -> SympyJson:
+    return _sympy_to_json_impl(
+        expr,
+        allow_complex=allow_complex,
+        allow_trig_functions=True,
+        allow_sets=allow_sets,
+        validate=_validate_symbolic_submission_json_value,
+    )
 
 
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
@@ -2656,16 +2737,20 @@ def try_parse_symbolic_submission(
         return result
 
     try:
-        submission_json = sympy_to_json(
+        submission_json = _serialize_symbolic_submission(
             result.expr,
             allow_complex=allow_complex,
             allow_sets=supports_set_syntax,
         )
-        json_to_sympy(
-            submission_json,
-            allow_complex=allow_complex,
-            allow_sets=supports_set_syntax,
-            simplify_expression=simplify_expression,
+    except _UnsupportedSympyJsonNodeError as exc:
+        if issubclass(exc.node_type, sympy.AccumBounds):
+            return SympyParseFailure(
+                "Your answer simplifies to a range of possible values, which is not "
+                f"supported: $${sympy.latex(result.expr)}$$"
+            )
+        return SympyParseFailure(
+            "Your answer was simplified to this, which contains an unsupported "
+            f"expression: $${sympy.latex(result.expr)}$$"
         )
     except Exception:
         return SympyParseFailure(
