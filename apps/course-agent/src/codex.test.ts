@@ -1,82 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ThreadStartResponse } from '../generated/types/v2/ThreadStartResponse.js';
-import type { Turn } from '../generated/types/v2/Turn.js';
-
 import { CodexAppServerClient } from './codex.js';
 import { SandboxTurn } from './sandbox-turn.js';
 import type { CourseSandbox } from './sandbox.js';
 
-const turn: Turn = {
-  id: 'turn',
-  rootTurnId: null,
-  items: [],
-  itemsView: 'full',
-  status: 'inProgress',
-  error: null,
-  startedAt: null,
-  completedAt: null,
-  durationMs: null,
-};
-const threadResult: ThreadStartResponse = {
-  model: 'test',
-  modelProvider: 'test',
-  serviceTier: null,
-  cwd: '/workspace/session/course',
-  approvalPolicy: 'never',
-  approvalsReviewer: 'user',
-  sandbox: { type: 'dangerFullAccess' },
-  reasoningEffort: null,
-  disabledPluginIds: [],
-  instructionSources: [],
-  runtimeWorkspaceRoots: [],
-  activePermissionProfile: null,
-  multiAgentMode: 'explicitRequestOnly',
-  thread: {
-    id: 'thread',
-    sessionId: 'session',
-    forkedFromId: null,
-    parentThreadId: null,
-    preview: '',
-    ephemeral: false,
-    section: null,
-    sectionEnteredAt: null,
-    projectId: null,
-    historyMode: 'legacy',
-    modelProvider: 'test',
-    model: 'test',
-    reasoningEffort: null,
-    createdAt: 0,
-    updatedAt: 0,
-    recencyAt: null,
-    status: { type: 'idle' },
-    path: null,
-    cwd: '/workspace/session/course',
-    cliVersion: 'test',
-    originator: null,
-    source: 'appServer',
-    threadSource: null,
-    agentNickname: null,
-    agentRole: null,
-    gitInfo: null,
-    name: null,
-    turns: [],
-    environments: [],
-    extra: null,
-    canAcceptDirectInput: true,
-    daybreakEnabled: false,
-  },
-};
+const turn = { id: 'turn', status: 'inProgress', error: null };
 
 function runner({
   loseAcceptance = false,
-  initializeResult = {
-    userAgent: 'test',
-    codexHome: '/workspace/session/home/.codex',
-    platformFamily: 'unix',
-    platformOs: 'linux',
-  },
-}: { loseAcceptance?: boolean; initializeResult?: unknown } = {}) {
+  threadResult = { thread: { id: 'thread' } },
+}: { loseAcceptance?: boolean; threadResult?: unknown } = {}) {
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -98,7 +31,7 @@ function runner({
       if (frame.method === 'initialize') {
         emit({
           id: frame.id,
-          result: initializeResult,
+          result: {},
         });
       }
       if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
@@ -126,11 +59,29 @@ function runner({
 }
 
 describe('Codex native stream', () => {
-  it('rejects invalid native results before continuing setup', async () => {
-    const { native, commands } = runner({ initializeResult: {} });
-    await expect(native.connect()).rejects.toThrow('Invalid result for initialize');
-    await expect(native.finished).rejects.toThrow('Invalid result for initialize');
-    expect(commands.map((command) => command.method)).toEqual(['initialize']);
+  it('rejects invalid native results before submitting a turn', async () => {
+    const { native, commands } = runner({ threadResult: { thread: { id: 123 } } });
+    await native.connect();
+    await expect(
+      native.thread({ model: 'test', instructions: 'Edit course', threadId: null }),
+    ).rejects.toThrow('Invalid result for thread/start');
+    await expect(native.finished).rejects.toThrow('Invalid result for thread/start');
+    expect(commands.map((command) => command.method)).toEqual([
+      'initialize',
+      'initialized',
+      'thread/start',
+    ]);
+  });
+
+  it('rejects malformed subscribed notifications', async () => {
+    const { native, emit } = runner();
+    await native.connect();
+    await native.thread({ model: 'test', instructions: 'Edit course', threadId: null });
+    emit({
+      method: 'item/agentMessage/delta',
+      params: { threadId: 'thread', turnId: 'turn', itemId: 'item', delta: 123 },
+    });
+    await expect(native.finished).rejects.toThrow('Invalid notification: item/agentMessage/delta');
   });
 
   it('waits for terminal confirmation after SDK cancellation and interrupt acknowledgement', async () => {

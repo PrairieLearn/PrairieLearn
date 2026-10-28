@@ -26,8 +26,6 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "ajv": "^8.20.0",
-    "esbuild": "^0.28.2",
     "execa": "^10.0.1",
     "prettier": "^3.9.9",
     "ts-morph": "^28.0.0",
