@@ -63,6 +63,7 @@ const minimalStaffCourse: z.input<typeof StaffCourseSchema> = {
   sync_warnings: null,
   template_course: false,
   title: null,
+  uuid: '00000000-0000-4000-8000-000000000001',
 };
 
 // StudentCourse omits many fields from StaffCourse
@@ -241,7 +242,7 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   mode: null,
   modified_at: new Date(),
   number: 1,
-  open: null,
+  open: true,
   points: null,
   score_perc: null,
   score_perc_pending: 0,
@@ -264,7 +265,7 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   mode: null,
   modified_at: new Date(),
   number: 1,
-  open: null,
+  open: true,
   points: null,
   score_perc: null,
   score_perc_pending: 0,
@@ -377,6 +378,7 @@ const minimalStaffAlternativePool: z.input<typeof StaffAlternativePoolSchema> = 
 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
+  ai_grading_last_selected_credential_id: null,
   ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
@@ -509,6 +511,8 @@ const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   client_files: null,
+  copied_from: null,
+  copied_from_question_id: null,
   course_id: '1',
   deleted_at: null,
   dependencies: {},

@@ -18,10 +18,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 interface QuestionState {
   id: number;
   question_access_mode:
-    | 'default'
-    | 'blocked_sequence'
-    | 'blocked_lockpoint'
-    | 'read_only_lockpoint';
+    'default' | 'blocked_sequence' | 'blocked_lockpoint' | 'read_only_lockpoint';
   url: string;
 }
 
@@ -214,10 +211,16 @@ describe('Assessment lockpoints', { timeout: 60_000, concurrent: false }, functi
     const response = await helperClient.fetchCheerio(context.questionStates[0].url);
     assert.isTrue(response.ok);
     assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
-    assert.include(
-      response.$('#question-nav-next').attr('data-bs-content') ?? '',
-      'You must cross the lockpoint on the assessment overview page',
+    assert.isTrue(response.$('#question-nav-next').is(':disabled'));
+    assert.strictEqual(
+      response.$('#question-nav-next-reason').text().replaceAll(/\s+/g, ' ').trim(),
+      'Cross the lockpoint on the assessment overview to proceed to the next question.',
     );
+    assert.strictEqual(
+      response.$('#question-nav-next-reason a').attr('href'),
+      `${new URL(context.assessmentInstanceUrl).pathname}/`,
+    );
+    assert.strictEqual(response.$('#question-nav-next-reason a').text(), 'assessment overview');
   });
 
   test('crossing the first lockpoint makes previous questions read-only', async function () {

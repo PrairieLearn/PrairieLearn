@@ -9,6 +9,20 @@
   --md-typeset-a-color: #127ac4; /* arbitrary blue */
 }
 
+/* Material's translucent attribute color falls below 4.5:1 on light code backgrounds. */
+[data-md-color-scheme='default'] {
+  --md-code-hl-variable-color: #666;
+}
+
+/* Code backgrounds need different link colors without changing ordinary prose links. */
+[data-md-color-scheme='default'] .md-typeset a code {
+  color: #106eb0;
+}
+
+[data-md-color-scheme='slate'] .md-typeset a code {
+  color: #6e9cf0;
+}
+
 /* Allow captioned code blocks to function */
 code {
   text-align: left;
@@ -158,8 +172,14 @@ code.doc-symbol-json::after {
   display: none;
 }
 
-.muted {
+/* Keep muted prefixes in sidebars; headers and footers need their own text colors. */
+.md-nav .muted {
   color: var(--md-default-fg-color--light);
+}
+
+/* Material's fainter attribution color falls just below 4.5:1 in light mode. */
+.md-copyright {
+  color: var(--md-footer-fg-color--light);
 }
 
 /* Frame screenshots so they don't blend into the page background. */

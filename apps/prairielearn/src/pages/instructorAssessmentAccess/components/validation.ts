@@ -66,8 +66,7 @@ type RuleValidationFieldPath =
   | 'scoreVisibility.visibleFromDate';
 
 type DateControlValidationPath =
-  | `defaultRule.${RuleValidationFieldPath}`
-  | `overrides.${number}.${RuleValidationFieldPath}`;
+  `defaultRule.${RuleValidationFieldPath}` | `overrides.${number}.${RuleValidationFieldPath}`;
 
 type RuleFormFields = Pick<AccessControlFormData['defaultRule'], OverridableFieldName>;
 

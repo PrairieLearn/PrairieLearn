@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+
 import {
   type GenerateTextResult,
   type LanguageModel,
@@ -39,6 +41,7 @@ import {
   AiGradingJobSchema,
   AssessmentQuestionSchema,
   type CourseInstance,
+  type EnumAiGradingProvider,
   GradingJobSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -54,7 +57,7 @@ import { safeMustacheRender } from '../../../lib/mustache.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
-import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import { AI_GRADING_MODEL_IDS, AI_GRADING_MODEL_PROVIDERS } from './ai-grading-models.shared.js';
 import {
   type CounterClockwiseRotationDegrees,
   type InstanceQuestionAIGradingInfo,
@@ -64,6 +67,9 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
+// Each grading inference call gets one deadline, including SDK retries.
+export const AI_GRADING_INFERENCE_TIMEOUT_MS = 5 * 60 * 1000;
+
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
@@ -72,7 +78,7 @@ const SubmissionVariantSchema = z.object({
 type UserContentParts = Exclude<UserContent, string>;
 
 // Keep this to media types supported as inline file parts by every AI-grading provider.
-const SUPPORTED_AI_GRADING_FILE_MEDIA_TYPES = new Set([
+const AI_GRADING_BINARY_FILE_MEDIA_TYPES = new Set([
   'application/pdf',
   'image/jpeg',
   'image/png',
@@ -232,10 +238,6 @@ function getAiGradingFileName($: cheerio.CheerioAPI, el: AnyNode): string | unde
   return options?.submitted_file_name;
 }
 
-export function containsSubmissionAttachment(submission_text: string): boolean {
-  return cheerio.load(submission_text)(AI_GRADING_FILE_SELECTOR).length > 0;
-}
-
 function containsSubmissionImage(submission_text: string): boolean {
   const $ = cheerio.load(submission_text);
   for (const el of $(AI_GRADING_FILE_SELECTOR)) {
@@ -248,13 +250,42 @@ function containsSubmissionImage(submission_text: string): boolean {
   return false;
 }
 
-function getAiGradingFileMediaType(fileName: string): string {
+function getAiGradingFileMediaType(fileName: string): string | null {
   const mediaType = mime.getType(fileName);
-  if (mediaType && SUPPORTED_AI_GRADING_FILE_MEDIA_TYPES.has(mediaType)) {
+  if (mediaType && AI_GRADING_BINARY_FILE_MEDIA_TYPES.has(mediaType)) {
     return mediaType;
   }
 
-  throw new Error(`AI grading only supports PDF, JPEG, PNG, and WebP files; found "${fileName}".`);
+  return null;
+}
+
+function decodeAiGradingTextFile(fileName: string, fileData: string): string | null {
+  const bytes = Buffer.from(fileData, 'base64');
+  if (bytes.toString('base64') !== fileData) {
+    throw new Error(`Submitted file "${fileName}" has invalid base64 data.`);
+  }
+
+  // File extensions cannot reliably distinguish source code from binary files.
+  // Decode strictly so invalid bytes are never silently replaced in the student's work.
+  const encoding =
+    bytes[0] === 0xff && bytes[1] === 0xfe
+      ? 'utf-16le'
+      : bytes[0] === 0xfe && bytes[1] === 0xff
+        ? 'utf-16be'
+        : 'utf-8';
+  let text: string;
+  try {
+    text = new TextDecoder(encoding, { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  }
+
+  // Binary files can contain valid Unicode but still include non-text control characters.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/u.test(text)) {
+    return null;
+  }
+  return text;
 }
 
 /**
@@ -281,7 +312,7 @@ export function generateSubmissionContent({
       case 'text':
         return [segment];
       case 'file': {
-        if (!segment.fileData) {
+        if (segment.fileData === null) {
           return [
             {
               type: 'text',
@@ -291,6 +322,15 @@ export function generateSubmissionContent({
         }
 
         const mediaType = getAiGradingFileMediaType(segment.fileName);
+        if (!mediaType) {
+          const text = decodeAiGradingTextFile(segment.fileName, segment.fileData);
+          return [
+            {
+              type: 'text',
+              text: `Submitted file: ${segment.fileName}\n\n${text ?? 'File contents unavailable: unsupported file format or text encoding.'}`,
+            },
+          ];
+        }
         return [
           {
             type: 'text',
@@ -344,7 +384,8 @@ type SubmissionHTMLSegment =
  * preserves the full HTML structure for text segments, ensuring the prompt matches what the
  * instructor sees on the AI grading preview page. Attachments are identified by an internal marker
  * emitted by supported elements and returned as separate segments. Legacy markers emitted by
- * `pl-image-capture` and `pl-file-upload` are also recognized.
+ * `pl-image-capture` and `pl-file-upload` are also recognized. Files without a marker
+ * (for example, workspace files) are appended in their stored order.
  */
 export function parseSubmission({
   submission_text,
@@ -355,13 +396,6 @@ export function parseSubmission({
 }): SubmissionHTMLSegment[] {
   const $ = cheerio.load(submission_text);
   const attachmentElements = $(AI_GRADING_FILE_SELECTOR);
-
-  // If there are no attachments, return the full HTML as a single text segment.
-  if (attachmentElements.length === 0) {
-    const text = $('body').html()?.trim();
-    if (!text) return [];
-    return [{ type: 'text', text }];
-  }
 
   // Extract attachment data and replace each element with a unique marker so we can split the
   // HTML into alternating text/attachment segments.
@@ -419,11 +453,19 @@ export function parseSubmission({
     }
   }
 
+  // Some submission paths do not render file markers. Include their files too,
+  // while preserving the positions of marked files and avoiding duplicates.
+  for (const file of submitted_answer?._files ?? []) {
+    if (includedFileNames.has(file.name)) continue;
+    includedFileNames.add(file.name);
+    segments.push({ type: 'file', fileName: file.name, fileData: file.contents });
+  }
+
   return segments;
 }
 
 /**
- * Returns all images referenced by AI-grading file markers in the rendered submission.
+ * Returns all supported images in the submission, including files without markers.
  * Returns a mapping from an image's filename to its base64-encoded contents.
  */
 export function extractSubmissionImages({
@@ -442,7 +484,7 @@ export function extractSubmissionImages({
     (acc, segment) => {
       if (segment.type === 'text' || !segment.fileData) return acc;
 
-      if (getAiGradingFileMediaType(segment.fileName).startsWith('image/')) {
+      if (getAiGradingFileMediaType(segment.fileName)?.startsWith('image/')) {
         acc[segment.fileName] = segment.fileData;
       }
       return acc;
@@ -515,6 +557,8 @@ export async function insertAiGradingJob({
   grading_job_id,
   job_sequence_id,
   model_id,
+  provider = AI_GRADING_MODEL_PROVIDERS[z.enum(AI_GRADING_MODEL_IDS).parse(model_id)],
+  base_url = null,
   prompt,
   response,
   course_id,
@@ -522,7 +566,9 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  model_id: AiGradingModelId;
+  model_id: string;
+  provider?: EnumAiGradingProvider;
+  base_url?: string | null;
   prompt: ModelMessage[];
   response: GenerateTextResult<any, any, any>;
   course_id: string;
@@ -537,9 +583,17 @@ export async function insertAiGradingJob({
       completion: sanitizeObject(response),
       rotation_correction_degrees: null,
       model: model_id,
+      provider,
+      base_url,
       prompt_tokens: response.usage.inputTokens ?? 0,
       completion_tokens: response.usage.outputTokens ?? 0,
-      cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+      cost:
+        provider === 'openai-compatible'
+          ? null
+          : calculateResponseCost({
+              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+              usage: response.usage,
+            }),
       course_id,
       course_instance_id,
     },
@@ -556,6 +610,8 @@ export async function insertAiGradingJob({
  * @param params.grading_job_id
  * @param params.job_sequence_id
  * @param params.model_id
+ * @param params.provider
+ * @param params.base_url
  * @param params.prompt
  * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected non-upright images.
  * @param params.rotationCorrections - For each image, the amount of degrees counterclockwise it was rotated and the response of the rotation correction LLM call.
@@ -567,6 +623,8 @@ export async function insertAiGradingJobWithRotationCorrection({
   grading_job_id,
   job_sequence_id,
   model_id,
+  provider = AI_GRADING_MODEL_PROVIDERS[z.enum(AI_GRADING_MODEL_IDS).parse(model_id)],
+  base_url = null,
   prompt,
   gradingResponseWithRotationIssue,
   rotationCorrections,
@@ -576,7 +634,9 @@ export async function insertAiGradingJobWithRotationCorrection({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  model_id: AiGradingModelId;
+  model_id: string;
+  provider?: EnumAiGradingProvider;
+  base_url?: string | null;
   prompt: ModelMessage[];
   gradingResponseWithRotationIssue: GenerateTextResult<any, any, any>;
   rotationCorrections: Record<
@@ -597,20 +657,27 @@ export async function insertAiGradingJobWithRotationCorrection({
     (gradingResponseWithRotationIssue.usage.outputTokens ?? 0) +
     (gradingResponseWithRotationCorrection.usage.outputTokens ?? 0);
   let cost =
-    calculateResponseCost({
-      model: model_id,
-      usage: gradingResponseWithRotationIssue.usage,
-    }) +
-    calculateResponseCost({
-      model: model_id,
-      usage: gradingResponseWithRotationCorrection.usage,
-    });
+    provider === 'openai-compatible'
+      ? null
+      : calculateResponseCost({
+          model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+          usage: gradingResponseWithRotationIssue.usage,
+        }) +
+        calculateResponseCost({
+          model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+          usage: gradingResponseWithRotationCorrection.usage,
+        });
 
   const rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> = {};
   for (const [filename, { degreesRotated, response }] of Object.entries(rotationCorrections)) {
     prompt_tokens += response.usage.inputTokens ?? 0;
     completion_tokens += response.usage.outputTokens ?? 0;
-    cost += calculateResponseCost({ model: model_id, usage: response.usage });
+    if (cost !== null) {
+      cost += calculateResponseCost({
+        model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+        usage: response.usage,
+      });
+    }
     rotationCorrectionDegrees[filename] = degreesRotated;
   }
 
@@ -623,6 +690,8 @@ export async function insertAiGradingJobWithRotationCorrection({
       completion: sanitizeObject(gradingResponseWithRotationCorrection),
       rotation_correction_degrees: rotationCorrectionDegrees,
       model: model_id,
+      provider,
+      base_url,
       prompt_tokens,
       completion_tokens,
       cost,
@@ -723,9 +792,14 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
 
 export async function setAiGradingLastSelectedModel(
   assessment_question_id: string,
-  model_id: AiGradingModelId,
+  model_id: string,
+  credential_id: string | null = null,
 ) {
-  await execute(sql.set_ai_grading_last_selected_model, { assessment_question_id, model_id });
+  await execute(sql.set_ai_grading_last_selected_model, {
+    assessment_question_id,
+    model_id,
+    credential_id,
+  });
 }
 
 const rateLimiter = new RedisRateLimiter({
@@ -736,7 +810,7 @@ const rateLimiter = new RedisRateLimiter({
       throw new Error('nonVolatileRedisUrl must be set in config');
     }
 
-    const redis = new Redis(config.nonVolatileRedisUrl);
+    const redis = new Redis<'legacy'>(config.nonVolatileRedisUrl);
 
     redis.on('error', (err) => {
       logger.error('AI grading Redis error', err);
@@ -744,8 +818,9 @@ const rateLimiter = new RedisRateLimiter({
       // This error could happen during a specific request, but we shouldn't
       // associate it with that request - we just happened to try to set up
       // Redis during a given request. We'll use a fresh scope to capture this.
-      Sentry.withScope((scope) => {
-        scope.clear();
+      const scope = new Sentry.Scope();
+      scope.setClient(Sentry.getCurrentScope().getClient());
+      Sentry.withScope(scope, () => {
         Sentry.captureException(err);
       });
     });
@@ -866,6 +941,7 @@ async function correctImageOrientation({
 
   const response = await generateText({
     model,
+    abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
     instructions: formatPrompt([
       'Of the four labeled images provided, select the one that is closest to being upright.',
       'Upright (0 degrees): The handwriting is in a standard reading position already.',
@@ -925,9 +1001,11 @@ export async function correctImagesOrientation({
   > = {};
 
   for (const [filename, image] of Object.entries(submittedImages)) {
+    const mediaType = getAiGradingFileMediaType(filename);
+    assert(mediaType);
     const { correctedImage, degreesRotated, response } = await correctImageOrientation({
       image,
-      mediaType: getAiGradingFileMediaType(filename),
+      mediaType,
       model,
     });
 
@@ -953,13 +1031,10 @@ export async function correctImagesOrientation({
 
 const AiGradingJobDataForSubmissionSchema = z.object({
   manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+  model: AiGradingJobSchema.shape.model.nullable(),
   prompt: AiGradingJobSchema.shape.prompt,
   completion: AiGradingJobSchema.shape.completion,
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
-});
-
-const AiGradingExplanationSchema = z.object({
-  explanation: z.string(),
 });
 
 /**
@@ -984,18 +1059,23 @@ const AiGradingCompletionSchema = z.object({
   _output: z.unknown().optional(),
 });
 
-export function extractAiGradingExplanationFromCompletion(completion: unknown): string | null {
+export function extractAiGradingTextFromCompletion(
+  completion: unknown,
+  field: 'explanation' | 'feedback' = 'explanation',
+): string | null {
   const parsed = AiGradingCompletionSchema.safeParse(completion);
   if (!parsed.success) return null;
 
   const { choices, output_parsed, object, _output } = parsed.data;
-  const explanation = AiGradingExplanationSchema.safeParse(
+  const output = z.record(z.string(), z.unknown()).safeParse(
     // The 4 different formats
     choices?.[0]?.message?.parsed ?? output_parsed ?? object ?? _output,
   );
-  if (!explanation.success) return null;
+  if (!output.success) return null;
 
-  return explanation.data.explanation.trim() || null;
+  const text = output.data[field];
+  if (typeof text !== 'string') return null;
+  return field === 'explanation' ? text.trim() || null : text;
 }
 
 /**
@@ -1036,7 +1116,7 @@ export async function buildAiGradingInfo({
           .trimStart()
       : '';
 
-  const explanation = extractAiGradingExplanationFromCompletion(aiGradingJobData.completion);
+  const explanation = extractAiGradingTextFromCompletion(aiGradingJobData.completion);
 
   const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
   const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
@@ -1062,6 +1142,7 @@ export async function buildAiGradingInfo({
   });
 
   const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
+    model: aiGradingJobData.model,
     submissionManuallyGraded,
     prompt: formattedPrompt,
     selectedRubricItemIds: selectedRubricItems.map((item) => item.id),

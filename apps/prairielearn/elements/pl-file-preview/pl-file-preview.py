@@ -16,8 +16,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return ""
 
     if data["ai_grading"]:
-        # In theory, we may want to support AI grading of arbitrary file uploads,
-        # but for now, we'll just avoid rendering anything at all.
+        # AI grading reads submitted files directly, including files without an
+        # input-element marker (such as workspace files).
         return ""
 
     # Fetch any submitted files

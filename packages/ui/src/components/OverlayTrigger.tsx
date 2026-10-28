@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState } from 'react';
 import {
   // eslint-disable-next-line no-restricted-imports
   OverlayTrigger as BootstrapOverlayTrigger,
   type OverlayTriggerProps as BootstrapOverlayTriggerProps,
+  CloseButton,
   Popover,
   type PopoverProps,
   Tooltip,
@@ -93,27 +94,48 @@ export function OverlayTrigger({
   returnFocus = true,
   onEntered,
   onExit,
+  show,
+  defaultShow,
+  onToggle,
+  trigger,
   ...props
 }: OverlayTriggerProps) {
+  const [internalShow, setInternalShow] = useState(defaultShow ?? false);
+  const isClickTriggered = Array.isArray(trigger) ? trigger.includes('click') : trigger === 'click';
+  const isShown = show ?? internalShow;
+  const headerId = useId();
+  const popoverId = useId();
   const overlayBodyRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const focusTrapRef = useRef<FocusTrap | null>(null);
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
+  const handleToggle = (nextShow: boolean) => {
+    if (nextShow && returnFocus && document.activeElement instanceof HTMLElement) {
+      triggerElementRef.current = document.activeElement;
+    }
+    if (show === undefined) setInternalShow(nextShow);
+    onToggle?.(nextShow);
+  };
+
   const handleEntered = (node: HTMLElement, isAppearing: boolean) => {
     // Store the currently focused element (the trigger) before we move focus
-    if (returnFocus && document.activeElement instanceof HTMLElement) {
+    if (
+      returnFocus &&
+      triggerElementRef.current === null &&
+      document.activeElement instanceof HTMLElement
+    ) {
       triggerElementRef.current = document.activeElement;
     }
 
-    const isClickTriggered = Array.isArray(props.trigger)
-      ? props.trigger.includes('click')
-      : props.trigger === 'click';
-    if (shouldTrapFocus && overlayBodyRef.current && isClickTriggered) {
-      // Trap focus inside the overlay body
-      focusTrapRef.current = trapFocus(overlayBodyRef.current);
+    const container = overlayBodyRef.current?.closest<HTMLElement>('.popover');
+    if (shouldTrapFocus && container && isClickTriggered) {
+      // Include the header's Close button in the focus trap.
+      focusTrapRef.current = trapFocus(container);
 
       // Move focus to the first focusable element
-      focusFirstFocusableChild(overlayBodyRef.current);
+      if (overlayBodyRef.current) focusFirstFocusableChild(overlayBodyRef.current);
+      if (!container.contains(document.activeElement)) closeButtonRef.current?.focus();
     }
 
     // Call the original onEntered callback if provided
@@ -137,9 +159,6 @@ export function OverlayTrigger({
     // Return focus to the trigger element (only for click-triggered overlays;
     // for focus-triggered tooltips this would create an infinite loop since
     // refocusing the trigger re-shows the tooltip).
-    const isClickTriggered = Array.isArray(props.trigger)
-      ? props.trigger.includes('click')
-      : props.trigger === 'click';
     if (returnFocus && triggerElementRef.current && isClickTriggered) {
       triggerElementRef.current.focus();
       triggerElementRef.current = null;
@@ -155,22 +174,65 @@ export function OverlayTrigger({
 
   // Construct the popover with our managed ref
   const popoverOverlay = popover ? (
-    <Popover {...popover.props}>
-      {popover.header && <Popover.Header>{popover.header}</Popover.Header>}
+    <Popover
+      {...popover.props}
+      id={popover.props?.id ?? popoverId}
+      {...(isClickTriggered
+        ? {
+            role: 'dialog' as const,
+            ...(popover.header
+              ? { 'aria-labelledby': headerId }
+              : { 'aria-label': popover.props?.['aria-label'] ?? 'Popover' }),
+          }
+        : {})}
+      onKeyDown={(event) => {
+        popover.props?.onKeyDown?.(event);
+        if (isClickTriggered && event.key === 'Escape' && !event.defaultPrevented) {
+          handleToggle(false);
+        }
+      }}
+    >
+      {isClickTriggered ? (
+        <Popover.Header className="d-flex align-items-center gap-2">
+          {popover.header && (
+            <div id={headerId} className="flex-grow-1">
+              {popover.header}
+            </div>
+          )}
+          <CloseButton
+            ref={closeButtonRef}
+            className="ms-auto flex-shrink-0"
+            onClick={() => handleToggle(false)}
+          />
+        </Popover.Header>
+      ) : (
+        popover.header && <Popover.Header>{popover.header}</Popover.Header>
+      )}
       <Popover.Body ref={overlayBodyRef}>{popover.body}</Popover.Body>
     </Popover>
   ) : null;
 
   const tooltipOverlay = tooltip ? <Tooltip {...tooltip.props}>{tooltip.body}</Tooltip> : null;
 
+  let triggerChild = children;
+  if (popover && isClickTriggered && isValidElement<React.HTMLAttributes<HTMLElement>>(children)) {
+    // React-Bootstrap requires the original trigger element, so preserve it while adding ARIA state.
+    // eslint-disable-next-line @eslint-react/no-clone-element
+    triggerChild = cloneElement(children, { 'aria-haspopup': 'dialog', 'aria-expanded': isShown });
+  }
+
   return (
     <BootstrapOverlayTrigger
       {...props}
+      trigger={trigger}
+      show={popover ? isShown : show}
+      defaultShow={popover ? undefined : defaultShow}
       overlay={popoverOverlay ?? tooltipOverlay!}
+      onToggle={popover ? handleToggle : onToggle}
       onEntered={handleEntered}
       onExit={handleExit}
     >
-      {children}
+      {triggerChild}
     </BootstrapOverlayTrigger>
   );
 }

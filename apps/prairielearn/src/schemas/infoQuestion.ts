@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import {
+  imageRegistryHelpText,
+  imageRegistryRestrictionsText,
+} from '@prairielearn/docker-utils/registry';
+
 import { CommentJsonSchema } from './comment.js';
 
 // This schema is intentionally a subset of JSON Schema. The `type`, `default`,
@@ -104,7 +109,7 @@ const WorkspaceOptionsJsonSchema = z
     image: z
       .string()
       .describe(
-        'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
+        `The public Docker image that will be used to serve this question. ${imageRegistryHelpText} For example, docker.io/org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR. ${imageRegistryRestrictionsText}`,
       ),
     port: z
       .number()
@@ -183,7 +188,7 @@ const ExternalGradingOptionsJsonSchema = z
     image: z
       .string()
       .describe(
-        'The Docker image that will be used to grade this question. Should be specified as Dockerhub image.',
+        `The public Docker image that will be used to grade this question. ${imageRegistryHelpText} For example, docker.io/org/image:tag for Docker Hub or ghcr.io/org/image:tag for GHCR. ${imageRegistryRestrictionsText}`,
       ),
     entrypoint: z
       .union([z.string(), z.array(z.string())])
@@ -227,6 +232,12 @@ export const QuestionJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     uuid: z.guid().describe('Unique identifier (UUID).'),
+    copiedFrom: z
+      .templateLiteral([z.guid(), '/', z.guid(), z.string().startsWith('/').optional()])
+      .describe(
+        'The course UUID and question UUID of the source question, separated by a slash, optionally followed by a slash and human-readable text. Only the two UUIDs identify the source.',
+      )
+      .optional(),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
       .describe('Type of the question. This should be set to "v3" for new questions.'),

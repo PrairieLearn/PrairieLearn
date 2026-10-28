@@ -165,6 +165,87 @@ describe('Creating an assessment', { concurrent: false }, () => {
     assert.equal(assessmentInfo.set, 'Practice Quiz');
   });
 
+  test('deduplicates titles only within the same assessment set', async () => {
+    const assessmentsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+    );
+
+    const firstCreationResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_assessment',
+          __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Shared title',
+          aid: 'HW4',
+          type: 'Homework',
+          set: 'Lab',
+        }),
+      },
+    );
+
+    assert.equal(firstCreationResponse.status, 200);
+    const firstAssessmentInfo = JSON.parse(
+      await fs.readFile(path.join(assessmentLiveDir(), 'HW4', 'infoAssessment.json'), 'utf8'),
+    );
+    assert.equal(firstAssessmentInfo.title, 'Shared title');
+
+    const secondAssessmentsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+    );
+    const secondCreationResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_assessment',
+          __csrf_token: secondAssessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: secondAssessmentsPageResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Shared title',
+          aid: 'HW5',
+          type: 'Homework',
+          set: 'Practice Quiz',
+        }),
+      },
+    );
+
+    assert.equal(secondCreationResponse.status, 200);
+    const secondAssessmentInfo = JSON.parse(
+      await fs.readFile(path.join(assessmentLiveDir(), 'HW5', 'infoAssessment.json'), 'utf8'),
+    );
+    assert.equal(secondAssessmentInfo.title, 'Shared title');
+  });
+
+  test('does not suffix a unique aid when the title is duplicated in its set', async () => {
+    const assessmentsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+    );
+
+    const assessmentCreationResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_assessment',
+          __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Shared title',
+          aid: 'HW6',
+          type: 'Homework',
+          set: 'Practice Quiz',
+        }),
+      },
+    );
+
+    assert.equal(assessmentCreationResponse.status, 200);
+    const assessmentInfo = JSON.parse(
+      await fs.readFile(path.join(assessmentLiveDir(), 'HW6', 'infoAssessment.json'), 'utf8'),
+    );
+    assert.equal(assessmentInfo.title, 'Shared title (2)');
+  });
+
   test('should not be able to create an assessment without fields', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(

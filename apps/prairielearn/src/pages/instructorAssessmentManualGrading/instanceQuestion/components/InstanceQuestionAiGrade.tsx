@@ -16,8 +16,7 @@ import {
   type AiGradingModelSelectionModalState,
 } from '../../assessmentQuestion/components/AiGradingModelSelectionModal.js';
 import { AI_GRADING_MODAL_OPEN_EVENT } from '../instanceQuestion.shared.js';
-
-import { reloadGradingPanel } from './reloadGradingPanel.js';
+import { reloadGradingPanel } from '../utils/reloadGradingPanel.js';
 
 interface InstanceQuestionAiGradeInnerProps {
   courseInstanceId: string;
@@ -29,6 +28,8 @@ interface InstanceQuestionAiGradeInnerProps {
   availableAiGradingProviders: EnumAiGradingProvider[];
   aiGradingRelativeCosts: Record<string, string>;
   aiGradingLastSelectedModel: string | null;
+  aiGradingLastSelectedCredentialId: string | null;
+  courseInstanceTrpcCsrfToken: string;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   hasCourseInstancePermissionEdit: boolean;
 }
@@ -48,6 +49,8 @@ function InstanceQuestionAiGradeInner({
   availableAiGradingProviders,
   aiGradingRelativeCosts,
   aiGradingLastSelectedModel,
+  aiGradingLastSelectedCredentialId,
+  courseInstanceTrpcCsrfToken,
   initialOngoingJobSequenceTokens,
   hasCourseInstancePermissionEdit,
 }: InstanceQuestionAiGradeInnerProps) {
@@ -55,6 +58,9 @@ function InstanceQuestionAiGradeInner({
   const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     aiGradingLastSelectedModel,
+  );
+  const [lastSelectedCredentialId, setLastSelectedCredentialId] = useState(
+    aiGradingLastSelectedCredentialId,
   );
   const [showReloadError, setShowReloadError] = useState(false);
 
@@ -92,9 +98,8 @@ function InstanceQuestionAiGradeInner({
     }
   }, [submissionStatus, courseInstanceId, assessmentId, instanceQuestionId]);
 
-  // Imperatively toggle the AI grade button's disabled state because the
-  // button lives in the server-rendered grading panel — making this
-  // declarative would require porting the entire grading panel to React.
+  // TODO: The AI controls and grading panel are separate React islands. Keep this DOM bridge until
+  // they share a root and can pass the in-progress state declaratively.
   useEffect(() => {
     const button = document.getElementById('ai-grade-button') as HTMLButtonElement | null;
     if (!button) return;
@@ -150,11 +155,14 @@ function InstanceQuestionAiGradeInner({
         </div>
       </Alert>
       <AiGradingModelSelectionModal
-        key={lastSelectedModel ?? 'default'}
+        key={`${lastSelectedCredentialId ?? 'official'}:${lastSelectedModel ?? 'default'}`}
+        courseInstanceId={courseInstanceId}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         show={modelSelectionModalState.show}
         data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
+        aiGradingLastSelectedCredentialId={lastSelectedCredentialId}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={useCustomApiKeys}
         aiGradingSettingsUrl={aiGradingSettingsUrl}
@@ -162,13 +170,16 @@ function InstanceQuestionAiGradeInner({
         totalSubmissionCount={1}
         onHide={modelSelectionModalState.onHide}
         onExited={modelSelectionModalState.onExited}
-        onSuccess={(data, modelId) => {
+        onSuccess={(data, selection) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
             data.job_sequence_token,
           );
           expectReloadRef.current = true;
-          setLastSelectedModel(modelId);
+          setLastSelectedModel(selection.model_id);
+          setLastSelectedCredentialId(
+            selection.provider === 'openai-compatible' ? selection.credential_id : null,
+          );
         }}
       />
     </>

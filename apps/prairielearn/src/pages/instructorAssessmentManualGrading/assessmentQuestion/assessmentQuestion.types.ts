@@ -26,6 +26,7 @@ export const InstanceQuestionRowSchema = z.object({
   open_issue_count: z.number().nullable(),
   rubric_grading_item_ids: z.array(IdSchema),
   enrollment_id: IdSchema.nullable(),
+  student_label_ids: IdSchema.array(),
 });
 export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
   ...InstanceQuestionRowSchema.shape,

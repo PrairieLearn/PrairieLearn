@@ -24,7 +24,11 @@ import {
 } from './infoAssessment.js';
 import { ColorJsonSchema, type CourseJson, CourseJsonSchema } from './infoCourse.js';
 import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseInstance.js';
-import { type ElementCoreJson, ElementCoreJsonSchema } from './infoElementCore.js';
+import {
+  type ElementCoreJson,
+  ElementCoreJsonSchema,
+  ElementLocalFilePathJsonSchema,
+} from './infoElementCore.js';
 import { type ElementCourseJson, ElementCourseJsonSchema } from './infoElementCourse.js';
 import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoElementExtension.js';
 import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
@@ -54,6 +58,7 @@ import {
 // inlining. Multiple roots can share the same registered subschemas.
 const namedDefinitions = {
   CommentJsonSchema,
+  ElementLocalFilePathJsonSchema,
   DatetimeLocalStringSchema,
   AccessControlJsonSchema,
   DeadlineEntryJsonSchema,
@@ -81,7 +86,7 @@ for (const [id, schema] of Object.entries(namedDefinitions)) {
   z.globalRegistry.add(schema, { ...z.globalRegistry.get(schema), id });
 }
 
-function prairielearnZodToJsonSchema(schema: z.ZodType): Record<string, any> {
+function prairielearnZodToJsonSchema(schema: z.core.$ZodType): Record<string, any> {
   return z.toJSONSchema(schema, {
     target: 'draft-07',
     io: 'input',

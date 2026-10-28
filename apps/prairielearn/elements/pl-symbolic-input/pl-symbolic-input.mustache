@@ -11,6 +11,7 @@
             id="symbolic-input-json-{{name}}"
             type="hidden"
             value=""
+            data-deferred-initial-value="true"
         />
         <script>
             $(function() {
@@ -22,15 +23,18 @@
             id="symbolic-input-sub-{{name}}"
             type="hidden"
             value=""
+            data-deferred-initial-value="true"
         />
         <input
             name="{{name}}-latex"
             id="symbolic-input-latex-{{name}}"
             type="hidden"
             {{#has_submitted_answer_latex}}value="{{raw_submitted_answer_latex}}"{{/has_submitted_answer_latex}}
+            data-deferred-initial-value="true"
         />
         <math-field
             id="symbolic-input-{{name}}"
+            theme="light"
             class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid no-validation-icon{{/parse_error}}{{^formula_editor_buttons}} no-buttons{{/formula_editor_buttons}}"
             {{#parse_error}}aria-invalid="true"{{/parse_error}}
             {{^editable}}contentEditable="false"{{/editable}}
@@ -43,6 +47,8 @@
             {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
             {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
             {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
             >
         </math-field>
         {{/formula_editor}}

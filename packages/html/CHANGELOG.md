@@ -1,5 +1,17 @@
 # @prairielearn/html
 
+## 5.0.10
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 5.0.9
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 5.0.8
 
 ### Patch Changes

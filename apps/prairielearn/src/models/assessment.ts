@@ -170,6 +170,7 @@ export async function selectZoneToolOverrides({ assessment_id }: { assessment_id
       zone_number: z.number(),
       tool: EnumAssessmentToolSchema,
       enabled: z.boolean(),
+      settings: AssessmentToolSchema.shape.settings,
     }),
   );
 }

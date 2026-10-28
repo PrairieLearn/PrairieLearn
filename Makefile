@@ -114,6 +114,8 @@ check-badge-contrast:
 	@node scripts/check-badge-contrast.mjs
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
+check-python-dependencies:
+	@python3 scripts/check_python_dependencies.py
 check-python-helper-dependencies:
 	@uv run python scripts/sync-python-helper-dependencies.py --check
 update-python-helper-dependencies:
@@ -214,9 +216,9 @@ fix-python:
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
-	@pnpm tsgo -p contrib --noEmit
+	@pnpm tsc -p contrib --noEmit
 typecheck-scripts:
-	@pnpm tsgo -p scripts --noEmit
+	@pnpm tsc -p scripts --noEmit
 typecheck-js:
 	@pnpm turbo run build --output-logs=errors-only
 typecheck-python: python-deps

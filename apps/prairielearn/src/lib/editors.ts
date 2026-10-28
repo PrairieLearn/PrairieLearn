@@ -23,7 +23,7 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
-import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
+import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -43,8 +43,12 @@ import {
   type User,
 } from './db-types.js';
 import { discoverInfoDirs } from './discover-info-dirs.js';
-import { computeEncodedFileContentHash, computeFileContentHash } from './editorUtil.js';
-import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
+import {
+  computeEncodedFileContentHash,
+  computeFileContentHash,
+  getDetailsForFile,
+} from './editorUtil.js';
+import { FileType, getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
@@ -617,6 +621,18 @@ export class AssessmentCopyEditor extends Editor {
 
     delete infoJson.shareSourcePublicly;
     removeStudentSpecificAccessControlRulesForCopy(infoJson);
+    for (const rule of infoJson.accessControl ?? []) {
+      if (rule.integrations) {
+        delete rule.integrations.prairieTest;
+        if (Object.keys(rule.integrations).length === 0) {
+          delete rule.integrations;
+        }
+      }
+    }
+    if (infoJson.allowAccess) {
+      // Removing only the exam UUID would broaden access beyond that PrairieTest exam.
+      infoJson.allowAccess = infoJson.allowAccess.filter((rule) => !rule.examUuid);
+    }
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -791,9 +807,13 @@ export class AssessmentAddEditor extends Editor {
       'assessments',
     );
 
-    debug('Get all existing long names');
+    debug('Get existing long names in the same assessment set');
     const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
-    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
+    const oldNamesLong = assessments
+      .filter(
+        (assessment) => assessment.title !== null && assessment.assessment_set.name === this.set,
+      )
+      .map((row) => row.title!);
     const nextAssessmentNumber =
       Math.max(
         0,
@@ -1012,6 +1032,7 @@ export class CourseInstanceCopyEditor extends Editor {
           from_course: this.from_course,
           from_path,
           from_qid,
+          source_qid: question.qid,
           uuid,
           existingTitles: existingQuestionTitles,
           existingQids: existingQuestionQids,
@@ -2083,6 +2104,7 @@ async function copyQuestion({
   from_course,
   from_path,
   from_qid,
+  source_qid = from_qid,
   uuid,
   existingTitles: oldLongNames,
   existingQids: oldShortNames,
@@ -2091,6 +2113,7 @@ async function copyQuestion({
   from_course: Course | StaffCourse;
   from_path: string;
   from_qid: string;
+  source_qid?: string;
   uuid: string;
   existingTitles: string[];
   existingQids: string[];
@@ -2132,6 +2155,11 @@ async function copyQuestion({
   debug('Write info.json with new title and uuid');
   infoJson.title = questionTitle;
   infoJson.uuid = uuid;
+
+  if (!idsEqual(course.id, from_course.id)) {
+    infoJson.copiedFrom = `${from_course.uuid}/${sourceInfoJson.uuid}/${source_qid}`;
+    delete infoJson.authors;
+  }
 
   // When transferring a question from an example/template course, drop the tags. They
   // are likely undesirable in the template course.
@@ -2406,7 +2434,7 @@ export class FileUploadEditor extends Editor {
   }
 
   assertCanEdit() {
-    for (const filePath of Object.keys(this.files)) {
+    for (const [filePath, fileContents] of Object.entries(this.files)) {
       if (!contains(this.container.rootPath, filePath)) {
         throw new AugmentedError('Invalid file path', {
           info: html`
@@ -2436,6 +2464,27 @@ export class FileUploadEditor extends Editor {
             <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
           `,
         });
+      }
+
+      // Metadata lives at the container root; descendants are ordinary assets.
+      if (path.dirname(filePath) !== this.container.rootPath) continue;
+      const relativePath = path.relative(this.course.path, filePath);
+      if (getDetailsForFile(relativePath).type === FileType.File) continue;
+
+      try {
+        // Preserve a BOM so JSON.parse rejects it, matching course sync.
+        const contents = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
+          fileContents,
+        );
+        const parsed: unknown = JSON.parse(contents);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+          throw new Error('Expected a JSON object');
+        }
+      } catch {
+        throw new HttpStatusError(
+          400,
+          `Cannot upload ${relativePath}: PrairieLearn metadata files must contain a valid UTF-8 JSON object.`,
+        );
       }
     }
 
@@ -2665,7 +2714,12 @@ export class MultiEditor extends Editor {
   }
 }
 
-export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
+export type AssessmentToolsConfig = {
+  name: string;
+  label: string;
+  enabled: boolean;
+  type?: CalculatorType;
+}[];
 
 /** A single question to import, with all file contents as serialized data. */
 export interface QtiImportQuestionData {

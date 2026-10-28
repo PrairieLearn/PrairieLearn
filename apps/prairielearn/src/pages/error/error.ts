@@ -14,7 +14,17 @@ import { ErrorPage } from './error.html.js';
  *
  * @see http://expressjs.com/en/guide/using-middleware.html#middleware.error-handling
  */
-export default (function (err, req, res, _next) {
+export default (function (err, req, res, next) {
+  if (res.headersSent || res.destroyed) {
+    next(err);
+    return;
+  }
+
+  // Downloads can fail after setting headers but before streaming starts.
+  // Don't send the error response with the download's content type or filename.
+  res.removeHeader('Content-Disposition');
+  res.removeHeader('Content-Type');
+
   const errorId = res.locals.error_id;
 
   err.status ??= 500;

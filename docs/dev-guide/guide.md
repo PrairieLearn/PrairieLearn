@@ -654,6 +654,12 @@ Alternatively, if you want to check if you _might_ be authorized to perform an a
 
 - All `logger` functions have a mandatory first argument that is a string, and an optional second argument that is an object containing useful information. It is important to always provide a string as the first argument.
 
+## TypeScript versions
+
+Builds and type checks use TypeScript 7 through `pnpm tsc`. The `@typescript/native` dependency is an npm alias for the official `typescript` package.
+
+ESLint and other tools that use the TypeScript compiler API still need TypeScript 6. The `typescript` dependency is an alias for `@typescript/typescript6`, which preserves `import ... from 'typescript'` and provides `pnpm tsc6` for workflows that need the older compiler. Keep this alias when updating TypeScript; replacing it with TypeScript 7 would break API consumers. See the [TypeScript 7 release notes](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0) for the side-by-side setup.
+
 ## Coding style
 
 [ESLint](http://eslint.org/) and [Prettier](https://prettier.io/) are used to enforce consistent code conventions and formatting throughout the codebase. See `.eslintrc.js` and `.prettierrc.json` in the root of the PrairieLearn repository to view our specific configuration. The repo includes an [`.editorconfig`](https://editorconfig.org/) file that most editors will detect and use to automatically configure things like indentation. If your editor doesn't natively support an EditorConfig file, there are [plugins](https://editorconfig.org/#download) available for most other editors.

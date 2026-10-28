@@ -11,6 +11,7 @@ import type {
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
+  StaffStudentLabel,
   StaffUser,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
@@ -36,6 +37,7 @@ interface AssessmentQuestionManualGradingProps {
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
   trpcCsrfToken: string;
+  courseInstanceTrpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -47,6 +49,7 @@ interface AssessmentQuestionManualGradingProps {
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
+  studentLabels: StaffStudentLabel[];
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
@@ -70,6 +73,7 @@ function AssessmentQuestionManualGradingInner({
   courseInstance,
   urlPrefix,
   csrfToken,
+  courseInstanceTrpcCsrfToken,
   assessment,
   assessmentQuestion,
   questionQid,
@@ -79,6 +83,7 @@ function AssessmentQuestionManualGradingInner({
   rubricData: initialRubricData,
   instanceQuestionGroups,
   courseStaff,
+  studentLabels,
   aiGradingStats: initialAiGradingStats,
   initialOngoingJobSequenceTokens,
   numOpenInstances,
@@ -171,6 +176,7 @@ function AssessmentQuestionManualGradingInner({
         course={course}
         courseInstance={courseInstance}
         csrfToken={csrfToken}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         instanceQuestionsInfo={instanceQuestionsInfo}
         urlPrefix={urlPrefix}
         assessment={assessment}
@@ -181,6 +187,7 @@ function AssessmentQuestionManualGradingInner({
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
+        studentLabels={studentLabels}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}

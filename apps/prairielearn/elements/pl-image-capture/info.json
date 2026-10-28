@@ -9,5 +9,10 @@
     ],
     "elementScripts": ["pl-image-capture.js"],
     "elementStyles": ["pl-image-capture.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {
+      "heic-to/csp": "heic-to/dist/csp/heic-to.min.js"
+    }
   }
 }

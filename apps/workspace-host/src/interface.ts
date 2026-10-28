@@ -5,12 +5,10 @@ import * as http from 'node:http';
 import * as net from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { pipeline } from 'node:stream/promises';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import { ZipArchive } from 'archiver';
 import * as async from 'async';
 import { Mutex } from 'async-mutex';
 import bodyParser from 'body-parser';
@@ -24,6 +22,7 @@ import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -267,8 +266,12 @@ async
           await pruneStoppedContainers();
           await pruneRunawayContainers();
           await updateLoadCount();
+          // Development may share Docker with unrelated workloads.
+          if (config.runningInEc2) {
+            await docker.pruneVolumes();
+          }
         } catch (err) {
-          logger.error('Error pruning containers', err);
+          logger.error('Error pruning containers and volumes', err);
           Sentry.captureException(err);
         }
 
@@ -453,7 +456,7 @@ async function killAndRemoveWorkspace(workspace_id: string | number, container: 
     }
 
     try {
-      await container.remove();
+      await container.remove({ v: true });
     } catch (err) {
       Sentry.captureException(err);
       logger.error('Error removing stopped container', err);
@@ -494,6 +497,23 @@ async function markSelfUnhealthy(reason: Error | string) {
     // This could error if we don't even have a DB connection. In that case, we
     // should let the main server mark us as unhealthy.
     logger.error('Could not mark self as unhealthy', err);
+  }
+}
+
+async function checkDiskSpace() {
+  // Docker Desktop's data directory may not be accessible from this process.
+  if (!config.runningInEc2) return;
+
+  try {
+    const { DockerRootDir } = await docker.info();
+    const { bavail, bsize } = await fs.statfs(DockerRootDir);
+    const availableBytes = bavail * bsize;
+    if (availableBytes < config.workspaceHostMinAvailableDiskMB * 1_000_000) {
+      await markSelfUnhealthy(`Low Docker disk space: ${availableBytes} bytes available`);
+    }
+  } catch (err) {
+    logger.error('Error checking Docker disk space', err);
+    Sentry.captureException(err);
   }
 }
 
@@ -665,7 +685,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 
   if (config.cacheImageRegistry) {
     const repository = new DockerName(settings.workspace_image);
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
     const newImage = repository.getCombined();
     logger.info(`Using ${newImage} for ${settings.workspace_image}`);
     settings.workspace_image = newImage;
@@ -702,9 +722,13 @@ async function _pullImage(workspace: Workspace) {
   logger.info(`Pulling docker image: ${workspace_image}`);
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
-  // assume we're pulling from the public Docker Hub registry.
+  // assume we're pulling from a public registry.
   const ecr = new ECRClient(makeAwsClientConfig());
   const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
+
+  if (!config.cacheImageRegistry) {
+    assertSupportedImageRegistry(workspace_image);
+  }
 
   let percentDisplayed = false;
   let stream: NodeJS.ReadableStream | undefined;
@@ -997,6 +1021,9 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
+  // Check before pulling or creating a container so failed launches also trigger a check.
+  await checkDiskSpace();
+
   const uuid = crypto.randomUUID();
   const params = {
     workspace_id,
@@ -1169,15 +1196,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
 
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
-  const archive = new ZipArchive();
-  const archiveCompleted = pipeline(archive, res);
-
-  for (const file of gradedFiles) {
-    archive.append(file.createReadStream(), { name: file.path });
-    debug(`Sending ${file.path}`);
-  }
-
-  await Promise.all([archive.finalize(), archiveCompleted]);
+  await workspaceUtils.writeWorkspaceGradedFilesArchive(gradedFiles, res);
 }
 
 async function sendLogs(workspaceId: string | number, res: Response) {

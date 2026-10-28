@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
@@ -34,6 +34,7 @@ import type {
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
+  StaffStudentLabel,
   StaffUser,
 } from '../../../../lib/client/safe-db-types.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
@@ -49,6 +50,7 @@ import type { RubricSettingsContextKeys } from '../queries.js';
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
+import { getManualGradingCsvData, getManualGradingJsonData } from '../utils/exportData.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import {
@@ -61,10 +63,6 @@ import { QueryErrors } from './QueryErrors.js';
 import { ReviewSubmissionsAlert } from './ReviewSubmissionsAlert.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
-function userToExportFields(user: StaffUser | null) {
-  return user ? { name: user.name, uid: user.uid, uin: user.uin, email: user.email } : null;
-}
-
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { start: [], end: [] };
 const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> = {
@@ -73,8 +71,11 @@ const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> 
 };
 const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_AI_MODEL_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+
 const EMPTY_NUMERIC_FILTER: NumericColumnFilterValue = { filterValue: '', emptyOnly: false };
 
 interface AssessmentQuestionTableProps {
@@ -82,6 +83,7 @@ interface AssessmentQuestionTableProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  courseInstanceTrpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -92,6 +94,7 @@ interface AssessmentQuestionTableProps {
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
+  studentLabels: StaffStudentLabel[];
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
@@ -135,6 +138,7 @@ function AiGradingOption({
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
+  courseInstanceTrpcCsrfToken,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
   assessment,
@@ -145,6 +149,7 @@ export function AssessmentQuestionTable({
   rubricData,
   instanceQuestionGroups,
   courseStaff,
+  studentLabels,
   course,
   courseInstance,
   aiGradingStats,
@@ -171,6 +176,11 @@ export function AssessmentQuestionTable({
 
   const filterRegistry = useMemo(
     () => ({
+      student_labels: {
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_STUDENT_LABELS_FILTER,
+        enabled: !assessment.team_work,
+      },
       requires_manual_grading: {
         urlKey: 'status',
         parser: parseAsMultiSelectFilter(GRADING_STATUS_VALUES),
@@ -185,6 +195,11 @@ export function AssessmentQuestionTable({
         urlKey: 'graded_by',
         parser: parseAsMultiSelectFilter(),
         defaultValue: DEFAULT_GRADED_BY_FILTER,
+      },
+      ai_grading_model: {
+        urlKey: 'ai_model',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_AI_MODEL_FILTER,
       },
       instance_question_group_name: {
         urlKey: 'submission_group',
@@ -225,7 +240,13 @@ export function AssessmentQuestionTable({
         enabled: !aiGradingMode,
       },
     }),
-    [aiGradingMode, instanceQuestionGroups.length, assessmentQuestion.max_auto_points, rubricData],
+    [
+      aiGradingMode,
+      instanceQuestionGroups.length,
+      assessmentQuestion.max_auto_points,
+      rubricData,
+      assessment.team_work,
+    ],
   );
 
   const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
@@ -257,9 +278,38 @@ export function AssessmentQuestionTable({
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     assessmentQuestion.ai_grading_last_selected_model ?? null,
   );
+  const [lastSelectedCredentialId, setLastSelectedCredentialId] = useState<string | null>(
+    assessmentQuestion.ai_grading_last_selected_credential_id,
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
+  const exportAiGradingTextMutation = useMutation(
+    trpc.manualGrading.exportAiGradingText.mutationOptions(),
+  );
+
+  async function getExportOptions(rows: InstanceQuestionRowWithAIGradingStats[]) {
+    const grading_job_ids = rows.flatMap(({ instance_question: iq }) => {
+      const id = iq.ai_grading?.latest_update.grading_job.id;
+      return id ? [id] : [];
+    });
+    try {
+      const text =
+        grading_job_ids.length > 0
+          ? await exportAiGradingTextMutation.mutateAsync({ grading_job_ids })
+          : [];
+      return {
+        assessment,
+        studentLabels,
+        instanceQuestionGroups,
+        rubricData,
+        aiGradingTextByJobId: Object.fromEntries(text.map((item) => [item.grading_job_id, item])),
+      };
+    } catch {
+      // QueryErrors displays the mutation error; cancel this download.
+      return null;
+    }
+  }
 
   // Fetch instance questions data
   const {
@@ -284,6 +334,18 @@ export function AssessmentQuestionTable({
     });
     return Array.from(graders).sort();
   }, [instanceQuestionsInfo, aiGradingMode]);
+
+  const allAiModels = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          instanceQuestionsInfo.map(
+            (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? 'None',
+          ),
+        ),
+      ).sort(),
+    [instanceQuestionsInfo],
+  );
 
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {
@@ -361,6 +423,7 @@ export function AssessmentQuestionTable({
         urlPrefix,
         csrfToken,
         courseInstanceId: courseInstance.id,
+        studentLabels,
         scrollRef,
         onEditPointsSuccess: () => {
           void queryClientInstance.invalidateQueries({
@@ -381,6 +444,7 @@ export function AssessmentQuestionTable({
       urlPrefix,
       csrfToken,
       courseInstance.id,
+      studentLabels,
       scrollRef,
       queryClientInstance,
       trpc.manualGrading.instances,
@@ -411,7 +475,16 @@ export function AssessmentQuestionTable({
           return [[col.id, aiGradingMode]];
         }
         // Some columns are always hidden by default.
-        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id)) {
+        if (
+          [
+            'user_or_group_name',
+            'uid',
+            'student_labels',
+            'points',
+            'rubric_grading_item_ids',
+            'ai_grading_model',
+          ].includes(col.id)
+        ) {
           return [[col.id, false]];
         }
 
@@ -491,10 +564,14 @@ export function AssessmentQuestionTable({
     const nameVisible = visibility.user_or_group_name;
     const uidVisible = visibility.uid;
 
-    if (nameVisible && uidVisible) return 'checked';
-    if (nameVisible || uidVisible) return 'indeterminate';
+    const labelsVisible = visibility.student_labels;
+
+    if (nameVisible && uidVisible && (assessment.team_work || labelsVisible)) return 'checked';
+    if (nameVisible || uidVisible || (!assessment.team_work && labelsVisible)) {
+      return 'indeterminate';
+    }
     return 'unchecked';
-  }, [columnVisibility]);
+  }, [columnVisibility, assessment.team_work]);
 
   // Ref for the student info checkbox to handle indeterminate state
   const studentInfoCheckboxRef = useRef<HTMLInputElement>(null);
@@ -504,32 +581,34 @@ export function AssessmentQuestionTable({
     }
   }, [studentInfoCheckboxState]);
 
-  // Handle student info checkbox click - toggles between checked (both visible) and unchecked (both hidden)
+  // Handle student info checkbox click - toggles between checked (all visible) and unchecked (all hidden)
   const handleStudentInfoCheckboxClick = useCallback(() => {
     const currentState = studentInfoCheckboxState;
     const currentVisibility = table.state.columnVisibility;
 
     let newVisibility: ColumnVisibilityState;
     if (currentState === 'checked') {
-      // Checked -> Unchecked (hide both)
+      // Checked -> Unchecked (hide all)
       newVisibility = {
         ...currentVisibility,
         user_or_group_name: false,
         uid: false,
+        student_labels: false,
       };
     } else {
-      // Unchecked or Indeterminate -> Checked (show both)
+      // Unchecked or Indeterminate -> Checked (show all)
       newVisibility = {
         ...currentVisibility,
         user_or_group_name: true,
         uid: true,
+        student_labels: !assessment.team_work,
       };
     }
 
     void setColumnVisibility(newVisibility);
-  }, [studentInfoCheckboxState, table, setColumnVisibility]);
+  }, [studentInfoCheckboxState, table, setColumnVisibility, assessment.team_work]);
 
-  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.instance_question.id);
 
   // Calculate counts for AI grading dropdown
@@ -572,7 +651,9 @@ export function AssessmentQuestionTable({
   } = mutations;
 
   const columnFiltersComponents = createColumnFilters({
+    studentLabels,
     allGraders,
+    allAiModels,
     allSubmissionGroups,
     allAiAgreementItems,
   });
@@ -620,6 +701,7 @@ export function AssessmentQuestionTable({
           setAssignedGraderMutation,
           setRequiresManualGradingMutation,
           stopAiGradingJobMutation,
+          exportAiGradingTextMutation,
         ]}
       />
       {deleteAiGradingJobsMutation.isSuccess && (
@@ -899,92 +981,29 @@ export function AssessmentQuestionTable({
         pluralLabel="submissions"
         downloadButtonOptions={{
           filenameBase: `manual_grading_${questionQid}`,
-          mapRowToData: (row) => [
-            {
-              name: 'Instance',
-              value: row.instance_question.id,
-            },
-            {
-              name: assessment.team_work ? 'Group Name' : 'Name',
-              value: row.user_or_group_name || '',
-            },
-            { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
-            ...(assessment.team_work
-              ? []
-              : [
-                  { name: 'UIN', value: row.user?.uin ?? '' },
-                  { name: 'Email', value: row.user?.email ?? '' },
-                ]),
-            {
-              name: 'Grading Status',
-              value: row.instance_question.requires_manual_grading ? 'Requires grading' : 'Graded',
-            },
-            { name: 'Assigned Grader Name', value: row.assigned_grader?.name ?? '' },
-            { name: 'Assigned Grader UID', value: row.assigned_grader?.uid ?? '' },
-            { name: 'Assigned Grader UIN', value: row.assigned_grader?.uin ?? '' },
-            { name: 'Assigned Grader Email', value: row.assigned_grader?.email ?? '' },
-            {
-              name: 'Auto Points',
-              value:
-                row.instance_question.auto_points != null
-                  ? row.instance_question.auto_points.toString()
-                  : '',
-            },
-            {
-              name: 'Manual Points',
-              value:
-                row.instance_question.manual_points != null
-                  ? row.instance_question.manual_points.toString()
-                  : '',
-            },
-            {
-              name: 'Total Points',
-              value:
-                row.instance_question.points != null ? row.instance_question.points.toString() : '',
-            },
-            {
-              name: 'Score %',
-              value:
-                row.instance_question.score_perc != null
-                  ? row.instance_question.score_perc.toString()
-                  : '',
-            },
-            { name: 'Last Grader Name', value: row.last_grader?.name ?? '' },
-            { name: 'Last Grader UID', value: row.last_grader?.uid ?? '' },
-            { name: 'Last Grader UIN', value: row.last_grader?.uin ?? '' },
-            { name: 'Last Grader Email', value: row.last_grader?.email ?? '' },
-            { name: 'Modified At', value: row.instance_question.modified_at.toISOString() },
-          ],
-          mapRowToJsonData: (row) => ({
-            instance_question_id: row.instance_question.id,
-            ...(assessment.team_work
-              ? {
-                  group: {
-                    name: row.user_or_group_name ?? null,
-                    members: row.group_members.map((m) => userToExportFields(m)),
-                  },
-                }
-              : { user: userToExportFields(row.user) }),
-            requires_manual_grading: row.instance_question.requires_manual_grading,
-            assigned_grader: userToExportFields(row.assigned_grader),
-            auto_points: row.instance_question.auto_points ?? null,
-            manual_points: row.instance_question.manual_points ?? null,
-            points: row.instance_question.points ?? null,
-            score_perc: row.instance_question.score_perc ?? null,
-            last_grader: userToExportFields(row.last_grader),
-            modified_at: row.instance_question.modified_at.toISOString(),
-          }),
+          isPending: exportAiGradingTextMutation.isPending,
+          getCsvData: async (rows) => {
+            const options = await getExportOptions(rows);
+            return options ? rows.map((row) => getManualGradingCsvData(row, options)) : null;
+          },
+          getJsonData: async (rows) => {
+            const options = await getExportOptions(rows);
+            return options ? rows.map((row) => getManualGradingJsonData(row, options)) : null;
+          },
           hasSelection: true,
         }}
         onResetColumnFilters={onResetColumnFilters}
       />
 
       <AiGradingModelSelectionModal
-        key={lastSelectedModel ?? 'default'}
+        key={`${lastSelectedCredentialId ?? 'official'}:${lastSelectedModel ?? 'default'}`}
+        courseInstanceId={courseInstance.id}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         show={modelSelectionModalState.show}
         data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
+        aiGradingLastSelectedCredentialId={lastSelectedCredentialId}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
@@ -1013,12 +1032,15 @@ export function AssessmentQuestionTable({
             numToGrade: ids.length,
           });
         }}
-        onSuccess={(data, modelId) => {
+        onSuccess={(data, selection) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
             data.job_sequence_token,
           );
-          setLastSelectedModel(modelId);
+          setLastSelectedModel(selection.model_id);
+          setLastSelectedCredentialId(
+            selection.provider === 'openai-compatible' ? selection.credential_id : null,
+          );
           setRowSelection({});
         }}
       />

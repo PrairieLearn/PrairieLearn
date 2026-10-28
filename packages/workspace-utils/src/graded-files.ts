@@ -1,5 +1,7 @@
-import { Readable } from 'node:stream';
+import { Readable, type Writable } from 'node:stream';
+import { finished, pipeline } from 'node:stream/promises';
 
+import { ZipArchive } from 'archiver';
 import fg from 'fast-glob';
 import { filesize } from 'filesize';
 
@@ -85,7 +87,6 @@ export async function openWorkspaceGradedFiles(
 
     return {
       [Symbol.iterator]: () => files[Symbol.iterator](),
-      // eslint-disable-next-line unicorn/no-nonstandard-builtin-properties -- Supported in Node 24.
       [Symbol.asyncDispose]: () => closeWorkspaceGradedFiles(files),
     };
   } catch (error) {
@@ -102,3 +103,33 @@ export const workspaceFastGlobDefaultOptions = {
   braceExpansion: false,
   followSymbolicLinks: false,
 };
+
+export async function writeWorkspaceGradedFilesArchive(
+  files: Iterable<WorkspaceGradedFile>,
+  output: Writable,
+): Promise<void> {
+  const archive = new ZipArchive();
+  const archiveCompleted = pipeline(archive, output);
+  const sources: Readable[] = [];
+
+  try {
+    for (const file of files) {
+      const source = file.createReadStream();
+      sources.push(source);
+      // Archiver pipes sources through a PassThrough without forwarding read errors.
+      source.on('error', (error) => archive.destroy(error));
+      archive.append(source, { name: file.path });
+    }
+
+    await Promise.all([archive.finalize(), archiveCompleted]);
+  } finally {
+    // Aborting the archive does not close its sources, including queued files.
+    archive.abort();
+    archive.destroy();
+    for (const source of sources) source.destroy();
+    await Promise.allSettled([
+      archiveCompleted,
+      ...sources.map((source) => finished(source, { cleanup: true })),
+    ]);
+  }
+}

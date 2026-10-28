@@ -1,5 +1,17 @@
 # @prairielearn/run
 
+## 2.0.10
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 2.0.9
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 2.0.8
 
 ### Patch Changes

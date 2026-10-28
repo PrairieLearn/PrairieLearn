@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/react",
-  "version": "2.1.4",
+  "version": "2.1.6",
   "type": "module",
   "repository": {
     "type": "git",
@@ -16,8 +16,8 @@
     "./hydrated-component": "./dist/hydrated-component/index.js"
   },
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/browser-utils": "workspace:^",
@@ -25,17 +25,17 @@
     "@prairielearn/error": "workspace:^",
     "@prairielearn/html": "workspace:^",
     "@prairielearn/utils": "workspace:^",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "clsx": "^2.1.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "selector-observer": "^2.1.6",
     "superjson": "^2.2.6"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.13.3",
-    "@typescript/native-preview": "beta"
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

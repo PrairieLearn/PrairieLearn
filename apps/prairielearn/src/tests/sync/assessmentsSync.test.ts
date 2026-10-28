@@ -4634,6 +4634,32 @@ describe('Assessment syncing', () => {
   });
 
   describe('Assessment tools syncing', () => {
+    it('preserves calculator presets when assessment JSON becomes invalid', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true, type: 'basic' } };
+      assessment.zones = [
+        {
+          title: 'Scientific',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: true, type: 'scientific' } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      const { courseDir } = await util.writeAndSyncCourseData(courseData);
+      const before = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      assert.sameDeepMembers(
+        before.map((tool) => tool.settings),
+        [{ type: 'basic' }, { type: 'scientific' }],
+      );
+      for (const type of ['custom', 'full']) {
+        Object.assign(assessment.tools.calculator!, { type });
+        await util.overwriteAndSyncCourseData(courseData, courseDir);
+        const after = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+        assert.deepEqual(after, before);
+      }
+    });
+
     it('syncs assessment-level tools', async () => {
       const courseData = util.getCourseData();
       const assessment = makeAssessment(courseData);

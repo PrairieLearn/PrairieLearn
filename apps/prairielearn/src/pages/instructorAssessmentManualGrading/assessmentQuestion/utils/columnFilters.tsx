@@ -6,6 +6,8 @@ import {
   type TanstackTableHeader,
 } from '@prairielearn/ui';
 
+import { StudentLabelsFilter } from '../../../../components/StudentLabels.js';
+import type { StaffStudentLabel } from '../../../../lib/client/safe-db-types.js';
 import {
   GRADING_STATUS_VALUES,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
@@ -15,14 +17,21 @@ type ColumnFilter = (props: { header: TanstackTableHeader<InstanceQuestionRow> }
 
 export function createColumnFilters({
   allGraders,
+  allAiModels,
+  studentLabels,
   allSubmissionGroups,
   allAiAgreementItems,
 }: {
   allGraders: string[];
+  allAiModels: string[];
+  studentLabels: StaffStudentLabel[];
   allSubmissionGroups: string[];
   allAiAgreementItems: { number: number; description: string }[];
 }) {
   return {
+    student_labels: ({ header }) => (
+      <StudentLabelsFilter column={header.column} studentLabels={studentLabels} />
+    ),
     requires_manual_grading: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}
@@ -42,6 +51,9 @@ export function createColumnFilters({
         allColumnValues={[...allGraders, 'Unassigned']}
         showSearch
       />
+    ),
+    ai_grading_model: ({ header }) => (
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allAiModels} showSearch />
     ),
     instance_question_group_name: ({ header }) => (
       <MultiSelectColumnFilter

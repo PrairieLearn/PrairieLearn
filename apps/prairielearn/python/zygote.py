@@ -1,3 +1,6 @@
+# The zygote specifically uses imports in strange places to facilitate the
+# preloading of commonly-used modules.
+# ruff:file-ignore[unused-import,undocumented-public-module,undocumented-public-function,module-import-not-at-top-of-file]
 # pyright: reportUnusedImport=false
 
 # This program is the glue between python-runner JavaScript code and Python code
@@ -117,8 +120,10 @@ import numpy as np
 import pint
 import prairielearn
 import sklearn
+from _pygraphviz_compat import patch_pygraphviz
 
 mpl.use("PDF")
+patch_pygraphviz()
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()

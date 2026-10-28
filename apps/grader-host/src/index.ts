@@ -18,6 +18,7 @@ import * as tmp from 'tmp-promise';
 import z from 'zod';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import { FileSizeLimitError, contains, readFileWithinDirectory } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -27,6 +28,7 @@ import { withResolvers } from '@prairielearn/utils';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
+import { serializeGradingResultMessage } from './lib/gradingResultMessage.js';
 import * as healthCheck from './lib/healthCheck.js';
 import { type WinstonBufferedLogger, makeJobLogger } from './lib/jobLogger.js';
 import * as lifecycle from './lib/lifecycle.js';
@@ -422,7 +424,9 @@ async function initDocker(context: Context) {
   logger.info(`Pulling latest version of "${image}" image`);
   const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
+  } else {
+    assertSupportedImageRegistry(repository.getRegistryRepo());
   }
   const params = {
     fromImage: repository.getRegistryRepo(),
@@ -528,7 +532,7 @@ async function runJob(
 
   const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
   }
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);
@@ -694,15 +698,6 @@ async function uploadResults(context: Context, results: GradingResults) {
   // Send the results back to PrairieLearn now; the archive will
   // be uploaded later
   logger.info('Sending results to PrairieLearn with results');
-  const messageBody = {
-    jobId,
-    event: 'grading_result',
-    // The SQS max message size is 256KB; if our results payload is
-    // larger than 250KB, we won't send results via this and will
-    // instead rely on PL fetching them via S3.
-    data: JSON.stringify(results).length <= 250 * 1024 ? results : undefined,
-  };
-
   if (!config.resultsQueueUrl) {
     throw new Error('resultsQueueUrl is not defined');
   }
@@ -711,7 +706,7 @@ async function uploadResults(context: Context, results: GradingResults) {
   await sqs.send(
     new SendMessageCommand({
       QueueUrl: config.resultsQueueUrl,
-      MessageBody: JSON.stringify(messageBody),
+      MessageBody: serializeGradingResultMessage(jobId, results),
     }),
   );
 }

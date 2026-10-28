@@ -54,8 +54,8 @@ A more complete example combining multiple tools, initial drawings, and several 
 | `weight`           | integer | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                      |
 | `x-range`          | string  | `"-5,5"` | x-range of the canvas as a comma-separated pair of numbers. A 10-pixel-wide, ungraded margin is added around this range.                                                                                  |
 | `y-range`          | string  | `"-5,5"` | y-range of the canvas as a comma-separated pair of numbers. A 10-pixel-wide, ungraded margin is added around this range.                                                                                  |
-| `width`            | integer | 800      | Display width of the canvas in pixels. Note that the element is not responsive, so custom widths can cause display issues and should be used with care.                                                   |
-| `height`           | integer | 450      | Display height of the canvas in pixels.                                                                                                                                                                   |
+| `width`            | integer | 800      | Maximum display width of the canvas in pixels. Graphs shrink to fit their container if necessary.                                                                                                         |
+| `height`           | integer | 450      | Display height of the canvas in pixels at its configured width. Graphs shrink to fit their container if necessary, preserving the original aspect ratio.                                                  |
 | `read-only`        | boolean | false    | If set to `true`, the graph is not editable and the top toolbar is removed. This setting can be used in combination with `pl-sketch-initial` (see below) to render drawings as static question materials. |
 | `overlay-solution` | boolean | true     | If set to `true`, the sample solution (defined via `pl-sketch-solution` tags) is overlaid with student submissions once the question's answer is revealed to allow an easier comparison.                  |
 | `enforce-bounds`   | boolean | false    | If set to `true`, objects cannot be dragged past the edges of the canvas.                                                                                                                                 |
@@ -383,7 +383,7 @@ Note that all criteria are still considered when determining achievable points, 
 
 ## Accessibility
 
-Due to the highly graphical nature of this element, there are currently no viable keyboard controls or reasonable screen reader interaction available. To meet some accessibility needs, alternative versions of sketching questions will be necessary, for example to allow students to give textual descriptions rather than drawing.
+`pl-sketch` currently has no viable keyboard controls or screen reader interaction. See [alternatives to drawing input](../question/accessibility.md#alternatives-to-drawing-input) for other ways students can answer.
 
 ## Example implementations
 

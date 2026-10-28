@@ -406,6 +406,9 @@
     },
   ];
 
+  // Bullet (U+2022), bullet operator (U+2219), and asterisk operator (U+2217)
+  const unicodeMultiplicationKeys = new Set(['•', '∙', '∗']);
+
   /**
    * @param {import('mathlive').MathfieldElement} mf
    * @returns {boolean} Whether there is currently a selection in the mathfield
@@ -1553,12 +1556,13 @@
 
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
+      const latex = mf.getValue('latex-unstyled');
       $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
-      $('#symbolic-input-latex-' + name).val(mf.getValue('latex-unstyled'));
+      $('#symbolic-input-latex-' + name).val(latex.trim() === '' ? '' : latex);
 
       // Use the custom syntax parser with the same settings
       const ls = createSyntax(mf);
-      const json = parseLatex(ls, mf.getValue('latex-unstyled'));
+      const json = parseLatex(ls, latex);
       $('#symbolic-input-json-' + name).val(JSON.stringify(json));
 
       // The student is editing again: clear any error feedback from the last
@@ -1568,8 +1572,7 @@
       // input event for the very value the feedback was rendered for.
       if (
         mf.dataset.clientParseError === 'true' &&
-        errorPromptState.get(/** @type {HTMLElement} */ (mf))?.value !==
-          mf.getValue('latex-unstyled')
+        errorPromptState.get(/** @type {HTMLElement} */ (mf))?.value !== latex
       ) {
         clearClientParseError(/** @type {HTMLElement} */ (mf), clientErrorEl);
         clearSourceErrorHighlights(/** @type {HTMLElement} */ (mf));
@@ -1578,6 +1581,7 @@
 
     updateSubmissionData();
     mf.addEventListener('input', updateSubmissionData);
+    mf.closest('form')?.addEventListener('submit', updateSubmissionData);
 
     // Students find error feedback while typing distracting, so parse errors
     // are only reported when the field loses focus, and are cleared again as
@@ -1604,6 +1608,11 @@
         if (ev.key === '\\') {
           ev.preventDefault();
           mf.executeCommand(['insert', '\\backslash']);
+        } else if (unicodeMultiplicationKeys.has(ev.key)) {
+          // MathLive would insert these as \bullet, \textbullet, or \ast, which are
+          // not submitted as multiplication. Treat them like the "×" keyboard key.
+          ev.preventDefault();
+          mf.executeCommand(['insert', '{#@}\\cdot']);
         } else if (ev.key === 'Escape') {
           ev.preventDefault();
         }

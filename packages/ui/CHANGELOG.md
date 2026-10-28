@@ -1,5 +1,42 @@
 # @prairielearn/ui
 
+## 4.3.0
+
+### Minor Changes
+
+- e6c306d: Add accessible Close buttons to click-triggered popovers and include them in focus traps.
+
+## 4.2.0
+
+### Minor Changes
+
+- 32a1f8b: Support async CSV and JSON data providers for table downloads, with shared row eligibility and a pending state.
+
+## 4.1.2
+
+### Patch Changes
+
+- 4e683bf: Respect table filters when downloading selected rows as CSV or JSON, including the selected download count.
+
+## 4.1.1
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- 83590cf: Upgrade @tanstack/match-sorter-utils to version 9, preserving fuzzy matching and ranking behavior in table filters.
+
+## 4.1.0
+
+### Minor Changes
+
+- 7b247e1: Add an opt-in non-virtualized rendering mode to TanstackTable that grows with its content without requiring a bounded height.
+
+## 4.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 4.0.0
 
 ### Major Changes

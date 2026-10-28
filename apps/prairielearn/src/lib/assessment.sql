@@ -1481,6 +1481,75 @@ WITH
       WHERE
         ai.id = $assessment_instance_id
     )
+    UNION
+    (
+      SELECT
+        11 AS event_order,
+        'Add personal note'::text AS event_name,
+        'gray2'::text AS event_color,
+        f.created_at AS date,
+        u.id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid,
+        q.id AS question_id,
+        f.instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
+        NULL::integer AS submission_id,
+        f.id AS log_id,
+        NULL::bigint AS client_fingerprint_id,
+        jsonb_build_object(
+          'file_id',
+          f.id::text,
+          'display_filename',
+          f.display_filename
+        ) AS data
+      FROM
+        files AS f
+        LEFT JOIN instance_questions AS iq ON (iq.id = f.instance_question_id)
+        LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        LEFT JOIN questions AS q ON (q.id = aq.question_id)
+        LEFT JOIN users AS u ON (u.id = f.created_by)
+      WHERE
+        f.assessment_instance_id = $assessment_instance_id
+        AND f.type = 'student_upload'
+    )
+    UNION
+    (
+      SELECT
+        12 AS event_order,
+        'Delete personal note'::text AS event_name,
+        'red2'::text AS event_color,
+        f.deleted_at AS date,
+        u.id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid,
+        q.id AS question_id,
+        f.instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
+        NULL::integer AS submission_id,
+        f.id AS log_id,
+        NULL::bigint AS client_fingerprint_id,
+        jsonb_build_object(
+          'file_id',
+          f.id::text,
+          'display_filename',
+          f.display_filename
+        ) AS data
+      FROM
+        files AS f
+        LEFT JOIN instance_questions AS iq ON (iq.id = f.instance_question_id)
+        LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        LEFT JOIN questions AS q ON (q.id = aq.question_id)
+        LEFT JOIN users AS u ON (u.id = f.deleted_by)
+      WHERE
+        f.assessment_instance_id = $assessment_instance_id
+        AND f.type = 'student_upload'
+        AND f.deleted_at IS NOT NULL
+    )
   ),
   question_data AS (
     SELECT

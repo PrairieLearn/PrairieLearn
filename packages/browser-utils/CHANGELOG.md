@@ -1,5 +1,29 @@
 # @prairielearn/browser-utils
 
+## 2.7.8
+
+### Patch Changes
+
+- e6c306d: Add accessible Close buttons to click-triggered popovers and include them in focus traps.
+
+## 2.7.7
+
+### Patch Changes
+
+- bae4e10: Escape formula-like text values in CSV downloads so spreadsheets treat them as text.
+
+## 2.7.6
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 2.7.5
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 2.7.4
 
 ### Patch Changes

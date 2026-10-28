@@ -1,5 +1,17 @@
 # @prairielearn/express-test-utils
 
+## 2.0.15
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 2.0.14
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 2.0.13
 
 ### Patch Changes

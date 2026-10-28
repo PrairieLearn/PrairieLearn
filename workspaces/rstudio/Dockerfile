@@ -38,8 +38,16 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
+# Temporary workaround until the RStudio base image includes patched Node:
+# https://github.com/PrairieLearn/PrairieLearn/pull/16132
+FROM node:24.22.1-bookworm-slim AS node
+
 FROM rocker/rstudio:4.6.1
-ARG CACHEBUST=2026-08-15-14-04-29
+ARG CACHEBUST=2026-09-15-14-09-16
+
+# Update the bundled runtime independently of RStudio releases.
+COPY --from=node /usr/local/bin/node /usr/lib/rstudio-server/bin/node/bin/node
+
 LABEL com.prairielearn.workspace.home="/home/rstudio/workspace"
 LABEL com.prairielearn.workspace.port="3939"
 LABEL com.prairielearn.workspace.rewrite-url="false"

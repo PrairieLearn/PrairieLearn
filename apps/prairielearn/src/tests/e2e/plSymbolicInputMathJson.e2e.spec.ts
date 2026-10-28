@@ -185,10 +185,24 @@ function getSetsFormulaEditor(page: Page): Locator {
   return page.locator('#symbolic-input-sets-editor');
 }
 
-async function setHiddenMathJson(page: Page, rawMathJson: string): Promise<void> {
-  await page.locator('input[name="editor-json"]').evaluate((el, rawMathJson) => {
-    (el as HTMLInputElement).value = rawMathJson;
-  }, rawMathJson);
+async function overrideNextSubmission(
+  page: Page,
+  fields: Record<string, string | null>,
+): Promise<void> {
+  // Override the payload after submit handlers refresh the editor's hidden inputs.
+  await page.route(
+    page.url(),
+    async (route) => {
+      expect(route.request().method()).toBe('POST');
+      const body = new URLSearchParams(route.request().postDataJSON() as Record<string, string>);
+      for (const [name, value] of Object.entries(fields)) {
+        if (value === null) body.delete(name);
+        else body.set(name, value);
+      }
+      await route.continue({ postData: body.toString() });
+    },
+    { times: 1 },
+  );
 }
 
 async function showSubmittedErrorDetails(page: Page): Promise<void> {
@@ -201,7 +215,7 @@ async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Pro
   await page.getByLabel('Raw symbolic expression').fill('x');
   await fillFormulaEditor(getFormulaEditor(page), 'x');
   await fillFormulaEditor(getSetsFormulaEditor(page), String.raw`\{1\}`);
-  await setHiddenMathJson(page, rawMathJson);
+  await overrideNextSubmission(page, { 'editor-json': rawMathJson });
   await showSubmittedErrorDetails(page);
 }
 
@@ -241,13 +255,10 @@ test.describe('pl-symbolic-input', () => {
       await expect(page.locator('input[name="editor-latex"]')).toHaveValue('x^2+1');
 
       // A legacy page submits only raw text, without LaTeX or MathJSON fields.
-      await page
-        .locator('input[name="editor-latex"], input[name="editor-json"]')
-        .evaluateAll((els) => {
-          els.forEach((el) => el.remove());
-        });
-      await page.locator('input[name="editor"]').evaluate((el) => {
-        (el as HTMLInputElement).value = 'x**2+2-';
+      await overrideNextSubmission(page, {
+        'editor-latex': null,
+        'editor-json': null,
+        editor: 'x**2+2-',
       });
       await page.getByRole('button', { name: /Save & Grade/ }).click();
       await expect(page.locator('input[name="editor-latex"]')).toHaveValue('x^2+2-');

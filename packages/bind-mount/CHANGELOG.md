@@ -1,5 +1,21 @@
 # @prairielearn/bind-mount
 
+## 2.1.0
+
+### Minor Changes
+
+- 83590cf: Upgrade node-gyp to version 13. Node.js 24.15.0 or newer is now required to build the native addon.
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 2.0.8
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
 ## 2.0.7
 
 ### Patch Changes

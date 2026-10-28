@@ -1177,6 +1177,10 @@ export async function initExpress(): Promise<Express> {
   );
 
   // course instance - course admin pages
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/trpc',
+    courseTrpcRouter,
+  );
   app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/instances`);
   });
@@ -1943,6 +1947,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/public/course_instance/:course_instance_id(\\d+)', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'public';
+      res.locals.urlPrefix = '/pl/public/course_instance/' + req.params.course_instance_id;
       next();
     },
     (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourseInstance,
@@ -1955,8 +1960,20 @@ export async function initExpress(): Promise<Express> {
     res.redirect(`${req.params[0]}/questions`);
   });
   app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzPublicAssessment.js')).default,
+  );
+  app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/file_view',
+    (await import('./pages/publicAssessmentFileBrowser/publicAssessmentFileBrowser.js')).default,
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/file_download',
+    (await import('./pages/publicAssessmentFileDownload/publicAssessmentFileDownload.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -2327,14 +2344,6 @@ if (shouldStartServer) {
     await opentelemetry.init({
       ...config,
       serviceName: 'prairielearn',
-      // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
-      // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
-      //
-      // However, despite what their documentation claims, only the `SentryContextManager`
-      // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
-      // is used, 100% of traces will be sent to Sentry, despite us never having set
-      // `tracesSampleRate` in the Sentry configuration.
-      contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
       // This is a convoluted way to allow us to force sampling of 100% of traces
       // for specific users. We'll provide the user with a little bit of JS to set
       // a cookie in their browser. If that cookie is present, and passes a signature
@@ -2685,10 +2694,8 @@ if (shouldStartServer) {
 
     // These should be the last things to start before we actually start taking
     // requests, as they may actually end up executing course code.
-    if (config.externalGradingEnableResults) {
-      await externalGraderResults.init();
-      await externalGraderDeadLetters.init();
-    }
+    await externalGraderResults.init();
+    await externalGraderDeadLetters.init();
 
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
@@ -2723,42 +2730,13 @@ if (shouldStartServer) {
       });
     }
 
-    // By this point, we should no longer be attached to the load balancer,
-    // so there's no point shutting down the HTTP server or the socket.io
-    // server.
-    //
-    // We use `allSettled()` here to ensure that all tasks can gracefully
-    // shut down, even if some of them fail.
+    // Production deployments drain connections at the load balancer before
+    // stopping PrairieLearn. This sequence drains the background work that may
+    // outlive those connections.
     if (process.env.NODE_ENV !== 'test') {
       logger.info('Shutting down async processing');
     }
-    // First, stop all services that use the database.
-    const serviceResults = await Promise.allSettled([
-      externalGraderDeadLetters.stop(),
-      externalGraderResults.stop(),
-      cron.stop(),
-      serverJobs.stop(),
-      socketServer.close(),
-      cache.close(),
-      assets.close(),
-      codeCaller.finish(),
-      stopBatchedMigrations(),
-    ]);
-    serviceResults.forEach((r) => {
-      if (r.status === 'rejected') {
-        logger.error('Error shutting down async processing', r.reason);
-        Sentry.captureException(r.reason);
-      }
-    });
-
-    // Then close the database connections now that nothing is using them.
-    const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
-    dbResults.forEach((r) => {
-      if (r.status === 'rejected') {
-        logger.error('Error closing database connections', r.reason);
-        Sentry.captureException(r.reason);
-      }
-    });
+    await close();
 
     try {
       await lifecycleHooks.completeInstanceTermination();
@@ -2802,23 +2780,54 @@ if (shouldStartServer) {
 }
 
 /**
- * Vite (and specifically our `@prairielearn/vite-plugin-express`) will call this
- * function when it wants to perform a full restart of the server. Anything that
- * creates long-lived resources (e.g. connection or worker pools) should be
- * cleaned up here.
+ * Stops background work before closing its dependencies and database pools.
+ * Used by the SIGTERM handler and by `@prairielearn/vite-plugin-express` for
+ * full server restarts.
  */
 export async function close() {
-  // These are run in the opposite order in which they're initialized/started.
-  await cron.stop();
-  await serverJobs.stop();
-  await socketServer.close();
-  await cache.close();
-  await assets.close();
-  await codeCaller.finish();
+  // Disconnect clients before draining workspace startups, but keep Redis
+  // adapters available for progress broadcasts from running jobs.
+  socketServer.io?.engine.close();
+
+  // Stop polling and scheduled work and finish pending workspace startups while
+  // their shared dependencies are still available.
+  await settleShutdownTasks([
+    externalGraderDeadLetters.stop(),
+    externalGraderResults.stop(),
+    cron.stop(),
+    workspace.stop(),
+    stopBatchedMigrations(),
+  ]);
+
+  // Server jobs may render questions or publish progress after an await. Wait
+  // for their final status writes and notifications before closing dependencies.
+  await settleShutdownTasks([serverJobs.stop()]);
+
+  await settleShutdownTasks([
+    serverJobProgressSocket.close(),
+    socketServer.close(),
+    cache.close(),
+    assets.close(),
+    codeCaller.finish(),
+  ]);
   load.close();
-  await stopBatchedMigrations();
-  await namedLocks.close();
-  await sqldb.closeAsync();
+  nodeMetrics.stop();
+
+  // Close the database pools only after background work and its resources have
+  // finished shutting down.
+  await settleShutdownTasks([namedLocks.close(), sqldb.closeAsync()]);
+}
+
+async function settleShutdownTasks(tasks: Promise<unknown>[]) {
+  // A failed cleanup must not prevent the other tasks in this phase or later
+  // phases from shutting down.
+  const results = await Promise.allSettled(tasks);
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      logger.error('Error shutting down PrairieLearn', result.reason);
+      Sentry.captureException(result.reason);
+    }
+  }
 }
 
 export const viteExpressApp = app;

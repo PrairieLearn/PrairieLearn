@@ -1,6 +1,6 @@
 # `pl-manual-grading-only` element
 
-Hide the contents so that it is **only** displayed to graders in the manual grading page.
+Hide the contents so that it is **only** displayed to graders in the manual grading page, or for AI grading.
 
 ## Sample element
 
@@ -12,7 +12,7 @@ Hide the contents so that it is **only** displayed to graders in the manual grad
 
 ## Details
 
-This element is typically used to provide graders with additional information that may not be presented to students. Examples may include grading instructions, sample answers, acceptable values for individual results, random parameters used in the question generation, or pre-computed values calculated in explicit `parse` functions. It is the reverse of [the `pl-hide-in-manual-grading` element](pl-hide-in-manual-grading.md), which explicitly hides content during grading.
+This element is typically used to provide either staff graders or the AI grading process with additional information that may not be presented to students. Examples may include grading instructions, sample answers, acceptable values for individual results, random parameters used in the question generation, or pre-computed values calculated in explicit `parse` functions. It is the reverse of [the `pl-hide-in-manual-grading` element](pl-hide-in-manual-grading.md), which explicitly hides content during grading. Note that, for AI grading, the content is only shown in the question panel and the answer panel, not in the submission panel.
 
 ## Example implementations
 

@@ -1,5 +1,4 @@
 import chevron
-import lxml.etree
 import lxml.html
 import prairielearn as pl
 
@@ -28,7 +27,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
             html_variables.append(var_dict)
 
-        elif isinstance(child, lxml.etree._Comment):
+        elif isinstance(child, lxml.html.HtmlComment):
             continue
 
         else:

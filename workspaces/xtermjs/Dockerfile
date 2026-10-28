@@ -1,5 +1,5 @@
 FROM node:26-trixie
-ARG CACHEBUST=2026-08-15-14-04-29
+ARG CACHEBUST=2026-10-22-17-00-00
 LABEL com.prairielearn.workspace.home="/home/student"
 LABEL com.prairielearn.workspace.port="8080"
 LABEL com.prairielearn.workspace.rewrite-url="true"
@@ -16,6 +16,6 @@ COPY --chmod=0755 --chown=root:root pl-gosu-helper.sh /usr/bin/
 COPY src /xterm
 
 WORKDIR /xterm
-RUN npm install --frozen-lockfile && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 ENTRYPOINT ["/usr/bin/pl-gosu-helper.sh", "node", "server.js", "-w", "/home/student"]

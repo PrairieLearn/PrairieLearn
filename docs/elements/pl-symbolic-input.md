@@ -76,6 +76,9 @@ If `allow-sets="true"`, the following additional layer of syntax is enabled:
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
   intersection (`cap` or `&`), and difference (`-`)
 
+Names listed in the `variables` attribute are scalar symbols, not named sets,
+even when `allow-sets="true"`; sets must be constructed with set notation.
+
 ## Example implementations
 
 - [element/symbolicInput]
