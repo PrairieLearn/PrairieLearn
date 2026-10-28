@@ -215,6 +215,32 @@ test('prints representative controls, editable Word content, and an ordered answ
   expect(distractorBounds!.y).toBeGreaterThanOrEqual(correctBounds!.y + correctBounds!.height);
 });
 
+test('preserves literal dollar patterns in Word exports', async ({
+  page,
+  courseInstance,
+  testCoursePath,
+}) => {
+  const questionPath = path.join(testCoursePath, 'questions/addNumbers/question.html');
+  const original = await fs.readFile(questionPath, 'utf8');
+  const text = "Dollar patterns: $$, $&, $`, and $'.";
+  try {
+    await fs.writeFile(questionPath, `${original}\n<pre>${text}</pre>\n`);
+    await syncCourse(testCoursePath);
+    const { printUrl } = await createPrintableAssessment(courseInstance, 'exam20-assessmentTools');
+    const query = 'paper_size=Letter';
+    await page.goto(`${printUrl}/preview?${query}`);
+    await waitForPrintablePage(page);
+    await expect(page.locator('.pagedjs_page').getByText(text, { exact: true })).toBeVisible();
+
+    const response = await downloadPrintableWord(page, printUrl, query);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain(DOCX_CONTENT_TYPE);
+  } finally {
+    await fs.writeFile(questionPath, original);
+    await syncCourse(testCoursePath);
+  }
+});
+
 test('refuses incomplete question and answer-key renders and recovers after a correction', async ({
   page,
   courseInstance,
