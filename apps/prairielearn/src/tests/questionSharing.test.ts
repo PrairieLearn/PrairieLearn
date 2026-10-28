@@ -1130,6 +1130,18 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
       assert.equal(syncResult.status, 'complete');
       assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 
+      const question = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+      });
+      const downloadUrl = `${baseUrl}/public/course/${sharingCourse.id}/question/${question.id}/file_download/questions/${question.qid}/info.json`;
+      const download = await fetch(downloadUrl);
+      assert.equal(download.status, 200);
+      assert.deepEqual(
+        await download.json(),
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+      );
+
       sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
         true;
       delete sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID]
@@ -1180,6 +1192,37 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
       const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
 
       assert(sharedAssessmentPage.ok);
+    });
+
+    test('Successfully access the files tab for the shared assessment', async () => {
+      const sharedAssessmentId = (
+        await selectAssessmentByTid({
+          tid: 'test',
+          course_instance_id: sharingCourseInstanceId,
+        })
+      ).id;
+      const sharedAssessmentFilesUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/file_view`;
+      const sharedAssessmentFilesPage = await fetchCheerio(sharedAssessmentFilesUrl);
+
+      assert(sharedAssessmentFilesPage.ok);
+      assert.lengthOf(sharedAssessmentFilesPage.$('a:contains("infoAssessment.json")'), 1);
+    });
+
+    test('Successfully download a file from the shared assessment', async () => {
+      const sharedAssessmentId = (
+        await selectAssessmentByTid({
+          tid: 'test',
+          course_instance_id: sharingCourseInstanceId,
+        })
+      ).id;
+      const sharedAssessmentFileDownloadUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/file_download/courseInstances/Fa19/assessments/test/infoAssessment.json`;
+      const sharedAssessmentFileDownloadPage = await fetchCheerio(sharedAssessmentFileDownloadUrl);
+
+      assert(sharedAssessmentFileDownloadPage.ok);
+      assert.deepEqual(
+        JSON.parse(await sharedAssessmentFileDownloadPage.text()),
+        sharingCourseData.courseInstances['Fa19'].assessments['test'],
+      );
     });
 
     test('Try adding a draft question to a sharing set, ensure sync error is created', async () => {
