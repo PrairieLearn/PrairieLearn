@@ -1,11 +1,34 @@
 import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
+import { z } from 'zod';
 
-import { notifications, requests } from '../generated/protocol.js';
-import type { AgentMessageDeltaNotification } from '../generated/types/v2/AgentMessageDeltaNotification.js';
+import type { InitializeParams } from '../generated/types/InitializeParams.js';
+import type { ThreadResumeParams } from '../generated/types/v2/ThreadResumeParams.js';
+import type { ThreadStartParams } from '../generated/types/v2/ThreadStartParams.js';
+import type { TurnInterruptParams } from '../generated/types/v2/TurnInterruptParams.js';
+import type { TurnStartParams } from '../generated/types/v2/TurnStartParams.js';
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
+
+// Validate only fields consumed by this adapter; Codex may return additional data.
+const EmptyResult = z.object({});
+const ThreadResult = z.object({ thread: z.object({ id: z.string() }) });
+const TurnResult = z.object({ turn: z.object({ id: z.string() }) });
+const TextDelta = z.object({
+  threadId: z.string(),
+  turnId: z.string(),
+  itemId: z.string(),
+  delta: z.string(),
+});
+const TurnCompleted = z.object({
+  threadId: z.string(),
+  turn: z.object({
+    id: z.string(),
+    status: z.enum(['inProgress', 'completed', 'interrupted', 'failed']),
+    error: z.object({ message: z.string() }).nullable(),
+  }),
+});
 
 /** One app-server connection and its conversion into the chat SDK's output format. */
 export class CodexAppServerClient {
@@ -46,25 +69,25 @@ export class CodexAppServerClient {
     const rpc = createCodexConnection(socket, (error) => this.fail(error));
     this.rpc = rpc;
     const onNotification = <P>(
-      event: { method: string; params: (value: unknown) => value is P },
+      method: string,
+      schema: z.ZodType<P>,
       handler: (params: P) => void,
     ) =>
-      rpc.onNotification(event.method, (value: unknown) => {
+      rpc.onNotification(method, (value: unknown) => {
         try {
-          if (!event.params(value)) throw new Error(`Invalid notification: ${event.method}`);
-          handler(value);
+          const parsed = schema.safeParse(value);
+          if (!parsed.success) throw new Error(`Invalid notification: ${method}`);
+          handler(parsed.data);
         } catch (error) {
           this.fail(error instanceof Error ? error : new Error(String(error)));
         }
       });
     rpc.listen();
-    onNotification(notifications['item/agentMessage/delta'], (params) =>
-      this.delta('text', params),
-    );
-    onNotification(notifications['item/reasoning/summaryTextDelta'], (params) =>
+    onNotification('item/agentMessage/delta', TextDelta, (params) => this.delta('text', params));
+    onNotification('item/reasoning/summaryTextDelta', TextDelta, (params) =>
       this.delta('reasoning', params),
     );
-    onNotification(notifications['turn/completed'], (params) => {
+    onNotification('turn/completed', TurnCompleted, (params) => {
       if (params.threadId !== this.threadId || (this.turnId && params.turn.id !== this.turnId)) {
         return;
       }
@@ -75,10 +98,14 @@ export class CodexAppServerClient {
       }
     });
     socket.accept();
-    await this.request(requests.initialize, {
-      clientInfo: { name: 'prairielearn', title: 'PrairieLearn', version: '1' },
-      capabilities: { experimentalApi: true, requestAttestation: false },
-    });
+    await this.request(
+      'initialize',
+      {
+        clientInfo: { name: 'prairielearn', title: 'PrairieLearn', version: '1' },
+        capabilities: { experimentalApi: true, requestAttestation: false },
+      } satisfies InitializeParams,
+      EmptyResult,
+    );
     await rpc.sendNotification('initialized');
   }
 
@@ -92,33 +119,26 @@ export class CodexAppServerClient {
     this.rpc?.dispose();
   }
 
-  private async request<P, R>(
-    method: {
-      method: string;
-      params: (value: unknown) => value is P;
-      result: (value: unknown) => value is R;
-    },
-    params: NoInfer<P>,
-  ): Promise<R> {
-    if (!method.params(params)) throw new Error(`Invalid parameters for ${method.method}`);
+  private async request<R>(method: string, params: unknown, schema: z.ZodType<R>): Promise<R> {
     const connection = this.connection;
     // A timeout means acceptance is unknown. Dispose pending work without replaying the command.
     const timeout = setTimeout(
-      () => this.fail(new Error(`Native command did not settle: ${method.method}`)),
+      () => this.fail(new Error(`Native command did not settle: ${method}`)),
       30_000,
     );
     try {
       const result = await connection.sendRequest<unknown>(
-        method.method,
+        method,
         ParameterStructures.byName,
         params,
       );
-      if (!method.result(result)) {
-        const error = new Error(`Invalid result for ${method.method}`);
+      const parsed = schema.safeParse(result);
+      if (!parsed.success) {
+        const error = new Error(`Invalid result for ${method}`);
         this.fail(error);
         throw error;
       }
-      return result;
+      return parsed.data;
     } finally {
       clearTimeout(timeout);
     }
@@ -131,33 +151,45 @@ export class CodexAppServerClient {
       approvalPolicy: 'never' as const,
       sandbox: 'danger-full-access' as const,
       developerInstructions: config.instructions,
-    };
+    } satisfies ThreadStartParams;
     const result = config.threadId
-      ? await this.request(requests['thread/resume'], {
-          ...settings,
-          threadId: config.threadId,
-          excludeTurns: true,
-        })
-      : await this.request(requests['thread/start'], settings);
+      ? await this.request(
+          'thread/resume',
+          {
+            ...settings,
+            threadId: config.threadId,
+            excludeTurns: true,
+          } satisfies ThreadResumeParams,
+          ThreadResult,
+        )
+      : await this.request('thread/start', settings, ThreadResult);
     this.threadId = result.thread.id;
     return result.thread.id;
   }
 
   async run(text: string, accepted: (turnId: string) => void) {
-    const result = await this.request(requests['turn/start'], {
-      threadId: this.threadId!,
-      input: [{ type: 'text', text, text_elements: [] }],
-    });
+    const result = await this.request(
+      'turn/start',
+      {
+        threadId: this.threadId!,
+        input: [{ type: 'text', text, text_elements: [] }],
+      } satisfies TurnStartParams,
+      TurnResult,
+    );
     this.turnId = result.turn.id;
     accepted(this.turnId);
   }
 
   async interrupt() {
     if (!this.turnId) throw new Error('Native turn acceptance is unknown');
-    await this.request(requests['turn/interrupt'], {
-      threadId: this.threadId!,
-      turnId: this.turnId,
-    });
+    await this.request(
+      'turn/interrupt',
+      {
+        threadId: this.threadId!,
+        turnId: this.turnId,
+      } satisfies TurnInterruptParams,
+      EmptyResult,
+    );
     const timeout = AbortSignal.timeout(30_000);
     const expired = Promise.withResolvers<never>();
     const fail = () => expired.reject(new Error('Native interruption did not settle'));
@@ -173,7 +205,7 @@ export class CodexAppServerClient {
     return this.terminal.promise;
   }
 
-  private delta(type: 'text' | 'reasoning', params: AgentMessageDeltaNotification) {
+  private delta(type: 'text' | 'reasoning', params: z.infer<typeof TextDelta>) {
     if (
       params.threadId !== this.threadId ||
       (this.turnId && params.turnId !== this.turnId) ||
