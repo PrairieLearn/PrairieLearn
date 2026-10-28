@@ -9,12 +9,14 @@ import { waitForPrintablePage } from './utils.js';
 
 const cloudflareAccountId = process.env.CF_ACCOUNT_ID;
 const cloudflareApiToken = process.env.CF_API_TOKEN;
+const browserOrigin = 'https://example.com';
 const test = createTest(
   cloudflareAccountId && cloudflareApiToken
     ? {
         features: { 'printable-assessments': true },
         printingCloudflareAccountId: cloudflareAccountId,
         printingCloudflareApiToken: cloudflareApiToken,
+        serverCanonicalHost: browserOrigin,
       }
     : { features: { 'printable-assessments': true } },
 );
@@ -56,6 +58,7 @@ test('loads course assets in the rendering browser', async ({ page, courseInstan
     const color = await renderer.render(
       {
         url: page.url(),
+        browserOrigin,
         html: `<!doctype html><html data-print-status="ready"><head><link rel="stylesheet" href="/pl/course_instance/${courseInstance.id}/instructor/clientFilesCourse/sharedElementStyles.css"></head><body><span class="example-shared-style">Print asset</span></body></html>`,
         assetScope,
       },
