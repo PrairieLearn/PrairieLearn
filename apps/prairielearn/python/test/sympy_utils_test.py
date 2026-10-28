@@ -919,6 +919,51 @@ class TestSympy:
         assert restored == expression
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize(
+        "sympy_range",
+        [sympy.Range(0, 3, 1), sympy.Range(0, sympy.oo, 1)],
+    )
+    def test_range_json_conversion(
+        self, sympy_range: sympy.Range, *, simplify_expression: bool
+    ) -> None:
+        encoded = psu.sympy_to_json(sympy_range, allow_sets=True)
+
+        assert (
+            psu.json_to_sympy(
+                encoded,
+                allow_sets=True,
+                simplify_expression=simplify_expression,
+            )
+            == sympy_range
+        )
+
+    def test_range_is_not_a_builtin_set_function(self) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "Range(0, 3, 1)",
+            None,
+            allow_sets=True,
+            allowed_types={"all"},
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert 'invalid function "Range"' in result.error
+
+    def test_custom_range_function_round_trips_with_sets(self) -> None:
+        x = sympy.Symbol("x")
+        expected = sympy.Function("Range")(x)
+        parsed = psu.convert_string_to_sympy(
+            "Range(x)",
+            ["x"],
+            allow_sets=True,
+            custom_functions=["Range"],
+        )
+        encoded = psu.sympy_to_json(parsed, allow_sets=True)
+
+        assert parsed == expected
+        assert encoded.get("_custom_functions") == ["Range"]
+        assert psu.json_to_sympy(encoded, allow_sets=True) == expected
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
     @pytest.mark.parametrize("operator", ["|", "&"])
     def test_legacy_scalar_set_operator_json_conversion(
         self, operator: str, *, simplify_expression: bool
@@ -960,6 +1005,13 @@ class TestSympy:
     def test_sets_json_conversion_requires_sets_enabled(self) -> None:
         with pytest.raises(psu.HasSetNotationError):
             psu.sympy_to_json(sympy.Interval(0, 1))
+
+    def test_range_type_classification(self) -> None:
+        assert psu.check_sympy_types(sympy.Range(0, 3), {"finite-set"}) is None
+
+        result = psu.check_sympy_types(sympy.Range(0, sympy.oo), {"finite-set"})
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "uses set" in result.error
 
     @pytest.mark.parametrize(
         ("fn_name", "fn_args"),

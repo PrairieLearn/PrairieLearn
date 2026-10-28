@@ -302,6 +302,10 @@ class _Constants:
         "Complement": sympy.Complement,
     })
 
+    serialized_set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "Range": sympy.Range,
+    })
+
     set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
         "U": operator.or_,
         "cup": operator.or_,
@@ -730,6 +734,12 @@ class CheckAST(ast.NodeVisitor):
                 if fn in _SET_OPERATION_FUNCTIONS.values():
                     self.__set_operations.add(node)
                 return self._set_type(node, inferred_type)
+            case fn if (
+                self.allow_sets
+                and fn in _Constants.serialized_set_functions
+                and resolved_function == _Constants.serialized_set_functions[fn]
+            ):
+                return self._set_type(node, ASTSympyType.SET)
             case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
                 arities = _builtin_function_arities(fn) or (len(args),)
                 self._enforce_signature(
@@ -1563,6 +1573,7 @@ def _convert_string_to_sympy_with_source(
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
+    allow_serialized_functions: bool = False,
 ) -> tuple[SympyValue, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1628,6 +1639,8 @@ def _convert_string_to_sympy_with_source(
 
     if allow_sets:
         locals_for_eval["functions"].update(const.set_functions)
+        if allow_serialized_functions:
+            locals_for_eval["functions"].update(const.serialized_set_functions)
 
     for name, (is_var, raw_name) in valid_names.items():
         if is_var:
@@ -1885,6 +1898,7 @@ def json_to_sympy(
         resolved_name_overrides=(
             dict.fromkeys(variables) if allow_sets and variables is not None else None
         ),
+        allow_serialized_functions=True,
     )
     return result
 
