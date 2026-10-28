@@ -132,9 +132,11 @@ function makeLegacyAssessment({
 }
 
 function assessmentRows($: cheerio.CheerioAPI, title: string) {
-  return $('table[aria-label="Assessments"] tbody tr').filter(
-    (_, elem) => $(elem).children('td').eq(1).text().trim() === title,
-  );
+  return $('table[aria-label="Assessments"] tbody tr').filter((_, elem) => {
+    const titleCell = $(elem).children('td').eq(1).clone();
+    titleCell.find('button[data-bs-toggle="popover"]').remove();
+    return titleCell.text().trim() === title;
+  });
 }
 
 function assertLinkedAssessment($: cheerio.CheerioAPI, title: string) {

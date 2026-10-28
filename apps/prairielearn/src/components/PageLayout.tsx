@@ -343,14 +343,17 @@ export function PageLayout({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({
-          resLocals,
-          pageTitle,
-          pageNote: resolvedOptions.pageNote,
-        })}
-        ${compiledStylesheetTag('pageLayout.css')}
-        ${courseAgentPanel ? compiledStylesheetTag('courseAgent.css') : ''} ${headContentString}
-        ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
+        ${[
+          HeadContents({
+            resLocals,
+            pageTitle,
+            pageNote: resolvedOptions.pageNote,
+          }),
+          compiledStylesheetTag('pageLayout.css'),
+          courseAgentPanel ? compiledStylesheetTag('courseAgent.css') : '',
+          headContentString,
+          sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : '',
+        ]}
       </head>
       <body
         class="${clsx({
