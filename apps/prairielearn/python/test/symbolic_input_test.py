@@ -62,6 +62,7 @@ def _serialize_symbolic_submission_with_round_trip(
     allow_sets: bool,
     simplify_expression: bool,
 ) -> psu.SympyJson:
+    assert isinstance(expr, sympy.Expr | sympy.Set)
     result = psu.sympy_to_json(
         expr,
         allow_complex=allow_complex,
@@ -370,7 +371,7 @@ def test_parse_symbolic_submission_serializes_result() -> None:
     )
     assert isinstance(result, psu._SymbolicSubmissionParseSuccess)
     assert result.expr == sympy.Abs(sympy.Symbol("x"))
-    assert result.expr != ""
+    assert isinstance(result.expr, sympy.Expr | sympy.Set)
     assert result.json != ""
     assert result.json == psu.sympy_to_json(result.expr)
     assert psu.json_to_sympy(result.json) == result.expr
