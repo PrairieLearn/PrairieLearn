@@ -8,6 +8,7 @@ import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
 import {
   createCourseAgentConversation,
+  createLocalCourseAgentConversation,
   getCourseAgentPendingReview,
   resumeCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
@@ -18,6 +19,7 @@ import {
   selectOptionalCourseAgentConversation,
 } from '../../ee/models/course-agent-conversation.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 
@@ -121,24 +123,29 @@ export const courseAgentRouter = t.router({
   create: courseAgentProcedure
     .input(z.object({ text: z.string().trim().min(1).max(20_000) }))
     .mutation(async ({ ctx, input }) => {
-      const repository = parseGithubRepository(ctx.course.repository ?? '');
-      if (!repository || !ctx.course.branch) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Configure a GitHub repository and branch before starting a conversation.',
+      let agentConversationId: string;
+      if (config.devMode && !config.fileEditorUseGit) {
+        agentConversationId = await createLocalCourseAgentConversation(ctx.course.path);
+      } else {
+        const repository = parseGithubRepository(ctx.course.repository ?? '');
+        if (!repository || !ctx.course.branch) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Configure a GitHub repository and branch before starting a conversation.',
+          });
+        }
+        const binding = CreateConversationInput.safeParse({
+          repository: `${repository.owner}/${repository.repo}`,
+          branch: ctx.course.branch,
         });
+        if (!binding.success) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'The course repository or branch is invalid.',
+          });
+        }
+        agentConversationId = await createCourseAgentConversation(binding.data);
       }
-      const binding = CreateConversationInput.safeParse({
-        repository: `${repository.owner}/${repository.repo}`,
-        branch: ctx.course.branch,
-      });
-      if (!binding.success) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'The course repository or branch is invalid.',
-        });
-      }
-      const agentConversationId = await createCourseAgentConversation(binding.data);
       const title = input.text.replaceAll(/\s+/g, ' ');
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,

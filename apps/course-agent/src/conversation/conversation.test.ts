@@ -130,7 +130,7 @@ function fixture() {
     },
   } as unknown as Env;
   const conversation = new Conversation(ctx as unknown as DurableObjectState, env);
-  conversation.initialize({ repository: 'PrairieLearn/course', branch: 'master' });
+  conversation.initialize({ type: 'github', repository: 'PrairieLearn/course', branch: 'master' });
   return { conversation, saved, ctx, env, sandbox };
 }
 

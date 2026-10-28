@@ -247,7 +247,10 @@ export class CodexAppServerClient {
         )
       : await this.request(
           'thread/start',
-          { ...settings, dynamicTools: [pushSyncTool] } satisfies ThreadStartParams,
+          {
+            ...settings,
+            dynamicTools: this.onReview ? [pushSyncTool] : [],
+          } satisfies ThreadStartParams,
           ThreadResult,
         );
     this.threadId = result.thread.id;

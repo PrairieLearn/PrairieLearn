@@ -3,7 +3,7 @@ import { z } from 'zod';
 export * from './budget.js';
 
 export type ConversationLifecycle =
-  // No live container. The next message clones the repository or restores the committed checkpoint.
+  // No live container. The next message initializes a workspace or restores the committed checkpoint.
   | { status: 'offline' }
   // Creating or restoring the sandbox and configuring it before submitting the new input.
   | { status: 'starting' }

@@ -1,7 +1,12 @@
 import { once } from 'node:events';
 import { createServer } from 'node:http';
+import * as path from 'node:path';
 
+import { execa } from 'execa';
+import fs from 'fs-extra';
 import { Redis } from 'ioredis';
+import * as tar from 'tar';
+import { dir as temporaryDirectory } from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import {
@@ -17,6 +22,7 @@ import {
 } from '../ee/models/course-agent-conversation.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { RedisRateLimiter } from '../lib/redis-rate-limiter.js';
 import {
   insertCoursePermissionsByUserUid,
@@ -56,24 +62,27 @@ function historyUrl(conversationId: string) {
 }
 
 describe('Course agent access and conversation privacy', () => {
-  const serviceConversationId = crypto.randomUUID();
+  let serviceConversationId = crypto.randomUUID();
   const serviceRequests: { path: string; body: unknown; authorization: string | undefined }[] = [];
   const service = createServer(async (request, response) => {
     const chunks: Buffer[] = [];
     for await (const chunk of request) chunks.push(chunk);
-    const body = Buffer.concat(chunks).toString();
+    const bytes = Buffer.concat(chunks);
+    const body = bytes.toString();
     serviceRequests.push({
       path: request.url!,
-      body: body ? JSON.parse(body) : null,
+      body:
+        request.headers['content-type'] === 'application/gzip'
+          ? bytes
+          : body
+            ? JSON.parse(body)
+            : null,
       authorization: request.headers.authorization,
     });
     response.setHeader('Content-Type', 'application/json');
-    response.statusCode = request.url === '/conversations' ? 201 : 200;
-    response.end(
-      JSON.stringify(
-        request.url === '/conversations' ? { id: serviceConversationId } : { recovered: true },
-      ),
-    );
+    const creating = request.url === '/conversations' || request.url === '/conversations/local';
+    response.statusCode = creating ? 201 : 200;
+    response.end(JSON.stringify(creating ? { id: serviceConversationId } : { recovered: true }));
   });
   let owner: User;
   let otherOwner: User;
@@ -116,6 +125,7 @@ describe('Course agent access and conversation privacy', () => {
     }
   });
   beforeEach(async () => {
+    serviceConversationId = crypto.randomUUID();
     config.cacheKeyPrefix = `${originalConfig.cacheKeyPrefix}course-agent-test:${crypto.randomUUID()}:`;
     serviceRequests.length = 0;
     await updateCoursePermissionsRole({
@@ -314,8 +324,10 @@ describe('Course agent access and conversation privacy', () => {
       value: 'pilot-edits',
       authnUserId: owner.id,
     });
-    const conversation = await withUser(owner, () =>
-      createClient(owner).courseAgent.create.mutate({ text: 'First message' }),
+    const conversation = await withConfig({ fileEditorUseGit: true }, () =>
+      withUser(owner, () =>
+        createClient(owner).courseAgent.create.mutate({ text: 'First message' }),
+      ),
     );
     expect(serviceRequests).toEqual([
       {
@@ -339,17 +351,76 @@ describe('Course agent access and conversation privacy', () => {
       value: 'https://gitlab.com/course/repo',
       authnUserId: owner.id,
     });
-    await withUser(owner, async () => {
-      const client = createClient(owner);
-      const before = await client.courseAgent.list.query();
-      await expect(
-        client.courseAgent.create.mutate({ text: 'First message' }),
-      ).rejects.toMatchObject({
-        data: { code: 'BAD_REQUEST' },
-      });
-      expect(await client.courseAgent.list.query()).toEqual(before);
-    });
+    await withConfig({ fileEditorUseGit: true }, () =>
+      withUser(owner, async () => {
+        const client = createClient(owner);
+        const before = await client.courseAgent.list.query();
+        await expect(
+          client.courseAgent.create.mutate({ text: 'First message' }),
+        ).rejects.toMatchObject({
+          data: { code: 'BAD_REQUEST' },
+        });
+        expect(await client.courseAgent.list.query()).toEqual(before);
+      }),
+    );
     expect(serviceRequests).toEqual([]);
+  });
+
+  test('initializes from current local files and course-only Git history in dev mode', async () => {
+    const fixture = await fs.mkdtemp(path.join(TEST_COURSE_PATH, '.course-agent-local-'));
+    const output = await temporaryDirectory({ unsafeCleanup: true });
+    try {
+      await fs.writeFile(path.join(fixture, 'question.html'), 'Uncommitted local course contents');
+      await fs.outputFile(path.join(fixture, '.git', 'config'), 'Host repository metadata');
+      await updateCourseColumn({
+        courseId: '1',
+        columnName: 'repository',
+        value: '',
+        authnUserId: owner.id,
+      });
+      await withConfig({ devMode: true, fileEditorUseGit: false }, () =>
+        withUser(owner, () =>
+          createClient(owner).courseAgent.create.mutate({ text: 'Read my local changes' }),
+        ),
+      );
+      expect(serviceRequests).toHaveLength(1);
+      expect(serviceRequests[0]).toMatchObject({
+        path: '/conversations/local',
+        authorization: 'Bearer test-token',
+      });
+      const archivePath = path.join(output.path, 'source.tar.gz');
+      await fs.writeFile(archivePath, serviceRequests[0].body as Buffer);
+      await tar.extract({ file: archivePath, cwd: output.path });
+      const course = path.join(output.path, 'testCourse');
+      const copied = path.join(course, path.basename(fixture));
+      expect(await fs.readFile(path.join(copied, 'question.html'), 'utf8')).toBe(
+        'Uncommitted local course contents',
+      );
+      expect(await fs.pathExists(path.join(copied, '.git'))).toBe(false);
+      const { stdout: expectedHistory } = await execa(
+        'git',
+        ['log', '--format=%an <%ae> %aI %s', 'HEAD', '--', '.'],
+        { cwd: TEST_COURSE_PATH },
+      );
+      const { stdout: history } = await execa('git', ['log', '--format=%an <%ae> %aI %s'], {
+        cwd: course,
+      });
+      expect(history).toBe(expectedHistory);
+      const { stdout: objects } = await execa('git', ['rev-list', '--objects', '--all'], {
+        cwd: course,
+      });
+      const historicalPaths = objects
+        .split('\n')
+        .filter((line) => line.includes(' '))
+        .map((line) => line.slice(line.indexOf(' ') + 1))
+        .filter(Boolean);
+      expect(
+        historicalPaths.every((entry) => entry === 'testCourse' || entry.startsWith('testCourse/')),
+      ).toBe(true);
+    } finally {
+      await fs.remove(fixture);
+      await output.cleanup();
+    }
   });
 
   test('admits recovery only for the authenticated creator', async () => {
