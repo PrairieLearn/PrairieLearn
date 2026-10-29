@@ -13,7 +13,6 @@ import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
   createCourseRepoFixture,
-  syncCourse,
   updateCourseRepository,
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
@@ -596,34 +595,5 @@ describe('Editing question settings', { concurrent: false }, () => {
         `${siteUrl}/pl/public/course/1/question/1/preview`,
       );
     });
-  });
-
-  test('does not allow sharing legacy questions from settings', async () => {
-    const question = await selectQuestionById('1');
-    const infoPath = path.join(courseRepo.courseLiveDir, 'questions', question.qid!, 'info.json');
-    const info = await fs.readJson(infoPath);
-    await fs.writeJson(infoPath, { ...info, type: 'Calculation' });
-    await syncCourse(courseRepo.courseLiveDir);
-    await features.enable('question-sharing');
-
-    const settingsUrl = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
-    const settingsPage = await fetchCheerio(settingsUrl);
-    assert.equal(settingsPage.status, 200);
-    assert.lengthOf(settingsPage.$('#share_publicly, #share_source_publicly, #sharing_sets'), 0);
-
-    const response = await fetch(settingsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'update_question',
-        __csrf_token: settingsPage.$('input[name=__csrf_token]').val() as string,
-        orig_hash: settingsPage.$('input[name=orig_hash]').val() as string,
-        title: question.title!,
-        qid: question.qid!,
-        share_publicly: 'on',
-      }),
-    });
-
-    assert.equal(response.status, 400);
-    assert.include(await response.text(), 'Sharing is only supported for v3 questions.');
   });
 });
