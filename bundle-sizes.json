@@ -290,9 +290,9 @@
     "brotli": 106113
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentGroups.ts": {
-    "raw": 1528080,
-    "gzip": 422400,
-    "brotli": 360839
+    "raw": 1526850,
+    "gzip": 422082,
+    "brotli": 360600
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentInstanceActions.ts": {
     "raw": 1082966,
