@@ -416,15 +416,11 @@ export function GroupSettingsCard({
               </div>
 
               <div className="text-muted small mb-3">
-                For each{' '}
+                Configure{' '}
                 <a href="https://docs.prairielearn.com/assessment/configuration/#enabling-custom-group-roles">
-                  custom group role
+                  custom group roles
                 </a>
-                , set the minimum required and maximum allowed number of students (leave the maximum
-                blank for no limit). 'Assign roles' lets students with that role assign roles to
-                other group members. 'View questions' and 'Submit answers' set default permissions
-                for assessment questions.
-                {canEdit && " Select 'View questions' before enabling 'Submit answers'."}
+                , which can be assigned different permissions to facilitate role-based teamwork.
               </div>
 
               <div className="card overflow-x-auto">
