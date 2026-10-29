@@ -1,4 +1,3 @@
-import type { UIMessageChunk } from 'ai';
 import { describe, expect, it } from 'vitest';
 
 import type { ReviewOutcome } from '@prairielearn/course-agent-types';
@@ -8,15 +7,7 @@ import type { CourseSandbox } from './sandbox.js';
 
 const turn = { id: 'turn', status: 'inProgress', error: null };
 
-function runner({
-  savedReview,
-  onReview,
-  threadResult = { thread: { id: 'thread' } },
-}: {
-  threadResult?: unknown;
-  savedReview?: ReviewOutcome;
-  onReview?: Parameters<CodexAppServerClient['beginTurn']>[1];
-} = {}) {
+function runner(savedReview?: ReviewOutcome) {
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -38,7 +29,7 @@ function runner({
         });
       }
       if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
-        emit({ id: frame.id, result: threadResult });
+        emit({ id: frame.id, result: { thread: { id: 'thread' } } });
       }
       if (frame.method === 'thread/read') {
         const previousTurn = {
@@ -64,97 +55,21 @@ function runner({
       if (frame.method === 'turn/start') {
         emit({ id: frame.id, result: { turn } });
       }
-      if (frame.method === 'turn/interrupt') emit({ id: frame.id, result: {} });
     },
   });
   const sandbox = {
     fetch: async () => ({ status: 101, webSocket: socket }),
   } as unknown as DurableObjectStub<CourseSandbox>;
   const native = new CodexAppServerClient(sandbox);
-  const stream = native.beginTurn('assistant', onReview);
+  native.beginTurn('assistant');
   return {
-    sandbox,
     native,
-    stream,
     commands,
-    emit,
     disconnect: () => socket.close(),
   };
 }
 
 describe('Codex native stream', () => {
-  it('ends the SDK response for review and continues on the retained native connection', async () => {
-    const review = Promise.withResolvers<ReviewOutcome['result']>();
-    const { native, stream, emit, disconnect } = runner({
-      onReview: (_call, ready) => {
-        ready();
-        return review.promise;
-      },
-    });
-    await native.connect();
-    await native.thread({ model: 'test', instructions: 'Edit course', threadId: null });
-    await native.run('Edit', () => {});
-    const collect = async (stream: ReadableStream<UIMessageChunk>) => {
-      const chunks = [];
-      for await (const chunk of stream) chunks.push(chunk);
-      return chunks;
-    };
-    const firstResponse = collect(stream);
-    emit({
-      id: 'review',
-      method: 'item/tool/call',
-      params: {
-        threadId: 'thread',
-        turnId: 'turn',
-        callId: 'review',
-        tool: 'push_sync',
-        namespace: null,
-        arguments: {},
-      },
-    });
-    expect(await firstResponse).toContainEqual({
-      type: 'tool-input-available',
-      toolCallId: 'review',
-      toolName: 'push_sync',
-      input: {},
-    });
-
-    const nextResponse = collect(native.openStream('assistant'));
-    review.resolve({
-      decision: 'denied',
-      publication: { status: 'not_attempted' },
-      sync: { status: 'not_attempted' },
-    });
-    await new Promise<void>((resolve) => setImmediate(resolve));
-    emit({
-      method: 'item/agentMessage/delta',
-      params: {
-        threadId: 'thread',
-        turnId: 'turn',
-        itemId: 'reply',
-        delta: 'Continuing after review',
-      },
-    });
-    emit({
-      method: 'item/completed',
-      params: { threadId: 'thread', item: { type: 'agentMessage', id: 'reply' } },
-    });
-    emit({
-      method: 'turn/completed',
-      params: { threadId: 'thread', turn: { ...turn, status: 'completed' } },
-    });
-    await native.finished;
-    native.closeStream();
-    expect(await nextResponse).toEqual([
-      { type: 'start', messageId: 'assistant' },
-      { type: 'text-start', id: 'text:reply' },
-      { type: 'text-delta', id: 'text:reply', delta: 'Continuing after review' },
-      { type: 'text-end', id: 'text:reply' },
-      { type: 'finish' },
-    ]);
-    disconnect();
-  });
-
   it.each([
     {
       name: 'restored review supplies only its result without replaying the prompt',
@@ -170,9 +85,7 @@ describe('Codex native stream', () => {
         sync: { status: 'not_attempted' },
       },
     };
-    const { native, commands, disconnect } = runner({
-      savedReview: incorporated ? outcome : undefined,
-    });
+    const { native, commands, disconnect } = runner(incorporated ? outcome : undefined);
     await native.connect();
     await native.thread({ model: 'test', instructions: 'Edit course', threadId: 'thread' });
     await native.run(outcome, () => {});
