@@ -215,7 +215,11 @@ export async function generatePrompt({
           "You must grade the student's response by using the rubric and returning, for each rubric item, whether that rubric item applies to the student's response.",
           'The keys of the `rubric_items` object are the rubric item numbers shown below (e.g. `"1"`, `"2"`, ...).',
           'If no rubric items apply, set every value to false.',
-          'You must include an explanation on why you make these choices.',
+          'Always provide an instructor-facing justification of the grading decision in `explanation`.',
+          'Always return the `feedback` field. Provide student-facing feedback only when the Instructor grading guidelines explicitly request it; otherwise, return `feedback` as an empty string ("").',
+          'When feedback is requested, follow the specified conditions, content, length, and format. If the conditions for providing feedback are not met, return `feedback` as an empty string ("").',
+          'A request to explain grading decisions or apply rubric items does not by itself request student-facing feedback.',
+          'Address the student as "you" in feedback. Keep instructor-facing grading justification in `explanation`; do not copy it into `feedback` unless explicitly requested.',
         ]
       : [
           'Assign a numeric score between 0 and 100 (inclusive) to the student response.',
