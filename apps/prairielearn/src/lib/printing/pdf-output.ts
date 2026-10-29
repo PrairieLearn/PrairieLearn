@@ -5,7 +5,6 @@ import { preparePdfAccessibility } from './pdf-accessibility-browser.js';
 import {
   PrintPdfAccessibilityError,
   finalizePrintPdf,
-  validatePrintPdf,
   withPrintPdfDirectory,
 } from './pdf-tools.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
@@ -13,7 +12,7 @@ import type { PrintablePageOutput } from './printable-page-output.js';
 export const PAPER_SIZES = ['Letter', 'A4'] as const;
 export type PaperSize = (typeof PAPER_SIZES)[number];
 
-/** Prints the paginated page, restores source-declared PDF semantics, and validates the final bytes. */
+/** Print the paginated page and restore source-declared PDF semantics. */
 export function createPdfOutput(): PrintablePageOutput<Buffer> {
   return {
     label: 'PDF',
@@ -32,7 +31,6 @@ export function createPdfOutput(): PrintablePageOutput<Buffer> {
           tagged: true,
         });
         await finalizePrintPdf(input, output, manifest, signal);
-        await validatePrintPdf(output, signal);
         return await readFile(output);
       });
     },

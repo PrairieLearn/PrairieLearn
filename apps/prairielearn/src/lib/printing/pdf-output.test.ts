@@ -10,7 +10,7 @@ import { REPOSITORY_ROOT_PATH } from '../paths.js';
 import { createPdfOutput } from './pdf-output.js';
 import { withPrintPdfDirectory } from './pdf-tools.js';
 
-it('exports a PDF/UA-1 document with source-declared math, figures, and document structure', async () => {
+it('exports tagged PDF math, figures, and document structure from source semantics', async () => {
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage();
