@@ -1072,9 +1072,7 @@ function validateQuestion({
 
   if (question.type !== 'v3') {
     for (const attribute of ['sharePublicly', 'shareSourcePublicly', 'sharingSets'] as const) {
-      const enabled =
-        attribute === 'sharingSets' ? (question.sharingSets?.length ?? 0) > 0 : question[attribute];
-      if (enabled) {
+      if (question[attribute]) {
         errors.push(
           `"${attribute}" is only supported for v3 questions. Remove this setting or convert the question to v3.`,
         );
