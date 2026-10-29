@@ -191,6 +191,7 @@ function SharingMessageText({ message }: { message: SharingMessage }) {
 
 export const InstructorQuestionSettingsForm = ({
   authorStaff,
+  initialAuthors,
   currentUid,
   question,
   topic,
@@ -211,6 +212,7 @@ export const InstructorQuestionSettingsForm = ({
   questionTest,
 }: {
   authorStaff: { uid: string; name: string | null }[];
+  initialAuthors: string[] | null;
   currentUid: string;
   question: StaffQuestion;
   courseInstance?: StaffCourseInstance | null;
@@ -254,7 +256,7 @@ export const InstructorQuestionSettingsForm = ({
   );
 
   const defaultValues: QuestionSettingsFormValues = {
-    authors: question.authors ?? [],
+    authors: initialAuthors ?? [],
     qid: question.qid ?? '',
     title: question.title ?? '',
     topic: topic.name,
@@ -538,7 +540,7 @@ export const InstructorQuestionSettingsForm = ({
               </label>
               {canEdit ? (
                 <>
-                  {(question.authors !== null || dirtyFields.authors) && (
+                  {initialAuthors !== null && dirtyFields.authors && (
                     <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
                   )}
                   <TagPicker
@@ -547,6 +549,7 @@ export const InstructorQuestionSettingsForm = ({
                     items={authorItems}
                     value={selectedAuthors}
                     placeholder="Add an author by UID"
+                    disabled={initialAuthors === null}
                     tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
                     renderTagContent={({ uid, name }) =>
                       name ? (
@@ -578,23 +581,30 @@ export const InstructorQuestionSettingsForm = ({
               <small className="form-text text-muted">
                 Credit the people who wrote this question by their UID. Names are shown for current
                 course staff.{' '}
-                {canEdit && !selectedAuthors.includes(currentUid.trim()) && (
-                  <>
-                    <button
-                      type="button"
-                      className="btn btn-link btn-sm p-0 border-0 align-baseline"
-                      onClick={() => {
-                        setValue('authors', [...selectedAuthors, currentUid.trim()], {
-                          shouldDirty: true,
-                        });
-                      }}
-                    >
-                      Add myself
-                    </button>
-                    .
-                  </>
-                )}
+                {canEdit &&
+                  initialAuthors !== null &&
+                  !selectedAuthors.includes(currentUid.trim()) && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm p-0 border-0 align-baseline"
+                        onClick={() => {
+                          setValue('authors', [...selectedAuthors, currentUid.trim()], {
+                            shouldDirty: true,
+                          });
+                        }}
+                      >
+                        Add myself
+                      </button>
+                      .
+                    </>
+                  )}
               </small>
+              {canEdit && initialAuthors === null && (
+                <div className="form-text text-danger">
+                  Authors could not be loaded from info.json. Fix the file before editing authors.
+                </div>
+              )}
             </div>
 
             {courseInstance && (

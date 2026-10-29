@@ -65,7 +65,7 @@ test('edits authors with keyboard entry, cancellation, and persistence', async (
   }
 });
 
-test('preserves unknown authors on unrelated saves and accepts an explicit author edit', async ({
+test('preserves file authors when synced values are unknown', async ({
   page,
   courseInstance,
   testCoursePath,
@@ -88,12 +88,13 @@ test('preserves unknown authors on unrelated saves and accepts an explicit autho
 
     await execute(sql.set_authors_unknown, { question_id: question.id });
     await page.reload();
-    const input = page.getByRole('combobox', { name: 'Authors', exact: true });
-    await input.fill('replacement-author');
-    await input.press('Enter');
+    await page.getByRole('button', { name: 'Add myself', exact: true }).click();
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await page.waitForLoadState('load');
-    expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).toEqual(['replacement-author']);
+    expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).toEqual([
+      ...original.authors,
+      'dev@example.com',
+    ]);
   } finally {
     await fs.writeFile(infoPath, originalInfo);
     await syncCourse(testCoursePath);

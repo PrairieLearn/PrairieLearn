@@ -88,8 +88,11 @@ describe('Editing question settings', { concurrent: false }, () => {
     assert.equal(settings.status, 200);
     assert.include(settings.$('body').text(), staff.name!);
     assert.notInclude(settings.$('body').text(), 'Private Nonstaff Name');
-    const authors = JSON.parse(settings.$('input[name=authors]').val() as string);
-    assert.deepEqual(authors, ['author-staff', 'author-nonstaff', 'author-unknown']);
+    assert.lengthOf(settings.$('input[name=authors]'), 0);
+    const authors = ['author-staff', 'author-nonstaff', 'author-unknown'];
+    for (const uid of authors) {
+      assert.include(settings.$('#authors-label').parent().text(), uid);
+    }
     const response = await fetch(url, {
       method: 'POST',
       body: new URLSearchParams({

@@ -35,7 +35,7 @@ import {
 import { getQuestionPreviewUrl } from '../../lib/client/url.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
-import { getOriginalHash } from '../../lib/editorUtil.js';
+import { computeFileContentHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   FileModifyEditor,
@@ -50,7 +50,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { QuestionAuthorUidsSchema } from '../../lib/question-authors.js';
+import { QuestionAuthorUidsSchema, normalizeQuestionAuthors } from '../../lib/question-authors.js';
 import { selectQuestionsBlockingDeletion } from '../../lib/question-deletion-validation.js';
 import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
@@ -67,7 +67,10 @@ import {
 } from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
-import type { QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
+import {
+  QuestionJsonSchema,
+  type QuestionPreferencesSchemaJson,
+} from '../../schemas/infoQuestion.js';
 
 import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.html.js';
 import {
@@ -79,6 +82,9 @@ const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AuthorsBodySchema = JsonFromStringSchema.pipe(QuestionAuthorUidsSchema).optional();
+const AuthorsFileSchema = JsonFromStringSchema.pipe(
+  z.object({ authors: QuestionJsonSchema.shape.authors }),
+);
 
 const ImageSchema = z
   .string()
@@ -710,7 +716,20 @@ router.get(
     });
     const fullInfoPath = path.join(course.path, 'questions', question.qid!, 'info.json');
 
-    const origHash = (await getOriginalHash(fullInfoPath)) ?? '';
+    // Initialize authors and the conflict-check hash from the same file snapshot.
+    const infoContents = await fs
+      .readFile(fullInfoPath, 'utf8')
+      .catch((err: NodeJS.ErrnoException) => {
+        if (err.code === 'ENOENT') return null;
+        throw err;
+      });
+    const origHash = infoContents === null ? '' : computeFileContentHash(infoContents);
+    const initialAuthors = run(() => {
+      const info = AuthorsFileSchema.safeParse(infoContents);
+      if (!info.success) return null;
+      const { uids, warnings } = normalizeQuestionAuthors(info.data.authors);
+      return warnings.length === 0 ? uids : null;
+    });
     const authorStaff = await sqldb.queryRows(
       sql.select_authors,
       { course_id: course.id },
@@ -742,6 +761,7 @@ router.get(
           <Hydrate>
             <InstructorQuestionSettingsForm
               authorStaff={authorStaff}
+              initialAuthors={initialAuthors}
               currentUid={res.locals.user.uid}
               question={question}
               topic={topic}
