@@ -47,26 +47,20 @@ function requestUsage(event: z.infer<typeof ModelEventSchema>): UsageDelta | nul
 /** Observe provider usage before forwarding completion, even if the native reader disconnects. */
 export async function observeModelUsage(
   response: Response,
-  {
-    settle,
-    missingUsage,
-  }: {
-    settle: (usage: UsageDelta) => void;
-    missingUsage: () => void;
-  },
+  recordUsage: (usage: UsageDelta | null) => void,
 ) {
   if (!response.ok) {
     // These HTTP rejections did not admit generation. A transport/server failure is uncertain.
-    if ([400, 401, 403, 404, 413, 422, 429].includes(response.status)) settle(emptyUsage());
-    else missingUsage();
+    if ([400, 401, 403, 404, 413, 422, 429].includes(response.status)) recordUsage(emptyUsage());
+    else recordUsage(null);
     return { response, finished: Promise.resolve() };
   }
   if (!response.headers.get('Content-Type')?.includes('text/event-stream')) {
     const value: unknown = await response.json();
     const event = ModelEventSchema.parse({ type: 'response.completed', response: value });
     const usage = requestUsage(event);
-    if (usage) settle(usage);
-    else missingUsage();
+    if (usage) recordUsage(usage);
+    else recordUsage(null);
     return { response: Response.json(value), finished: Promise.resolve() };
   }
   if (!response.body) throw new Error('Provider returned no response stream');
@@ -99,7 +93,7 @@ export async function observeModelUsage(
         ) {
           const usage = requestUsage(event);
           if (usage) {
-            settle(usage);
+            recordUsage(usage);
             settled = true;
           }
         }
@@ -116,7 +110,7 @@ export async function observeModelUsage(
       if (!cancelled) downstream.error(error);
     } finally {
       reader.releaseLock();
-      if (!settled) missingUsage();
+      if (!settled) recordUsage(null);
     }
   })();
   const headers = new Headers(response.headers);

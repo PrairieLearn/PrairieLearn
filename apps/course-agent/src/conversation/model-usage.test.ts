@@ -14,9 +14,8 @@ const completion = {
   },
 };
 const encode = (event: unknown) => new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`);
-it('settles provider usage before forwarding completion to the native runtime', async () => {
-  const settle = vi.fn();
-  const missingUsage = vi.fn();
+it('records provider usage before forwarding completion to the native runtime', async () => {
+  const recordUsage = vi.fn();
   const result = await observeModelUsage(
     new Response(
       new ReadableStream({
@@ -28,13 +27,13 @@ it('settles provider usage before forwarding completion to the native runtime', 
       }),
       { headers: { 'Content-Type': 'text/event-stream' } },
     ),
-    { settle, missingUsage },
+    recordUsage,
   );
   const reader = result.response.body!.getReader();
   await reader.read();
   const chunk = await reader.read();
   expect(new TextDecoder().decode(chunk.value)).toContain('response.completed');
-  expect(settle).toHaveBeenCalledExactlyOnceWith({
+  expect(recordUsage).toHaveBeenCalledExactlyOnceWith({
     inputTokens: 10000,
     cachedInputTokens: 8000,
     outputTokens: 2000,
@@ -42,13 +41,11 @@ it('settles provider usage before forwarding completion to the native runtime', 
     costMilliDollars: 2,
   });
   await result.finished;
-  expect(missingUsage).not.toHaveBeenCalled();
 });
 
 it('continues accounting when the downstream reader disconnects', async () => {
   let upstream!: ReadableStreamDefaultController<Uint8Array>;
-  const settle = vi.fn();
-  const missingUsage = vi.fn();
+  const recordUsage = vi.fn();
   const result = await observeModelUsage(
     new Response(
       new ReadableStream<Uint8Array>({
@@ -58,27 +55,24 @@ it('continues accounting when the downstream reader disconnects', async () => {
       }),
       { headers: { 'Content-Type': 'text/event-stream' } },
     ),
-    { settle, missingUsage },
+    recordUsage,
   );
   await result.response.body!.cancel();
   upstream.enqueue(encode(completion));
   upstream.close();
   await result.finished;
-  expect(settle).toHaveBeenCalledOnce();
-  expect(missingUsage).not.toHaveBeenCalled();
+  expect(recordUsage).toHaveBeenCalledOnce();
 });
 
 it('marks an interrupted stream without usage as unresolved instead of inventing a charge', async () => {
-  const settle = vi.fn();
-  const missingUsage = vi.fn();
+  const recordUsage = vi.fn();
   const result = await observeModelUsage(
     new Response('data: {"type":"response.output_text.delta","delta":"Hello"}\n\n', {
       headers: { 'Content-Type': 'text/event-stream' },
     }),
-    { settle, missingUsage },
+    recordUsage,
   );
   await result.response.text();
   await result.finished;
-  expect(settle).not.toHaveBeenCalled();
-  expect(missingUsage).toHaveBeenCalledOnce();
+  expect(recordUsage).toHaveBeenCalledExactlyOnceWith(null);
 });
