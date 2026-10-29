@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import { Redis } from 'ioredis';
 import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
   type BudgetRequest,
@@ -253,6 +253,20 @@ describe('Course agent access and conversation privacy', () => {
       expect(await redis.pttl(keys[0])).toBeGreaterThan(0);
       const other = await createConversation(otherOwner);
       expect((await report(other.agent_conversation_id, 1, 0)).status).toBe(200);
+      const nextHour = Math.floor(Date.now() / 3_600_000) * 3_600_000 + 3_600_000;
+      const now = vi.spyOn(Date, 'now').mockReturnValue(nextHour);
+      try {
+        const renewed = await report(a.agent_conversation_id, 4, 0);
+        expect(renewed.status).toBe(200);
+        expect(BudgetResponseSchema.parse(await renewed.json()).allocation).toEqual({
+          status: 'granted',
+          grantedMilliDollars: 3000,
+          expiresAt: new Date(nextHour + 3_600_000).toISOString(),
+        });
+        expect(await limiter.getIntervalUsage(`user:${owner.id}`)).toBe(0);
+      } finally {
+        now.mockRestore();
+      }
     } finally {
       await limiter.close();
     }

@@ -1,11 +1,15 @@
 import type { UIMessage } from 'ai';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import type { ConversationState, PushSyncResult } from '@prairielearn/course-agent-types';
+import {
+  type ConversationState,
+  type PushSyncResult,
+  emptyUsage,
+} from '@prairielearn/course-agent-types';
 
-import type { BudgetState } from '../budget.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
+import type { BudgetState } from './budget.js';
 import { Conversation } from './conversation.js';
 
 const sdk = vi.hoisted(() => ({
@@ -112,6 +116,7 @@ function fixture() {
   };
   const sandbox = {
     prepare: vi.fn(),
+    stopProcesses: vi.fn(),
     authorizeModel: vi.fn(async (_config: { executionId: string }) => {}),
     captureReview: vi.fn(async () => ({
       repository: 'PrairieLearn/course',
@@ -136,8 +141,8 @@ function fixture() {
   return { conversation, saved, ctx, env, sandbox };
 }
 
-async function pendingReview(live: boolean) {
-  const { conversation, saved, ctx, env } = fixture();
+async function pendingReview(live: boolean, budget?: BudgetState) {
+  const { conversation, saved, ctx, env, sandbox } = fixture();
   await conversation.persistMessages([
     { id: 'user', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
   ]);
@@ -168,7 +173,7 @@ async function pendingReview(live: boolean) {
     },
   );
   await sdk.reviewReady.promise;
-  if (live) return { conversation, nativeResult };
+  if (live) return { conversation, nativeResult, saved, sandbox };
 
   // A delayed decision sees saved state/history, with no in-memory native execution.
   saved.set('conversation', {
@@ -177,11 +182,12 @@ async function pendingReview(live: boolean) {
     lifecycle: { status: 'offline' },
     deadline: null,
   });
+  if (budget) saved.set('budget', budget);
   const restored = new Conversation(ctx as unknown as DurableObjectState, env);
   await restored.persistMessages(conversation.messages);
   await restored.onStart();
   vi.mocked(SandboxTurn).mockClear();
-  return { conversation: restored, nativeResult };
+  return { conversation: restored, nativeResult, saved, sandbox };
 }
 
 it('denial after restart continues the saved thread with only its result', async () => {
@@ -263,8 +269,7 @@ it('Stop ends native work while admitted inference finishes accounting before re
   await options.prepare();
   options.onReady();
   const { executionId } = sandbox.authorizeModel.mock.calls[0][0];
-  const request = () =>
-    new Request('https://model.internal/v1/responses', { method: 'POST', body: '{}' });
+  const request = () => '{}';
   const response = await conversation.proxyModelRequest(request(), executionId);
   stop.abort();
   await sdk.completeResponse('initial');
@@ -293,7 +298,68 @@ it('Stop ends native work while admitted inference finishes accounting before re
   expect(saved.get('budget') as BudgetState).toMatchObject({
     balanceMilliDollars: 2998,
     blocked: null,
-    inFlightRequestId: null,
-    unreportedUsage: { costMilliDollars: 0 },
+    accounting: { phase: 'idle', usage: { costMilliDollars: 2 } },
   });
+});
+
+it('Stop during a refill never forwards inference after the credit reply arrives', async () => {
+  const { conversation, saved, sandbox } = fixture();
+  const grant = Promise.withResolvers<Response>();
+  const fetch = vi.fn(() => grant.promise);
+  vi.stubGlobal('fetch', fetch);
+  await conversation.persistMessages([
+    { id: 'user', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
+  ]);
+  const stop = new AbortController();
+  await conversation.onChatMessage(undefined, { requestId: 'initial', abortSignal: stop.signal });
+  await vi.mocked(SandboxTurn).mock.calls[0][2].prepare();
+  const { executionId } = sandbox.authorizeModel.mock.calls[0][0];
+  const response = conversation.proxyModelRequest('{}', executionId);
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+  stop.abort();
+  await sdk.completeResponse('initial');
+  grant.resolve(
+    Response.json({
+      sequence: 1,
+      allocation: {
+        status: 'granted',
+        grantedMilliDollars: 3000,
+        expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      },
+    }),
+  );
+  expect((await response).status).toBe(409);
+  await vi.waitFor(() =>
+    expect((saved.get('budget') as BudgetState).accounting.phase).toBe('idle'),
+  );
+  expect(fetch).toHaveBeenCalledOnce();
+  expect(saved.get('budget')).toMatchObject({ balanceMilliDollars: 3000, blocked: null });
+});
+
+it('a restored review saves its outcome without credit and gates subsequent inference', async () => {
+  const fetch = vi.fn();
+  vi.stubGlobal('fetch', fetch);
+  vi.stubGlobal('scheduler', { wait: async () => {} });
+  const { conversation, saved, sandbox } = await pendingReview(false, {
+    balanceMilliDollars: 0,
+    creditExpiresAt: null,
+    lastAcknowledgedSequence: 0,
+    accounting: { phase: 'idle', usage: emptyUsage() },
+    blocked: {
+      reason: 'budget_exhausted',
+      retryAt: new Date(Date.now() + 3_600_000).toISOString(),
+    },
+  });
+  conversation.recordReviewDecision({ callId: 'review', decision: 'denied' });
+  await expect(
+    conversation.recordReviewOutcome({ callId: 'review', result: results.denied }),
+  ).resolves.toBe(true);
+  const options = vi.mocked(SandboxTurn).mock.calls[0][2];
+  expect(options.text).toEqual({ callId: 'review', result: results.denied });
+  await options.prepare();
+  const { executionId } = sandbox.authorizeModel.mock.calls[0][0];
+  expect((await conversation.proxyModelRequest('{}', executionId)).status).toBe(429);
+  expect((saved.get('budget') as BudgetState).blocked?.reason).toBe('budget_exhausted');
+  expect(fetch).not.toHaveBeenCalled();
+  await sdk.completeResponse('continuation');
 });

@@ -20,16 +20,17 @@ import {
   type ReviewOutcome,
   type ReviewSnapshot,
   SavedJobOutcomeSchema,
+  emptyUsage,
 } from '@prairielearn/course-agent-types';
 
-import { ConversationBudget } from '../budget.js';
-import { observeModelUsage } from '../model-usage.js';
 import { reportError } from '../monitoring.js';
 import { CodexAppServerClient } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
+import { ConversationBudget } from './budget.js';
 import { buildInstructions } from './instructions.js';
+import { observeModelUsage } from './model-usage.js';
 
 const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
@@ -116,7 +117,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /** Existing outbound proxy entrypoint; only the sandbox binding can call it. */
-  async proxyModelRequest(request: Request, executionId: string): Promise<Response> {
+  async proxyModelRequest(body: string, executionId: string): Promise<Response> {
     if (!this.active || this.active.executionId !== executionId) {
       return new Response('Forbidden', { status: 403 });
     }
@@ -129,9 +130,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       if (this.modelRequest === pending.promise) this.modelRequest = null;
       pending.resolve(undefined);
     };
+    const requestId = crypto.randomUUID();
     try {
-      if (!(await this.budget.ensureCredit())) {
+      if (!(await this.budget.tryStartRequest(requestId))) {
         release();
+        if (!this.budget.blocked) return new Response('Execution stopped', { status: 409 });
         this.interruptForBudget();
         return Response.json(
           {
@@ -148,41 +151,34 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         this.record.lifecycle.status === 'stopping' ||
         this.workspaceShutdown
       ) {
+        this.budget.recordRequestUsage(requestId, emptyUsage());
         release();
         return new Response('Execution stopped', { status: 409 });
       }
-      const requestId = crypto.randomUUID();
-      this.budget.begin(requestId);
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: request.body,
+        body,
         redirect: 'manual',
       });
-      const result = await observeModelUsage(response, {
-        settle: (usage) => {
-          this.budget.settle(requestId, usage);
-          release();
-        },
-        missingUsage: () => {
-          this.budget.fail('usage_unavailable');
-          this.interruptForBudget();
-        },
+      const result = await observeModelUsage(response, (usage) => {
+        this.budget.recordRequestUsage(requestId, usage);
+        if (!usage) this.interruptForBudget();
+        release();
       });
       void this.keepAliveWhile(async () => {
         try {
           await result.finished;
-          await this.budget.reportCompletedRequest();
         } finally {
           release();
         }
       }).catch((error: unknown) => this.reportError(error));
       return result.response;
     } catch (error) {
-      this.budget.fail('usage_unavailable');
+      this.budget.recordRequestUsage(requestId, null);
       release();
       this.interruptForBudget();
       throw error;
@@ -252,7 +248,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // A new object has no saved conversation yet. Leave the private record null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this._record) return;
-    this.budget.recover();
+    if (this.budget.blocked) this.setRecord({ ...this.record, deadline: null });
     if (this.record.review) {
       await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
     }
@@ -621,7 +617,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // Stop terminates native work, but admitted inference finishes accounting before reuse.
     // Aborting the provider stream here would discard its final usage.
     if (this.modelRequest) await this.modelRequest;
-    await this.budget.report(false);
     if (this.active !== active) return;
     try {
       await active.stop;

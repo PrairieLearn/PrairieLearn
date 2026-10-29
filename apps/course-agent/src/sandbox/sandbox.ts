@@ -82,10 +82,7 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
       return new Response('Forbidden', { status: 403 });
     }
     return this.env.Conversation.getByName(this.ctx.props.conversationId).proxyModelRequest(
-      new Request('https://model.internal/v1/responses', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      }),
+      JSON.stringify(body),
       this.ctx.props.executionId,
     );
   }
