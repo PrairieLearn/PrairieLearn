@@ -4,10 +4,16 @@ import * as path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import { Redis } from 'ioredis';
 import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import {
+  type BudgetRequest,
+  BudgetResponseSchema,
+  emptyUsage,
+} from '@prairielearn/course-agent-types';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import {
@@ -17,6 +23,7 @@ import {
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { RedisRateLimiter } from '../lib/redis-rate-limiter.js';
 import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
@@ -84,6 +91,7 @@ describe('Course agent access and conversation privacy', () => {
     courseAgentServiceUrl: config.courseAgentServiceUrl,
     courseAgentServiceToken: config.courseAgentServiceToken,
     features: config.features,
+    cacheKeyPrefix: config.cacheKeyPrefix,
   };
 
   beforeAll(async () => {
@@ -116,6 +124,7 @@ describe('Course agent access and conversation privacy', () => {
   });
   beforeEach(async () => {
     serviceConversationId = crypto.randomUUID();
+    config.cacheKeyPrefix = `${originalConfig.cacheKeyPrefix}course-agent-test:${crypto.randomUUID()}:`;
     serviceRequests.length = 0;
     await updateCoursePermissionsRole({
       course_id: '1',
@@ -130,6 +139,138 @@ describe('Course agent access and conversation privacy', () => {
     await once(service, 'close');
   });
   afterAll(() => Object.assign(config, originalConfig));
+
+  test('rejects duplicate usage reports and preserves final usage after access revocation', async () => {
+    const conversation = await createConversation(owner);
+    const url = `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/usage`;
+    const report = (body: BudgetRequest, token = 'test-token') =>
+      fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    const request: BudgetRequest = {
+      sequence: 1,
+      usageDelta: { ...emptyUsage(), inputTokens: 10000, outputTokens: 2000, costMilliDollars: 40 },
+      requestCredit: true,
+    };
+    expect((await report(request, 'wrong')).status).toBe(401);
+    const accepted = await report(request);
+    expect(accepted.status).toBe(200);
+    const first = BudgetResponseSchema.parse(await accepted.json());
+    expect(first.allocation).toMatchObject({ status: 'granted', grantedMilliDollars: 3000 });
+    expect((await report(request)).status).toBe(409);
+    expect(
+      (await report({ ...request, usageDelta: { ...request.usageDelta, costMilliDollars: 80 } }))
+        .status,
+    ).toBe(409);
+    let saved = await selectOptionalCourseAgentConversation({
+      id: conversation.id,
+      course_id: '1',
+      user_id: owner.id,
+    });
+    expect(saved).toMatchObject({
+      usage_input_tokens: 10000,
+      usage_output_tokens: 2000,
+      usage_cost_milli_dollars: 40,
+    });
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: owner.id,
+      course_role: 'Editor',
+      authn_user_id: '1',
+    });
+    const final = {
+      sequence: 2,
+      usageDelta: { ...emptyUsage(), outputTokens: 500, costMilliDollars: 10 },
+      requestCredit: true,
+    };
+    const denied = await report(final);
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toEqual({
+      sequence: 2,
+      allocation: { status: 'denied', reason: 'not_allowed' },
+    });
+    expect(
+      (
+        await report({
+          sequence: 3,
+          usageDelta: { ...emptyUsage(), costMilliDollars: 5 },
+          requestCredit: false,
+        })
+      ).status,
+    ).toBe(200);
+    saved = await selectOptionalCourseAgentConversation({
+      id: conversation.id,
+      course_id: '1',
+      user_id: owner.id,
+    });
+    expect(saved).toMatchObject({ usage_output_tokens: 2500, usage_cost_milli_dollars: 55 });
+    expect((await report(request)).status).toBe(409);
+  });
+
+  test('limits actual hourly spend per user without charging credit pulls or report retries', async () => {
+    const redis = new Redis<'legacy'>(config.nonVolatileRedisUrl!);
+    const limiter = new RedisRateLimiter({
+      redis: () => redis,
+      keyPrefix: () => config.cacheKeyPrefix + 'course-agent-usage:',
+      intervalSeconds: 3600,
+    });
+    const report = (
+      agentId: string,
+      sequence: number,
+      costMilliDollars: number,
+      requestCredit = true,
+    ) =>
+      fetch(`${siteUrl}/pl/api/course-agent/conversations/${agentId}/usage`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sequence,
+          usageDelta: { ...emptyUsage(), costMilliDollars },
+          requestCredit,
+        }),
+      });
+    try {
+      const a = await createConversation(owner);
+      const b = await createConversation(owner);
+      expect((await report(a.agent_conversation_id, 1, 40000, false)).status).toBe(200);
+      expect((await report(a.agent_conversation_id, 1, 40000, false)).status).toBe(409);
+      expect((await report(b.agent_conversation_id, 1, 0)).status).toBe(200);
+      expect(await limiter.getIntervalUsage(`user:${owner.id}`)).toBe(40000);
+      expect((await report(a.agent_conversation_id, 2, 9000)).status).toBe(200);
+      const denied = await report(b.agent_conversation_id, 2, 1000);
+      expect(denied.status).toBe(429);
+      expect(denied.headers.get('Retry-After')).not.toBeNull();
+      expect(BudgetResponseSchema.parse(await denied.json()).allocation).toMatchObject({
+        status: 'denied',
+        reason: 'hourly_limit',
+      });
+      expect((await report(a.agent_conversation_id, 3, 0)).status).toBe(429);
+      expect(await limiter.getIntervalUsage(`user:${owner.id}`)).toBe(50000);
+      const keys = await redis.keys(`${config.cacheKeyPrefix}course-agent-usage:*`);
+      expect(keys).toHaveLength(1);
+      expect(await redis.pttl(keys[0])).toBeGreaterThan(0);
+      const other = await createConversation(otherOwner);
+      expect((await report(other.agent_conversation_id, 1, 0)).status).toBe(200);
+      const nextHour = Math.floor(Date.now() / 3_600_000) * 3_600_000 + 3_600_000;
+      const now = vi.spyOn(Date, 'now').mockReturnValue(nextHour);
+      try {
+        const renewed = await report(a.agent_conversation_id, 4, 0);
+        expect(renewed.status).toBe(200);
+        expect(BudgetResponseSchema.parse(await renewed.json()).allocation).toEqual({
+          status: 'granted',
+          grantedMilliDollars: 3000,
+          expiresAt: new Date(nextHour + 3_600_000).toISOString(),
+        });
+        expect(await limiter.getIntervalUsage(`user:${owner.id}`)).toBe(0);
+      } finally {
+        now.mockRestore();
+      }
+    } finally {
+      await limiter.close();
+    }
+  });
 
   test('rejects API and history access when the feature is disabled', async () => {
     const conversation = await createConversation(owner);

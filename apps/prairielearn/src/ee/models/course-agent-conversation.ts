@@ -1,12 +1,43 @@
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import type { BudgetRequest } from '@prairielearn/course-agent-types';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+export async function recordCourseAgentConversationUsage(id: string, request: BudgetRequest) {
+  const usage = request.usageDelta;
+  await execute(sql.add_usage, {
+    id,
+    input: usage.inputTokens,
+    cached: usage.cachedInputTokens,
+    output: usage.outputTokens,
+    reasoning: usage.reasoningTokens,
+    cost: usage.costMilliDollars,
+    sequence: request.sequence,
+  });
+}
+
 export async function selectOptionalCourseAgentConversationByAgentId(agentConversationId: string) {
   return queryOptionalRow(
     sql.select_course_agent_conversation_by_agent_id,
+    { agent_conversation_id: agentConversationId },
+    CourseAgentConversationSchema,
+  );
+}
+
+/** Accounting may finish after a course is soft-deleted. Lock the row to serialize reports. */
+export async function selectOptionalCourseAgentConversationByAgentIdForUpdate(
+  agentConversationId: string,
+) {
+  return queryOptionalRow(
+    sql.select_course_agent_conversation_by_agent_id_for_update,
     { agent_conversation_id: agentConversationId },
     CourseAgentConversationSchema,
   );

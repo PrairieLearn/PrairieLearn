@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './budget.js';
+
 export type ConversationLifecycle =
   // No live container. The next message initializes a workspace or restores the committed checkpoint.
   | { status: 'offline' }
@@ -16,7 +18,16 @@ export type ConversationLifecycle =
   // An operation failed or was interrupted. Explicit Resume repairs the workspace without replaying input.
   | {
       status: 'blocked';
-      reason: 'startup_failed' | 'runtime_failed' | 'checkpoint_failed' | 'cleanup_failed';
+      reason:
+        | 'startup_failed'
+        | 'runtime_failed'
+        | 'checkpoint_failed'
+        | 'cleanup_failed'
+        | 'budget_exhausted'
+        | 'budget_unavailable'
+        | 'usage_unavailable'
+        | 'access_revoked';
+      retryAt?: string;
     };
 
 /**

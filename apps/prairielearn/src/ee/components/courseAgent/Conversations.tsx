@@ -25,17 +25,9 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { ReviewCard } from './ReviewCard.js';
-
-const BLOCKED_MESSAGES = {
-  startup_failed:
-    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
-  runtime_failed:
-    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
-  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
-  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
-} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
 
 const NEW_CONVERSATION = 'new';
 
@@ -54,7 +46,10 @@ export function Conversations({
   showConversationStats: boolean;
 }) {
   const trpc = useTRPC();
-  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
+  const conversations = useQuery({
+    ...trpc.courseAgent.list.queryOptions(),
+    refetchInterval: active ? 10_000 : false,
+  });
   const listError = getAppError<CourseAgentError['List']>(conversations.error);
   if (conversations.isPending) return <Loading />;
   return (
@@ -189,6 +184,7 @@ function ConversationPicker({
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
+          usage={selectedConversation!}
           showConversationStats={showConversationStats}
           chatCsrfToken={chatCsrfToken}
           initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
@@ -234,11 +230,13 @@ function Chat({
   initialMessage,
   onInitialMessageSent,
   showConversationStats,
+  usage,
 }: {
   courseId: string;
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
+  usage: StaffCourseAgentConversation;
   initialMessage: string | undefined;
   onInitialMessageSent: () => void;
 }) {
@@ -299,7 +297,7 @@ function Chat({
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive || pendingReview) {
+    if (!responseActive || pendingReview || lifecycle?.status === 'blocked') {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -352,17 +350,11 @@ function Chat({
             </div>
           )}
           {lifecycle?.status === 'blocked' && (
-            <Alert variant="warning">
-              <p>{BLOCKED_MESSAGES[lifecycle.reason]}</p>
-              <Button
-                variant="outline-dark"
-                size="sm"
-                disabled={!connected || resume.isPending}
-                onClick={() => resume.mutate({ conversationId })}
-              >
-                Resume
-              </Button>
-            </Alert>
+            <BlockedNotice
+              state={lifecycle}
+              disabled={!connected || resume.isPending}
+              onResume={() => resume.mutate({ conversationId })}
+            />
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
             <p className="text-muted" role="status">
@@ -377,7 +369,7 @@ function Chat({
           {connectionError && (
             <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
-          {error && (
+          {error && lifecycle?.status !== 'blocked' && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
             </Alert>
@@ -392,7 +384,7 @@ function Chat({
         onSubmit={submit}
         onStop={!pendingReview && (responseActive || canStop) ? () => void stop() : undefined}
       >
-        {showConversationStats && <ConversationStats state={lifecycle} />}
+        {showConversationStats && <ConversationStats state={lifecycle} usage={usage} />}
       </Composer>
     </div>
   );

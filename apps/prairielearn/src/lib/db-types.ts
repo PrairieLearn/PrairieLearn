@@ -717,6 +717,12 @@ export const CourseAgentConversationSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
   title: z.string(),
+  usage_cost_milli_dollars: z.coerce.number(),
+  usage_input_tokens: z.coerce.number(),
+  usage_input_tokens_cache_read: z.coerce.number(),
+  usage_output_tokens: z.coerce.number(),
+  usage_output_tokens_reasoning: z.coerce.number(),
+  usage_report_sequence: z.coerce.number(),
   user_id: IdSchema,
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;

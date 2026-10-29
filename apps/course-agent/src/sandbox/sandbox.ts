@@ -62,7 +62,10 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
 }
 
 /** Only the conversation's pinned model is available; its API key stays outside the container. */
-export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: string }> {
+export class CourseAgentModelOutbound extends WorkerEntrypoint<
+  Env,
+  { model: string; conversationId?: string; executionId?: string }
+> {
   override async fetch(request: Request) {
     const url = new URL(request.url);
     if (
@@ -75,15 +78,13 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: str
     }
     const body = (await request.json()) as { model?: string };
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
-    return fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      redirect: 'manual',
-    });
+    if (!this.ctx.props.conversationId || !this.ctx.props.executionId) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    return this.env.Conversation.getByName(this.ctx.props.conversationId).proxyModelRequest(
+      JSON.stringify(body),
+      this.ctx.props.executionId,
+    );
   }
 }
 
@@ -91,6 +92,13 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: str
 export class CourseSandbox extends DurableObject<Env> {
   private process: ExecProcess | null = null;
   private nativeToken: string | null = null;
+
+  async authorizeModel(config: { model: string; conversationId: string; executionId: string }) {
+    await this.container.interceptOutboundHttp(
+      'model.internal:80',
+      this.ctx.exports.CourseAgentModelOutbound({ props: config }),
+    );
+  }
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);

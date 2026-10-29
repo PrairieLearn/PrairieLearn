@@ -1,6 +1,6 @@
 # Course agent service
 
-A Cloudflare Worker hosts private course-editing conversations behind PrairieLearn’s Enterprise `course-agent` flag. PrairieLearn owns authorization and the conversation catalog; `AIChatAgent` owns chat history, streaming, replay and Stop. The Conversation Durable Object owns sandbox lifecycle and one private persisted record. SandboxTurn owns each in-memory execution, and CourseSandbox owns container, native process and directory-backup operations. See [the execution contract](CONTRACT.md).
+A Cloudflare Worker hosts private course-editing conversations behind PrairieLearn’s Enterprise `course-agent` flag. PrairieLearn owns authorization and the conversation catalog; `AIChatAgent` owns chat history, streaming, replay and Stop. The Conversation Durable Object owns sandbox lifecycle and private lifecycle/accounting records. SandboxTurn owns each in-memory execution, and CourseSandbox owns container, native process and directory-backup operations. See [the execution contract](CONTRACT.md).
 
 ## Configuration
 
@@ -109,7 +109,11 @@ Outgoing requests are checked against the generated types with TypeScript. Incom
 
 Malformed messages and invalid consumed fields in replies or subscribed notifications fail the connection and pending work. Unknown notifications and late replies are ignored. Connection loss and command timeouts never replay a prompt. Codex currently labels WebSocket transport experimental and unsupported for production; deployed validation is required before enabling a pilot.
 
-Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Review cards wait for a PrairieLearn approval or denial result. Idle expiry checkpoints a pending review; the saved result continues the restored native thread without repeating the user prompt. Accounting remains separate work.
+Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Review cards wait for a PrairieLearn approval or denial result. Idle expiry checkpoints a pending review; the saved result continues the restored native thread without repeating the user prompt.
+
+### Usage and rate limits
+
+The Conversation DO deducts confirmed token costs after each model request, including requests between tool calls during long turns. At zero credit it asks PL for another allocation before admitting inference. PL checks actual reported spending against a soft $50/user/hour limit using AI grading's existing Redis counter pattern, and stores reported usage totals plus the last accepted report sequence on each conversation. Spending is persisted locally between refills; Stats and the hourly counter lag until the next refill, and turn completion does not flush a partial batch. The MVP assumes committed report replies reach the DO; lost replies require operator recovery. New credit requires `nonVolatileRedisUrl`. The development Stats menu shows token and cost totals; the chat shows a persistent retry time when limited. See [the accounting contract](BUDGET.md) for the policy, endpoint schemas, and failure handling.
 
 ### Push sync
 

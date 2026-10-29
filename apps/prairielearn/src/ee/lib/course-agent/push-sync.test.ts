@@ -63,6 +63,12 @@ const conversation: CourseAgentConversation = {
   agent_conversation_id: 'agent-1',
   title: 'Update question',
   created_at: new Date(0),
+  usage_input_tokens: 0,
+  usage_input_tokens_cache_read: 0,
+  usage_output_tokens: 0,
+  usage_output_tokens_reasoning: 0,
+  usage_cost_milli_dollars: 0,
+  usage_report_sequence: 0,
 };
 const graphql = vi.fn();
 const getBranch = vi.fn();

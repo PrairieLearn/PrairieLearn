@@ -20,6 +20,7 @@ import {
   type ReviewOutcome,
   type ReviewSnapshot,
   SavedJobOutcomeSchema,
+  emptyUsage,
 } from '@prairielearn/course-agent-types';
 
 import { reportError } from '../monitoring.js';
@@ -27,7 +28,9 @@ import { CodexAppServerClient } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
+import { ConversationBudget } from './budget.js';
 import { buildInstructions } from './instructions.js';
+import { observeModelUsage } from './model-usage.js';
 
 const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
@@ -69,6 +72,7 @@ type ConversationRecord = RecordData &
   );
 
 interface ActiveTurn {
+  executionId: string;
   requestId: string;
   execution: SandboxTurn;
   sdkFinished: PromiseWithResolvers<undefined>;
@@ -89,6 +93,98 @@ interface ReviewOperation {
  * persists workspace configuration and recovery data; browsers receive only its status/deadline.
  */
 export class Conversation extends AIChatAgent<Env, ConversationState> {
+  private budgetInstance: ConversationBudget | null = null;
+  /** Admission/settlement ownership; Stop waits for confirmed usage before releasing execution. */
+  private modelRequest: Promise<undefined> | null = null;
+
+  private get budget() {
+    this.budgetInstance ??= new ConversationBudget(this.ctx.storage, this.env, this.name, () => {
+      if (this._record && this.budgetInstance?.blocked) {
+        this.setRecord({ ...this.record, deadline: null });
+      }
+    });
+    return this.budgetInstance;
+  }
+
+  private interruptForBudget() {
+    const active = this.active;
+    if (!active) return;
+    // Let the provider-facing error return before interrupting its waiting native caller.
+    void this.keepAliveWhile(async () => {
+      await scheduler.wait(0);
+      if (this.active === active) await this.stopLive();
+    }).catch((error: unknown) => this.reportError(error));
+  }
+
+  /** Existing outbound proxy entrypoint; only the sandbox binding can call it. */
+  async proxyModelRequest(body: string, executionId: string): Promise<Response> {
+    if (!this.active || this.active.executionId !== executionId) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    if (this.modelRequest) {
+      return new Response('A model request is already running', { status: 409 });
+    }
+    const pending = Promise.withResolvers<undefined>();
+    this.modelRequest = pending.promise;
+    const release = () => {
+      if (this.modelRequest === pending.promise) this.modelRequest = null;
+      pending.resolve(undefined);
+    };
+    const requestId = crypto.randomUUID();
+    try {
+      if (!(await this.budget.tryStartRequest(requestId))) {
+        release();
+        if (!this.budget.blocked) return new Response('Execution stopped', { status: 409 });
+        this.interruptForBudget();
+        return Response.json(
+          {
+            error: {
+              code: 'course_agent_budget_exhausted',
+              message: 'The course agent has no available credit.',
+            },
+          },
+          { status: 429 },
+        );
+      }
+      if (
+        this.active?.executionId !== executionId ||
+        this.record.lifecycle.status === 'stopping' ||
+        this.workspaceShutdown
+      ) {
+        this.budget.recordRequestUsage(requestId, emptyUsage());
+        release();
+        return new Response('Execution stopped', { status: 409 });
+      }
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body,
+        redirect: 'manual',
+      });
+      const result = await observeModelUsage(response, (usage) => {
+        this.budget.recordRequestUsage(requestId, usage);
+        if (!usage) this.interruptForBudget();
+        release();
+      });
+      void this.keepAliveWhile(async () => {
+        try {
+          await result.finished;
+        } finally {
+          release();
+        }
+      }).catch((error: unknown) => this.reportError(error));
+      return result.response;
+    } catch (error) {
+      this.budget.recordRequestUsage(requestId, null);
+      release();
+      this.interruptForBudget();
+      throw error;
+    }
+  }
+
   override initialState: ConversationState = { status: 'offline', deadlineAt: null };
   private _record: ConversationRecord | null = null;
   // Process connections and completion promises exist only in this DO instance.
@@ -125,6 +221,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * part of "saving" from the user's perspective, so expose it as suspending.
    */
   private get publicState(): ConversationState {
+    if (this.budgetInstance?.blocked) {
+      return { status: 'blocked', ...this.budgetInstance.blocked, deadlineAt: null };
+    }
     const lifecycle = this.record.lifecycle;
     return {
       ...(lifecycle.status === 'destroying' ? { status: 'suspending' as const } : lifecycle),
@@ -149,10 +248,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // A new object has no saved conversation yet. Leave the private record null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this._record) return;
+    if (this.budget.blocked) this.setRecord({ ...this.record, deadline: null });
     if (this.record.review) {
       await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
     }
     this.setState(this.publicState);
+    if (this.budget.blocked) return;
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
     // reconstructing an in-flight operation. The remaining states need explicit recovery.
     switch (this.record.lifecycle.status) {
@@ -368,6 +469,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     if (
       this.active ||
+      (!continuation && this.budget.blocked) ||
       (!continuation && this.record.review) ||
       (!continuation && this.recovering) ||
       (!continuation && !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status))
@@ -385,6 +487,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
     });
+    const executionId = crypto.randomUUID();
     this.native ??= new CodexAppServerClient(this.sandbox);
     const execution = new SandboxTurn(this.sandbox, this.native, {
       messageId: crypto.randomUUID(),
@@ -447,6 +550,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         if (startup) {
           await this.sandbox.prepare(this.record.config, this.record.checkpoint);
         }
+        await this.sandbox.authorizeModel({
+          model: this.record.config.model,
+          conversationId: this.name,
+          executionId,
+        });
         if (outcome) {
           await this.sandbox.stopProcesses();
         }
@@ -461,6 +569,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       onAccepted: (nativeTurnId) => this.stash({ nativeTurnId }),
     });
     const active: ActiveTurn = {
+      executionId,
       requestId: options.requestId,
       execution,
       sdkFinished: Promise.withResolvers<undefined>(),
@@ -505,6 +614,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
     }
     await active.sdkFinished.promise;
+    // Stop terminates native work, but admitted inference finishes accounting before reuse.
+    // Aborting the provider stream here would discard its final usage.
+    if (this.modelRequest) await this.modelRequest;
     if (this.active !== active) return;
     try {
       await active.stop;
@@ -523,7 +635,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         return;
       }
     }
-    if (this.record.lifecycle.status === 'blocked') return;
+    if (this.budget.blocked || this.record.lifecycle.status === 'blocked') return;
     if (result.stopped && result.phase === 'startup') {
       await this.discardStartup();
     } else if (active.shutdown) {
@@ -597,11 +709,30 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       }
     }
     // Another Resume or an unfinished turn must not modify this workspace concurrently.
-    if (this.record.lifecycle.status !== 'blocked' || this.active || this.recovering) return false;
-    const reason = this.record.lifecycle.reason;
+    const blocked =
+      this.budget.blocked ??
+      (this.record.lifecycle.status === 'blocked' ? this.record.lifecycle : null);
+    if (!blocked || this.active || this.recovering) return false;
+    const reason = blocked.reason;
     this.recovering = true;
     try {
       switch (reason) {
+        case 'budget_exhausted':
+        case 'budget_unavailable':
+          if (!(await this.budget.resume())) return false;
+          if (this.record.sandboxId) {
+            await this.backupAndShutdown();
+          } else {
+            this.setRecord({
+              ...this.record,
+              lifecycle: { status: 'offline' },
+              sandboxId: null,
+            });
+          }
+          break;
+        case 'usage_unavailable':
+        case 'access_revoked':
+          return false;
         case 'startup_failed':
           await this.discardStartup();
           break;
