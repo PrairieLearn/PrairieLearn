@@ -701,6 +701,29 @@ class TestSympy:
             is None
         )
 
+    @pytest.mark.parametrize("allowed_type", ["finite-set", "interval"])
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_equivalent_infinite_union_members_require_set_type(
+        self,
+        allowed_type: psu.AllowedSympyType,
+        *,
+        simplify_expression: bool,
+    ) -> None:
+        result = psu.check_sympy_types(
+            sympy.Union(
+                sympy.S.Naturals0,
+                sympy.Range(0, sympy.oo, 1),
+                evaluate=False,
+            ),
+            {allowed_type},
+            simplify_expression=simplify_expression,
+        )
+
+        assert result == psu.SympyParseFailure(
+            f"Your answer uses set, which this input does not accept. "
+            f"Allowed types: {allowed_type}."
+        )
+
     @pytest.mark.parametrize(
         ("text", "allowed_types", "missing_types"),
         [

@@ -113,25 +113,6 @@ type _UsedSympyType = _SympyValueType | Literal["empty-set"]
 type AllowedSympyType = Literal["all"] | _SympyValueType
 
 
-def _maximal_union_args(expr: sympy.Union) -> tuple[sympy.Set, ...]:
-    """Return arguments not provably contained by another union argument."""
-    args = cast(tuple[sympy.Set, ...], expr.args)
-    # SymPy can prove named domains are subsets of Reals, but not always of the
-    # equal Interval(-oo, oo) representation.
-    comparison_args = tuple(
-        sympy.S.Reals if arg == sympy.S.Reals else arg for arg in args
-    )
-    return tuple(
-        arg
-        for index, arg in enumerate(args)
-        if not any(
-            arg != other
-            and comparison_args[index].is_subset(comparison_args[other_index]) is True
-            for other_index, other in enumerate(args)
-        )
-    )
-
-
 def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
@@ -149,8 +130,15 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
                 required_types.update(_used_sympy_types(arg))
         return required_types
     if isinstance(expr, sympy.Union):
+        args = cast(tuple[sympy.Set, ...], expr.args)
+        # SymPy can leave Reals alongside its subsets in an evaluated union.
+        # Unlike Rationals/Naturals, Reals can be typed as 'interval'
+        if any(arg == sympy.S.Reals for arg in args) and all(
+            arg.is_subset(sympy.S.Reals) is True for arg in args
+        ):
+            return {"interval"}
         required_types: set[_UsedSympyType] = set()
-        for arg in _maximal_union_args(expr):
+        for arg in args:
             required_types.update(_used_sympy_types(arg))
         return required_types
     if isinstance(expr, (sympy.Intersection, sympy.Complement)):
