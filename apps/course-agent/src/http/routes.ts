@@ -1,7 +1,11 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import {
+  CreateConversationInput,
+  ReviewDecisionSchema,
+  ReviewOutcomeSchema,
+} from '@prairielearn/course-agent-types';
 
 import { reportError } from '../monitoring.js';
 
@@ -69,6 +73,36 @@ conversations.post('/:id/resume', async (c) => {
     // This handled RPC failure would otherwise be returned as a successful HTTP handler.
     reportError(error);
     return c.json({ error: 'Could not recover workspace' }, 503);
+  }
+});
+
+conversations.get('/:id/pending-review', async (c) => {
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  return c.json(await conversation.getPendingReview());
+});
+
+conversations.post('/:id/pending-review/decision', async (c) => {
+  const decision = ReviewDecisionSchema.safeParse(await c.req.json().catch(() => null));
+  if (!decision.success) return c.text('Invalid decision', 400);
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  if (!(await conversation.recordReviewDecision(decision.data))) {
+    return c.text('Review has changed', 409);
+  }
+  return c.json({ decisionRecorded: true });
+});
+
+conversations.post('/:id/pending-review/outcome', async (c) => {
+  const outcome = ReviewOutcomeSchema.safeParse(await c.req.json().catch(() => null));
+  if (!outcome.success) return c.text('Invalid outcome', 400);
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  try {
+    if (!(await conversation.recordReviewOutcome(outcome.data))) {
+      return c.text('Review has changed', 409);
+    }
+    return c.json({ outcomeRecorded: true });
+  } catch (error) {
+    reportError(error);
+    return c.text('Could not incorporate review result', 503);
   }
 });
 

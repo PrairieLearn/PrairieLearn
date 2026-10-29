@@ -8,6 +8,11 @@ import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
 import { z } from 'zod';
 
+import {
+  PendingReviewSchema,
+  type ReviewDecision,
+  type ReviewOutcome,
+} from '@prairielearn/course-agent-types';
 import * as error from '@prairielearn/error';
 
 import { config } from '../../../lib/config.js';
@@ -126,4 +131,56 @@ export async function resumeCourseAgentConversation(agentConversationId: string)
     );
   }
   return z.strictObject({ recovered: z.literal(true) }).parse(await response.json());
+}
+
+export async function getCourseAgentPendingReview(agentConversationId: string) {
+  const { url, headers } = buildCourseAgentServiceRequest(
+    `conversations/${encodeURIComponent(agentConversationId)}/pending-review`,
+  );
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new error.HttpStatusError(502, 'Could not load the course agent review');
+  return PendingReviewSchema.nullable().parse(await response.json());
+}
+
+export async function recordCourseAgentReviewDecision(
+  agentConversationId: string,
+  decision: ReviewDecision,
+) {
+  const { url, headers } = buildCourseAgentServiceRequest(
+    `conversations/${encodeURIComponent(agentConversationId)}/pending-review/decision`,
+  );
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(decision),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) {
+    throw new error.HttpStatusError(
+      response.status === 409 ? 409 : 503,
+      'Could not record the review decision. Reload the review before continuing.',
+    );
+  }
+  z.strictObject({ decisionRecorded: z.literal(true) }).parse(await response.json());
+}
+
+export async function deliverCourseAgentReviewOutcome(
+  agentConversationId: string,
+  outcome: ReviewOutcome,
+) {
+  const { url, headers } = buildCourseAgentServiceRequest(
+    `conversations/${encodeURIComponent(agentConversationId)}/pending-review/outcome`,
+  );
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(outcome),
+  });
+  if (!response.ok) {
+    throw new error.HttpStatusError(
+      response.status === 409 ? 409 : 503,
+      'Could not deliver the review result. Try again.',
+    );
+  }
+  z.strictObject({ outcomeRecorded: z.literal(true) }).parse(await response.json());
 }

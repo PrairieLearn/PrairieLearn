@@ -4,11 +4,11 @@ A Cloudflare Worker hosts private course-editing conversations behind PrairieLea
 
 ## Configuration
 
-Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). GitHub-backed conversations additionally require `GITHUB_READ_TOKEN` with read access to the course repository. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; it can only call the configured model endpoint, clone and fetch the configured course repository, and use the SDK’s temporary backup grant. Git publication is unavailable.
+Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). GitHub-backed conversations additionally require `GITHUB_READ_TOKEN` with read access to the course repository. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. The container cannot publish; PrairieLearn performs approved publication and Course Sync outside it.
 
 Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings.
 
-`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after turn completion and chat persistence. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
+`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after normal turn completion and chat persistence, or after a review card has been persisted while the native tool waits for a decision. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
 
 ## Local development
 
@@ -34,6 +34,8 @@ Merge the following into `apps/prairielearn/config.json`, using the same service
   }
 }
 ```
+
+For GitHub publication, set `fileEditorUseGit: true`, configure the course repository and branch, and set PrairieLearn `githubClientToken` to an API credential with write access. Worker `PL_SERVICE_URL` defaults to `http://localhost:3000`; change it to your PrairieLearn origin if different so Resume can retrieve saved job outcomes.
 
 Start the Worker:
 
@@ -93,6 +95,9 @@ All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 - `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
 - `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.
 - `GET /conversations/{uuid}/get-messages` returns SDK history.
+- `GET /conversations/{uuid}/pending-review` returns the DO-owned full-file snapshot, card identity, status, and PL job reference, or `null`.
+- `POST /conversations/{uuid}/pending-review/decision` accepts `{ callId, decision, jobSequenceId }` for approval or `{ callId, decision }` for denial, and claims the operation before publication. Identical decisions succeed; conflicts return `409`.
+- `POST /conversations/{uuid}/pending-review/outcome` accepts `{ callId, result }` after a PrairieLearn review decision. It acknowledges SDK persistence; conflicting redelivery returns `409`.
 
 PrairieLearn’s owner- and creator-scoped tRPC routes create and recover conversations. Its existing authenticated proxy carries SDK traffic without parsing native Codex messages. The conversation connects to Codex over a private WebSocket through the CourseSandbox DO binding. CourseSandbox forwards upgrades to the container port and injects a fresh capability token; only its hash reaches the runner, and neither value enters a checkpoint. There is no public native-server route. Process execution still uses private Container exec.
 
@@ -104,12 +109,20 @@ Outgoing requests are checked against the generated types with TypeScript. Incom
 
 Malformed messages and invalid consumed fields in replies or subscribed notifications fail the connection and pending work. Unknown notifications and late replies are ignored. Connection loss and command timeouts never replay a prompt. Codex currently labels WebSocket transport experimental and unsupported for production; deployed validation is required before enabling a pilot.
 
-Focused automated tests cover session reuse, Stop/startup cancellation, failed cleanup, lost acceptance, and PrairieLearn authorization/binding/recovery. Real process termination, file preservation, and browser reconnect behavior are checked separately against a running sandbox. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Publication, push sync, approvals, accounting and rich tool cards remain separate work.
+Focused tests cover native termination, stream adaptation, lost acceptance, and PrairieLearn authorization/binding/recovery. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Review cards wait for a PrairieLearn approval or denial result. Idle expiry checkpoints a pending review; the saved result continues the restored native thread without repeating the user prompt. Accounting remains separate work.
+
+### Push sync
+
+The Conversation DO owns the pending snapshot; PL adds no table or conversation column. PL publishes the reviewed full-file contents using Octokit GraphQL, runs Course Sync, and stores the outcome in the existing job record before attempting one callback. Native call IDs identify reviews; there is no extra request UUID.
+
+Explicit Resume recovers a missed callback through PL's service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. The route returns `{ callId, jobSequenceId, status, result, error }`; status is running, completed, or blocked. Before ordinary job completion, callId may be null. Interrupted publication requires inspection and is never automatically retried. There is no PL delivery cron.
+
+Snapshot limits are 100 files, 64 KiB decoded per file, and 1 MiB of base64 contents. Only non-executable regular files are supported initially. GitHub attributes commits to the API credential. The agent handles fetching published changes into its sandbox. See [CONTRACT.md](CONTRACT.md#pending-reviews-and-publication-outcomes) for persistence and recovery.
 
 ## Deployment environments and monitoring
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings are repeated explicitly because Wrangler does not inherit them into named environments. Container image configuration is shared; the container instances belong to each environment's separate Durable Objects.
 
-Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
+Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. Set `PL_SERVICE_URL` to the matching PrairieLearn origin in each deployed environment so Resume can retrieve saved publication outcomes. No deployment or resource provisioning is performed by local checks.
 
 Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local reporting is disabled while the DSN is empty.

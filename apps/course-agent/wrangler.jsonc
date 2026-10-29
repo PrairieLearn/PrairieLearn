@@ -9,7 +9,8 @@
     "AGENT_TURN_SECONDS": "21600",
     "USER_IDLE_SECONDS": "600",
     "SENTRY_DSN": "",
-    "SENTRY_ENVIRONMENT": "development"
+    "SENTRY_ENVIRONMENT": "development",
+    "PL_SERVICE_URL": "http://localhost:3000"
   },
   "version_metadata": {
     "binding": "VERSION_METADATA"
@@ -66,7 +67,8 @@
         "AGENT_TURN_SECONDS": "21600",
         "USER_IDLE_SECONDS": "600",
         "SENTRY_DSN": "",
-        "SENTRY_ENVIRONMENT": "staging"
+        "SENTRY_ENVIRONMENT": "staging",
+        "PL_SERVICE_URL": ""
       },
       "secrets": {
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
@@ -100,7 +102,8 @@
         "AGENT_TURN_SECONDS": "21600",
         "USER_IDLE_SECONDS": "600",
         "SENTRY_DSN": "",
-        "SENTRY_ENVIRONMENT": "production"
+        "SENTRY_ENVIRONMENT": "production",
+        "PL_SERVICE_URL": ""
       },
       "secrets": {
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]

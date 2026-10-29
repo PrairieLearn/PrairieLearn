@@ -28,7 +28,7 @@ export function getJobSequenceResultsProps({
   course,
   jobSequence,
 }: {
-  course: Course | undefined;
+  course: Pick<Course, 'display_timezone'> | undefined;
   jobSequence: JobSequenceWithTokens;
 }): JobSequenceResultsProps {
   return JobSequenceResultsPropsSchema.parse({

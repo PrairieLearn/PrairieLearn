@@ -914,6 +914,9 @@ importers:
       delegated-events:
         specifier: ^1.1.2
         version: 1.1.2
+      diff:
+        specifier: ^9.0.0
+        version: 9.0.0
       dockerode:
         specifier: ^5.0.1
         version: 5.0.1(supports-color@10.2.2)

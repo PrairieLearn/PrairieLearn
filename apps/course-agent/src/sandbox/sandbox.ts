@@ -1,7 +1,23 @@
-import { DirectoryBackup, type DirectoryBackupRecord, Files } from '@cloudflare/sandbox';
+import { Buffer } from 'node:buffer';
+
+import {
+  DirectoryBackup,
+  type DirectoryBackupRecord,
+  Files,
+  SandboxFileError,
+} from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
+import {
+  MAX_REVIEW_BYTES,
+  MAX_REVIEW_FILE_BYTES,
+  type ReviewSnapshot,
+  ReviewSnapshotSchema,
+} from '@prairielearn/course-agent-types';
+
 const SESSION = '/workspace/session';
+// The node user and group in the base container image both have ID 1000.
+const NODE_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
@@ -125,7 +141,7 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.backups.restore(checkpoint);
     } else {
       await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
-      await this.exec(['chown', '-R', '1000:1000', SESSION]);
+      await this.exec(['chown', '-R', NODE_UID_GID, SESSION]);
       if (config.type === 'local') {
         const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
         if (!archive) throw new Error('The local course snapshot is missing');
@@ -184,7 +200,67 @@ export class CourseSandbox extends DurableObject<Env> {
       `${SESSION}/home/.codex/config.toml`,
       'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
     );
-    await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
+    await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
+    // Keep the parent root-owned so the agent cannot rename or replace course/home directories.
+    await this.exec(['chown', 'root:root', SESSION]);
+  }
+
+  /** Capture changed-file contents; Conversation persists the returned snapshot. */
+  async captureReview(repository: string, branch: string) {
+    const course = `${SESSION}/course`;
+    const files = new Files(this.container);
+    const options = { cwd: course, user: NODE_UID_GID };
+    const git = async (...args: string[]) => {
+      const result = await this.exec(
+        ['git', '--literal-pathspecs', '-c', 'safe.directory=*', '-C', course, ...args],
+        'node',
+      );
+      return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
+    };
+    await git('check-ref-format', `refs/heads/${branch}`);
+    // Pin the review to the remote-tracking commit; local HEAD may include agent commits.
+    const baseCommit = (
+      await git('rev-parse', '--verify', `refs/remotes/origin/${branch}^{commit}`)
+    ).trim();
+
+    // Comparing with the remote base includes local commits and staged/unstaged edits.
+    // Untracked files need a separate listing; NUL delimiters preserve spaces in paths.
+    const tracked = await git('diff', '--name-only', '-z', '--no-renames', baseCommit, '--');
+    const untracked = await git('ls-files', '--others', '--exclude-standard', '-z');
+    const paths = [...new Set((tracked + untracked).split('\0').filter(Boolean))];
+    if (paths.length > 100) throw new Error('A review may change at most 100 files');
+
+    const additions: ReviewSnapshot['additions'] = [];
+    const deletions: ReviewSnapshot['deletions'] = [];
+    let total = 0;
+    for (const path of paths) {
+      let info;
+      try {
+        info = await files.lstat(path, options);
+      } catch (error) {
+        if (!SandboxFileError.is(error) || error.code !== 'ENOENT') throw error;
+        deletions.push({ path });
+        continue;
+      }
+      if (info.type !== 'file') throw new Error(`Unsupported course file: ${path}`);
+      if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
+        throw new Error(`Review file is too large: ${path}`);
+      }
+      // Git records executable bits; the publication API accepts contents, not mode changes.
+      const old = await git('ls-tree', baseCommit, '--', path);
+      const mode = info.mode & 0o100 ? '100755' : '100644';
+      if (mode !== '100644' || (old && old.slice(0, 6) !== mode)) {
+        throw new Error(`File mode changes are not supported: ${path}`);
+      }
+
+      // Capture bytes now: later edits must not change what the instructor approves.
+      const response = await files.readFile(path, options);
+      const contents = Buffer.from(await response.arrayBuffer()).toString('base64');
+      total += contents.length;
+      if (total > MAX_REVIEW_BYTES) throw new Error('Reviewed changes are too large');
+      additions.push({ path, contents });
+    }
+    return ReviewSnapshotSchema.parse({ repository, branch, baseCommit, additions, deletions });
   }
 
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */

@@ -6,13 +6,20 @@ import {
 import { MessageType } from '@cloudflare/ai-chat/types';
 import type { DirectoryBackupRecord } from '@cloudflare/sandbox';
 import type { Connection, ConnectionContext } from 'agents';
-import { createUIMessageStreamResponse } from 'ai';
+import { createUIMessageStreamResponse, isToolUIPart } from 'ai';
 import { z } from 'zod';
 
 import {
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
+  type PendingReview,
+  type PushSyncResult,
+  PushSyncResultSchema,
+  type ReviewDecision,
+  type ReviewOutcome,
+  type ReviewSnapshot,
+  SavedJobOutcomeSchema,
 } from '@prairielearn/course-agent-types';
 
 import { reportError } from '../monitoring.js';
@@ -42,6 +49,12 @@ interface RecordData {
   nativeThreadId: string | null;
   checkpoint: DirectoryBackupRecord | null;
   deadline: Deadline | null;
+  review:
+    | (Omit<PendingReview, 'snapshot'> & {
+        snapshot: Omit<ReviewSnapshot, 'additions'> & { additions: { path: string }[] };
+        decision: ReviewDecision | null;
+      })
+    | null;
 }
 
 // Destruction is a private phase because the replacement checkpoint is committed
@@ -62,6 +75,13 @@ interface ActiveTurn {
   stop: Promise<void> | null;
   shutdown: boolean;
 }
+interface ReviewOperation {
+  callId: string;
+  /** Present while the original native tool call is still waiting for its answer. */
+  resolveNativeCall: ((result: PushSyncResult) => void) | null;
+  /** Once PL supplies a result, duplicate callbacks share its persistence and continuation promise. */
+  delivery: { result: PushSyncResult; done: Promise<boolean> } | null;
+}
 
 /**
  * Owns a conversation's workspace lifecycle: admit one turn, preserve edits, and recover failures.
@@ -75,6 +95,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private active: ActiveTurn | null = null;
   private native: CodexAppServerClient | null = null;
   private recovering = false;
+  private reviewOperation: ReviewOperation | null = null;
+  /** Continuations wait for the current checkpoint/destruction before starting execution. */
+  private workspaceShutdown: Promise<void> | null = null;
+
   private reportError(error: unknown) {
     reportError(error, {
       'course_agent.lifecycle': this._record?.lifecycle.status ?? 'uninitialized',
@@ -125,6 +149,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // A new object has no saved conversation yet. Leave the private record null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this._record) return;
+    if (this.record.review) {
+      await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
+    }
     this.setState(this.publicState);
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
     // reconstructing an in-flight operation. The remaining states need explicit recovery.
@@ -171,6 +198,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: null,
       nativeThreadId: null,
       checkpoint: null,
+      review: null,
       deadline: null,
     });
   }
@@ -198,8 +226,40 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** SDK restart recovery preserves buffered output but must never repeat file edits. */
   protected override async onChatRecovery() {
-    if (this._record && this.record.lifecycle.status !== 'blocked') this.block('runtime_failed');
+    if (this._record) await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
+    if (this._record && !this.record.review && this.record.lifecycle.status !== 'blocked') {
+      this.block('runtime_failed');
+    }
     return { continue: false };
+  }
+
+  /** Restore a card that SDK restart recovery persisted after the wake hook. */
+  async recoverReviewCard() {
+    if (!this.record.review || this.active || this.workspaceShutdown) return;
+    if (
+      this.record.lifecycle.status === 'blocked' &&
+      this.record.lifecycle.reason !== 'runtime_failed'
+    ) {
+      return;
+    }
+    if (!this.reviewPart()) return;
+    if (this.savedOutcome()) {
+      await this.continueReview();
+      return;
+    }
+    if (
+      !['waiting_for_agent', 'waiting_for_user', 'blocked', 'offline'].includes(
+        this.record.lifecycle.status,
+      )
+    ) {
+      return;
+    }
+    this.setRecord(
+      this.record.sandboxId
+        ? { ...this.record, lifecycle: { status: 'waiting_for_user' } }
+        : { ...this.record, sandboxId: null, lifecycle: { status: 'offline' } },
+    );
+    if (this.record.sandboxId) await this.scheduleDeadline('idle');
   }
 
   private block(reason: BlockedReason) {
@@ -259,6 +319,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block('runtime_failed');
       return;
     }
+    if (this.record.review) {
+      await this.backupAndShutdown();
+      return;
+    }
     active.shutdown ||= shutdown;
     this.setRecord({ ...this.record, lifecycle: { status: 'stopping' }, deadline: null });
     active.stop ??= active.execution.stop();
@@ -268,18 +332,54 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** SDK inbound-message hook: admit one input and return its sandbox output stream. */
   override async onChatMessage(_onFinish: unknown, options?: OnChatMessageOptions) {
     if (!options) throw new Error('Missing SDK chat options');
+    // The SDK identifies continuations; saved tool history supplies their result.
+    const continuation = options.continuation === true;
+    if (continuation && this.workspaceShutdown) await this.workspaceShutdown;
+    const outcome = continuation ? this.savedOutcome() : null;
+    if (continuation && !outcome) throw new Error('No saved review outcome');
+    const operation = this.reviewOperation;
+    const live = this.active;
+    if (
+      continuation &&
+      outcome &&
+      live &&
+      operation?.resolveNativeCall &&
+      operation.callId === this.record.review?.callId
+    ) {
+      live.requestId = options.requestId;
+      live.sdkFinished = Promise.withResolvers<undefined>();
+      const stream = live.execution.openStream();
+      this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' } });
+      await this.scheduleDeadline('turn');
+      const resolve = operation.resolveNativeCall;
+      operation.resolveNativeCall = null;
+      resolve(outcome);
+      const abort = () => {
+        void this.stopLive().catch((error: unknown) => {
+          this.reportError(error);
+          this.block('runtime_failed');
+        });
+      };
+      options.abortSignal?.addEventListener('abort', abort, { once: true });
+      void live.execution.finished.finally(() =>
+        options.abortSignal?.removeEventListener('abort', abort),
+      );
+      return createUIMessageStreamResponse({ stream });
+    }
     if (
       this.active ||
-      this.recovering ||
-      !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status)
+      (!continuation && this.record.review) ||
+      (!continuation && this.recovering) ||
+      (!continuation && !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status))
     ) {
       throw new Error('The course agent workspace is not ready.');
     }
     // Capture input before asynchronous setup allows another connection to change history.
     const message = this.messages.at(-1);
-    if (message?.role !== 'user') throw new Error('Expected a new user message');
-    const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
-    const startup = this.record.lifecycle.status === 'offline';
+    if (!continuation && message?.role !== 'user') throw new Error('Expected a new user message');
+    const text = message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
+    const startup = this.record.sandboxId === null;
+    const source = this.record.config;
     this.setRecord({
       ...this.record,
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
@@ -288,15 +388,72 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.native ??= new CodexAppServerClient(this.sandbox);
     const execution = new SandboxTurn(this.sandbox, this.native, {
       messageId: crypto.randomUUID(),
-      text,
+      text: outcome ? { callId: this.record.review!.callId, result: outcome } : text,
       startup,
+      onReview:
+        source.type === 'local'
+          ? undefined
+          : async ({ callId }, ready) => {
+              if (this.reviewOperation?.resolveNativeCall) {
+                throw new Error('A review is already pending');
+              }
+              const result = Promise.withResolvers<PushSyncResult>();
+              const operation: ReviewOperation = {
+                callId,
+                resolveNativeCall: result.resolve,
+                delivery: null,
+              };
+              this.reviewOperation = operation;
+              try {
+                const snapshot: ReviewSnapshot = await this.sandbox.captureReview(
+                  source.repository,
+                  source.branch,
+                );
+                this.clearReview();
+                snapshot.additions.forEach((file, index) =>
+                  this.ctx.storage.kv.put(`review-file:${index}`, file.contents),
+                );
+                this.setRecord({
+                  ...this.record,
+                  review: {
+                    callId,
+                    card: { messageId: this.active!.execution.messageId, partId: callId },
+                    snapshot: {
+                      ...snapshot,
+                      additions: snapshot.additions.map(({ path }) => ({ path })),
+                    },
+                    status: 'pending',
+                    jobSequenceId: null,
+                    error: null,
+                    decision: null,
+                  },
+                });
+                ready();
+                await this.active!.sdkFinished.promise;
+                this.setRecord({
+                  ...this.record,
+                  lifecycle: { status: 'waiting_for_user' },
+                  deadline: null,
+                });
+                await this.scheduleDeadline('idle');
+              } catch (error) {
+                if (this.reviewOperation === operation) this.reviewOperation = null;
+                throw error;
+              }
+              return result.promise;
+            },
       prepare: async () => {
         await this.scheduleDeadline('turn');
-        if (startup) await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+        if (startup) {
+          await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+        }
+        if (outcome) {
+          await this.sandbox.stopProcesses();
+        }
       },
       thread: {
         model: this.record.config.model,
-        instructions: buildInstructions(this.record.courseContext ?? undefined),
+        instructions: buildInstructions(this.record.courseContext ?? undefined, source.type),
         threadId: this.record.nativeThreadId,
       },
       onThread: (nativeThreadId) => this.setRecord({ ...this.record, nativeThreadId }),
@@ -355,6 +512,17 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.active = null;
       if (active.stop) this.native = null;
     }
+    if (this.reviewOperation) {
+      this.reviewOperation.resolveNativeCall = null;
+      if (!this.reviewOperation.delivery) this.reviewOperation = null;
+    }
+    if (this.record.review) {
+      if (this.savedOutcome() && !result.error && !result.stopped) {
+        this.clearReview();
+      } else {
+        return;
+      }
+    }
     if (this.record.lifecycle.status === 'blocked') return;
     if (result.stopped && result.phase === 'startup') {
       await this.discardStartup();
@@ -368,6 +536,66 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Explicit Resume repairs the workspace; it never repeats an interrupted prompt. */
   async resume(): Promise<boolean> {
+    const review = this.record.review;
+    if (review?.decision && !this.savedOutcome()) {
+      if (this.recovering || this.reviewOperation?.delivery) return false;
+      this.recovering = true;
+      try {
+        if (review.decision.decision === 'denied') {
+          return await this.recordReviewOutcome({
+            callId: review.callId,
+            result: {
+              decision: 'denied',
+              publication: { status: 'not_attempted' },
+              sync: { status: 'not_attempted' },
+            },
+          });
+        }
+        const url = new URL(
+          `pl/api/course-agent/conversations/${this.name}/jobs/${review.jobSequenceId}/outcome`,
+          this.env.PL_SERVICE_URL.endsWith('/')
+            ? this.env.PL_SERVICE_URL
+            : `${this.env.PL_SERVICE_URL}/`,
+        );
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}` },
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (!response.ok) {
+          if (response.status === 404) {
+            this.setRecord({
+              ...this.record,
+              review: {
+                ...review,
+                status: 'blocked',
+                error: 'The publication job could not be verified. Inspect it before retrying.',
+              },
+            });
+          }
+          throw new Error('Could not retrieve the publication outcome.');
+        }
+        const saved = SavedJobOutcomeSchema.parse(await response.json());
+        if (
+          (saved.callId !== null && saved.callId !== review.callId) ||
+          saved.jobSequenceId !== review.jobSequenceId
+        ) {
+          throw new Error('Publication job does not match the pending review.');
+        }
+        if (saved.status === 'running') return false;
+        if (saved.status === 'blocked' || !saved.result) {
+          this.setRecord({
+            ...this.record,
+            review: { ...review, status: 'blocked', error: saved.error },
+          });
+          throw new Error(
+            saved.error ?? 'Publication was interrupted. Inspect the job before retrying.',
+          );
+        }
+        return await this.recordReviewOutcome({ callId: review.callId, result: saved.result });
+      } finally {
+        this.recovering = false;
+      }
+    }
     // Another Resume or an unfinished turn must not modify this workspace concurrently.
     if (this.record.lifecycle.status !== 'blocked' || this.active || this.recovering) return false;
     const reason = this.record.lifecycle.reason;
@@ -384,6 +612,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         case 'cleanup_failed':
           await this.destroyCheckpointed();
       }
+      if (this.record.review && this.savedOutcome()) await this.continueReview();
       return true;
     } finally {
       this.recovering = false;
@@ -407,12 +636,228 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
   }
 
+  private reviewPart() {
+    const callId = this.record.review?.callId;
+    for (const message of this.messages) {
+      const part = message.parts.find((part) => isToolUIPart(part) && part.toolCallId === callId);
+      if (part && isToolUIPart(part)) return { message, part };
+    }
+    return null;
+  }
+
+  private savedOutcome() {
+    const saved = this.reviewPart();
+    return saved?.part.state === 'output-available'
+      ? PushSyncResultSchema.parse(saved.part.output)
+      : null;
+  }
+
+  private clearReview() {
+    this.record.review?.snapshot.additions.forEach((_, index) =>
+      this.ctx.storage.kv.delete(`review-file:${index}`),
+    );
+    this.setRecord({ ...this.record, review: null });
+  }
+
+  /** The review remains available without restoring or waking a sandbox. */
+  getPendingReview() {
+    const review = this.record.review;
+    if (
+      !review ||
+      !['waiting_for_user', 'offline', 'blocked'].includes(this.record.lifecycle.status) ||
+      !this.reviewPart() ||
+      this.savedOutcome()
+    ) {
+      return null;
+    }
+    return {
+      callId: review.callId,
+      card: review.card,
+      status: review.status,
+      jobSequenceId: review.jobSequenceId,
+      error: review.error,
+      snapshot: {
+        ...review.snapshot,
+        additions: review.snapshot.additions.map((file, index) => ({
+          ...file,
+          contents: this.ctx.storage.kv.get<string>(`review-file:${index}`)!,
+        })),
+      },
+    } satisfies PendingReview;
+  }
+
+  /** Claim before PL starts external work; conflicting approvals cannot publish twice. */
+  recordReviewDecision(decision: ReviewDecision): boolean {
+    const review = this.record.review;
+    if (!review || review.callId !== decision.callId) return false;
+    if (review.decision) return JSON.stringify(review.decision) === JSON.stringify(decision);
+    if (!['waiting_for_user', 'offline', 'blocked'].includes(this.record.lifecycle.status)) {
+      return false;
+    }
+    if (
+      !this.messages.some(
+        (message) =>
+          message.id === review.card.messageId &&
+          message.parts.some(
+            (part) =>
+              isToolUIPart(part) &&
+              part.toolCallId === review.callId &&
+              part.state === 'input-available',
+          ),
+      )
+    ) {
+      return false;
+    }
+    this.setRecord({
+      ...this.record,
+      review: {
+        ...review,
+        status: 'running',
+        decision,
+        jobSequenceId: decision.decision === 'approved' ? decision.jobSequenceId : null,
+      },
+    });
+    return true;
+  }
+
+  /** Authenticated callbacks are accepted only for the frozen call and exact result. */
+  async recordReviewOutcome(outcome: ReviewOutcome): Promise<boolean> {
+    const pending = this.reviewOperation;
+    // Old callbacks are checked against saved history without replacing a newer review.
+    if (pending && pending.callId !== outcome.callId) return this.acceptReviewOutcome(outcome);
+    const operation: ReviewOperation = pending ?? {
+      callId: outcome.callId,
+      resolveNativeCall: null,
+      delivery: null,
+    };
+    if (operation.delivery) {
+      return JSON.stringify(operation.delivery.result) === JSON.stringify(outcome.result)
+        ? operation.delivery.done
+        : false;
+    }
+    this.reviewOperation = operation;
+    const delivery = { result: outcome.result, done: this.acceptReviewOutcome(outcome) };
+    operation.delivery = delivery;
+    try {
+      return await delivery.done;
+    } finally {
+      // Continuing the agent can create its next review before this delivery returns.
+      if (this.reviewOperation === operation) {
+        operation.delivery = null;
+        if (!operation.resolveNativeCall) this.reviewOperation = null;
+      }
+    }
+  }
+
+  private async acceptReviewOutcome(outcome: ReviewOutcome): Promise<boolean> {
+    const history = this.messages;
+    for (const message of history) {
+      for (const part of message.parts) {
+        if (
+          isToolUIPart(part) &&
+          part.toolCallId === outcome.callId &&
+          part.state === 'output-available'
+        ) {
+          if (
+            JSON.stringify(PushSyncResultSchema.parse(part.output)) !==
+            JSON.stringify(outcome.result)
+          ) {
+            return false;
+          }
+          if (this.record.review?.callId === outcome.callId && !this.active) {
+            await this.continueReview();
+          }
+          return true;
+        }
+      }
+    }
+    const review = this.record.review;
+    if (
+      !review ||
+      review.callId !== outcome.callId ||
+      review.decision?.decision !== outcome.result.decision
+    ) {
+      return false;
+    }
+    if (!this.workspaceShutdown) {
+      this.setRecord({
+        ...this.record,
+        lifecycle: { status: 'waiting_for_agent' },
+        deadline: null,
+      });
+    }
+    // Publish the saved result before resuming the native call. Its completion
+    // notification belongs to the closed review stream, not the new response.
+    await this.persistMessages(
+      history.map((message) => ({
+        ...message,
+        parts: message.parts.map((part) =>
+          isToolUIPart(part) && part.toolCallId === outcome.callId
+            ? {
+                type: 'tool-push_sync' as const,
+                toolCallId: part.toolCallId,
+                input: part.input,
+                state: 'output-available' as const,
+                output: outcome.result,
+              }
+            : part,
+        ),
+      })),
+    );
+    const response = await this.continueLastTurn();
+    if (response.status !== 'completed') throw new Error('Could not incorporate review result');
+    const stored = this.messages
+      .flatMap((message) => message.parts)
+      .find(
+        (part) =>
+          isToolUIPart(part) &&
+          part.toolCallId === outcome.callId &&
+          part.state === 'output-available',
+      );
+    if (!stored) throw new Error('SDK did not persist review result');
+    return true;
+  }
+
+  /** Scheduled and explicit recovery uses only the saved tool result, never old user input. */
+  async continueReview() {
+    if (!this.record.review || this.active || this.workspaceShutdown || !this.savedOutcome()) {
+      return;
+    }
+    this.setRecord({
+      ...this.record,
+      lifecycle: { status: 'waiting_for_agent' },
+      deadline: null,
+    });
+    const result = await this.continueLastTurn();
+    if (result.status !== 'completed') this.block('runtime_failed');
+  }
+
   /** Commit a replacement backup before shutdown; cleanup of the old archive is independent. */
   private async backupAndShutdown() {
-    this.native?.close();
-    this.native = null;
+    // Outcome delivery must await the same shutdown started by idle expiry or recovery.
+    if (this.workspaceShutdown) return this.workspaceShutdown;
+    const shutdown = this.checkpointAndDestroy();
+    this.workspaceShutdown = shutdown;
+    try {
+      await shutdown;
+    } finally {
+      this.workspaceShutdown = null;
+    }
+  }
+
+  private async checkpointAndDestroy() {
     this.setRecord({ ...this.record, lifecycle: { status: 'suspending' }, deadline: null });
     try {
+      const active = this.active;
+      if (active) {
+        await active.execution.stop();
+        await active.sdkFinished.promise;
+        await active.execution.finished;
+        // finishTurn releases execution ownership before checkpointing can proceed.
+        while (this.active === active) await scheduler.wait(0);
+      }
+      this.native?.close();
+      this.native = null;
       const previous = this.record.checkpoint;
       const checkpoint = await this.sandbox.checkpoint();
       this.setRecord({ ...this.record, checkpoint, lifecycle: { status: 'destroying' } });

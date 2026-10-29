@@ -2,7 +2,13 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
+import { type PushSyncResult, type ReviewOutcome } from '@prairielearn/course-agent-types';
+
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
+import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
+import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
+import type { ThreadReadParams } from '../../generated/types/v2/ThreadReadParams.js';
 import type { ThreadResumeParams } from '../../generated/types/v2/ThreadResumeParams.js';
 import type { ThreadStartParams } from '../../generated/types/v2/ThreadStartParams.js';
 import type { TurnInterruptParams } from '../../generated/types/v2/TurnInterruptParams.js';
@@ -30,6 +36,38 @@ const TurnCompleted = z.object({
   }),
 });
 
+const ItemCompleted = z.object({
+  threadId: z.string(),
+  item: z.object({ id: z.string(), type: z.string() }),
+});
+const PushSyncCall: z.ZodType<DynamicToolCallParams> = z.object({
+  threadId: z.string(),
+  turnId: z.string(),
+  callId: z.string(),
+  namespace: z.null(),
+  tool: z.literal('push_sync'),
+  arguments: z.strictObject({}),
+});
+const FunctionCallOutput = z.object({
+  type: z.literal('functionCallOutput'),
+  name: z.string(),
+  output: z.string(),
+});
+const ThreadHistory = z.object({
+  thread: z.object({
+    turns: z.array(
+      z.object({
+        items: z.array(
+          z.union([
+            FunctionCallOutput,
+            z.object({ type: z.string() }).refine((item) => item.type !== 'functionCallOutput'),
+          ]),
+        ),
+      }),
+    ),
+  }),
+});
+
 /** A workspace's app-server connection, reused across turns until Stop or workspace cleanup. */
 export class CodexAppServerClient {
   private rpc: MessageConnection | null = null;
@@ -39,21 +77,30 @@ export class CodexAppServerClient {
   private threadId: string | null = null;
   private parts = new Map<string, 'text' | 'reasoning'>();
   private failure: Error | null = null;
+  private onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<PushSyncResult>;
 
   constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
 
-  beginTurn(messageId: string) {
+  beginTurn(
+    messageId: string,
+    onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<PushSyncResult>,
+  ) {
     this.terminal = Promise.withResolvers<undefined>();
     this.turnId = null;
     this.parts.clear();
-    // Setup can fail before the execution helper starts waiting for completion.
+    this.onReview = onReview;
     void this.terminal.promise.catch(() => {});
+    return this.openStream(messageId);
+  }
+
+  /** A review ends one SDK response while retaining the live native connection. */
+  openStream(messageId: string) {
+    if (this.controller) throw new Error('An SDK response is already open');
     return new ReadableStream<UIMessageChunk>({
       start: (controller) => {
         this.controller = controller;
         controller.enqueue({ type: 'start', messageId });
       },
-      // The SDK may cancel its reader before native execution has stopped.
       cancel: () => {
         this.controller = null;
       },
@@ -86,11 +133,41 @@ export class CodexAppServerClient {
           this.fail(error instanceof Error ? error : new Error(String(error)));
         }
       });
+    rpc.onRequest('item/tool/call', async (value: unknown) => {
+      const call = this.parseReviewCall(value);
+      if (!this.onReview) throw new Error('Review handling is not configured');
+      const result = await this.onReview(call, () => {
+        // The frontend uses this tool part to load the saved review from PL.
+        // File contents stay in DO storage instead of entering chat history.
+        this.emit({
+          type: 'tool-input-available',
+          toolCallId: call.callId,
+          toolName: 'push_sync',
+          input: {},
+        });
+        this.finishResponse();
+      });
+      const response = {
+        success: result.publication.status === 'published' && result.sync.status === 'succeeded',
+        contentItems: [{ type: 'inputText' as const, text: JSON.stringify(result) }],
+      } satisfies DynamicToolCallResponse;
+      return response;
+    });
     rpc.listen();
     onNotification('item/agentMessage/delta', TextDelta, (params) => this.delta('text', params));
     onNotification('item/reasoning/summaryTextDelta', TextDelta, (params) =>
       this.delta('reasoning', params),
     );
+    onNotification('item/completed', ItemCompleted, ({ threadId, item }) => {
+      if (threadId !== this.threadId) return;
+      const type =
+        item.type === 'agentMessage' ? 'text' : item.type === 'reasoning' ? 'reasoning' : null;
+      if (!type) return;
+      const id = `${type}:${item.id}`;
+      if (this.parts.delete(id)) {
+        this.emit({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
+      }
+    });
     onNotification('turn/completed', TurnCompleted, (params) => {
       if (params.threadId !== this.threadId || (this.turnId && params.turn.id !== this.turnId)) {
         return;
@@ -116,6 +193,14 @@ export class CodexAppServerClient {
   private get connection() {
     if (!this.rpc) throw new Error('Native runner is not connected');
     return this.rpc;
+  }
+
+  private parseReviewCall(value: unknown): DynamicToolCallParams {
+    const parsed = PushSyncCall.safeParse(value);
+    if (!parsed.success || parsed.data.threadId !== this.threadId) {
+      throw new Error('Invalid push_sync call');
+    }
+    return parsed.data;
   }
 
   private fail(error: Error) {
@@ -168,17 +253,57 @@ export class CodexAppServerClient {
           } satisfies ThreadResumeParams,
           ThreadResult,
         )
-      : await this.request('thread/start', settings, ThreadResult);
+      : await this.request(
+          'thread/start',
+          {
+            ...settings,
+            dynamicTools: this.onReview ? [pushSyncTool] : [],
+          } satisfies ThreadStartParams,
+          ThreadResult,
+        );
     this.threadId = result.thread.id;
     return result.thread.id;
   }
 
-  async run(text: string, accepted: (turnId: string) => void) {
+  async run(text: string | ReviewOutcome, accepted: (turnId: string) => void) {
+    if (typeof text !== 'string') {
+      const saved = await this.request(
+        'thread/read',
+        {
+          threadId: this.threadId!,
+          includeTurns: true,
+        } satisfies ThreadReadParams,
+        ThreadHistory,
+      );
+      const incorporated = saved.thread.turns.some((turn) =>
+        turn.items.some(
+          (item) =>
+            item.type === 'functionCallOutput' &&
+            'name' in item &&
+            item.name === 'push_sync' &&
+            item.output === JSON.stringify(text),
+        ),
+      );
+      if (incorporated) {
+        this.terminal.resolve(undefined);
+        return;
+      }
+    }
     const result = await this.request(
       'turn/start',
       {
         threadId: this.threadId!,
-        input: [{ type: 'text', text, text_elements: [] }],
+        input: typeof text === 'string' ? [{ type: 'text', text, text_elements: [] }] : [],
+        ...(typeof text !== 'string'
+          ? {
+              toolOutput: {
+                name: 'push_sync',
+                namespace: null,
+                output: JSON.stringify(text),
+                retain: true,
+              },
+            }
+          : {}),
       } satisfies TurnStartParams,
       TurnResult,
     );
@@ -231,8 +356,16 @@ export class CodexAppServerClient {
     });
   }
 
+  emit(chunk: UIMessageChunk) {
+    this.controller?.enqueue(chunk);
+  }
+
   closeStream(error?: unknown) {
     if (error) this.terminal.reject(error);
+    this.finishResponse(error);
+  }
+
+  private finishResponse(error?: unknown) {
     if (!this.controller) return;
     for (const [id, type] of this.parts) {
       this.controller.enqueue({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
@@ -247,6 +380,7 @@ export class CodexAppServerClient {
     this.controller.enqueue({ type: 'finish' });
     this.controller.close();
     this.controller = null;
+    this.parts.clear();
   }
 
   close() {
@@ -256,3 +390,11 @@ export class CodexAppServerClient {
     this.rpc = null;
   }
 }
+
+const pushSyncTool: DynamicToolSpec = {
+  type: 'function',
+  name: 'push_sync',
+  description:
+    'Request instructor review, Git publication, and Course Sync of the current course edits. Wait for the result; do not push yourself.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+};

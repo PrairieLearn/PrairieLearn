@@ -2,7 +2,7 @@ import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
-import type { UIMessage } from 'ai';
+import { type UIMessage, isToolUIPart } from 'ai';
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -14,7 +14,7 @@ import {
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
-import type { ConversationState } from '@prairielearn/course-agent-types';
+import { type ConversationState } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
@@ -26,6 +26,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
+import { ReviewCard } from './ReviewCard.js';
 
 const BLOCKED_MESSAGES = {
   startup_failed:
@@ -274,7 +275,14 @@ function Chat({
   });
   const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
   const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
-  const readyToSend = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
+  const pendingReview = messages.some((message) =>
+    message.parts.some(
+      (part) =>
+        isToolUIPart(part) && part.type === 'tool-push_sync' && part.state !== 'output-available',
+    ),
+  );
+  const readyToSend =
+    !pendingReview && (lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user');
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
   const [draft, setDraft] = useState('');
   // Wait for initial history before allowing messages to be sent.
@@ -291,7 +299,7 @@ function Chat({
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive) {
+    if (!responseActive || pendingReview) {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -326,7 +334,16 @@ function Chat({
             </p>
           )}
           {messages.map((message) => (
-            <Message key={message.id} message={message} />
+            <Message
+              key={message.id}
+              message={message}
+              conversationId={conversationId}
+              canReview={
+                lifecycle?.status === 'waiting_for_user' ||
+                lifecycle?.status === 'offline' ||
+                lifecycle?.status === 'blocked'
+              }
+            />
           ))}
           {showThinking && (
             <div className="text-muted small">
@@ -373,7 +390,7 @@ function Chat({
         stopDisabled={!connected || !canStop}
         onDraftChange={setDraft}
         onSubmit={submit}
-        onStop={responseActive || canStop ? () => void stop() : undefined}
+        onStop={!pendingReview && (responseActive || canStop) ? () => void stop() : undefined}
       >
         {showConversationStats && <ConversationStats state={lifecycle} />}
       </Composer>
@@ -435,7 +452,15 @@ function Composer({
   );
 }
 
-function Message({ message }: { message: UIMessage }) {
+function Message({
+  message,
+  conversationId,
+  canReview,
+}: {
+  message: UIMessage;
+  conversationId: string;
+  canReview: boolean;
+}) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     return (
@@ -450,6 +475,18 @@ function Message({ message }: { message: UIMessage }) {
         const key = `part-${index}`;
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+        if (isToolUIPart(part) && part.type === 'tool-push_sync') {
+          return (
+            <ReviewCard
+              key={key}
+              conversationId={conversationId}
+              messageId={message.id}
+              canReview={canReview}
+              partId={part.toolCallId}
+              output={part.state === 'output-available' ? part.output : undefined}
+            />
+          );
+        }
         return null;
       })}
     </div>

@@ -1,5 +1,9 @@
 import type { UIMessageChunk } from 'ai';
 
+import type { PushSyncResult, ReviewOutcome } from '@prairielearn/course-agent-types';
+
+import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
+
 import type { CodexAppServerClient } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 
@@ -15,6 +19,7 @@ export class SandboxTurn {
   private interruptible = false;
   private stopping: Promise<void> | null = null;
   readonly finished: Promise<TurnResult>;
+  readonly messageId: string;
   readonly stream: ReadableStream<UIMessageChunk>;
 
   constructor(
@@ -22,7 +27,8 @@ export class SandboxTurn {
     private native: CodexAppServerClient,
     options: {
       messageId: string;
-      text: string;
+      text: string | ReviewOutcome;
+      onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<PushSyncResult>;
       startup: boolean;
       prepare: () => Promise<void>;
       thread: { model: string; instructions: string; threadId: string | null };
@@ -31,8 +37,13 @@ export class SandboxTurn {
       onAccepted: (id: string) => void;
     },
   ) {
-    this.stream = native.beginTurn(options.messageId);
+    this.messageId = options.messageId;
+    this.stream = native.beginTurn(options.messageId, options.onReview);
     this.finished = this.execute(options);
+  }
+
+  openStream() {
+    return this.native.openStream(this.messageId);
   }
 
   private get stopped() {

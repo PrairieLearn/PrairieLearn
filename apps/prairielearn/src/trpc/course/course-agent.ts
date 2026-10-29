@@ -5,12 +5,15 @@ import { CreateConversationInput } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
+import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
 import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
+  getCourseAgentPendingReview,
   resumeCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
+import { getPendingReview, postReviewDecision } from '../../ee/lib/course-agent/push-sync.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
@@ -19,6 +22,7 @@ import {
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
+import { getJobSequence } from '../../lib/server-jobs.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
 
@@ -35,6 +39,66 @@ const requireCourseAgent = t.middleware(async (opts) => {
 const courseAgentProcedure = t.procedure.use(requireCoursePermissionOwn).use(requireCourseAgent);
 
 export const courseAgentRouter = t.router({
+  getPendingReview: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, callId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      return getPendingReview(ctx.course, conversation, ctx.locals.authn_user.id, input.callId);
+    }),
+  postReviewDecision: courseAgentProcedure
+    .input(
+      z.object({
+        conversationId: IdSchema,
+        reviewToken: z.string(),
+        decision: z.enum(['approved', 'denied']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      return postReviewDecision({
+        ...input,
+        course: ctx.course,
+        conversation,
+        user: ctx.authz_data.user,
+        authnUserId: ctx.locals.authn_user.id,
+      });
+    }),
+  reviewJob: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, jobSequenceId: IdSchema }))
+    .query(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      const jobSequence = await getJobSequence(input.jobSequenceId, ctx.course.id);
+      const bound =
+        jobSequence.status === 'Running'
+          ? (await getCourseAgentPendingReview(conversation.agent_conversation_id))
+              ?.jobSequenceId === input.jobSequenceId
+          : jobSequence.jobs.some(
+              (job) => job.data.agentConversationId === conversation.agent_conversation_id,
+            );
+      if (
+        jobSequence.type !== 'course_agent_push_sync' ||
+        jobSequence.authn_user_id !== ctx.locals.authn_user.id ||
+        !bound
+      ) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+      return getJobSequenceResultsProps({ course: ctx.course, jobSequence });
+    }),
   list: courseAgentProcedure.query(async ({ ctx }) => {
     const conversations = await selectCourseAgentConversationsForUser({
       course_id: ctx.course.id,
@@ -99,4 +163,7 @@ export interface CourseAgentError {
   List: never;
   Create: never;
   Resume: never;
+  GetPendingReview: never;
+  PostReviewDecision: never;
+  ReviewJob: never;
 }

@@ -24,6 +24,8 @@ function mockImageSyncJob() {
     executeInBackground,
   });
   const job = {
+    output: '',
+    saveData: vi.fn(),
     info: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
