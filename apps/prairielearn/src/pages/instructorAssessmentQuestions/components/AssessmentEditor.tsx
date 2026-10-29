@@ -1138,7 +1138,7 @@ function AssessmentEditorInner({
                           setEditMode(false);
                         }}
                       />
-                      {!editMode && printableAssessmentsAvailable && (
+                      {!editMode && printableAssessmentsAvailable && !groupsConfigured && (
                         <Button
                           variant="outline-secondary"
                           size="sm"
