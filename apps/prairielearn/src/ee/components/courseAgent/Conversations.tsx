@@ -27,6 +27,15 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
 
+const BLOCKED_MESSAGES = {
+  startup_failed:
+    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
+  runtime_failed:
+    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
+  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
+  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
+} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
+
 const NEW_CONVERSATION = 'new';
 
 /** The conversation picker plus the selected conversation's chat. */
@@ -35,13 +44,13 @@ export function Conversations({
   authnUserId,
   chatCsrfToken,
   active,
-  isDevMode,
+  showConversationStats,
 }: {
   courseId: string;
   authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
-  isDevMode: boolean;
+  showConversationStats: boolean;
 }) {
   const trpc = useTRPC();
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
@@ -63,7 +72,7 @@ export function Conversations({
           authnUserId={authnUserId}
           chatCsrfToken={chatCsrfToken}
           active={active}
-          isDevMode={isDevMode}
+          showConversationStats={showConversationStats}
         />
       )}
     </>
@@ -72,7 +81,7 @@ export function Conversations({
 
 function ConversationPicker({
   conversations,
-  isDevMode,
+  showConversationStats,
   courseId,
   authnUserId,
   chatCsrfToken,
@@ -83,7 +92,7 @@ function ConversationPicker({
   authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
-  isDevMode: boolean;
+  showConversationStats: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -179,7 +188,7 @@ function ConversationPicker({
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
-          isDevMode={isDevMode}
+          showConversationStats={showConversationStats}
           chatCsrfToken={chatCsrfToken}
           initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
           onInitialMessageSent={create.reset}
@@ -223,11 +232,11 @@ function Chat({
   chatCsrfToken,
   initialMessage,
   onInitialMessageSent,
-  isDevMode,
+  showConversationStats,
 }: {
   courseId: string;
   conversationId: string;
-  isDevMode: boolean;
+  showConversationStats: boolean;
   chatCsrfToken: string;
   initialMessage: string | undefined;
   onInitialMessageSent: () => void;
@@ -327,7 +336,7 @@ function Chat({
           )}
           {lifecycle?.status === 'blocked' && (
             <Alert variant="warning">
-              <p>{blockedMessage[lifecycle.reason]}</p>
+              <p>{BLOCKED_MESSAGES[lifecycle.reason]}</p>
               <Button
                 variant="outline-dark"
                 size="sm"
@@ -366,7 +375,7 @@ function Chat({
         onSubmit={submit}
         onStop={responseActive || canStop ? () => void stop() : undefined}
       >
-        {isDevMode && <ConversationStats state={lifecycle} />}
+        {showConversationStats && <ConversationStats state={lifecycle} />}
       </Composer>
     </div>
   );
@@ -446,12 +455,3 @@ function Message({ message }: { message: UIMessage }) {
     </div>
   );
 }
-
-const blockedMessage = {
-  startup_failed:
-    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
-  runtime_failed:
-    'The course agent was interrupted. Resume to recover and save your workspace. Your previous message will not run again.',
-  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
-  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
-} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;

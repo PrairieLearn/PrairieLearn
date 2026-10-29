@@ -31,7 +31,12 @@ const Envelope = z.union([
   }),
 ]);
 
-/** Adapt Cloudflare's accepted socket and Codex's omitted JSON-RPC version field. */
+/**
+ * The Conversation DO receives this socket from CourseSandbox's private container upgrade.
+ * Adapt its message events to vscode-jsonrpc's reader/writer interface, so that library owns
+ * request/reply matching and notification dispatch. Codex omits the JSON-RPC version field;
+ * add it for incoming frames and remove it for outgoing frames.
+ */
 export function createCodexConnection(socket: WebSocket, onError: (error: Error) => void) {
   const fail = (error: Error) => {
     connection.dispose();

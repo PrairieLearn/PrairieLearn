@@ -2,11 +2,11 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import type { InitializeParams } from '../generated/types/InitializeParams.js';
-import type { ThreadResumeParams } from '../generated/types/v2/ThreadResumeParams.js';
-import type { ThreadStartParams } from '../generated/types/v2/ThreadStartParams.js';
-import type { TurnInterruptParams } from '../generated/types/v2/TurnInterruptParams.js';
-import type { TurnStartParams } from '../generated/types/v2/TurnStartParams.js';
+import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { ThreadResumeParams } from '../../generated/types/v2/ThreadResumeParams.js';
+import type { ThreadStartParams } from '../../generated/types/v2/ThreadStartParams.js';
+import type { TurnInterruptParams } from '../../generated/types/v2/TurnInterruptParams.js';
+import type { TurnStartParams } from '../../generated/types/v2/TurnStartParams.js';
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
@@ -30,7 +30,7 @@ const TurnCompleted = z.object({
   }),
 });
 
-/** One app-server connection and its conversion into the chat SDK's output format. */
+/** A workspace's app-server connection, reused across turns until Stop or workspace cleanup. */
 export class CodexAppServerClient {
   private rpc: MessageConnection | null = null;
   private controller: ReadableStreamDefaultController<UIMessageChunk> | null = null;
@@ -38,15 +38,17 @@ export class CodexAppServerClient {
   private turnId: string | null = null;
   private threadId: string | null = null;
   private parts = new Map<string, 'text' | 'reasoning'>();
-  readonly stream: ReadableStream<UIMessageChunk>;
+  private failure: Error | null = null;
 
-  constructor(
-    private sandbox: DurableObjectStub<CourseSandbox>,
-    messageId: string,
-  ) {
+  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
+
+  beginTurn(messageId: string) {
+    this.terminal = Promise.withResolvers<undefined>();
+    this.turnId = null;
+    this.parts.clear();
     // Setup can fail before the execution helper starts waiting for completion.
     void this.terminal.promise.catch(() => {});
-    this.stream = new ReadableStream<UIMessageChunk>({
+    return new ReadableStream<UIMessageChunk>({
       start: (controller) => {
         this.controller = controller;
         controller.enqueue({ type: 'start', messageId });
@@ -59,6 +61,8 @@ export class CodexAppServerClient {
   }
 
   async connect() {
+    if (this.failure) throw this.failure;
+    if (this.rpc) return;
     const response = await this.sandbox.fetch('http://codex.internal/', {
       headers: { Upgrade: 'websocket' },
     });
@@ -115,8 +119,10 @@ export class CodexAppServerClient {
   }
 
   private fail(error: Error) {
+    this.failure = error;
     this.terminal.reject(error);
     this.rpc?.dispose();
+    this.rpc = null;
   }
 
   private async request<R>(method: string, params: unknown, schema: z.ZodType<R>): Promise<R> {
@@ -227,7 +233,6 @@ export class CodexAppServerClient {
 
   closeStream(error?: unknown) {
     if (error) this.terminal.reject(error);
-    this.rpc?.dispose();
     if (!this.controller) return;
     for (const [id, type] of this.parts) {
       this.controller.enqueue({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
@@ -242,5 +247,12 @@ export class CodexAppServerClient {
     this.controller.enqueue({ type: 'finish' });
     this.controller.close();
     this.controller = null;
+  }
+
+  close() {
+    // Forced cleanup must release a turn still waiting for a terminal notification.
+    this.terminal.reject(new Error('Native runner was stopped'));
+    this.rpc?.dispose();
+    this.rpc = null;
   }
 }
