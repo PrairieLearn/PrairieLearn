@@ -26,7 +26,10 @@ import {
   selectQuestionByQid,
   updateQuestion,
 } from '../models/question.js';
-import { selectOptionalSharingSetByName } from '../models/sharing-set.js';
+import {
+  selectOptionalSharingSetByName,
+  selectSharingSetsForQuestion,
+} from '../models/sharing-set.js';
 import { selectUserByUid } from '../models/user.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
@@ -1298,6 +1301,147 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
       assert.isNotNull(question);
       assert.isNotNull(question.sync_errors);
       assert.match(question.sync_errors, /cannot be publicly shared/);
+    });
+  });
+
+  describe('v3-only sharing', () => {
+    test.each([
+      { attribute: 'sharePublicly', settings: { sharePublicly: true }, sharingEnabled: true },
+      {
+        attribute: 'shareSourcePublicly',
+        settings: { shareSourcePublicly: true },
+        sharingEnabled: true,
+      },
+      {
+        attribute: 'shareSourcePublicly',
+        settings: { shareSourcePublicly: true },
+        sharingEnabled: false,
+      },
+      {
+        attribute: 'sharingSets',
+        settings: { sharingSets: [SHARING_SET_NAME] },
+        sharingEnabled: true,
+      },
+    ])(
+      'Reject $attribute on legacy questions (sharing enabled: $sharingEnabled)',
+      async ({ attribute, settings, sharingEnabled }) => {
+        const questionPath = path.join(courseRepo.courseLiveDir, 'questions/private/info.json');
+        const originalQuestion = sharingCourseData.questions.private;
+        try {
+          await fs.writeJSON(questionPath, {
+            ...originalQuestion,
+            type: 'Calculation',
+            ...settings,
+          });
+          await withConfig(
+            { checkSharingOnSync: false, features: { 'question-sharing': sharingEnabled } },
+            async () => {
+              const result = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+              assert.equal(result.status, 'complete');
+              assert(result.status === 'complete' && result.hadJsonErrors);
+              const question = await selectQuestionByQid({
+                course_id: sharingCourse.id,
+                qid: 'private',
+              });
+              assert.include(
+                question.sync_errors,
+                `"${attribute}" is only supported for v3 questions`,
+              );
+              assert.equal(question.type, 'Freeform');
+              assert.isFalse(question.share_publicly);
+              assert.isFalse(question.share_source_publicly);
+              const sets = await selectSharingSetsForQuestion({
+                course_id: sharingCourse.id,
+                question_id: question.id,
+              });
+              assert.isTrue(sets.every((set) => !set.in_set));
+            },
+          );
+        } finally {
+          await fs.writeJSON(questionPath, originalQuestion);
+          await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+        }
+      },
+    );
+
+    test.each([
+      { description: 'omitted', settings: {} },
+      {
+        description: 'disabled',
+        settings: { sharePublicly: false, shareSourcePublicly: false, sharingSets: [] },
+      },
+    ])('Allow legacy questions with sharing $description', async ({ settings }) => {
+      const questionPath = path.join(courseRepo.courseLiveDir, 'questions/private/info.json');
+      const originalQuestion = sharingCourseData.questions.private;
+      try {
+        await fs.writeJSON(questionPath, {
+          ...originalQuestion,
+          type: 'Calculation',
+          ...settings,
+        });
+        const result = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+        assert.equal(result.status, 'complete');
+        const question = await selectQuestionByQid({
+          course_id: sharingCourse.id,
+          qid: 'private',
+        });
+        assert.isNull(question.sync_errors);
+        assert.equal(question.type, 'Calculation');
+      } finally {
+        await fs.writeJSON(questionPath, originalQuestion);
+        await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      }
+    });
+
+    test('Preserve sharing-set membership when a shared question changes to a legacy type', async () => {
+      const questionPath = path.join(
+        courseRepo.courseLiveDir,
+        'questions',
+        SHARING_QUESTION_QID,
+        'info.json',
+      );
+      const originalQuestion = sharingCourseData.questions[SHARING_QUESTION_QID];
+      const question = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
+      const originalSets = await selectSharingSetsForQuestion({
+        course_id: sharingCourse.id,
+        question_id: question.id,
+      });
+      const originalSetNames = originalSets
+        .filter((set) => set.in_set)
+        .map((set) => set.name)
+        .sort();
+      assert.isNotEmpty(originalSetNames);
+      try {
+        await fs.writeJSON(questionPath, { ...originalQuestion, type: 'Calculation' });
+        await withConfig({ checkSharingOnSync: true }, async () => {
+          const result = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+          assert.equal(result.status, 'complete');
+          const updatedQuestion = await selectQuestionByQid({
+            course_id: sharingCourse.id,
+            qid: SHARING_QUESTION_QID,
+          });
+          assert.include(
+            updatedQuestion.sync_errors,
+            '"sharingSets" is only supported for v3 questions',
+          );
+          assert.equal(updatedQuestion.type, 'Freeform');
+          const updatedSets = await selectSharingSetsForQuestion({
+            course_id: sharingCourse.id,
+            question_id: question.id,
+          });
+          const updatedSetNames = updatedSets
+            .filter((set) => set.in_set)
+            .map((set) => set.name)
+            .sort();
+          assert.deepEqual(updatedSetNames, originalSetNames);
+        });
+      } finally {
+        await fs.writeJSON(questionPath, originalQuestion);
+        await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      }
     });
   });
 
