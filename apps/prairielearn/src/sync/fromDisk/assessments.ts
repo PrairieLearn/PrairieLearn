@@ -1,4 +1,5 @@
 import { Ajv } from 'ajv';
+import { chunk } from 'es-toolkit';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -6,12 +7,14 @@ import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { updateAssessmentInstancesScorePending } from '../../lib/assessment-grading.js';
 import { config } from '../../lib/config.js';
 import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
 import { parseLocalDateTime } from '../../lib/timezones.js';
+import { selectAssessmentInstanceIdsForPendingScoreRefresh } from '../../models/assessment-instance.js';
 import {
   type AssessmentJson,
   EnumAssessmentToolSchema,
@@ -569,7 +572,7 @@ export async function sync(
     ]);
   });
 
-  return await sqldb.runInTransactionAsync(async () => {
+  const result = await sqldb.runInTransactionAsync(async () => {
     const { name_to_id_map } = await sqldb.callRow(
       'sync_assessments',
       [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
@@ -579,6 +582,15 @@ export async function sync(
     await syncAssessmentTools(assessments, name_to_id_map);
     return { name_to_id_map };
   });
+
+  // Release the question locks before taking instance locks, matching grading's lock order.
+  const pendingInstanceIds = await selectAssessmentInstanceIdsForPendingScoreRefresh({
+    course_instance_id: courseInstanceId,
+  });
+  for (const ids of chunk(pendingInstanceIds, 1000)) {
+    await updateAssessmentInstancesScorePending(ids);
+  }
+  return result;
 }
 
 async function syncAssessmentTools(

@@ -822,34 +822,13 @@ FOR NO KEY UPDATE OF
   ai;
 
 -- BLOCK update_assessment_instance_score
-WITH
-  updated_assessment_instances AS (
-    UPDATE assessment_instances AS ai
-    SET
-      points = $points,
-      score_perc = $score_perc,
-      modified_at = now()
-    WHERE
-      ai.id = $assessment_instance_id
-    RETURNING
-      ai.*
-  )
-INSERT INTO
-  assessment_score_logs (
-    assessment_instance_id,
-    auth_user_id,
-    max_points,
-    points,
-    score_perc
-  )
-SELECT
-  ai.id,
-  $authn_user_id,
-  ai.max_points,
-  ai.points,
-  ai.score_perc
-FROM
-  updated_assessment_instances AS ai;
+UPDATE assessment_instances
+SET
+  points = $points,
+  score_perc = $score_perc,
+  modified_at = now()
+WHERE
+  id = $assessment_instance_id;
 
 -- BLOCK assessment_instance_log
 WITH
@@ -1286,7 +1265,11 @@ WITH
           'max_points',
           asl.max_points,
           'score_perc',
-          asl.score_perc
+          asl.score_perc,
+          'score_perc_pending',
+          asl.score_perc_pending,
+          'grading_pending',
+          asl.grading_pending
         ) AS data
       FROM
         assessment_score_logs AS asl
