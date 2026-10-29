@@ -20,7 +20,7 @@ Copy the Worker secrets template:
 cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
 ```
 
-Set `OPENAI_API_KEY` and a random `PL_SERVICE_TOKEN` in `.dev.vars` (e.g. generate the service token with `openssl rand -hex 32`). Leave `GITHUB_READ_TOKEN` empty for the default local-file setup, which does not require a GitHub token or a course repository URL. Wrangler must still declare its name in `secrets.required` so it loads the value from `.dev.vars` when GitHub mode is enabled.
+Set `OPENAI_API_KEY` and a random `PL_SERVICE_TOKEN` in `.dev.vars` (e.g. generate the service token with `openssl rand -hex 32`). The default local setup does not require a GitHub token or a course repository URL.
 
 Merge the following into `apps/prairielearn/config.json`, using the same service token:
 

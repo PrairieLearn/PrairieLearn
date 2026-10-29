@@ -16,7 +16,7 @@
     "binding": "VERSION_METADATA"
   },
   "secrets": {
-    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
   },
   "durable_objects": {
     "bindings": [
@@ -71,7 +71,7 @@
         "PL_SERVICE_URL": ""
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
       },
       "durable_objects": {
         "bindings": [
@@ -106,7 +106,7 @@
         "PL_SERVICE_URL": ""
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
       },
       "durable_objects": {
         "bindings": [
