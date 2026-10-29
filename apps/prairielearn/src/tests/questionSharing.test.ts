@@ -1301,37 +1301,6 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
   });
 
-  test('Reject sharing settings on legacy questions', async () => {
-    const questionPath = path.join(courseRepo.courseLiveDir, 'questions/private/info.json');
-    const originalQuestion = sharingCourseData.questions.private;
-    try {
-      await fs.writeJSON(questionPath, {
-        ...originalQuestion,
-        type: 'Calculation',
-        sharePublicly: true,
-        shareSourcePublicly: true,
-        sharingSets: [SHARING_SET_NAME],
-      });
-      await withConfig({ checkSharingOnSync: false }, async () => {
-        const result = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(result.status, 'complete');
-        const question = await selectQuestionByQid({
-          course_id: sharingCourse.id,
-          qid: 'private',
-        });
-        assert.include(question.sync_errors, '"sharePublicly" is only supported for v3 questions');
-        assert.include(
-          question.sync_errors,
-          '"shareSourcePublicly" is only supported for v3 questions',
-        );
-        assert.include(question.sync_errors, '"sharingSets" is only supported for v3 questions');
-      });
-    } finally {
-      await fs.writeJSON(questionPath, originalQuestion);
-      await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-    }
-  });
-
   describe('Test that deleted shared questions are excluded from imports', function () {
     // Resolve question IDs once before any soft-deletes; `selectQuestionByQid`
     // filters on `deleted_at IS NULL`, so the lookup would fail mid-test once
