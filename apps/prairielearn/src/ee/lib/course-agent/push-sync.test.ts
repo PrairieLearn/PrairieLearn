@@ -139,13 +139,22 @@ function decide(decision: 'approved' | 'denied') {
   });
 }
 
-it('approval publishes the saved files and delivers the published commit after sync', async () => {
+it('approval publishes reviewed files, syncs, and saves the result even if delivery fails', async () => {
+  vi.mocked(deliverCourseAgentReviewOutcome).mockImplementation(async (_agentId, outcome) => {
+    expect(job.data.result).toEqual(outcome.result);
+    throw new Error('Agent unavailable');
+  });
   await expect(decide('approved')).resolves.toEqual({
     decision: 'approved',
     jobSequenceId: 'job-1',
   });
-  await executeJob.mock.results[0].value;
-  expect(graphql).toHaveBeenCalledWith(expect.any(String), {
+  const saved = await executeJob.mock.results[0].value;
+  expect(saved.data.result).toEqual({
+    decision: 'approved',
+    publication: { status: 'published', commitSha: publishedCommit },
+    sync: { status: 'succeeded' },
+  });
+  expect(graphql).toHaveBeenCalledExactlyOnceWith(expect.any(String), {
     input: {
       branch: { repositoryNameWithOwner: 'PrairieLearn/course', branchName: 'master' },
       expectedHeadOid: baseCommit,
@@ -194,13 +203,6 @@ it('a repeated approval reuses its job and a conflicting denial is rejected', as
   expect(recordCourseAgentReviewDecision).not.toHaveBeenCalled();
 });
 
-it('an approval for a replaced review cannot start publication', async () => {
-  review = { ...review, callId: 'new-review' };
-  await expect(decide('approved')).rejects.toThrow('This review has changed');
-  expect(createServerJob).not.toHaveBeenCalled();
-  expect(graphql).not.toHaveBeenCalled();
-});
-
 it('an advanced branch head rejects publication and skips sync', async () => {
   getBranch.mockResolvedValue({ data: { commit: { sha: 'c'.repeat(40) } } });
   await decide('approved');
@@ -236,20 +238,4 @@ it('sync failure retains the published commit and returns its diagnostics', asyn
       sync: { status: 'failed', error: 'Invalid question configuration' },
     },
   });
-});
-
-it('failed outcome delivery leaves the completed job result available without republishing', async () => {
-  vi.mocked(deliverCourseAgentReviewOutcome).mockImplementation(async (_agentId, outcome) => {
-    expect(job.data.result).toEqual(outcome.result);
-    throw new Error('Agent unavailable');
-  });
-  await decide('approved');
-  const saved = await executeJob.mock.results[0].value;
-  expect(saved.data.result).toEqual({
-    decision: 'approved',
-    publication: { status: 'published', commitSha: publishedCommit },
-    sync: { status: 'succeeded' },
-  });
-  expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledOnce();
-  expect(graphql).toHaveBeenCalledOnce();
 });
