@@ -80,7 +80,7 @@ export async function createLocalCourseAgentConversation(coursePath: string): Pr
     // A file-backed Blob streams the upload with a known Content-Length for R2.
     const body = await openAsBlob(archive);
     return await createConversation('conversations/local', body, 'application/gzip', {
-      'X-Course-Directory': encodeURIComponent(directory),
+      'X-PL-Course-Directory': encodeURIComponent(directory),
     });
   } finally {
     await temporary.cleanup();

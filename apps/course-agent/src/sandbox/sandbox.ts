@@ -189,9 +189,10 @@ export class CourseSandbox extends DurableObject<Env> {
     if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
       return new Response('WebSocket required', { status: 426 });
     }
-    if (!this.container.running || this.process || this.nativeToken) {
-      throw new Error('Native runner is unavailable or already connected');
-    }
+    if (!this.container.running) throw new Error('Native runner has no live workspace');
+    // A fresh connection follows workspace startup or Conversation DO recovery. Replace any
+    // orphaned runner before reconnecting; ordinary turns reuse the existing connection.
+    await this.stopProcesses();
     this.nativeToken = crypto.randomUUID();
     const digest = await crypto.subtle.digest(
       'SHA-256',
@@ -245,7 +246,7 @@ export class CourseSandbox extends DurableObject<Env> {
       return;
     }
     // A terminal Codex event does not prove detached tools stopped. Kill and verify
-    // every process of the dedicated uid before admitting a successor or backup.
+    // every process of the dedicated uid for explicit Stop, recovery, or backup.
     await this.exec(['sh', '-c', 'pkill -KILL -u 1000; code=$?; [ "$code" -le 1 ]']);
     if (this.process) {
       await this.process.exitCode;

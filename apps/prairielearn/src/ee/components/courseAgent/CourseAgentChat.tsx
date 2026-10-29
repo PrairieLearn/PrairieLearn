@@ -14,14 +14,14 @@ export function CourseAgentChat({
   trpcCsrfToken,
   chatCsrfToken,
   active,
-  isDevMode,
+  showConversationStats,
 }: {
   courseId: string;
   authnUserId: string;
   trpcCsrfToken: string;
   chatCsrfToken: string;
   active: boolean;
-  isDevMode: boolean;
+  showConversationStats: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -35,7 +35,7 @@ export function CourseAgentChat({
           authnUserId={authnUserId}
           chatCsrfToken={chatCsrfToken}
           active={active}
-          isDevMode={isDevMode}
+          showConversationStats={showConversationStats}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
