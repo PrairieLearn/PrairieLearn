@@ -63,6 +63,9 @@ window.PLMultipleChoice = function (uuid) {
     },
   });
 
+  // dropdown_input moves focus to the control, but only the search input inherits aria-label.
+  select.focus_node.setAttribute('aria-label', selectElement.getAttribute('aria-label'));
+
   // Reposition the dropdown when the main container is scrolled. This is only
   // needed in instructor pages, since student pages scroll on body, which is
   // already handled by TomSelect itself.
