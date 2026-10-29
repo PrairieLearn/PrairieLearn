@@ -1,19 +1,10 @@
-import { fileURLToPath } from 'node:url';
-
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  // Select Workers' JSON-RPC transport without applying browser conditions to PL's Node dependencies.
-  resolve: {
-    alias: {
-      'vscode-jsonrpc/browser': fileURLToPath(
-        new URL('../browser/main.js', import.meta.resolve('vscode-jsonrpc')),
-      ),
-    },
-  },
-  ssr: { noExternal: ['vscode-jsonrpc'] },
+  // Match Workers' browser transport instead of JSON-RPC's Node streams in these tests.
+  ssr: { resolve: { conditions: ['browser'] }, noExternal: ['vscode-jsonrpc'] },
   test: {
     name: 'course-agent',
-    dir: import.meta.dirname,
+    dir: `${import.meta.dirname}/src`,
   },
 });
