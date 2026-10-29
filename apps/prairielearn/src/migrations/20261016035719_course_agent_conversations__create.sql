@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS course_agent_conversations (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS course_agent_conversations_course_id_user_id_created_at_id_idx ON course_agent_conversations (course_id, user_id, created_at, id);
+CREATE INDEX IF NOT EXISTS course_agent_conversations_course_id_user_id_created_at_idx ON course_agent_conversations (course_id, user_id, created_at);
