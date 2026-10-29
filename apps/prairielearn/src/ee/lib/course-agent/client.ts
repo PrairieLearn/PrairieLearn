@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { openAsBlob } from 'node:fs';
 import { cp, mkdir, realpath } from 'node:fs/promises';
 import * as path from 'node:path';
@@ -42,6 +43,7 @@ export async function createCourseAgentConversation(binding: {
 
 /** Snapshot current course files and their Git history without exposing host paths. */
 export async function createLocalCourseAgentConversation(coursePath: string): Promise<string> {
+  assert(config.devMode, 'Local course agent initialization is only available in development');
   const temporary = await temporaryDirectory({ unsafeCleanup: true });
   try {
     const sourcePath = await realpath(coursePath);
@@ -85,7 +87,7 @@ export async function createLocalCourseAgentConversation(coursePath: string): Pr
     // A file-backed Blob streams the upload with a known Content-Length for R2.
     const body = await openAsBlob(archive);
     return await createConversation('conversations/local', body, 'application/gzip', {
-      'X-Course-Directory': encodeURIComponent(directory),
+      'X-PL-Course-Directory': encodeURIComponent(directory),
     });
   } finally {
     await temporary.cleanup();

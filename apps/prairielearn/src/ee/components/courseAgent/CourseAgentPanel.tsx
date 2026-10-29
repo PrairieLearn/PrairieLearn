@@ -73,14 +73,14 @@ export function CourseAgentPanel({
   trpcCsrfToken,
   chatCsrfToken,
   initialOpen,
-  isDevMode,
+  showConversationStats,
 }: {
   courseId: string;
   authnUserId: string;
   trpcCsrfToken: string;
   chatCsrfToken: string;
   initialOpen: boolean;
-  isDevMode: boolean;
+  showConversationStats: boolean;
 }) {
   const [hydrated, setHydrated] = useState(false);
   // Keep server markup during hydration, then reveal the lazy chat without delaying its ready state.
@@ -185,7 +185,7 @@ export function CourseAgentPanel({
               trpcCsrfToken={trpcCsrfToken}
               chatCsrfToken={chatCsrfToken}
               active={open}
-              isDevMode={isDevMode}
+              showConversationStats={showConversationStats}
             />
           ) : (
             <ChatLoading />

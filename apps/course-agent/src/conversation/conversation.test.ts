@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import type { ConversationState, PushSyncResult } from '@prairielearn/course-agent-types';
 
-import { SandboxTurn } from '../sandbox-turn.js';
+import { SandboxTurn } from '../sandbox/turn.js';
 
 import { Conversation } from './conversation.js';
 
@@ -52,14 +52,16 @@ vi.mock('@cloudflare/ai-chat', () => ({
     }
   },
 }));
-vi.mock('../sandbox-turn.js', () => ({
+vi.mock('../monitoring.js', () => ({ reportError: vi.fn() }));
+vi.mock('../sandbox/turn.js', () => ({
   SandboxTurn: vi.fn(
     class {
       stream = new ReadableStream();
       finished = new Promise<never>(() => {});
       constructor(
         _sandbox: unknown,
-        readonly options: ConstructorParameters<typeof SandboxTurn>[1],
+        _native: unknown,
+        readonly options: ConstructorParameters<typeof SandboxTurn>[2],
       ) {}
 
       get messageId() {
@@ -122,7 +124,7 @@ async function pendingReview(live: boolean) {
     { id: 'user', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
   ]);
   await conversation.onChatMessage(undefined, { requestId: 'initial' });
-  const [, options] = vi.mocked(SandboxTurn).mock.calls[0];
+  const [, , options] = vi.mocked(SandboxTurn).mock.calls[0];
   options.onThread('native-thread');
   const nativeResult = options.onReview!(
     {
@@ -198,6 +200,7 @@ it.each(['approved', 'denied'] as const)(
       conversation.recordReviewOutcome({ callId: 'review', result: results[decision] }),
     ).resolves.toBe(true);
     expect(SandboxTurn).toHaveBeenCalledExactlyOnceWith(
+      expect.anything(),
       expect.anything(),
       expect.objectContaining({
         text: { callId: 'review', result: results[decision] },

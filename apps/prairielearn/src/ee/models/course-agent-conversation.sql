@@ -20,8 +20,7 @@ WHERE
   course_id = $course_id
   AND user_id = $user_id
 ORDER BY
-  created_at DESC,
-  id DESC;
+  created_at DESC;
 
 -- BLOCK select_course_agent_conversation
 SELECT
