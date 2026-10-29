@@ -79,6 +79,7 @@ async function aiEvaluateStudentResponse({
       userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: course,
+      courseInstanceId: variant.course_instance_id,
     },
   });
 

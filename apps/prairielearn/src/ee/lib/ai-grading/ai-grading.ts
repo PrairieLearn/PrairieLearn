@@ -602,6 +602,7 @@ export async function aiGrade({
         userId: variant.user_id,
         groupId: variant.team_id,
         variantCourse: course,
+        courseInstanceId: variant.course_instance_id,
       };
       const render_question_results = await questionModule.render({
         renderSelection: { question: true, submissions: false, answer: true },

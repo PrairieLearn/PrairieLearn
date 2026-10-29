@@ -56,6 +56,7 @@ export async function makeVariant({
   question,
   course,
   variant_course,
+  course_instance_id,
   variant_seed: variant_seed_option,
   preferences = {},
   effective_user_id,
@@ -65,6 +66,7 @@ export async function makeVariant({
   course: Course;
   /** The course where the variant is being created. May differ from the question's course (`course`) for shared questions. */
   variant_course: Course;
+  course_instance_id: string | null;
   variant_seed?: string | null;
   preferences?: Record<string, string | number | boolean>;
   /** The user that owns the variant, or `null` for group variants. Used to expose user info to `server.py` if the course has opted in. */
@@ -86,6 +88,7 @@ export async function makeVariant({
     userId: effective_user_id,
     groupId: group_id,
     variantCourse: variant_course,
+    courseInstanceId: course_instance_id,
   };
 
   const questionModule = questionServers.getModule(question.type);
@@ -185,6 +188,7 @@ export async function getDynamicFile({
       userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
+      courseInstanceId: variant.course_instance_id,
     },
   );
 
@@ -312,6 +316,7 @@ async function makeAndInsertVariant({
     question,
     course: question_course,
     variant_course,
+    course_instance_id: course_instance?.id ?? null,
     variant_seed: options.variant_seed,
     preferences,
     effective_user_id: variant_user_id,

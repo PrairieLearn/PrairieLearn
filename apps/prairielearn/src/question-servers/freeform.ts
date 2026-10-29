@@ -1880,6 +1880,7 @@ async function getCacheKey(
         //   1. the course toggles `questions_receive_user_data`
         //   2. a user is renamed (uid/uin/name)
         //   3. group membership or a member's name changes
+        //   4. a user's student labels change
         //
         // `options.user` is the variant owner (not the viewer); on group variants
         // it is null and `group.members` is ordered deterministically.
