@@ -28,6 +28,7 @@ export const InstanceQuestionRowSchema = z.object({
   prev_advance_score_perc: z.number().nullable(),
   prev_title: z.string().nullable(),
   prev_question_access_mode: EnumQuestionAccessModeSchema.nullable(),
+  autoGradingPending: z.boolean().default(false),
   allowGradeLeftMs: z.number().default(0), // Computed after the query if needed, defaults to zero if grade_rate_minutes is null
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
   group_role_permissions: z

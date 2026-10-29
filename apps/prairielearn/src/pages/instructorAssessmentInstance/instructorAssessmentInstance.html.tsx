@@ -72,7 +72,11 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_max_points: z.number().nullable(),
   zone_title: z.string().nullable(),
 });
-type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
+type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema> & {
+  auto_grading_pending: boolean;
+  grading_pending: boolean;
+  score_perc_pending: number;
+};
 
 const FINGERPRINT_COLORS = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
 
@@ -263,7 +267,7 @@ export function InstructorAssessmentInstance({
               <tr>
                 <th>Score</th>
                 <td class="align-middle" style="width: 20%;">
-                  ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
+                  ${ScorebarHtml(resLocals.assessment_instance.score_perc, { scorePending: resLocals.assessment_instance.score_perc_pending, gradingPending: resLocals.assessment_instance.grading_pending })}
                 </td>
                 <td class="align-middle" style="width: 100%;">
                   ${
@@ -495,6 +499,7 @@ export function InstructorAssessmentInstance({
                             ${InstanceQuestionPoints({
                               instance_question,
                               assessment_question: instance_question.assessment_question,
+                              autoGradingPending: instance_question.auto_grading_pending,
                               component: 'auto',
                             })}
                             ${
@@ -513,6 +518,7 @@ export function InstructorAssessmentInstance({
                             ${InstanceQuestionPoints({
                               instance_question,
                               assessment_question: instance_question.assessment_question,
+                              autoGradingPending: instance_question.auto_grading_pending,
                               component: 'manual',
                             })}
                             ${
@@ -531,6 +537,7 @@ export function InstructorAssessmentInstance({
                             ${InstanceQuestionPoints({
                               instance_question,
                               assessment_question: instance_question.assessment_question,
+                              autoGradingPending: instance_question.auto_grading_pending,
                               component: 'total',
                             })}
                             ${
@@ -546,7 +553,10 @@ export function InstructorAssessmentInstance({
                             }
                           </td>
                           <td class="text-center text-nowrap" style="padding-top: 0.65rem;">
-                            ${ScorebarHtml(instance_question.score_perc)}
+                            ${ScorebarHtml(instance_question.score_perc, {
+                              scorePending: instance_question.score_perc_pending,
+                              gradingPending: instance_question.grading_pending,
+                            })}
                           </td>
                           <td style="width: 1em;">
                             ${

@@ -33,6 +33,16 @@ It is recommended to also mark manually-graded questions as `"singleVariant": tr
 
 Any [elements](../elements/index.md) can be used in the [`question.html`](../question/overview.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
 
+## Scores while grading is pending
+
+Assessment scores distinguish points already awarded from submitted work awaiting grading. The green portion of the score bar shows the current score; a striped portion shows the possible additional credit from pending work. If no points have been awarded yet, the bar reads "Pending". Students and instructors can expand the pending indicator for an explanation.
+
+The pending amount is an upper bound, not a predicted grade. It accounts for the question's available automatic and manual points, rubric limits, best-question selection, zone and assessment caps, and submission credit. Unanswered questions do not contribute pending credit. An assessment can still show "Grading pending" with no possible increase, for example when the student has already reached the assessment's cap or a submission is awaiting review.
+
+Grading only the manual portion of a question leaves unresolved automatic grading pending. An explicit automatic-score or total-question-score override, or a rubric applied to total points, supersedes outstanding automatic grading for that submission. Overriding an assessment's total preserves its manual-grading queue; later question grading can update the assessment score again.
+
+Student gradebook CSV downloads and assessment-instance CSV and JSON exports include the current numeric scores and separate pending-grading metadata. Canvas exports and LMS score updates use the current numeric score, so grades can change when pending work is graded. Pending indicators follow the assessment's score-visibility settings.
+
 ## Manual grading using file uploads
 
 ### Downloading the students' submitted answers
