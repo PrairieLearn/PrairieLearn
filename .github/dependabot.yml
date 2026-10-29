@@ -160,6 +160,10 @@ updates:
       - '/workspaces/vscode-python'
     rebase-strategy: disabled
     groups:
+      # Security updates do not use the multi-ecosystem version-update group.
+      security:
+        applies-to: security-updates
+        patterns: ['*']
       all-patch-minor:
         update-types:
           - 'patch'
@@ -173,16 +177,19 @@ updates:
         versions: ['>=3.0']
       - dependency-name: 'pandas-stubs'
         versions: ['>=3.0']
-      # pygraphviz 2.0 ships binary wheels that bundle their own Graphviz and
-      # font stack, which changes graph rendering and emits Fontconfig warnings
-      # that surface as question issues. Upgrade deliberately in a dedicated PR.
-      # https://github.com/PrairieLearn/PrairieLearn/pull/15373
-      - dependency-name: 'pygraphviz'
-        versions: ['>=2']
       # numpy 2.5 removes some deprecated functionality that may be in use by
       # instructors. Retaining for now out of an abundance of caution.
       - dependency-name: 'numpy'
         versions: ['>=2.5']
+      # PuLP 4 removes LpVariable(...), LpVariable.dicts(...), and PULP_CBC_CMD,
+      # stops bundling CBC, and changes solve/status APIs. This can break course
+      # question and grader code mid-term; upgrade separately after coordinating
+      # course migrations and solver installation.
+      # This upgrade was already backed out of #15898:
+      # https://github.com/PrairieLearn/PrairieLearn/pull/15898#issuecomment-6085242106
+      # https://coin-or.github.io/pulp/guides/how_to_migrate_to_v4.html
+      - dependency-name: 'pulp'
+        versions: ['>=4']
 
   - package-ecosystem: uv
     multi-ecosystem-group: python
@@ -190,15 +197,19 @@ updates:
     # Currently we only have a `uv.lock` in the root directory.
     directories:
       - '/'
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ['*']
     ignore:
       - dependency-name: 'pandas'
         versions: ['>=3.0']
       - dependency-name: 'pandas-stubs'
         versions: ['>=3.0']
-      # See the note on the pip entry above.
-      - dependency-name: 'pygraphviz'
-        versions: ['>=2']
       # numpy 2.5 removes some deprecated functionality that may be in use by
       # instructors. Retaining for now out of an abundance of caution.
       - dependency-name: 'numpy'
         versions: ['>=2.5']
+      # Match the pip hold above: PuLP 4 requires course migrations and CBC setup.
+      - dependency-name: 'pulp'
+        versions: ['>=4']

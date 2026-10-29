@@ -1,7 +1,5 @@
 import assert from 'node:assert';
 
-import { createAnthropic } from '@ai-sdk/anthropic';
-import { createGoogle } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type GenerateTextResult, type ModelMessage, Output, generateText } from 'ai';
 import * as async from 'async';
@@ -39,6 +37,7 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob, selectJobSequenceStatus } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
+import { selectOptionalCredential } from '../../../models/ai-grading-credentials.js';
 import {
   insertAiGradingJobAndDeductCreditsIfNeeded,
   selectCreditPool,
@@ -47,11 +46,15 @@ import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
-import { resolveAiGradingKeys } from './ai-grading-credentials.js';
-import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
-import { createAiGradingOpenAI } from './ai-grading-openai-provider.js';
+import { resolveAiGradingModel } from './ai-grading-model.js';
+import { AI_GRADING_MODEL_IDS } from './ai-grading-models.shared.js';
+import {
+  type AiGradingSelection,
+  AiGradingSelectionSchema,
+} from './ai-grading-selection.shared.js';
 import { selectGradingResults } from './ai-grading-stats.js';
 import {
+  AI_GRADING_INFERENCE_TIMEOUT_MS,
   type AiGradingPrompt,
   addAiGradingCostToIntervalUsage,
   correctImagesOrientation,
@@ -63,6 +66,7 @@ import {
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
+  setAiGradingLastSelectedModel,
 } from './ai-grading-util.js';
 import {
   type AIGradingLog,
@@ -74,7 +78,7 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 
 type AiGradingResponsesForPersistence = {
-  model_id: AiGradingModelId;
+  model_id: string;
   finalGradingResponse: GenerateTextResult<any, any, any>;
 } & (
   | {
@@ -96,6 +100,8 @@ type AiGradingResponsesForPersistence = {
 );
 
 interface AiGradingPersistenceContext {
+  provider: Awaited<ReturnType<typeof resolveAiGradingModel>>['provider'];
+  base_url: string | null;
   prompt: ModelMessage[];
   course_instance: CourseInstance;
   instance_question: InstanceQuestion;
@@ -118,17 +124,20 @@ function calculateTotalGradingCostMilliDollars({
   rotationCorrections,
   finalGradingResponse,
 }: AiGradingResponsesForPersistence): number {
-  let totalRawCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
+  let totalRawCost = calculateResponseCost({
+    model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+    usage: finalGradingResponse.usage,
+  });
   if (gradingResponseWithRotationIssue) {
     totalRawCost += calculateResponseCost({
-      model: model_id,
+      model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
       usage: gradingResponseWithRotationIssue.usage,
     });
   }
   if (rotationCorrections) {
     for (const correction of Object.values(rotationCorrections)) {
       totalRawCost += calculateResponseCost({
-        model: model_id,
+        model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
         usage: correction.response.usage,
       });
     }
@@ -144,7 +153,7 @@ async function insertAiGradingJobForResponses({
   grading_job_id: string;
   persistenceContext: Pick<
     AiGradingPersistenceContext,
-    'prompt' | 'course_instance' | 'job_sequence_id'
+    'prompt' | 'course_instance' | 'job_sequence_id' | 'provider' | 'base_url'
   >;
   responses: AiGradingResponsesForPersistence;
 }): Promise<string> {
@@ -152,6 +161,8 @@ async function insertAiGradingJobForResponses({
     grading_job_id,
     job_sequence_id: persistenceContext.job_sequence_id,
     model_id: responses.model_id,
+    provider: persistenceContext.provider,
+    base_url: persistenceContext.base_url,
     prompt: persistenceContext.prompt,
     course_id: persistenceContext.course_instance.course_id,
     course_instance_id: persistenceContext.course_instance.id,
@@ -265,14 +276,16 @@ async function finalizeAiGradingPersistence({
         }),
     });
 
-    await updateCourseInstanceUsagesForAiGradingResponses({
-      courseInstanceId: persistenceContext.course_instance.id,
-      authnUserId: persistenceContext.authn_user_id,
-      model: responses.model_id,
-      gradingResponseWithRotationIssue: responses.gradingResponseWithRotationIssue,
-      rotationCorrections: responses.rotationCorrections,
-      finalGradingResponse: responses.finalGradingResponse,
-    });
+    if (persistenceContext.provider !== 'openai-compatible') {
+      await updateCourseInstanceUsagesForAiGradingResponses({
+        courseInstanceId: persistenceContext.course_instance.id,
+        authnUserId: persistenceContext.authn_user_id,
+        model: z.enum(AI_GRADING_MODEL_IDS).parse(responses.model_id),
+        gradingResponseWithRotationIssue: responses.gradingResponseWithRotationIssue,
+        rotationCorrections: responses.rotationCorrections,
+        finalGradingResponse: responses.finalGradingResponse,
+      });
+    }
 
     return deducted_milli_dollars;
   });
@@ -312,6 +325,8 @@ export async function aiGrade({
   mode,
   instance_question_ids,
   model_id,
+  provider: selectedProvider,
+  credential_id,
 }: {
   question: Question;
   course: Course;
@@ -329,7 +344,9 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
-  model_id: AiGradingModelId;
+  model_id: string;
+  provider?: AiGradingSelection['provider'];
+  credential_id?: string | null;
 }): Promise<string> {
   if (!assessment_question.max_manual_points) {
     throw new error.HttpStatusError(
@@ -338,37 +355,15 @@ export async function aiGrade({
     );
   }
 
-  const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
-  const resolvedKeys = await resolveAiGradingKeys(course_instance);
-
-  const model = run(() => {
-    if (provider === 'openai') {
-      if (!resolvedKeys.openai) {
-        throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
-      }
-      return createAiGradingOpenAI({
-        apiKey: resolvedKeys.openai.apiKey,
-        organization: resolvedKeys.openai.organization ?? undefined,
-      })(model_id);
-    } else if (provider === 'google') {
-      if (!resolvedKeys.google) {
-        throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
-      }
-      return createGoogle({
-        apiKey: resolvedKeys.google.apiKey,
-      })(model_id);
-    } else {
-      if (!resolvedKeys.anthropic) {
-        throw new error.HttpStatusError(
-          403,
-          'Model not available (Anthropic API key not provided)',
-        );
-      }
-      return createAnthropic({
-        apiKey: resolvedKeys.anthropic.apiKey,
-      })(model_id);
-    }
-  });
+  const resolved = await resolveAiGradingModel(
+    course_instance,
+    AiGradingSelectionSchema.parse({
+      model_id,
+      provider: selectedProvider,
+      credential_id,
+    }),
+  );
+  const { model, provider, base_url } = resolved;
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -388,6 +383,28 @@ export async function aiGrade({
       );
     }
 
+    if (resolved.credential_id !== null) {
+      // Match credential replacement's lock order before remembering a FK to the credential.
+      const customApiKeysEnabled = await queryScalar(
+        sql.lock_course_instance_for_custom_provider,
+        { course_instance_id: course_instance.id },
+        z.boolean(),
+      );
+      if (!customApiKeysEnabled) {
+        throw new error.HttpStatusError(403, 'Custom API keys are not enabled');
+      }
+      const credential = await selectOptionalCredential({
+        course_instance_id: course_instance.id,
+        credential_id: resolved.credential_id,
+      });
+      if (!credential) {
+        throw new error.HttpStatusError(
+          400,
+          'Custom provider configuration changed. Select a provider again.',
+        );
+      }
+    }
+    await setAiGradingLastSelectedModel(assessment_question.id, model_id, resolved.credential_id);
     return await createServerJob({
       type: 'ai_grading',
       description: 'Perform AI grading',
@@ -756,6 +773,7 @@ export async function aiGrade({
             return {
               finalGradingResponse: await generateText({
                 model,
+                abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
                 output: Output.object({ schema: RubricGradingResultSchema }),
                 ...gradingPrompt,
                 providerOptions: {
@@ -768,6 +786,7 @@ export async function aiGrade({
 
           const initialResponse = await generateText({
             model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
             output: Output.object({ schema: RubricImageGradingResultSchema }),
             ...gradingPrompt,
             providerOptions: {
@@ -816,6 +835,7 @@ export async function aiGrade({
           // Perform grading with the rotation-corrected images.
           const finalResponse = await generateText({
             model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
             output: Output.object({ schema: RubricImageGradingResultSchema }),
             ...gradingPrompt,
             providerOptions: {
@@ -848,7 +868,7 @@ export async function aiGrade({
             ]) {
               await addAiGradingCostToIntervalUsage({
                 courseInstance: course_instance,
-                model: model_id,
+                model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
                 usage: response.usage,
               });
             }
@@ -858,7 +878,7 @@ export async function aiGrade({
           if (trackRateLimitAndCost) {
             await addAiGradingCostToIntervalUsage({
               courseInstance: course_instance,
-              model: model_id,
+              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
               usage: finalGradingResponse.usage,
             });
           }
@@ -885,6 +905,8 @@ export async function aiGrade({
             }
           : { model_id, rotationCorrectionApplied, finalGradingResponse };
         const persistenceContext = {
+          provider,
+          base_url,
           prompt: getPersistedAiGradingPrompt(gradingPrompt),
           course_instance,
           instance_question,
@@ -995,6 +1017,7 @@ export async function aiGrade({
             return {
               finalGradingResponse: await generateText({
                 model,
+                abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
                 output: Output.object({ schema: GradingResultSchema }),
                 ...gradingPrompt,
                 providerOptions: {
@@ -1007,6 +1030,7 @@ export async function aiGrade({
 
           const initialResponse = await generateText({
             model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
             output: Output.object({ schema: ImageGradingResultSchema }),
             ...gradingPrompt,
             providerOptions: {
@@ -1044,6 +1068,7 @@ export async function aiGrade({
           // Perform grading with the rotation-corrected images.
           const finalResponse = await generateText({
             model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
             output: Output.object({ schema: ImageGradingResultSchema }),
             ...gradingPrompt,
             providerOptions: {
@@ -1076,7 +1101,7 @@ export async function aiGrade({
             ]) {
               await addAiGradingCostToIntervalUsage({
                 courseInstance: course_instance,
-                model: model_id,
+                model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
                 usage: response.usage,
               });
             }
@@ -1086,7 +1111,7 @@ export async function aiGrade({
           if (trackRateLimitAndCost) {
             await addAiGradingCostToIntervalUsage({
               courseInstance: course_instance,
-              model: model_id,
+              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
               usage: finalGradingResponse.usage,
             });
           }
@@ -1104,6 +1129,8 @@ export async function aiGrade({
             }
           : { model_id, rotationCorrectionApplied, finalGradingResponse };
         const persistenceContext = {
+          provider,
+          base_url,
           prompt: getPersistedAiGradingPrompt(gradingPrompt),
           course_instance,
           instance_question,

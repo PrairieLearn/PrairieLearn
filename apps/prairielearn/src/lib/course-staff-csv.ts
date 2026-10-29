@@ -1,5 +1,3 @@
-import { Readable } from 'node:stream';
-
 import { CsvError } from 'csv-parse';
 import { z } from 'zod';
 
@@ -94,7 +92,7 @@ export async function parseCourseStaffCsv(text: string): Promise<{
     throw new HttpStatusError(400, 'The staff CSV must be no larger than 1 MiB.');
   }
 
-  const parser = createCsvParser(Readable.from([text]), {
+  const parser = createCsvParser(text, {
     columns: false,
     cast: false,
     info: true,

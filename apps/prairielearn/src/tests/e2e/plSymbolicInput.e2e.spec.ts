@@ -84,6 +84,22 @@ test.describe('pl-symbolic-input formula editor', () => {
     expect(body['x-latex']).toBe('y');
   });
 
+  test('keeps the hidden LaTeX input empty for whitespace-only formula editor output', async ({
+    page,
+  }) => {
+    const formulaEditor = page.locator('#symbolic-input-x');
+    await formulaEditor.evaluate((element) => {
+      const field = element as HTMLElement & { getValue(format: string): string };
+      const originalGetValue = field.getValue.bind(field);
+      field.getValue = (format: string) =>
+        format === 'latex' ? '\n                \n            ' : '';
+      field.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      field.getValue = originalGetValue;
+    });
+
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('');
+  });
+
   test('keeps preceding content outside typed square roots and absolute values', async ({
     page,
   }) => {

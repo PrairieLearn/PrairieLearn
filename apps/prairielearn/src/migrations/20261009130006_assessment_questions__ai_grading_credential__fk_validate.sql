@@ -1,0 +1,1 @@
+ALTER TABLE assessment_questions VALIDATE CONSTRAINT assessment_questions_ai_grading_credential_fkey;

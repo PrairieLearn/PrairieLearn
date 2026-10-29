@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 4.3.0
+
+### Minor Changes
+
+- e6c306d: Add accessible Close buttons to click-triggered popovers and include them in focus traps.
+
 ## 4.2.0
 
 ### Minor Changes

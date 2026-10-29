@@ -71,6 +71,7 @@ const DEFAULT_GRADING_STATUS_FILTER: MultiSelectFilterValue<GradingStatusValue> 
 };
 const DEFAULT_ASSIGNED_GRADER_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_GRADED_BY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+const DEFAULT_AI_MODEL_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_SUBMISSION_GROUP_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_AI_AGREEMENT_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
@@ -82,6 +83,7 @@ interface AssessmentQuestionTableProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  courseInstanceTrpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -136,6 +138,7 @@ function AiGradingOption({
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
+  courseInstanceTrpcCsrfToken,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
   assessment,
@@ -192,6 +195,11 @@ export function AssessmentQuestionTable({
         urlKey: 'graded_by',
         parser: parseAsMultiSelectFilter(),
         defaultValue: DEFAULT_GRADED_BY_FILTER,
+      },
+      ai_grading_model: {
+        urlKey: 'ai_model',
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_AI_MODEL_FILTER,
       },
       instance_question_group_name: {
         urlKey: 'submission_group',
@@ -270,6 +278,9 @@ export function AssessmentQuestionTable({
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     assessmentQuestion.ai_grading_last_selected_model ?? null,
   );
+  const [lastSelectedCredentialId, setLastSelectedCredentialId] = useState<string | null>(
+    assessmentQuestion.ai_grading_last_selected_credential_id,
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
@@ -279,8 +290,7 @@ export function AssessmentQuestionTable({
 
   async function getExportOptions(rows: InstanceQuestionRowWithAIGradingStats[]) {
     const grading_job_ids = rows.flatMap(({ instance_question: iq }) => {
-      const id =
-        iq.ai_grading?.score_source?.grading_job.id ?? iq.ai_grading?.latest_update.grading_job.id;
+      const id = iq.ai_grading?.latest_update.grading_job.id;
       return id ? [id] : [];
     });
     try {
@@ -324,6 +334,18 @@ export function AssessmentQuestionTable({
     });
     return Array.from(graders).sort();
   }, [instanceQuestionsInfo, aiGradingMode]);
+
+  const allAiModels = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          instanceQuestionsInfo.map(
+            (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? 'None',
+          ),
+        ),
+      ).sort(),
+    [instanceQuestionsInfo],
+  );
 
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {
@@ -460,6 +482,7 @@ export function AssessmentQuestionTable({
             'student_labels',
             'points',
             'rubric_grading_item_ids',
+            'ai_grading_model',
           ].includes(col.id)
         ) {
           return [[col.id, false]];
@@ -630,6 +653,7 @@ export function AssessmentQuestionTable({
   const columnFiltersComponents = createColumnFilters({
     studentLabels,
     allGraders,
+    allAiModels,
     allSubmissionGroups,
     allAiAgreementItems,
   });
@@ -972,11 +996,14 @@ export function AssessmentQuestionTable({
       />
 
       <AiGradingModelSelectionModal
-        key={lastSelectedModel ?? 'default'}
+        key={`${lastSelectedCredentialId ?? 'official'}:${lastSelectedModel ?? 'default'}`}
+        courseInstanceId={courseInstance.id}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         show={modelSelectionModalState.show}
         data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
+        aiGradingLastSelectedCredentialId={lastSelectedCredentialId}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={courseInstance.ai_grading_use_custom_api_keys}
         aiGradingSettingsUrl={`${urlPrefix}/instance_admin/ai_grading`}
@@ -1005,12 +1032,15 @@ export function AssessmentQuestionTable({
             numToGrade: ids.length,
           });
         }}
-        onSuccess={(data, modelId) => {
+        onSuccess={(data, selection) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
             data.job_sequence_token,
           );
-          setLastSelectedModel(modelId);
+          setLastSelectedModel(selection.model_id);
+          setLastSelectedCredentialId(
+            selection.provider === 'openai-compatible' ? selection.credential_id : null,
+          );
           setRowSelection({});
         }}
       />

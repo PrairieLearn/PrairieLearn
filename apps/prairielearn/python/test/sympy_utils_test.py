@@ -707,9 +707,11 @@ class TestSympy:
 
     @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),
-        chain(
-            zip(EXPR_PAIRS, repeat(None)),
-            zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
+        tuple(
+            chain(
+                zip(EXPR_PAIRS, repeat(None)),
+                zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
+            )
         ),
     )
     @pytest.mark.parametrize("remove_assumptions", [True, False])
@@ -880,6 +882,23 @@ class TestExceptions:
             psu.convert_string_to_sympy(
                 a_sub, self.VARIABLES, allow_complex=False, simplify_expression=True
             )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_complex_cube_root(self, *, simplify_expression: bool) -> None:
+        with pytest.raises(psu.HasComplexError):
+            psu.convert_string_to_sympy(
+                "(-8)**(1/3)",
+                self.VARIABLES,
+                allow_complex=False,
+                simplify_expression=simplify_expression,
+            )
+
+        psu.convert_string_to_sympy(
+            "(-8)**(1/3)",
+            self.VARIABLES,
+            allow_complex=True,
+            simplify_expression=simplify_expression,
+        )
 
     @pytest.mark.parametrize(
         "text",

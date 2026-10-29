@@ -454,6 +454,57 @@ def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
     assert "complex number" in data["format_errors"]["test"]
 
 
+def test_unevaluated_real_subexpression_ignores_false_complex_assumption(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_is_disallowed_complex = psu._is_disallowed_complex
+
+    def is_disallowed_complex(item: sympy.Basic) -> bool:
+        # SymPy can intermittently report this unevaluated product as non-real.
+        if isinstance(item, sympy.Mul) and item.args == (
+            sympy.Integer(1),
+            sympy.Integer(0),
+        ):
+            return True
+        return original_is_disallowed_complex(item)
+
+    monkeypatch.setattr(psu, "_is_disallowed_complex", is_disallowed_complex)
+
+    element_html = build_element_html(
+        'variables="x"', 'display-simplified-expression="false"'
+    )
+    data = make_question_data(
+        submitted_answers={"test": "(x-0)/6"},
+        correct_answers={
+            "test": psu.sympy_to_json(sympy.Symbol("x") / sympy.Integer(6))
+        },
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert data["submitted_answers"]["test"]["_value"] == "(x - 1*0)/6"
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_adjacent_decimal_points_report_source(*, simplify_expression: bool) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "|x+1| + 2..3"},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(42))},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    error = data["format_errors"]["test"]
+    assert "invalid expression" in error
+    assert "2..3" in error
+    assert data["submitted_answers"]["test"] is None
+
+
 @pytest.mark.parametrize("a_sub", ["log(-x^2)", "sqrt(-x^2)"])
 def test_complex_from_real_assumptions_produces_format_error(a_sub: str) -> None:
     """When a correct answer has real variable assumptions, submitting an

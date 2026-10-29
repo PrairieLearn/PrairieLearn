@@ -378,6 +378,7 @@ const minimalStaffAlternativePool: z.input<typeof StaffAlternativePoolSchema> = 
 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
+  ai_grading_last_selected_credential_id: null,
   ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
@@ -510,6 +511,8 @@ const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   client_files: null,
+  copied_from: null,
+  copied_from_question_id: null,
   course_id: '1',
   deleted_at: null,
   dependencies: {},
