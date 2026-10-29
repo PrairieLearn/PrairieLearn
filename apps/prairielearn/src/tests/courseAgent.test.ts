@@ -140,7 +140,7 @@ describe('Course agent access and conversation privacy', () => {
   });
   afterAll(() => Object.assign(config, originalConfig));
 
-  test('records usage and credit once across retries, and preserves final usage after access revocation', async () => {
+  test('rejects duplicate usage reports and preserves final usage after access revocation', async () => {
     const conversation = await createConversation(owner);
     const url = `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/usage`;
     const report = (body: BudgetRequest, token = 'test-token') =>
@@ -159,7 +159,7 @@ describe('Course agent access and conversation privacy', () => {
     expect(accepted.status).toBe(200);
     const first = BudgetResponseSchema.parse(await accepted.json());
     expect(first.allocation).toMatchObject({ status: 'granted', grantedMilliDollars: 3000 });
-    expect(await (await report(request)).json()).toEqual(first);
+    expect((await report(request)).status).toBe(409);
     expect(
       (await report({ ...request, usageDelta: { ...request.usageDelta, costMilliDollars: 80 } }))
         .status,
@@ -235,7 +235,7 @@ describe('Course agent access and conversation privacy', () => {
       const a = await createConversation(owner);
       const b = await createConversation(owner);
       expect((await report(a.agent_conversation_id, 1, 40000, false)).status).toBe(200);
-      expect((await report(a.agent_conversation_id, 1, 40000, false)).status).toBe(200);
+      expect((await report(a.agent_conversation_id, 1, 40000, false)).status).toBe(409);
       expect((await report(b.agent_conversation_id, 1, 0)).status).toBe(200);
       expect(await limiter.getIntervalUsage(`user:${owner.id}`)).toBe(40000);
       expect((await report(a.agent_conversation_id, 2, 9000)).status).toBe(200);

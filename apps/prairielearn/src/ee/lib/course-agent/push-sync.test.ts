@@ -37,8 +37,6 @@ const conversation: CourseAgentConversation = {
   usage_output_tokens_reasoning: 0,
   usage_cost_milli_dollars: 0,
   usage_report_sequence: 0,
-  usage_report_request: null,
-  usage_report_response: null,
 };
 const graphql = vi.fn();
 const getBranch = vi.fn();

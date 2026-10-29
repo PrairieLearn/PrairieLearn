@@ -722,8 +722,6 @@ export const CourseAgentConversationSchema = z.object({
   usage_input_tokens_cache_read: z.coerce.number(),
   usage_output_tokens: z.coerce.number(),
   usage_output_tokens_reasoning: z.coerce.number(),
-  usage_report_request: z.unknown(),
-  usage_report_response: z.unknown(),
   usage_report_sequence: z.coerce.number(),
   user_id: IdSchema,
 });

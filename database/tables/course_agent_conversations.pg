@@ -9,8 +9,6 @@ columns
     usage_input_tokens_cache_read: bigint not null default 0
     usage_output_tokens: bigint not null default 0
     usage_output_tokens_reasoning: bigint not null default 0
-    usage_report_request: jsonb
-    usage_report_response: jsonb
     usage_report_sequence: bigint not null default 0
     user_id: bigint not null
 

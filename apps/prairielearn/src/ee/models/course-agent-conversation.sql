@@ -19,9 +19,7 @@ SET
   usage_output_tokens = usage_output_tokens + $output,
   usage_output_tokens_reasoning = usage_output_tokens_reasoning + $reasoning,
   usage_cost_milli_dollars = usage_cost_milli_dollars + $cost,
-  usage_report_sequence = $sequence,
-  usage_report_request = $request::jsonb,
-  usage_report_response = $response::jsonb
+  usage_report_sequence = $sequence
 WHERE
   id = $id;
 

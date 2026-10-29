@@ -1,4 +1,4 @@
-import type { BudgetRequest, BudgetResponse } from '@prairielearn/course-agent-types';
+import type { BudgetRequest } from '@prairielearn/course-agent-types';
 import {
   execute,
   loadSqlEquiv,
@@ -11,11 +11,7 @@ import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export async function recordCourseAgentConversationUsage(
-  id: string,
-  request: BudgetRequest,
-  response: BudgetResponse,
-) {
+export async function recordCourseAgentConversationUsage(id: string, request: BudgetRequest) {
   const usage = request.usageDelta;
   await execute(sql.add_usage, {
     id,
@@ -25,8 +21,6 @@ export async function recordCourseAgentConversationUsage(
     reasoning: usage.reasoningTokens,
     cost: usage.costMilliDollars,
     sequence: request.sequence,
-    request,
-    response,
   });
 }
 
