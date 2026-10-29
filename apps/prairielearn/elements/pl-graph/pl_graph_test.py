@@ -82,6 +82,45 @@ def test_prepare_aria_description_without_label_error() -> None:
         graph.prepare(element_html, data)
 
 
+def test_render_adjacency_matrix() -> None:
+    """Test rendering from an adjacency matrix param backend."""
+    import prairielearn as pl
+
+    mat = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+    data = {
+        "params": {
+            "matrix": pl.to_json(mat),
+            "labels": pl.to_json(["A", "B", "C"]),
+        },
+        "options": {},
+        "extensions": [],
+    }
+    element_html = (
+        '<pl-graph params-name="matrix" params-name-labels="labels"></pl-graph>'
+    )
+    result = graph.render(element_html, data)
+    assert '<div class="pl-graph">' in result
+    assert "<svg" in result
+
+
+def test_render_networkx_graph() -> None:
+    """Test rendering from a networkx graph param backend."""
+    import networkx as nx
+    import prairielearn as pl
+
+    g = nx.DiGraph()
+    g.add_edge("A", "B")
+    data = {
+        "params": {"graph": pl.to_json(g)},
+        "options": {},
+        "extensions": [],
+    }
+    element_html = '<pl-graph params-type="networkx" params-name="graph"></pl-graph>'
+    result = graph.render(element_html, data)
+    assert '<div class="pl-graph">' in result
+    assert "<svg" in result
+
+
 def test_render_missing_file_error() -> None:
     """Test that render raises an error when source file doesn't exist"""
     data = {

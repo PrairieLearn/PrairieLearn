@@ -1,6 +1,5 @@
 import numpy as np
 import prairielearn as pl
-import pygraphviz
 
 # Import the host element for all the attrib defaults
 pl_graph = pl.load_host_script("pl-graph.py")
@@ -30,18 +29,19 @@ def graphviz_from_inc_matrix(element, data):
     if label is None:
         label = range(mat.shape[1])
 
-    graph = pygraphviz.AGraph(directed=True)
-
-    for node in label:
-        graph.add_node(node)
+    lines = ["strict digraph {"]
+    lines.extend(f"\t{pl_graph.dot_node_id(node)};" for node in label)
 
     edges, _ = mat.shape
     for e in range(edges):
-        out_node = np.where(mat[e] == -1)[0][0]
-        in_node = np.where(mat[e] == 1)[0][0]
-        graph.add_edge(out_node, in_node)
+        out_node = label[np.where(mat[e] == -1)[0][0]]
+        in_node = label[np.where(mat[e] == 1)[0][0]]
+        lines.append(
+            f"\t{pl_graph.dot_node_id(out_node)} -> {pl_graph.dot_node_id(in_node)};"
+        )
 
-    return graph.string()
+    lines.append("}")
+    return "\n".join(lines) + "\n"
 
 
 backends = {"edge-inc-matrix": graphviz_from_inc_matrix}

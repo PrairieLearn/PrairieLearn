@@ -8,7 +8,6 @@ import lxml.html
 import networkx as nx
 import numpy as np
 import prairielearn as pl
-import pygraphviz
 
 ENGINE_DEFAULT = "dot"
 # Legacy default
@@ -30,6 +29,71 @@ XML_DECLARATION = r"<\?xml[^>\?]*\?>"
 DOCTYPE_DECLARATION = r"<!DOCTYPE svg [^>]*>"
 
 
+def dot_node_id(node: object) -> str:
+    if isinstance(node, (int, float)) and not isinstance(node, bool):
+        return str(node)
+    text = str(node)
+    escaped = text.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def _dot_attr_value(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return str(value)
+    text = str(value)
+    escaped = text.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def _dot_attr_list(attrs: dict[str, object]) -> str:
+    return ", ".join(f"{key}={_dot_attr_value(value)}" for key, value in attrs.items())
+
+
+def networkx_to_dot(graph: nx.Graph) -> str:
+    lines: list[str] = []
+
+    if graph.is_multigraph():
+        graph_type = "digraph" if graph.is_directed() else "graph"
+        edge_op = "->" if graph.is_directed() else "--"
+        lines.append(f"{graph_type} {{")
+    elif graph.is_directed():
+        graph_type = "digraph"
+        edge_op = "->"
+        lines.append("strict digraph {")
+    else:
+        graph_type = "graph"
+        edge_op = "--"
+        lines.append("strict graph {")
+
+    if graph.graph:
+        lines.append(f"\tgraph [{_dot_attr_list(dict(graph.graph))}];")
+
+    for node, node_attrs in graph.nodes(data=True):
+        node_id = dot_node_id(node)
+        if node_attrs:
+            lines.append(f"\t{node_id}\t[{_dot_attr_list(dict(node_attrs))}];")
+        else:
+            lines.append(f"\t{node_id};")
+
+    if graph.is_multigraph():
+        for u, v, key, edge_attrs in graph.edges(keys=True, data=True):
+            line = f"\t{dot_node_id(u)} {edge_op} {dot_node_id(v)}"
+            attrs = {"key": key, **dict(edge_attrs)}
+            lines.append(f"{line}\t[{_dot_attr_list(attrs)}];")
+    else:
+        for u, v, edge_attrs in graph.edges(data=True):
+            line = f"\t{dot_node_id(u)} {edge_op} {dot_node_id(v)}"
+            if edge_attrs:
+                lines.append(f"{line}\t[{_dot_attr_list(dict(edge_attrs))}];")
+            else:
+                lines.append(f"{line};")
+
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
 def graphviz_from_networkx(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> str:
@@ -37,9 +101,7 @@ def graphviz_from_networkx(
 
     networkx_graph = pl.from_json(data["params"][input_param_name])
 
-    graph = nx.nx_agraph.to_agraph(networkx_graph)
-
-    return graph.string()
+    return networkx_to_dot(networkx_graph)
 
 
 def graphviz_from_adj_matrix(
@@ -105,10 +167,10 @@ def graphviz_from_adj_matrix(
     if show_weights is None:
         show_weights = any(x not in {0, 1} for x in mat.flatten())
 
-    # Create pygraphviz graph representation
-
-    graph = pygraphviz.AGraph(directed=directed)
-    graph.add_nodes_from(mat_label)
+    edge_op = "->" if directed else "--"
+    graph_type = "digraph" if directed else "graph"
+    lines = [f"strict {graph_type} {{"]
+    lines.extend(f"\t{dot_node_id(node)};" for node in mat_label)
 
     for in_node, row in zip(mat_label, mat, strict=True):
         for out_node, x in zip(mat_label, row, strict=True):
@@ -117,18 +179,17 @@ def graphviz_from_adj_matrix(
             if x is None or (not negative_weights and x <= 0.0):
                 continue
 
+            line = f"\t{dot_node_id(out_node)} {edge_op} {dot_node_id(in_node)}"
             if show_weights:
-                graph.add_edge(
-                    out_node,
-                    in_node,
-                    label=pl.string_from_2darray(
-                        x, presentation_type=presentation_type, digits=digits
-                    ),
+                weight_label = pl.string_from_2darray(
+                    x, presentation_type=presentation_type, digits=digits
                 )
+                lines.append(f"{line}\t[label={_dot_attr_value(weight_label)}];")
             else:
-                graph.add_edge(out_node, in_node)
+                lines.append(f"{line};")
 
-    return graph.string()
+    lines.append("}")
+    return "\n".join(lines) + "\n"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -249,21 +310,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # properly encoded
         graphviz_data = element.text
 
-    translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
-
     # PyGraphviz 2's native renderer bypasses Python's warning filters and uses
     # CoreFoundation on macOS, which cannot run safely in our forked workers.
     result = subprocess.run(
         ["dot", f"-K{engine}", "-Tsvg"],
-        input=translated_dotcode.string().encode(translated_dotcode.encoding),
+        input=graphviz_data.encode("utf-8"),
         capture_output=True,
         check=False,
     )
     if result.returncode != 0:
-        raise OSError(result.stderr.decode(translated_dotcode.encoding))
+        raise OSError(result.stderr.decode("utf-8"))
     if log_warnings and result.stderr:
         warnings.warn(
-            result.stderr.decode(translated_dotcode.encoding),
+            result.stderr.decode("utf-8"),
             RuntimeWarning,
             stacklevel=2,
         )

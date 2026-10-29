@@ -1,6 +1,6 @@
 # `pl-graph` element
 
-Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz DOT visualizations.
+Using the Graphviz `dot` executable, create Graphviz DOT visualizations.
 
 ## Sample elements
 
