@@ -24,9 +24,7 @@ app.post('/conversations/local', async (c) => {
   if (c.req.header('Content-Type') !== 'application/gzip' || !c.req.raw.body) {
     return c.text('Expected a gzip course archive', 400);
   }
-  const directory = decodeURIComponent(
-    c.req.header('X-PL-Course-Directory') ?? c.req.header('X-Course-Directory') ?? '.',
-  );
+  const directory = decodeURIComponent(c.req.header('X-PL-Course-Directory') ?? '.');
   if (directory.startsWith('/') || directory.split('/').includes('..')) {
     return c.text('Expected a relative course directory', 400);
   }

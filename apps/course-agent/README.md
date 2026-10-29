@@ -88,7 +88,7 @@ Browser refresh or disconnect leaves execution running; the SDK replays saved ou
 
 All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 
-- `POST /conversations/local` accepts a gzip tar archive of course files and optional Git history and returns `201 { id }`. For a course nested in the archived repository, `X-PL-Course-Directory` specifies its URL-encoded relative directory. The former `X-Course-Directory` name is accepted during the PL/Worker rollout transition. The initial archive is deleted after the first successful checkpoint.
+- `POST /conversations/local` accepts a gzip tar archive of course files and optional Git history and returns `201 { id }`. For a course nested in the archived repository, `X-PL-Course-Directory` specifies its URL-encoded relative directory. The initial archive is deleted after the first successful checkpoint.
 - `POST /conversations` accepts `{ repository: "owner/name", branch: "branch" }` and returns `201 { id }` after initialization.
 - `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
 - `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.
@@ -108,23 +108,8 @@ Focused automated tests cover session reuse, Stop/startup cancellation, failed c
 
 ## Deployment environments and monitoring
 
-Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`.
-The top-level configuration is for local development. Each named environment has its
-own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars,
-and secrets. Resource bindings are repeated explicitly because Wrangler does not
-inherit them into named environments. Container image configuration is shared; the
-container instances belong to each environment's separate Durable Objects.
+Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings are repeated explicitly because Wrangler does not inherit them into named environments. Container image configuration is shared; the container instances belong to each environment's separate Durable Objects.
 
-Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`,
-`OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for
-each deployed environment. Configure PL to use the matching Worker URL and service
-token. Do not point staging at production conversation storage or checkpoints.
-No deployment or resource provisioning is performed by local checks.
+Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
 
-Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT`
-and Worker version metadata identify the deployment. Reports cover Worker handlers,
-Durable Object/RPC operations, and handled background lifecycle failures. Request
-bodies/headers, chat content, breadcrumbs, and user data are excluded. Model and
-service credentials are redacted from exception messages. Local reporting is disabled
-while the DSN is empty. Before a pilot, send a controlled failure to the configured
-Sentry project and confirm its environment/release and sanitized contents.
+Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local reporting is disabled while the DSN is empty.

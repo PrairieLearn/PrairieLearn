@@ -15,7 +15,7 @@ import {
   type ConversationState,
 } from '@prairielearn/course-agent-types';
 
-import { createErrorReporter } from '../monitoring.js';
+import { reportError } from '../monitoring.js';
 import { CodexAppServerClient } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
@@ -75,7 +75,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private active: ActiveTurn | null = null;
   private native: CodexAppServerClient | null = null;
   private recovering = false;
-  private reportError = createErrorReporter(this.env, this.ctx);
+  private reportError(error: unknown) {
+    reportError(error, {
+      'course_agent.lifecycle': this._record?.lifecycle.status ?? 'uninitialized',
+    });
+  }
 
   override onError(...args: [error: unknown] | [connection: Connection, error: unknown]) {
     this.reportError(args.length === 1 ? args[0] : args[1]);

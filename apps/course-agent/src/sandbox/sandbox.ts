@@ -9,60 +9,63 @@ export type CourseSource =
 const lifetimeMs = (env: Env) =>
   (Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS) + 3600) * 1000;
 
-/** Only these two private hostnames can leave a container. Secrets stay here. */
-export class CourseAgentOutbound extends WorkerEntrypoint<
+/** Read-only access to the bound repository; the container never receives the GitHub token. */
+export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
   Env & { GITHUB_READ_TOKEN?: string },
-  { repository?: string; model: string }
+  { repository: string }
 > {
-  // Add credentials only after checking that the request targets the bound
-  // repository or model. The container never receives the underlying tokens.
   override async fetch(request: Request) {
     const url = new URL(request.url);
-    const headers = new Headers();
-    let target: URL;
-    if (url.hostname === 'repository.internal') {
-      if (!this.ctx.props.repository) return new Response('Forbidden', { status: 403 });
-      if (!this.env.GITHUB_READ_TOKEN) {
-        return new Response('Repository access is not configured', { status: 503 });
-      }
-      // GET info/refs supports clone, fetch, pull, and ls-remote.
-      // POST git-upload-pack supports downloading objects for clone, fetch, and pull.
-      // Only this repository is allowed; push (git-receive-pack) and GitHub APIs are denied.
-      const path = `/${this.ctx.props.repository}.git`;
-      const discovery =
-        request.method === 'GET' &&
-        url.pathname === `${path}/info/refs` &&
-        url.search === '?service=git-upload-pack';
-      const read =
-        request.method === 'POST' && url.pathname === `${path}/git-upload-pack` && !url.search;
-      if (!discovery && !read) return new Response('Forbidden', { status: 403 });
-      target = new URL(url.pathname + url.search, 'https://github.com');
-      headers.set('Authorization', `Basic ${btoa(`x-access-token:${this.env.GITHUB_READ_TOKEN}`)}`);
-      headers.set('Content-Type', 'application/x-git-upload-pack-request');
-      headers.set('Git-Protocol', 'version=2');
-    } else if (
-      url.hostname === 'model.internal' &&
-      url.pathname === '/v1/responses' &&
-      !url.search &&
-      request.method === 'POST'
-    ) {
-      const body = (await request.json()) as { model?: string };
-      if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
-      headers.set('Authorization', `Bearer ${this.env.OPENAI_API_KEY}`);
-      headers.set('Content-Type', 'application/json');
-      return fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-        redirect: 'manual',
-      });
-    } else {
-      return new Response('Forbidden', { status: 403 });
+    if (url.hostname !== 'repository.internal') return new Response('Forbidden', { status: 403 });
+    if (!this.env.GITHUB_READ_TOKEN) {
+      return new Response('Repository access is not configured', { status: 503 });
     }
+    // GET info/refs supports clone, fetch, pull, and ls-remote.
+    // POST git-upload-pack supports downloading objects for clone, fetch, and pull.
+    // Only this repository is allowed; push (git-receive-pack) and GitHub APIs are denied.
+    const path = `/${this.ctx.props.repository}.git`;
+    const discovery =
+      request.method === 'GET' &&
+      url.pathname === `${path}/info/refs` &&
+      url.search === '?service=git-upload-pack';
+    const read =
+      request.method === 'POST' && url.pathname === `${path}/git-upload-pack` && !url.search;
+    if (!discovery && !read) return new Response('Forbidden', { status: 403 });
+    const target = new URL(url.pathname + url.search, 'https://github.com');
+    const headers = new Headers();
+    headers.set('Authorization', `Basic ${btoa(`x-access-token:${this.env.GITHUB_READ_TOKEN}`)}`);
+    headers.set('Content-Type', 'application/x-git-upload-pack-request');
+    headers.set('Git-Protocol', 'version=2');
     return fetch(target, {
       method: request.method,
       headers,
       body: request.body,
+      redirect: 'manual',
+    });
+  }
+}
+
+/** Only the conversation's pinned model is available; its API key stays outside the container. */
+export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: string }> {
+  override async fetch(request: Request) {
+    const url = new URL(request.url);
+    if (
+      url.hostname !== 'model.internal' ||
+      url.pathname !== '/v1/responses' ||
+      url.search ||
+      request.method !== 'POST'
+    ) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    const body = (await request.json()) as { model?: string };
+    if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
+    return fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
       redirect: 'manual',
     });
   }
@@ -107,16 +110,16 @@ export class CourseSandbox extends DurableObject<Env> {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
     this.container.start({ image: this.container.images.courseAgent, enableInternet: false });
     await this.container.setInactivityTimeout(lifetimeMs(this.env));
-    const outbound = this.ctx.exports.CourseAgentOutbound({
-      props: {
-        model: config.model,
-        ...(config.type === 'local' ? {} : { repository: config.repository }),
-      },
-    });
     if (config.type !== 'local') {
-      await this.container.interceptOutboundHttp('repository.internal:80', outbound);
+      await this.container.interceptOutboundHttp(
+        'repository.internal:80',
+        this.ctx.exports.CourseAgentGitHubOutbound({ props: { repository: config.repository } }),
+      );
     }
-    await this.container.interceptOutboundHttp('model.internal:80', outbound);
+    await this.container.interceptOutboundHttp(
+      'model.internal:80',
+      this.ctx.exports.CourseAgentModelOutbound({ props: { model: config.model } }),
+    );
     await this.exec(['mkdir', '-p', '/workspace']);
     if (checkpoint) {
       await this.backups.restore(checkpoint);
