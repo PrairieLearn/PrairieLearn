@@ -18,6 +18,7 @@ export async function createPrintableAssessmentInstance(courseInstanceId: string
     time_limit_min: null,
     date: new Date(),
     client_fingerprint_id: null,
+    forPrinting: true,
   });
 }
 
