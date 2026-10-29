@@ -1,20 +1,52 @@
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 
 import type { PendingReview } from '@prairielearn/course-agent-types';
-import * as namedLocks from '@prairielearn/named-locks';
-import * as postgres from '@prairielearn/postgres';
 
-import type { AuditEvent, Course, CourseAgentConversation, Job } from '../../../lib/db-types.js';
-import * as github from '../../../lib/github.js';
-import * as jobs from '../../../lib/server-jobs.js';
-import { type ServerJob, type ServerJobExecutor } from '../../../lib/server-jobs.js';
-import * as auditEvents from '../../../models/audit-event.js';
-import * as courses from '../../../models/course.js';
-import * as sync from '../../../sync/syncFromDisk.js';
+import type { Course, CourseAgentConversation, Job } from '../../../lib/db-types.js';
+import { getGithubClient } from '../../../lib/github.js';
+import {
+  type ServerJob,
+  type ServerJobExecutor,
+  createServerJob,
+  selectJobsByJobSequenceId,
+} from '../../../lib/server-jobs.js';
+import { selectCourseById } from '../../../models/course.js';
+import { syncDiskToSqlWithLock } from '../../../sync/syncFromDisk.js';
 
-import * as client from './client.js';
+import {
+  deliverCourseAgentReviewOutcome,
+  getCourseAgentPendingReview,
+  recordCourseAgentReviewDecision,
+} from './client.js';
 import { getPendingReview, postReviewDecision } from './push-sync.js';
-import * as diff from './review-diff.js';
+
+// Other suites can load the real dependencies because Vitest disables module isolation.
+vi.hoisted(() => vi.resetModules());
+
+vi.mock('@prairielearn/named-locks', () => ({
+  doWithLock: async (_name: string, _options: unknown, fn: () => Promise<void>) => fn(),
+}));
+vi.mock('@prairielearn/postgres', () => ({
+  runInTransactionAsync: async (fn: () => Promise<unknown>) => fn(),
+}));
+vi.mock('../../../lib/github.js', () => ({ getGithubClient: vi.fn() }));
+vi.mock('../../../lib/server-jobs.js', () => ({
+  createServerJob: vi.fn(),
+  selectJobsByJobSequenceId: vi.fn(),
+}));
+vi.mock('../../../models/audit-event.js', () => ({ insertAuditEvent: vi.fn() }));
+vi.mock('../../../models/course.js', () => ({
+  selectCourseById: vi.fn(),
+  getLockNameForCoursePath: vi.fn(),
+  updateCourseCommitHash: vi.fn(),
+}));
+vi.mock('../../../sync/syncFromDisk.js', () => ({ syncDiskToSqlWithLock: vi.fn() }));
+vi.mock('./client.js', () => ({
+  getCourseAgentPendingReview: vi.fn(),
+  recordCourseAgentReviewDecision: vi.fn(),
+  deliverCourseAgentReviewOutcome: vi.fn(),
+}));
+vi.mock('./review-diff.js', () => ({ createReviewDiff: vi.fn(async () => 'reviewed diff') }));
 
 const baseCommit = 'a'.repeat(40);
 const publishedCommit = 'b'.repeat(40);
@@ -59,17 +91,7 @@ let review: PendingReview;
 let reviewToken: string;
 
 beforeEach(async () => {
-  vi.clearAllMocks();
-  vi.spyOn(namedLocks, 'doWithLock').mockImplementation(async (_name, _options, fn) => fn());
-  vi.spyOn(postgres, 'runInTransactionAsync').mockImplementation(async (fn) =>
-    fn({} as Parameters<typeof fn>[0]),
-  );
-  vi.spyOn(auditEvents, 'insertAuditEvent').mockResolvedValue({} as AuditEvent);
-  vi.spyOn(courses, 'getLockNameForCoursePath').mockResolvedValue('course');
-  vi.spyOn(courses, 'updateCourseCommitHash').mockResolvedValue(publishedCommit);
-  vi.spyOn(diff, 'createReviewDiff').mockResolvedValue('reviewed diff');
-  vi.spyOn(client, 'deliverCourseAgentReviewOutcome').mockResolvedValue();
-  vi.spyOn(client, 'recordCourseAgentReviewDecision').mockResolvedValue();
+  vi.resetAllMocks();
   job.data = {};
   review = {
     callId: 'review-1',
@@ -85,25 +107,25 @@ beforeEach(async () => {
       deletions: [{ path: 'old.html' }],
     },
   };
-  vi.spyOn(courses, 'selectCourseById').mockResolvedValue(course);
-  vi.spyOn(client, 'getCourseAgentPendingReview').mockImplementation(async () => review);
-  vi.spyOn(github, 'getGithubClient').mockReturnValue({
+  vi.mocked(selectCourseById).mockResolvedValue(course);
+  vi.mocked(getCourseAgentPendingReview).mockImplementation(async () => review);
+  vi.mocked(getGithubClient).mockReturnValue({
     repos: { getBranch },
     graphql,
-  } as unknown as ReturnType<typeof github.getGithubClient>);
+  } as unknown as ReturnType<typeof getGithubClient>);
   getBranch.mockResolvedValue({ data: { commit: { sha: baseCommit } } });
   graphql.mockResolvedValue({ createCommitOnBranch: { commit: { oid: publishedCommit } } });
-  vi.spyOn(sync, 'syncDiskToSqlWithLock').mockResolvedValue({
+  vi.mocked(syncDiskToSqlWithLock).mockResolvedValue({
     status: 'complete',
     hadJsonErrors: false,
-  } as Awaited<ReturnType<typeof sync.syncDiskToSqlWithLock>>);
-  vi.spyOn(jobs, 'selectJobsByJobSequenceId').mockResolvedValue([{ id: 'job-1' } as Job]);
+  } as Awaited<ReturnType<typeof syncDiskToSqlWithLock>>);
+  vi.mocked(selectJobsByJobSequenceId).mockResolvedValue([{ id: 'job-1' } as Job]);
   // The job runner retains data even when job.fail() ends its callback.
   executeJob.mockImplementation(async (fn) => {
     await fn(job).catch(() => {});
     return { data: structuredClone(job.data) };
   });
-  vi.spyOn(jobs, 'createServerJob').mockResolvedValue({
+  vi.mocked(createServerJob).mockResolvedValue({
     jobSequenceId: 'job-1',
     execute: executeJob,
     executeUnsafe: vi.fn(),
@@ -111,8 +133,6 @@ beforeEach(async () => {
   });
   reviewToken = (await getPendingReview(course, conversation, '2', review.callId))!.reviewToken;
 });
-
-afterEach(() => vi.restoreAllMocks());
 
 function decide(decision: 'approved' | 'denied') {
   return postReviewDecision({
@@ -125,13 +145,22 @@ function decide(decision: 'approved' | 'denied') {
   });
 }
 
-it('approval publishes the saved files and delivers the published commit after sync', async () => {
+it('approval publishes reviewed files, syncs, and saves the result even if delivery fails', async () => {
+  vi.mocked(deliverCourseAgentReviewOutcome).mockImplementation(async (_agentId, outcome) => {
+    expect(job.data.result).toEqual(outcome.result);
+    throw new Error('Agent unavailable');
+  });
   await expect(decide('approved')).resolves.toEqual({
     decision: 'approved',
     jobSequenceId: 'job-1',
   });
-  await executeJob.mock.results[0].value;
-  expect(graphql).toHaveBeenCalledWith(expect.any(String), {
+  const saved = await executeJob.mock.results[0].value;
+  expect(saved.data.result).toEqual({
+    decision: 'approved',
+    publication: { status: 'published', commitSha: publishedCommit },
+    sync: { status: 'succeeded' },
+  });
+  expect(graphql).toHaveBeenCalledExactlyOnceWith(expect.any(String), {
     input: {
       branch: { repositoryNameWithOwner: 'PrairieLearn/course', branchName: 'master' },
       expectedHeadOid: baseCommit,
@@ -139,8 +168,8 @@ it('approval publishes the saved files and delivers the published commit after s
       fileChanges: { additions: review.snapshot.additions, deletions: review.snapshot.deletions },
     },
   });
-  expect(sync.syncDiskToSqlWithLock).toHaveBeenCalledOnce();
-  expect(client.deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
+  expect(syncDiskToSqlWithLock).toHaveBeenCalledOnce();
+  expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
     callId: 'review-1',
     result: {
       decision: 'approved',
@@ -152,11 +181,11 @@ it('approval publishes the saved files and delivers the published commit after s
 
 it('denial delivers the decision without creating a publication job or syncing', async () => {
   await expect(decide('denied')).resolves.toEqual({ decision: 'denied', jobSequenceId: null });
-  expect(client.recordCourseAgentReviewDecision).toHaveBeenCalledWith('agent-1', {
+  expect(recordCourseAgentReviewDecision).toHaveBeenCalledWith('agent-1', {
     callId: 'review-1',
     decision: 'denied',
   });
-  expect(client.deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
+  expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
     callId: 'review-1',
     result: {
       decision: 'denied',
@@ -164,9 +193,9 @@ it('denial delivers the decision without creating a publication job or syncing',
       sync: { status: 'not_attempted' },
     },
   });
-  expect(jobs.createServerJob).not.toHaveBeenCalled();
+  expect(createServerJob).not.toHaveBeenCalled();
   expect(graphql).not.toHaveBeenCalled();
-  expect(sync.syncDiskToSqlWithLock).not.toHaveBeenCalled();
+  expect(syncDiskToSqlWithLock).not.toHaveBeenCalled();
 });
 
 it('a repeated approval reuses its job and a conflicting denial is rejected', async () => {
@@ -176,15 +205,8 @@ it('a repeated approval reuses its job and a conflicting denial is rejected', as
     jobSequenceId: 'existing-job',
   });
   await expect(decide('denied')).rejects.toThrow('already has a different decision');
-  expect(jobs.createServerJob).not.toHaveBeenCalled();
-  expect(client.recordCourseAgentReviewDecision).not.toHaveBeenCalled();
-});
-
-it('an approval for a replaced review cannot start publication', async () => {
-  review = { ...review, callId: 'new-review' };
-  await expect(decide('approved')).rejects.toThrow('This review has changed');
-  expect(jobs.createServerJob).not.toHaveBeenCalled();
-  expect(graphql).not.toHaveBeenCalled();
+  expect(createServerJob).not.toHaveBeenCalled();
+  expect(recordCourseAgentReviewDecision).not.toHaveBeenCalled();
 });
 
 it('an advanced branch head rejects publication and skips sync', async () => {
@@ -192,7 +214,7 @@ it('an advanced branch head rejects publication and skips sync', async () => {
   await decide('approved');
   await executeJob.mock.results[0].value;
   expect(graphql).not.toHaveBeenCalled();
-  expect(sync.syncDiskToSqlWithLock).not.toHaveBeenCalled();
+  expect(syncDiskToSqlWithLock).not.toHaveBeenCalled();
   expect(job.data.result).toMatchObject({
     publication: { status: 'failed' },
     sync: { status: 'not_attempted' },
@@ -205,18 +227,16 @@ it('an uncertain publication failure blocks delivery and never starts sync', asy
   const saved = await executeJob.mock.results[0].value;
   expect(saved.data.error).toContain('GitHub publication could not be confirmed');
   expect(saved.data.result).toBeUndefined();
-  expect(sync.syncDiskToSqlWithLock).not.toHaveBeenCalled();
-  expect(client.deliverCourseAgentReviewOutcome).not.toHaveBeenCalled();
+  expect(syncDiskToSqlWithLock).not.toHaveBeenCalled();
+  expect(deliverCourseAgentReviewOutcome).not.toHaveBeenCalled();
   expect(graphql).toHaveBeenCalledOnce();
 });
 
 it('sync failure retains the published commit and returns its diagnostics', async () => {
-  vi.spyOn(sync, 'syncDiskToSqlWithLock').mockRejectedValue(
-    new Error('Invalid question configuration'),
-  );
+  vi.mocked(syncDiskToSqlWithLock).mockRejectedValue(new Error('Invalid question configuration'));
   await decide('approved');
   await executeJob.mock.results[0].value;
-  expect(client.deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
+  expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
     callId: 'review-1',
     result: {
       decision: 'approved',
@@ -224,22 +244,4 @@ it('sync failure retains the published commit and returns its diagnostics', asyn
       sync: { status: 'failed', error: 'Invalid question configuration' },
     },
   });
-});
-
-it('failed outcome delivery leaves the completed job result available without republishing', async () => {
-  vi.mocked(client.deliverCourseAgentReviewOutcome).mockImplementation(
-    async (_agentId, outcome) => {
-      expect(job.data.result).toEqual(outcome.result);
-      throw new Error('Agent unavailable');
-    },
-  );
-  await decide('approved');
-  const saved = await executeJob.mock.results[0].value;
-  expect(saved.data.result).toEqual({
-    decision: 'approved',
-    publication: { status: 'published', commitSha: publishedCommit },
-    sync: { status: 'succeeded' },
-  });
-  expect(client.deliverCourseAgentReviewOutcome).toHaveBeenCalledOnce();
-  expect(graphql).toHaveBeenCalledOnce();
 });

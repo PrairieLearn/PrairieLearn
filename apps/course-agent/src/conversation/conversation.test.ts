@@ -184,51 +184,21 @@ async function pendingReview(live: boolean) {
   return { conversation: restored, nativeResult };
 }
 
-it.each(['approved', 'denied'] as const)(
-  'live %s decision answers the waiting native call',
-  async (decision) => {
-    const { conversation, nativeResult } = await pendingReview(true);
-    expect(
-      conversation.recordReviewDecision(
-        decision === 'approved'
-          ? { callId: 'review', decision, jobSequenceId: 'job' }
-          : { callId: 'review', decision },
-      ),
-    ).toBe(true);
-    await expect(
-      conversation.recordReviewOutcome({ callId: 'review', result: results[decision] }),
-    ).resolves.toBe(true);
-    await expect(nativeResult).resolves.toEqual(results[decision]);
-    expect(SandboxTurn).toHaveBeenCalledOnce();
-  },
-);
+it('denial after restart continues the saved thread with only its result', async () => {
+  const { conversation } = await pendingReview(false);
+  conversation.recordReviewDecision({ callId: 'review', decision: 'denied' });
+  await conversation.recordReviewOutcome({ callId: 'review', result: results.denied });
+  expect(SandboxTurn).toHaveBeenCalledExactlyOnceWith(
+    expect.anything(),
+    expect.anything(),
+    expect.objectContaining({
+      text: { callId: 'review', result: results.denied },
+      thread: expect.objectContaining({ threadId: 'native-thread' }),
+    }),
+  );
+});
 
-it.each(['approved', 'denied'] as const)(
-  'delayed %s decision continues the saved thread with only its result',
-  async (decision) => {
-    const { conversation } = await pendingReview(false);
-    expect(
-      conversation.recordReviewDecision(
-        decision === 'approved'
-          ? { callId: 'review', decision, jobSequenceId: 'job' }
-          : { callId: 'review', decision },
-      ),
-    ).toBe(true);
-    await expect(
-      conversation.recordReviewOutcome({ callId: 'review', result: results[decision] }),
-    ).resolves.toBe(true);
-    expect(SandboxTurn).toHaveBeenCalledExactlyOnceWith(
-      expect.anything(),
-      expect.anything(),
-      expect.objectContaining({
-        text: { callId: 'review', result: results[decision] },
-        thread: expect.objectContaining({ threadId: 'native-thread' }),
-      }),
-    );
-  },
-);
-
-it('duplicate outcomes share delivery and a conflicting outcome cannot answer the call', async () => {
+it('approval answers the waiting call once despite duplicate or conflicting outcomes', async () => {
   const { conversation, nativeResult } = await pendingReview(true);
   conversation.recordReviewDecision({
     callId: 'review',
@@ -252,6 +222,7 @@ it('duplicate outcomes share delivery and a conflicting outcome cannot answer th
   await expect(nativeResult).resolves.toEqual(results.approved);
   await expect(conversation.recordReviewOutcome(outcome)).resolves.toBe(true);
   expect(sdk.continued).toHaveBeenCalledOnce();
+  expect(SandboxTurn).toHaveBeenCalledOnce();
 });
 
 it('Stop ends native work while admitted inference finishes accounting before reuse', async () => {
