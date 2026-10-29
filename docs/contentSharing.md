@@ -2,8 +2,6 @@
 
 To allow instructors to share their course content with others and to avoid instructors needing to copy question files in between courses, PrairieLearn provides a way for questions from one course to be used in assessments in other courses.
 
-Only v3 questions (`"type": "v3"` in `info.json`) can be shared publicly, have their source shared publicly, or belong to sharing sets. To share a legacy question, convert it to v3 first. Legacy questions can still be used within their own course without sharing.
-
 ## Using shared questions
 
 You can use a shared question by referencing it from an assessment, or by copying it when source copying is allowed. A reference uses the question maintained in the source course; a copy is a separate question in your course that you can edit independently.
