@@ -89,8 +89,8 @@ function AssessmentModuleRow({
           onDelete={onDelete}
         />
       )}
-      <td className="align-middle">{module.name}</td>
-      <td className="align-middle">
+      <td className="align-middle pe-4">{module.name}</td>
+      <td className="align-middle pe-4">
         <AssessmentModuleHeading assessmentModule={module} />
       </td>
       <td className="align-middle">
@@ -134,9 +134,9 @@ function AssessmentModulesTable({
                 <span className="visually-hidden">Drag, Edit and Delete</span>
               </th>
             )}
-            <th>Name</th>
-            <th className="col-8">Heading</th>
-            <th>Action</th>
+            <th className="col-3 pe-4">Name</th>
+            <th className="pe-4">Heading</th>
+            <th style={{ width: '1%' }}>Action</th>
           </tr>
         </thead>
         <tbody>

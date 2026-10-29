@@ -64,11 +64,11 @@ function AssessmentSetRow({
           onDelete={onDelete}
         />
       )}
-      <td className="align-middle">
+      <td className="align-middle pe-4">
         <span className={`badge color-${assessmentSet.color}`}>{assessmentSet.abbreviation}</span>
       </td>
-      <td className="align-middle">{assessmentSet.name}</td>
-      <td className="align-middle">
+      <td className="align-middle pe-4">{assessmentSet.name}</td>
+      <td className="align-middle pe-4">
         <AssessmentSetHeading assessmentSet={assessmentSet} />
       </td>
       <td className="align-middle">
@@ -112,10 +112,12 @@ function AssessmentSetsTable({
                 <span className="visually-hidden">Drag, Edit and Delete</span>
               </th>
             )}
-            <th>Abbreviation</th>
-            <th>Name</th>
-            <th className="col-8">Heading</th>
-            <th>Action</th>
+            <th className="pe-4" style={{ width: '1%' }}>
+              Abbreviation
+            </th>
+            <th className="col-3 pe-4">Name</th>
+            <th className="pe-4">Heading</th>
+            <th style={{ width: '1%' }}>Action</th>
           </tr>
         </thead>
 
