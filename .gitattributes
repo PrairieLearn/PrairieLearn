@@ -9,3 +9,5 @@
 # to never touch again.
 apps/prairielearn/public/javascripts/** linguist-vendored
 apps/prairielearn/public/localscripts/** linguist-vendored
+
+apps/course-agent/generated/** linguist-generated=true

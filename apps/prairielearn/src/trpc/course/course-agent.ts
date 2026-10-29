@@ -1,13 +1,24 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
+
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
-import { createCourseAgentConversation } from '../../ee/lib/course-agent/client.js';
+import {
+  createCourseAgentConversation,
+  createLocalCourseAgentConversation,
+  resumeCourseAgentConversation,
+} from '../../ee/lib/course-agent/client.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
+  selectOptionalCourseAgentConversation,
 } from '../../ee/models/course-agent-conversation.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
+import { parseGithubRepository } from '../../lib/github-utils.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
 
@@ -32,11 +43,47 @@ export const courseAgentRouter = t.router({
     return z.array(StaffCourseAgentConversationSchema).parse(conversations);
   }),
 
+  resume: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema }))
+    .output(z.strictObject({ recovered: z.literal(true) }))
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      return resumeCourseAgentConversation(conversation.agent_conversation_id);
+    }),
+
   // Record only conversations whose Cloudflare startup succeeded.
   create: courseAgentProcedure
     .input(z.object({ text: z.string().trim().min(1).max(20_000) }))
     .mutation(async ({ ctx, input }) => {
-      const agentConversationId = await createCourseAgentConversation();
+      const agentConversationId = await run(async () => {
+        if (config.devMode && !config.fileEditorUseGit) {
+          return createLocalCourseAgentConversation(ctx.course.path);
+        } else {
+          const repository = parseGithubRepository(ctx.course.repository ?? '');
+          if (!repository || !ctx.course.branch) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Configure a GitHub repository and branch before starting a conversation.',
+            });
+          }
+          const binding = CreateConversationInput.safeParse({
+            repository: `${repository.owner}/${repository.repo}`,
+            branch: ctx.course.branch,
+          });
+          if (!binding.success) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'The course repository or branch is invalid.',
+            });
+          }
+          return createCourseAgentConversation(binding.data);
+        }
+      });
       const title = input.text.replaceAll(/\s+/g, ' ');
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,
@@ -51,4 +98,5 @@ export const courseAgentRouter = t.router({
 export interface CourseAgentError {
   List: never;
   Create: never;
+  Resume: never;
 }

@@ -186,6 +186,8 @@ const config: KnipConfig = {
       ignoreDependencies: [...autoDetectedDeps, ...EXTERNAL_ELEMENT_DEPS, ...DEPS_OF_DEAD_CODE],
     },
     'apps/course-agent': {
+      // Worker runtime imports and the pinned CLI invoked by protocol generation.
+      ignoreDependencies: ['cloudflare', '@openai/codex'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/workspace-host': {

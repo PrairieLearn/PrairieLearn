@@ -17,8 +17,8 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@sentry/core": "^11.0.0",
-    "@sentry/node": "^11.0.0",
+    "@sentry/core": "^11.9.0",
+    "@sentry/node": "^11.9.0",
     "execa": "^10.0.1"
   },
   "devDependencies": {

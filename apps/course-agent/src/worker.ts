@@ -1,25 +1,25 @@
-import { getAgentByName } from 'agents';
+import { DirectoryBackupGateway } from '@cloudflare/sandbox';
+import * as Sentry from '@sentry/cloudflare';
 
-import { isAuthorized } from './http/auth.js';
-import { parseRoute } from './http/routes.js';
+import { Conversation as ConversationAgent } from './conversation/conversation.js';
+import app from './http/routes.js';
+import { sentryOptions } from './monitoring.js';
+import {
+  CourseAgentGitHubOutbound as GitHubOutbound,
+  CourseAgentModelOutbound as ModelOutbound,
+  CourseSandbox as Sandbox,
+} from './sandbox/sandbox.js';
 
-export { Conversation } from './conversation/conversation.js';
+export { DirectoryBackupGateway };
+export class Conversation extends Sentry.instrumentAgentWithSentry(
+  sentryOptions,
+  ConversationAgent,
+) {}
+export class CourseSandbox extends Sentry.instrumentDurableObjectWithSentry(
+  sentryOptions,
+  Sandbox,
+) {}
+export class CourseAgentGitHubOutbound extends Sentry.withSentry(sentryOptions, GitHubOutbound) {}
+export class CourseAgentModelOutbound extends Sentry.withSentry(sentryOptions, ModelOutbound) {}
 
-export default {
-  async fetch(request, env) {
-    if (!isAuthorized(request.headers.get('Authorization'), env.PL_SERVICE_TOKEN)) {
-      return new Response('Unauthorized', { status: 401 });
-    }
-    if (request.method === 'POST' && new URL(request.url).pathname === '/conversations') {
-      const id = crypto.randomUUID();
-      await getAgentByName(env.Conversation, id);
-      return Response.json({ id }, { status: 201 });
-    }
-    const id = parseRoute(request.url);
-    if (!id || request.method !== 'GET') return new Response('Not found', { status: 404 });
-    // PL's catalog is the existence/ownership authority. Both SDK routes are
-    // reachable only through its authenticated proxy.
-    const conversation = await getAgentByName(env.Conversation, id);
-    return conversation.fetch(request);
-  },
-} satisfies ExportedHandler<Env>;
+export default Sentry.withSentry(sentryOptions, { fetch: app.fetch });

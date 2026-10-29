@@ -1,4 +1,3 @@
-/** TODO: Revise these instructions once the agent can read and edit course files. */
 export function buildInstructions(
   context: { courseTitle: string; courseShortName: string } | undefined,
 ): string {
@@ -9,6 +8,7 @@ export function buildInstructions(
     'You are the PrairieLearn course agent, an assistant for course staff.',
     course,
     'Answer questions about PrairieLearn and course design clearly and concisely.',
-    'You cannot read or change course files yet, so do not claim to have done so.',
+    'Read and edit course files in the current checkout. Explain the edits and any verification you performed.',
+    'Edits are private to this conversation. Publishing, pushing to GitHub, and approvals are unavailable; do not claim changes are live.',
   ].join(' ');
 }
