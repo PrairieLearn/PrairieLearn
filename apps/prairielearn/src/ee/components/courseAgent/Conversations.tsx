@@ -37,13 +37,13 @@ export function Conversations({
   authnUserId,
   chatCsrfToken,
   active,
-  isDevMode,
+  showConversationStats,
 }: {
   courseId: string;
   authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
-  isDevMode: boolean;
+  showConversationStats: boolean;
 }) {
   const trpc = useTRPC();
   const conversations = useQuery({
@@ -68,7 +68,7 @@ export function Conversations({
           authnUserId={authnUserId}
           chatCsrfToken={chatCsrfToken}
           active={active}
-          isDevMode={isDevMode}
+          showConversationStats={showConversationStats}
         />
       )}
     </>
@@ -77,7 +77,7 @@ export function Conversations({
 
 function ConversationPicker({
   conversations,
-  isDevMode,
+  showConversationStats,
   courseId,
   authnUserId,
   chatCsrfToken,
@@ -88,7 +88,7 @@ function ConversationPicker({
   authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
-  isDevMode: boolean;
+  showConversationStats: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -185,7 +185,7 @@ function ConversationPicker({
           courseId={courseId}
           conversationId={selectedId}
           usage={selectedConversation!}
-          isDevMode={isDevMode}
+          showConversationStats={showConversationStats}
           chatCsrfToken={chatCsrfToken}
           initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
           onInitialMessageSent={create.reset}
@@ -229,12 +229,12 @@ function Chat({
   chatCsrfToken,
   initialMessage,
   onInitialMessageSent,
-  isDevMode,
+  showConversationStats,
   usage,
 }: {
   courseId: string;
   conversationId: string;
-  isDevMode: boolean;
+  showConversationStats: boolean;
   chatCsrfToken: string;
   usage: StaffCourseAgentConversation;
   initialMessage: string | undefined;
@@ -384,7 +384,7 @@ function Chat({
         onSubmit={submit}
         onStop={!pendingReview && (responseActive || canStop) ? () => void stop() : undefined}
       >
-        {isDevMode && <ConversationStats state={lifecycle} usage={usage} />}
+        {showConversationStats && <ConversationStats state={lifecycle} usage={usage} />}
       </Composer>
     </div>
   );

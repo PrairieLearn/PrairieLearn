@@ -7,7 +7,7 @@ export type ConversationLifecycle =
   | { status: 'offline' }
   // Creating or restoring the sandbox and configuring it before submitting the new input.
   | { status: 'starting' }
-  // Preparing or executing a turn; new input waits for native cleanup and SDK response completion.
+  // Preparing or executing a turn; new input waits for this turn and SDK response completion.
   | { status: 'waiting_for_agent' }
   // The live workspace is ready for input; idle expiry will checkpoint it and shut it down.
   | { status: 'waiting_for_user' }

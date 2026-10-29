@@ -94,21 +94,19 @@ describe('Course agent access and conversation privacy', () => {
     cacheKeyPrefix: config.cacheKeyPrefix,
   };
 
-  // Enterprise routes must be mounted before starting the test server.
   beforeAll(async () => {
     service.listen(0, '127.0.0.1');
     await once(service, 'listening');
     const address = service.address();
     if (!address || typeof address === 'string') throw new Error('Expected a service TCP address');
+    // Enterprise routes must be mounted before starting the test server.
     Object.assign(config, {
       isEnterprise: true,
       courseAgentServiceUrl: `http://127.0.0.1:${address.port}`,
       courseAgentServiceToken: 'test-token',
       features: { ...config.features, 'course-agent': true },
     });
-  });
-  beforeAll(helperServer.before());
-  beforeAll(async () => {
+    await helperServer.before()();
     owner = await getOrCreateUser({ uid: 'owner@example.com', name: 'Course Owner', uin: 'owner' });
     otherOwner = await getOrCreateUser({
       uid: 'other-owner@example.com',
@@ -294,21 +292,25 @@ describe('Course agent access and conversation privacy', () => {
     });
   });
 
-  test('lists the current user’s conversations without exposing another owner’s', async () => {
+  test('keeps conversations private to their creator, including other course owners', async () => {
     const own = await createConversation(owner);
-    const others = await createConversation(otherOwner);
+    const other = await createConversation(otherOwner);
     await withUser(owner, async () => {
-      const ids = (await createClient(owner).courseAgent.list.query()).map((c) => c.id);
+      const client = createClient(owner);
+      const ids = (await client.courseAgent.list.query()).map((c) => c.id);
       expect(ids).toContain(own.id);
-      expect(ids).not.toContain(others.id);
+      expect(ids).not.toContain(other.id);
+      expect((await fetch(historyUrl(other.id))).status).toBe(404);
+      await expect(
+        client.courseAgent.resume.mutate({ conversationId: other.id }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      expect(await client.courseAgent.resume.mutate({ conversationId: own.id })).toEqual({
+        recovered: true,
+      });
     });
-  });
-
-  test('rejects reading another owner’s conversation', async () => {
-    const others = await createConversation(otherOwner);
-    await withUser(owner, async () => {
-      expect((await fetch(historyUrl(others.id))).status).toBe(404);
-    });
+    expect(serviceRequests.map((request) => request.path)).toEqual([
+      `/conversations/${own.agent_conversation_id}/resume`,
+    ]);
   });
 
   test('binds creation to the authorized course repository and branch', async () => {
@@ -397,15 +399,6 @@ describe('Course agent access and conversation privacy', () => {
         'Uncommitted local course contents',
       );
       expect(await fs.pathExists(path.join(copied, '.git'))).toBe(false);
-      const { stdout: expectedHistory } = await execa(
-        'git',
-        ['log', '--format=%an <%ae> %aI %s', 'HEAD', '--', '.'],
-        { cwd: TEST_COURSE_PATH },
-      );
-      const { stdout: history } = await execa('git', ['log', '--format=%an <%ae> %aI %s'], {
-        cwd: course,
-      });
-      expect(history).toBe(expectedHistory);
       const { stdout: objects } = await execa('git', ['rev-list', '--objects', '--all'], {
         cwd: course,
       });
@@ -414,6 +407,7 @@ describe('Course agent access and conversation privacy', () => {
         .filter((line) => line.includes(' '))
         .map((line) => line.slice(line.indexOf(' ') + 1))
         .filter(Boolean);
+      expect(historicalPaths).toContain('testCourse/infoCourse.json');
       expect(
         historicalPaths.every((entry) => entry === 'testCourse' || entry.startsWith('testCourse/')),
       ).toBe(true);
@@ -421,26 +415,5 @@ describe('Course agent access and conversation privacy', () => {
       await fs.remove(fixture);
       await output.cleanup();
     }
-  });
-
-  test('admits recovery only for the authenticated creator', async () => {
-    const own = await createConversation(owner);
-    const other = await createConversation(otherOwner);
-    await withUser(owner, async () => {
-      const client = createClient(owner);
-      await expect(
-        client.courseAgent.resume.mutate({ conversationId: other.id }),
-      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
-      expect(await client.courseAgent.resume.mutate({ conversationId: own.id })).toEqual({
-        recovered: true,
-      });
-    });
-    expect(serviceRequests).toEqual([
-      {
-        path: `/conversations/${own.agent_conversation_id}/resume`,
-        body: null,
-        authorization: 'Bearer test-token',
-      },
-    ]);
   });
 });

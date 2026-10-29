@@ -13,7 +13,7 @@ const blockedMessage = {
   startup_failed:
     'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
   runtime_failed:
-    'The course agent was interrupted. Resume to recover and save your workspace. Your previous message will not run again.',
+    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
   checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
   cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
 } satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;

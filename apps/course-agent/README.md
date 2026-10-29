@@ -6,9 +6,9 @@ A Cloudflare Worker hosts private course-editing conversations behind PrairieLea
 
 Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). GitHub-backed conversations additionally require `GITHUB_READ_TOKEN` with read access to the course repository. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. The container cannot publish; PrairieLearn performs approved publication and Course Sync outside it.
 
-Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings. Container SDK and helper image are both pinned to 1.0.2; the native runtime and protocol generator are both Codex 0.163.0.
+Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings.
 
-`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after normal turn cleanup and chat persistence, or after a review card has been persisted while the native tool waits for a decision. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
+`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after normal turn completion and chat persistence, or after a review card has been persisted while the native tool waits for a decision. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
 
 ## Local development
 
@@ -78,19 +78,19 @@ These requests do not start a sandbox or add the conversation to PrairieLearn's 
 
 ## Lifecycle and recovery
 
-The + button opens a local draft. First send creates the conversation and its title without starting a container. In dev mode it snapshots local course files; otherwise it binds a GitHub repository and branch. Execution unpacks the local snapshot or clones that branch; later turns reuse the native thread. Only the newest input is submitted. Stop interrupts native work and verifies that agent/tool processes have stopped before another turn is admitted. Turn deadline expiry also backs up and shuts down the workspace. Closing or switching the panel leaves execution running. The selected conversation is retained per tab in session storage.
+The + button opens a local draft. First send creates the conversation and its title without starting a container. In dev mode it snapshots local course files; otherwise it binds a GitHub repository and branch. Execution unpacks the local snapshot or clones that branch; later turns reuse the running Codex connection and native thread. Only the newest input is submitted. Ordinary turn completion leaves Codex and background tools running until the next message or workspace cleanup. Stop interrupts the turn and terminates all agent/tool processes before another turn is admitted; the container and edited files remain available. Turn deadline expiry also backs up and shuts down the workspace. Closing or switching the panel leaves execution running. The selected conversation is retained per tab in session storage.
 
 After idle expiry, the service stops native writers, backs up `/workspace/session` with `DirectoryBackup`, commits its returned reference, then destroys the container. A later send restores that checkpoint before resuming the native thread. A fresh random sandbox ID identifies every newly provisioned runtime. Caches, dependencies and native authentication files are excluded from backups.
 
 Uncertain execution enters `blocked`. Resume waits for recovery to finish; it never repeats the old prompt. Concurrent recovery is rejected. A failed or interrupted recovery requires another explicit Resume. Startup failures discard incomplete setup while preserving the committed checkpoint. Runtime and checkpoint failures require stopped processes and a new checkpoint. Cleanup failures retain the sandbox ID and committed archive for destruction retry. Missing live workspace data stays blocked rather than silently restoring older edits.
 
-Only SDK-buffered output can be replayed after a restart. Native output that never reached the SDK cannot be recovered through reconnect.
+Browser refresh or disconnect leaves execution running; the SDK replays saved output on reconnect. A Worker/DO restart loses the native connection. Output that Codex generated before it reached the SDK may be missing from the chat even when the associated file edit completed. The interrupted turn is marked blocked, with a warning that its reply may be incomplete. Resume recovers the workspace without resubmitting the old prompt. Recovering completed answers from persisted native thread history is follow-up work; this PR does not promise reconstruction of missing output.
 
 ## Private service endpoints
 
 All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 
-- `POST /conversations/local` accepts a gzip tar archive of course files and optional Git history and returns `201 { id }`. For a course nested in the archived repository, `X-Course-Directory` specifies its URL-encoded relative directory. The initial archive is deleted after the first successful checkpoint.
+- `POST /conversations/local` accepts a gzip tar archive of course files and optional Git history and returns `201 { id }`. For a course nested in the archived repository, `X-PL-Course-Directory` specifies its URL-encoded relative directory. The initial archive is deleted after the first successful checkpoint.
 - `POST /conversations` accepts `{ repository: "owner/name", branch: "branch" }` and returns `201 { id }` after initialization.
 - `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
 - `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.
@@ -122,3 +122,11 @@ The Conversation DO owns the pending snapshot; PL adds no table or conversation 
 Explicit Resume recovers a missed callback through PL's service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. The route returns `{ callId, jobSequenceId, status, result, error }`; status is running, completed, or blocked. Before ordinary job completion, callId may be null. Interrupted publication requires inspection and is never automatically retried. There is no PL delivery cron.
 
 Snapshot limits are 100 files, 64 KiB decoded per file, and 1 MiB of base64 contents. Only non-executable regular files are supported initially. GitHub attributes commits to the API credential. The agent handles fetching published changes into its sandbox. See [CONTRACT.md](CONTRACT.md#pending-reviews-and-publication-outcomes) for persistence and recovery.
+
+## Deployment environments and monitoring
+
+Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings are repeated explicitly because Wrangler does not inherit them into named environments. Container image configuration is shared; the container instances belong to each environment's separate Durable Objects.
+
+Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. Set `PL_SERVICE_URL` to the matching PrairieLearn origin in each deployed environment so Resume can retrieve saved publication outcomes. No deployment or resource provisioning is performed by local checks.
+
+Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local reporting is disabled while the DSN is empty.

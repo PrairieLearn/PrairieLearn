@@ -4,15 +4,15 @@ import { z } from 'zod';
 
 import { type PushSyncResult, type ReviewOutcome } from '@prairielearn/course-agent-types';
 
-import type { InitializeParams } from '../generated/types/InitializeParams.js';
-import type { DynamicToolCallParams } from '../generated/types/v2/DynamicToolCallParams.js';
-import type { DynamicToolCallResponse } from '../generated/types/v2/DynamicToolCallResponse.js';
-import type { DynamicToolSpec } from '../generated/types/v2/DynamicToolSpec.js';
-import type { ThreadReadParams } from '../generated/types/v2/ThreadReadParams.js';
-import type { ThreadResumeParams } from '../generated/types/v2/ThreadResumeParams.js';
-import type { ThreadStartParams } from '../generated/types/v2/ThreadStartParams.js';
-import type { TurnInterruptParams } from '../generated/types/v2/TurnInterruptParams.js';
-import type { TurnStartParams } from '../generated/types/v2/TurnStartParams.js';
+import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
+import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
+import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
+import type { ThreadReadParams } from '../../generated/types/v2/ThreadReadParams.js';
+import type { ThreadResumeParams } from '../../generated/types/v2/ThreadResumeParams.js';
+import type { ThreadStartParams } from '../../generated/types/v2/ThreadStartParams.js';
+import type { TurnInterruptParams } from '../../generated/types/v2/TurnInterruptParams.js';
+import type { TurnStartParams } from '../../generated/types/v2/TurnStartParams.js';
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
@@ -68,7 +68,7 @@ const ThreadHistory = z.object({
   }),
 });
 
-/** One app-server connection and its conversion into the chat SDK's output format. */
+/** A workspace's app-server connection, reused across turns until Stop or workspace cleanup. */
 export class CodexAppServerClient {
   private rpc: MessageConnection | null = null;
   private controller: ReadableStreamDefaultController<UIMessageChunk> | null = null;
@@ -76,34 +76,40 @@ export class CodexAppServerClient {
   private turnId: string | null = null;
   private threadId: string | null = null;
   private parts = new Map<string, 'text' | 'reasoning'>();
-  stream: ReadableStream<UIMessageChunk>;
+  private failure: Error | null = null;
+  private onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<PushSyncResult>;
 
-  constructor(
-    private sandbox: DurableObjectStub<CourseSandbox>,
-    readonly messageId: string,
-    private onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<PushSyncResult>,
+  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
+
+  beginTurn(
+    messageId: string,
+    onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<PushSyncResult>,
   ) {
-    // Setup can fail before the execution helper starts waiting for completion.
+    this.terminal = Promise.withResolvers<undefined>();
+    this.turnId = null;
+    this.parts.clear();
+    this.onReview = onReview;
     void this.terminal.promise.catch(() => {});
-    this.stream = this.openStream();
+    return this.openStream(messageId);
   }
 
   /** A review ends one SDK response while retaining the live native connection. */
-  openStream() {
+  openStream(messageId: string) {
     if (this.controller) throw new Error('An SDK response is already open');
-    this.stream = new ReadableStream<UIMessageChunk>({
+    return new ReadableStream<UIMessageChunk>({
       start: (controller) => {
         this.controller = controller;
-        controller.enqueue({ type: 'start', messageId: this.messageId });
+        controller.enqueue({ type: 'start', messageId });
       },
       cancel: () => {
         this.controller = null;
       },
     });
-    return this.stream;
   }
 
   async connect() {
+    if (this.failure) throw this.failure;
+    if (this.rpc) return;
     const response = await this.sandbox.fetch('http://codex.internal/', {
       headers: { Upgrade: 'websocket' },
     });
@@ -198,8 +204,10 @@ export class CodexAppServerClient {
   }
 
   private fail(error: Error) {
+    this.failure = error;
     this.terminal.reject(error);
     this.rpc?.dispose();
+    this.rpc = null;
   }
 
   private async request<R>(method: string, params: unknown, schema: z.ZodType<R>): Promise<R> {
@@ -354,7 +362,6 @@ export class CodexAppServerClient {
 
   closeStream(error?: unknown) {
     if (error) this.terminal.reject(error);
-    this.rpc?.dispose();
     this.finishResponse(error);
   }
 
@@ -374,6 +381,13 @@ export class CodexAppServerClient {
     this.controller.close();
     this.controller = null;
     this.parts.clear();
+  }
+
+  close() {
+    // Forced cleanup must release a turn still waiting for a terminal notification.
+    this.terminal.reject(new Error('Native runner was stopped'));
+    this.rpc?.dispose();
+    this.rpc = null;
   }
 }
 
