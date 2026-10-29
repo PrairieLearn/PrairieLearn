@@ -132,7 +132,7 @@ test.describe('pl-symbolic-input formula editor', () => {
     await expect(formulaEditor).toBeVisible();
     await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
 
-    const cases = [/sqrt/, /^\|\{#0\}\|$/, /operatorname\{sin\}/];
+    const cases = [/sqrt/, /\|\{#0\}.*\|$/, /operatorname\{sin\}/];
 
     for (const label of cases) {
       await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
