@@ -501,7 +501,7 @@
         UNITS_DICTIONARY,
         OTHERS_DICTIONARY,
         // @ts-expect-error - Load UMD module
-      } = /** @type {import('@cortex-js/compute-engine')} */ (window.ComputeEngine);
+      } = /** @type {typeof import('@cortex-js/compute-engine')} */ (window.ComputeEngine);
 
       // https://github.com/cortex-js/compute-engine/blob/b8db7dbf7ebd39d65b1c9f071936226ee2ce4885/src/compute-engine/latex-syntax/dictionary/default-dictionary.ts#L82-L103
       latexSyntax = new LatexSyntax({
@@ -512,7 +512,54 @@
           ...ALGEBRA_DICTIONARY,
           ...LOGIC_DICTIONARY,
           ...INEQUALITIES_DICTIONARY,
-          ...ARITHMETIC_DICTIONARY,
+          ...ARITHMETIC_DICTIONARY.map((entry) => {
+            const head = entry.name ?? ('symbolTrigger' in entry ? entry.symbolTrigger : undefined);
+            if (!head || !['Ln', 'Log', 'ln', 'log'].includes(head)) return entry;
+            const parse =
+              /** @type {import('@cortex-js/compute-engine').ExpressionParseHandler} */ (
+                entry.parse
+              );
+            return {
+              ...entry,
+              parse: /** @type {import('@cortex-js/compute-engine').ExpressionParseHandler} */ (
+                (parser, until) => {
+                  parser.skipSpace();
+                  // Keep CE's handling of grouped arguments, log bases, and function powers.
+                  if (['<{>', '_', '^'].includes(parser.peek)) return parse(parser, until);
+                  const name = head === 'ln' ? 'Ln' : head === 'log' ? 'Log' : head;
+                  const args = parser.parseArguments('enclosure');
+                  if (args !== null) return [name, ...args];
+
+                  // Bare arguments include juxtaposed factors (ln 2x), but not explicit products.
+                  const argument = parser.parseExpression({
+                    minPrec: 391,
+                    condition: (p) =>
+                      ['*', '\\cdot', '\\times', '/', '\\div'].includes(p.peek) ||
+                      (until?.condition?.(p) ?? false),
+                  });
+                  if (argument === null) return name;
+                  if (Array.isArray(argument) && argument[0] === 'InvisibleOperator') {
+                    // A following parenthesized factor ends the bare argument: ln 8(x+1).
+                    const boundary = argument.findIndex((arg, index) => {
+                      if (index <= 1) return false;
+                      while (
+                        Array.isArray(arg) &&
+                        ['Power', 'Factorial', 'Factorial2'].includes(arg[0])
+                      ) {
+                        arg = arg[1];
+                      }
+                      return Array.isArray(arg) && arg[0] === 'Delimiter';
+                    });
+                    if (boundary !== -1) {
+                      const value = boundary === 2 ? argument[1] : argument.slice(0, boundary);
+                      return ['InvisibleOperator', [name, value], ...argument.slice(boundary)];
+                    }
+                  }
+                  return [name, argument];
+                }
+              ),
+            };
+          }),
           ...COMPLEX_DICTIONARY,
           ...CALCULUS_DICTIONARY,
           ...LINEAR_ALGEBRA_DICTIONARY,
@@ -685,7 +732,7 @@
   }
 
   /**
-   * @param {unknown} expr
+   * @param {import('@cortex-js/compute-engine').MathJsonExpression} expr
    * @param {{ allowSets: boolean }} options
    * @returns {ClientErrorItem[]} User-facing formula editor errors
    */
@@ -867,6 +914,10 @@
       if (mathJSONSetHeads.has(head)) return 'set';
       if (head === 'List' && options.allowSets) return 'set';
       if (mathJSONTupleHeads.has(head)) return 'collection';
+      if (head === 'Delimiter' && expr.length === 2) {
+        // eslint-disable-next-line unicorn/no-useless-recursion -- MathJSON expressions are recursive trees.
+        return mathJSONExpressionKind(expr[1], options);
+      }
       if (head === 'Delimiter' && options.allowSets) return 'set';
       return 'numeric';
     }
@@ -991,7 +1042,7 @@
   /**
    * @param {HTMLElement} inputEl
    * @param {HTMLElement | null | undefined} errorEl
-   * @param {unknown} mathJSON
+   * @param {import('@cortex-js/compute-engine').MathJsonExpression} mathJSON
    */
   function syncClientParseError(inputEl, errorEl, mathJSON) {
     const items = collectMathJSONClientErrors(mathJSON, {
@@ -1581,7 +1632,8 @@
 
     updateSubmissionData();
     mf.addEventListener('input', updateSubmissionData);
-    mf.closest('form')?.addEventListener('submit', updateSubmissionData);
+    // Refresh before the unload tracker snapshots the submitted form in the bubbling phase.
+    mf.closest('form')?.addEventListener('submit', updateSubmissionData, { capture: true });
 
     // Students find error feedback while typing distracting, so parse errors
     // are only reported when the field loses focus, and are cleared again as

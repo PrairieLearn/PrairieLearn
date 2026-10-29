@@ -220,6 +220,127 @@ async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Pro
 }
 
 test.describe('pl-symbolic-input', () => {
+  test('grades products following bare logarithms', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const cleanupQuestion = await openSymbolicInputPreview({
+      courseInstance,
+      page,
+      testCoursePath,
+      questionFiles: {
+        html: `
+<pl-symbolic-input
+  answers-name="editor"
+  formula-editor="true"
+  variables="x"
+  allow-sets="true"
+  correct-answer="2*x+3"
+></pl-symbolic-input>
+`,
+        server: '',
+      },
+    });
+
+    try {
+      const editor = getFormulaEditor(page);
+      for (const latex of [
+        String.raw`\frac{\ln4\cdot(2x+3)}{\ln4}`,
+        String.raw`\frac{\ln4(2x+3)}{\ln4}`,
+      ]) {
+        await editor.click();
+        await fillFormulaEditor(editor, latex);
+        await editor.press('Tab');
+        await expect(editor).not.toHaveClass(/is-invalid/);
+        await page.getByRole('button', { name: 'Save & Grade', exact: true }).click();
+        await expect(editor.locator('..').getByText('100%', { exact: true })).toBeVisible();
+        await expect(page.getByText('Invalid', { exact: true })).toHaveCount(0);
+      }
+    } finally {
+      await cleanupQuestion();
+    }
+  });
+
+  for (const saveAction of ['Save only', 'Save & Grade']) {
+    test(`does not warn about unsaved changes on ${saveAction} after an accessibility edit`, async ({
+      page,
+      testCoursePath,
+      courseInstance,
+    }) => {
+      const cleanupQuestion = await openSymbolicInputPreview({
+        courseInstance,
+        page,
+        testCoursePath,
+        questionFiles: {
+          html: `
+<pl-symbolic-input
+  answers-name="editor"
+  formula-editor="true"
+  variables="x"
+  correct-answer="2*x+3"
+></pl-symbolic-input>
+`,
+          server: '',
+        },
+      });
+
+      try {
+        const editor = getFormulaEditor(page);
+        await editor.click();
+        await editor.evaluate((element) => {
+          // Accessibility APIs can change the value without dispatching an input event.
+          (element as HTMLElement & { value: string }).value = '2x+3';
+        });
+        await expect(page.locator('input[name="editor-latex"]')).toHaveValue('');
+
+        const dialogs: string[] = [];
+        page.on('dialog', async (dialog) => {
+          dialogs.push(dialog.type());
+          await dialog.accept();
+        });
+        await page.getByRole('button', { name: saveAction, exact: true }).click();
+        await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible();
+        await expect(page.locator('input[name="editor-latex"]')).toHaveValue('2x+3');
+        expect(dialogs).toEqual([]);
+        if (saveAction === 'Save & Grade') {
+          await expect(editor.locator('..').getByText('100%', { exact: true })).toBeVisible();
+        }
+      } finally {
+        await cleanupQuestion();
+      }
+    });
+  }
+
+  test('warns before navigating away from an unsaved formula editor edit', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const cleanupQuestion = await openSymbolicInputPreview({
+      courseInstance,
+      page,
+      testCoursePath,
+    });
+
+    try {
+      const editor = getFormulaEditor(page);
+      await editor.click();
+      await editor.pressSequentially('x');
+      await expect(page.locator('input[name="editor-latex"]')).toHaveValue('x');
+
+      const dialogs: string[] = [];
+      page.on('dialog', async (dialog) => {
+        dialogs.push(dialog.type());
+        await dialog.accept();
+      });
+      await page.goto('/pl');
+      expect(dialogs).toEqual(['beforeunload']);
+    } finally {
+      await cleanupQuestion();
+    }
+  });
+
   test('restores initial values and legacy text in the formula editor', async ({
     page,
     testCoursePath,

@@ -34,6 +34,51 @@ def test_converts_arithmetic_expression() -> None:
     assert expr == 2 * x + 3
 
 
+@pytest.mark.parametrize("allow_sets", [False, True])
+@pytest.mark.parametrize("simplify_expression", [False, True])
+@pytest.mark.parametrize(
+    ("grouped", "ungrouped"),
+    [
+        (["Delimiter", ["Add", "x", 1]], ["Add", "x", 1]),
+        (
+            ["Power", ["Delimiter", ["Delimiter", ["Add", "x", 1]]], 2],
+            ["Power", ["Add", "x", 1], 2],
+        ),
+        (
+            [
+                "Divide",
+                [
+                    "InvisibleOperator",
+                    ["Ln", 4],
+                    ["Delimiter", ["Add", ["InvisibleOperator", 2, "x"], 3]],
+                ],
+                ["Ln", 4],
+            ],
+            [
+                "Divide",
+                [
+                    "InvisibleOperator",
+                    ["Ln", 4],
+                    ["Add", ["InvisibleOperator", 2, "x"], 3],
+                ],
+                ["Ln", 4],
+            ],
+        ),
+    ],
+)
+def test_parentheses_preserve_grouped_expression(
+    grouped: MathJsonExpression,
+    ungrouped: MathJsonExpression,
+    allow_sets: bool,
+    simplify_expression: bool,
+) -> None:
+    assert mathjson_to_sympy_expr(
+        grouped, allow_sets=allow_sets, simplify_expression=simplify_expression
+    ) == mathjson_to_sympy_expr(
+        ungrouped, allow_sets=allow_sets, simplify_expression=simplify_expression
+    )
+
+
 @pytest.mark.parametrize(
     ("mathjson", "expected"),
     [

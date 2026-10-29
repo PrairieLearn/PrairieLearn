@@ -168,6 +168,50 @@ test.describe('pl-symbolic-input formula editor', () => {
       await page.getByLabel(/operatorname\{ln\}/).click();
     });
   });
+
+  test('keeps multiplication outside bare logarithm arguments', async ({ page }) => {
+    const formulaEditor = page.locator('#symbolic-input-lnx');
+    const mathJson = page.locator('input[name="lnx-json"]');
+    for (const { latex, expected } of [
+      { latex: String.raw`\ln 4\cdot x`, expected: ['Multiply', ['Ln', 4], 'x'] },
+      {
+        latex: String.raw`\ln 8(x+1)`,
+        expected: ['InvisibleOperator', ['Ln', 8], ['Delimiter', ['Add', 'x', 1]]],
+      },
+      {
+        latex: String.raw`\ln 2x(x+1)`,
+        expected: [
+          'InvisibleOperator',
+          ['Ln', ['InvisibleOperator', 2, 'x']],
+          ['Delimiter', ['Add', 'x', 1]],
+        ],
+      },
+      {
+        latex: String.raw`\ln 8(x+1)^2`,
+        expected: ['InvisibleOperator', ['Ln', 8], ['Power', ['Delimiter', ['Add', 'x', 1]], 2]],
+      },
+      {
+        latex: String.raw`\ln 8(x+1)!`,
+        expected: ['InvisibleOperator', ['Ln', 8], ['Factorial', ['Delimiter', ['Add', 'x', 1]]]],
+      },
+      { latex: String.raw`\operatorname{ln}4\cdot x`, expected: ['Multiply', ['Ln', 4], 'x'] },
+      { latex: String.raw`\log 4\cdot x`, expected: ['Multiply', ['Log', 4], 'x'] },
+      { latex: String.raw`\ln(4\cdot x)`, expected: ['Ln', ['Multiply', 4, 'x']] },
+      { latex: String.raw`\ln{4\cdot x}`, expected: ['Ln', ['Multiply', 4, 'x']] },
+      { latex: String.raw`\ln x^2`, expected: ['Ln', ['Power', 'x', 2]] },
+      { latex: String.raw`\ln^2 x`, expected: ['Power', ['Ln', 'x'], 2] },
+      { latex: String.raw`\log_2 x`, expected: ['Lb', 'x'] },
+    ]) {
+      await fillFormulaEditor(formulaEditor, latex);
+      await expect(mathJson).toHaveValue(JSON.stringify(expected));
+    }
+
+    const customFunctionEditor = page.locator('#symbolic-input-custom_function');
+    await fillFormulaEditor(customFunctionEditor, String.raw`\ln f(x)`);
+    await expect(page.locator('input[name="custom_function-json"]')).toHaveValue(
+      JSON.stringify(['Ln', ['f', 'x']]),
+    );
+  });
 });
 
 test.describe('pl-symbolic-input unicode multiplication keys', () => {
@@ -279,8 +323,9 @@ test.describe('pl-symbolic-input plus-minus', () => {
     await expect(page.locator('#symbolic-input-latex-x')).toHaveValue('2\\pm y');
     await page.getByRole('button', { name: 'Save only' }).click();
     await expect(formulaEditor).toHaveClass(/is-invalid/);
-    const plusMinusError = page.locator('[data-bs-content*="invalid symbol"]');
-    await expect(plusMinusError.first()).toBeAttached();
+    await expect(
+      page.getByRole('button', { name: 'More info…', exact: true }).first(),
+    ).toHaveAttribute('data-bs-content', /Parse error: Could not parse submitted answer\./);
 
     await fillFormulaEditor(formulaEditor, '');
     for (const key of '2+-y') await formulaEditor.press(key);

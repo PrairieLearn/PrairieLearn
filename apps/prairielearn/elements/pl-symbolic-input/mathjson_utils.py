@@ -526,6 +526,8 @@ def _function(
     raw_args = tuple(expr[1:])
 
     match expr:
+        case ["Delimiter", inner]:
+            return _mathjson_to_sympy_expr(inner, allow_sets=allow_sets)
         case ["Interval", *raw_args]:
             return _interval(head, raw_args, allow_sets=allow_sets)
         case ["List", *raw_args] | [
