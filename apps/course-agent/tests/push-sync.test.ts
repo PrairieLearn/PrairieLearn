@@ -298,6 +298,7 @@ async function reviewWithAgent(state: 'waiting' | 'asleep') {
 
 function expectNativeContinuation(state: 'waiting' | 'asleep', result: PushSyncResult) {
   expect(model.submissions).toHaveLength(state === 'asleep' ? 2 : 1);
+  expect(model.resumedThreads).toEqual(state === 'asleep' ? ['native-thread'] : []);
   expect(model.submissions.slice(1)).toEqual(
     state === 'asleep'
       ? [
@@ -471,6 +472,7 @@ it('Resume retrieves a missed publication outcome without publishing or syncing 
   failDelivery = false;
   await expect(agent.resume()).resolves.toBe(true);
   await expectContinued(published);
+  expectNativeContinuation('asleep', published);
   expect(graphql).toHaveBeenCalledOnce();
   expect(syncDiskToSqlWithLock).toHaveBeenCalledOnce();
 });
