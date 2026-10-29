@@ -5,6 +5,7 @@ import type { ReviewOutcome } from '@prairielearn/course-agent-types';
 export function nativeRunner(savedReview?: ReviewOutcome) {
   const submissions: { input: unknown[]; toolOutput?: { output: string } }[] = [];
   const results: ReviewOutcome['result'][] = [];
+  const resumedThreads: string[] = [];
   const sockets: { emit: (frame: unknown) => void; close: () => void }[] = [];
   let callId = 'review-1';
 
@@ -21,7 +22,7 @@ export function nativeRunner(savedReview?: ReviewOutcome) {
         const frame = JSON.parse(text) as {
           id: string | number;
           method?: string;
-          params: { input: unknown[]; toolOutput?: { output: string } };
+          params: { threadId?: string; input: unknown[]; toolOutput?: { output: string } };
           result?: { contentItems: { text: string }[] };
         };
         switch (frame.method) {
@@ -30,6 +31,7 @@ export function nativeRunner(savedReview?: ReviewOutcome) {
             break;
           case 'thread/start':
           case 'thread/resume':
+            if (frame.method === 'thread/resume') resumedThreads.push(frame.params.threadId!);
             emit({ id: frame.id, result: { thread: { id: 'native-thread' } } });
             break;
           case 'thread/read':
@@ -102,6 +104,7 @@ export function nativeRunner(savedReview?: ReviewOutcome) {
     fetch,
     submissions,
     results,
+    resumedThreads,
     requestReview(id = 'review-1') {
       callId = id;
       sockets.at(-1)!.emit({
