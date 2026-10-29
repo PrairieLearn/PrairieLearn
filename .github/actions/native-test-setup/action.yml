@@ -33,10 +33,9 @@ runs:
           libgvplugin-gd-dev \
           libgvplugin-neato-layout-dev \
           libgvplugin-pango-dev \
-          default-jdk-headless \
-          unzip
+          default-jdk-headless
 
-    - name: Install PDF accessibility tools
+    - name: Install PDFBox
       shell: bash
       run: ./scripts/install-print-pdf-tools.sh
 
