@@ -408,17 +408,14 @@ export class PrintRenderer {
             return;
           }
           // Public app assets need no session, so Cloudflare can fetch them directly.
-          if (
-            this.cloudflare &&
-            !config.devMode &&
-            requestUrl.pathname.startsWith(`${config.assetsPrefix}/`)
-          ) {
+          const isAppAsset = requestUrl.pathname.startsWith(`${config.assetsPrefix}/`);
+          if (this.cloudflare && !config.devMode && isAppAsset) {
             await route.continue();
             return;
           }
           // Playwright only routes the first request in a redirect chain, so proxied requests
           // cannot follow redirects without potentially leaving the allowed origin.
-          const assetToken = assetRoute.type === 'public' ? undefined : assetAccess?.token;
+          const assetToken = isAppAsset ? undefined : assetAccess?.token;
           if (this.cloudflare) {
             const assetUrl = urlAtOrigin(requestUrl, localUrl.origin);
             const response = await fetchCloudflareAsset(

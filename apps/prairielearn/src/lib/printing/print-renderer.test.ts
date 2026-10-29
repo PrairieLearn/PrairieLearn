@@ -329,13 +329,16 @@ describe('PrintRenderer', () => {
         abort,
       } as unknown as Route);
 
-    await request(
+    for (const pathname of [
       '/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
-    );
-    expect(fetch).toHaveBeenCalledWith({
-      maxRedirects: 0,
-      headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
-    });
+      '/pl/static/elements/pl-drawing/pl-drawing.css',
+    ]) {
+      await request(pathname);
+      expect(fetch).toHaveBeenLastCalledWith({
+        maxRedirects: 0,
+        headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
+      });
+    }
     await request('/assets/image.png');
     expect(fetch).toHaveBeenLastCalledWith({ maxRedirects: 0 });
     await request('/pl/course_instance/10/instructor/assessment/20/questions');
@@ -343,7 +346,7 @@ describe('PrintRenderer', () => {
       '/pl/course_instance/10/instructor/instance_question/41/clientFilesQuestion/image.png',
     );
     expect(abort).toHaveBeenCalledTimes(2);
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   it('aborts requests when fetching their response fails', async () => {
@@ -510,7 +513,10 @@ describe('PrintRenderer', () => {
     expect(fetchAsset).not.toHaveBeenCalled();
   });
 
-  it('proxies protected assets for Cloudflare without giving the browser a session', async () => {
+  it.each([
+    '/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
+    '/pl/static/elements/pl-drawing/pl-drawing.css',
+  ])('proxies %s for Cloudflare without giving the browser a session', async (pathname) => {
     const harness = createBrowserHarness();
     const fetchAsset = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new globalThis.Response('image', {
@@ -540,21 +546,15 @@ describe('PrintRenderer', () => {
     await harness.getRouteHandler()!({
       request: () => ({
         method: () => 'GET',
-        url: () =>
-          'https://example.com/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
+        url: () => `https://example.com${pathname}`,
       }),
       fulfill,
     } as unknown as Route);
-    expect(fetchAsset).toHaveBeenCalledWith(
-      new URL(
-        'http://localhost:3000/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
-      ),
-      {
-        headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
-        redirect: 'manual',
-        signal: expect.any(AbortSignal),
-      },
-    );
+    expect(fetchAsset).toHaveBeenCalledWith(new URL(`http://localhost:3000${pathname}`), {
+      headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
+      redirect: 'manual',
+      signal: expect.any(AbortSignal),
+    });
     expect(fulfill).toHaveBeenCalledWith({
       status: 200,
       contentType: 'image/png',
