@@ -109,3 +109,10 @@ FROM
   course_instances AS ci
 WHERE
   ci.id = $course_instance_id;
+
+-- BLOCK update_submission_credit
+UPDATE submissions
+SET
+  credit = $credit
+WHERE
+  id = $submission_id;

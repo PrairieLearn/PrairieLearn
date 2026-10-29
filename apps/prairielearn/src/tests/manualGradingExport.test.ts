@@ -419,4 +419,21 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
       manual: 'Score 3',
     });
   });
+
+  test('returns last submission credit for the assessment instance', async () => {
+    const { assessment, aq, iqId, submissionId } = await createGradingExportFixture();
+
+    await sqldb.execute(sql.update_submission_credit, {
+      submission_id: submissionId,
+      credit: 80,
+    });
+
+    const rows = await selectInstanceQuestionsForManualGrading({
+      assessment,
+      assessment_question: aq,
+    });
+    const row = rows.find((r) => r.instance_question.id === iqId);
+    assert.ok(row);
+    assert.equal(row.last_submission_credit, 80);
+  });
 });

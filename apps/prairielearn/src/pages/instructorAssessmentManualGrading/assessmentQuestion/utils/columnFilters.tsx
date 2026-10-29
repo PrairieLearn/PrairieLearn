@@ -66,6 +66,7 @@ export function createColumnFilters({
     auto_points: ({ header }) => <NumericInputColumnFilter column={header.column} />,
     points: ({ header }) => <NumericInputColumnFilter column={header.column} />,
     score_perc: ({ header }) => <NumericInputColumnFilter column={header.column} />,
+    last_submission_credit: ({ header }) => <NumericInputColumnFilter column={header.column} />,
     rubric_difference: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}

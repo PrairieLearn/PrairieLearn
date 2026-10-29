@@ -31,6 +31,27 @@ WITH
       iq.id ASC,
       s.date DESC
   ),
+  assessment_instance_last_submission_credit AS MATERIALIZED (
+    SELECT DISTINCT
+      ON (iq.assessment_instance_id) iq.assessment_instance_id,
+      s.credit AS last_submission_credit
+    FROM
+      instance_questions AS iq
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+    WHERE
+      iq.assessment_instance_id IN (
+        SELECT
+          iq2.assessment_instance_id
+        FROM
+          instance_questions AS iq2
+        WHERE
+          iq2.assessment_question_id = $assessment_question_id
+      )
+    ORDER BY
+      iq.assessment_instance_id,
+      s.date DESC
+  ),
   rubric_items_agg AS MATERIALIZED (
     SELECT
       ls.instance_question_id,
@@ -105,7 +126,8 @@ SELECT
   ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
   COALESCE(ri.rubric_grading_item_ids, '[]'::jsonb) AS rubric_grading_item_ids,
   e.id AS enrollment_id,
-  COALESCE(sla.student_label_ids, '[]'::jsonb) AS student_label_ids
+  COALESCE(sla.student_label_ids, '[]'::jsonb) AS student_label_ids,
+  aisc.last_submission_credit
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -124,6 +146,9 @@ FROM
   LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
   LEFT JOIN rubric_items_agg AS ri ON ri.instance_question_id = iq.id
+  LEFT JOIN assessment_instance_last_submission_credit AS aisc ON (
+    aisc.assessment_instance_id = iq.assessment_instance_id
+  )
 WHERE
   ai.assessment_id = $assessment_id
   AND iq.assessment_question_id = $assessment_question_id

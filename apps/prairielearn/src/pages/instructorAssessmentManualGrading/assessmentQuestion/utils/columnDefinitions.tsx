@@ -307,6 +307,19 @@ export function createColumns({
       size: 200,
     }),
 
+    columnHelper.accessor('last_submission_credit', {
+      id: 'last_submission_credit',
+      header: 'Last submission credit',
+      cell: (info) => {
+        const credit = info.getValue();
+        return credit == null ? '—' : `${credit}%`;
+      },
+      filterFn: numericColumnFilterFn,
+      meta: {
+        autoSize: true,
+      },
+    }),
+
     columnHelper.accessor('last_grader_name', {
       id: 'last_grader_name',
       header: 'Graded by',
