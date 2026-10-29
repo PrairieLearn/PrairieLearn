@@ -2,7 +2,6 @@ import {
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
-  type Modifier,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -10,36 +9,15 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
+  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { type ReactNode, type RefObject, useId } from 'react';
-import { Button, Form } from 'react-bootstrap';
-import type { FieldError, UseFormRegisterReturn } from 'react-hook-form';
+import { type ReactNode, useMemo } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
-
-/** Keep every drop target reachable, including when rows have different heights. */
-export function restrictToVerticalContainer(containerRef: RefObject<HTMLElement | null>): Modifier {
-  return ({ draggingNodeRect, transform }) => {
-    if (!draggingNodeRect || !containerRef.current) {
-      return { ...transform, x: 0 };
-    }
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const draggingCenterY = draggingNodeRect.top + draggingNodeRect.height / 2;
-    // Clamp the center, not the edges, so a tall row can reach a shorter end row.
-    return {
-      ...transform,
-      x: 0,
-      y: Math.min(
-        Math.max(transform.y, containerRect.top - draggingCenterY),
-        containerRect.bottom - draggingCenterY,
-      ),
-    };
-  };
-}
 
 /**
  * Drag-and-drop context for a table whose rows can be reordered. Rows are
@@ -47,13 +25,11 @@ export function restrictToVerticalContainer(containerRef: RefObject<HTMLElement 
  */
 export function ReorderableRowsContext<T extends { trackingId: string }>({
   rows,
-  onMove,
-  rowsRef,
+  onReorder,
   children,
 }: {
   rows: T[];
-  onMove: (from: number, to: number) => void;
-  rowsRef: RefObject<HTMLTableSectionElement | null>;
+  onReorder: (rows: T[]) => void;
   children: ReactNode;
 }) {
   const sensors = useSensors(
@@ -61,20 +37,19 @@ export function ReorderableRowsContext<T extends { trackingId: string }>({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const ids = rows.map((row) => row.trackingId);
+  const ids = useMemo(() => rows.map((row) => row.trackingId), [rows]);
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
       autoScroll={false}
-      modifiers={[restrictToVerticalContainer(rowsRef)]}
       onDragEnd={({ active, over }: DragEndEvent) => {
         if (!over || active.id === over.id) return;
         const oldIndex = rows.findIndex((row) => row.trackingId === active.id);
         const newIndex = rows.findIndex((row) => row.trackingId === over.id);
         if (oldIndex === -1 || newIndex === -1) return;
-        onMove(oldIndex, newIndex);
+        onReorder(arrayMove(rows, oldIndex, newIndex));
       }}
     >
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
@@ -107,25 +82,29 @@ export function useReorderableRow(trackingId: string) {
 type ReorderableRowHandle = ReturnType<typeof useReorderableRow>;
 
 /**
- * The drag/delete actions cell of a reorderable row. When
+ * The drag/edit/delete actions cell of a reorderable row. When
  * `deleteDisabledReason` is set, the delete button is inert and explains why
  * in a click tooltip instead.
  */
 export function ReorderableRowActionsCell({
   trackingId,
   dragHandleProps,
+  editLabel,
   deleteLabel,
   deleteDisabledReason,
+  onEdit,
   onDelete,
 }: {
   trackingId: string;
   dragHandleProps: ReorderableRowHandle['dragHandleProps'];
+  editLabel: string;
   deleteLabel: string;
   deleteDisabledReason?: string | null;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
-    <td className="align-top">
+    <td className="align-middle">
       <div className="d-flex align-items-center">
         <button
           type="button"
@@ -133,8 +112,18 @@ export function ReorderableRowActionsCell({
           style={{ cursor: 'grab', touchAction: 'none' }}
           aria-label="Drag row"
           {...dragHandleProps}
+          // Native buttons already have the role supplied by dnd-kit.
+          role={undefined}
         >
           <i className="fa fa-grip-vertical" aria-hidden="true" />
+        </button>
+        <button
+          className="btn btn-sm btn-ghost"
+          type="button"
+          aria-label={editLabel}
+          onClick={onEdit}
+        >
+          <i className="fa fa-edit" aria-hidden="true" />
         </button>
         {deleteDisabledReason ? (
           <OverlayTrigger
@@ -175,58 +164,4 @@ export function getDuplicateNames(names: string[]): string[] {
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
   return [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name);
-}
-
-/** Shared add action for the last row of an inline editor. */
-export function AddRowButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
-  return (
-    <Button variant="ghost" size="sm" onClick={onClick}>
-      <i className="bi bi-plus-lg me-1" aria-hidden="true" />
-      {children}
-    </Button>
-  );
-}
-
-export function InlineTableTextInput({
-  label,
-  defaultValue,
-  registration,
-  error,
-  readOnly,
-  description,
-}: {
-  label: string;
-  defaultValue: string;
-  registration: UseFormRegisterReturn;
-  error?: FieldError;
-  readOnly?: boolean;
-  description?: string;
-}) {
-  const id = useId();
-  return (
-    <>
-      <Form.Control
-        type="text"
-        size="sm"
-        aria-label={label}
-        defaultValue={defaultValue}
-        readOnly={readOnly}
-        isInvalid={!!error}
-        aria-invalid={!!error || undefined}
-        aria-errormessage={error ? `${id}-error` : undefined}
-        aria-describedby={description ? `${id}-description` : undefined}
-        {...registration}
-      />
-      {error && (
-        <Form.Control.Feedback type="invalid" id={`${id}-error`}>
-          {error.message}
-        </Form.Control.Feedback>
-      )}
-      {description && (
-        <small id={`${id}-description`} className="text-muted">
-          {description}
-        </small>
-      )}
-    </>
-  );
 }

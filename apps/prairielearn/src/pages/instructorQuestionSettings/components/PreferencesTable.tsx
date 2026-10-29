@@ -2,6 +2,7 @@ import {
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
+  type Modifier,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -28,7 +29,6 @@ import {
   useFieldArray,
 } from 'react-hook-form';
 
-import { AddRowButton, restrictToVerticalContainer } from '../../../components/ReorderableTable.js';
 import { DragHandle } from '../../instructorAssessmentQuestions/components/tree/DragHandle.js';
 import type {
   PreferenceField,
@@ -66,6 +66,25 @@ export function PreferencesTable({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // Clamp the dragged item's center (not edges) to the container so that
+  // closestCenter collision detection can always reach every target, even
+  // when rows have very different heights.
+  const restrictToGridVertical: Modifier = ({ draggingNodeRect, transform }) => {
+    if (!draggingNodeRect || !gridRef.current) {
+      return { ...transform, x: 0 };
+    }
+    const containerRect = gridRef.current.getBoundingClientRect();
+    const draggingCenterY = draggingNodeRect.top + draggingNodeRect.height / 2;
+    return {
+      ...transform,
+      x: 0,
+      y: Math.min(
+        Math.max(transform.y, containerRect.top - draggingCenterY),
+        containerRect.bottom - draggingCenterY,
+      ),
+    };
+  };
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -77,12 +96,21 @@ export function PreferencesTable({
     }
   }
 
-  const addPreference = () => append({ name: '', type: 'string', default: '', enum: [] });
-
   return (
     <div className="card">
       <div className="card-body">
-        <h2 className="h5 card-title mb-3">Preferences</h2>
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <h2 className="h5 card-title mb-0">Preferences</h2>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            disabled={!canEdit}
+            onClick={() => append({ name: '', type: 'string', default: '', enum: [] })}
+          >
+            <i className="bi bi-plus-lg me-1" aria-hidden="true" />
+            Add preference
+          </Button>
+        </div>
         <small className="text-muted d-block mb-3">
           Configure{' '}
           <a
@@ -99,13 +127,7 @@ export function PreferencesTable({
         {fields.length === 0 && (
           <div className="border rounded p-4 text-center text-muted">
             <i className="bi bi-sliders fs-3 d-block mb-2" aria-hidden="true" />
-            <p>No preferences configured</p>
-            {canEdit && (
-              <Button variant="outline-primary" size="sm" onClick={addPreference}>
-                <i className="bi bi-plus-lg me-1" aria-hidden="true" />
-                Add preference
-              </Button>
-            )}
+            No preferences configured
           </div>
         )}
 
@@ -120,7 +142,7 @@ export function PreferencesTable({
             }}
             collisionDetection={closestCenter}
             id={dndId}
-            modifiers={[restrictToVerticalContainer(gridRef)]}
+            modifiers={[restrictToGridVertical]}
             sensors={sensors}
             onDragEnd={handleDragEnd}
           >
@@ -156,11 +178,6 @@ export function PreferencesTable({
                     />
                   ))}
                 </div>
-                {canEdit && (
-                  <div className="border-top px-2 py-1">
-                    <AddRowButton onClick={addPreference}>Add preference</AddRowButton>
-                  </div>
-                )}
               </div>
             </SortableContext>
           </DndContext>
@@ -230,7 +247,6 @@ function PreferenceRow({
             errors?.name && 'is-invalid',
           )}
           id={`pref-${index}-name`}
-          aria-label={`Name for preference ${index + 1}`}
           disabled={!canEdit}
           placeholder="e.g. show_hints"
           defaultValue={field.name}
@@ -280,7 +296,6 @@ function PreferenceRow({
           <select
             className={clsx('form-select form-select-sm', errors?.default && 'is-invalid')}
             id={`pref-${index}-default`}
-            aria-label={`Default for preference ${index + 1}`}
             disabled={!canEdit}
             value={String(preferenceDefaultValue)}
             aria-invalid={!!errors?.default || undefined}
@@ -296,7 +311,6 @@ function PreferenceRow({
           <select
             className={clsx('form-select form-select-sm', errors?.default && 'is-invalid')}
             id={`pref-${index}-default`}
-            aria-label={`Default for preference ${index + 1}`}
             disabled={!canEdit}
             defaultValue={String(field.default)}
             aria-invalid={!!errors?.default || undefined}
@@ -320,7 +334,6 @@ function PreferenceRow({
             step={prefType === 'number' ? 'any' : undefined}
             className={clsx('form-control form-control-sm', errors?.default && 'is-invalid')}
             id={`pref-${index}-default`}
-            aria-label={`Default for preference ${index + 1}`}
             disabled={!canEdit}
             defaultValue={String(field.default)}
             aria-invalid={!!errors?.default || undefined}
@@ -340,7 +353,7 @@ function PreferenceRow({
           />
         )}
       </div>
-      <div className="preferences-grid-values" style={{ gridColumn: canEdit ? 5 : 4 }}>
+      <div>
         {prefType === 'boolean' ? (
           <span className="text-muted small">N/A</span>
         ) : (

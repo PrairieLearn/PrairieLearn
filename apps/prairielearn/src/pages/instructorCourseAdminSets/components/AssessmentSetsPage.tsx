@@ -1,14 +1,11 @@
-import { useRef, useState } from 'react';
 import { Form } from 'react-bootstrap';
-import { FormProvider, useFieldArray, useForm, useFormContext } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 
-import { useModalState } from '@prairielearn/ui';
+import { StickySaveBar, useModalState } from '@prairielearn/ui';
 
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import { AssessmentUsageModal } from '../../../components/AssessmentUsageModal.js';
 import {
-  AddRowButton,
-  InlineTableTextInput,
   ReorderableRowActionsCell,
   ReorderableRowsContext,
   getDuplicateNames,
@@ -17,9 +14,10 @@ import {
 import { ColorJsonSchema } from '../../../schemas/index.js';
 import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.types.js';
 
-interface SetsFormValues {
-  sets: InstructorCourseAdminSetFormRow[];
-}
+import {
+  type EditAssessmentSetModalData,
+  EditAssessmentSetsModal,
+} from './EditAssessmentSetModal.js';
 
 const emptyAssessmentSet = {
   abbreviation: '',
@@ -36,119 +34,44 @@ const emptyAssessmentSet = {
 
 function AssessmentSetRow({
   assessmentSet,
-  editMode,
   allowEdit,
-  index,
+  onEdit,
   onDelete,
   onShowUsage,
 }: {
   assessmentSet: InstructorCourseAdminSetFormRow;
-  editMode: boolean;
   allowEdit: boolean;
-  index: number;
+  onEdit: () => void;
   onDelete: () => void;
   onShowUsage: () => void;
 }) {
   const { ref, style, dragHandleProps } = useReorderableRow(assessmentSet.trackingId);
-  const {
-    register,
-    setValue,
-    getValues,
-    formState: { errors },
-  } = useFormContext<SetsFormValues>();
-  const rowErrors = errors.sets?.[index];
-  const onChange = () => setValue(`sets.${index}.implicit`, false, { shouldDirty: true });
 
   return (
     <tr ref={ref} style={style}>
-      {editMode && allowEdit && (
+      {allowEdit && (
         <ReorderableRowActionsCell
           trackingId={assessmentSet.trackingId}
           dragHandleProps={dragHandleProps}
+          editLabel={`Edit assessment set ${assessmentSet.name}`}
           deleteLabel={`Delete assessment set ${assessmentSet.name}`}
           deleteDisabledReason={
             assessmentSet.assessments.length > 0
               ? `This assessment set cannot be deleted because it is referenced by ${assessmentSet.assessments.length} assessment${assessmentSet.assessments.length === 1 ? '' : 's'}.`
               : null
           }
+          onEdit={onEdit}
           onDelete={onDelete}
         />
       )}
-      <td
-        className={editMode && allowEdit ? 'align-top' : 'align-middle'}
-        style={{ minWidth: '9rem' }}
-      >
-        {editMode && allowEdit && (
-          <div className="mb-1">
-            <InlineTableTextInput
-              label={`Abbreviation for assessment set ${index + 1}`}
-              defaultValue={assessmentSet.abbreviation}
-              error={rowErrors?.abbreviation}
-              registration={register(`sets.${index}.abbreviation`, {
-                onChange,
-                validate: (value) => !!value.trim() || 'Abbreviation is required',
-              })}
-            />
-          </div>
-        )}
-        <span className={`badge color-${assessmentSet.color}`}>
-          {assessmentSet.abbreviation || 'Preview'}
-        </span>
+      <td className="align-middle">
+        <span className={`badge color-${assessmentSet.color}`}>{assessmentSet.abbreviation}</span>
       </td>
-      <td
-        className={editMode && allowEdit ? 'align-top' : 'align-middle'}
-        style={{ minWidth: '12rem' }}
-      >
-        {editMode && allowEdit ? (
-          <InlineTableTextInput
-            label={`Name for assessment set ${index + 1}`}
-            defaultValue={assessmentSet.name}
-            error={rowErrors?.name}
-            registration={register(`sets.${index}.name`, {
-              onChange,
-              validate: {
-                required: (value) => !!value.trim() || 'Name is required',
-                unique: (value) =>
-                  getValues('sets').every((row, i) => i === index || row.name !== value) ||
-                  'Name must be unique',
-              },
-            })}
-          />
-        ) : (
-          assessmentSet.name
-        )}
+      <td className="align-middle">{assessmentSet.name}</td>
+      <td className="align-middle">
+        <AssessmentSetHeading assessmentSet={assessmentSet} />
       </td>
-      <td
-        className={editMode && allowEdit ? 'align-top' : 'align-middle'}
-        style={{ minWidth: '16rem' }}
-      >
-        {editMode && allowEdit ? (
-          <InlineTableTextInput
-            label={`Heading for assessment set ${index + 1}`}
-            defaultValue={assessmentSet.heading}
-            registration={register(`sets.${index}.heading`, { onChange })}
-          />
-        ) : (
-          <AssessmentSetHeading assessmentSet={assessmentSet} />
-        )}
-      </td>
-      {editMode && allowEdit && (
-        <td className="align-top" style={{ minWidth: '10rem' }}>
-          <Form.Select
-            size="sm"
-            aria-label={`Color for assessment set ${index + 1}`}
-            defaultValue={assessmentSet.color}
-            {...register(`sets.${index}.color`, { onChange })}
-          >
-            {ColorJsonSchema.options.map((color) => (
-              <option key={color} value={color}>
-                {color}
-              </option>
-            ))}
-          </Form.Select>
-        </td>
-      )}
-      <td className={editMode && allowEdit ? 'align-top' : 'align-middle'}>
+      <td className="align-middle">
         <button
           type="button"
           className="btn btn-sm btn-outline-secondary text-nowrap"
@@ -164,64 +87,60 @@ function AssessmentSetRow({
 
 function AssessmentSetsTable({
   rows,
-  onMove,
-  editMode,
+  onReorder,
   allowEdit,
+  handleEdit,
   handleDelete,
   handleCreate,
   handleShowUsage,
 }: {
   rows: InstructorCourseAdminSetFormRow[];
-  onMove: (from: number, to: number) => void;
-  editMode: boolean;
+  onReorder: (rows: InstructorCourseAdminSetFormRow[]) => void;
   allowEdit: boolean;
+  handleEdit: (index: number) => void;
   handleDelete: (id: string) => void;
   handleCreate: () => void;
   handleShowUsage: (assessmentSet: InstructorCourseAdminSetFormRow) => void;
 }) {
-  const rowsRef = useRef<HTMLTableSectionElement>(null);
-
   return (
-    <ReorderableRowsContext rows={rows} rowsRef={rowsRef} onMove={onMove}>
+    <ReorderableRowsContext rows={rows} onReorder={onReorder}>
       <table className="table table-sm table-hover table-striped" aria-label="Assessment sets">
         <thead>
           <tr>
-            {editMode && allowEdit && (
+            {allowEdit && (
               <th style={{ width: '1%' }}>
-                <span className="visually-hidden">Drag and Delete</span>
+                <span className="visually-hidden">Drag, Edit and Delete</span>
               </th>
             )}
             <th>Abbreviation</th>
             <th>Name</th>
-            <th className="col-4">Heading</th>
-            {editMode && allowEdit && <th>Color</th>}
+            <th className="col-8">Heading</th>
             <th>Action</th>
           </tr>
         </thead>
 
-        {/* Table row groups don't support overflow clipping; clip the dragged row here. */}
-        <tbody ref={rowsRef} style={{ clipPath: 'inset(0)' }}>
+        <tbody>
           {rows.map((assessmentSet, index) => (
             <AssessmentSetRow
               key={assessmentSet.trackingId}
               assessmentSet={assessmentSet}
-              editMode={editMode}
               allowEdit={allowEdit}
-              index={index}
+              onEdit={() => handleEdit(index)}
               onDelete={() => handleDelete(assessmentSet.trackingId)}
               onShowUsage={() => handleShowUsage(assessmentSet)}
             />
           ))}
-        </tbody>
-        <tfoot>
-          {editMode && allowEdit && (
+
+          {allowEdit && (
             <tr>
-              <td colSpan={6}>
-                <AddRowButton onClick={handleCreate}>Add assessment set</AddRowButton>
+              <td colSpan={5}>
+                <button className="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
+                  <i className="fa fa-plus" aria-hidden="true" /> New assessment set
+                </button>
               </td>
             </tr>
           )}
-        </tfoot>
+        </tbody>
       </table>
     </ReorderableRowsContext>
   );
@@ -238,106 +157,116 @@ export function AssessmentSetsPage({
   origHash: string | null;
   csrfToken: string;
 }) {
-  const [editMode, setEditMode] = useState(false);
-  const form = useForm<SetsFormValues>({ defaultValues: { sets: assessmentSets } });
-  const { append, remove, move } = useFieldArray({ control: form.control, name: 'sets' });
+  const canEdit = allowEdit && origHash !== null;
+  const form = useForm({ defaultValues: { sets: assessmentSets } });
   const assessmentSetsState = form.watch('sets');
+  const setAssessmentSetsState = (sets: InstructorCourseAdminSetFormRow[]) => {
+    form.setValue('sets', sets, { shouldDirty: true });
+  };
+  const editModalState = useModalState<EditAssessmentSetModalData>();
   const usageModalState = useModalState<InstructorCourseAdminSetFormRow>();
 
   const duplicateNames = getDuplicateNames(assessmentSetsState.map((set) => set.name));
 
+  // Names of other assessment sets (excluding the one currently being edited)
+  const editingId = editModalState.data?.assessmentSet.trackingId ?? null;
+  const existingNames = new Set(
+    assessmentSetsState.filter((set) => set.trackingId !== editingId).map((set) => set.name),
+  );
+
   const handleCreate = () => {
-    append(
-      {
+    editModalState.showWithData({
+      mode: 'create',
+      assessmentSet: {
         ...emptyAssessmentSet,
         trackingId: crypto.randomUUID(),
         color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
       },
-      { focusName: `sets.${assessmentSetsState.length}.abbreviation` },
-    );
+    });
   };
 
-  const handleDelete = (trackingId: string) => {
-    remove(assessmentSetsState.findIndex((set) => set.trackingId === trackingId));
+  const handleEdit = (index: number) => {
+    editModalState.showWithData({
+      mode: 'edit',
+      assessmentSet: {
+        ...assessmentSetsState[index],
+        implicit: false,
+      },
+    });
+  };
+
+  const handleSave = (assessmentSet: InstructorCourseAdminSetFormRow) => {
+    if (editModalState.data?.mode === 'create') {
+      setAssessmentSetsState([...assessmentSetsState, assessmentSet]);
+    } else if (editModalState.data?.mode === 'edit') {
+      setAssessmentSetsState(
+        assessmentSetsState.map((d) =>
+          d.trackingId === assessmentSet.trackingId ? assessmentSet : d,
+        ),
+      );
+    }
+    editModalState.hide();
+  };
+
+  const handleDelete = (deleteId: string) => {
+    setAssessmentSetsState(assessmentSetsState.filter((d) => d.trackingId !== deleteId));
   };
 
   return (
     <>
-      <FormProvider {...form}>
-        <Form
-          as={editMode ? 'form' : 'div'}
-          method={editMode ? 'POST' : undefined}
-          onSubmit={(event) => {
-            const element = event.currentTarget;
-            void form.handleSubmit(() => element.submit())(event);
-          }}
-        >
-          <input type="hidden" name="__action" value="save_assessment_sets" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <input type="hidden" name="orig_hash" value={origHash ?? ''} />
-          <input type="hidden" name="assessment_sets" value={JSON.stringify(assessmentSetsState)} />
-          <div className="card mb-4">
-            <div className="card-header bg-primary text-white d-flex align-items-center">
-              <h1>Assessment sets</h1>
-              <div className="ms-auto">
-                {allowEdit && origHash ? (
-                  !editMode ? (
-                    <button
-                      key="edit"
-                      className="btn btn-sm btn-light mx-1"
-                      type="button"
-                      onClick={() => setEditMode(true)}
-                    >
-                      <i className="fa fa-edit" aria-hidden="true" /> Edit assessment sets
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        className="btn btn-sm btn-light mx-1"
-                        type="submit"
-                        disabled={!form.formState.isDirty}
-                      >
-                        <i className="fa fa-save" aria-hidden="true" />
-                        Save
-                      </button>
-                      <button
-                        className="btn btn-sm btn-light"
-                        type="button"
-                        onClick={() => {
-                          form.reset();
-                          setEditMode(false);
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  )
-                ) : null}
-              </div>
-            </div>
-
-            {editMode && duplicateNames.length > 0 && (
-              <div className="alert alert-warning m-3" role="alert">
-                <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
-                <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Assessment
-                set names must be unique; rename or remove the duplicates before saving.
-              </div>
-            )}
-
-            <div className="table-responsive">
-              <AssessmentSetsTable
-                rows={assessmentSetsState}
-                editMode={editMode}
-                allowEdit={allowEdit}
-                handleDelete={handleDelete}
-                handleCreate={handleCreate}
-                handleShowUsage={usageModalState.showWithData}
-                onMove={move}
-              />
-            </div>
+      <Form
+        as={canEdit ? 'form' : 'div'}
+        method={canEdit ? 'POST' : undefined}
+        onSubmit={(event) => {
+          const element = event.currentTarget;
+          void form.handleSubmit(() => element.submit())(event);
+        }}
+      >
+        <input type="hidden" name="__action" value="save_assessment_sets" />
+        <input type="hidden" name="__csrf_token" value={csrfToken} />
+        <input type="hidden" name="orig_hash" value={origHash ?? ''} />
+        <input type="hidden" name="assessment_sets" value={JSON.stringify(assessmentSetsState)} />
+        <div className="card mb-4">
+          <div className="card-header bg-primary text-white d-flex align-items-center">
+            <h1>Assessment sets</h1>
           </div>
-        </Form>
-      </FormProvider>
+
+          {canEdit && duplicateNames.length > 0 && (
+            <div className="alert alert-warning m-3" role="alert">
+              <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
+              <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Only the last
+              assessment set with each name will be synced.
+            </div>
+          )}
+
+          <div className="table-responsive">
+            <AssessmentSetsTable
+              rows={assessmentSetsState}
+              allowEdit={canEdit}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+              handleCreate={handleCreate}
+              handleShowUsage={usageModalState.showWithData}
+              onReorder={setAssessmentSetsState}
+            />
+          </div>
+        </div>
+
+        {canEdit && (
+          <StickySaveBar
+            isSaving={form.formState.isSubmitting}
+            visible={form.formState.isDirty}
+            fullWidth
+            onCancel={() => form.reset()}
+          />
+        )}
+      </Form>
+
+      <EditAssessmentSetsModal
+        {...editModalState}
+        existingNames={existingNames}
+        onSave={handleSave}
+      />
 
       <AssessmentUsageModal {...usageModalState} entityLabel="assessment set" />
     </>
