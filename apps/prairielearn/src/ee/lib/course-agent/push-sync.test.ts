@@ -20,6 +20,9 @@ import {
 } from './client.js';
 import { getPendingReview, postReviewDecision } from './push-sync.js';
 
+// Other suites can load the real dependencies because Vitest disables module isolation.
+vi.hoisted(() => vi.resetModules());
+
 vi.mock('@prairielearn/named-locks', () => ({
   doWithLock: async (_name: string, _options: unknown, fn: () => Promise<void>) => fn(),
 }));
