@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -160,6 +161,7 @@ export function AssessmentSetsPage({
   csrfToken: string;
 }) {
   const canEdit = allowEdit && origHash !== null;
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm({ defaultValues: { sets: assessmentSets } });
   const assessmentSetsState = form.watch('sets');
   const setAssessmentSetsState = (sets: InstructorCourseAdminSetFormRow[]) => {
@@ -219,10 +221,7 @@ export function AssessmentSetsPage({
       <Form
         as={canEdit ? 'form' : 'div'}
         method={canEdit ? 'POST' : undefined}
-        onSubmit={(event) => {
-          const element = event.currentTarget;
-          void form.handleSubmit(() => element.submit())(event);
-        }}
+        onSubmit={() => setIsSubmitting(true)}
       >
         <input type="hidden" name="__action" value="save_assessment_sets" />
         <input type="hidden" name="__csrf_token" value={csrfToken} />
@@ -256,7 +255,7 @@ export function AssessmentSetsPage({
 
         {canEdit && (
           <StickySaveBar
-            isSaving={form.formState.isSubmitting}
+            isSaving={isSubmitting}
             visible={form.formState.isDirty}
             fullWidth
             onCancel={() => form.reset()}
