@@ -1,7 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import {
   DefaultChatTransport,
-  type ReasoningUIPart,
   type TextUIPart,
   type ToolUIPart,
   type UIMessage,
@@ -16,12 +15,12 @@ import { run } from '@prairielearn/run';
 import { useResizeHandle } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
+import { ReasoningBlock, TextPart } from '../../../components/ai/ChatParts.js';
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
 } from '../../../lib/ai-question-generation/agent.js';
 
-import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
 
 function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
@@ -202,58 +201,6 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   });
 
   return <ToolCallStatus state={part.state} statusText={statusText} />;
-}
-
-function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
-  // Track whether the user has explicitly interacted with the expand/collapse
-  const [userControlled, setUserControlled] = useState(false);
-  const [userExpanded, setUserExpanded] = useState(false);
-
-  const isStreaming = part.state === 'streaming';
-
-  // If user has taken control, use their preference. Otherwise, expand while streaming, collapse when done.
-  const isExpanded = userControlled ? userExpanded : isStreaming;
-
-  if (!part.text) return null;
-
-  const toggleExpanded = () => {
-    setUserControlled(true);
-    setUserExpanded(!isExpanded);
-  };
-
-  return (
-    <div className="d-flex flex-column gap-1 border rounded p-1 small">
-      <button
-        type="button"
-        className="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
-        aria-expanded={isExpanded}
-        onClick={toggleExpanded}
-      >
-        <i
-          className={clsx('bi small text-muted', {
-            'bi-chevron-right': !isExpanded,
-            'bi-chevron-down': isExpanded,
-          })}
-          aria-hidden="true"
-        />
-        <span className="small text-muted">{isStreaming ? 'Thinking...' : 'Thinking'}</span>
-      </button>
-
-      {isExpanded && (
-        <div className="markdown-body reasoning-body p-1 pt-0">
-          <MemoizedMarkdown content={part.text} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TextPart({ part }: { part: TextUIPart }) {
-  return (
-    <div className="markdown-body">
-      <MemoizedMarkdown content={part.text} />
-    </div>
-  );
 }
 
 function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }) {
