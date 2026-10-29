@@ -101,15 +101,8 @@ export class ConversationBudget {
     }
     if (this.blocked?.retryAt && Date.parse(this.blocked.retryAt) > Date.now()) return false;
     this.save({ ...this.state, blocked: null });
-    // Replaying an old denial acknowledges its report, not a fresh policy decision.
     if (this.state.pendingRequest) {
       await this.report(false);
-      if (
-        this.blocked?.reason === 'budget_exhausted' &&
-        Date.parse(this.blocked.retryAt!) <= Date.now()
-      ) {
-        this.save({ ...this.state, blocked: null });
-      }
     }
     return this.ensureCredit();
   }
@@ -212,7 +205,8 @@ export class ConversationBudget {
       }
     } catch (error) {
       console.error('Course agent usage report failed', error);
-      // A report-only failure may lag behind funded work. Keep its payload for replay.
+      // Keep the report for retry if PL has not committed it. A lost reply after
+      // commit is not recoverable yet: PL rejects the duplicate with 409.
       if (request.requestCredit) this.fail('budget_unavailable');
       return;
     }

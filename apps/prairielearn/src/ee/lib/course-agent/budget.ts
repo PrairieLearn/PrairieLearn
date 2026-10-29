@@ -1,9 +1,6 @@
-import { isDeepStrictEqual } from 'node:util';
-
 import {
   type BudgetRequest,
   type BudgetResponse,
-  BudgetResponseSchema,
   budgetResponseStatus,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
@@ -25,17 +22,9 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
   const report = await runInTransactionAsync(async () => {
     const conversation = await selectOptionalCourseAgentConversationByAgentIdForUpdate(agentId);
     if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
-    // The DO sends one report at a time, so only its latest acknowledgement is needed.
-    if (request.sequence === conversation.usage_report_sequence) {
-      if (!isDeepStrictEqual(conversation.usage_report_request, request)) {
-        throw new HttpStatusError(409, 'The usage report changed.');
-      }
-      return {
-        body: BudgetResponseSchema.parse(conversation.usage_report_response),
-        userId: conversation.user_id,
-        costMilliDollars: 0,
-      };
-    }
+    // TODO: Recover replies lost after commit so the DO can receive its credit
+    // without counting usage twice. For now, duplicate reports are rejected.
+    // https://github.com/PrairieLearn/PrairieLearn/issues/15684
     if (request.sequence !== conversation.usage_report_sequence + 1) {
       throw new HttpStatusError(409, 'The usage report is out of order.');
     }
@@ -73,7 +62,7 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
       }
     }
     const body: BudgetResponse = { sequence: request.sequence, allocation };
-    await recordCourseAgentConversationUsage(conversation.id, request, body);
+    await recordCourseAgentConversationUsage(conversation.id, request);
     return {
       body,
       userId: conversation.user_id,

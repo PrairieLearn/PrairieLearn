@@ -1,4 +1,4 @@
-import type { BudgetRequest, BudgetResponse } from '@prairielearn/course-agent-types';
+import type { BudgetRequest } from '@prairielearn/course-agent-types';
 import {
   execute,
   loadSqlEquiv,
@@ -11,13 +11,7 @@ import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const DEFAULT_COURSE_AGENT_CONVERSATION_TITLE = 'New conversation';
-
-export async function recordCourseAgentConversationUsage(
-  id: string,
-  request: BudgetRequest,
-  response: BudgetResponse,
-) {
+export async function recordCourseAgentConversationUsage(id: string, request: BudgetRequest) {
   const usage = request.usageDelta;
   await execute(sql.add_usage, {
     id,
@@ -27,8 +21,6 @@ export async function recordCourseAgentConversationUsage(
     reasoning: usage.reasoningTokens,
     cost: usage.costMilliDollars,
     sequence: request.sequence,
-    request,
-    response,
   });
 }
 
@@ -55,14 +47,16 @@ export async function insertCourseAgentConversation({
   course_id,
   user_id,
   agent_conversation_id,
+  title,
 }: {
   course_id: string;
   user_id: string;
   agent_conversation_id: string;
+  title: string;
 }) {
   return await queryRow(
     sql.insert_course_agent_conversation,
-    { course_id, user_id, agent_conversation_id, title: DEFAULT_COURSE_AGENT_CONVERSATION_TITLE },
+    { course_id, user_id, agent_conversation_id, title },
     CourseAgentConversationSchema,
   );
 }
@@ -99,19 +93,4 @@ export async function selectOptionalCourseAgentConversation({
     { id, course_id, user_id },
     CourseAgentConversationSchema,
   );
-}
-
-/** Sets the title unless the conversation already has a non-default one. */
-export async function updateCourseAgentConversationTitleIfDefault({
-  id,
-  title,
-}: {
-  id: string;
-  title: string;
-}) {
-  await execute(sql.update_course_agent_conversation_title_if_default, {
-    id,
-    title,
-    default_title: DEFAULT_COURSE_AGENT_CONVERSATION_TITLE,
-  });
 }

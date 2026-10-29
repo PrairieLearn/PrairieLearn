@@ -40,19 +40,19 @@ afterEach(() => {
 });
 
 describe('durable usage delivery', () => {
-  it('replays a frozen delta after restart without losing newer usage or charging it twice', async () => {
+  it('retries an undelivered delta after restart without losing newer usage or charging it twice', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime('2026-10-27T03:10:00Z');
     const requests: BudgetRequest[] = [];
-    let loseReply = true;
+    let unavailable = true;
     vi.stubGlobal(
       'fetch',
       vi.fn(async (_url, options: RequestInit) => {
         const body = JSON.parse(options.body as string) as BudgetRequest;
         requests.push(body);
-        if (body.sequence === 2 && loseReply) {
-          loseReply = false;
-          throw new Error('Reply lost');
+        if (body.sequence === 2 && unavailable) {
+          unavailable = false;
+          throw new Error('PL unavailable before processing');
         }
         return body.requestCredit
           ? grant(body.sequence)
@@ -85,31 +85,39 @@ describe('durable usage delivery', () => {
     });
   });
 
-  it('recovers a lost grant reply once and does not prefetch another chunk', async () => {
+  it('blocks when retrying a committed report whose grant reply was lost', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime('2026-10-27T03:10:00Z');
     const fetch = vi
       .fn()
       .mockRejectedValueOnce(new Error('Reply lost'))
-      .mockResolvedValueOnce(grant(1));
+      .mockResolvedValueOnce(
+        Response.json(
+          { error: { code: 'report_conflict', message: 'The usage report is out of order.' } },
+          { status: 409 },
+        ),
+      );
     vi.stubGlobal('fetch', fetch);
     const state = fixture();
     expect(await state.restart().ensureCredit()).toBe(false);
     const restored = state.restart();
-    expect(await restored.resume()).toBe(true);
-    expect(await restored.ensureCredit()).toBe(true);
+    expect(await restored.resume()).toBe(false);
+    expect(await restored.resume()).toBe(false);
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(fetch.mock.calls[0][1].body).toBe(fetch.mock.calls[1][1].body);
-    expect(state.saved().balanceMilliDollars).toBe(3000);
+    expect(state.saved()).toMatchObject({
+      balanceMilliDollars: 0,
+      lastAcknowledgedSequence: 0,
+      blocked: { reason: 'usage_unavailable' },
+    });
   });
 
-  it('keeps debt through a lost denial and requests a fresh decision on explicit Resume', async () => {
+  it('keeps debt through an hourly denial and requests a fresh decision on explicit Resume', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime('2026-10-27T03:59:00Z');
     const fetch = vi
       .fn()
       .mockResolvedValueOnce(grant(1))
-      .mockRejectedValueOnce(new Error('Denial reply lost'))
       .mockResolvedValueOnce(
         Response.json(
           {
@@ -142,7 +150,7 @@ describe('durable usage delivery', () => {
       blocked: null,
       lastAcknowledgedSequence: 3,
     });
-    expect(JSON.parse(fetch.mock.calls[3][1].body)).toMatchObject({
+    expect(JSON.parse(fetch.mock.calls[2][1].body)).toMatchObject({
       sequence: 3,
       usageDelta: emptyUsage(),
       requestCredit: true,
