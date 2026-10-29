@@ -176,17 +176,6 @@ jobs:
           include-hidden-files: true
           retention-days: 1
 
-      - name: Upload PDF accessibility reports from failed Vitest checks
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: pdf-accessibility-vitest-${{ matrix.shardIndex }}-attempt-${{ github.run_attempt }}
-          path: |
-            /tmp/prairielearn-pdf-*/*.validation.json
-            /tmp/prairielearn-pdf-*/*.validation.log
-          if-no-files-found: ignore
-          retention-days: 7
-
   test-prairielearn-playwright:
     name: Playwright (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
@@ -253,17 +242,6 @@ jobs:
           path: apps/prairielearn/test-results/blob-report/*
           include-hidden-files: true
           retention-days: 1
-
-      - name: Upload PDF accessibility reports from failed Playwright checks
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: pdf-accessibility-playwright-${{ matrix.shardIndex }}-attempt-${{ github.run_attempt }}
-          path: |
-            /tmp/prairielearn-pdf-*/*.validation.json
-            /tmp/prairielearn-pdf-*/*.validation.log
-          if-no-files-found: ignore
-          retention-days: 7
 
   merge-native-test-reports:
     name: Native (merge test reports)
