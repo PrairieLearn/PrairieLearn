@@ -187,7 +187,12 @@ const config: KnipConfig = {
     },
     'apps/course-agent': {
       // Worker runtime imports and the pinned CLI invoked by protocol generation.
-      ignoreDependencies: ['cloudflare', '@openai/codex'],
+      ignoreDependencies: [
+        'cloudflare',
+        '@openai/codex',
+        // Cross-app flow tests import PL sources by path; Turbo must build PL before their typecheck.
+        '@prairielearn/prairielearn',
+      ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/workspace-host': {

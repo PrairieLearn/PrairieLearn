@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "tsc --noEmit && wrangler deploy --dry-run --outdir dist",
+    "build": "tsc --noEmit && tsc --project tests && wrangler deploy --dry-run --outdir dist",
     "check-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false --check",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --port 8790 --persist-to .wrangler/local",
@@ -25,6 +25,9 @@
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260917.1",
     "@openai/codex": "0.163.0",
+    "@prairielearn/named-locks": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/prairielearn": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
