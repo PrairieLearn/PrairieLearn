@@ -26,10 +26,7 @@ const lifetimeMs = (env: Env) =>
   (Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS) + 3600) * 1000;
 
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
-export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
-  Env & { GITHUB_READ_TOKEN?: string },
-  { repository: string }
-> {
+export class CourseAgentGitHubOutbound extends WorkerEntrypoint<Env, { repository: string }> {
   override async fetch(request: Request) {
     const url = new URL(request.url);
     if (url.hostname !== 'repository.internal') return new Response('Forbidden', { status: 403 });
