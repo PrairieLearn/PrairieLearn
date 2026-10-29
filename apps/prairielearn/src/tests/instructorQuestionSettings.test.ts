@@ -12,6 +12,7 @@ import { selectQuestionById, updateQuestion } from '../models/question.js';
 import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -570,6 +571,99 @@ describe('Editing question settings', { concurrent: false }, () => {
     });
 
     await assertEditError(response, 'would be a parent directory of the existing question');
+  });
+
+  describe('sharing legacy questions', () => {
+    const settingsUrl = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
+
+    let originalInfo: string;
+    let originInfoPath: string;
+
+    beforeAll(async () => {
+      await features.enable('question-sharing');
+      const question = await selectQuestionById('1');
+      originInfoPath = path.join(
+        courseRepo.courseOriginDir,
+        'questions',
+        question.qid!,
+        'info.json',
+      );
+      originalInfo = await fs.readFile(originInfoPath, 'utf8');
+      await fs.writeJson(originInfoPath, { ...JSON.parse(originalInfo), type: 'Calculation' });
+      await commitOriginAndSync(courseRepo, 'Convert question to legacy format');
+    });
+
+    afterAll(async () => {
+      await fs.writeFile(originInfoPath, originalInfo);
+      await commitOriginAndSync(courseRepo, 'Restore v3 question');
+    });
+
+    test('hides sharing controls for legacy questions', async () => {
+      const response = await fetchCheerio(settingsUrl);
+      assert.equal(response.status, 200);
+      assert.lengthOf(response.$('#share_publicly, #share_source_publicly, #sharing_sets'), 0);
+    });
+
+    test.each(['share_publicly', 'share_source_publicly', 'sharing_sets'])(
+      'rejects a legacy question submission with %s without changing the info file',
+      async (attribute) => {
+        const question = await selectQuestionById('1');
+        const infoPath = path.join(
+          courseRepo.courseLiveDir,
+          'questions',
+          question.qid!,
+          'info.json',
+        );
+        const originalInfo = await fs.readFile(infoPath, 'utf8');
+        const settingsPage = await fetchCheerio(settingsUrl);
+        assert.equal(settingsPage.status, 200);
+
+        const response = await fetch(settingsUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_question',
+            __csrf_token: settingsPage.$('input[name=__csrf_token]').val() as string,
+            orig_hash: settingsPage.$('input[name=orig_hash]').val() as string,
+            title: 'Rejected legacy sharing edit',
+            qid: question.qid!,
+            [attribute]: attribute === 'sharing_sets' ? 'example' : 'on',
+          }),
+        });
+
+        assert.equal(response.status, 400);
+        assert.include(await response.text(), 'Sharing is only supported for v3 questions.');
+        assert.equal(await fs.readFile(infoPath, 'utf8'), originalInfo);
+        assert.deepEqual(await selectQuestionById('1'), question);
+      },
+    );
+
+    test('saves other legacy settings without adding sharing attributes', async () => {
+      const question = await selectQuestionById('1');
+      const settingsPage = await fetchCheerio(settingsUrl);
+      const response = await fetch(settingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'update_question',
+          __csrf_token: settingsPage.$('input[name=__csrf_token]').val() as string,
+          orig_hash: settingsPage.$('input[name=orig_hash]').val() as string,
+          title: 'Updated legacy question',
+          qid: question.qid!,
+          topic: 'Test',
+          grading_method: 'Internal',
+        }),
+      });
+
+      assert.equal(response.status, 200);
+      const updatedQuestion = await selectQuestionById('1');
+      assert.equal(updatedQuestion.title, 'Updated legacy question');
+      assert.equal(updatedQuestion.type, 'Calculation');
+      const info = await fs.readJson(
+        path.join(courseRepo.courseLiveDir, 'questions', question.qid!, 'info.json'),
+      );
+      for (const attribute of ['sharePublicly', 'shareSourcePublicly', 'sharingSets']) {
+        assert.notProperty(info, attribute);
+      }
+    });
   });
 
   describe('public link for shared questions', () => {

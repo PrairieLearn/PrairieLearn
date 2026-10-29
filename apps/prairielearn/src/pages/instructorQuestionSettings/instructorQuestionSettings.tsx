@@ -271,7 +271,16 @@ router.post(
         );
       }
 
-      const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
+      if (
+        res.locals.question.type !== 'Freeform' &&
+        (body.share_publicly || body.share_source_publicly || body.sharing_sets)
+      ) {
+        throw new error.HttpStatusError(400, 'Sharing is only supported for v3 questions.');
+      }
+
+      const sharingEnabled =
+        res.locals.question.type === 'Freeform' &&
+        (await features.enabledFromLocals('question-sharing', res.locals));
       let resolvedSharingSets: string[] | undefined;
       if (sharingEnabled) {
         const sharingSetRows = await selectSharingSetsForQuestion({
@@ -683,7 +692,9 @@ router.get(
     const courseTags = await selectTagsByCourseId(course.id);
     const questionTags = await selectTagsByQuestionId(question.id);
 
-    const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
+    const sharingEnabled =
+      question.type === 'Freeform' &&
+      (await features.enabledFromLocals('question-sharing', res.locals));
 
     let sharingSets: QuestionSharingSetRow[] | undefined;
     let sharingConstraints:
