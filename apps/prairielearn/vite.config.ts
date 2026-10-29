@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, isRunnableDevEnvironment } from 'vite';
 
 import { VitePluginExpress } from '@prairielearn/vite-plugin-express';
 
@@ -13,6 +13,23 @@ export default defineConfig({
     noExternal: [],
   },
   plugins: [
+    {
+      name: 'course-agent-websocket',
+      configureServer(server) {
+        // During local Vite development, upgrades reach Vite's HTTP server instead of PL's.
+        // Forward them to PL's authorization/proxy handler, loading current modules after hot updates.
+        server.httpServer?.on('upgrade', async (req, _socket, head) => {
+          if (!req.url?.includes('/course_agent/conversations/')) return;
+          const environment = server.environments.ssr;
+          if (!isRunnableDevEnvironment(environment)) return;
+          const { viteExpressApp } = await environment.runner.import('./src/server.ts');
+          const { handleCourseAgentUpgrade } = await environment.runner.import(
+            './src/ee/routers/courseAgentChat.ts',
+          );
+          handleCourseAgentUpgrade(viteExpressApp, req, head);
+        });
+      },
+    },
     ...VitePluginExpress({
       appPath: './src/server.ts',
       fullRestartPaths: [

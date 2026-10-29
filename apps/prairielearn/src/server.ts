@@ -609,6 +609,14 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/sideNavSettings/sideNavSettings.js')).default,
   );
 
+  if (isEnterprise()) {
+    // Handles updates to the course agent panel's open state.
+    app.use(
+      '/pl/course_agent/panel_settings',
+      (await import('./ee/pages/courseAgentPanelSettings/courseAgentPanelSettings.js')).default,
+    );
+  }
+
   app.use('/pl/workspace/:workspace_id(\\d+)', [
     (req: Request, res: Response, next: NextFunction) => {
       res.locals.workspace_id = req.params.workspace_id;
@@ -756,6 +764,20 @@ export async function initExpress(): Promise<Express> {
   ]);
 
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
+
+  if (isEnterprise()) {
+    // The course agent chat proxy, and the panel that PageLayout renders on
+    // instructor pages. Both run after the instructor chains above.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent',
+      (await import('./ee/routers/courseAgentChat.js')).default,
+    );
+    const courseAgentPanel = (await import('./ee/middlewares/courseAgentPanel.js')).default;
+    app.use(
+      ['/pl/course/:course_id(\\d+)', '/pl/course_instance/:course_instance_id(\\d+)/instructor'],
+      courseAgentPanel,
+    );
+  }
 
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
@@ -2142,6 +2164,11 @@ export async function startServer(app: express.Express) {
     default: {
       assertNever(config.serverType);
     }
+  }
+
+  if (isEnterprise()) {
+    const { initCourseAgentProxy } = await import('./ee/routers/courseAgentChat.js');
+    initCourseAgentProxy(server, app);
   }
 
   // Capture metrics about the server, including the number of active connections
