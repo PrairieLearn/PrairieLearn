@@ -157,7 +157,11 @@ export function getUpcomingStudentAssessments(
       row.authz_result.credit == null ||
       row.authz_result.credit <= 0 ||
       deadline == null ||
-      deadline <= reqDate
+      deadline <= reqDate ||
+      (!row.modern_access_control &&
+        (row.assessment_instance_open === false ||
+          (row.assessment_instance_date_limit != null &&
+            row.assessment_instance_date_limit < reqDate)))
     ) {
       return [];
     }

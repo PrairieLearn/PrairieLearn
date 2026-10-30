@@ -1,5 +1,9 @@
 import { Hydrate } from '@prairielearn/react/server';
 
+import {
+  StudentAccessRulesSchedule,
+  StudentAccessTimelineSchedule,
+} from '../../components/StudentAccessSchedules.js';
 import { type StaffInstitution } from '../../lib/client/safe-db-types.js';
 import { type NewsItem } from '../../lib/db-types.js';
 
@@ -103,6 +107,18 @@ function UpcomingDeadlinesCard({
                   >
                     {deadline.assessmentTitle}
                   </a>
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: String(
+                        deadline.modernAccessControl
+                          ? StudentAccessTimelineSchedule({
+                              accessTimeline: deadline.accessTimeline,
+                              displayTimezone: deadline.displayTimezone,
+                            })
+                          : StudentAccessRulesSchedule({ accessRules: deadline.accessRules }),
+                      ),
+                    }}
+                  />
                 </td>
                 <td className="text-center align-middle">
                   <span

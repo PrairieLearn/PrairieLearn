@@ -50,6 +50,54 @@ function makeAssessmentRow({
 }
 
 describe('getUpcomingStudentAssessments', () => {
+  it.each([
+    { open: false, dateLimit: null, included: false },
+    { open: true, dateLimit: '2025-03-15T11:59:59Z', included: false },
+    { open: true, dateLimit: '2025-03-15T12:00:00Z', included: true },
+    { open: true, dateLimit: '2025-03-15T12:00:01Z', included: true },
+    { open: true, dateLimit: null, included: true },
+  ])(
+    'filters legacy instances with open=$open and dateLimit=$dateLimit',
+    ({ open, dateLimit, included }) => {
+      const reqDate = new Date('2025-03-15T12:00:00Z');
+      const row = makeAssessmentRow({
+        assessmentId: '1',
+        deadline: new Date('2025-03-15T22:00:00Z'),
+        instanceId: '10',
+      });
+      row.modern_access_control = false;
+      row.assessment_instance_open = open;
+      row.assessment_instance_date_limit = dateLimit == null ? null : new Date(dateLimit);
+
+      const upcoming = getUpcomingStudentAssessments([row], reqDate, 'America/Chicago');
+
+      expect(upcoming.map(({ assessment_instance_id }) => assessment_instance_id)).toEqual(
+        included ? ['10'] : [],
+      );
+    },
+  );
+
+  it.each([
+    { open: false, dateLimit: null },
+    { open: true, dateLimit: '2025-03-15T11:59:59Z' },
+  ])(
+    'uses resolved authorization for modern instances with open=$open and dateLimit=$dateLimit',
+    ({ open, dateLimit }) => {
+      const reqDate = new Date('2025-03-15T12:00:00Z');
+      const row = makeAssessmentRow({
+        assessmentId: '1',
+        deadline: new Date('2025-03-15T22:00:00Z'),
+        instanceId: '10',
+      });
+      row.assessment_instance_open = open;
+      row.assessment_instance_date_limit = dateLimit == null ? null : new Date(dateLimit);
+
+      const upcoming = getUpcomingStudentAssessments([row], reqDate, 'America/Chicago');
+
+      expect(upcoming.map(({ assessment_instance_id }) => assessment_instance_id)).toEqual(['10']);
+    },
+  );
+
   it('includes started and unstarted assessments ending today or tomorrow', () => {
     const reqDate = new Date('2025-03-15T12:00:00Z');
     const rows = [

@@ -305,13 +305,17 @@ router.get(
             ).map((assessment) => ({
               assessmentSetColor: assessment.assessment_set_color,
               assessmentTitle: assessment.title ?? '',
+              accessRules: assessment.authz_result.access_rules,
+              accessTimeline: assessment.authz_result.access_timeline,
               courseInstanceId: courseInstance.id,
               courseInstanceLongName: entry.course_instance.long_name ?? '',
               courseShortName: entry.course.short_name ?? '',
               creditDateString: assessment.authz_result.credit_date_string,
               deadline: assessment.authz_result.credit_end_date,
+              displayTimezone: courseInstance.display_timezone,
               label: assessment.label,
               link: assessment.link,
+              modernAccessControl: assessment.modern_access_control,
               status: assessment.status,
             }));
           }),

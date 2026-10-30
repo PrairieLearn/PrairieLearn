@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { DateFromISOString } from '@prairielearn/zod';
 
+import type { AssessmentAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
@@ -54,12 +55,16 @@ export type StudentHomePageCourse = Pick<StudentHomePageCourseData, 'course' | '
 export interface UpcomingAssessmentDeadline {
   assessmentSetColor: string;
   assessmentTitle: string;
+  accessRules: AssessmentAuthzResult['access_rules'];
+  accessTimeline: AssessmentAuthzResult['access_timeline'];
   courseInstanceId: string;
   courseInstanceLongName: string;
   courseShortName: string;
   creditDateString: string;
   deadline: Date;
+  displayTimezone: string;
   label: string;
   link: string;
+  modernAccessControl: boolean;
   status: 'In progress' | 'Not started';
 }
