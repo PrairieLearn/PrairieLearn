@@ -66,12 +66,21 @@ window.PLMultipleChoice = function (uuid) {
   // dropdown_input moves focus to the control, but only the search input inherits aria-label.
   select.focus_node.setAttribute('aria-label', selectElement.getAttribute('aria-label'));
 
-  // Reposition the dropdown when the main container is scrolled. This is only
-  // needed in instructor pages, since student pages scroll on body, which is
-  // already handled by TomSelect itself.
-  selectElement
-    .closest('.app-main-container')
-    ?.addEventListener('scroll', () => select.positionDropdown());
+  // Scroll events don't bubble, so capture them to follow any scrolling ancestor
+  // without depending on the page layout. Ignore scrolling within the dropdown.
+  const repositionDropdown = (event) => {
+    if (event.target instanceof Element && event.target.contains(select.control)) {
+      select.positionDropdown();
+    }
+  };
+  const stopWatchingScroll = () => {
+    document.removeEventListener('scroll', repositionDropdown, true);
+  };
+  select.on('dropdown_open', () => {
+    document.addEventListener('scroll', repositionDropdown, { capture: true });
+  });
+  select.on('dropdown_close', stopWatchingScroll);
+  select.on('destroy', stopWatchingScroll);
 
   // By default, `tom-select` will set the placeholder as the "active" option,
   // but this means that the active option can't be changed with the up/down keys
