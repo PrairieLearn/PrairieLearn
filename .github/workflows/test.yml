@@ -157,8 +157,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - uses: ./.github/actions/native-test-setup
-        with:
-          install-playwright-browsers: 'true'
 
       - name: Vitest suite
         run: |
