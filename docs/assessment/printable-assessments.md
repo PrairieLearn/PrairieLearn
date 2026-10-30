@@ -47,25 +47,25 @@ The default cover has spaces for **Name** and **Date**, along with the assessmen
 
 ### Add your own cover pages
 
-Use **Custom cover pages (PDF)** to upload your own instructions or other pages. They appear in the listed order after the default cover and before the questions in each student PDF. If you turn off the default cover, your uploaded pages come first.
+Use **Custom cover pages (PDF)** to upload your own instructions or other pages for booklets and downloads of multiple forms or copies. In each student copy, they appear in the listed order after the default cover and before the questions. If you turn off the default cover, your uploaded pages come first.
 
-You can add up to 10 PDFs, with a combined limit of 100 pages and 10 MB. Uploaded covers are excluded from answer keys and Word files. If you reload the page, you will need to add the files again.
+You can add up to 10 PDFs, with a combined limit of 100 pages and 10 MB. Uploaded covers are excluded from individual form PDFs, answer keys, and Word files. If you reload the page, you will need to add the files again.
 
-Uploaded PDFs must include document tags and a document language before they can be included. These basic checks do not establish accessibility or PDF/UA-1 compliance. Export tagged PDFs from an accessible source document with a title, language, useful image descriptions, and correctly identified table headers. Scanned pages need accessible text and structure. If a cover is rejected, repair the source document and export it again, or remove the upload. Some PDFs with nested tagged content or internal links cannot currently be combined safely.
+Upload readable PDFs without password protection. Accessibility tags are not required for these print-only packets. Fillable covers must have saved field appearances; if prompted, print or export the cover as a flattened PDF before uploading it. If a cover is rejected, follow the download message or remove the upload.
 
-Uploaded covers do not appear in the preview. Download a student PDF or booklet to check them before printing.
+Uploaded covers do not appear in the preview. Download all forms or a booklet to check them before printing.
 
 ## Download files
 
 Select **Update preview** after making changes, then open **Download**. The available files depend on your forms:
 
-| Option                               | What you get                                                                     |
-| ------------------------------------ | -------------------------------------------------------------------------------- |
-| **Download Form A (PDF)**            | One student copy of Form A, including your cover pages.                          |
-| **Download Form A Word (.docx)**     | An editable student copy of Form A.                                              |
-| **Download Form A answer key (PDF)** | The answer key for Form A.                                                       |
-| **Download all forms (PDF)**         | One student copy of each form, in order. Available when you have multiple forms. |
-| **Download booklet PDF…**            | A student copy for each student, followed by the answer keys.                    |
+| Option                               | What you get                                                                             |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| **Download Form A (PDF)**            | One student copy of Form A, without uploaded cover pages.                                |
+| **Download Form A Word (.docx)**     | An editable student copy of Form A.                                                      |
+| **Download Form A answer key (PDF)** | The answer key for Form A.                                                               |
+| **Download all forms (PDF)**         | One student copy of each form, including uploaded covers. Available with multiple forms. |
+| **Download booklet PDF…**            | A student copy with uploaded covers for each student, followed by the answer keys.       |
 
 If a download says the preview has expired or changed, select **Update preview** and try again.
 
@@ -83,6 +83,8 @@ Always check the downloaded files before printing, including the cover pages and
 
 ## PDF accessibility
 
-PDF exports preserve document tags and check for missing source descriptions, lost structure, and unsupported content. These checks can prevent an export, but downloads are not automatically validated for PDF/UA-1 compliance. Add useful descriptions to meaningful figures, SVGs, and canvases; provide spoken descriptions for mathematical expressions; use headings, lists, and table headers that express the question's structure. Mark changes of language in authored content. Use decorative markings only for content without meaning, such as borders. Regenerate the preview after making corrections.
+Individual form and answer-key PDFs preserve document tags and check for missing source descriptions, lost structure, and unsupported content. These checks can prevent an export, but downloads are not automatically validated for PDF/UA-1 compliance. Add useful descriptions to meaningful images, SVGs, and canvases, and provide spoken descriptions for mathematical expressions. Place links outside SVG images. Use headings, lists, and table headers that express the question's structure, and mark changes of language in authored content. Use decorative markings only for content without meaning, such as borders. Regenerate the preview after making corrections.
 
-Validate the final downloaded files with a PDF/UA checker. A passing automated report does not establish full PDF/UA-1 compliance. Review the final downloaded assessment, answer key, and booklet with assistive technology before claiming compliance. Check question navigation, reading order, mathematical meaning, table relationships, descriptions, and repeated copies. The current implementation has automated coverage for these structures, but a human accessibility review of the supported export paths is still required.
+Combined PDFs, including booklets and downloads of multiple forms or copies, are intended for printing. They do not preserve document tags or internal PDF navigation and do not claim PDF/UA-1 compliance. These downloads do not require image or math descriptions, and uploaded covers do not need accessibility tags.
+
+Validate individual form and answer-key downloads with a PDF/UA checker before claiming compliance. A passing automated report does not establish full PDF/UA-1 compliance. Review the final files with assistive technology for question navigation, reading order, mathematical meaning, table relationships, and useful descriptions. Human accessibility review of the supported export paths is still required.
