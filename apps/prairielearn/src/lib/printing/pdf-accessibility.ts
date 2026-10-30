@@ -1,4 +1,6 @@
 import { setImmediate } from 'node:timers/promises';
+import { promisify } from 'node:util';
+import { deflate } from 'node:zlib';
 
 import {
   PDFArray,
@@ -16,6 +18,8 @@ import {
 
 import type { PdfAccessibilityManifest } from './pdf-accessibility-browser.js';
 import { type PdfContentMark, rewritePdfContent } from './pdf-content-stream.js';
+
+const deflateAsync = promisify(deflate);
 
 type Artifact = NonNullable<PdfContentMark['artifact']>;
 
@@ -288,7 +292,11 @@ export async function finalizePrintPdf(
       new Set(),
       `page ${index + 1}`,
     );
-    page.node.set(PDFName.of('Contents'), context.register(context.flateStream(output)));
+    if (output !== bytes) {
+      // Native compression avoids blocking other exports on large vector drawings.
+      const stream = context.stream(await deflateAsync(output), { Filter: 'FlateDecode' });
+      page.node.set(PDFName.of('Contents'), context.register(stream));
+    }
     const annotations = page.node.lookup(PDFName.of('Annots'));
     if (annotations instanceof PDFArray && annotations.size()) {
       page.node.set(PDFName.of('Tabs'), PDFName.of('S'));
