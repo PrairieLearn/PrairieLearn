@@ -1,7 +1,9 @@
+import type { PDFDocument } from 'pdf-lib';
+
 import { HttpStatusError } from '@prairielearn/error';
 
 import { config } from './config.js';
-import { type PrintCover, assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
+import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
 import { type PrintDocument, getPrintRenderer, validatePrintDocument } from './printing/index.js';
 import { type PaperSize, createPdfOutput } from './printing/pdf-output.js';
 
@@ -22,7 +24,7 @@ export interface PrintExportWork {
 
 export async function renderPrintExport(
   work: PrintExportWork,
-  parsedCovers?: PrintCover[],
+  parsedCovers?: PDFDocument[],
   shutdownSignal?: AbortSignal,
 ): Promise<Buffer> {
   const covers =
@@ -38,13 +40,7 @@ export async function renderPrintExport(
   const renderer = getPrintRenderer();
   const forms: { pdf: Buffer; coverPageCount: number }[] = [];
   const answerKeys: Buffer[] = [];
-  const pdfOutput = createPdfOutput({
-    accessible:
-      work.document !== 'booklet' &&
-      work.snapshots.length === 1 &&
-      work.copies === 1 &&
-      covers.length === 0,
-  });
+  const pdfOutput = createPdfOutput();
   for (const snapshot of work.snapshots) {
     if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
     const rendered = await renderer.render(
@@ -57,7 +53,7 @@ export async function renderPrintExport(
       },
       {
         label: work.document === 'booklet' ? 'booklet PDF' : 'PDF',
-        produce: async (page, signal) => {
+        produce: async (page) => {
           const identity = await page.evaluate(() => ({
             document: document.documentElement.dataset.printDocument,
             formLabel: document.documentElement.dataset.printFormLabel,
@@ -74,7 +70,7 @@ export async function renderPrintExport(
           const state = await validatePrintDocument(page);
           shutdownSignal?.throwIfAborted();
           return {
-            pdf: await pdfOutput.produce(page, signal),
+            pdf: await pdfOutput.produce(page),
             coverPageCount: state.coverPageCount,
           };
         },

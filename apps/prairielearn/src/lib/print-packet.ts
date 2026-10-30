@@ -6,11 +6,9 @@ import {
   PDFBool,
   PDFDict,
   PDFDocument,
-  PDFHexString,
   PDFName,
   PDFPage,
   PDFRawStream,
-  PDFString,
 } from 'pdf-lib';
 
 import {
@@ -21,11 +19,6 @@ import {
 } from './client/print-packet.js';
 
 export class PrintPacketError extends Error {}
-
-export interface PrintCover {
-  pdf: Uint8Array;
-  pageCount: number;
-}
 
 function needsFormAppearances(document: PDFDocument): boolean {
   const form = document.catalog.lookup(PDFName.of('AcroForm'));
@@ -59,22 +52,21 @@ function needsFormAppearances(document: PDFDocument): boolean {
 export async function readPrintCoverPages(
   files: File[],
   signal?: AbortSignal,
-): Promise<PrintCover[]> {
+): Promise<PDFDocument[]> {
   if (files.length > MAX_COVER_FILES) {
     throw new PrintPacketError(`Upload at most ${MAX_COVER_FILES} cover PDFs.`);
   }
   if (files.reduce((total, file) => total + file.size, 0) > MAX_COVER_BYTES) {
     throw new PrintPacketError('Cover PDFs must total at most 10 MB.');
   }
-  const covers: PrintCover[] = [];
+  const covers: PDFDocument[] = [];
   let pageCount = 0;
   for (const file of files) {
     signal?.throwIfAborted();
     let cover: PDFDocument;
     let needsAppearances: boolean;
-    const bytes = new Uint8Array(await file.arrayBuffer());
     try {
-      cover = await PDFDocument.load(bytes, {
+      cover = await PDFDocument.load(await file.arrayBuffer(), {
         throwOnInvalidObject: true,
         updateMetadata: false,
       });
@@ -99,7 +91,7 @@ export async function readPrintCoverPages(
         `Cover PDFs must contain at most ${MAX_COVER_PAGES} pages in total.`,
       );
     }
-    covers.push({ pdf: bytes, pageCount: cover.getPageCount() });
+    covers.push(cover);
   }
   return covers;
 }
@@ -113,7 +105,7 @@ export async function assemblePrintPacket({
   signal,
 }: {
   forms: { pdf: Uint8Array; coverPageCount: number }[];
-  covers: PrintCover[];
+  covers: PDFDocument[];
   copies: number;
   answerKeys?: Uint8Array[];
   signal?: AbortSignal;
@@ -125,7 +117,7 @@ export async function assemblePrintPacket({
     })),
   );
   const answerKeyDocuments = await Promise.all(answerKeys.map((pdf) => PDFDocument.load(pdf)));
-  const coverPageCount = covers.reduce((total, cover) => total + cover.pageCount, 0);
+  const coverPageCount = covers.reduce((total, cover) => total + cover.getPageCount(), 0);
   let totalPages = answerKeyDocuments.reduce((total, key) => total + key.getPageCount(), 0);
   for (let copy = 0; copy < copies; copy++) {
     const form = sources[copy % sources.length];
@@ -142,18 +134,11 @@ export async function assemblePrintPacket({
     return Buffer.from(forms[0].pdf);
   }
 
-  // A packet preserves printed pages; its new catalog does not claim PDF/UA conformance.
   const packet = await PDFDocument.create();
-  packet.setTitle(`${sources[0].document.getTitle() ?? 'Assessment'} — print packet`);
-  const language = sources[0].document.catalog.lookup(PDFName.of('Lang'));
-  if (language instanceof PDFString || language instanceof PDFHexString) {
-    packet.setLanguage(language.decodeText());
-  }
   const copiedCovers = [];
   for (const cover of covers) {
     signal?.throwIfAborted();
-    const document = await PDFDocument.load(cover.pdf, { updateMetadata: false });
-    copiedCovers.push(...(await packet.copyPages(document, document.getPageIndices())));
+    copiedCovers.push(...(await packet.copyPages(cover, cover.getPageIndices())));
   }
   const copiedForms = [];
   for (const { document, coverPageCount } of sources) {
