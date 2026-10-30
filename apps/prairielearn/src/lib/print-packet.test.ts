@@ -1,4 +1,4 @@
-import { PDFDocument, PDFName } from 'pdf-lib';
+import { PDFBool, PDFDict, PDFDocument, PDFName, PDFRawStream, PDFStream } from 'pdf-lib';
 import { describe, expect, test } from 'vitest';
 
 import { MAX_COVER_BYTES, MAX_COVER_FILES, MAX_COVER_PAGES } from './client/print-packet.js';
@@ -87,7 +87,7 @@ describe('print packets', () => {
     ]);
   });
 
-  test('accepts ordinary PDFs and rejects unreadable, empty, or encrypted covers', async () => {
+  test('accepts saved cover appearances and rejects unreadable or incomplete covers', async () => {
     await expect(readPrintCoverPages([new File(['not a PDF'], 'bad.pdf')])).rejects.toThrow(
       'valid PDF without password protection',
     );
@@ -95,6 +95,50 @@ describe('print packets', () => {
     expect(await readPrintCoverPages([await coverFile([100])])).toEqual([
       { pdf: expect.any(Uint8Array), pageCount: 1 },
     ]);
+    const filled = await PDFDocument.create();
+    const page = filled.addPage([500, 300]);
+    const form = filled.getForm();
+    const name = form.createTextField('student');
+    name.setText('Morgan');
+    name.addToPage(page, { x: 20, y: 150, width: 300, height: 40 });
+    const checkbox = form.createCheckBox('confirmed');
+    checkbox.addToPage(page, { x: 20, y: 100, width: 20, height: 20 });
+    checkbox.check();
+    form.updateFieldAppearances();
+    const asFile = async () =>
+      new File([Buffer.from(await filled.save({ updateFieldAppearances: false }))], 'form.pdf');
+    const covers = await readPrintCoverPages([await asFile()]);
+    const packet = await PDFDocument.load(
+      await assemblePrintPacket({
+        forms: [{ pdf: await pdfWithPages([100]), coverPageCount: 0 }],
+        covers,
+        copies: 2,
+      }),
+    );
+    for (const index of [0, 2]) {
+      const widgets = packet.getPage(index).node.Annots()!;
+      const textAppearance = widgets
+        .lookup(0, PDFDict)
+        .lookup(PDFName.of('AP'), PDFDict)
+        .lookup(PDFName.of('N'), PDFStream);
+      expect(textAppearance.getContents()).toEqual(
+        Buffer.from(
+          name.acroField.getWidgets()[0].AP()!.lookup(PDFName.of('N'), PDFStream).getContents(),
+        ),
+      );
+      const checked = widgets.lookup(1, PDFDict);
+      expect(
+        checked
+          .lookup(PDFName.of('AP'), PDFDict)
+          .lookup(PDFName.of('N'), PDFDict)
+          .lookup(checked.lookup(PDFName.of('AS'), PDFName)),
+      ).toBeInstanceOf(PDFRawStream);
+    }
+    form.acroForm.dict.set(PDFName.of('NeedAppearances'), PDFBool.True);
+    await expect(readPrintCoverPages([await asFile()])).rejects.toThrow('flattened PDF');
+    form.acroForm.dict.delete(PDFName.of('NeedAppearances'));
+    name.acroField.getWidgets()[0].dict.delete(PDFName.of('AP'));
+    await expect(readPrintCoverPages([await asFile()])).rejects.toThrow('flattened PDF');
     const encrypted = await PDFDocument.create();
     encrypted.addPage();
     encrypted.context.trailerInfo.Encrypt = encrypted.context.obj({});
