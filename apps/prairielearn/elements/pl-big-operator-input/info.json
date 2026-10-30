@@ -1,0 +1,8 @@
+{
+  "controller": "pl-big-operator-input.py",
+  "dependencies": {
+    "nodeModulesScripts": ["mathlive/mathlive.min.js"],
+    "elementScripts": ["pl-big-operator-input.js"],
+    "elementStyles": ["pl-big-operator-input.css"]
+  }
+}
