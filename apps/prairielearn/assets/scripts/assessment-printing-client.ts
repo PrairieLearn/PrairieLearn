@@ -216,6 +216,7 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
       'aria-label',
       'aria-labelledby',
       'aria-describedby',
+      'aria-description',
       'aria-hidden',
       'role',
     ]) {
@@ -498,10 +499,11 @@ function annotatePdfSemantics(output: HTMLElement, totalPages: number): void {
     container.dataset.printPdfRole = 'Div';
     container.dataset.printPdfDecorativePaint = '';
   }
+  const questionHeadingLevel = output.querySelector('.assessment-cover h1') ? '2' : '1';
   for (const heading of output.querySelectorAll(
     '.printing-question .question-block > .card-header h1',
   )) {
-    heading.setAttribute('aria-level', '2');
+    heading.setAttribute('aria-level', questionHeadingLevel);
   }
   const footerLabel = document.documentElement.dataset.printFooterLabel!;
   for (const [index, page] of output.querySelectorAll('.pagedjs_page').entries()) {
