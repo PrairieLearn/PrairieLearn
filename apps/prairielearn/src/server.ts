@@ -50,7 +50,6 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { isMultipartRequest } from '@prairielearn/trpc/express';
@@ -62,7 +61,7 @@ import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import { getCourseAdminQtiImportUrl } from './lib/client/url.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import { runDatabaseEncryptionOperation } from './lib/database-encryption-rotation.js';
 import { UserSchema } from './lib/db-types.js';
@@ -80,7 +79,6 @@ import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import { beginPrintExportShutdown, waitForPrintExportWorkers } from './lib/print-export-jobs.js';
 import { closePrintRenderer } from './lib/printing/index.js';
 import { initPrintRequests, stopPrintRequests } from './lib/printing/print-request.js';
-import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -2130,7 +2128,6 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 let server: http.Server | https.Server | undefined;
-let app: express.Express | undefined;
 
 export async function startServer(app: express.Express) {
   switch (config.serverType) {
@@ -2193,12 +2190,6 @@ export async function startServer(app: express.Express) {
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
-  // When using Vite in development, it is responsible for the server.
-  if (DEV_EXECUTION_MODE === 'hmr') {
-    return server;
-  }
-
-  // When Vite is not in use, start the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
@@ -2282,22 +2273,8 @@ function getPostgresConfig() {
   };
 }
 
-const isHMR = DEV_EXECUTION_MODE === 'hmr';
-
-if (isHMR && isServerPending()) {
-  throw new Error('The server was restarted, but it was not fully initialized.');
-}
-
-const shouldStartServer = run(() => {
-  if (!config.startServer) return false;
-  if (esMain(import.meta)) return true;
-  if (isHMR && !isServerInitialized()) return true;
-  return false;
-});
-
-if (shouldStartServer) {
+if (esMain(import.meta)) {
   try {
-    setServerState('pending');
     logger.verbose('PrairieLearn server start');
 
     let configPaths = [
@@ -2678,7 +2655,7 @@ if (shouldStartServer) {
     }
 
     logger.verbose('Starting server...');
-    app = await initExpress();
+    const app = await initExpress();
     const httpServer = await startServer(app);
 
     await socketServer.init(httpServer);
@@ -2715,12 +2692,7 @@ if (shouldStartServer) {
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
-    // When HMR is active, we'll defer this error logging to the Vite plugin, which can
-    // do a better job.
-    if (!isHMR) {
-      logger.error('Error initializing PrairieLearn server:', err);
-    }
-
+    logger.error('Error initializing PrairieLearn server:', err);
     throw err;
   }
 
@@ -2781,25 +2753,16 @@ if (shouldStartServer) {
     process.kill(process.pid, 'SIGTERM');
   });
 
-  setServerState('initialized');
   logger.info('PrairieLearn server ready, press Control-C to quit');
   if (config.devMode && process.env.NODE_ENV !== 'test') {
     logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
-} else if (isHMR && isServerInitialized()) {
-  // We need to re-initialize the server when we are running in HMR mode.
-  await socketServer.close();
-  app = await initExpress();
-  const httpServer = await startServer(app);
-  await socketServer.init(httpServer);
 }
 
 /**
  * Stops background work before closing its dependencies and database pools.
- * Used by the SIGTERM handler and by `@prairielearn/vite-plugin-express` for
- * full server restarts.
  */
-export async function close() {
+async function close() {
   beginPrintExportShutdown();
 
   // Disconnect clients before draining workspace startups, but keep Redis
@@ -2851,5 +2814,3 @@ async function settleShutdownTasks(tasks: Promise<unknown>[]) {
     }
   }
 }
-
-export const viteExpressApp = app;

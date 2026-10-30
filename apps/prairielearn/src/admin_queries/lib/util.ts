@@ -53,7 +53,7 @@ export async function loadAdminQueryModule(query: string): Promise<{
     default: (params: Record<string, any>) => Promise<AdministratorQueryResult>;
   };
   try {
-    module = await import(/* @vite-ignore */ modulePath);
+    module = await import(modulePath);
   } catch (err) {
     logger.error(`Failed to load module for query ${query}:`, err);
     throw new Error(`Query module ${query} could not be imported`, { cause: err });

@@ -31,7 +31,6 @@ import * as helperDb from './helperDb.js';
 const debug = debugfn('prairielearn:helperServer');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-config.startServer = false;
 // Pick a unique port based on the Vitest worker ID.
 config.serverPort = (3007 + Number.parseInt(process.env.VITEST_POOL_ID ?? '0')).toString();
 
