@@ -44,6 +44,8 @@
 }
 
 .preferences-grid-row {
+  /* Align with the first line of enum chips even when they wrap. */
+  align-items: first baseline;
   border-bottom: 1px solid var(--bs-border-color);
 }
 
