@@ -479,7 +479,7 @@ function loadPendingSubmissionPanel({
   signal: AbortSignal;
 }): void {
   const { submissionId, dynamicRenderUrl } = panel.dataset;
-  if (submissionId == null) return;
+  if (submissionId == null || dynamicRenderUrl == null) return;
 
   const services = browserServices.get(container);
   if (services) {
@@ -500,7 +500,6 @@ function loadPendingSubmissionPanel({
     return;
   }
 
-  if (dynamicRenderUrl == null) return;
   const url = new URL(dynamicRenderUrl, window.location.origin);
 
   if (includeScorePanels) {
