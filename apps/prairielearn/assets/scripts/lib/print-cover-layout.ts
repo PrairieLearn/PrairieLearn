@@ -38,9 +38,6 @@ export function layoutPrintGradingTable(source: HTMLElement, pageHeight: number)
     line.className = 'assessment-grading-score';
     line.setAttribute('role', 'cell');
     line.setAttribute('aria-label', 'Score');
-    const rule = document.createElement('span');
-    rule.dataset.printPdfRole = 'Artifact';
-    line.append(rule);
     row.append(number, line);
     grid.append(row);
   }
