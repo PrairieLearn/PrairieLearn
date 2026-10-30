@@ -17,7 +17,6 @@ const playwrightMocks = {
   launch: vi.fn(),
 };
 
-import * as pdfOutput from './pdf-output.js';
 import {
   PrintRenderer,
   QuestionBlockSizeOverflowError,
@@ -145,10 +144,6 @@ describe('PrintRenderer', () => {
   let originalDevMode: boolean;
 
   beforeEach(() => {
-    vi.spyOn(pdfOutput, 'createPdfOutput').mockReturnValue({
-      label: 'PDF',
-      produce: async (page) => await page.pdf(),
-    });
     originalDevMode = config.devMode;
     playwrightMocks.connectOverCDP.mockReset();
     playwrightMocks.launch.mockReset();
@@ -196,11 +191,17 @@ describe('PrintRenderer', () => {
 
     const page = harness.pages[0];
     expect(page.emulateMedia).toHaveBeenNthCalledWith(1, { media: 'screen' });
+    expect(page.emulateMedia).toHaveBeenNthCalledWith(2, { media: 'print' });
     expect(page.goto).toHaveBeenCalledExactlyOnceWith(
       'https://localhost:3000/print?paper_size=Letter',
       { waitUntil: 'load', timeout: expect.any(Number) },
     );
-    expect(page.pdf).toHaveBeenCalledExactlyOnceWith();
+    expect(page.pdf).toHaveBeenCalledExactlyOnceWith({
+      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      preferCSSPageSize: true,
+      printBackground: true,
+      tagged: true,
+    });
   });
 
   it('prints pre-paginated HTML without running page scripts or loading the preview route', async () => {

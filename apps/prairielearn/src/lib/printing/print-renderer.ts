@@ -459,7 +459,7 @@ export class PrintRenderer {
       });
 
       signal.throwIfAborted();
-      state.outputPromise = output.produce(page, signal);
+      state.outputPromise = output.produce(page);
       return await state.outputPromise;
     };
 
