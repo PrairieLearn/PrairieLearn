@@ -15,7 +15,20 @@ SELECT
       assessment_instances
     WHERE
       assessment_id = $assessment_id
+      AND NOT for_printing
   );
+
+-- BLOCK select_assessment_instances_for_user
+SELECT
+  ai.*
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.assessment_id = $assessment_id
+  AND ai.user_id = $user_id
+  AND ai.for_printing
+ORDER BY
+  ai.number DESC;
 
 -- BLOCK insert_group_assessment_instance
 INSERT INTO

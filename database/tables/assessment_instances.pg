@@ -7,6 +7,7 @@ columns
     date: timestamp with time zone default CURRENT_TIMESTAMP
     date_limit: timestamp with time zone
     duration: interval default '00:00:00'::interval
+    for_printing: boolean not null default false
     grading_needed: boolean not null default false
     id: bigint not null default nextval('assessment_instances_id_seq'::regclass)
     include_in_statistics: boolean not null default true

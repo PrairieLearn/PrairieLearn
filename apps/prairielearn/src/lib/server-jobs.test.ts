@@ -1,6 +1,7 @@
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { z } from 'zod';
 
-import { execute, loadSql, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSql, loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import * as helperDb from '../tests/helperDb.js';
@@ -154,5 +155,19 @@ describe('server-jobs SQL transitions', () => {
       await execute(productionSql.error_abandoned_job_sequences);
       assert.equal(await selectStatus(job_sequence_id), 'Error');
     });
+  });
+
+  it('leaves queued print exports for the lease-based worker', async () => {
+    const { job_id } = await insertJobSequence('Running');
+    await execute(sql.mark_job_print_export, { job_id });
+    const abandoned = await queryRows(
+      productionSql.select_abandoned_jobs,
+      { timeout_secs: 3600 },
+      z.object({ id: IdSchema, job_sequence_id: IdSchema.nullable() }),
+    );
+    assert.notInclude(
+      abandoned.map((job) => job.id),
+      job_id,
+    );
   });
 });

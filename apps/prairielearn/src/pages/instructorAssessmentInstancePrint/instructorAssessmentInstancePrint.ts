@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
+import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
 import { escapeRegExp } from '@prairielearn/sanitize';
 import { JsonFromStringSchema, parseRequest, parseRequestQuery } from '@prairielearn/zod';
 
@@ -15,6 +16,7 @@ import {
 } from '../../lib/client/print-cover.js';
 import { serializePrintDocument } from '../../lib/client/print-document.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
@@ -23,6 +25,7 @@ import {
   type PrintDocument,
   describeOmittedQuestions,
   getPrintRenderer,
+  getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
   validatePrintDocument,
@@ -36,6 +39,10 @@ import {
   getPrintFooterLabel,
 } from '../../lib/printing/print-cover.js';
 import { withPrintRequest } from '../../lib/printing/print-request.js';
+import {
+  checkPrintSnapshotId,
+  createPrintSnapshotId,
+} from '../../lib/printing/print-snapshot-id.js';
 import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
@@ -66,7 +73,7 @@ const QuestionBlockSizeOverrideSchema = z
     };
   });
 
-const LayoutQuerySchema = z.object({
+const LayoutQuerySchema = z.strictObject({
   paper_size: z.enum(PAPER_SIZES),
   include_honor_code: z
     .enum(['true', 'false'])
@@ -97,12 +104,13 @@ const LayoutQuerySchema = z.object({
 const DocumentQuerySchema = LayoutQuerySchema.extend({
   document: z.enum(PRINT_DOCUMENTS).default('assessment'),
 });
-const PrintSnapshotSchema = z.object({
+const PrintSnapshotSchema = z.strictObject({
+  id: z.string().min(1),
   html: z.string().min(1).max(MAX_PRINT_SNAPSHOT_BYTES),
-  source: z.object({
+  source: z.strictObject({
     html: z.string().max(MAX_PRINT_SNAPSHOT_BYTES),
     figures: z.array(
-      z.object({
+      z.strictObject({
         id: z.string().regex(/^[1-9]\d*$/),
         width: z.number().positive().max(4096),
         height: z.number().positive().max(4096),
@@ -111,6 +119,7 @@ const PrintSnapshotSchema = z.object({
     ),
   }) satisfies z.ZodType<DocxSource>,
 });
+
 const DocxPostRequestSchemas = {
   query: DocumentQuerySchema,
   body: z
@@ -241,6 +250,26 @@ router.get(
       res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
+      const meter = metrics.getMeter('prairielearn');
+      const attributes = { document };
+      const startedAt = performance.now();
+      res.once('finish', () => {
+        getHistogram(meter, 'print.preview.request.duration', {
+          unit: 'milliseconds',
+          valueType: ValueType.DOUBLE,
+        }).record(performance.now() - startedAt, attributes);
+        getHistogram(meter, 'print.preview.rss', {
+          unit: 'bytes',
+          valueType: ValueType.INT,
+        }).record(process.memoryUsage().rss, attributes);
+        if (res.statusCode >= 400) {
+          getCounter(meter, 'print.preview.failures', { valueType: ValueType.INT }).add(
+            1,
+            attributes,
+          );
+        }
+      });
+
       const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
         signal,
         defaultQuestionBlockSize: layout.blockSize ?? 'auto',
@@ -249,6 +278,10 @@ router.get(
         document,
       });
       signal.throwIfAborted();
+      getHistogram(meter, 'print.preview.questions.duration', {
+        unit: 'milliseconds',
+        valueType: ValueType.DOUBLE,
+      }).record(performance.now() - startedAt, attributes);
       if (printingResult.questionHtmls.length === 0) {
         throw new HttpStatusError(
           422,
@@ -310,19 +343,32 @@ router.get(
         },
       );
       remainingTimeoutMs();
-      PrintSnapshotSchema.shape.source.parse(source);
+      const parsedSource = PrintSnapshotSchema.shape.source.parse(source);
+      const id = createPrintSnapshotId(
+        {
+          assessmentInstanceId: res.locals.assessment_instance.id,
+          authnUserId: res.locals.authn_user.id,
+          search: localPreviewUrl.searchParams,
+          questionListDigest: printingResult.questionListDigest,
+          html,
+          source: parsedSource,
+        },
+        config.secretKey,
+      );
+      const snapshotHtml = html
+        .replace('<html', () => `<html data-print-snapshot-id="${id}"`)
+        .replace(
+          '</head>',
+          () =>
+            `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(parsedSource).replaceAll('<', '\\u003c')}</script></head>`,
+        );
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader(
         'Content-Security-Policy',
         "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
       );
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      res.send(
-        html.replace(
-          '</head>',
-          `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(source).replaceAll('<', '\\u003c')}</script></head>`,
-        ),
-      );
+      res.send(snapshotHtml);
     });
   }),
 );
@@ -374,6 +420,29 @@ router.post(
           'Printable document rendering is not configured on this server',
         );
       }
+      const localPreviewUrl = new URL(
+        printUrl(req.baseUrl, 'preview', layout, document),
+        `${config.serverType}://localhost:${config.serverPort}`,
+      );
+      const questionListDigest = await getPrintableQuestionListDigest(
+        res.locals.assessment_instance.id,
+        layout.excludedQuestionNumbers,
+      );
+      signal.throwIfAborted();
+      if (
+        !checkPrintSnapshotId(
+          {
+            ...snapshot,
+            assessmentInstanceId: res.locals.assessment_instance.id,
+            authnUserId: res.locals.authn_user.id,
+            search: localPreviewUrl.searchParams,
+            questionListDigest,
+          },
+          config.secretKey,
+        )
+      ) {
+        throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+      }
       const $ = load(snapshot.html);
       const hasExecutableAttributes =
         $('*').filter((_index, node) =>
@@ -390,10 +459,6 @@ router.post(
       ) {
         throw new HttpStatusError(400, 'The printable pages contain executable content.');
       }
-      const localPreviewUrl = new URL(
-        printUrl(req.baseUrl, 'preview', layout, document),
-        `${config.serverType}://localhost:${config.serverPort}`,
-      );
       const output = createDocxOutput({
         source: snapshot.source,
         cover: layout.includeCoverPage

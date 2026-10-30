@@ -76,6 +76,7 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { beginPrintExportShutdown, waitForPrintExportWorkers } from './lib/print-export-jobs.js';
 import { closePrintRenderer } from './lib/printing/index.js';
 import { initPrintRequests, stopPrintRequests } from './lib/printing/print-request.js';
 import * as serverJobs from './lib/server-jobs.js';
@@ -965,6 +966,11 @@ export async function initExpress(): Promise<Express> {
       (await import('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics.js'))
         .default,
     ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print_preparation/exports',
+    (await import('./pages/instructorAssessmentPrintExport/instructorAssessmentPrintExport.js'))
+      .default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',
@@ -2757,6 +2763,8 @@ if (esMain(import.meta)) {
  * Stops background work before closing its dependencies and database pools.
  */
 async function close() {
+  beginPrintExportShutdown();
+
   // Disconnect clients before draining workspace startups, but keep Redis
   // adapters available for progress broadcasts from running jobs.
   socketServer.io?.engine.close();
@@ -2775,6 +2783,9 @@ async function close() {
   // Server jobs may render questions or publish progress after an await. Wait
   // for their final status writes and notifications before closing dependencies.
   await settleShutdownTasks([serverJobs.stop()]);
+
+  // Let print workers finish cleanup while their dependencies are available.
+  await settleShutdownTasks([waitForPrintExportWorkers()]);
   await settleShutdownTasks([closePrintRenderer()]);
 
   await settleShutdownTasks([

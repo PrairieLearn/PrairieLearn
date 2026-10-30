@@ -4,6 +4,7 @@
  */
 export function serializePrintDocument(root: HTMLElement): string {
   const copy = root.cloneNode(true) as HTMLElement;
+  copy.removeAttribute('data-print-snapshot-id');
   const roots: ParentNode[] = [copy];
   const shadowRoots: ShadowRoot[] = [];
   while (roots.length > 0) {
