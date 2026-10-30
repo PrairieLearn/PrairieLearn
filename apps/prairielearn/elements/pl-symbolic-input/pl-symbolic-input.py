@@ -4,7 +4,7 @@ import re
 from enum import Enum
 from functools import lru_cache
 from sys import get_int_max_str_digits
-from typing import assert_never
+from typing import assert_never, cast
 
 import chevron
 import lxml.html
@@ -26,7 +26,7 @@ ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
-ALLOW_SETS_DEFAULT = False
+ALLOWED_TYPES_DEFAULT = "expression"
 DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
@@ -41,6 +41,19 @@ PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
 INITIAL_VALUE_DEFAULT = None
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
+FORMAT_HELP_BY_ALLOWED_TYPE: dict[psu.AllowedSympyType, tuple[str, tuple[str, ...]]] = {
+    "expression": ("symbolic expressions", ("1/2 + pi",)),
+    "finite-set": ("finite sets", ("{ 0, pi/2, 3pi/2, 2pi }",)),
+    "interval": ("intervals", ("[0, +oo)",)),
+    "set": (
+        "sets (including finite sets and intervals)",
+        (
+            "{ 0, pi/2, 3pi/2, 2pi }",
+            "[0, +oo)",
+            "[0, 2] U {4}",
+        ),
+    ),
+}
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
@@ -64,7 +77,7 @@ def _get_variables_with_fallback(
 
 
 def _replace_imaginary_for_display(
-    expr: sympy.Expr, imaginary_unit: str
+    expr: sympy.Basic, imaginary_unit: str
 ) -> sympy.Basic:
     return expr.subs(sympy.I, sympy.Symbol(imaginary_unit))
 
@@ -76,6 +89,66 @@ SYMPY_ADDITIONAL_SIMPLIFICATIONS = {
     "trigsimp": sympy.trigsimp,
     "expand_log": sympy.expand_log,
 }
+
+
+def _get_allowed_types(element: lxml.html.HtmlElement) -> set[psu.AllowedSympyType]:
+    if pl.has_attrib(element, "allow-sets") and pl.has_attrib(element, "allowed-types"):
+        raise ValueError(
+            "The deprecated 'allow-sets' attribute cannot be used with "
+            "'allowed-types'. Remove 'allow-sets' and use 'allowed-types' instead."
+        )
+
+    if pl.has_attrib(element, "allowed-types"):
+        return cast(
+            set[psu.AllowedSympyType],
+            set(psu.get_items_list(pl.get_string_attrib(element, "allowed-types"))),
+        )
+
+    if pl.get_boolean_attrib(element, "allow-sets", False):
+        return {"all"}
+
+    return {ALLOWED_TYPES_DEFAULT}
+
+
+def _allows_sets(allowed_types: set[psu.AllowedSympyType]) -> bool:
+    return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
+
+
+def _serialize_and_validate_sympy(
+    answer: psu.SympyValue,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    allow_trig_functions: bool,
+    simplify_expression: bool,
+) -> psu.SympyJson:
+    """Serialize and reparse an answer to validate that it can be stored safely.
+
+    This performs a full SymPy serialization and parse, so callers should use it as
+    a validation gate at answer-ingestion boundaries rather than as a cheap conversion
+    helper.
+
+    Returns:
+        The serialized answer after its representation has been validated.
+    """
+    answer_json = psu.sympy_to_json(
+        answer,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+    )
+
+    # This reparses serialized text rather than simplifying the same tree. In
+    # simplified mode, the first parse already evaluated the expression, so
+    # evaluating the serialized form is idempotent and restores canonical form.
+    psu.json_to_sympy(
+        answer_json,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
+    )
+    return answer_json
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -96,7 +169,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -121,10 +195,22 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
         blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-        # Validate that the answer can be parsed before storing
-        if a_true.strip() != "":
-            try:
-                psu.convert_string_to_sympy(
+        if a_true.strip() == "" and allow_blank and blank_value == "":
+            a_true = ""
+        elif a_true.strip() == "":
+            raise ValueError(
+                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+            )
+
+        data["correct_answers"][name] = a_true
+
+    variables = _get_variables_with_fallback(element, data, name)
+
+    a_true = data["correct_answers"].get(name)
+    if a_true is not None and a_true != "":
+        try:
+            if isinstance(a_true, str):
+                parsed_answer = psu.convert_string_to_sympy(
                     a_true,
                     variables,
                     allow_complex=allow_complex,
@@ -133,20 +219,40 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
                 )
-            except psu.BaseSympyError as exc:
-                raise ValueError(
-                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
-                ) from exc
-        elif allow_blank and blank_value == "":
-            a_true = ""
-        else:
+            else:
+                parsed_answer = psu.json_to_sympy(
+                    a_true,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    allow_trig_functions=allow_trig,
+                    simplify_expression=simplify_expression,
+                )
+        except psu.BaseSympyError as exc:
             raise ValueError(
-                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+                f"Parsing correct answer {a_true!r} for {name!r} failed."
+            ) from exc
+
+        type_failure = psu.check_sympy_types(
+            parsed_answer, allowed_types, simplify_expression=simplify_expression
+        )
+        if type_failure is not None:
+            raise ValueError(
+                f"Parsing correct answer {a_true!r} for {name!r} failed: "
+                f"{type_failure.error}"
             )
 
-        data["correct_answers"][name] = a_true
-
-    variables = _get_variables_with_fallback(element, data, name)
+        try:
+            _serialize_and_validate_sympy(
+                parsed_answer,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
+            )
+        except Exception as exc:
+            raise ValueError(
+                f"Serializing correct answer {a_true!r} for {name!r} failed."
+            ) from exc
 
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
@@ -185,7 +291,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     if allow_sets and additional_simplifications:
         raise ValueError(
-            "The 'additional-simplifications' attribute cannot be used when 'allow-sets' is true."
+            "The 'additional-simplifications' attribute cannot be used when "
+            "'allowed-types' permits sets or intervals."
         )
     # Note: it is an intentional decision to allow repeats in the list, as this might be (rarely) an
     # intended way to work around SymPy limitations
@@ -219,7 +326,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -246,13 +354,38 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
+    format_help_types = allowed_types - {"all"}
+    if "all" in allowed_types:
+        format_help_types.update({"expression", "set"})
+    if "set" in format_help_types:
+        format_help_types.difference_update({"finite-set", "interval"})
+
+    accepted_type_labels = []
+    format_examples = []
+    for allowed_type, (label, examples) in FORMAT_HELP_BY_ALLOWED_TYPE.items():
+        if allowed_type in format_help_types:
+            accepted_type_labels.append(label)
+            format_examples.extend(examples)
+    accepted_types = " and ".join(
+        ", ".join(accepted_type_labels).rsplit(", ", maxsplit=1)
+    )
+
     info_params = {
         "format": True,
         "variables": variables,
         "operators": operators,
         "constants": constants,
+        "accepted_types": accepted_types,
+        "examples": [
+            {
+                "value": example,
+                "separator": ", " if index < len(format_examples) - 1 else ".",
+            }
+            for index, example in enumerate(format_examples)
+        ],
+        "multiple_examples": len(format_examples) > 1,
         "allow_complex": allow_complex,
-        "allow_sets": allow_sets,
+        "allow_set_operations": allow_sets,
     }
 
     with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
@@ -473,7 +606,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -540,6 +674,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         custom_functions=custom_functions,
         simplify_expression=simplify_expression,
         assumptions=assumptions_dict,
+        allowed_types=allowed_types,
     )
 
     if isinstance(result, psu.SympyParseFailure):
@@ -549,26 +684,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     a_sub_parsed = result.expr
 
-    # Make sure we can parse the json again
     try:
-        a_sub_json = psu.sympy_to_json(
+        data["submitted_answers"][name] = _serialize_and_validate_sympy(
             a_sub_parsed,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
-        )
-
-        # This reparses serialized text rather than simplifying the same tree. In
-        # simplified mode, the first parse already evaluated the expression, so
-        # evaluating the serialized form is idempotent and restores canonical form.
-        psu.json_to_sympy(
-            a_sub_json,
-            allow_complex=allow_complex,
-            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
             simplify_expression=simplify_expression,
         )
-
-        # Finally, store the result
-        data["submitted_answers"][name] = a_sub_json
     except Exception:
         data["format_errors"][name] = (
             f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
@@ -1083,7 +1206,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -1207,7 +1331,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
-    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    allowed_types = _get_allowed_types(element)
+    allow_sets = _allows_sets(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -1215,6 +1340,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     result = data["test_type"]
+    a_tru = ""
     a_tru_str = ""
 
     if result in ["correct", "incorrect"]:
@@ -1267,12 +1393,33 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
-        if a_tru_str == "" or allow_sets:
-            data["raw_submitted_answers"][name] = f"{random.randint(1, 100):d}"
+        offset = random.randint(1, 100)
+        for _ in range(2):
+            if isinstance(a_tru, sympy.Expr):
+                candidate = f"({a_tru_str}) + {offset:d}"
+                candidate_sympy = a_tru + sympy.Integer(offset)
+                if _sympy_values_equal(candidate_sympy, a_tru):
+                    candidate = f"{offset:d}"
+                    candidate_sympy = sympy.Integer(offset)
+            elif "all" in allowed_types or "expression" in allowed_types:
+                candidate = f"{offset:d}"
+                candidate_sympy = sympy.Integer(offset)
+            elif "set" in allowed_types or "finite-set" in allowed_types:
+                candidate = f"{{{offset:d}}}"
+                candidate_sympy = sympy.FiniteSet(offset)
+            elif "interval" in allowed_types:
+                candidate = f"({offset:d}, {offset + 1:d})"
+                candidate_sympy = sympy.Interval.open(offset, offset + 1)
+            else:
+                raise AssertionError(f"Unexpected allowed types: {allowed_types}")
+
+            if a_tru == "" or not _sympy_values_equal(candidate_sympy, a_tru):
+                break
+            offset += 1
         else:
-            data["raw_submitted_answers"][name] = (
-                f"{a_tru_str} + {random.randint(1, 100):d}"
-            )
+            raise AssertionError("Failed to generate an incorrect answer")
+
+        data["raw_submitted_answers"][name] = candidate
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":
