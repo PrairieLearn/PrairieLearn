@@ -163,6 +163,9 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
+  // Print assets carry a short-lived job credential instead of an instructor session.
+  (await import('./lib/printing/print-asset-routes.js')).applyPrintAssetRoutes(app);
+
   const sessionMiddleware = createSessionMiddleware({
     secret: config.secretKey,
     store: new PostgresSessionStore(),
@@ -971,6 +974,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print_preparation/exports',
     (await import('./pages/instructorAssessmentPrintExport/instructorAssessmentPrintExport.js'))
       .default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print_preparation',
+    (await import('./pages/instructorAssessmentPrint/instructorAssessmentPrint.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',

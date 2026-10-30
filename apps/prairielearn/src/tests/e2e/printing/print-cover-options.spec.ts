@@ -13,12 +13,12 @@ import {
   waitForPrintablePage,
 } from './utils.js';
 
+const test = createTest({ features: { 'printable-assessments': true } });
+
 async function printBase(courseInstanceId: string, tid: string) {
   const instanceId = await createPrintableAssessmentInstance(courseInstanceId, tid);
   return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${instanceId}/print`;
 }
-
-const test = createTest({ features: { 'printable-assessments': true } });
 
 test('fills the cover grading table down columns using only included questions', async ({
   page,

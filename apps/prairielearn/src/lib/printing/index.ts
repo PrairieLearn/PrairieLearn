@@ -235,6 +235,16 @@ export async function getPrintableQuestionListDigest(
   return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
 }
 
+export async function getPrintableInstanceQuestionIds(
+  assessmentInstanceId: string,
+  excludedQuestionNumbers: ReadonlySet<string>,
+): Promise<string[]> {
+  const questions = await selectPrintableQuestions(assessmentInstanceId);
+  return selectIncludedQuestions(questions, excludedQuestionNumbers).map(
+    ({ instance_question }) => instance_question.id,
+  );
+}
+
 export async function validateQuestionsForPrinting(
   assessmentInstanceId: string,
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,

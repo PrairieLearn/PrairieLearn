@@ -7,6 +7,12 @@ import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/open
 import { config } from '../config.js';
 
 import { createPdfOutput } from './pdf-output.js';
+import {
+  PRINT_ASSET_TOKEN_HEADER,
+  type PrintAssetScope,
+  beginPrintAssetAccess,
+  classifyPrintAssetPath,
+} from './print-asset-access.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import { RenderQueue } from './render-queue.js';
 
@@ -27,7 +33,8 @@ const CLOUDFLARE_KEEP_ALIVE_MS = 180_000;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
 const SOCKET_IO_PATH = '/socket.io/';
 
-async function fetchCloudflareAsset(url: URL, signal: AbortSignal, cookieHeader?: string) {
+async function fetchCloudflareAsset(url: URL, signal: AbortSignal, assetToken?: string) {
+  const headers = assetToken ? { [PRINT_ASSET_TOKEN_HEADER]: assetToken } : undefined;
   if (url.protocol === 'https:' && url.hostname === 'localhost') {
     // The local development server can use a certificate that Node does not trust. This
     // exception applies only to requests back to the same machine, never to public hosts.
@@ -37,7 +44,7 @@ async function fetchCloudflareAsset(url: URL, signal: AbortSignal, cookieHeader?
           .get(
             url,
             {
-              headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+              headers,
               rejectUnauthorized: false,
               signal,
             },
@@ -60,7 +67,7 @@ async function fetchCloudflareAsset(url: URL, signal: AbortSignal, cookieHeader?
     );
   }
   const response = await fetch(url, {
-    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+    headers,
     redirect: 'manual',
     signal,
   });
@@ -102,7 +109,8 @@ export interface RenderPageOptions {
   browserOrigin?: string;
   /** Browser-paginated HTML to serve at `url`. */
   html: string;
-  cookieHeader?: string;
+  /** Restricts browser requests and grants short-lived access to required assets. */
+  assetScope?: PrintAssetScope;
   /** Execute question scripts while preparing a new preview. */
   runScripts?: boolean;
   /** Overrides the renderer's default deadline. `0` disables the deadline. */
@@ -112,6 +120,9 @@ export interface RenderPageOptions {
 }
 
 export type RenderPdfOptions = RenderPageOptions;
+type ActiveRenderPageOptions = RenderPageOptions & {
+  assetAccess?: { token: string; scope: PrintAssetScope };
+};
 
 /**
  * Reuses one browser connection with a bounded number of isolated rendering contexts. The browser
@@ -156,6 +167,9 @@ export class PrintRenderer {
 
   render<T>(options: RenderPageOptions, output: PrintablePageOutput<T>): Promise<T> {
     if (this.closed) return Promise.reject(new Error('The print renderer has been closed'));
+    const access = options.assetScope
+      ? beginPrintAssetAccess(options.assetScope, config.secretKey)
+      : null;
     const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs;
     const kind = output.label === 'preview' ? 'preview' : 'export';
     const meter = metrics.getMeter('prairielearn');
@@ -184,7 +198,21 @@ export class PrintRenderer {
           queueWait.record(queueWaitMs, { kind });
           if (this.closed) throw new Error('The print renderer has been closed');
           const remainingTimeoutMs = timeoutMs === 0 ? 0 : Math.max(1, timeoutMs - queueWaitMs);
-          return this.renderWithPermit({ ...options, timeoutMs: remainingTimeoutMs }, output);
+          return this.renderWithPermit(
+            {
+              ...options,
+              timeoutMs: remainingTimeoutMs,
+              ...(access
+                ? {
+                    assetAccess: {
+                      token: access.token,
+                      scope: access.scope,
+                    },
+                  }
+                : {}),
+            },
+            output,
+          );
         },
         timeoutMs,
         output.label,
@@ -281,11 +309,11 @@ export class PrintRenderer {
       url,
       browserOrigin,
       html,
-      cookieHeader,
+      assetAccess,
       runScripts = false,
       timeoutMs = DEFAULT_RENDER_TIMEOUT_MS,
       signal: requestSignal,
-    }: RenderPageOptions,
+    }: ActiveRenderPageOptions,
     output: PrintablePageOutput<T>,
   ): Promise<T> {
     requestSignal?.throwIfAborted();
@@ -346,7 +374,6 @@ export class PrintRenderer {
         serviceWorkers: 'block',
         javaScriptEnabled: runScripts,
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
-        ...(!this.cloudflare && cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
       });
       if (signal.aborted) {
         await this.discardContext(browser, context);
@@ -354,7 +381,7 @@ export class PrintRenderer {
       }
       state.context = context;
 
-      // Only same-origin GET requests may use the forwarded cookie. Realtime traffic is refused
+      // Only required same-origin assets may be loaded. Realtime traffic is refused
       // outright: with WebSockets closed, socket.io would otherwise fall back to HTTP long-polling,
       // and a handful of open polls can occupy every HTTP/1.1 connection to the server and starve
       // the page's own script and image loads.
@@ -366,31 +393,35 @@ export class PrintRenderer {
             await route.fulfill({ status: 200, contentType: 'text/html', body: html });
             return;
           }
+          const assetRoute = classifyPrintAssetPath(
+            requestUrl.pathname,
+            assetAccess?.scope ?? null,
+            config.assetsPrefix,
+          );
           if (
             request.method() !== 'GET' ||
             requestUrl.origin !== renderOrigin ||
-            requestUrl.pathname.startsWith(SOCKET_IO_PATH)
+            requestUrl.pathname.startsWith(SOCKET_IO_PATH) ||
+            !assetRoute
           ) {
             await route.abort('blockedbyclient');
             return;
           }
           // Public app assets need no session, so Cloudflare can fetch them directly.
-          if (
-            this.cloudflare &&
-            !config.devMode &&
-            requestUrl.pathname.startsWith(`${config.assetsPrefix}/`)
-          ) {
+          const isAppAsset = requestUrl.pathname.startsWith(`${config.assetsPrefix}/`);
+          if (this.cloudflare && !config.devMode && isAppAsset) {
             await route.continue();
             return;
           }
           // Playwright only routes the first request in a redirect chain, so proxied requests
           // cannot follow redirects without potentially leaving the allowed origin.
+          const assetToken = isAppAsset ? undefined : assetAccess?.token;
           if (this.cloudflare) {
             const assetUrl = urlAtOrigin(requestUrl, localUrl.origin);
             const response = await fetchCloudflareAsset(
               assetUrl,
               assetController.signal,
-              cookieHeader,
+              assetToken,
             );
             if (response.status >= 300 && response.status < 400) {
               await route.abort('blockedbyclient');
@@ -402,7 +433,10 @@ export class PrintRenderer {
               body: response.body,
             });
           } else {
-            const response = await route.fetch({ maxRedirects: 0 });
+            const response = await route.fetch({
+              maxRedirects: 0,
+              ...(assetToken ? { headers: { [PRINT_ASSET_TOKEN_HEADER]: assetToken } } : {}),
+            });
             if (response.status() >= 300 && response.status() < 400) {
               await route.abort('blockedbyclient');
               return;

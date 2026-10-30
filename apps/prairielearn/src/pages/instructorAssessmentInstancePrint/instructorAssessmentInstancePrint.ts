@@ -25,13 +25,15 @@ import {
   type PrintDocument,
   describeOmittedQuestions,
   getPrintRenderer,
+  getPrintableInstanceQuestionIds,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
   validatePrintDocument,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
-import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
+import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import {
   BLANK_NAME_PLACEHOLDER,
   HONOR_CODE_HEADING,
@@ -219,6 +221,20 @@ function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
   };
 }
 
+function printAssetScope(
+  resLocals: ResLocalsForPage<'assessment-instance'>,
+  instanceQuestionIds: string[],
+): PrintAssetScope {
+  return {
+    courseInstanceId: resLocals.course_instance.id,
+    assessmentId: resLocals.assessment.id,
+    assessmentInstanceId: resLocals.assessment_instance.id,
+    instanceQuestionIds,
+    authnUserId: resLocals.authn_user.id,
+    userId: resLocals.user.id,
+  };
+}
+
 const parseDocxBody: RequestHandler = (req, res, next) => {
   if (!req.is('application/octet-stream')) {
     next(new HttpStatusError(415, 'The Word export request has an unsupported format.'));
@@ -324,7 +340,12 @@ router.get(
           url: localPreviewUrl.href,
           browserOrigin: config.serverCanonicalHost ?? undefined,
           html: rawHtml,
-          cookieHeader: req.get('cookie'),
+          assetScope: printAssetScope(
+            res.locals,
+            printingResult.questionResults
+              .filter((result) => result.status === 'rendered')
+              .map(({ instanceQuestionId }) => instanceQuestionId),
+          ),
           runScripts: true,
           signal,
           timeoutMs: remainingTimeoutMs(),
@@ -473,12 +494,17 @@ router.post(
           : undefined,
         footerLabel,
       });
+      const instanceQuestionIds = await getPrintableInstanceQuestionIds(
+        res.locals.assessment_instance.id,
+        layout.excludedQuestionNumbers,
+      );
+      signal.throwIfAborted();
       const contents = await getPrintRenderer().render(
         {
           url: localPreviewUrl.href,
           browserOrigin: config.serverCanonicalHost ?? undefined,
           html: snapshot.html,
-          cookieHeader: req.get('cookie'),
+          assetScope: printAssetScope(res.locals, instanceQuestionIds),
           runScripts: true,
           signal,
           timeoutMs: remainingTimeoutMs(),
@@ -489,17 +515,12 @@ router.post(
             const identity = await page.evaluate(() => ({
               document: globalThis.document.documentElement.dataset.printDocument,
               formLabel: globalThis.document.documentElement.dataset.printFormLabel,
-              paperSize: globalThis.document.documentElement.dataset.printPaperSize,
             }));
             signal.throwIfAborted();
-            if (
-              identity.document !== document ||
-              identity.formLabel !== (layout.formLabel ?? '') ||
-              identity.paperSize !== layout.paperSize
-            ) {
+            if (identity.document !== document || identity.formLabel !== (layout.formLabel ?? '')) {
               throw new HttpStatusError(
                 400,
-                'The preview does not match the requested document type, form label, or paper size. Generate a new preview before exporting.',
+                'The preview does not match the requested document type or form label. Generate a new preview before exporting.',
               );
             }
             await validatePrintDocument(page);

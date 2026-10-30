@@ -41,7 +41,7 @@ interface WorkerFixtures {
  * See https://playwright.dev/docs/test-fixtures#automatic-fixtures and
  * https://playwright.dev/docs/test-parallel#isolate-test-data-between-parallel-workers
  */
-export function createTest(configOverrides?: Partial<Config>) {
+export function createTest(configOverrides?: Partial<Config>, serverEnv?: NodeJS.ProcessEnv) {
   return base.extend<TestFixtures, WorkerFixtures>({
     testCoursePath: [
       // eslint-disable-next-line no-empty-pattern
@@ -69,6 +69,7 @@ export function createTest(configOverrides?: Partial<Config>) {
         await setupWorkerServer(workerInfo, use, {
           courseDirs: [testCoursePath],
           configOverrides,
+          serverEnv,
         });
       },
       { scope: 'worker' },

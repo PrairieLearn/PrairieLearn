@@ -14,6 +14,7 @@ interface WorkerServerOptions {
   courseDirs?: string[];
   /** Additional config overrides to pass to the server */
   configOverrides?: Partial<Config>;
+  serverEnv?: NodeJS.ProcessEnv;
 }
 
 /**
@@ -47,7 +48,7 @@ export async function setupWorkerServer(
 
       await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
 
-      const { kill } = await startServerSubprocess(tmpFile.path);
+      const { kill } = await startServerSubprocess(tmpFile.path, options.serverEnv);
 
       try {
         await use(port);
@@ -69,6 +70,7 @@ export async function setupWorkerServer(
  */
 async function startServerSubprocess(
   configPath: string,
+  serverEnv?: NodeJS.ProcessEnv,
 ): Promise<{ serverProcess: ChildProcess; kill: () => Promise<void> }> {
   // We do this instead of importing the server.ts file directly because Playwright
   // doesn't respect tsconfig.json files.
@@ -87,6 +89,7 @@ async function startServerSubprocess(
     cwd: serverDir,
     env: {
       ...process.env,
+      ...serverEnv,
       PL_CONFIG_PATH: configPath,
       NODE_ENV: 'test',
     },
