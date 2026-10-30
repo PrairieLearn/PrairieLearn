@@ -18,9 +18,10 @@ import { config } from '../lib/config.js';
 import { isDraftQid } from '../lib/draft-question.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
+import { normalizeQuestionAuthors } from '../lib/question-authors.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { UUID_REGEXP_INLINE } from '../lib/string-util.js';
-import { findCoursesBySharingNames, selectOptionalCourseById } from '../models/course.js';
+import { selectOptionalCourseById } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
@@ -779,7 +780,11 @@ async function loadInfoForDirectory<T extends ZodType>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
+  validate: (
+    info: z.infer<T>,
+    rawInfo: z.input<T>,
+    relativeDir: string,
+  ) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -802,7 +807,7 @@ async function loadInfoForDirectory<T extends ZodType>({
         filePath: infoFilePath,
         schema,
         zodSchema,
-        validate,
+        validate: (info, rawInfo) => validate(info, rawInfo, path.join(relativeDir, dir)),
         // If we aren't operating in recursive mode, we want to ensure
         // that missing files are correctly reflected as errors.
         tolerateMissing: recursive,
@@ -880,44 +885,6 @@ function checkDuplicateUUIDs<T>(
       infos[id].uuid = undefined;
     });
   });
-}
-
-async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<QuestionJson>>) {
-  // First, create a map from origin courses to questions that reference them
-  const originCourseIDs = Object.entries(questionInfos).reduce((map, [id, info]) => {
-    if (!info.data?.authors) {
-      // No authors -> skip
-      return map;
-    }
-    for (const author of info.data.authors) {
-      if (author.originCourse) {
-        let originCourseRefs = map.get(author.originCourse);
-        if (!originCourseRefs) {
-          originCourseRefs = [];
-          map.set(author.originCourse, originCourseRefs);
-        }
-        originCourseRefs.push(id);
-      }
-    }
-    return map;
-  }, new Map<string, string[]>());
-
-  // Avoid unneeded database queries if no origin courses are set
-  if (originCourseIDs.size === 0) return;
-
-  // Then, look up all the course IDs at once and find unresolvable ones
-  const originCourses = await findCoursesBySharingNames(Array.from(originCourseIDs.keys()));
-  for (const [sharingName, course] of originCourses) {
-    if (!course) {
-      const affectedQuestions = originCourseIDs.get(sharingName) ?? [];
-      affectedQuestions.forEach((question) => {
-        infofile.addError(
-          questionInfos[question],
-          `The author origin course with the sharing name "${sharingName}" does not exist`,
-        );
-      });
-    }
-  }
 }
 
 /**
@@ -1021,33 +988,12 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
   return warnings;
 }
 
-function isValidORCID(orcid: string): boolean {
-  // Drop any dashes
-  const digits = orcid.replaceAll('-', '');
-
-  // Sanity check that should not fail since the ORCID identifier format is baked into the JSON schema
-  if (!/^\d{15}[\dX]$/.test(digits)) {
-    return false;
-  }
-
-  // Calculate and verify checksum
-  // (adapted from Java code provided here: https://support.orcid.org/hc/en-us/articles/360006897674-Structure-of-the-ORCID-Identifier)
-  let total = 0;
-  for (let i = 0; i < 15; i++) {
-    total = (total + Number.parseInt(digits[i])) * 2;
-  }
-
-  const remainder = total % 11;
-  const result = (12 - remainder) % 11;
-  const checkDigit = result === 10 ? 'X' : String(result);
-
-  return digits[15] === checkDigit;
-}
-
 function validateQuestion({
+  qid,
   question,
   sharingEnabled,
 }: {
+  qid: string;
   question: QuestionJson;
   sharingEnabled: boolean;
 }): { warnings: string[]; errors: string[] } {
@@ -1100,30 +1046,9 @@ function validateQuestion({
     errors.push(...validatePreferencesSchema(question.preferences));
   }
 
-  for (const author of question.authors) {
-    if (!author.email && !author.orcid && !author.originCourse) {
-      errors.push(
-        'At least one of "email", "orcid", or "originCourse" is required for each author',
-      );
-    }
-    if (author.orcid) {
-      if (!isValidORCID(author.orcid)) {
-        errors.push(
-          `The author ORCID identifier "${author.orcid}" has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
-        );
-      }
-    }
-    if (author.email) {
-      // Manual check here since using email() directly in the schema validation doesn't work well with error logging yet
-      // See: https://github.com/PrairieLearn/PrairieLearn/issues/12846
-      const parsedEmail = z.email().safeParse(author.email);
-
-      if (!parsedEmail.success) {
-        errors.push(`The author email address "${author.email}" is invalid`);
-      }
-    }
-    // Origin courses are validated in bulk in loadQuestions(), and skipped here.
-  }
+  const authors = normalizeQuestionAuthors(question.authors);
+  question.authors = authors.uids;
+  warnings.push(...authors.warnings.map((warning) => `Question "${qid}": ${warning}`));
 
   return { warnings, errors };
 }
@@ -1835,7 +1760,7 @@ export async function loadQuestions({
     infoFilename: 'info.json',
     zodSchema: schemas.QuestionJsonSchema,
     schema: schemas.infoQuestion,
-    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
+    validate: (question, _rawQuestion, qid) => validateQuestion({ qid, question, sharingEnabled }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is
@@ -1845,7 +1770,6 @@ export async function loadQuestions({
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }
-  await checkAuthorOriginCourses(questions);
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`,

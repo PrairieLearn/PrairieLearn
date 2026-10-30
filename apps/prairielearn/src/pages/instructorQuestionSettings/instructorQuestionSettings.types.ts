@@ -39,6 +39,7 @@ export interface PreferenceField {
 }
 
 export interface QuestionSettingsFormValues {
+  authors: string[];
   qid: string;
   title: string;
   topic: string;

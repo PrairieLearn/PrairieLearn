@@ -44,34 +44,43 @@
     },
     "authors": {
       "default": [],
-      "maxItems": 10,
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "name": {
+        "anyOf": [
+          {
             "type": "string",
-            "minLength": 3,
-            "maxLength": 255,
-            "description": "A human-readable name of a question author."
+            "minLength": 1,
+            "description": "A user UID, which need not identify an existing account or be a routable email."
           },
-          "email": {
-            "type": "string",
-            "maxLength": 255,
-            "description": "An email address to contact a question author."
-          },
-          "orcid": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$",
-            "description": "An ORCID identifier that uniquely identifies an individual question author."
-          },
-          "originCourse": {
-            "type": "string",
-            "description": "The sharing name of a course whose staff is a question author."
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 255,
+                "description": "A human-readable name of a question author."
+              },
+              "email": {
+                "type": "string",
+                "maxLength": 255,
+                "description": "An email address to contact a question author."
+              },
+              "orcid": {
+                "type": "string",
+                "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$",
+                "description": "An ORCID identifier that uniquely identifies an individual question author."
+              },
+              "originCourse": {
+                "type": "string",
+                "description": "The sharing name of a course whose staff is a question author."
+              }
+            },
+            "additionalProperties": false,
+            "description": "Deprecated structured author metadata. Replace with a UID string; legacy email values are treated as UIDs during the transition.",
+            "deprecated": true
           }
-        },
-        "additionalProperties": false,
-        "description": "An author (individual person, or staff of a course of origin) credited with creating a question."
+        ]
       }
     },
     "clientFiles": {

@@ -1418,6 +1418,7 @@ export const QuestionGenerationContextEmbeddingSchema = z.object({
 });
 
 export const QuestionSchema = z.object({
+  authors: z.array(z.string()).nullable(),
   client_files: z.array(z.string()).nullable(),
   copied_from: z.string().nullable(),
   copied_from_question_id: IdSchema.nullable(),

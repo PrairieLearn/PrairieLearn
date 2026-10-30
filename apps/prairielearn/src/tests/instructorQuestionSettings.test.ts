@@ -6,12 +6,16 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import {
+  deleteCoursePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
 import { selectQuestionById, updateQuestion } from '../models/question.js';
 
 import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -51,6 +55,82 @@ describe('Editing question settings', { concurrent: false }, () => {
   test('access the test question info file', async () => {
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionInfo.title, 'Test question');
+  });
+
+  test('converts legacy authors on save and resolves names only for course staff', async () => {
+    const staff = await getOrCreateUser({
+      uid: 'author-staff',
+      name: 'Visible Staff Name',
+      uin: null,
+      email: null,
+    });
+    await getOrCreateUser({
+      uid: 'author-nonstaff',
+      name: 'Private Nonstaff Name',
+      uin: null,
+      email: null,
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: staff.uid,
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    const info = await fs.readJSON(questionLiveInfoPath);
+    info.authors = [{ name: 'Old name', email: staff.uid }, 'author-nonstaff', 'author-unknown'];
+    await fs.writeJSON(
+      path.join(courseRepo.courseOriginDir, 'questions/test/question/info.json'),
+      info,
+    );
+    await commitOriginAndSync(courseRepo, 'Add legacy authors');
+    const url = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
+    const settings = await fetchCheerio(url);
+    assert.equal(settings.status, 200);
+    assert.include(settings.$('body').text(), staff.name!);
+    assert.notInclude(settings.$('body').text(), 'Private Nonstaff Name');
+    assert.lengthOf(settings.$('input[name=authors]'), 0);
+    const authors = ['author-staff', 'author-nonstaff', 'author-unknown'];
+    for (const uid of authors) {
+      assert.include(settings.$('#authors-label').parent().text(), uid);
+    }
+    const response = await fetch(url, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settings.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settings.$('input[name=orig_hash]').val() as string,
+        qid: 'test/question',
+        title: info.title,
+        topic: info.topic,
+        authors: JSON.stringify(authors),
+      }),
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.url, url);
+    assert.deepEqual((await fs.readJSON(questionLiveInfoPath)).authors, authors);
+    await deleteCoursePermissions({ course_id: '1', user_id: staff.id, authn_user_id: '1' });
+    const afterRemoval = await fetchCheerio(url);
+    assert.include(afterRemoval.$('body').text(), staff.uid);
+    assert.notInclude(afterRemoval.$('body').text(), staff.name!);
+  });
+
+  test('rejects legacy author objects submitted by the UI before writing files', async () => {
+    const url = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
+    const original = await fs.readFile(questionLiveInfoPath, 'utf8');
+    const settings = await fetchCheerio(url);
+    const response = await fetch(url, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settings.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settings.$('input[name=orig_hash]').val() as string,
+        qid: 'test/question',
+        title: 'Invalid change',
+        authors: JSON.stringify([{ email: 'legacy' }]),
+      }),
+    });
+    assert.equal(response.status, 400);
+    assert.equal(await fs.readFile(questionLiveInfoPath, 'utf8'), original);
   });
 
   test('change question info', async () => {
