@@ -14,6 +14,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
@@ -277,15 +278,26 @@ async function runClaimedPrintExport({
         1,
         attributes,
       );
-      const failureMessage =
-        printableFailureMessage(error) ??
-        'The PDF could not be prepared because of a server error.';
+      const failureMessage = printableFailureMessage(error);
+      if (failureMessage === null) {
+        Sentry.captureException(error, {
+          tags: {
+            'job_sequence.id': jobSequenceId,
+            'job_sequence.type': 'print_export',
+          },
+          extra: { document },
+        });
+      }
       inputCanBeDeleted = await finishPrintExport({
         id,
         jobSequenceId,
         owner,
         status: 'Error',
-        data: { inputKey, failureMessage },
+        data: {
+          inputKey,
+          failureMessage:
+            failureMessage ?? 'The PDF could not be prepared because of a server error.',
+        },
         output: error instanceof Error ? (error.stack ?? error.message) : String(error),
       });
       return;
@@ -390,6 +402,13 @@ export async function processQueuedPrintExports(): Promise<void> {
     })
       .catch((error: unknown) => {
         logger.error('Print export worker failed', error);
+        Sentry.captureException(error, {
+          tags: {
+            'job_sequence.id': job.job_sequence_id,
+            'job_sequence.type': 'print_export',
+          },
+          extra: { document: job.document },
+        });
       })
       .finally(() => {
         activePrintExports.delete(worker);

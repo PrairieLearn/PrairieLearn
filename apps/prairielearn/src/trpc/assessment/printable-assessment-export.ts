@@ -356,7 +356,12 @@ export const printableAssessmentExportRouter = t.router({
         ) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
         }
-        throw error;
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'The PDF could not be prepared because of a server error.',
+          cause: error,
+        });
       }
     }),
   status: t.procedure
