@@ -37,9 +37,15 @@
               This PDF cannot be displayed. Use the Download button to open it.
             </object>
           </div> 
-          <div class="file-preview-container mt-2">
-            <pre class="d-none bg-dark text-white rounded p-3 mb-0"><code></code></pre>
-            <div class="d-none js-notebook-preview"></div>
+          <div class="position-relative mt-2 file-preview-code-wrapper">
+            <div class="file-preview-container">
+              <pre class="d-none bg-dark text-white rounded p-3 mb-0"><code></code></pre>
+              <div class="d-none js-notebook-preview"></div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-light d-none file-preview-copy" aria-label="Copy {{name}} to clipboard" title="Copy to clipboard">
+              <i class="fa-regular fa-copy" aria-hidden="true"></i>
+              <i class="fa-solid fa-check d-none" aria-hidden="true"></i>
+            </button>
           </div>
           <button type="button" class="btn btn-outline-secondary btn-sm d-block w-100 d-none file-preview-expand">
             <i class="fa-solid fa-expand"></i>
