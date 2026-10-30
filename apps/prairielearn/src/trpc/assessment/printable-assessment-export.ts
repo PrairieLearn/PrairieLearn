@@ -96,6 +96,14 @@ export const printableAssessmentExportRouter = t.router({
           message: 'Answer key exports do not use uploaded cover pages.',
         });
       }
+      // A one-copy assessment renders only the first selected form.
+      if (metadata.document === 'assessment' && metadata.copies === 1 && files.data.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message:
+            'Individual form PDFs do not use uploaded cover pages. Use a booklet to include them.',
+        });
+      }
       const pages = z.array(z.instanceof(File)).safeParse(input.getAll('pages'));
       const snapshotIds = z.array(z.string().min(1)).safeParse(input.getAll('snapshotIds'));
       if (
