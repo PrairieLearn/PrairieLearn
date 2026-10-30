@@ -52,7 +52,7 @@
     },
     "display": {
       "type": "string",
-      "enum": ["block", "inline"]
+      "enum": ["block", "inline", "embed"]
     },
     "initial-value": {
       "type": "string"
