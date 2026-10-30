@@ -112,6 +112,8 @@ export function ReorderableRowActionsCell({
           style={{ cursor: 'grab', touchAction: 'none' }}
           aria-label="Drag row"
           {...dragHandleProps}
+          // Native buttons already have the role supplied by dnd-kit.
+          role={undefined}
         >
           <i className="fa fa-grip-vertical" aria-hidden="true" />
         </button>

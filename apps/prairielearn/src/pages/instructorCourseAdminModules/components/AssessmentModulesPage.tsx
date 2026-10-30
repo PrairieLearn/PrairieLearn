@@ -1,10 +1,11 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { Alert, Form } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
-import { useModalState } from '@prairielearn/ui';
+import { StickySaveBar, useModalState } from '@prairielearn/ui';
 
 import { AssessmentModuleHeading } from '../../../components/AssessmentModuleHeading.js';
 import { AssessmentUsageModal } from '../../../components/AssessmentUsageModal.js';
@@ -58,14 +59,12 @@ function toFormRow(module: StaffAssessmentModuleWithAssessments): AssessmentModu
 
 function AssessmentModuleRow({
   module,
-  editMode,
   allowEdit,
   onEdit,
   onDelete,
   onShowUsage,
 }: {
   module: AssessmentModuleFormRow;
-  editMode: boolean;
   allowEdit: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -75,7 +74,7 @@ function AssessmentModuleRow({
 
   return (
     <tr ref={ref} style={style}>
-      {editMode && allowEdit && (
+      {allowEdit && (
         <ReorderableRowActionsCell
           trackingId={module.trackingId}
           dragHandleProps={dragHandleProps}
@@ -90,8 +89,8 @@ function AssessmentModuleRow({
           onDelete={onDelete}
         />
       )}
-      <td className="align-middle">{module.name}</td>
-      <td className="align-middle">
+      <td className="align-middle pe-4">{module.name}</td>
+      <td className="align-middle pe-4">
         <AssessmentModuleHeading assessmentModule={module} />
       </td>
       <td className="align-middle">
@@ -111,7 +110,6 @@ function AssessmentModuleRow({
 function AssessmentModulesTable({
   rows,
   onReorder,
-  editMode,
   allowEdit,
   handleEdit,
   handleDelete,
@@ -120,7 +118,6 @@ function AssessmentModulesTable({
 }: {
   rows: AssessmentModuleFormRow[];
   onReorder: (rows: AssessmentModuleFormRow[]) => void;
-  editMode: boolean;
   allowEdit: boolean;
   handleEdit: (trackingId: string) => void;
   handleDelete: (module: AssessmentModuleFormRow) => void;
@@ -132,14 +129,14 @@ function AssessmentModulesTable({
       <table className="table table-sm table-hover table-striped" aria-label="Assessment modules">
         <thead>
           <tr>
-            {editMode && allowEdit && (
+            {allowEdit && (
               <th style={{ width: '1%' }}>
                 <span className="visually-hidden">Drag, Edit and Delete</span>
               </th>
             )}
-            <th>Name</th>
-            <th className="col-8">Heading</th>
-            <th>Action</th>
+            <th className="col-3 pe-4">Name</th>
+            <th className="pe-4">Heading</th>
+            <th style={{ width: '1%' }}>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -147,14 +144,13 @@ function AssessmentModulesTable({
             <AssessmentModuleRow
               key={module.trackingId}
               module={module}
-              editMode={editMode}
               allowEdit={allowEdit}
               onEdit={() => handleEdit(module.trackingId)}
               onDelete={() => handleDelete(module)}
               onShowUsage={() => handleShowUsage(module)}
             />
           ))}
-          {editMode && allowEdit && (
+          {allowEdit && (
             <tr>
               <td colSpan={4}>
                 <button className="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
@@ -195,8 +191,12 @@ function AssessmentModulesCard({
   });
   const origHash = data.origHash;
 
-  const [editMode, setEditMode] = useState(false);
-  const [modulesState, setModulesState] = useState<AssessmentModuleFormRow[]>([]);
+  const canEdit = allowEdit && origHash !== null;
+  const form = useForm({ defaultValues: { modules: initialModules.map(toFormRow) } });
+  const modulesState = form.watch('modules');
+  const setModulesState = (modules: AssessmentModuleFormRow[]) => {
+    form.setValue('modules', modules, { shouldDirty: true });
+  };
 
   const saveMutation = useMutation({
     ...trpc.assessmentModules.save.mutationOptions(),
@@ -206,28 +206,19 @@ function AssessmentModulesCard({
       queryClient.setQueryData(trpc.assessmentModules.list.queryKey(), (old) =>
         old ? { ...old, origHash: result.origHash } : old,
       );
-      try {
-        await refetch();
-      } finally {
-        setEditMode(false);
+      const refreshed = await refetch({ throwOnError: true });
+      if (refreshed.data) {
+        form.reset({ modules: refreshed.data.modules.map(toFormRow) });
       }
     },
   });
 
-  const rows = editMode ? modulesState : data.modules.map(toFormRow);
-
-  const duplicateNames = getDuplicateNames(rows.map((module) => module.name));
+  const duplicateNames = getDuplicateNames(modulesState.map((module) => module.name));
 
   const editingId = editModal.data?.assessmentModule.trackingId ?? null;
   const existingNames = new Set(
     modulesState.filter((module) => module.trackingId !== editingId).map((module) => module.name),
   );
-
-  const enterEditMode = () => {
-    setModulesState(data.modules.map(toFormRow));
-    saveMutation.reset();
-    setEditMode(true);
-  };
 
   const handleCreate = () => {
     editModal.showWithData({
@@ -245,17 +236,19 @@ function AssessmentModulesCard({
 
   const handleSave = (assessmentModule: AssessmentModuleFormRow) => {
     if (editModal.data?.mode === 'create') {
-      setModulesState((prev) => [...prev, assessmentModule]);
+      setModulesState([...modulesState, assessmentModule]);
     } else {
-      setModulesState((prev) =>
-        prev.map((m) => (m.trackingId === assessmentModule.trackingId ? assessmentModule : m)),
+      setModulesState(
+        modulesState.map((m) =>
+          m.trackingId === assessmentModule.trackingId ? assessmentModule : m,
+        ),
       );
     }
     editModal.hide();
   };
 
   const removeModule = (trackingId: string) => {
-    setModulesState((prev) => prev.filter((m) => m.trackingId !== trackingId));
+    setModulesState(modulesState.filter((m) => m.trackingId !== trackingId));
   };
 
   const handleDelete = (module: AssessmentModuleFormRow) => {
@@ -286,104 +279,80 @@ function AssessmentModulesCard({
 
   return (
     <>
-      <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex align-items-center">
-          <h1>Modules</h1>
-          <div className="ms-auto">
-            {allowEdit && origHash ? (
-              !editMode ? (
-                <button className="btn btn-sm btn-light" type="button" onClick={enterEditMode}>
-                  <i className="fa fa-edit" aria-hidden="true" /> Edit modules
-                </button>
-              ) : (
-                <>
-                  <button
-                    className="btn btn-sm btn-light mx-1"
-                    type="button"
-                    disabled={saveMutation.isPending || duplicateNames.length > 0}
-                    onClick={handleSubmit}
-                  >
-                    {saveMutation.isPending ? (
-                      <span
-                        className="spinner-border spinner-border-sm me-1"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <i className="fa fa-save" aria-hidden="true" />
-                    )}{' '}
-                    Save
-                  </button>
-                  <button
-                    className="btn btn-sm btn-light"
-                    type="button"
-                    disabled={saveMutation.isPending}
-                    onClick={() => {
-                      saveMutation.reset();
-                      setEditMode(false);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </>
-              )
-            ) : null}
-          </div>
-        </div>
+      <Form as={canEdit ? 'form' : 'div'} onSubmit={form.handleSubmit(handleSubmit)}>
+        <fieldset disabled={saveMutation.isPending}>
+          <legend className="visually-hidden">Assessment modules</legend>
+          <div className="card mb-4">
+            <div className="card-header bg-primary text-white d-flex align-items-center">
+              <h1>Modules</h1>
+            </div>
 
-        {saveError && (
-          <AppErrorAlert
-            error={saveError}
-            className="m-3"
-            render={{
-              SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
-                <>
-                  {message}{' '}
-                  <a href={getCourseEditErrorUrl(courseId, jobSequenceId)}>View job logs</a>
-                </>
-              ),
-              UNKNOWN: ({ message }) => message,
+            {saveError && (
+              <AppErrorAlert
+                error={saveError}
+                className="m-3"
+                render={{
+                  SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
+                    <>
+                      {message}{' '}
+                      <a href={getCourseEditErrorUrl(courseId, jobSequenceId)}>View job logs</a>
+                    </>
+                  ),
+                  UNKNOWN: ({ message }) => message,
+                }}
+                onDismiss={() => saveMutation.reset()}
+              />
+            )}
+
+            {canEdit && duplicateNames.length > 0 && (
+              <div className="alert alert-warning m-3" role="alert">
+                <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
+                <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Module names
+                must be unique; rename or remove the duplicates before saving.
+              </div>
+            )}
+
+            <div className="table-responsive">
+              <AssessmentModulesTable
+                rows={modulesState}
+                allowEdit={canEdit}
+                handleEdit={handleEdit}
+                handleDelete={handleDelete}
+                handleCreate={handleCreate}
+                handleShowUsage={usageModal.showWithData}
+                onReorder={setModulesState}
+              />
+            </div>
+
+            <div className="card-footer">
+              <small>
+                Modules can be used to group assessments by topic, chapter, section, or other
+                category. More information on modules can be found in the{' '}
+                <a
+                  href="https://docs.prairielearn.com/course/#assessment-modules"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  PrairieLearn documentation
+                </a>
+                .
+              </small>
+            </div>
+          </div>
+        </fieldset>
+        {canEdit && (
+          <StickySaveBar
+            isSaving={saveMutation.isPending}
+            saveDisabledReason={duplicateNames.length > 0 ? 'Module names must be unique.' : null}
+            visible={form.formState.isDirty}
+            fullWidth
+            onCancel={() => {
+              form.reset();
+              saveMutation.reset();
             }}
-            onDismiss={() => saveMutation.reset()}
           />
         )}
-
-        {editMode && duplicateNames.length > 0 && (
-          <div className="alert alert-warning m-3" role="alert">
-            <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
-            <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Module names
-            must be unique; rename or remove the duplicates before saving.
-          </div>
-        )}
-
-        <div className="table-responsive">
-          <AssessmentModulesTable
-            rows={rows}
-            editMode={editMode}
-            allowEdit={allowEdit}
-            handleEdit={handleEdit}
-            handleDelete={handleDelete}
-            handleCreate={handleCreate}
-            handleShowUsage={usageModal.showWithData}
-            onReorder={setModulesState}
-          />
-        </div>
-
-        <div className="card-footer">
-          <small>
-            Modules can be used to group assessments by topic, chapter, section, or other category.
-            More information on modules can be found in the{' '}
-            <a
-              href="https://docs.prairielearn.com/course/#assessment-modules"
-              target="_blank"
-              rel="noreferrer"
-            >
-              PrairieLearn documentation
-            </a>
-            .
-          </small>
-        </div>
-      </div>
+      </Form>
 
       {allowEdit && origHash === null && (
         <Alert variant="info">
