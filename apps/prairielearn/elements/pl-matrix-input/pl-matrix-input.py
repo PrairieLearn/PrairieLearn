@@ -134,6 +134,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
+        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "label": label,
@@ -160,12 +161,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        else:
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+        elif submitted_raw_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                submitted_raw_answer
+            )
+
+        if submitted_raw_answer is not None:
+            html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                submitted_raw_answer, aria_label or name
+            )
 
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)

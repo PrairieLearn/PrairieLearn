@@ -1,25 +1,62 @@
 <pl-question-panel>
   <p>
-    These inputs exercise the original-input rendering used by elements in this question. Some
-    values use characters whose rendered form needs additional explanation.
+    These inputs exercise the answer-as-entered popovers used by elements in this question. Some
+    values contain characters that are also shown as codes.
   </p>
   <p>
     Select <strong>Save &amp; Grade</strong>, then open each question-mark popover in the submitted
-    answer panel. The popovers show the readable value and add the control-and-formatting
-    explanation or an ASCII-only representation only when relevant. Select
-    <strong>Try Again</strong> to confirm that the literal values are restored to the input fields.
+    answer panel. When useful, the popovers show a second version with special characters displayed
+    as codes. After submitting, confirm that the literal values are restored to the input fields.
   </p>
 </pl-question-panel>
 
 <pl-card header="Scalar inputs">
-  <pl-string-input
-    answers-name="string_value"
-    aria-label="String value"
-    label="String:"
-    initial-value="caf&#233;"
-    correct-answer="cafe"
-    display="block"
-  ></pl-string-input>
+  <div class="vstack gap-3">
+    <pl-string-input
+      answers-name="string_value"
+      aria-label="String value"
+      label="String:"
+      initial-value="caf&#233;"
+      correct-answer="cafe"
+      display="block"
+    ></pl-string-input>
+
+    <pl-big-o-input
+      answers-name="big_o_value"
+      aria-label="Big O value"
+      variables="n"
+      initial-value="n&#8203;"
+      correct-answer="n"
+      display="block"
+    ></pl-big-o-input>
+
+    <pl-integer-input
+      answers-name="integer_value"
+      aria-label="Integer value"
+      label="Integer:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-integer-input>
+
+    <pl-number-input
+      answers-name="number_value"
+      aria-label="Number value"
+      label="Number:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-number-input>
+
+    <pl-units-input
+      answers-name="units_value"
+      aria-label="Units value"
+      label="Units:"
+      initial-value="1 m&#8203;"
+      correct-answer="1 m"
+      display="block"
+    ></pl-units-input>
+  </div>
 </pl-card>
 
 <pl-card header="Matrix inputs">
