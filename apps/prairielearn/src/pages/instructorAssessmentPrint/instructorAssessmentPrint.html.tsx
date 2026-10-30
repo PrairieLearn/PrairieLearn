@@ -291,7 +291,10 @@ function PrintPreparation({
   async function packetInput(metadata: ReturnType<typeof packetMetadata>) {
     const input = new FormData();
     input.set('metadata', JSON.stringify(metadata));
-    if (metadata.document !== 'answer_key') {
+    if (
+      metadata.document === 'booklet' ||
+      (metadata.document === 'assessment' && metadata.copies > 1)
+    ) {
       for (const { file } of coverPages) input.append('coverPages', file);
     }
     const snapshotRequests = metadata.instances.flatMap((instance, index) =>
@@ -924,10 +927,10 @@ function PrintPreparation({
                       {uploadError}
                     </Form.Control.Feedback>
                     <Form.Text id="print-cover-pages-help">
-                      Every printed copy includes all uploaded pages, in this order, before the
-                      questions{includeCoverPage ? ' and after the default cover' : ''}. Up to{' '}
-                      {MAX_COVER_FILES} PDFs, 10 MB total, and {MAX_COVER_PAGES} pages. Uploaded
-                      PDFs must include document tags and a document language.
+                      Booklets and downloads of multiple forms or copies include uploaded pages
+                      before the questions{includeCoverPage ? ' and after the default cover' : ''},
+                      in this order. Individual form and answer-key PDFs exclude uploaded pages. Up
+                      to {MAX_COVER_FILES} PDFs, 10 MB total, and {MAX_COVER_PAGES} pages.
                     </Form.Text>
                   </Form.Group>
                   {coverPages.length > 0 && (
