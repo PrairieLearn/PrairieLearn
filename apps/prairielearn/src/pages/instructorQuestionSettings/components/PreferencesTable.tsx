@@ -99,18 +99,7 @@ export function PreferencesTable({
   return (
     <div className="card">
       <div className="card-body">
-        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-          <h2 className="h5 card-title mb-0">Preferences</h2>
-          <Button
-            variant="outline-primary"
-            size="sm"
-            disabled={!canEdit}
-            onClick={() => append({ name: '', type: 'string', default: '', enum: [] })}
-          >
-            <i className="bi bi-plus-lg me-1" aria-hidden="true" />
-            Add preference
-          </Button>
-        </div>
+        <h2 className="h5 card-title mb-3">Preferences</h2>
         <small className="text-muted d-block mb-3">
           Configure{' '}
           <a
@@ -125,9 +114,20 @@ export function PreferencesTable({
         </small>
 
         {fields.length === 0 && (
-          <div className="border rounded p-4 text-center text-muted">
-            <i className="bi bi-sliders fs-3 d-block mb-2" aria-hidden="true" />
-            No preferences configured
+          <div className="border rounded p-4 text-center">
+            <i className="bi bi-sliders fs-3 d-block mb-2 text-muted" aria-hidden="true" />
+            <div className="text-muted">No preferences configured</div>
+            {canEdit && (
+              <Button
+                variant="outline-primary"
+                size="sm"
+                className="mt-3"
+                onClick={() => append({ name: '', type: 'string', default: '', enum: [] })}
+              >
+                <i className="bi bi-plus-lg me-1" aria-hidden="true" />
+                Add preference
+              </Button>
+            )}
           </div>
         )}
 
@@ -178,6 +178,18 @@ export function PreferencesTable({
                     />
                   ))}
                 </div>
+                {canEdit && (
+                  <div className="border-top px-2 py-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => append({ name: '', type: 'string', default: '', enum: [] })}
+                    >
+                      <i className="bi bi-plus-lg me-1" aria-hidden="true" />
+                      Add preference
+                    </Button>
+                  </div>
+                )}
               </div>
             </SortableContext>
           </DndContext>
