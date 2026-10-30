@@ -15,7 +15,6 @@ import {
 } from 'pdf-lib';
 
 import type { PdfAccessibilityManifest } from './pdf-accessibility-browser.js';
-import { PrintPdfAccessibilityError } from './pdf-accessibility-error.js';
 import { type PdfContentMark, rewritePdfContent } from './pdf-content-stream.js';
 
 type Artifact = NonNullable<PdfContentMark['artifact']>;
@@ -28,15 +27,15 @@ function pdfText(value: PDFObject | undefined): string | undefined {
 
 function decodeContent(stream: PDFObject | undefined): Uint8Array {
   if (!(stream instanceof PDFRawStream)) {
-    throw new PrintPdfAccessibilityError('Expected a PDF content stream.');
+    throw new Error('Expected a PDF content stream.');
   }
   const filter = stream.dict.lookup(PDFName.of('Filter'));
   const parameters = stream.dict.lookup(PDFName.of('DecodeParms'));
   if (filter && filter !== PDFName.of('FlateDecode')) {
-    throw new PrintPdfAccessibilityError(`Unsupported PDF content filter: ${filter.toString()}.`);
+    throw new Error(`Unsupported PDF content filter: ${filter.toString()}.`);
   }
   if (parameters && parameters !== PDFNull) {
-    throw new PrintPdfAccessibilityError('PDF content stream decoding parameters are unsupported.');
+    throw new Error('PDF content stream decoding parameters are unsupported.');
   }
   return decodePDFRawStream(stream).decode();
 }
@@ -55,24 +54,17 @@ export async function finalizePrintPdf(
   const { context } = document;
   const root = document.catalog.lookup(PDFName.of('StructTreeRoot'));
   if (!(root instanceof PDFDict)) {
-    throw new PrintPdfAccessibilityError('Chromium did not produce a tagged PDF.');
+    throw new Error('Chromium did not produce a tagged PDF.');
   }
   if (!manifest.title.trim() || !manifest.language.trim()) {
-    throw new PrintPdfAccessibilityError('PDF title and language are required.');
+    throw new Error('PDF title and language are required.');
   }
   const tags = new Map<string, PdfAccessibilityManifest['tags'][number]>();
   for (const tag of manifest.tags) {
     if (!tag.marker || tags.has(tag.marker)) {
-      throw new PrintPdfAccessibilityError('PDF source markers must be unique.');
+      throw new Error('PDF source markers must be unique.');
     }
     tags.set(tag.marker, tag);
-  }
-  const links = new Map<string, string>();
-  for (const link of manifest.links) {
-    links.set(
-      link.uri,
-      links.has(link.uri) && links.get(link.uri) !== link.alt ? link.uri : link.alt,
-    );
   }
   const pages = document.getPages();
   const pageContent = new Map<
@@ -95,7 +87,7 @@ export async function finalizePrintPdf(
   ): void {
     signal?.throwIfAborted();
     if (seenElements.has(owner)) {
-      throw new PrintPdfAccessibilityError('Repeated or circular PDF structure element.');
+      throw new Error('Repeated or circular PDF structure element.');
     }
     seenElements.add(owner);
     const page = owner.lookup(PDFName.of('Pg')) ?? inheritedPage;
@@ -113,18 +105,14 @@ export async function finalizePrintPdf(
         let decoration = false;
         if (tag) {
           if (found.has(tag.marker)) {
-            throw new PrintPdfAccessibilityError(
-              `A PDF source marker was duplicated: ${tag.marker}.`,
-            );
+            throw new Error(`A PDF source marker was duplicated: ${tag.marker}.`);
           }
           found.add(tag.marker);
           if (tag.role === 'Artifact') {
             artifact = 'all';
           } else {
             if ((tag.role === 'Formula' || tag.role === 'Figure') && !tag.alt?.trim()) {
-              throw new PrintPdfAccessibilityError(
-                'A formula or figure has no alternative description.',
-              );
+              throw new Error('A formula or figure has no alternative description.');
             }
             child.set(PDFName.of('S'), PDFName.of(tag.role));
             if (tag.alt?.trim()) child.set(PDFName.of('Alt'), PDFHexString.fromText(tag.alt));
@@ -144,7 +132,7 @@ export async function finalizePrintPdf(
           mcid = child.lookup(PDFName.of('MCID'));
           contentPage = child.lookup(PDFName.of('Pg')) ?? contentPage;
           if (child.has(PDFName.of('Stm'))) {
-            throw new PrintPdfAccessibilityError('Nested PDF structure streams are unsupported.');
+            throw new Error('Nested PDF structure streams are unsupported.');
           }
         }
         const markings = contentPage instanceof PDFDict ? pageContent.get(contentPage) : undefined;
@@ -154,9 +142,7 @@ export async function finalizePrintPdf(
           !Number.isInteger(mcid.asNumber()) ||
           mcid.asNumber() < 0
         ) {
-          throw new PrintPdfAccessibilityError(
-            'PDF content has no valid page or marked-content identifier.',
-          );
+          throw new Error('PDF content has no valid page or marked-content identifier.');
         }
         const id = mcid.asNumber();
         const artifact = inheritedArtifact ?? (ownDecoration ? 'decoration' : undefined);
@@ -168,7 +154,18 @@ export async function finalizePrintPdf(
         }
       } else {
         if (inheritedArtifact) {
-          throw new PrintPdfAccessibilityError('A decorative element contains a PDF annotation.');
+          throw new Error('A decorative element contains a PDF annotation.');
+        }
+        if (
+          child instanceof PDFDict &&
+          child.lookup(PDFName.of('Type')) === PDFName.of('OBJR') &&
+          owner.lookup(PDFName.of('S')) === PDFName.of('Link')
+        ) {
+          const description = pdfText(owner.lookup(PDFName.of('Alt')));
+          if (!description?.trim()) throw new Error('A PDF link has no source description.');
+          child
+            .lookup(PDFName.of('Obj'), PDFDict)
+            .set(PDFName.of('Contents'), PDFHexString.fromText(description));
         }
         result.push(raw);
       }
@@ -179,9 +176,7 @@ export async function finalizePrintPdf(
   transformKids(root);
   const missing = [...tags.keys()].filter((marker) => !found.has(marker));
   if (missing.length > 0) {
-    throw new PrintPdfAccessibilityError(
-      `Chromium omitted declared PDF structure: ${missing.join(', ')}.`,
-    );
+    throw new Error(`Chromium omitted declared PDF structure: ${missing.join(', ')}.`);
   }
   const pageParents = new Map<number, PDFDict>();
   for (const page of pages) {
@@ -194,7 +189,7 @@ export async function finalizePrintPdf(
     signal?.throwIfAborted();
     if (!(node instanceof PDFDict)) return;
     if (parentTreeNodes.has(node)) {
-      throw new PrintPdfAccessibilityError('Repeated or circular PDF parent tree.');
+      throw new Error('Repeated or circular PDF parent tree.');
     }
     parentTreeNodes.add(node);
     const numbers = node.lookup(PDFName.of('Nums'));
@@ -206,7 +201,7 @@ export async function finalizePrintPdf(
         if (!(entries instanceof PDFArray) || !page) continue;
         for (const mcid of pageContent.get(page)!.artifacts.keys()) {
           if (mcid >= entries.size()) {
-            throw new PrintPdfAccessibilityError('Decorative content has no parent-tree entry.');
+            throw new Error('Decorative content has no parent-tree entry.');
           }
           entries.set(mcid, PDFNull);
         }
@@ -219,16 +214,16 @@ export async function finalizePrintPdf(
   }
   clearParentTree(root.lookup(PDFName.of('ParentTree')));
 
-  function rewriteContent(
+  async function rewriteContent(
     bytes: Uint8Array,
     resources: PDFDict | undefined,
     page: PDFDict,
     inheritedMarks: readonly PdfContentMark[],
     activeForms: Set<PDFRawStream>,
     location: string,
-  ): Uint8Array {
+  ): Promise<Uint8Array> {
     const markings = pageContent.get(page)!;
-    return rewritePdfContent(bytes, {
+    return await rewritePdfContent(bytes, {
       signal,
       location,
       inheritedMarks,
@@ -243,22 +238,22 @@ export async function finalizePrintPdf(
         const value = properties?.lookup(PDFName.of(key));
         return value instanceof PDFDict ? value : undefined;
       },
-      visitForm(key, marks) {
+      async visitForm(key, marks) {
         const xobjects = resources?.lookupMaybe(PDFName.of('XObject'), PDFDict);
         const object = xobjects?.lookup(PDFName.of(key));
         if (!(object instanceof PDFRawStream)) {
-          throw new PrintPdfAccessibilityError(`Missing PDF XObject: ${key}.`);
+          throw new Error(`Missing PDF XObject: ${key}.`);
         }
         if (object.dict.lookup(PDFName.of('Subtype')) !== PDFName.of('Form')) return;
         if (activeForms.has(object)) {
-          throw new PrintPdfAccessibilityError('Recursive PDF form content.');
+          throw new Error('Recursive PDF form content.');
         }
         if (object.dict.has(PDFName.of('StructParents'))) {
-          throw new PrintPdfAccessibilityError('Nested PDF structure streams are unsupported.');
+          throw new Error('Nested PDF structure streams are unsupported.');
         }
         activeForms.add(object);
         const original = decodeContent(object);
-        const rewritten = rewriteContent(
+        const rewritten = await rewriteContent(
           original,
           object.dict.lookupMaybe(PDFName.of('Resources'), PDFDict) ?? resources,
           page,
@@ -268,7 +263,7 @@ export async function finalizePrintPdf(
         );
         activeForms.delete(object);
         if (!Buffer.from(original).equals(Buffer.from(rewritten))) {
-          throw new PrintPdfAccessibilityError('Rewriting shared PDF form content is unsupported.');
+          throw new Error('Rewriting shared PDF form content is unsupported.');
         }
       },
     });
@@ -285,7 +280,7 @@ export async function finalizePrintPdf(
     const bytes = Buffer.concat(
       streams.flatMap((stream) => [decodeContent(stream), Buffer.from('\n')]),
     );
-    const output = rewriteContent(
+    const output = await rewriteContent(
       bytes,
       page.node.Resources(),
       page.node,
@@ -299,31 +294,16 @@ export async function finalizePrintPdf(
       page.node.set(PDFName.of('Tabs'), PDFName.of('S'));
       for (const entry of annotations.asArray()) {
         const annotation = context.lookup(entry, PDFDict);
-        const action = annotation.lookup(PDFName.of('A'));
-        if (annotation.lookup(PDFName.of('Subtype')) !== PDFName.of('Link')) continue;
-        if (!(action instanceof PDFDict) || action.lookup(PDFName.of('S')) !== PDFName.of('URI')) {
-          if (pdfText(annotation.lookup(PDFName.of('Contents')))?.trim()) continue;
-          throw new PrintPdfAccessibilityError(
-            'PDF export cannot describe an internal link. Replace it with text or a full URL before exporting.',
-          );
-        }
-        const uri = pdfText(action.lookup(PDFName.of('URI')));
-        const description = uri === undefined ? undefined : links.get(uri);
         if (
-          description === undefined &&
-          pdfText(annotation.lookup(PDFName.of('Contents')))?.trim()
+          annotation.lookup(PDFName.of('Subtype')) === PDFName.of('Link') &&
+          !pdfText(annotation.lookup(PDFName.of('Contents')))?.trim()
         ) {
-          continue;
+          throw new Error('A PDF link has no source description.');
         }
-        if (!description?.trim()) {
-          throw new PrintPdfAccessibilityError(
-            `A PDF link has no source description: ${uri ?? ''}.`,
-          );
-        }
-        annotation.set(PDFName.of('Contents'), PDFHexString.fromText(description));
       }
     }
   }
+  await setImmediate(undefined, { signal });
   document.setTitle(manifest.title);
   document.setLanguage(manifest.language);
   document.catalog.getOrCreateViewerPreferences().setDisplayDocTitle(true);
@@ -343,6 +323,6 @@ export async function finalizePrintPdf(
   );
   signal?.throwIfAborted();
   const output = await document.save({ useObjectStreams: true, addDefaultPage: false });
-  signal?.throwIfAborted();
+  await setImmediate(undefined, { signal });
   return Buffer.from(output);
 }
