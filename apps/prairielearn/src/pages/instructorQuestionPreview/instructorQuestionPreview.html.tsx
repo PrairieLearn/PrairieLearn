@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import { CalculatorDrawerHeadScripts } from '../../components/CalculatorAssets.js';
@@ -21,7 +22,9 @@ export function InstructorQuestionPreview({
   readmeHtml,
   questionCopyTargets,
   resLocals,
+  independentScrolling,
 }: {
+  independentScrolling: boolean;
   normalPreviewUrl: string;
   questionRenderContext: 'manual_grading' | 'ai_grading' | undefined;
   manualGradingPreviewUrl: string;
@@ -42,9 +45,11 @@ export function InstructorQuestionPreview({
       subPage: 'preview',
     },
     options: {
+      contentContainerClassName: independentScrolling ? 'question-page-layout' : '',
       pageNote: resLocals.question.qid,
     },
     headContent: html`
+      ${independentScrolling ? compiledStylesheetTag('questionLayout.css') : ''}
       <meta
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
@@ -111,8 +116,11 @@ export function InstructorQuestionPreview({
             `
           : ''
       }
-      <div class="row">
-        <div class="col-lg-9 col-sm-12">
+      <div class="row question-page-row">
+        <div
+          class="col-lg-9 col-sm-12 question-page-question"
+          ${independentScrolling ? html`role="region" aria-label="Question" tabindex="0"` : ''}
+        >
           ${
             readmeHtml
               ? html`
@@ -163,7 +171,10 @@ export function InstructorQuestionPreview({
           })}
         </div>
 
-        <div class="col-lg-3 col-sm-12">
+        <div
+          class="col-lg-3 col-sm-12 question-page-sidebar"
+          ${independentScrolling ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
+        >
           <div class="card mb-3">
             <div class="card-header bg-secondary text-white">
               <h2>Student view placeholder</h2>
