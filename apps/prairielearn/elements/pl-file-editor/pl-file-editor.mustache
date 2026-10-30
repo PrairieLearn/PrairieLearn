@@ -1,6 +1,6 @@
 {{#question}}
 <script>
-$(function() {
+$(function () {
     var UUID = "{{uuid}}";
 
     new window.PLFileEditor(UUID, {
@@ -20,7 +20,7 @@ $(function() {
 });
 </script>
 <div id="file-editor-{{uuid}}" class="mathjax_ignore">
-    <input type="hidden" name="{{name}}">
+    <input type="hidden" name="{{name}}" value="{{current_file_contents}}">
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
              {{file_name}}
