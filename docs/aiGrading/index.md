@@ -218,8 +218,8 @@ API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
 
     There are two types of credit:
 
-    - **Transferable credit** — Can be moved between course instances.
-    - **Nontransferable credit** — Locked to the instance it was added to.
+    - **Transferable credit** — All purchased credit is transferable and can be moved between course instances.
+    - **Nontransferable credit** — Free credit provided by PrairieLearn is nontransferable and is locked to the course instance where it was redeemed.
 
     The billing page displays usage in two ways:
 
