@@ -581,6 +581,66 @@ def test_formula_editor_initial_value_respects_display_log_as_ln(
 
 
 @pytest.mark.parametrize(
+    ("submission", "expected_latex"),
+    [
+        ("1/x", r"\frac{1}{x}"),
+        ("x^(1/3)", r"\sqrt[3]{x}"),
+    ],
+)
+def test_simplified_submission_renders_after_json_round_trip(
+    monkeypatch: pytest.MonkeyPatch,
+    submission: str,
+    expected_latex: str,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": submission},
+        panel="submission",
+        editable=False,
+    )
+
+    symbolic_input.parse(element_html, data)
+    rendered = symbolic_input.render(element_html, data)
+
+    assert f"${expected_latex}$" in rendered
+
+
+@pytest.mark.parametrize(
+    ("display_simplified", "expected_latex"),
+    [
+        (True, r"\left\{1, 2\right\}"),
+        (False, r"\left\{1\right\} \cup \left\{2\right\}"),
+    ],
+)
+def test_stored_set_submission_renders_using_display_simplification(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    display_simplified: bool,
+    expected_latex: str,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    submitted_answer = psu.sympy_to_json(
+        sympy.Union(sympy.FiniteSet(1), sympy.FiniteSet(2), evaluate=False),
+        allow_sets=True,
+    )
+    element_html = build_element_html(
+        'allow-sets="true"',
+        f'display-simplified-expression="{str(display_simplified).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": submitted_answer},
+        raw_submitted_answers={"test": "{1} U {2}"},
+        panel="submission",
+        editable=False,
+    )
+
+    rendered = symbolic_input.render(element_html, data)
+
+    assert f"${expected_latex}$" in rendered
+
+
+@pytest.mark.parametrize(
     ("answer", "expected_expr"),
     [
         (
@@ -654,6 +714,141 @@ def test_empty_set_submission_round_trips_when_set_notation_is_enabled() -> None
         psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
         == sympy.EmptySet
     )
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_parse_does_not_evaluate_unsimplified_json_during_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def factorial_without_integer_evaluation(value: sympy.Expr) -> sympy.Expr:
+        if isinstance(value, sympy.Integer):
+            raise TypeError("factorial argument was evaluated")
+        return sympy.factorial(value)
+
+    functions = dict(psu._Constants.functions)
+    functions["factorial"] = factorial_without_integer_evaluation
+    monkeypatch.setattr(psu._Constants, "functions", psu.FrozenDict(functions))
+
+    element_html = build_element_html(
+        'allow-complex="true"',
+        'display-simplified-expression="false"',
+    )
+    data = make_question_data(submitted_answers={"test": "factorial(10^7)"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+
+@pytest.mark.parametrize("display_simplified", [True, False])
+@pytest.mark.parametrize(
+    ("correct_answer", "submission"),
+    [
+        ("[0, e)", "{0} U (1-1, e^1)"),
+        ("(1, 3]", "(sin(pi/2), 9/3] - ((log(1), exp(0)) U {})"),
+    ],
+)
+def test_reported_crash_submissions_grade_in_both_display_modes(
+    correct_answer: str,
+    submission: str,
+    *,
+    display_simplified: bool,
+) -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        f'display-simplified-expression="{str(display_simplified).lower()}"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize(
+    ("display_simplified", "expected_submission"),
+    [
+        (True, "{1, 2}"),
+        (False, "Union({1}, {2})"),
+    ],
+)
+def test_generated_correct_answer_uses_display_simplification(
+    *,
+    display_simplified: bool,
+    expected_submission: str,
+) -> None:
+    correct_answer = psu.sympy_to_json(
+        sympy.Union(sympy.FiniteSet(1), sympy.FiniteSet(2), evaluate=False),
+        allow_sets=True,
+    )
+    element_html = build_element_html(
+        'allow-complex="true"',
+        'allow-sets="true"',
+        f'display-simplified-expression="{str(display_simplified).lower()}"',
+    )
+    data = make_question_data(
+        raw_submitted_answers={},
+        correct_answers={"test": correct_answer},
+    )
+    data["test_type"] = "correct"
+
+    symbolic_input.test(element_html, data)
+
+    assert data["raw_submitted_answers"]["test"] == expected_submission
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_unsimplified_set_submission_preserves_operation() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'display-simplified-expression="false"',
+        'correct-answer="{2, e}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "(-oo, 2+1] & ({e, 4/2, 0} - {1, 0/3})"}
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    restored = psu.json_to_sympy(
+        data["submitted_answers"]["test"],
+        allow_sets=True,
+        simplify_expression=False,
+    )
+
+    assert isinstance(restored, sympy.Intersection)
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize("display_simplified", [True, False])
+def test_json_correct_answer_is_graded_by_value_in_both_display_modes(
+    *, display_simplified: bool
+) -> None:
+    correct_answer = sympy.Union(sympy.FiniteSet(1), sympy.FiniteSet(1), evaluate=False)
+    element_html = build_element_html(
+        'allow-sets="true"',
+        f'display-simplified-expression="{str(display_simplified).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "{1}"},
+        correct_answers={
+            "test": psu.sympy_to_json(correct_answer, allow_sets=True),
+        },
+    )
+
+    symbolic_input.parse(element_html, data)
+    assert "test" not in data["format_errors"]
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1
