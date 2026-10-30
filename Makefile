@@ -50,8 +50,6 @@ refresh-workspace-hosts-dev:
 
 dev: start-support python-deps
 	@pnpm dev
-dev-vite: start-support python-deps
-	@pnpm dev-vite
 dev-bun: python-deps
 	@pnpm dev-bun
 dev-workspace-host: start-support
