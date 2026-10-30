@@ -8,41 +8,37 @@ import * as unzipper from 'unzipper';
 
 import type { AssetsManifest } from '@prairielearn/compiled-assets';
 
-import type { DocxSource } from '../../lib/printing/docx-browser.js';
-import { createDocxDocument } from '../../lib/printing/docx-document.js';
-
-import { expect, test } from './fixtures.js';
+import { serializePrintDocument } from '../../../lib/client/print-document.js';
+import type { DocxSource } from '../../../lib/printing/docx-browser.js';
+import { createDocxDocument } from '../../../lib/printing/docx-document.js';
+import { expect, test } from '../fixtures.js';
 
 // These browser-only tests do not need the application server.
 test.use({ baseURL: '' });
 
 async function loadPrintClient(page: Page) {
-  const appDirectory = path.resolve(import.meta.dirname, '../../..');
+  const appDirectory = path.resolve(import.meta.dirname, '../../../..');
   const buildDirectory = path.join(appDirectory, 'public/build');
   const manifest: AssetsManifest = JSON.parse(
     await fs.readFile(path.join(buildDirectory, 'manifest.json'), 'utf8'),
   );
   await page.addStyleTag({
-    path: path.join(buildDirectory, manifest['stylesheets/exam-printing.css'].assetPath),
+    path: path.join(buildDirectory, manifest['stylesheets/assessment-printing.css'].assetPath),
   });
   await page.addStyleTag({
     content:
-      ':root { --exam-print-page-width: 8.5in; --exam-print-page-height: 11in; } @page { size: Letter; }',
+      ':root { --assessment-print-page-width: 8.5in; --assessment-print-page-height: 11in; } @page { size: Letter; }',
   });
   await page.addScriptTag({
     path: fileURLToPath(new URL('../dist/paged.polyfill.min.js', import.meta.resolve('pagedjs'))),
   });
   await page.addScriptTag({
-    path: path.join(buildDirectory, manifest['scripts/exam-printing-client.ts'].assetPath),
+    path: path.join(buildDirectory, manifest['scripts/assessment-printing-client.ts'].assetPath),
   });
   await expect(page.locator(':root')).toHaveAttribute('data-print-status', 'ready');
 }
 
-async function readWordOutput(page: Page) {
-  const source = await page.evaluate(
-    () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
-  );
-  expect(source).toBeDefined();
+async function readWordOutput(page: Page, source: DocxSource) {
   const geometry = await page.evaluate(() => {
     const sheet = document.querySelector('.pagedjs_page')!.getBoundingClientRect();
     const area = document.querySelector('.pagedjs_area')!.getBoundingClientRect();
@@ -56,7 +52,7 @@ async function readWordOutput(page: Page) {
     };
   });
   const figures = await Promise.all(
-    source!.figures.map(async (figure) => ({
+    source.figures.map(async (figure) => ({
       ...figure,
       png: await page.locator(`[data-docx-figure="${figure.id}"]`).first().screenshot(),
     })),
@@ -64,14 +60,14 @@ async function readWordOutput(page: Page) {
   const docx = createDocxDocument({
     geometry,
     footerLabel: 'Browser Word test',
-    source: source!,
+    source,
     figures,
   });
   const zip = await unzipper.Open.buffer(await Packer.toBuffer(docx));
   const documentXml = (
     await zip.files.find((file) => file.path === 'word/document.xml')!.buffer()
   ).toString('utf8');
-  return { source: source!, zip, documentXml };
+  return { source, zip, documentXml };
 }
 
 // Question content inside shadow roots can be missed when we copy the page for Word.
@@ -81,9 +77,9 @@ test('exports shadow-root figures and visible slotted text from a paginated page
 }) => {
   await page.goto('about:blank');
   await page.setContent(`
-    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="exam" data-print-paper-size="Letter"><body>
-      <main id="exam-print-source" class="exam-print-document">
-        <div class="exam-questions">
+    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="assessment" data-print-paper-size="Letter"><body>
+      <main id="assessment-print-source" class="assessment-print-document">
+        <div class="assessment-questions">
           <section class="printing-question printing-question-freeform" data-question-number="1">
             <div class="question-block"><div class="question-body">
               <div id="xss-test"><strong slot="term">Assigned text</strong><span>Unassigned content</span></div>
@@ -91,7 +87,7 @@ test('exports shadow-root figures and visible slotted text from a paginated page
           </section>
         </div>
       </main>
-      <div id="exam-print-pages"></div>
+      <div id="assessment-print-pages"></div>
     </body></html>
   `);
   await page.evaluate(() => {
@@ -114,7 +110,23 @@ test('exports shadow-root figures and visible slotted text from a paginated page
       '<p>Nested question text</p>';
   });
   await loadPrintClient(page);
-  const { zip, documentXml } = await readWordOutput(page);
+  const source = await page.evaluate(
+    () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
+  );
+  expect(source).toBeDefined();
+  const html = await page.locator(':root').evaluate(serializePrintDocument);
+  await page.route('http://print.test/snapshot', (route) =>
+    route.fulfill({ contentType: 'text/html', body: html }),
+  );
+  await page.goto('http://print.test/snapshot');
+  expect(await page.locator(':root').evaluate(serializePrintDocument)).toBe(html);
+  await expect(
+    page.locator('.pagedjs_page').getByText('Nested question text', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.pagedjs_page').getByText('Hidden answer', { exact: true }),
+  ).toBeHidden();
+  const { zip, documentXml } = await readWordOutput(page, source!);
   expect(documentXml).toContain('Shadow question');
   expect(documentXml.match(/Assigned text/g)).toHaveLength(1);
   expect(documentXml).toContain('Fallback instructions');
@@ -128,9 +140,9 @@ test('exports shadow-root figures and visible slotted text from a paginated page
 test('keeps printing when an equation cannot become editable Word math', async ({ page }) => {
   await page.goto('about:blank');
   await page.setContent(`
-    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="exam" data-print-paper-size="Letter"><body>
-      <main id="exam-print-source" class="exam-print-document">
-        <div class="exam-questions">
+    <!doctype html><html data-print-status="loading" data-print-include-cover="false" data-print-document="assessment" data-print-paper-size="Letter"><body>
+      <main id="assessment-print-source" class="assessment-print-document">
+        <div class="assessment-questions">
           <section class="printing-question printing-question-freeform" data-question-number="1">
             <div class="question-block"><div class="question-body">
               <p>Solve <mjx-container>Rendered equation</mjx-container></p>
@@ -138,7 +150,7 @@ test('keeps printing when an equation cannot become editable Word math', async (
           </section>
         </div>
       </main>
-      <div id="exam-print-pages"></div>
+      <div id="assessment-print-pages"></div>
     </body></html>
   `);
   await page.evaluate(() => {

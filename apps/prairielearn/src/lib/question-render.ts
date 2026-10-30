@@ -114,6 +114,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param params.locals The current locals for the page response.
  * @param params.user The effective user to attribute errors to.
  * @param params.authn_user The authenticated user to attribute errors to.
+ * @param params.throwOnFatalError Reject fatal rendering errors instead of returning incomplete HTML.
  */
 async function render({
   variant_course,
@@ -126,6 +127,7 @@ async function render({
   locals,
   user,
   authn_user,
+  throwOnFatalError = false,
 }: {
   variant_course: Course;
   renderSelection: questionServers.RenderSelection;
@@ -139,6 +141,7 @@ async function render({
   user: User;
   /** The authenticated user to attribute errors to. */
   authn_user: User;
+  throwOnFatalError?: boolean;
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -167,6 +170,12 @@ async function render({
     studentMessage,
     courseData,
   );
+  const fatalIssue = courseIssues.find((issue) => issue.fatal);
+  if (throwOnFatalError && fatalIssue) {
+    throw new Error(`Question ${question.qid ?? question.id} could not be rendered.`, {
+      cause: fatalIssue,
+    });
+  }
   return data;
 }
 
@@ -462,6 +471,10 @@ export async function getAndRenderVariant(
     publicQuestionPreview = false,
     issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
     questionRenderContext,
+    includeSubmissions = true,
+    showCorrectAnswer: showCorrectAnswerOverride,
+    requireOpenVariant = !!locals.assessment && locals.assessment.type !== 'Exam',
+    throwOnFatalError = false,
   }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
@@ -481,6 +494,17 @@ export async function getAndRenderVariant(
      * Leave undefined for normal student/instructor rendering.
      */
     questionRenderContext?: QuestionRenderContext;
+    /** Whether to load and render previous submissions. Defaults to true. */
+    includeSubmissions?: boolean;
+    /** Overrides correct-answer visibility. If omitted, the existing visibility rules apply. */
+    showCorrectAnswer?: boolean;
+    /**
+     * Whether a reused variant must be open. Defaults to true for non-Exam assessments.
+     * Ignored when `variant_id` is provided.
+     */
+    requireOpenVariant?: boolean;
+    /** Reject fatal rendering errors instead of returning incomplete HTML. Defaults to false. */
+    throwOnFatalError?: boolean;
   } = {},
 ): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
@@ -515,7 +539,7 @@ export async function getAndRenderVariant(
         variant_course: locals.course,
         question_course,
         options: { variant_seed },
-        require_open: !!locals.assessment && locals.assessment.type !== 'Exam',
+        require_open: requireOpenVariant,
         client_fingerprint_id: locals.client_fingerprint_id ?? null,
       });
     }
@@ -580,11 +604,13 @@ export async function getAndRenderVariant(
   // information for all submissions to this variant, and then we'll
   // load the full submission for only the submissions that we'll
   // actually render.
-  const basicSubmissions = await sqldb.queryRows(
-    sql.select_basic_submissions,
-    { variant_id: variant.id },
-    SubmissionBasicSchema,
-  );
+  const basicSubmissions = includeSubmissions
+    ? await sqldb.queryRows(
+        sql.select_basic_submissions,
+        { variant_id: variant.id },
+        SubmissionBasicSchema,
+      )
+    : [];
   const submissionCount = basicSubmissions.length;
 
   const submissions = await run(async () => {
@@ -619,6 +645,9 @@ export async function getAndRenderVariant(
   const submission = submissions.at(0) ?? null;
 
   const showCorrectAnswer = run(() => {
+    if (showCorrectAnswerOverride !== undefined) {
+      return showCorrectAnswerOverride;
+    }
     if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
       // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
       return true;
@@ -659,6 +688,7 @@ export async function getAndRenderVariant(
     },
     user: locals.user,
     authn_user: locals.authn_user,
+    throwOnFatalError,
   });
 
   // Load issues last in case rendering produced any new ones.

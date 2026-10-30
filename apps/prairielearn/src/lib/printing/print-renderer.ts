@@ -1,12 +1,12 @@
 import * as https from 'node:https';
 
-import { Semaphore } from 'async-mutex';
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
 import { config } from '../config.js';
 
 import { createPdfOutput } from './pdf-output.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
+import { RenderQueue } from './render-queue.js';
 
 const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
 
@@ -17,94 +17,13 @@ export class QuestionBlockSizeOverflowError extends Error {
   }
 }
 
-const DEFAULT_RENDER_TIMEOUT_MS = 120_000;
+const DEFAULT_RENDER_TIMEOUT_MS = 45_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
 const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 64;
 const DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS = 4;
 const CLOUDFLARE_KEEP_ALIVE_MS = 180_000;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
 const SOCKET_IO_PATH = '/socket.io/';
-
-interface RenderWaiter {
-  queuedAt: number;
-  resolve: (acquired: { queueWaitMs: number; release: () => void }) => void;
-  reject: (error: Error) => void;
-  timeout?: ReturnType<typeof setTimeout>;
-}
-
-class RenderQueue {
-  private readonly permits: Semaphore;
-  private readonly waiters: RenderWaiter[] = [];
-
-  constructor(
-    limit: number,
-    private readonly maxWaiters: number,
-  ) {
-    this.permits = new Semaphore(limit);
-  }
-
-  async run<T>(
-    callback: (queueWaitMs: number) => Promise<T>,
-    timeoutMs: number,
-    outputLabel: string,
-  ): Promise<T> {
-    const { queueWaitMs, release } = await this.acquire(timeoutMs, outputLabel);
-    try {
-      return await callback(queueWaitMs);
-    } finally {
-      this.release(release);
-    }
-  }
-
-  rejectAll(error: Error): void {
-    const waiters = [...this.waiters];
-    this.waiters.length = 0;
-    for (const waiter of waiters) {
-      if (waiter.timeout) clearTimeout(waiter.timeout);
-      waiter.reject(error);
-    }
-  }
-
-  private async acquire(
-    timeoutMs: number,
-    outputLabel: string,
-  ): Promise<{ queueWaitMs: number; release: () => void }> {
-    if (!this.permits.isLocked()) {
-      const [, release] = await this.permits.acquire();
-      return { queueWaitMs: 0, release };
-    }
-
-    if (this.waiters.length >= this.maxWaiters) {
-      throw new Error('Too many print renders are already waiting');
-    }
-
-    // withTimeout() leaves expired acquisitions in async-mutex's queue until a permit is
-    // released. Keep waiters here so a timed-out render immediately frees its queue slot.
-    return new Promise<{ queueWaitMs: number; release: () => void }>((resolve, reject) => {
-      const waiter: RenderWaiter = { queuedAt: Date.now(), resolve, reject };
-      if (timeoutMs > 0) {
-        waiter.timeout = setTimeout(() => {
-          const index = this.waiters.indexOf(waiter);
-          if (index === -1) return;
-          this.waiters.splice(index, 1);
-          reject(new Error(`Timed out after ${timeoutMs} ms waiting to render the ${outputLabel}`));
-        }, timeoutMs);
-      }
-      this.waiters.push(waiter);
-    });
-  }
-
-  private release(release: () => void): void {
-    const next = this.waiters.shift();
-    if (next) {
-      // Transfer the permit directly so a new render cannot pass the oldest waiter.
-      if (next.timeout) clearTimeout(next.timeout);
-      next.resolve({ queueWaitMs: Date.now() - next.queuedAt, release });
-    } else {
-      release();
-    }
-  }
-}
 
 async function fetchCloudflareAsset(url: URL, signal: AbortSignal, cookieHeader?: string) {
   if (url.protocol === 'https:' && url.hostname === 'localhost') {
@@ -172,6 +91,10 @@ export interface PrintRendererOptions {
 }
 
 export interface RenderPageOptions {
+  /**
+   * Page URL on the local application server. Cloudflare uses a separate navigation origin,
+   * but protected assets are fetched from this URL's origin, including in production.
+   */
   url: string;
   /** Browser page origin, required with Cloudflare and ignored by local Chromium. */
   browserOrigin?: string;
@@ -182,6 +105,8 @@ export interface RenderPageOptions {
   runScripts?: boolean;
   /** Overrides the renderer's default deadline. `0` disables the deadline. */
   timeoutMs?: number;
+  /** Cancels queued work and closes any browser context already rendering this page. */
+  signal?: AbortSignal;
 }
 
 export type RenderPdfOptions = RenderPageOptions;
@@ -231,6 +156,7 @@ export class PrintRenderer {
       },
       timeoutMs,
       output.label,
+      options.signal,
     );
   }
 
@@ -313,9 +239,11 @@ export class PrintRenderer {
       cookieHeader,
       runScripts = false,
       timeoutMs = DEFAULT_RENDER_TIMEOUT_MS,
+      signal: requestSignal,
     }: RenderPageOptions,
     output: PrintablePageOutput<T>,
   ): Promise<T> {
+    requestSignal?.throwIfAborted();
     const deadline = timeoutMs === 0 ? null : Date.now() + timeoutMs;
     const remainingTimeoutMs = () => (deadline === null ? 0 : Math.max(1, deadline - Date.now()));
     const localUrl = new URL(url);
@@ -327,30 +255,47 @@ export class PrintRenderer {
       navigationUrl = urlAtOrigin(localUrl, browserOrigin).href;
     }
     const renderOrigin = new URL(navigationUrl).origin;
-    let startupTimer: ReturnType<typeof setTimeout> | undefined;
-    const browser = await (deadline === null
-      ? this.getBrowser(0)
-      : Promise.race([
-          this.getBrowser(remainingTimeoutMs()),
-          new Promise<never>((_resolve, reject) => {
-            startupTimer = setTimeout(
-              () =>
-                reject(new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`)),
-              remainingTimeoutMs(),
-            );
-          }),
-        ]).finally(() => {
-          if (startupTimer) clearTimeout(startupTimer);
-        }));
+    const deadlineController = new AbortController();
+    const signal = requestSignal
+      ? AbortSignal.any([requestSignal, deadlineController.signal])
+      : deadlineController.signal;
+    let onAbort!: () => void;
+    const canceled = new Promise<never>((_resolve, reject) => {
+      onAbort = () => reject(signal.reason);
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+    const deadlineTimer =
+      deadline === null
+        ? undefined
+        : setTimeout(
+            () =>
+              deadlineController.abort(
+                new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`),
+              ),
+            remainingTimeoutMs(),
+          );
+    const clearDeadline = () => {
+      if (deadlineTimer) clearTimeout(deadlineTimer);
+      signal.removeEventListener('abort', onAbort);
+    };
+    const browser = await Promise.race([this.getBrowser(remainingTimeoutMs()), canceled])
+      .then((browser) => {
+        signal.throwIfAborted();
+        return browser;
+      })
+      .catch((error: unknown) => {
+        // Other renders may still be waiting for this shared browser connection.
+        clearDeadline();
+        throw error;
+      });
 
-    const state: { context: BrowserContext | null; timedOut: boolean } = {
+    const state: { context: BrowserContext | null; outputPromise?: Promise<T> } = {
       context: null,
-      timedOut: false,
     };
     const assetController = new AbortController();
-    let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
 
     const render = async () => {
+      signal.throwIfAborted();
       const context = await browser.newContext({
         ignoreHTTPSErrors: true,
         serviceWorkers: 'block',
@@ -358,6 +303,10 @@ export class PrintRenderer {
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
         ...(!this.cloudflare && cookieHeader ? { extraHTTPHeaders: { cookie: cookieHeader } } : {}),
       });
+      if (signal.aborted) {
+        await this.discardContext(browser, context);
+        signal.throwIfAborted();
+      }
       state.context = context;
 
       // Only same-origin GET requests may use the forwarded cookie. Realtime traffic is refused
@@ -464,26 +413,26 @@ export class PrintRenderer {
         );
       });
 
-      return await output.produce(page);
+      signal.throwIfAborted();
+      state.outputPromise = output.produce(page);
+      return await state.outputPromise;
     };
 
     try {
-      if (deadline === null) return await render();
-      const deadlineExpired = new Promise<never>((_resolve, reject) => {
-        deadlineTimer = setTimeout(() => {
-          state.timedOut = true;
-          reject(new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`));
-        }, remainingTimeoutMs());
-      });
-      return await Promise.race([render(), deadlineExpired]);
+      return await Promise.race([render(), canceled]);
     } finally {
-      if (deadlineTimer) clearTimeout(deadlineTimer);
+      clearDeadline();
       assetController.abort();
       const openContext = state.context;
-      // A context created after the deadline may still be pending, so discard its browser.
-      if (state.timedOut && !openContext) this.discardBrowser(browser);
+      // A context created after cancellation may still be pending, so discard its browser.
+      if (signal.aborted && !openContext) this.discardBrowser(browser);
       if (openContext) {
         await this.discardContext(browser, openContext);
+      }
+      if (signal.aborted) {
+        // Closing the context cancels Playwright work, but output generation may already be
+        // packing a Word document in Node. Keep the permit until that work actually settles.
+        await state.outputPromise?.catch(() => undefined);
       }
     }
   }

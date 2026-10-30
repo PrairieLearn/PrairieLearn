@@ -76,6 +76,8 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { closePrintRenderer } from './lib/printing/index.js';
+import { initPrintRequests, stopPrintRequests } from './lib/printing/print-request.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -134,6 +136,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  * @returns The express "app" object that was created.
  */
 export async function initExpress(): Promise<Express> {
+  initPrintRequests();
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
   app.set('trust proxy', config.trustProxy);
@@ -1087,6 +1090,12 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./pages/instructorAssessmentManualGrading/assessment/assessment.js')).default,
     ],
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)/print',
+    (await import('./pages/instructorAssessmentInstancePrint/instructorAssessmentInstancePrint.js'))
+      .default,
   );
 
   app.use(
@@ -2755,6 +2764,7 @@ async function close() {
   // Stop polling and scheduled work and finish pending workspace startups while
   // their shared dependencies are still available.
   await settleShutdownTasks([
+    stopPrintRequests(),
     externalGraderDeadLetters.stop(),
     externalGraderResults.stop(),
     cron.stop(),
@@ -2765,6 +2775,7 @@ async function close() {
   // Server jobs may render questions or publish progress after an await. Wait
   // for their final status writes and notifications before closing dependencies.
   await settleShutdownTasks([serverJobs.stop()]);
+  await settleShutdownTasks([closePrintRenderer()]);
 
   await settleShutdownTasks([
     serverJobProgressSocket.close(),

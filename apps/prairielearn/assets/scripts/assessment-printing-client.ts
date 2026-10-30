@@ -12,6 +12,8 @@ import {
 import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docx-browser.js';
 import { parseQuestionBlockSize } from '../../src/lib/printing/question-block-size.js';
 
+import { layoutPrintGradingTable } from './lib/print-cover-layout.js';
+
 interface PagedFlow {
   total: number;
 }
@@ -26,7 +28,7 @@ declare global {
         renderTo?: HTMLElement,
       ) => Promise<PagedFlow>;
     };
-    PrairieLearnExamPrinting: {
+    PrairieLearnAssessmentPrinting: {
       waitUntil: (promise: Promise<unknown>) => void;
     };
     __PL_PRINT_READINESS_PROMISES__?: Promise<unknown>[];
@@ -205,7 +207,27 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
     image.className = `${canvas.className} printing-canvas-image`;
     image.id = canvas.id;
     image.style.cssText = canvas.style.cssText;
-    image.alt = canvas.getAttribute('aria-label') ?? '';
+    for (const attribute of [
+      'aria-label',
+      'aria-labelledby',
+      'aria-describedby',
+      'aria-description',
+      'aria-hidden',
+      'role',
+    ]) {
+      const value = canvas.getAttribute(attribute);
+      if (value !== null) image.setAttribute(attribute, value);
+    }
+    const labelledBy = canvas.getAttribute('aria-labelledby');
+    const description =
+      labelledBy
+        ?.split(/\s+/)
+        .map((id) => document.getElementById(id)?.textContent ?? '')
+        .join(' ')
+        .trim() ||
+      canvas.getAttribute('aria-label')?.trim() ||
+      canvas.textContent.trim();
+    if (description) image.alt = description;
     image.src = canvas.toDataURL('image/png');
     const bounds = canvas.getBoundingClientRect();
     image.width = bounds.width || canvas.width;
@@ -253,7 +275,7 @@ function materializePrintableDetails(source: HTMLElement): void {
 
 function measurePrintablePage(source: HTMLElement): { width: number; height: number } {
   const measure = document.createElement('div');
-  measure.className = 'exam-print-page-measure';
+  measure.className = 'assessment-print-page-measure';
   source.append(measure);
   const { width, height } = measure.getBoundingClientRect();
   measure.remove();
@@ -315,8 +337,13 @@ interface PrintLayout {
   plannedPageCanSpanPages: boolean[];
 }
 
+/**
+ * Measures questions at the final print width and groups them into planned page containers.
+ * Requested block sizes reserve answer space; oversized questions may span multiple pages.
+ * The containers and returned geometry let validation detect unexpected changes during pagination.
+ */
 function layoutQuestions(source: HTMLElement): PrintLayout {
-  const questionsContainer = source.querySelector<HTMLElement>('.exam-questions');
+  const questionsContainer = source.querySelector<HTMLElement>('.assessment-questions');
   if (!questionsContainer) throw new Error('Printable question container is missing');
 
   const questions = [
@@ -382,6 +409,10 @@ function layoutQuestions(source: HTMLElement): PrintLayout {
   };
 }
 
+/**
+ * Checks that Paged.js preserved the measured page geometry and planned question placement.
+ * Rejects unexpected page splits or cover placement before the document is marked ready for export.
+ */
 function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
   const pagedArea = output.querySelector<HTMLElement>('.pagedjs_area');
   if (!pagedArea) throw new Error('Paged.js did not create a printable content area');
@@ -405,11 +436,11 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
 
   const generatedPages = [...output.querySelectorAll<HTMLElement>('.pagedjs_page')];
   const coverPageIndexes = generatedPages.flatMap((generatedPage, pageIndex) =>
-    generatedPage.querySelector('.exam-cover') ? [pageIndex] : [],
+    generatedPage.querySelector('.assessment-cover') ? [pageIndex] : [],
   );
   const includeCoverPage = document.documentElement.dataset.printIncludeCover !== 'false';
   if (includeCoverPage && (coverPageIndexes.length !== 1 || coverPageIndexes[0] !== 0)) {
-    throw new Error('The exam cover must occupy the first paginated page by itself');
+    throw new Error('The assessment cover must occupy the first paginated page by itself');
   }
   if (!includeCoverPage && coverPageIndexes.length > 0) {
     throw new Error('The document includes a cover page when it is disabled');
@@ -426,7 +457,9 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
         : [],
     );
     if (containingPageIndexes.length === 0) {
-      throw new Error(`Planned question page ${plannedPage} is missing from the paginated exam`);
+      throw new Error(
+        `Planned question page ${plannedPage} is missing from the paginated assessment`,
+      );
     }
     if (!canSpanPages && containingPageIndexes.length !== 1) {
       throw new Error(
@@ -443,20 +476,26 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
       containingPageIndexes.length
     ) {
       throw new Error(
-        `Planned question page ${plannedPage} is not contiguous in the paginated exam`,
+        `Planned question page ${plannedPage} is not contiguous in the paginated assessment`,
       );
     }
     previousLastPageIndex = containingPageIndexes.at(-1)!;
   }
 }
 
-async function paginateExam(): Promise<{ totalPages: number }> {
+/**
+ * Prepares question content, captures editable Word content, and paginates the assessment.
+ * Waits for asynchronous elements, math, fonts, and images before measuring; captures Word
+ * content before pagination splits the DOM. Marks the document ready only after validating
+ * the generated pages against the measured layout.
+ */
+async function paginateAssessment(): Promise<{ totalPages: number }> {
   await waitForDocumentReady();
   const extraReadinessPromises = window.__PL_PRINT_READINESS_PROMISES__;
-  if (!extraReadinessPromises) throw new Error('Exam printing bootstrap is missing');
-  const source = document.querySelector<HTMLElement>('#exam-print-source');
-  const output = document.querySelector<HTMLElement>('#exam-print-pages');
-  if (!source || !output) throw new Error('Printable exam containers are missing');
+  if (!extraReadinessPromises) throw new Error('Assessment printing bootstrap is missing');
+  const source = document.querySelector<HTMLElement>('#assessment-print-source');
+  const output = document.querySelector<HTMLElement>('#assessment-print-pages');
+  if (!source || !output) throw new Error('Printable assessment containers are missing');
 
   await Promise.all(extraReadinessPromises);
   await waitForExcalidrawCanvases(source);
@@ -480,6 +519,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   replaceCanvasesWithImages(source);
   await waitForPrintImages(source);
   const { height: pageHeight } = measurePrintablePage(source);
+  layoutPrintGradingTable(source, pageHeight);
   if (document.documentElement.dataset.printDocument === 'answer_key') {
     replaceStudentResponsesWithAnswerKeys(source, pageHeight);
   } else {
@@ -493,17 +533,23 @@ async function paginateExam(): Promise<{ totalPages: number }> {
 
   const flow = await window.PagedPolyfill.preview(source, undefined, output);
   validatePagedLayout(output, layout);
+  const questionHeadingLevel = output.querySelector('.assessment-cover h1') ? '2' : '1';
+  for (const heading of output.querySelectorAll(
+    '.printing-question .question-block > .card-header h1',
+  )) {
+    heading.setAttribute('aria-level', questionHeadingLevel);
+  }
   source.remove();
   document.documentElement.dataset.printStatus = 'ready';
   document.documentElement.dataset.printPageCount = String(flow.total);
   return { totalPages: flow.total };
 }
 
-window.__PL_PRINT_READY__ = paginateExam().catch((error: unknown) => {
+window.__PL_PRINT_READY__ = paginateAssessment().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   document.documentElement.dataset.printStatus = 'error';
   document.documentElement.dataset.printError = message;
-  const status = document.querySelector('#exam-print-status');
-  if (status) status.textContent = `Unable to paginate this exam: ${message}`;
+  const status = document.querySelector('#assessment-print-status');
+  if (status) status.textContent = `Unable to paginate this assessment: ${message}`;
   throw error;
 });

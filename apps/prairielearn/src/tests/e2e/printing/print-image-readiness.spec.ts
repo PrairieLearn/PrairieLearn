@@ -4,9 +4,8 @@ import type { AddressInfo } from 'node:net';
 import {
   waitForExcalidrawCanvases,
   waitForPrintImages,
-} from '../../lib/client/print-image-layout.js';
-
-import { expect, test } from './fixtures.js';
+} from '../../../lib/client/print-image-layout.js';
+import { expect, test } from '../fixtures.js';
 
 // These browser-only tests do not need the application server.
 test.use({ baseURL: '' });

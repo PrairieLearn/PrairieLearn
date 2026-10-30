@@ -22,7 +22,7 @@ const cover: PrintableCover = {
   eyebrow: 'XC 101',
   eyebrowDetail: 'Example Course',
   title: 'E4',
-  subtitle: 'Exam including autograded and manually graded questions',
+  subtitle: 'Assessment including autograded and manually graded questions',
   fields: [
     { label: 'Name', wide: true },
     { label: 'Section' },
@@ -37,13 +37,17 @@ const cover: PrintableCover = {
     {
       heading: 'Instructions',
       blocks: [
-        { type: 'list', ordered: true, items: ['Write your name.', 'Show your work.'] },
-        { type: 'paragraph', text: 'No calculators.' },
+        {
+          type: 'list',
+          ordered: true,
+          items: [[{ text: 'Write your name.' }], [{ text: 'Show your work.' }]],
+        },
+        { type: 'paragraph', runs: [{ text: 'No calculators.', bold: true, italic: true }] },
       ],
     },
     {
       heading: 'Academic integrity pledge',
-      blocks: [{ type: 'list', ordered: false, items: ['I pledge on my honor.'] }],
+      blocks: [{ type: 'list', ordered: false, items: [[{ text: 'I pledge on my honor.' }]] }],
       signatureLabel: 'Signature',
     },
   ],
@@ -134,6 +138,12 @@ describe('createDocxDocument', () => {
       footerLabel: 'Form ID 13',
     });
     const { files, documentXml, footerXml, stylesXml } = await readDocx(docx);
+    const word = load(documentXml, { xmlMode: true });
+    const instruction = word('w\\:r').filter(
+      (_, run) => word(run).find('w\\:t').text() === 'No calculators.',
+    );
+    expect(instruction.find('w\\:b')).toHaveLength(1);
+    expect(instruction.find('w\\:i')).toHaveLength(1);
     const styles = load(stylesXml, { xmlMode: true });
     const defaultParagraphStyle = styles('w\\:style[w\\:type="paragraph"][w\\:default="1"]');
     expect(defaultParagraphStyle).toHaveLength(1);
