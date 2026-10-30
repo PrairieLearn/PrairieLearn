@@ -54,13 +54,23 @@ def test_render_raw_input_popover_handles_empty_strings() -> None:
     assert content.count("(nothing entered)") == 1
 
 
-def test_render_raw_input_popover_can_hide_ascii_only_input() -> None:
+@pytest.mark.parametrize(
+    ("ascii_only", "non_ascii"),
+    [
+        ("plain ASCII", "café"),
+        ([["1", "2"]], [["1", "café"]]),
+    ],
+)
+def test_render_raw_input_popover_can_hide_ascii_only_input(
+    ascii_only: str | list[list[str]],
+    non_ascii: str | list[list[str]],
+) -> None:
     assert (
-        pl.render_raw_input_popover("plain ASCII", "answer", show_if_ascii_only=False)
+        pl.render_raw_input_popover(ascii_only, "answer", show_if_ascii_only=False)
         == ""
     )
     assert 'aria-label="Answer as entered for answer"' in pl.render_raw_input_popover(
-        "café", "answer", show_if_ascii_only=False
+        non_ascii, "answer", show_if_ascii_only=False
     )
 
 
@@ -73,3 +83,18 @@ def test_render_raw_input_popover_escapes_content_for_html_attribute() -> None:
     assert html.escape(content, quote=True) in popover
     assert '<img src=x onerror="alert(1)">' not in popover
     assert 'aria-label="Answer as entered for answer &quot;one&quot;"' in popover
+
+
+def test_render_raw_input_grid_popover_preserves_grid_shape() -> None:
+    popover = html.unescape(
+        pl.render_raw_input_popover([["1", "2\u200b"], ["café", ""]], "matrix answer")
+    )
+
+    assert 'aria-label="Answer as entered for matrix answer"' in popover
+    assert popover.count("<tr>") == 4
+    assert popover.count("<td>") == 8
+    assert "2&lt;U+200b&gt;" in popover
+    assert "café" in popover
+    assert "caf&lt;U+e9&gt;" in popover
+    assert popover.index("Invisible characters") < popover.index("<table")
+    assert popover.index("</table>") < popover.index("special characters")
