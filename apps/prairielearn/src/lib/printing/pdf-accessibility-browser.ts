@@ -92,7 +92,9 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
     }
     container.setAttribute('role', 'presentation');
     container.removeAttribute('aria-label');
-    container.querySelectorAll('mjx-assistive-mml').forEach((element) => element.remove());
+    container
+      .querySelectorAll('mjx-assistive-mml, mjx-speech')
+      .forEach((element) => element.remove());
     helpers.mark(svg, 'Formula', { alt: speech });
   }
   for (const element of document.querySelectorAll('math, .katex, [role="math"]')) {
@@ -114,7 +116,7 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
       !helpers.visible(element) ||
       element.hasAttribute('data-print-pdf-marked') ||
       element.closest(
-        '[data-print-pdf-marked="Artifact"], [data-print-pdf-marked="Formula"], [data-print-pdf-marked="Figure"]',
+        'mjx-container, [data-print-pdf-marked="Artifact"], [data-print-pdf-marked="Formula"], [data-print-pdf-marked="Figure"]',
       )
     ) {
       continue;
@@ -153,8 +155,19 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
       };
     }
   }
-  for (const element of document.querySelectorAll<HTMLAnchorElement>('a[href]')) {
-    if (!helpers.visible(element)) continue;
+  for (const element of document.querySelectorAll('a')) {
+    if (
+      !helpers.visible(element) ||
+      (!element.hasAttribute('href') && !element.hasAttribute('xlink:href'))
+    ) {
+      continue;
+    }
+    if (!(element instanceof HTMLAnchorElement)) {
+      return {
+        error:
+          'Links inside SVG images are not supported in individual PDFs. Place the link outside the image before exporting.',
+      };
+    }
     const uri = element.href;
     const alt = helpers.description(element, element.textContent.trim() || uri);
     helpers.mark(element, 'Link', { alt });
