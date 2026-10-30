@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -162,6 +162,17 @@ export function AssessmentSetsPage({
 }) {
   const canEdit = allowEdit && origHash !== null;
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // A submitted page restored from the back/forward cache has stale data and a stale file hash.
+  useEffect(() => {
+    if (!isSubmitting) return;
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [isSubmitting]);
+
   const form = useForm({ defaultValues: { sets: assessmentSets } });
   const assessmentSetsState = form.watch('sets');
   const setAssessmentSetsState = (sets: InstructorCourseAdminSetFormRow[]) => {
