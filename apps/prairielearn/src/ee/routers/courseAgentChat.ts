@@ -1,4 +1,4 @@
-import { type IncomingMessage, type Server, ServerResponse } from 'node:http';
+import { type IncomingMessage, ServerResponse } from 'node:http';
 
 import { type Express, type Request, type Response, Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -49,18 +49,17 @@ const proxy = createProxyMiddleware<Request, Response>({
 
 /** Send upgrades through the same session/authentication/RBAC chain as HTTP. */
 export function handleCourseAgentUpgrade(app: Express, req: IncomingMessage, head: Buffer) {
-  if (!CHAT_UPGRADE_PATH.test(req.url ?? '')) return;
+  if (!CHAT_UPGRADE_PATH.test(req.url ?? '')) return false;
   upgradeHeads.set(req, head);
   const res = new ServerResponse(req);
   res.assignSocket(req.socket);
-  // A rejected upgrade is an HTTP response on a socket outside Node's request loop.
+  // Node hands upgrade sockets to us without managing their HTTP response lifecycle.
+  // If Express rejects the upgrade, close the socket after its response is written.
+  // Successful upgrades detach this response and transfer the socket to the proxy below.
   res.shouldKeepAlive = false;
   res.once('finish', () => req.socket.end());
   app(req, res);
-}
-
-export function initCourseAgentProxy(server: Server, app: Express) {
-  server.on('upgrade', (req, _socket, head) => handleCourseAgentUpgrade(app, req, head));
+  return true;
 }
 
 async function prepareConversationProxyRequest(

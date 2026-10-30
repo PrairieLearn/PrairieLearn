@@ -49,7 +49,8 @@ let sub: Redis | undefined;
 
 export async function init(server: http.Server) {
   debug('init(): creating socket server');
-  io = new Server(server);
+  // PL rejects unknown upgrades; Socket.IO must leave other handlers' sockets alone.
+  io = new Server(server, { destroyUpgrade: false });
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers.
     //

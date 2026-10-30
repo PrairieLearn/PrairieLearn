@@ -2166,10 +2166,13 @@ export async function startServer(app: express.Express) {
     }
   }
 
-  if (isEnterprise()) {
-    const { initCourseAgentProxy } = await import('./ee/routers/courseAgentChat.js');
-    initCourseAgentProxy(server, app);
-  }
+  const handleCourseAgentUpgrade = isEnterprise()
+    ? (await import('./ee/routers/courseAgentChat.js')).handleCourseAgentUpgrade
+    : null;
+  server.on('upgrade', (req, socket, head) => {
+    if (req.url?.startsWith('/socket.io/')) return;
+    if (!handleCourseAgentUpgrade?.(app, req, head)) socket.destroy();
+  });
 
   // Capture metrics about the server, including the number of active connections
   // and the total number of connections that have been started.

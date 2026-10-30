@@ -18,7 +18,7 @@ export default defineConfig({
       configureServer(server) {
         // During local Vite development, upgrades reach Vite's HTTP server instead of PL's.
         // Forward them to PL's authorization/proxy handler, loading current modules after hot updates.
-        server.httpServer?.on('upgrade', async (req, _socket, head) => {
+        server.httpServer?.on('upgrade', async (req, socket, head) => {
           if (!req.url?.includes('/course_agent/conversations/')) return;
           const environment = server.environments.ssr;
           if (!isRunnableDevEnvironment(environment)) return;
@@ -26,7 +26,7 @@ export default defineConfig({
           const { handleCourseAgentUpgrade } = await environment.runner.import(
             './src/ee/routers/courseAgentChat.ts',
           );
-          handleCourseAgentUpgrade(viteExpressApp, req, head);
+          if (!handleCourseAgentUpgrade(viteExpressApp, req, head)) socket.destroy();
         });
       },
     },

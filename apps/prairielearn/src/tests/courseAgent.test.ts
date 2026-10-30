@@ -1,7 +1,9 @@
 import { once } from 'node:events';
 import { type IncomingMessage, createServer, request } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { setTimeout as sleep } from 'node:timers/promises';
 
+import { io } from 'socket.io-client';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -139,7 +141,26 @@ describe('Course agent access and conversation privacy', () => {
     });
   });
 
-  test('proxies non-ASCII course context', async () => {
+  // startServer() closes unknown upgrade paths; its Socket.IO exemption must stay intact.
+  // Force WebSocket: polling fallback could hide an accidentally rejected upgrade.
+  test('allows Socket.IO WebSocket upgrades alongside chat', async () => {
+    const socket = io(siteUrl, {
+      transports: ['websocket'],
+      reconnection: false,
+      autoConnect: false,
+    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        socket.once('connect', () => resolve());
+        socket.once('connect_error', reject);
+        socket.connect();
+      });
+    } finally {
+      socket.disconnect();
+    }
+  });
+
+  test('proxies a slow WebSocket handshake with non-ASCII course context', async () => {
     const title = 'Mécanique — 日本語 📚';
     await updateCourseColumn({
       courseId: '1',
@@ -149,8 +170,10 @@ describe('Course agent access and conversation privacy', () => {
     });
     const conversation = await createConversation(owner);
     const upstream = withResolvers<IncomingMessage>();
-    const service = createServer((req, res) => {
+    const service = createServer(async (req, res) => {
       upstream.resolve(req);
+      // Engine.IO used to close other protocols' unanswered upgrades after one second.
+      await sleep(1250);
       res.writeHead(101, { Upgrade: 'websocket', Connection: 'Upgrade' });
       res.end();
     });
