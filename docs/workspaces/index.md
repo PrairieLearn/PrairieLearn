@@ -278,6 +278,8 @@ Instructors are strongly encouraged to allow students to get exposed to the Prai
 
 - Expectations about workspace start times. In the worst case, a workspace may take several minutes as new machines are started and as images are pulled. This may be especially important in timed assessments, where the workspace starting time may affect the student's ability to complete their work.
 
+If a student saved files in their workspace but did not submit them in PrairieLearn, course staff can [submit an answer on the student's behalf](../faq.md#how-do-i-submit-an-answer-on-behalf-of-a-student).
+
 ## Troubleshooting workspace loading
 
 A variety of issues can prevent a workspace from loading, including antivirus software, browser extensions, and network issues. If a workspace fails to load, the following steps may help you resolve the issue or provide more information to the PrairieLearn team:
