@@ -56,30 +56,6 @@ The browser saves question text and equations before it splits them into pages, 
 
 Omit the `cover` option to start with questions on the first page.
 
-### PDF processing
-
-`createPdfOutput()` uses Chromium and the existing `pdf-lib` dependency entirely in Node. It preserves browser tags, restores source-declared formulas and decorative content, and adds document metadata. It rejects missing descriptions, lost structure, and unclassified drawing. Processing errors are returned to the export caller; no PDF temporary files or external processors are used. These safeguards do not establish PDF/UA-1 conformance. Print-only packet sources use `createPdfOutput({ accessible: false })` to skip accessibility processing and source-description requirements.
-
-The finalizer handles the content stream syntax emitted by the supported Chromium renderer. Inline image streams, tagged Form XObjects, and unsupported stream encodings are rejected instead of being silently rewritten. Check representative downloads after browser upgrades.
-
-The source must provide a title, language, correctly nested headings/lists/tables, and descriptions for meaningful graphics. MathJax SVG output must retain its spoken description. A template can identify wholly decorative content with `data-print-pdf-role="Artifact"`. For a container whose own background/border is decorative, set `data-print-pdf-role="Div"` (or its actual paragraph/heading role) and `data-print-pdf-decorative-paint`; its descendants remain meaningful. Only that container's marked drawing is made decorative, and the processor rejects text or images in it. Materialize repeated CSS-generated footer text as real DOM content before marking it decorative. Never use these annotations to hide meaningful author content.
-
-### Optional local validation
-
-veraPDF runs only when requested locally; production exports and CI do not install or run it. To check actual downloaded PDFs, install the pinned, checksum-verified veraPDF **1.30.3** CLI and run the validation script from the repository root:
-
-```sh
-./scripts/install-print-pdf-validator.sh
-node scripts/validate-print-pdfs.mts \
-  --verapdf .local/print-pdf-validator/verapdf \
-  --output /tmp/print-pdfua-review \
-  assessment.pdf answer-key.pdf
-```
-
-The output directory must be new and its parent must exist. The script checks the veraPDF version, retains the exact input bytes, runs `--flavour ua1`, and saves full JSON reports, validator logs, readable failure details, and a summary. It exits unsuccessfully for validation failures, unreadable inputs, parsing errors, or tool errors. Omit `--verapdf` when the executable is on `PATH`; set `JAVA_HOME` if your Java installation requires it.
-
-Include math, figures, lists, and tables in the individual assessment and answer key downloads. Combined packets are intended for printing and are outside the PDF/UA compliance scope. A passing automated report covers only machine-verifiable requirements: review the final files with assistive technology for reading order, navigation, mathematical meaning, table relationships, and useful descriptions before claiming PDF/UA-1 compliance.
-
 ## Combining question fragments
 
 Questions are normally rendered in separate documents, so author-generated IDs can repeat between questions. Built-in formula-editor symbolic inputs and sketch inputs generate unique DOM IDs when rendered while keeping their answer names stable. Before combining fragments in a preview or print document, use `namespaceQuestionHtmls` with a stable, unique namespace for each question. It renames IDs repeated across fragments and supported references in the rendered HTML: ID-reference attributes, inline `style` attributes and `<style>` blocks, and literal `getElementById`, `querySelector`, `querySelectorAll`, `closest`, `matches`, and `$` calls in inline scripts.
