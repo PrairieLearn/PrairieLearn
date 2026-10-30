@@ -44,7 +44,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   override async onConnect(connection: Connection, context: ConnectionContext) {
     // PL supplies this header after checking the session, course, and owner.
     const courseContext = CourseContextSchema.parse(
-      JSON.parse(context.request.headers.get('X-PL-Course-Context') ?? 'null'),
+      JSON.parse(decodeURIComponent(context.request.headers.get('X-PL-Course-Context') ?? 'null')),
     );
     this.setState({ model: this.getModel(), courseContext });
     // Load history on the same connection as resume, so an earlier HTTP snapshot

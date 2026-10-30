@@ -96,10 +96,12 @@ async function prepareConversationProxyRequest(
   delete req.headers.cookie;
   req.headers.authorization = headers.Authorization;
   req.headers['x-pl-user-id'] = authn_user.id;
-  req.headers['x-pl-course-context'] = JSON.stringify({
-    courseTitle: course.title ?? '',
-    courseShortName: course.short_name,
-  });
+  req.headers['x-pl-course-context'] = encodeURIComponent(
+    JSON.stringify({
+      courseTitle: course.title ?? '',
+      courseShortName: course.short_name,
+    }),
+  );
   return authn_user.id;
 }
 

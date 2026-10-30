@@ -1,6 +1,11 @@
+import { once } from 'node:events';
+import { type IncomingMessage, createServer, request } from 'node:http';
+import type { AddressInfo } from 'node:net';
+
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { withResolvers } from '@prairielearn/utils';
 
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { config } from '../lib/config.js';
@@ -9,6 +14,7 @@ import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
+import { updateCourseColumn } from '../models/course.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -51,8 +57,7 @@ describe('Course agent access and conversation privacy', () => {
     features: config.features,
   };
 
-  // Enterprise routes must be mounted before starting the test server. These
-  // tests reject history requests in PL and never connect to the agent service.
+  // Enterprise routes must be mounted before starting the test server.
   beforeAll(() => {
     Object.assign(config, {
       isEnterprise: true,
@@ -132,5 +137,61 @@ describe('Course agent access and conversation privacy', () => {
     await withUser(owner, async () => {
       expect((await fetch(historyUrl(others.id))).status).toBe(404);
     });
+  });
+
+  test('proxies non-ASCII course context', async () => {
+    const title = 'Mécanique — 日本語 📚';
+    await updateCourseColumn({
+      courseId: '1',
+      columnName: 'title',
+      value: title,
+      authnUserId: owner.id,
+    });
+    const conversation = await createConversation(owner);
+    const upstream = withResolvers<IncomingMessage>();
+    const service = createServer((req, res) => {
+      upstream.resolve(req);
+      res.writeHead(101, { Upgrade: 'websocket', Connection: 'Upgrade' });
+      res.end();
+    });
+    service.listen(0, '127.0.0.1');
+    await once(service, 'listening');
+    const { port } = service.address() as AddressInfo;
+    try {
+      await withUser(owner, () =>
+        withConfig({ courseAgentServiceUrl: `http://127.0.0.1:${port}` }, async () => {
+          const path = `/pl/course/1/course_agent/conversations/${conversation.id}`;
+          const csrfToken = generatePrefixCsrfToken(
+            { url: path, authn_user_id: owner.id },
+            config.secretKey,
+          );
+          const handshake = request(`${siteUrl}${path}?csrfToken=${csrfToken}`, {
+            headers: { Connection: 'Upgrade', Upgrade: 'websocket', Cookie: 'browser=secret' },
+          });
+          const upgraded = withResolvers<number | undefined>();
+          handshake.once('error', upgraded.reject);
+          handshake.once('response', (response) => {
+            response.resume();
+            upgraded.resolve(response.statusCode);
+          });
+          handshake.once('upgrade', (response, socket) => {
+            socket.destroy();
+            upgraded.resolve(response.statusCode);
+          });
+          handshake.end();
+          expect(await upgraded.promise).toBe(101);
+          const forwarded = await upstream.promise;
+          expect(forwarded.url).toBe(`/conversations/${conversation.agent_conversation_id}`);
+          expect(forwarded.headers.authorization).toBe('Bearer test-token');
+          expect(forwarded.headers.cookie).toBeUndefined();
+          expect(
+            JSON.parse(decodeURIComponent(forwarded.headers['x-pl-course-context'] as string)),
+          ).toMatchObject({ courseTitle: title });
+        }),
+      );
+    } finally {
+      service.close();
+      await once(service, 'close');
+    }
   });
 });
