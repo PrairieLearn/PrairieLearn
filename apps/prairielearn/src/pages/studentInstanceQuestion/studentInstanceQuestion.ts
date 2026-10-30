@@ -313,7 +313,7 @@ router.get(
 router.get(
   '/',
   typedAsyncHandler<'instance-question'>(async (req, res) => {
-    const independentScrolling = await features.enabledFromLocals(
+    const questionHostingUpdate = await features.enabledFromLocals(
       'question-hosting-update',
       res.locals,
     );
@@ -343,7 +343,7 @@ router.get(
       if (last_variant_id == null) {
         res.status(403).send(
           StudentInstanceQuestion({
-            independentScrolling,
+            questionHostingUpdate,
             resLocals: res.locals,
             renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
@@ -406,7 +406,7 @@ router.get(
       : null;
     res.send(
       StudentInstanceQuestion({
-        independentScrolling,
+        questionHostingUpdate,
         resLocals: res.locals,
         renderState,
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
