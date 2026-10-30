@@ -24,7 +24,7 @@
   .question-page-layout {
     height: 100%;
     min-height: 0;
-    overflow: hidden;
+    overflow: auto;
   }
 
   /* Banners and navigation retain their natural height as the question panes shrink. */
@@ -42,7 +42,8 @@
 
   .question-page-layout .question-page-row {
     flex: 1;
-    min-height: 0;
+    /* Let the outer area scroll rather than collapse the panes below long warnings. */
+    min-height: min(20rem, 50dvh);
   }
 
   .question-page-layout :is(.question-page-question, .question-page-sidebar) {
