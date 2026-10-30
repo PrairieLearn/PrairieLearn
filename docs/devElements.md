@@ -54,18 +54,27 @@ And an `info.json` with the following contents:
 
 ## Element functions
 
-All element functions are of the following form:
+Element functions have the following signatures. Type annotations are optional; these examples use `import prairielearn as pl` for the question data types.
 
 ```python
-def fcn(element_html, data):
+import prairielearn as pl
+
+
+def prepare(element_html: str, data: pl.QuestionData) -> None: ...
+def render(element_html: str, data: pl.QuestionData) -> str: ...
+def parse(element_html: str, data: pl.QuestionData) -> None: ...
+def grade(element_html: str, data: pl.QuestionData) -> None: ...
+def test(element_html: str, data: pl.ElementTestData) -> None: ...
 ```
 
-Note that not all functions have the same return type. The arguments are:
+`pl.ElementTestData` extends `pl.QuestionData` with the `test_type` key. Functions with a `None` return type modify `data` in place and do not need a `return` statement. The `render()` function returns HTML as a string.
 
-| Argument       | Type   | Description                                                        |
-| -------------- | ------ | ------------------------------------------------------------------ |
-| `element_html` | string | The template HTML for the element.                                 |
-| `data`         | dict   | Mutable data for the question, which can be modified and returned. |
+All element functions take `element_html` first and `data` second. This differs from the [question-level `render()` function](question/server.md#serverpy-functions), which takes `data` first and the rendered HTML second. The arguments are:
+
+| Argument       | Type   | Description                                                     |
+| -------------- | ------ | --------------------------------------------------------------- |
+| `element_html` | string | The template HTML for the element.                              |
+| `data`         | dict   | Data for the question; permitted keys can be modified in place. |
 
 The `data` dictionary has the following possible keys (not all keys will be present in all element functions):
 

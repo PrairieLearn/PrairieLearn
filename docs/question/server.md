@@ -324,7 +324,27 @@ def grade(data):
 
 ## `server.py` functions
 
-This table summarizes the functions that can be defined in `server.py`.
+The functions that can be defined in `server.py` have the following signatures. Type annotations are optional; these examples use `import prairielearn as pl` for the question data types.
+
+```python
+import io
+from collections.abc import Buffer
+
+import prairielearn as pl
+
+
+def generate(data: pl.QuestionData) -> None: ...
+def prepare(data: pl.QuestionData) -> None: ...
+def render(data: pl.QuestionData, html: str) -> str: ...
+def parse(data: pl.QuestionData) -> None: ...
+def grade(data: pl.QuestionData) -> None: ...
+def file(data: pl.QuestionData) -> str | Buffer | io.IOBase | None: ...
+def test(data: pl.ElementTestData) -> None: ...
+```
+
+`pl.ElementTestData` extends `pl.QuestionData` with the `test_type` key. For `file()`, `Buffer` covers bytes-like objects such as `bytes`, `bytearray`, and `memoryview`; `io.IOBase` covers file-like objects such as `io.StringIO` and `io.BytesIO`. Annotate your own `file()` function with the specific type it returns.
+
+This table summarizes what each function does.
 
 | Function     | Updates `data`?    | Modifiable `data` keys                                                                                   | Description                                                                                                                                                                                                                                                                   |
 | ------------ | ------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -336,7 +356,7 @@ This table summarizes the functions that can be defined in `server.py`.
 | `file()`     | :x:                | N/A. Returns an `object` (string, bytes-like, file-like)                                                 | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
 | `test()`     | :white_check_mark: | `feedback`, `format_errors`, `gradable`, `partial_scores`, `raw_submitted_answers`, `score`              | Generate test cases to ensure the question can grade a variety of student inputs.                                                                                                                                                                                             |
 
-As shown in the table, all functions (except for `render`) accept a single argument, `data` (a dictionary), and modify it in place. The `render` function accepts two arguments: the `data` dictionary and the `html` content computed from the template and elements.
+All functions except `render()` accept a single argument, `data` (a dictionary). The `render()` function accepts two arguments: the `data` dictionary and the `html` content computed from the template and elements, in that order. Functions with a `None` return type modify `data` in place and do not need a `return` statement. The `render()` and `file()` functions return content instead of modifying `data`.
 
 ### `data` dictionary
 
