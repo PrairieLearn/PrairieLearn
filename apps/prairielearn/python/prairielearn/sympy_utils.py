@@ -15,7 +15,7 @@ from collections import deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from functools import wraps
+from functools import lru_cache, wraps
 from io import StringIO
 from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
 from types import CodeType
@@ -37,6 +37,63 @@ from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
 from prairielearn.misc_utils import full_unidecode
+
+__all__ = [
+    "SET_NOTATION_OPERATORS",
+    "STANDARD_OPERATORS",
+    "SYMPY_PARSE_ERROR_WITHOUT_LOCATION",
+    "ASTSympyType",
+    "ASTWhiteListT",
+    "AllowedSympyType",
+    "AssumptionsDictT",
+    "BaseSympyError",
+    "CheckAST",
+    "FunctionNameWithoutArgumentsError",
+    "HasArgumentTypeError",
+    "HasCommentError",
+    "HasComplexError",
+    "HasConflictingFunctionError",
+    "HasConflictingVariableError",
+    "HasEscapeError",
+    "HasFloatError",
+    "HasFunctionArityError",
+    "HasInvalidAssumptionError",
+    "HasInvalidExpressionError",
+    "HasInvalidFunctionError",
+    "HasInvalidSymbolError",
+    "HasInvalidVariableError",
+    "HasParseError",
+    "HasSetNotationError",
+    "LocalsForEval",
+    "SympyFunctionMapT",
+    "SympyJson",
+    "SympyMapT",
+    "SympyParseFailure",
+    "SympyParseResult",
+    "SympyParseSuccess",
+    "SympyValue",
+    "ast_check_str",
+    "check_sympy_types",
+    "convert_string_to_sympy",
+    "convert_string_to_sympy_with_source",
+    "evaluate",
+    "evaluate_with_source",
+    "find_symbol_offset",
+    "get_builtin_callable_functions",
+    "get_builtin_constants",
+    "get_builtin_functions",
+    "get_items_list",
+    "greek_unicode_transform",
+    "is_sympy_json",
+    "json_to_sympy",
+    "normalize_formula_editor_output",
+    "point_to_error",
+    "sympy_check",
+    "sympy_to_json",
+    "try_parse_string_as_sympy",
+    "validate_names_for_conflicts",
+    "validate_string_as_sympy",
+]
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
@@ -1903,6 +1960,44 @@ def json_to_sympy(
     return result
 
 
+_ABSOLUTE_VALUE_PATTERN = re.compile(
+    r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
+)
+_BAR_PATTERN = re.compile(r"\|")
+
+
+def _normalize_absolute_value_bars(submission: str, *, allow_sets: bool) -> str | None:
+    """Replace absolute-value bars with syntax understood by the SymPy parser."""
+    # The formula editor writes \lvert, \rvert and \mid as U+2223 (DIVIDES).
+    submission = submission.replace("\u2223", "|")
+
+    search_from = 0
+    preceding_bars: list[int] = []
+    while match := _ABSOLUTE_VALUE_PATTERN.search(submission, search_from):
+        preceding_bars.extend(
+            bar_match.start()
+            for bar_match in _BAR_PATTERN.finditer(
+                submission, search_from, match.start()
+            )
+        )
+
+        content = match.group(0)[1:-1]
+        if allow_sets and "," in content:
+            preceding_bars.append(match.start())
+            search_from = match.start() + 1
+            continue
+
+        submission = (
+            submission[: match.start()] + f"abs({content})" + submission[match.end() :]
+        )
+        search_from = preceding_bars.pop() if preceding_bars else match.start()
+
+    if not allow_sets and "|" in submission:
+        return None
+
+    return submission
+
+
 @overload
 def try_parse_string_as_sympy(
     expr: str,
@@ -1965,6 +2060,14 @@ def try_parse_string_as_sympy(
         else:
             print(result.expr)
     """
+    normalized_expr = _normalize_absolute_value_bars(expr, allow_sets=allow_sets)
+    if normalized_expr is None:
+        return SympyParseFailure(
+            "The absolute value bars in your answer are mismatched or ambiguous: "
+            f"<code>{html.escape(expr)}</code>."
+        )
+    expr = normalized_expr
+
     if allowed_types is None:
         allowed_types = {"all"} if allow_sets else {"expression"}
 
@@ -2097,6 +2200,335 @@ def try_parse_string_as_sympy(
         return type_failure
 
     return SympyParseSuccess(expr_parsed)
+
+
+# From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
+_GREEK_ALPHABET = {
+    0x0391: "Alpha",
+    0x0392: "Beta",
+    0x0393: "Gamma",
+    0x0394: "Delta",
+    0x0395: "Epsilon",
+    0x0396: "Zeta",
+    0x0397: "Eta",
+    0x0398: "Theta",
+    0x0399: "Iota",
+    0x039A: "Kappa",
+    0x039B: "Lambda",
+    0x039C: "Mu",
+    0x039D: "Nu",
+    0x039E: "Xi",
+    0x039F: "Omicron",
+    0x03A0: "Pi",
+    0x03A1: "Rho",
+    0x03A3: "Sigma",
+    0x03A4: "Tau",
+    0x03A5: "Upsilon",
+    0x03A6: "Phi",
+    0x03A7: "Chi",
+    0x03A8: "Psi",
+    0x03A9: "Omega",
+    0x03B1: "alpha",
+    0x03B2: "beta",
+    0x03B3: "gamma",
+    0x03B4: "delta",
+    0x03B5: "epsilon",
+    0x03B6: "zeta",
+    0x03B7: "eta",
+    0x03B8: "theta",
+    0x03B9: "iota",
+    0x03BA: "kappa",
+    0x03BB: "lambda",
+    0x03BC: "mu",
+    0x03BD: "nu",
+    0x03BE: "xi",
+    0x03BF: "omicron",
+    0x03C0: "pi",
+    0x03C1: "rho",
+    0x03C3: "sigma",
+    0x03C4: "tau",
+    0x03C5: "upsilon",
+    0x03C6: "phi",
+    0x03C7: "chi",
+    0x03C8: "psi",
+    0x03C9: "omega",
+}
+
+
+def greek_unicode_transform(input_str: str) -> str:
+    """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
+    return input_str.translate(_GREEK_ALPHABET)
+
+
+_PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
+
+
+def _restore_formula_editor_plus_minus(submission: str, latex: str) -> str | None:
+    r"""Restore formula-editor ``\pm`` tokens without changing typed ``+-``."""
+    from_plus_minus = [
+        match.group(0).startswith("\\")
+        for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
+    ]
+    parts = submission.split("+-")
+    if len(parts) - 1 != len(from_plus_minus):
+        return None
+    if not any(from_plus_minus):
+        return submission
+
+    result = [parts[0]]
+    for is_plus_minus, part in zip(from_plus_minus, parts[1:], strict=True):
+        result.extend(("±" if is_plus_minus else "+-", part))
+    return "".join(result)
+
+
+def _format_formula_editor_greek_character(character: str) -> str:
+    transformed = greek_unicode_transform(character)
+    return " " + " ".join(transformed) + " " if transformed != character else character
+
+
+def _merge_formula_editor_tokens(text: str, tokens: Sequence[str]) -> str:
+    result: list[str] = []
+    index = 0
+    spaced_tokens = sorted(
+        ((token, " ".join(token)) for token in tokens),
+        key=lambda item: -len(item[1]),
+    )
+    while index < len(text):
+        for token, spaced_token in spaced_tokens:
+            if text.startswith(spaced_token, index):
+                result.append(token)
+                index += len(spaced_token)
+                break
+        else:
+            result.append(text[index])
+            index += 1
+    return "".join(result)
+
+
+def _add_formula_editor_multiplication_spaces(
+    text: str, protected_tokens: Sequence[str]
+) -> str:
+    protected_positions: set[int] = set()
+    for token in protected_tokens:
+        if not re.search(r"\d", token):
+            continue
+        for match in re.finditer(re.escape(token), text):
+            protected_positions.update(range(match.start(), match.end()))
+
+    result: list[str] = []
+    for index, character in enumerate(text):
+        result.append(character)
+        if (
+            index + 1 < len(text)
+            and character.isalpha()
+            and text[index + 1].isdigit()
+            and index + 1 not in protected_positions
+        ):
+            result.append(" ")
+    return "".join(result)
+
+
+_TRAILING_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_]\w*$")
+
+
+def _is_implicit_multiplication_parenthesis(
+    text: str,
+    argument_start: int,
+    argument_end: int,
+    function_names: frozenset[str],
+) -> bool:
+    if argument_end == argument_start:
+        return False
+
+    name_start = argument_end
+    while name_start > argument_start and (
+        text[name_start - 1].isalnum() or text[name_start - 1] == "_"
+    ):
+        name_start -= 1
+    name = _TRAILING_IDENTIFIER_PATTERN.search(text, name_start, argument_end)
+    if name is not None:
+        return name.group(0) not in function_names
+    if text[argument_end - 1].isdigit():
+        return True
+    return text[argument_end - 1] in ")]}"
+
+
+@lru_cache(maxsize=128)
+def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+    names = sorted(function_names, key=len, reverse=True)
+    return re.compile(
+        r"(?P<function>(?<![A-Za-z_])(?:"
+        + "|".join(map(re.escape, names))
+        + r")\s+(?=[^\s(]))|(?P<token>\*+|[()\[\]{}+\-/,])"
+    )
+
+
+def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
+    """Parenthesize bare function arguments that end at multiplication."""
+    if not function_names:
+        return text
+    pattern = _bare_function_token_pattern(function_names)
+
+    insertions: list[tuple[int, str]] = []
+    pending_arguments: dict[int, int] = {}
+    depth = 0
+    for match in pattern.finditer(text):
+        if match.lastgroup == "function":
+            pending_arguments.setdefault(depth, match.end())
+            continue
+
+        token = match.group(0)
+        match token:
+            case "(" | "*":
+                start = pending_arguments.get(depth)
+                if start is not None:
+                    argument_end = match.start()
+                    while argument_end > start and text[argument_end - 1].isspace():
+                        argument_end -= 1
+                    if token == "*" or _is_implicit_multiplication_parenthesis(
+                        text, start, argument_end, function_names
+                    ):
+                        pending_arguments.pop(depth)
+                        insertions.extend(((start, "("), (argument_end, ")")))
+                if token == "(":
+                    depth += 1
+            case "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
+            case "+" | "-" | "/" | ",":
+                pending_arguments.pop(depth, None)
+            case _:
+                pass
+
+    result: list[str] = []
+    position = 0
+    for index, parenthesis in sorted(insertions):
+        result.extend((text[position:index], parenthesis))
+        position = index
+    result.append(text[position:])
+    return "".join(result)
+
+
+def _normalize_formula_editor_submission(
+    submission: str,
+    known_tokens: Sequence[str],
+    function_names: frozenset[str],
+    *,
+    latex: str | None,
+) -> str | None:
+    """Normalize formula-editor transport output before symbolic parsing."""
+    text = (
+        submission
+        if latex is None
+        else _restore_formula_editor_plus_minus(submission, latex)
+    )
+    if text is None:
+        return None
+
+    text = text.replace("{:", "").replace(":}", "")
+    text = text.replace("-:", "/").replace(" ** ", " * ")
+    text = "".join(
+        _format_formula_editor_greek_character(character) for character in text
+    )
+    text = _merge_formula_editor_tokens(text, known_tokens)
+    text = _add_formula_editor_multiplication_spaces(text, known_tokens)
+    return _wrap_bare_function_arguments(text, function_names)
+
+
+def _build_formula_editor_tokens(
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    allow_trig_functions: bool,
+    allow_sets: bool,
+) -> list[str]:
+    tokens = (
+        list(STANDARD_OPERATORS)
+        + list(
+            get_builtin_functions(
+                allow_trig_functions=allow_trig_functions,
+                allow_sets=allow_sets,
+            )
+        )
+        + list(custom_functions)
+        + list(variables)
+    )
+    tokens += [
+        greek_unicode_transform(token)
+        for token in tokens
+        if greek_unicode_transform(token) != token
+    ]
+    return [token for token in tokens if len(token) > 1 and token != "**"]
+
+
+@overload
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str: ...
+
+
+@overload
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    latex: str | None,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str | None: ...
+
+
+def normalize_formula_editor_output(
+    submission: str,
+    variables: Iterable[str] | None,
+    *,
+    latex: str | None = None,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+) -> str | None:
+    r"""Normalize MathLive formula-editor output for symbolic parsing.
+
+    The optional LaTeX representation recovers information lost in MathLive's
+    plain-text representation, such as the distinction between ``\pm`` and a
+    typed ``+-``.
+
+    Returns:
+        The normalized output, or ``None`` if the plain-text and LaTeX
+        representations cannot be matched.
+    """
+    variable_names = tuple(variables or ())
+    custom_function_names = tuple(custom_functions)
+    known_tokens = _build_formula_editor_tokens(
+        variable_names,
+        custom_function_names,
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    )
+    function_names = frozenset(
+        greek_unicode_transform(name)
+        for name in (
+            get_builtin_callable_functions(
+                allow_trig_functions=allow_trig_functions,
+                allow_sets=allow_sets,
+            )
+            | set(custom_function_names)
+        )
+    )
+    return _normalize_formula_editor_submission(
+        submission,
+        known_tokens,
+        function_names,
+        latex=latex,
+    )
 
 
 def validate_string_as_sympy(
@@ -2501,61 +2933,3 @@ def validate_names_for_conflicts(
             f'Element "{element_name}" specifies names that conflict with built-ins: '
             f"{', '.join(conflicts)}. These are automatically available and should not be listed."
         )
-
-
-# From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
-_GREEK_ALPHABET = {
-    0x0391: "Alpha",
-    0x0392: "Beta",
-    0x0393: "Gamma",
-    0x0394: "Delta",
-    0x0395: "Epsilon",
-    0x0396: "Zeta",
-    0x0397: "Eta",
-    0x0398: "Theta",
-    0x0399: "Iota",
-    0x039A: "Kappa",
-    0x039B: "Lambda",
-    0x039C: "Mu",
-    0x039D: "Nu",
-    0x039E: "Xi",
-    0x039F: "Omicron",
-    0x03A0: "Pi",
-    0x03A1: "Rho",
-    0x03A3: "Sigma",
-    0x03A4: "Tau",
-    0x03A5: "Upsilon",
-    0x03A6: "Phi",
-    0x03A7: "Chi",
-    0x03A8: "Psi",
-    0x03A9: "Omega",
-    0x03B1: "alpha",
-    0x03B2: "beta",
-    0x03B3: "gamma",
-    0x03B4: "delta",
-    0x03B5: "epsilon",
-    0x03B6: "zeta",
-    0x03B7: "eta",
-    0x03B8: "theta",
-    0x03B9: "iota",
-    0x03BA: "kappa",
-    0x03BB: "lambda",
-    0x03BC: "mu",
-    0x03BD: "nu",
-    0x03BE: "xi",
-    0x03BF: "omicron",
-    0x03C0: "pi",
-    0x03C1: "rho",
-    0x03C3: "sigma",
-    0x03C4: "tau",
-    0x03C5: "upsilon",
-    0x03C6: "phi",
-    0x03C7: "chi",
-    0x03C8: "psi",
-    0x03C9: "omega",
-}
-
-
-def greek_unicode_transform(input_str: str) -> str:
-    """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
-    return input_str.translate(_GREEK_ALPHABET)
