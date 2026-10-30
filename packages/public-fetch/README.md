@@ -27,3 +27,16 @@ if (!response.ok) {
 As with `fetch()`, callers should consume or cancel the response body so the underlying connection
 can be released. Callers handling untrusted responses should stream the body and enforce
 content-specific size and format limits rather than using buffering helpers without a limit.
+
+Use `readResponseWithLimit(response, maxBytes)` to buffer a response with a byte limit. It returns a
+`Buffer` and throws `ResponseTooLargeError` if the advertised or streamed size exceeds the limit,
+canceling the body. Streamed bytes are counted after decompression. Choose a limit appropriate for
+the content and validate its format separately.
+
+```ts
+import { publicFetch, readResponseWithLimit } from '@prairielearn/public-fetch';
+
+const response = await publicFetch('https://example.com/catalog.json');
+const body = await readResponseWithLimit(response, 1024 * 1024);
+const catalog: unknown = JSON.parse(body.toString('utf8'));
+```

@@ -218,6 +218,7 @@ overrides:
   linkinator>marked: ^18
   markdownlint-cli2>smol-toml: ^1
   notebookjs>jsdom: '*'
+  jsdom>undici: ^8.12.3
 
 importers:
 
@@ -462,9 +463,12 @@ importers:
       '@ai-sdk/openai':
         specifier: ^4.0.78
         version: 4.0.78(zod@4.6.5)
+      '@ai-sdk/openai-compatible':
+        specifier: ^3.0.67
+        version: 3.0.67(zod@4.6.5)
       '@ai-sdk/provider':
         specifier: ^4.0.18
-        version: 4.0.18
+        version: 4.0.26
       '@ai-sdk/react':
         specifier: ^4.0.119
         version: 4.0.121(react@19.3.0)(zod@4.6.5)
@@ -1125,9 +1129,6 @@ importers:
       socket.io-client:
         specifier: ^4.8.4
         version: 4.8.4(supports-color@7.2.0)
-      streamifier:
-        specifier: ^0.1.1
-        version: 0.1.1
       strip-ansi:
         specifier: ^7.2.0
         version: 7.2.0
@@ -1164,9 +1165,6 @@ importers:
       use-stick-to-bottom:
         specifier: ^1.1.6
         version: 1.1.6(react@19.3.0)
-      vite:
-        specifier: ^8.3.1
-        version: 8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)
       web-tree-sitter:
         specifier: ^0.26.13
         version: 0.26.13
@@ -1195,9 +1193,6 @@ importers:
       '@prairielearn/express-list-endpoints':
         specifier: workspace:^
         version: link:../../packages/express-list-endpoints
-      '@prairielearn/vite-plugin-express':
-        specifier: workspace:^
-        version: link:../../packages/vite-plugin-express
       '@sa11y/format':
         specifier: ^8.1.1
         version: 8.1.1
@@ -1330,9 +1325,6 @@ importers:
       '@types/serve-static':
         specifier: ^2.2.0 <3
         version: 2.2.0
-      '@types/streamifier':
-        specifier: ^0.1.2
-        version: 0.1.2
       '@types/tmp':
         specifier: ^0.2.6
         version: 0.2.6
@@ -1414,9 +1406,6 @@ importers:
       '@socket.io/redis-emitter':
         specifier: ^5.1.0
         version: 5.1.0(supports-color@7.2.0)
-      archiver:
-        specifier: ^8.0.0
-        version: 8.0.0
       async:
         specifier: ^3.2.6
         version: 3.2.6
@@ -1454,9 +1443,6 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../../packages/tsconfig
-      '@types/archiver':
-        specifier: ^8.0.0
-        version: 8.0.0
       '@types/async':
         specifier: ^3.2.26
         version: 3.2.26
@@ -1751,9 +1737,6 @@ importers:
       csv-stringify:
         specifier: ^6.9.0
         version: 6.9.0
-      multipipe:
-        specifier: ^4.0.0
-        version: 4.0.0
       stream-transform:
         specifier: ^3.6.0
         version: 3.6.0
@@ -1761,9 +1744,6 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
-      '@types/multipipe':
-        specifier: ^3.0.5
-        version: 3.0.5
       '@types/node':
         specifier: ^24.19.0
         version: 24.19.0
@@ -2047,6 +2027,9 @@ importers:
       es-toolkit:
         specifier: ^1.52.0
         version: 1.52.0
+      lru-cache:
+        specifier: ^11.5.3
+        version: 11.5.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -2462,8 +2445,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       undici:
-        specifier: ^8.11.2
-        version: 8.11.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -2545,8 +2528,8 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(vitest@5.0.2)
       undici:
-        specifier: ^8.11.2
-        version: 8.11.2
+        specifier: ^8.12.3
+        version: 8.12.3
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -2911,34 +2894,6 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
-  packages/vite-plugin-express:
-    dependencies:
-      debounce:
-        specifier: ^3.0.0
-        version: 3.0.0
-      picomatch:
-        specifier: ^4.0.7
-        version: 4.0.7
-      strip-ansi:
-        specifier: ^7.2.0
-        version: 7.2.0
-      vite:
-        specifier: ^8.3.1
-        version: 8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)
-    devDependencies:
-      '@prairielearn/tsconfig':
-        specifier: workspace:^
-        version: link:../tsconfig
-      '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
-      '@types/picomatch':
-        specifier: ^4.0.3
-        version: 4.0.3
-      '@typescript/native':
-        specifier: npm:typescript@^7.0.2
-        version: typescript@7.0.2
-
   packages/workspace-utils:
     dependencies:
       '@prairielearn/path-utils':
@@ -2953,6 +2908,9 @@ importers:
       '@socket.io/redis-emitter':
         specifier: ^5.1.0
         version: 5.1.0(supports-color@7.2.0)
+      archiver:
+        specifier: ^8.0.0
+        version: 8.0.0
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -2969,6 +2927,9 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
+      '@types/archiver':
+        specifier: ^8.0.0
+        version: 8.0.0
       '@types/node':
         specifier: ^24.19.0
         version: 24.19.0
@@ -3057,6 +3018,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/openai-compatible@3.0.67':
+    resolution: {integrity: sha512-w1l+CRQoPgXGRuDMpD0hal7RWXYXzbr0uMzTF7L/zHusYRUfwQHphs/voY/H8yMWLc+8chu2UCfvfwUGSANubA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/openai@4.0.78':
     resolution: {integrity: sha512-S9WLSZUqebRjZbwYM8uorb4fsjo4Lhz/PGA3rWl01x88WeF/1PdHtNckcxqNZy5xMRzCHPVv9iA3F+ckV74zfA==}
     engines: {node: '>=22'}
@@ -3069,8 +3036,18 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider-utils@5.0.58':
+    resolution: {integrity: sha512-iXSwKR/7LpHzAlyrUl+bTinwzmZ3Nmup1viwPisM5Gn5cogRdIG4rV9w1ZDuKFcrXyu/AeVs42E1CX/0aNwrfQ==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider@4.0.18':
     resolution: {integrity: sha512-+GZJIgz1jk86pwEbb3f1BD2bdoSKyWE4Jg4YUc7NMnMozbWemSKYZcw2F4nMaO5qwsL5A8RmioAKW81YktRpIQ==}
+    engines: {node: '>=22'}
+
+  '@ai-sdk/provider@4.0.26':
+    resolution: {integrity: sha512-BZ443uBEq6HuMA+Z4b7Hpm65GpZSo7pWqnYqpf/7tAO3C48JbtvAhOE2JnODFj+jodsZzfRHkAyQb64xuD2tZQ==}
     engines: {node: '>=22'}
 
   '@ai-sdk/react@4.0.121':
@@ -5695,9 +5672,6 @@ packages:
   '@types/multer@2.2.0':
     resolution: {integrity: sha512-3U1troeqGV8Ntp7Q3klwf4zr23VEoqYVocYXaswm9+8z3O9UHDYAqLxjJ/h550iRADTjKdOdhhasXw6gD6kYtg==}
 
-  '@types/multipipe@3.0.5':
-    resolution: {integrity: sha512-mHBbV67bsmUtLtio0gj/GPzGsjv+Y6K1ff/48iR6YAfFfLkBtRIR0M5lZPbkMCyHGrCZM9p3VNnfY1QCws4t4w==}
-
   '@types/mustache@4.2.6':
     resolution: {integrity: sha512-t+8/QWTAhOFlrF1IVZqKnMRJi84EgkIK5Kh0p2JV4OLywUvCwJPFxbJAl7XAow7DVIHsF+xW9f1MVzg0L6Szjw==}
 
@@ -5749,9 +5723,6 @@ packages:
   '@types/pg@8.23.1':
     resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
 
-  '@types/picomatch@4.0.3':
-    resolution: {integrity: sha512-iG0T6+nYJ9FAPmx9SsUlnwcq1ZVRuCXcVEvWnntoPlrOpwtSTKNDC9uVAxTsC3PUvJ+99n4RpAcNgBbHX3JSnQ==}
-
   '@types/qrcode-svg@1.1.5':
     resolution: {integrity: sha512-GjkD+HB8S1wrIsf3skHDtcYBjzNhTxocMbX+wG166xDkaVOnLiMUla7bLjbwxo6mMvqqWQNP0Dk8nkIeizSmnw==}
 
@@ -5800,9 +5771,6 @@ packages:
 
   '@types/ssh2@1.15.5':
     resolution: {integrity: sha512-N1ASjp/nXH3ovBHddRJpli4ozpk6UdDYIX4RJWFa9L1YKnzdhTlVmiGHm4DZnj/jLbqZpes4aeR30EFGQtvhQQ==}
-
-  '@types/streamifier@0.1.2':
-    resolution: {integrity: sha512-W53GwxY5Tunz3JUoP1YWDidrAadenSZKOBKMRl6RO3yThOFd03w7yx3HypI8ABGuUCGDHCHUml/5e45FWRt1TQ==}
 
   '@types/tmp@0.2.6':
     resolution: {integrity: sha512-chhaNf2oKHlRkDGt+tiKE2Z5aJ6qalm7Z9rlLdBwmOiAAf09YQvvoLXjWK4HWPF1xU/fqvMgfNfpVoBscA/tKA==}
@@ -7108,10 +7076,6 @@ packages:
 
   dateformat@4.6.3:
     resolution: {integrity: sha512-2P0p0pFGzHS5EMnhdxQi7aJN+iMheud0UhG4dlE1DLAlvL8JHjJJTX/CSm4JXwV0Ka5nGk3zC5mcb5bUQUxxMA==}
-
-  debounce@3.0.0:
-    resolution: {integrity: sha512-64byRbF0/AirwbuHqB3/ZpMG9/nckDa6ZA0yd6UnaQNwbbemCOwvz2sL5sjXLHhZHADyiwLm0M5qMhltUUx+TA==}
-    engines: {node: '>=20'}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -9002,9 +8966,6 @@ packages:
     resolution: {integrity: sha512-7dqa0ZcFfzbefdTuIkzOSMvZWC0J7FLqBOjJUZvDCXShIURWKxAyTT1wHhnE5q19c7jOJf43IYYKjBmZVZmvhg==}
     engines: {node: '>= 10.16.0'}
 
-  multipipe@4.0.0:
-    resolution: {integrity: sha512-jzcEAzFXoWwWwUbvHCNPwBlTz3WCWe/jPcXSmTfbo/VjRwRTfvLZ/bdvtiTdqCe8d4otCSsPCbhGYcX+eggpKQ==}
-
   mustache@4.2.0:
     resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
     hasBin: true
@@ -10140,10 +10101,6 @@ packages:
   stream-transform@3.6.0:
     resolution: {integrity: sha512-iDtH6HV1MOQ3Ipva+9g/kke1uVLubZlEbGCxbWWlI+Ak++sDRQRxmPZ1iXlmXdLK6kP5fIziUf79GBB7erbppQ==}
 
-  streamifier@0.1.1:
-    resolution: {integrity: sha512-zDgl+muIlWzXNsXeyUfOk9dChMjlpkq0DRsxujtYPgyJ676yQ8jEm6zzaaWHFDg5BNcLuif0eD2MTyJdZqXpdg==}
-    engines: {node: '>=0.10'}
-
   streamsearch@0.1.2:
     resolution: {integrity: sha512-jos8u++JKm0ARcSUTAZXOVC0mSox7Bhn6sBgty73P1f3JGf7yG2clTbBNHUdde/kdvP2FESam+vM6l8jBrNxHA==}
     engines: {node: '>=0.8.0'}
@@ -10509,16 +10466,16 @@ packages:
   undici-types@8.11.2:
     resolution: {integrity: sha512-iMVNmWZ0leK/goS6eXMizSzmm9CDWtyphwbaCms3DNLqRxDL+mMoNVcZMTyyVgXP0N+Z8neAMzDoUOUJL8veKg==}
 
-  undici@6.28.0:
-    resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
+  undici@6.29.1:
+    resolution: {integrity: sha512-EvRlUt/QqAEvXdQeRMYUfwOQsfzpDztykrG2owGEE/rBOBoYv9uF39ZzsNDh4lTFHhTr2XOZjKkYgueD12ZmGA==}
     engines: {node: '>=18.17'}
 
-  undici@7.29.0:
-    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
+  undici@7.30.1:
+    resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.11.2:
-    resolution: {integrity: sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==}
+  undici@8.12.3:
+    resolution: {integrity: sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==}
     engines: {node: '>=22.19.0'}
 
   unicorn-magic@0.3.0:
@@ -10994,17 +10951,17 @@ snapshots:
       '@octokit/plugin-rest-endpoint-methods': 17.0.0(@octokit/core@7.0.7)
       '@octokit/request': 10.0.13
       '@octokit/request-error': 7.1.1
-      undici: 6.28.0
+      undici: 6.29.1
 
   '@actions/http-client@3.0.2':
     dependencies:
       tunnel: 0.0.6
-      undici: 6.28.0
+      undici: 6.29.1
 
   '@actions/http-client@4.0.1':
     dependencies:
       tunnel: 0.0.6
-      undici: 6.28.0
+      undici: 6.29.1
 
   '@actions/io@3.0.2': {}
 
@@ -11035,6 +10992,12 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.6.5
 
+  '@ai-sdk/openai-compatible@3.0.67(zod@4.6.5)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.26
+      '@ai-sdk/provider-utils': 5.0.58(zod@4.6.5)
+      zod: 4.6.5
+
   '@ai-sdk/openai@4.0.78(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 4.0.18
@@ -11047,10 +11010,23 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.0
-      undici: 7.29.0
+      undici: 7.30.1
+      zod: 4.6.5
+
+  '@ai-sdk/provider-utils@5.0.58(zod@4.6.5)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.26
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.0
+      undici: 7.30.1
       zod: 4.6.5
 
   '@ai-sdk/provider@4.0.18':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@4.0.26':
     dependencies:
       json-schema: 0.4.0
 
@@ -13844,10 +13820,6 @@ snapshots:
     dependencies:
       '@types/express': 4.17.25
 
-  '@types/multipipe@3.0.5':
-    dependencies:
-      '@types/node': 24.19.0
-
   '@types/mustache@4.2.6': {}
 
   '@types/node-jose@1.1.13':
@@ -13915,8 +13887,6 @@ snapshots:
       pg-protocol: 1.16.0
       pg-types: 2.2.0
 
-  '@types/picomatch@4.0.3': {}
-
   '@types/qrcode-svg@1.1.5': {}
 
   '@types/qs@6.15.1': {}
@@ -13970,10 +13940,6 @@ snapshots:
   '@types/ssh2@1.15.5':
     dependencies:
       '@types/node': 18.19.130
-
-  '@types/streamifier@0.1.2':
-    dependencies:
-      '@types/node': 24.19.0
 
   '@types/tmp@0.2.6': {}
 
@@ -14773,7 +14739,7 @@ snapshots:
       parse5: 7.3.0
       parse5-htmlparser2-tree-adapter: 7.1.0
       parse5-parser-stream: 7.1.2
-      undici: 7.29.0
+      undici: 7.30.1
       whatwg-mimetype: 4.0.0
 
   chokidar@3.6.0:
@@ -15170,8 +15136,6 @@ snapshots:
   date-fns@4.4.0: {}
 
   dateformat@4.6.3: {}
-
-  debounce@3.0.0: {}
 
   debug@2.6.9(supports-color@7.2.0):
     dependencies:
@@ -16648,7 +16612,7 @@ snapshots:
       parse5: 8.0.1
       saxes: 6.0.0
       tough-cookie: 6.0.2
-      undici: 8.11.2
+      undici: 8.12.3
       w3c-xmlserializer: 6.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -16900,7 +16864,7 @@ snapshots:
       mime: 4.1.0
       saxes: 6.0.0
       srcset: 5.0.3
-      undici: 8.11.2
+      undici: 8.12.3
 
   locate-path@6.0.0:
     dependencies:
@@ -17479,11 +17443,6 @@ snapshots:
       busboy: 1.6.0
       type-is: 1.6.18
 
-  multipipe@4.0.0:
-    dependencies:
-      duplexer2: 0.1.4
-      object-assign: 4.1.1
-
   mustache@4.2.0: {}
 
   mv@2.1.1:
@@ -17542,7 +17501,7 @@ snapshots:
       semver: 7.8.5
       tar: 7.5.22
       tinyglobby: 0.2.17
-      undici: 8.11.2
+      undici: 8.12.3
       which: 7.0.0
 
   node-int64@0.4.0: {}
@@ -18773,8 +18732,6 @@ snapshots:
 
   stream-transform@3.6.0: {}
 
-  streamifier@0.1.1: {}
-
   streamsearch@0.1.2: {}
 
   streamsearch@1.1.0: {}
@@ -19204,11 +19161,11 @@ snapshots:
 
   undici-types@8.11.2: {}
 
-  undici@6.28.0: {}
+  undici@6.29.1: {}
 
-  undici@7.29.0: {}
+  undici@7.30.1: {}
 
-  undici@8.11.2: {}
+  undici@8.12.3: {}
 
   unicorn-magic@0.3.0: {}
 

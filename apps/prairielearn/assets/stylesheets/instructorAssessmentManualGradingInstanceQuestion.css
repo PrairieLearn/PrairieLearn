@@ -4,22 +4,9 @@
 }
 
 .instance-question-manual-grading {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  height: auto;
   min-height: 0;
   container-name: manual-grading;
   container-type: inline-size;
-}
-
-.instance-question-manual-grading-header {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding-bottom: 1rem;
 }
 
 .instance-question-manual-grading-panes {
@@ -37,6 +24,7 @@
 }
 
 @container manual-grading (max-width: 1099.98px) {
+  /* Stacked content scrolls in PageLayout's main container instead of each pane. */
   .instance-question-manual-grading-panes {
     display: block;
     flex: 0 0 auto;

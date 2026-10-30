@@ -9,6 +9,7 @@ import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { CourseSharingNameSchema } from '../../lib/client/course-sharing.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -45,14 +46,6 @@ const SharingSetNameSchema = z
   .min(1, 'Sharing set name is required.')
   .refine((v) => !v.includes('/') && !v.includes('@'), {
     message: 'Sharing set name cannot contain "/" or "@".',
-  });
-
-const SharingNameSchema = z
-  .string()
-  .trim()
-  .min(1, 'Course sharing name is required.')
-  .refine((v) => !v.includes('/') && !v.includes('@'), {
-    message: 'Course sharing name cannot contain "/" or "@".',
   });
 
 const requireQuestionSharingEnabled = t.middleware(async (opts) => {
@@ -349,7 +342,7 @@ const chooseSharingName = t.procedure
   .use(requireCoursePermissionOwn)
   .use(requireQuestionSharingEnabled)
   .use(requireNotExampleCourse)
-  .input(z.object({ courseSharingName: SharingNameSchema }))
+  .input(z.object({ courseSharingName: CourseSharingNameSchema }))
   .mutation(async ({ input, ctx }) => {
     const existing = await findCoursesBySharingNames([input.courseSharingName]);
     const owner = existing.get(input.courseSharingName);

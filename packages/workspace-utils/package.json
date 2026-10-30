@@ -22,6 +22,7 @@
     "@prairielearn/postgres": "workspace:^",
     "@prairielearn/zod": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
+    "archiver": "^8.0.0",
     "fast-glob": "^3.3.3",
     "filesize": "^11.0.24",
     "socket.io": "^4.8.4",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/archiver": "^8.0.0",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.2",

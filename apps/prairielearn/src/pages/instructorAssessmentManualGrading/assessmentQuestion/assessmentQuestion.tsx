@@ -24,7 +24,7 @@ import {
   StaffStudentLabelSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
-import { getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
+import { getAssessmentQuestionTrpcUrl, getCourseInstanceTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
@@ -145,6 +145,13 @@ router.get(
       config.secretKey,
     );
 
+    const courseInstanceTrpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: getCourseInstanceTrpcUrl(course_instance.id),
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
     const availableAiGradingProviders = aiGradingEnabled
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
@@ -184,6 +191,7 @@ router.get(
                 urlPrefix={urlPrefix}
                 csrfToken={__csrf_token}
                 trpcCsrfToken={trpcCsrfToken}
+                courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
                 assessment={assessment}
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}

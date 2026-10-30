@@ -50,7 +50,6 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { isMultipartRequest } from '@prairielearn/trpc/express';
@@ -62,7 +61,7 @@ import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import { getCourseAdminQtiImportUrl } from './lib/client/url.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import { runDatabaseEncryptionOperation } from './lib/database-encryption-rotation.js';
 import { UserSchema } from './lib/db-types.js';
@@ -77,7 +76,6 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
-import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -1947,6 +1945,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/public/course_instance/:course_instance_id(\\d+)', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'public';
+      res.locals.urlPrefix = '/pl/public/course_instance/' + req.params.course_instance_id;
       next();
     },
     (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourseInstance,
@@ -1959,8 +1958,20 @@ export async function initExpress(): Promise<Express> {
     res.redirect(`${req.params[0]}/questions`);
   });
   app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzPublicAssessment.js')).default,
+  );
+  app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/file_view',
+    (await import('./pages/publicAssessmentFileBrowser/publicAssessmentFileBrowser.js')).default,
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/file_download',
+    (await import('./pages/publicAssessmentFileDownload/publicAssessmentFileDownload.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -2102,7 +2113,6 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 let server: http.Server | https.Server | undefined;
-let app: express.Express | undefined;
 
 export async function startServer(app: express.Express) {
   switch (config.serverType) {
@@ -2165,12 +2175,6 @@ export async function startServer(app: express.Express) {
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
-  // When using Vite in development, it is responsible for the server.
-  if (DEV_EXECUTION_MODE === 'hmr') {
-    return server;
-  }
-
-  // When Vite is not in use, start the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
@@ -2254,22 +2258,8 @@ function getPostgresConfig() {
   };
 }
 
-const isHMR = DEV_EXECUTION_MODE === 'hmr';
-
-if (isHMR && isServerPending()) {
-  throw new Error('The server was restarted, but it was not fully initialized.');
-}
-
-const shouldStartServer = run(() => {
-  if (!config.startServer) return false;
-  if (esMain(import.meta)) return true;
-  if (isHMR && !isServerInitialized()) return true;
-  return false;
-});
-
-if (shouldStartServer) {
+if (esMain(import.meta)) {
   try {
-    setServerState('pending');
     logger.verbose('PrairieLearn server start');
 
     let configPaths = [
@@ -2650,7 +2640,7 @@ if (shouldStartServer) {
     }
 
     logger.verbose('Starting server...');
-    app = await initExpress();
+    const app = await initExpress();
     const httpServer = await startServer(app);
 
     await socketServer.init(httpServer);
@@ -2681,20 +2671,13 @@ if (shouldStartServer) {
 
     // These should be the last things to start before we actually start taking
     // requests, as they may actually end up executing course code.
-    if (config.externalGradingEnableResults) {
-      await externalGraderResults.init();
-      await externalGraderDeadLetters.init();
-    }
+    await externalGraderResults.init();
+    await externalGraderDeadLetters.init();
 
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
-    // When HMR is active, we'll defer this error logging to the Vite plugin, which can
-    // do a better job.
-    if (!isHMR) {
-      logger.error('Error initializing PrairieLearn server:', err);
-    }
-
+    logger.error('Error initializing PrairieLearn server:', err);
     throw err;
   }
 
@@ -2719,42 +2702,13 @@ if (shouldStartServer) {
       });
     }
 
-    // By this point, we should no longer be attached to the load balancer,
-    // so there's no point shutting down the HTTP server or the socket.io
-    // server.
-    //
-    // We use `allSettled()` here to ensure that all tasks can gracefully
-    // shut down, even if some of them fail.
+    // Production deployments drain connections at the load balancer before
+    // stopping PrairieLearn. This sequence drains the background work that may
+    // outlive those connections.
     if (process.env.NODE_ENV !== 'test') {
       logger.info('Shutting down async processing');
     }
-    // First, stop all services that use the database.
-    const serviceResults = await Promise.allSettled([
-      externalGraderDeadLetters.stop(),
-      externalGraderResults.stop(),
-      cron.stop(),
-      serverJobs.stop(),
-      socketServer.close(),
-      cache.close(),
-      assets.close(),
-      codeCaller.finish(),
-      stopBatchedMigrations(),
-    ]);
-    serviceResults.forEach((r) => {
-      if (r.status === 'rejected') {
-        logger.error('Error shutting down async processing', r.reason);
-        Sentry.captureException(r.reason);
-      }
-    });
-
-    // Then close the database connections now that nothing is using them.
-    const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
-    dbResults.forEach((r) => {
-      if (r.status === 'rejected') {
-        logger.error('Error closing database connections', r.reason);
-        Sentry.captureException(r.reason);
-      }
-    });
+    await close();
 
     try {
       await lifecycleHooks.completeInstanceTermination();
@@ -2784,37 +2738,57 @@ if (shouldStartServer) {
     process.kill(process.pid, 'SIGTERM');
   });
 
-  setServerState('initialized');
   logger.info('PrairieLearn server ready, press Control-C to quit');
   if (config.devMode && process.env.NODE_ENV !== 'test') {
     logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
-} else if (isHMR && isServerInitialized()) {
-  // We need to re-initialize the server when we are running in HMR mode.
-  await socketServer.close();
-  app = await initExpress();
-  const httpServer = await startServer(app);
-  await socketServer.init(httpServer);
 }
 
 /**
- * Vite (and specifically our `@prairielearn/vite-plugin-express`) will call this
- * function when it wants to perform a full restart of the server. Anything that
- * creates long-lived resources (e.g. connection or worker pools) should be
- * cleaned up here.
+ * Stops background work before closing its dependencies and database pools.
  */
-export async function close() {
-  // These are run in the opposite order in which they're initialized/started.
-  await cron.stop();
-  await serverJobs.stop();
-  await socketServer.close();
-  await cache.close();
-  await assets.close();
-  await codeCaller.finish();
+async function close() {
+  // Disconnect clients before draining workspace startups, but keep Redis
+  // adapters available for progress broadcasts from running jobs.
+  socketServer.io?.engine.close();
+
+  // Stop polling and scheduled work and finish pending workspace startups while
+  // their shared dependencies are still available.
+  await settleShutdownTasks([
+    externalGraderDeadLetters.stop(),
+    externalGraderResults.stop(),
+    cron.stop(),
+    workspace.stop(),
+    stopBatchedMigrations(),
+  ]);
+
+  // Server jobs may render questions or publish progress after an await. Wait
+  // for their final status writes and notifications before closing dependencies.
+  await settleShutdownTasks([serverJobs.stop()]);
+
+  await settleShutdownTasks([
+    serverJobProgressSocket.close(),
+    socketServer.close(),
+    cache.close(),
+    assets.close(),
+    codeCaller.finish(),
+  ]);
   load.close();
-  await stopBatchedMigrations();
-  await namedLocks.close();
-  await sqldb.closeAsync();
+  nodeMetrics.stop();
+
+  // Close the database pools only after background work and its resources have
+  // finished shutting down.
+  await settleShutdownTasks([namedLocks.close(), sqldb.closeAsync()]);
 }
 
-export const viteExpressApp = app;
+async function settleShutdownTasks(tasks: Promise<unknown>[]) {
+  // A failed cleanup must not prevent the other tasks in this phase or later
+  // phases from shutting down.
+  const results = await Promise.allSettled(tasks);
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      logger.error('Error shutting down PrairieLearn', result.reason);
+      Sentry.captureException(result.reason);
+    }
+  }
+}

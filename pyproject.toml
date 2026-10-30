@@ -9,26 +9,26 @@ dependencies = [
   "ansi2html==1.9.5",
   "automata-lib==9.2.0",
   "chevron==0.14.0",
-  "coloraide==8.12.1",
+  "coloraide==8.13",
   "faker==40.39.0",
   "jinja2==3.1.6",
   "jsonschema==4.26.0",
   "lxml==6.1.3",
   "matplotlib==3.11.2",
-  "networkx==3.6.1",
+  "networkx==3.7",
   "nltk==3.10.3",
   "numpy==2.4.6",
   "openpyxl==3.1.5",
   "pandas==2.3.3",
-  "pillow==12.3.0",
-  "pint==0.25.3",
+  "pillow==13.0.0",
+  "pint==0.26.1",
   "psutil==7.2.2",
   "pulp==3.3.2",
   "pyarrow==25.0.1",
   "pycryptodome==3.23.0",
   "pygments==2.21.0",
   "pygments-ansi-color==0.3.0",
-  "pygraphviz==1.14",
+  "pygraphviz==2.0.3",
   "pyquaternion==0.9.9",
   "regex==2026.9.10",
   "requests==2.34.2",
@@ -52,9 +52,9 @@ dev = [
   "pytest-cov==7.1.0",
   "pytest-github-actions-annotate-failures==0.4.2",
   "pytest-repeat==0.9.4",
-  "ruff==0.16.7",
+  "ruff==0.16.9",
   "sqlfluff==4.3.0",
-  "squawk-cli==2.65.0",
+  "squawk-cli==2.66.0",
   "tomlkit==0.15.1",
   "types-chevron==0.14.2.20260408",
   "types-lxml==2026.2.16",
@@ -71,13 +71,13 @@ docs = [
   "mkdocs-literate-nav==0.6.3",
   "mkdocs-material==9.7.7",
   "mkdocstrings==1.0.6",
-  "mkdocstrings-python==2.0.8",
-  "pymdown-extensions==11.0.2",
+  "mkdocstrings-python==2.0.9",
+  "pymdown-extensions==12.1",
   # https://github.com/pygments/pygments/issues/3076
   "pygments==2.21.0",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.16.7",
+  "ruff==0.16.9",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
@@ -119,7 +119,6 @@ ignore = [
   "commented-out-code",  # too many false positives
   "line-too-long",
   "implicit-namespace-package",
-  "private-member-access",
   "print",
   "debugger",
   "blanket-type-ignore",
@@ -142,7 +141,6 @@ ignore = [
   "numpy-legacy-random",  # we use `np.random.*` in many places
   "import-outside-top-level",
   "compare-to-empty-string",
-  "import-private-name",
   "too-many-nested-blocks",
   "too-many-return-statements",
   "too-many-branches",
@@ -176,6 +174,26 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
+"!apps/prairielearn/elements/**" = [
+  "banned-api",
+  "import-private-name",
+  "private-member-access",
+]
+"apps/prairielearn/elements/**/*_test.py" = [
+  "banned-api",
+  "import-private-name",
+  "private-member-access",
+]
+"apps/prairielearn/elements/**/test_*.py" = [
+  "banned-api",
+  "import-private-name",
+  "private-member-access",
+]
+"apps/prairielearn/elements/**/tests/**" = [
+  "banned-api",
+  "import-private-name",
+  "private-member-access",
+]
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to
 # account for that.
@@ -245,6 +263,9 @@ convention = "google"
 # These are exact-output fixtures, not repository Python source.
 "packages/question-conversion/src/emitters/fixtures/**/server.py" = ["ALL"]
 
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"prairielearn.internal" = { msg = "Core elements must use public PrairieLearn APIs." }
+
 [tool.ruff.lint.pydoclint]
 # Skip docstrings which fit on a single line.
 ignore-one-line-docstrings = true
@@ -312,3 +333,6 @@ testpaths = [
 required-version = ">=0.9.0"
 # Ensures that all dependencies are installed whenever we use `uv run`.
 default-groups = "all"
+# PyGraphviz wheels bundle Graphviz and its font stack, which changes graph
+# rendering and emits Fontconfig warnings that surface as question issues.
+no-binary-package = ["pygraphviz"]

@@ -307,6 +307,9 @@
     },
   ];
 
+  // Bullet (U+2022), bullet operator (U+2219), and asterisk operator (U+2217)
+  const unicodeMultiplicationKeys = new Set(['•', '∙', '∗']);
+
   const isSelected = (mf) => {
     const firstSelection = mf.selection?.ranges?.[0];
     return firstSelection && firstSelection[1] !== firstSelection[0];
@@ -621,12 +624,14 @@
 
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
+      const latex = mf.getValue('latex');
       $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
-      $('#symbolic-input-latex-' + name).val(mf.getValue('latex'));
+      $('#symbolic-input-latex-' + name).val(latex.trim() === '' ? '' : latex);
     };
 
     updateSubmissionData();
     mf.addEventListener('input', updateSubmissionData);
+    mf.closest('form')?.addEventListener('submit', updateSubmissionData);
 
     // Disable access to manual "\" macro mode
     mf.addEventListener(
@@ -635,6 +640,11 @@
         if (ev.key === '\\') {
           ev.preventDefault();
           mf.executeCommand(['insert', '\\backslash']);
+        } else if (unicodeMultiplicationKeys.has(ev.key)) {
+          // MathLive would insert these as \bullet, \textbullet, or \ast, which are
+          // not submitted as multiplication. Treat them like the "×" keyboard key.
+          ev.preventDefault();
+          mf.executeCommand(['insert', '{#@}\\cdot']);
         } else if (ev.key === 'Escape') {
           ev.preventDefault();
         }

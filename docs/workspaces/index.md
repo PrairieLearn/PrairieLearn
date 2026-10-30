@@ -98,7 +98,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
 
 ### `question.html`
 
-The `Open workspace` button should be included in all workspace questions by using the workspace element `<pl-workspace>`.
+The `Open workspace` button should be included in all workspace questions by using the [`pl-workspace`](../elements/pl-workspace.md) element.
 
 For an ungraded workspace, a minimal `question.html` should look something like:
 

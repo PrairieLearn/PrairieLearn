@@ -8,7 +8,10 @@ import { parseStudentSyncCsv } from '../../lib/student-sync.js';
 import { selectUsersAndEnrollmentsForCourseInstance } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { computeSyncDiff } from '../../pages/instructorStudents/components/sync-students-diff.js';
-import { StudentRowSchema } from '../../pages/instructorStudents/instructorStudents.shared.js';
+import {
+  MAX_SYNC_CSV_TEXT_LENGTH,
+  StudentRowSchema,
+} from '../../pages/instructorStudents/instructorStudents.shared.js';
 
 import { requireCourseInstancePermissionEdit, t } from './init.js';
 
@@ -19,7 +22,7 @@ export interface StudentSyncError {
 export const studentSyncRouter = t.router({
   preview: t.procedure
     .use(requireCourseInstancePermissionEdit)
-    .input(z.object({ text: z.string().min(1).max(1_000_000) }))
+    .input(z.object({ text: z.string().min(1).max(MAX_SYNC_CSV_TEXT_LENGTH) }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.course_instance.modern_publishing) {
         throw new TRPCError({

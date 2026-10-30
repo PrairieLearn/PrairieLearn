@@ -229,6 +229,7 @@ export function LabelModifyModal({
                 validate: (value) => {
                   const trimmed = value.trim();
                   if (trimmed.length === 0) return 'Label name is required';
+                  if (trimmed.includes(';')) return 'Student label names cannot contain semicolons';
                   if (trimmed.length > MAX_STUDENT_LABEL_NAME_LENGTH) {
                     return `Label name must be at most ${MAX_STUDENT_LABEL_NAME_LENGTH} characters.`;
                   }

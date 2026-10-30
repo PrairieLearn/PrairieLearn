@@ -10,19 +10,25 @@ import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { assertNever } from '@prairielearn/utils';
 
 import { StudentCheckboxList } from '../../../components/StudentCheckboxList.js';
+import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import type { StaffCourseInstance, StaffStudentLabel } from '../../../lib/client/safe-db-types.js';
 import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import type { StudentSyncError } from '../../../trpc/courseInstance/student-sync.js';
-import type { StudentRow, SyncCsv } from '../instructorStudents.shared.js';
+import {
+  MAX_SYNC_CSV_TEXT_LENGTH,
+  type StudentRow,
+  type SyncCsv,
+} from '../instructorStudents.shared.js';
 
 import { type StudentSyncItem, type SyncPreview, computeSyncDiff } from './sync-students-diff.js';
 
 interface SyncStudentsForm {
   uids: string;
-  format: 'uids' | 'csv';
+  format: 'uids' | 'csv-file';
+  csvFile: FileList;
 }
 
 type SyncStep = 'input' | 'preview';
@@ -50,7 +56,7 @@ function getCurrentStatusLabel(status: EnumEnrollmentStatus): string {
 
 function renderSyncItemBadge(item: StudentSyncItem) {
   return (
-    <span className="badge rounded-pill bg-light text-body border">
+    <span className="badge rounded-pill bg-light text-body border align-self-end">
       {item.currentStatus ? getCurrentStatusLabel(item.currentStatus) : 'New'}
     </span>
   );
@@ -77,6 +83,7 @@ export function SyncStudentsModal({
   ) => Promise<void>;
 }) {
   const trpc = useTRPC();
+  const [previewText, setPreviewText] = useState<string | null>(null);
   const [labels, setLabels] = useState<StaffStudentLabel[]>([]);
   const [selectedLabelUpdates, setSelectedLabelUpdates] = useState<Set<string>>(() => new Set());
   const [step, setStep] = useState<SyncStep>('input');
@@ -89,9 +96,10 @@ export function SyncStudentsModal({
     handleSubmit,
     clearErrors,
     reset,
-    getValues,
+    resetField,
+    setError,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<SyncStudentsForm>({
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
@@ -110,16 +118,18 @@ export function SyncStudentsModal({
   };
   const previewMutation = useMutation(
     trpc.studentSync.preview.mutationOptions({
-      onSuccess: ({ preview, labels }) => {
+      onSuccess: ({ preview, labels }, { text }) => {
+        setPreviewText(text);
         setLabels(labels);
         showPreview(preview);
       },
     }),
   );
+  const isComparing = isSubmitting || previewMutation.isPending;
   const previewError = getAppError<StudentSyncError['Preview']>(previewMutation.error);
 
   const validateUidsFormat = (value: string): string | true => {
-    if (format === 'csv') return value.trim() !== '' || 'Enter a student CSV.';
+    if (format === 'csv-file') return true;
     let uids: string[] = [];
     try {
       uids = parseUniqueValuesFromString(value, MAX_UIDS);
@@ -140,11 +150,37 @@ export function SyncStudentsModal({
     return true;
   };
 
-  const onCompare = handleSubmit(({ uids }) => {
-    if (format === 'csv') {
-      previewMutation.mutate({ text: uids });
-    } else {
-      showPreview(computeSyncDiff(parseUniqueValuesFromString(uids, MAX_UIDS), students));
+  const onCompare = handleSubmit(async ({ uids, csvFile, format }) => {
+    switch (format) {
+      case 'uids':
+        setPreviewText(null);
+        showPreview(computeSyncDiff(parseUniqueValuesFromString(uids, MAX_UIDS), students));
+        break;
+      case 'csv-file': {
+        let text: string;
+        try {
+          text = await csvFile[0].text();
+        } catch {
+          setError('csvFile', { message: 'Could not read this file. Select the CSV file again.' });
+          return;
+        }
+        if (text.trim() === '') {
+          setError('csvFile', {
+            message: 'This file is empty. Select a CSV file containing students.',
+          });
+          return;
+        }
+        if (text.length > MAX_SYNC_CSV_TEXT_LENGTH) {
+          setError('csvFile', {
+            message: 'This CSV exceeds the 1,000,000-character limit. Select a smaller file.',
+          });
+          return;
+        }
+        previewMutation.mutate({ text });
+        break;
+      }
+      default:
+        assertNever(format);
     }
   });
 
@@ -161,9 +197,9 @@ export function SyncStudentsModal({
         toInvite,
         toCancelInvitation,
         toRemove,
-        format === 'csv'
+        previewText !== null
           ? {
-              text: getValues('uids'),
+              text: previewText,
               labelUpdates: [
                 ...preview.toInvite.filter((item) => selectedAdds.has(item.uid)),
                 ...preview.toUpdateLabels.filter((item) => selectedLabelUpdates.has(item.uid)),
@@ -182,6 +218,7 @@ export function SyncStudentsModal({
     clearErrors();
     setStep('input');
     setPreview(null);
+    setPreviewText(null);
     setSelectedAdds(new Set());
     setSelectedRemovals(new Set());
     syncMutation.reset();
@@ -248,16 +285,20 @@ export function SyncStudentsModal({
     const previous = new Set(item.labelUpdate.expected?.labelIds);
     const desired = new Set(item.labelUpdate.labelIds);
     return (
-      <span className="d-flex flex-column small text-break">
+      <span className="d-flex flex-column gap-1 small text-break">
         {labels
           .filter((label) => desired.has(label.id) && !previous.has(label.id))
           .map((label) => (
-            <span key={label.id}>Add: {label.name}</span>
+            <span key={label.id} className="d-flex flex-wrap align-items-center gap-1">
+              Add: <StudentLabelBadge label={label} />
+            </span>
           ))}
         {labels
           .filter((label) => previous.has(label.id) && !desired.has(label.id))
           .map((label) => (
-            <span key={label.id}>Remove: {label.name}</span>
+            <span key={label.id} className="d-flex flex-wrap align-items-center gap-1">
+              Remove: <StudentLabelBadge label={label} />
+            </span>
           ))}
       </span>
     );
@@ -272,12 +313,12 @@ export function SyncStudentsModal({
     <Modal
       show={show}
       backdrop="static"
-      keyboard={!previewMutation.isPending && !syncMutation.isPending}
+      keyboard={!isComparing && !syncMutation.isPending}
       size="lg"
       onHide={onHide}
       onExited={resetModalState}
     >
-      <Modal.Header closeButton={!previewMutation.isPending && !syncMutation.isPending}>
+      <Modal.Header closeButton={!isComparing && !syncMutation.isPending}>
         <Modal.Title>Synchronize student list</Modal.Title>
       </Modal.Header>
 
@@ -288,83 +329,120 @@ export function SyncStudentsModal({
           </Alert>
         )}
 
-        {step === 'input' && (
+        {/* Keep the native file selection mounted when returning from the preview. */}
+        <div hidden={step !== 'input'}>
           <div className="d-flex flex-column gap-3">
             <form onSubmit={onCompare}>
               <p>
-                Paste your student list below. Students on this list will be added to the course.
-                Students not on this list will be removed.
+                Upload a CSV file or paste a list of student UIDs below. Students on this list will
+                be added to the course. Students not on this list will be removed.
               </p>
-              <Form.Group controlId="sync-format" className="mb-3">
-                <Form.Label>Input format</Form.Label>
-                <Form.Select
-                  {...register('format')}
-                  defaultValue="uids"
-                  disabled={previewMutation.isPending}
-                >
-                  <option value="uids">UID list</option>
-                  <option value="csv">CSV with labels</option>
-                </Form.Select>
-              </Form.Group>
-              {format === 'csv' && (
+              <fieldset className="mb-3" disabled={isComparing}>
+                <legend className="form-label fs-6">Input format</legend>
+                {[
+                  { value: 'uids', label: 'UID list' },
+                  { value: 'csv-file', label: 'CSV file' },
+                ].map(({ value, label }) => (
+                  <Form.Check
+                    key={value}
+                    type="radio"
+                    id={`sync-format-${value}`}
+                    label={label}
+                    value={value}
+                    defaultChecked={value === 'uids'}
+                    inline
+                    {...register('format', {
+                      onChange: () => {
+                        resetField('csvFile');
+                        clearErrors();
+                        previewMutation.reset();
+                      },
+                    })}
+                  />
+                ))}
+              </fieldset>
+              {format === 'csv-file' && (
                 <div className="mb-3">
                   <p>
-                    Use one row per student and one label per column. Labels must already exist in
-                    this course instance.
+                    Use one row per student. In the labels column, separate label names with
+                    semicolons, such as <code>Section A;Extra time</code>. Labels must already exist
+                    in this course instance.
                   </p>
                   <pre className="bg-body-tertiary p-2" style={{ whiteSpace: 'pre-wrap' }}>
                     {
-                      'uid,label1,label2\nadam@example.com,Section 1,Arts\nben@example.com,Section 1,Science'
+                      'uid,labels\nadam@example.com,Section 1;Arts\nben@example.com,Section 1;Science'
                     }
                   </pre>
                   <p className="mb-0">
-                    Label columns replace each student's labels. Include every label to retain.
-                    Leaving all label cells empty clears labels. Omit all label columns to preserve
-                    existing labels.
+                    The labels column replaces each student's labels. Include every label to retain.
+                    An empty cell clears labels. Omit the labels column to preserve existing labels.
                   </p>
                 </div>
               )}
               <div>
-                <label htmlFor="sync-uids" className="form-label">
-                  {format === 'csv' ? 'Student CSV' : 'Student UIDs'}
-                </label>
-                <textarea
-                  id="sync-uids"
-                  className={clsx(
-                    'form-control',
-                    (errors.uids || (format === 'csv' && previewError)) && 'is-invalid',
-                  )}
-                  rows={8}
-                  defaultValue=""
-                  disabled={previewMutation.isPending}
-                  placeholder={
-                    format === 'csv'
-                      ? 'uid,label1,label2\nstudent@example.com,Section A,Extra time'
-                      : 'student1@example.com\nstudent2@example.com'
-                  }
-                  aria-invalid={!!errors.uids || (format === 'csv' && !!previewError)}
-                  aria-errormessage={
-                    errors.uids || (format === 'csv' && previewError)
-                      ? 'sync-uids-error'
-                      : undefined
-                  }
-                  aria-describedby="sync-uids-help"
-                  {...register('uids', {
-                    validate: validateUidsFormat,
-                  })}
-                />
-                {format === 'csv' && previewError && !errors.uids && (
-                  <div id="sync-uids-error" className="mt-2">
-                    <AppErrorAlert
-                      error={previewError}
-                      render={{ UNKNOWN: ({ message }) => message }}
+                {format === 'csv-file' ? (
+                  <Form.Group controlId="sync-csv-file">
+                    <Form.Label>Choose CSV file</Form.Label>
+                    <Form.Control
+                      type="file"
+                      accept=".csv"
+                      disabled={isComparing}
+                      isInvalid={!!errors.csvFile || !!previewError}
+                      aria-invalid={!!errors.csvFile || !!previewError}
+                      aria-errormessage={
+                        errors.csvFile || previewError ? 'sync-file-error' : undefined
+                      }
+                      aria-describedby="sync-file-help"
+                      {...register('csvFile', {
+                        validate: (files) => !!files.item(0) || 'Select a CSV file.',
+                        onChange: () => {
+                          clearErrors('csvFile');
+                          previewMutation.reset();
+                        },
+                      })}
                     />
-                  </div>
-                )}
-                {errors.uids?.message && (
-                  <div className="invalid-feedback" id="sync-uids-error">
-                    {errors.uids.message}
-                  </div>
+                    <Form.Text id="sync-file-help">
+                      Maximum CSV length: 1,000,000 characters.
+                    </Form.Text>
+                    {errors.csvFile?.message && (
+                      <Form.Control.Feedback type="invalid" id="sync-file-error">
+                        {errors.csvFile.message}
+                      </Form.Control.Feedback>
+                    )}
+                    {previewError && !errors.csvFile && (
+                      <div id="sync-file-error" className="mt-2">
+                        <AppErrorAlert
+                          error={previewError}
+                          render={{ UNKNOWN: ({ message }) => message }}
+                        />
+                      </div>
+                    )}
+                  </Form.Group>
+                ) : (
+                  <>
+                    <label htmlFor="sync-uids" className="form-label">
+                      Student UIDs
+                    </label>
+                    <textarea
+                      id="sync-uids"
+                      className={clsx('form-control', errors.uids && 'is-invalid')}
+                      rows={8}
+                      defaultValue=""
+                      disabled={isComparing}
+                      placeholder={'student1@example.com\nstudent2@example.com'}
+                      aria-invalid={!!errors.uids}
+                      aria-errormessage={errors.uids ? 'sync-uids-error' : undefined}
+                      aria-describedby="sync-uids-help"
+                      {...register('uids', {
+                        validate: validateUidsFormat,
+                      })}
+                    />
+                    {errors.uids?.message && (
+                      <div className="invalid-feedback" id="sync-uids-error">
+                        {errors.uids.message}
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="form-text" id="sync-uids-help">
                   {format === 'uids' && 'One UID per line, or comma/space/semicolon separated. '}
@@ -396,7 +474,7 @@ export function SyncStudentsModal({
               </Alert>
             )}
           </div>
-        )}
+        </div>
 
         {step === 'preview' && preview && (
           <>
@@ -427,10 +505,10 @@ export function SyncStudentsModal({
                     description="New students will be invited. Blocked or removed students will be re-enrolled."
                     checkboxIdPrefix="sync-add"
                     renderItemExtra={(item) => (
-                      <>
+                      <span className="d-flex flex-column gap-1">
                         {renderSyncItemBadge(item)}
                         {renderLabelChanges(item)}
-                      </>
+                      </span>
                     )}
                     onToggle={toggleAdd}
                     onSelectAll={() =>
@@ -495,11 +573,11 @@ export function SyncStudentsModal({
       <Modal.Footer>
         {step === 'input' && (
           <>
-            <Button variant="secondary" disabled={previewMutation.isPending} onClick={onHide}>
+            <Button variant="secondary" disabled={isComparing} onClick={onHide}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={previewMutation.isPending} onClick={onCompare}>
-              {previewMutation.isPending ? 'Comparing...' : 'Compare'}
+            <Button variant="primary" disabled={isComparing} onClick={onCompare}>
+              {isComparing ? 'Comparing...' : 'Compare'}
             </Button>
           </>
         )}

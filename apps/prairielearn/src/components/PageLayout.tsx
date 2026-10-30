@@ -224,7 +224,11 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Sets the html and body tag heights to 100% */
+    /**
+     * Fills the available height below navigation. Content can provide its own scroll regions;
+     * with side navigation, the main container remains the scroll parent for overflowing content
+     * (for example, when panes switch to a stacked layout).
+     */
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
@@ -291,6 +295,7 @@ export function PageLayout({
     'administrator_institution',
     'administrator',
     'institution',
+    'public',
   ].includes(navContext.type ?? '');
 
   // If additional navigation capabilities are not needed, such as on the
@@ -404,7 +409,6 @@ export function PageLayout({
             <div
               class="${clsx(
                 sideNavEnabled && 'app-main-container',
-                resolvedOptions.fullHeight && 'app-main-container-full-height',
                 !sideNavEnabled && resolvedOptions.fullWidth && 'w-100',
                 !sideNavEnabled && resolvedOptions.fullHeight && 'h-100',
                 'd-flex flex-column',
@@ -479,7 +483,7 @@ export function PageLayout({
                   resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   resolvedOptions.contentPadding && 'pb-3',
                   resolvedOptions.fullHeight && 'h-100',
-                  resolvedOptions.fullHeight && 'app-content-full-height',
+                  resolvedOptions.fullHeight && 'app-content-full-height flex-grow-1',
                 )}"
               >
                 ${renderHtml(

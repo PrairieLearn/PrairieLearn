@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 2.4.9
+
+### Patch Changes
+
+- 589a1a9: Reuse native date formatters in a bounded LRU cache to reduce formatting time and memory usage without changing the existing date formatting APIs.
+
 ## 2.4.8
 
 ### Patch Changes

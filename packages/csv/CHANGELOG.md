@@ -1,5 +1,11 @@
 # @prairielearn/csv
 
+## 3.0.11
+
+### Patch Changes
+
+- 666ac05: Bound buffering in stringifyStream, propagate errors and cancellation through its component streams, and respect output backpressure when stringifying arrays.
+
 ## 3.0.10
 
 ### Patch Changes

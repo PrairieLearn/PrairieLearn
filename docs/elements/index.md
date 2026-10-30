@@ -76,7 +76,7 @@ When the response is code or a file, written in the browser or uploaded from dis
 - [`pl-file-upload`](pl-file-upload.md): Provide a submission area to obtain a file with a specific naming scheme.
 - [`pl-file-editor`](pl-file-editor.md): Provide an in-browser code editor for writing and submitting code.
 
-For code that needs a richer environment (multiple files, a terminal, an IDE, or a build/run loop), use a [workspace](../workspaces/index.md) with the [`<pl-workspace>`](../workspaces/index.md) element to embed the workspace launcher in the question.
+For code that needs a richer environment (multiple files, a terminal, an IDE, or a build/run loop), use a [workspace](../workspaces/index.md) with the [`pl-workspace`](pl-workspace.md) element to embed the workspace launcher in the question.
 
 ??? note "Decision flowchart"
 
@@ -193,6 +193,7 @@ For showing what the student submitted and the results that come back from gradi
 | [`pl-units-input`](pl-units-input.md)                             | Submission     | Number with units.                            |
 | [`pl-variable-output`](pl-variable-output.md)                     | Display        | Matrix as code in supported languages.        |
 | [`pl-variable-score`](pl-variable-score.md)                       | **Deprecated** | See [migration](#deprecated-elements).        |
+| [`pl-workspace`](pl-workspace.md)                                 | Submission     | For code that needs a richer environment.     |
 | [`pl-xss-safe`](pl-xss-safe.md)                                   | Display        | Sanitize HTML content.                        |
 
 ## Deprecated elements
@@ -253,6 +254,7 @@ For showing what the student submitted and the results that come back from gradi
     'pl-units-input-element': 'pl-units-input/',
     'pl-variable-output-element': 'pl-variable-output/',
     'pl-variable-score-element': 'pl-variable-score/',
+    'pl-workspace': 'pl-workspace/',
     'pl-xss-safe-element': 'pl-xss-safe/',
   };
 

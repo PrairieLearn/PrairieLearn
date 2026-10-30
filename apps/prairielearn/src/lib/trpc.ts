@@ -1,10 +1,10 @@
 import type { ProcedureType, TRPCError } from '@trpc/server';
-import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import type { Request } from 'express';
 
 import { generateErrorId } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
+import { getTrpcErrorStatus } from '@prairielearn/trpc/server';
 
 /**
  * Reimplements error handling from `pages/error/error.ts` for tRPC errors.
@@ -19,7 +19,7 @@ export function handleTrpcError(opts: {
   const errorId = opts.req.res?.locals.error_id ?? generateErrorId();
   if (opts.req.res) opts.req.res.locals.error_id = errorId;
 
-  const code = getHTTPStatusCodeFromError(opts.error);
+  const code = getTrpcErrorStatus(opts.error);
   if (code >= 500) {
     Sentry.captureException(opts.error, { tags: { error_id: errorId } });
   }
