@@ -64,6 +64,7 @@ import {
   insertAiGradingJob,
   insertAiGradingJobWithRotationCorrection,
   parseAiRubricItems,
+  prepareQuestionPrompt,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
   setAiGradingLastSelectedModel,
@@ -620,6 +621,21 @@ export async function aiGrade({
       }
       const questionPrompt = render_question_results.data.questionHtml;
       const questionAnswer = render_question_results.data.answerHtml;
+      const imageContext = {
+        urls: locals,
+        question,
+        questionCourse: question_course,
+        variantCourse: course,
+        variant,
+        userId: user_id,
+        authnUserId: authn_user_id,
+      };
+      const questionPromptParts = await prepareQuestionPrompt(
+        questionPrompt,
+        imageContext,
+        'question',
+      );
+      const answerPromptParts = await prepareQuestionPrompt(questionAnswer, imageContext, 'answer');
 
       const render_submission_results = await questionModule.render({
         renderSelection: { question: false, submissions: true, answer: false },
@@ -685,8 +701,8 @@ export async function aiGrade({
       }
 
       let gradingPrompt = await generatePrompt({
-        questionPrompt,
-        questionAnswer,
+        questionPrompt: questionPromptParts,
+        questionAnswer: answerPromptParts,
         submission_text,
         submitted_answer: submission.submitted_answer,
         rubric_items,
@@ -821,8 +837,8 @@ export async function aiGrade({
 
           // Regenerate the prompt with the rotation-corrected images.
           gradingPrompt = await generatePrompt({
-            questionPrompt,
-            questionAnswer,
+            questionPrompt: questionPromptParts,
+            questionAnswer: answerPromptParts,
             rotationCorrected,
             submission_text,
             submitted_answer: rotatedSubmittedAnswer,
@@ -1055,8 +1071,8 @@ export async function aiGrade({
 
           // Regenerate the prompt with the rotation-corrected images.
           gradingPrompt = await generatePrompt({
-            questionPrompt,
-            questionAnswer,
+            questionPrompt: questionPromptParts,
+            questionAnswer: answerPromptParts,
             submission_text,
             submitted_answer: rotatedSubmittedAnswer,
             rubric_items,

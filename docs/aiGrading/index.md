@@ -27,6 +27,29 @@ Questions can combine these elements. For example, when a question contains both
 
 AI grading also includes files saved in the submission from [workspaces](../workspaces/index.md). Only files collected for grading are included; the AI grader does not read the live workspace. A [`pl-file-preview`](../elements/pl-file-preview.md) element is not required for AI grading, but is recommended so students can check their submitted files.
 
+### Images in questions and reference answers
+
+AI grading includes images rendered as `<img src="...">` in the question or instructor reference answer, including images added with [`pl-figure`](../elements/pl-figure.md). Supported formats are **PNG, JPEG (`.jpg` or `.jpeg`), WebP, and SVG**. SVG images are converted to PNG before grading.
+
+SVG files containing `<foreignObject>` are rejected because their embedded content is not preserved during conversion. Export these diagrams as PNG instead.
+
+Supported image sources include:
+
+- Static files in the question's `clientFilesQuestion` directory or the course's `clientFilesCourse` directory.
+- Files generated dynamically by the question's `server.py`.
+- Base64-encoded `data:` URLs, such as `data:image/png;base64,...` or `data:image/svg+xml;base64,...`.
+- Publicly accessible HTTPS URLs that point directly to an image. External image requests do not support authentication or redirects.
+
+For example, an SVG file can be included with:
+
+```html
+<pl-figure file-name="diagram.svg"></pl-figure>
+```
+
+Inline `<svg>` drawings, `<canvas>` drawings, and CSS background images are not captured. AI grading does not execute browser JavaScript to produce images. Student-submitted files follow the [submitted file format rules](#submitted-file-formats) below; submitted SVG files are handled as text rather than rendered images.
+
+Repeated references to the same image source are included once per question or reference-answer section. If an image cannot be loaded or uses an unsupported format, AI grading fails for that submission.
+
 ### Submitted file formats
 
 - **Text and source code:** Files such as `.py`, `.cpp`, `.java`, `.txt`, `.csv`, and `.json` are decoded and sent as text with their filenames. Any filename or extension is accepted if the contents are readable text. Indentation and line breaks are preserved. Unicode is preserved when `pl-file-editor`'s `normalize-to-ascii` option is disabled (the default); enabling it normalizes non-ASCII characters before submission. Supported encodings are UTF-8 (with or without a byte-order mark) and UTF-16 (with a byte-order mark).
@@ -34,6 +57,18 @@ AI grading also includes files saved in the submission from [workspaces](../work
 - **Other binary formats or encodings:** Files such as ZIP archives, compiled programs, and binary Office documents are not decoded as text. AI grading continues with the rest of the submission, and the model receives a message naming the unreadable file and explaining that its contents are unavailable. Convert these files to a supported format if their contents are needed for grading.
 
 Text files are passed as source text, without executing code or rendering HTML, Markdown, or SVG. File contents count toward the model's input limits; they are not truncated by PrairieLearn.
+
+### File size limits
+
+AI grading applies a separate **10 MiB (10,485,760 bytes) combined file-size limit** to each of these sections:
+
+- Images in the question.
+- Images in the instructor reference answer.
+- Binary submission attachments, including PDF, JPEG, PNG, and WebP files.
+
+Each section has its own budget. File sizes are measured without base64 encoding overhead; SVG images count toward the limit after conversion to PNG. Text and source-code files sent as text do not count toward the binary submission attachment limit.
+
+If any section exceeds its limit, AI grading fails for that submission.
 
 ## Prerequisites
 
