@@ -1,14 +1,20 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-
-import { execa } from 'execa';
+import {
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFHexString,
+  PDFName,
+  PDFNumber,
+  type PDFObject,
+  PDFRawStream,
+  PDFRef,
+  PDFString,
+  decodePDFRawStream,
+} from 'pdf-lib';
 import { chromium } from 'playwright';
-import { expect, it } from 'vitest';
-
-import { REPOSITORY_ROOT_PATH } from '../paths.js';
+import { assert, expect, it } from 'vitest';
 
 import { createPdfOutput } from './pdf-output.js';
-import { withPrintPdfDirectory } from './pdf-tools.js';
 
 it('exports tagged PDF math, figures, and document structure from source semantics', async () => {
   const browser = await chromium.launch();
@@ -50,37 +56,149 @@ it('exports tagged PDF math, figures, and document structure from source semanti
             <thead><tr><th id="input" scope="col">Input</th><th id="result" scope="col">Result</th></tr></thead>
             <tbody><tr><td headers="input">2</td><td headers="result">4</td></tr></tbody>
           </table>
+          <section data-print-pdf-role="Div" data-print-pdf-decorative-paint style="border: 1px solid; padding: 8px">
+            <div data-print-pdf-role="Div" data-print-pdf-decorative-paint style="border-left: 2px solid; padding-left: 8px">
+              <h2>References</h2>
+              <p>Read the <a href="https://www.prairielearn.com/">PrairieLearn home page</a>.</p>
+            </div>
+          </section>
           <footer data-print-pdf-role="Artifact">Page 1</footer>
         </body>
       </html>`);
 
-    const pdf = await createPdfOutput().produce(page);
-    await withPrintPdfDirectory(async (directory) => {
-      const filename = path.join(directory, 'assessment.pdf');
-      const decodedPath = path.join(directory, 'decoded.pdf');
-      await writeFile(filename, pdf);
-      await execa(
-        process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', 'java') : 'java',
-        [
-          '-Djava.awt.headless=true',
-          '-jar',
-          path.join(REPOSITORY_ROOT_PATH, '.local', 'print-pdf-tools', 'pdfbox-app-3.0.8.jar'),
-          'decode',
-          filename,
-          decodedPath,
-        ],
-      );
-      const decoded = await readFile(decodedPath, 'latin1');
-      for (const role of ['H1', 'H2', 'L', 'LI', 'Table', 'TH', 'TD', 'Formula', 'Figure']) {
-        expect(decoded).toMatch(new RegExp(`/S /${role}\\b`));
+    const pdf = await PDFDocument.load(await createPdfOutput().produce(page));
+    const { context } = pdf;
+    const root = pdf.catalog.lookup(PDFName.of('StructTreeRoot'), PDFDict);
+    const parents = new Map<number, PDFObject>();
+
+    function readParents(node: PDFDict): void {
+      const numbers = node.lookup(PDFName.of('Nums'));
+      if (numbers instanceof PDFArray) {
+        for (let index = 0; index < numbers.size(); index += 2) {
+          parents.set(numbers.lookup(index, PDFNumber).asNumber(), numbers.get(index + 1));
+        }
       }
-      expect(decoded).toContain('/Alt (x squared)');
-      expect(decoded).toContain('/Alt (A square. All four sides are equal)');
-      expect(decoded).toContain('/Alt (A circle. The radius is twenty units)');
-      expect(decoded).toContain('/Lang (fr)');
-      expect(decoded).toContain('/Artifact BMC');
-      expect(decoded).toContain('/DisplayDocTitle true');
-    });
+      const kids = node.lookup(PDFName.of('Kids'));
+      if (kids instanceof PDFArray) {
+        for (const child of kids.asArray()) readParents(context.lookup(child, PDFDict));
+      }
+    }
+    readParents(root.lookup(PDFName.of('ParentTree'), PDFDict));
+
+    const elements: PDFDict[] = [];
+    const structureReferences: PDFObject[] = [];
+    const relationships: { actual: PDFObject | undefined; expected: PDFDict }[] = [];
+
+    function collectKids(owner: PDFDict, inheritedPage?: PDFDict): void {
+      const page = owner.lookupMaybe(PDFName.of('Pg'), PDFDict) ?? inheritedPage;
+      for (const raw of owner.lookup(PDFName.of('K'), PDFArray).asArray()) {
+        const child = context.lookup(raw);
+        if (child instanceof PDFDict && child.has(PDFName.of('S'))) {
+          structureReferences.push(raw);
+          relationships.push({ actual: child.lookup(PDFName.of('P')), expected: owner });
+          elements.push(child);
+          collectKids(child, page);
+        } else if (child instanceof PDFNumber) {
+          const parent = page!.lookup(PDFName.of('StructParents'), PDFNumber).asNumber();
+          relationships.push({
+            actual: context.lookup(parents.get(parent), PDFArray).lookup(child.asNumber()),
+            expected: owner,
+          });
+        } else if (
+          child instanceof PDFDict &&
+          child.lookup(PDFName.of('Type')) === PDFName.of('OBJR')
+        ) {
+          const annotation = child.lookup(PDFName.of('Obj'), PDFDict);
+          const parent = annotation.lookup(PDFName.of('StructParent'), PDFNumber).asNumber();
+          relationships.push({ actual: context.lookup(parents.get(parent)), expected: owner });
+        }
+      }
+    }
+    collectKids(root);
+    for (const reference of structureReferences) expect(reference).toBeInstanceOf(PDFRef);
+    for (const { actual, expected } of relationships) expect(actual).toBe(expected);
+
+    const roles = elements.map((element) => element.lookup(PDFName.of('S'), PDFName).decodeText());
+    expect(roles).toEqual(
+      expect.arrayContaining([
+        'H1',
+        'H2',
+        'L',
+        'LI',
+        'Table',
+        'TH',
+        'TD',
+        'Formula',
+        'Figure',
+        'Div',
+        'Link',
+      ]),
+    );
+    const descriptions = elements.map((element) =>
+      element.lookupMaybe(PDFName.of('Alt'), PDFString, PDFHexString)?.decodeText(),
+    );
+    expect(descriptions).toEqual(
+      expect.arrayContaining([
+        'x squared',
+        'A square. All four sides are equal',
+        'A circle. The radius is twenty units',
+      ]),
+    );
+    expect(
+      elements.some(
+        (element) =>
+          element.lookupMaybe(PDFName.of('Lang'), PDFString, PDFHexString)?.decodeText() === 'fr',
+      ),
+    ).toBe(true);
+    const headers = elements.filter(
+      (element) => element.lookup(PDFName.of('S')) === PDFName.of('TH'),
+    );
+    const cells = elements.filter(
+      (element) => element.lookup(PDFName.of('S')) === PDFName.of('TD'),
+    );
+    for (const [index, cell] of cells.entries()) {
+      const attributes = cell
+        .lookup(PDFName.of('A'), PDFArray)
+        .asArray()
+        .map((entry) => context.lookup(entry, PDFDict));
+      const references = attributes
+        .find((entry) => entry.has(PDFName.of('Headers')))!
+        .lookup(PDFName.of('Headers'), PDFArray);
+      expect(references.lookup(0, PDFString, PDFHexString).decodeText()).toBe(
+        headers[index].lookup(PDFName.of('ID'), PDFString, PDFHexString).decodeText(),
+      );
+    }
+    const pdfPage = pdf.getPages()[0];
+    const contents = pdfPage.node.lookup(PDFName.of('Contents'));
+    assert(contents instanceof PDFRawStream);
+    expect(Buffer.from(decodePDFRawStream(contents).decode()).toString('latin1')).toContain(
+      '/Artifact BMC',
+    );
+    const link = pdfPage.node.lookup(PDFName.of('Annots'), PDFArray).lookup(0, PDFDict);
+    expect(link.lookup(PDFName.of('Contents'), PDFString, PDFHexString).decodeText()).toBe(
+      'PrairieLearn home page',
+    );
+    expect(pdfPage.node.lookup(PDFName.of('Tabs'))).toBe(PDFName.of('S'));
+    expect(pdf.getTitle()).toBe('Accessible assessment');
+    expect(pdf.catalog.lookup(PDFName.of('Lang'), PDFString, PDFHexString).decodeText()).toBe('en');
+    expect(pdf.catalog.getOrCreateViewerPreferences().getDisplayDocTitle()).toBe(true);
+    const metadata = pdf.catalog.lookup(PDFName.of('Metadata'));
+    assert(metadata instanceof PDFRawStream);
+    const xmp = Buffer.from(decodePDFRawStream(metadata).decode()).toString('utf8');
+    expect(xmp).toContain('<pdfuaid:part>1</pdfuaid:part>');
+    expect(xmp).toContain('<rdf:li xml:lang="x-default">Accessible assessment</rdf:li>');
+
+    await page.setContent(`<!doctype html>
+      <html lang="en">
+        <head><title>Assessment instructions</title></head>
+        <body>
+          <a href="#instructions">Read instructions</a>
+          <h1 id="instructions">Instructions</h1>
+        </body>
+      </html>`);
+    await expect(createPdfOutput().produce(page)).rejects.toThrow(
+      'cannot describe an internal link',
+    );
   } finally {
     await browser.close();
   }

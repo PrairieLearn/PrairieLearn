@@ -20,7 +20,7 @@ import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
-import { PrintPdfAccessibilityError } from './printing/pdf-tools.js';
+import { PrintPdfAccessibilityError } from './printing/pdf-accessibility-error.js';
 import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
 
 const sql = loadSqlEquiv(import.meta.url);
