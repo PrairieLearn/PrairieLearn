@@ -51,6 +51,7 @@ export function StudentInstanceQuestion({
   // TODO: support more tools
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const calculator = enabledTools.find((t) => t.tool === 'calculator');
+  const regenerateAlert = userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : '';
 
   return PageLayout({
     resLocals,
@@ -127,12 +128,13 @@ export function StudentInstanceQuestion({
         })
       : '',
     content: html`
-      ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
+      ${questionHostingUpdate ? '' : regenerateAlert}
       <div class="row question-page-row">
         <div
           class="col-lg-9 col-sm-12 question-page-question"
           ${questionHostingUpdate ? html`role="region" aria-label="Question" tabindex="0"` : ''}
         >
+          ${questionHostingUpdate ? regenerateAlert : ''}
           ${
             resLocals.instance_question_info.question_access_mode === 'read_only_lockpoint'
               ? html`
