@@ -464,7 +464,7 @@ export class PrintRenderer {
         );
       });
 
-      return await output.produce(page, assetController.signal);
+      return await output.produce(page);
     };
 
     try {
