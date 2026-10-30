@@ -41,17 +41,7 @@ describe('print packets', () => {
   });
 
   test('prints repeated copies without uploaded covers', async () => {
-    const source = await PDFDocument.load(await pdfWithPages([101, 102]));
-    source.catalog.set(
-      PDFName.of('Metadata'),
-      source.context.register(
-        source.context.stream('<pdfuaid:part>1</pdfuaid:part>', {
-          Type: 'Metadata',
-          Subtype: 'XML',
-        }),
-      ),
-    );
-    const pdf = Buffer.from(await source.save());
+    const pdf = Buffer.from(await pdfWithPages([101, 102]));
     expect(
       await assemblePrintPacket({ forms: [{ pdf, coverPageCount: 1 }], covers: [], copies: 1 }),
     ).toEqual(pdf);
@@ -65,8 +55,6 @@ describe('print packets', () => {
     expect(result.getPages().map((page) => Math.round(page.getWidth()))).toEqual([
       101, 102, 101, 102, 101, 102,
     ]);
-    expect(result.catalog.has(PDFName.of('Metadata'))).toBe(false);
-    expect(result.catalog.has(PDFName.of('StructTreeRoot'))).toBe(false);
   });
 
   test('appends each answer key once after all student copies with uploaded covers', async () => {
@@ -92,9 +80,7 @@ describe('print packets', () => {
       'valid PDF without password protection',
     );
     await expect(readPrintCoverPages([await coverFile([])])).rejects.toThrow('contains no pages');
-    expect(await readPrintCoverPages([await coverFile([100])])).toEqual([
-      { pdf: expect.any(Uint8Array), pageCount: 1 },
-    ]);
+    expect((await readPrintCoverPages([await coverFile([100])]))[0].getPageCount()).toBe(1);
     const filled = await PDFDocument.create();
     const page = filled.addPage([500, 300]);
     const form = filled.getForm();

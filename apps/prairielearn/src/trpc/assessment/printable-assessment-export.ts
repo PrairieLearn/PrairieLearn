@@ -43,7 +43,6 @@ import {
   isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
-import { PrintPdfAccessibilityError } from '../../lib/printing/pdf-accessibility-error.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
@@ -95,14 +94,6 @@ export const printableAssessmentExportRouter = t.router({
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Answer key exports do not use uploaded cover pages.',
-        });
-      }
-      // A one-copy assessment renders only the first selected form.
-      if (metadata.document === 'assessment' && metadata.copies === 1 && files.data.length > 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message:
-            'Individual form PDFs do not use uploaded cover pages. Use a booklet to include them.',
         });
       }
       const pages = z.array(z.instanceof(File)).safeParse(input.getAll('pages'));
@@ -179,7 +170,7 @@ export const printableAssessmentExportRouter = t.router({
             }
           }
         }
-        const coverPageCount = covers.reduce((count, cover) => count + cover.pageCount, 0);
+        const coverPageCount = covers.reduce((count, cover) => count + cover.getPageCount(), 0);
         const estimatedPages =
           Array.from({ length: metadata.copies }, (_, index) =>
             formPageCounts.length > 0
@@ -362,7 +353,6 @@ export const printableAssessmentExportRouter = t.router({
         }
         if (
           error instanceof PrintPacketError ||
-          error instanceof PrintPdfAccessibilityError ||
           (error instanceof HttpStatusError && error.status === 400)
         ) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });

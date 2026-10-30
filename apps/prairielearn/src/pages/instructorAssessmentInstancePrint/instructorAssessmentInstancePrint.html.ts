@@ -66,7 +66,6 @@ export function InstructorAssessmentInstancePrint({
       lang="en"
       data-print-document="${document}"
       data-print-form-label="${formLabel ?? ''}"
-      data-print-footer-label="${footerLabel}"
       data-print-include-cover="${includeCoverPage}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
@@ -110,10 +109,6 @@ export function InstructorAssessmentInstancePrint({
           data-pagedjs-ignore
         />
         <style data-pagedjs-ignore>
-          .pagedjs_margin-bottom-right > .pagedjs_margin-content[data-print-footer]::after {
-            content: none !important;
-          }
-
           @media print {
             @page {
               size: ${paperWidth} ${paperHeight};

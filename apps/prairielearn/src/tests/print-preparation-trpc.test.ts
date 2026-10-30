@@ -320,29 +320,26 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).rejects.toThrow('Invalid print export settings.');
   });
 
-  test('rejects invalid custom cover PDFs before rendering', async () => {
+  test('validates custom cover PDFs on individual form exports before rendering', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableAssessments.create.mutate();
-    const data = packetInput(instance.assessmentInstanceId, 2);
+    const data = packetInput(instance.assessmentInstanceId);
     data.append('coverPages', new File(['invalid PDF'], 'bad.pdf', { type: 'application/pdf' }));
     await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
       'valid PDF without password protection',
     );
   });
 
-  test('rejects cover PDFs on individual form and answer key exports', async () => {
+  test('rejects cover PDFs on answer key exports', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const instance = await api.printableAssessments.create.mutate();
-    for (const [document, message] of [
-      ['assessment', 'Individual form PDFs do not use uploaded cover pages.'],
-      ['answer_key', 'Answer key exports do not use uploaded cover pages.'],
-    ] as const) {
-      const data = packetInput(instance.assessmentInstanceId, 1, document);
-      data.append('coverPages', new File(['unused'], 'cover.pdf', { type: 'application/pdf' }));
-      await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(message);
-    }
+    const data = packetInput(instance.assessmentInstanceId, 1, 'answer_key');
+    data.append('coverPages', new File(['unused'], 'cover.pdf', { type: 'application/pdf' }));
+    await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
+      'Answer key exports do not use uploaded cover pages.',
+    );
   });
 
   test('rejects a predictable page limit before rendering', async () => {
