@@ -1,5 +1,11 @@
 # @prairielearn/migrations
 
+## 5.2.6
+
+### Patch Changes
+
+- 3daebb7: Remove the obsolete Vite development-server directive from migration imports.
+
 ## 5.2.5
 
 ### Patch Changes
