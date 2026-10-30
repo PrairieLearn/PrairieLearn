@@ -132,13 +132,21 @@ test.describe('pl-symbolic-input formula editor', () => {
     await expect(formulaEditor).toBeVisible();
     await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
 
-    const cases = [/sqrt/, /^\|\{#0\}\|$/, /operatorname\{sin\}/];
+    const absoluteValue = /^\\left\|\{#0\}\\right\|$/;
+    const cases = [/sqrt/, absoluteValue, /operatorname\{sin\}/];
 
     for (const label of cases) {
       await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
         await page.getByLabel(label).click();
       });
     }
+
+    await fillFormulaEditor(formulaEditor, '');
+    await page.getByLabel(absoluteValue).click();
+    await page.keyboard.type('y/2');
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(
+      String.raw`\left|\frac{y}{2}\right|`,
+    );
 
     await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
       await page.getByLabel(/operatorname\{sin\}/).dispatchEvent('pointerdown', {
