@@ -21,8 +21,8 @@ import { decryptFromStorage, encryptForStorage } from './encrypted-storage.js';
 import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
+import { PrintPdfAccessibilityError } from './printing/pdf-accessibility-error.js';
 import { PAPER_SIZES } from './printing/pdf-output.js';
-import { PrintPdfAccessibilityError } from './printing/pdf-tools.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';

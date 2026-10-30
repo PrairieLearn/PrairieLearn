@@ -96,9 +96,9 @@ This sets a half-page default and allows Question 3 to size itself automatically
 
 ### PDF processing
 
-PDF exports require a JDK (Java 17 or newer) and PDFBox **3.0.8**. Run `./scripts/install-print-pdf-tools.sh` once from the repository root to install the pinned, checksum-verified PDFBox JAR in `.local/print-pdf-tools`. Docker and CI install it automatically. Set `JAVA_HOME` if your Java installation requires it. No tools are downloaded during an export.
+`createPdfOutput()` uses Chromium and the existing `pdf-lib` dependency entirely in Node. It preserves browser tags, restores source-declared formulas and decorative content, and adds document metadata. It rejects missing descriptions, lost structure, and unclassified drawing. Processing errors are returned to the export caller; no PDF temporary files or external processors are used. These safeguards do not establish PDF/UA-1 conformance.
 
-`createPdfOutput()` preserves browser tags, restores source-declared formulas and decorative content, and adds document metadata. It rejects missing descriptions, lost structure, and unclassified drawing. PDFBox processing diagnostics remain in the server's temporary directory as `.accessibility.log` files when these checks fail; temporary PDFs are removed. These safeguards do not establish PDF/UA-1 conformance.
+The finalizer handles the content stream syntax emitted by the supported Chromium renderer. Internal links without descriptions, inline image streams, tagged Form XObjects, and unsupported stream encodings are rejected instead of being silently rewritten. Check representative downloads after browser upgrades.
 
 The source must provide a title, language, correctly nested headings/lists/tables, and descriptions for meaningful graphics. MathJax SVG output must retain its spoken description. A template can identify wholly decorative content with `data-print-pdf-role="Artifact"`. For a container whose own background/border is decorative, set `data-print-pdf-role="Div"` (or its actual paragraph/heading role) and `data-print-pdf-decorative-paint`; its descendants remain meaningful. Only that container's marked drawing is made decorative, and the processor rejects text or images in it. Materialize repeated CSS-generated footer text as real DOM content before marking it decorative. Never use these annotations to hide meaningful author content.
 

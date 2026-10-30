@@ -42,7 +42,7 @@ import {
   isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
-import { PrintPdfAccessibilityError } from '../../lib/printing/pdf-tools.js';
+import { PrintPdfAccessibilityError } from '../../lib/printing/pdf-accessibility-error.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
