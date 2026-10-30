@@ -83,7 +83,7 @@ export async function finalizePrintPdf(
   const found = new Set<string>();
   const seenElements = new Set<PDFDict>();
 
-  function transformKids(
+  function transformChildren(
     owner: PDFDict,
     inheritedPage?: PDFObject,
     inheritedArtifact?: Artifact,
@@ -95,10 +95,11 @@ export async function finalizePrintPdf(
     }
     seenElements.add(owner);
     const page = owner.lookup(PDFName.of('Pg')) ?? inheritedPage;
-    const rawKids = owner.get(PDFName.of('K'));
-    const kids = context.lookup(rawKids);
+    const rawChildren = owner.get(PDFName.of('K'));
+    const children = context.lookup(rawChildren);
     // Keep indirect references even when Chromium gives an element only one child.
-    const entries = kids instanceof PDFArray ? kids.asArray() : rawKids ? [rawKids] : [];
+    const entries =
+      children instanceof PDFArray ? children.asArray() : rawChildren ? [rawChildren] : [];
     const result: PDFObject[] = [];
     for (const raw of entries) {
       const child = context.lookup(raw);
@@ -124,7 +125,7 @@ export async function finalizePrintPdf(
             decoration = tag.decorativePaint === true;
           }
         }
-        transformKids(child, page, artifact, decoration);
+        transformChildren(child, page, artifact, decoration);
         if (!artifact) result.push(raw);
       } else if (
         child instanceof PDFNumber ||
@@ -177,7 +178,7 @@ export async function finalizePrintPdf(
     owner.set(PDFName.of('K'), context.obj(result));
   }
 
-  transformKids(root);
+  transformChildren(root);
   const missing = [...tags.keys()].filter((marker) => !found.has(marker));
   if (missing.length > 0) {
     throw new Error(`Chromium omitted declared PDF structure: ${missing.join(', ')}.`);
@@ -211,9 +212,9 @@ export async function finalizePrintPdf(
         }
       }
     }
-    const kids = node.lookup(PDFName.of('Kids'));
-    if (kids instanceof PDFArray) {
-      for (const child of kids.asArray()) clearParentTree(context.lookup(child));
+    const children = node.lookup(PDFName.of('Kids'));
+    if (children instanceof PDFArray) {
+      for (const child of children.asArray()) clearParentTree(context.lookup(child));
     }
   }
   clearParentTree(root.lookup(PDFName.of('ParentTree')));
