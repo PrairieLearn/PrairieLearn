@@ -7,7 +7,6 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 
-import { HelpTooltip } from '../../../components/HelpTooltip.js';
 import { type StaffGroupConfig } from '../../../lib/client/safe-db-types.js';
 import { type GroupSettingsFormValues, makeRole } from '../../../lib/group-config.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
@@ -429,45 +428,16 @@ export function GroupSettingsCard({
                   <thead>
                     <tr>
                       <th scope="col">Name</th>
-                      <th scope="col">
-                        Min assignees{' '}
-                        <HelpTooltip
-                          body="Minimum number of students that must be assigned to this role."
-                          id="role-min-assignees-tooltip"
-                          ariaLabel="Min assignees help"
-                        />
-                      </th>
-                      <th scope="col">
-                        Max assignees{' '}
-                        <HelpTooltip
-                          body="Maximum number of students that can be assigned to this role. Leave blank for unlimited."
-                          id="role-max-assignees-tooltip"
-                          ariaLabel="Max assignees help"
-                        />
+                      <th scope="col">Minimum students</th>
+                      <th scope="col">Maximum students</th>
+                      <th scope="col" className="text-center">
+                        Assign roles
                       </th>
                       <th scope="col" className="text-center">
-                        Can assign{' '}
-                        <HelpTooltip
-                          body="Students with this role can assign roles to other students in the group."
-                          id="role-can-assign-tooltip"
-                          ariaLabel="Can assign roles help"
-                        />
+                        View questions
                       </th>
                       <th scope="col" className="text-center">
-                        Can view{' '}
-                        <HelpTooltip
-                          body="Students with this role can view assessment questions by default."
-                          id="role-can-view-tooltip"
-                          ariaLabel="Can view help"
-                        />
-                      </th>
-                      <th scope="col" className="text-center">
-                        Can submit{' '}
-                        <HelpTooltip
-                          body="Students with this role can submit answers to assessment questions by default."
-                          id="role-can-submit-tooltip"
-                          ariaLabel="Can submit help"
-                        />
+                        Submit answers
                       </th>
                       <th scope="col" />
                     </tr>
@@ -538,7 +508,7 @@ export function GroupSettingsCard({
                                   )}
                                   placeholder="None"
                                   defaultValue={field.minAssignees ?? ''}
-                                  aria-label={`Min assignees for role ${rowNumber}`}
+                                  aria-label={`Minimum students for role ${rowNumber}`}
                                   aria-invalid={minError ? 'true' : undefined}
                                   aria-errormessage={minError ? minErrorId : undefined}
                                   {...register(`roles.${index}.minAssignees`, {
@@ -586,7 +556,7 @@ export function GroupSettingsCard({
                                   )}
                                   placeholder="None"
                                   defaultValue={field.maxAssignees ?? ''}
-                                  aria-label={`Max assignees for role ${rowNumber}`}
+                                  aria-label={`Maximum students for role ${rowNumber}`}
                                   aria-invalid={maxError ? 'true' : undefined}
                                   aria-errormessage={maxError ? maxErrorId : undefined}
                                   {...register(`roles.${index}.maxAssignees`, {
@@ -615,7 +585,7 @@ export function GroupSettingsCard({
                                 <input
                                   type="checkbox"
                                   className="form-check-input"
-                                  aria-label={`Can assign roles for ${watchedRoles[index]?.name || 'this role'}`}
+                                  aria-label={`Assign roles for ${watchedRoles[index]?.name || 'this role'}`}
                                   defaultChecked={field.canAssignRoles}
                                   {...register(`roles.${index}.canAssignRoles`)}
                                 />
@@ -624,7 +594,7 @@ export function GroupSettingsCard({
                                 <input
                                   type="checkbox"
                                   className="form-check-input"
-                                  aria-label={`Can view for ${watchedRoles[index]?.name || 'this role'}`}
+                                  aria-label={`View questions for ${watchedRoles[index]?.name || 'this role'}`}
                                   defaultChecked={field.canView}
                                   {...register(`roles.${index}.canView`, {
                                     onChange: (e) => {
@@ -644,13 +614,8 @@ export function GroupSettingsCard({
                                   disabled={!watchedRoles[index]?.canView}
                                   aria-label={
                                     watchedRoles[index]?.canView
-                                      ? `Can submit for ${watchedRoles[index]?.name || 'this role'}`
-                                      : `Can submit for ${watchedRoles[index]?.name || 'this role'} (requires can view)`
-                                  }
-                                  title={
-                                    watchedRoles[index]?.canView
-                                      ? undefined
-                                      : "Enable 'Can view' first to allow submission"
+                                      ? `Submit answers for ${watchedRoles[index]?.name || 'this role'}`
+                                      : `Submit answers for ${watchedRoles[index]?.name || 'this role'} (requires viewing questions)`
                                   }
                                   defaultChecked={field.canSubmit}
                                   {...register(`roles.${index}.canSubmit`)}
