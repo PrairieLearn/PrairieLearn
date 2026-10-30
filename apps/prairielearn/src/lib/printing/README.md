@@ -46,7 +46,7 @@ The caller owns the paginated HTML page. It must set `document.documentElement.d
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page, signal)` callback can inspect the DOM and then call `createPdfOutput().produce(page, signal)` to reuse the standard PDF output.
 
-`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use PDFBox's structure-aware merger and page splitter, with independent structure references for each copy, namespaced table identifiers, and preserved source languages. Final packet metadata is applied after assembly. Uploaded covers must contain document tags and a document language before rendering begins. These prerequisite checks do not establish PDF/UA-1 conformance or judge the accuracy of descriptions and reading order. Tagged Form XObjects and internal links that cross a split document section are currently rejected because the merger cannot preserve their relationships safely. Re-export affected covers from a supported source, or omit them.
+`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy printed pages, sharing fonts and images across repeated copies. Packets do not preserve document tags or internal PDF navigation and do not claim PDF/UA conformance. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits; they do not need accessibility tags.
 
 ### Word output
 
@@ -111,12 +111,12 @@ veraPDF runs only when requested locally; production exports and CI do not insta
 node scripts/validate-print-pdfs.mts \
   --verapdf .local/print-pdf-validator/verapdf \
   --output /tmp/print-pdfua-review \
-  assessment.pdf answer-key.pdf packet.pdf
+  assessment.pdf answer-key.pdf
 ```
 
 The output directory must be new and its parent must exist. The script checks the veraPDF version, retains the exact input bytes, runs `--flavour ua1`, and saves full JSON reports, validator logs, readable failure details, and a summary. It exits unsuccessfully for validation failures, unreadable inputs, parsing errors, or tool errors. Omit `--verapdf` when the executable is on `PATH`; set `JAVA_HOME` if your Java installation requires it.
 
-Include math, figures, lists, and tables in the assessment and answer key, and repeated forms and an uploaded cover in the final assembled packet. Validate after assembly because page copying can lose document structure and language. A passing automated report covers only machine-verifiable requirements: review the final files with assistive technology for reading order, navigation, mathematical meaning, table relationships, and useful descriptions before claiming PDF/UA-1 compliance.
+Include math, figures, lists, and tables in the individual assessment and answer key downloads. Combined packets are intended for printing and are outside the PDF/UA compliance scope. A passing automated report covers only machine-verifiable requirements: review the final files with assistive technology for reading order, navigation, mathematical meaning, table relationships, and useful descriptions before claiming PDF/UA-1 compliance.
 
 ## Combining question fragments
 

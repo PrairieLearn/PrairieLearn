@@ -1,7 +1,6 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { setImmediate } from 'node:timers/promises';
 
-import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString } from 'pdf-lib';
+import { PDFDocument, PDFHexString, PDFName, PDFPage, PDFString } from 'pdf-lib';
 
 import {
   MAX_COVER_BYTES,
@@ -9,7 +8,6 @@ import {
   MAX_COVER_PAGES,
   MAX_PACKET_PAGES,
 } from './client/print-packet.js';
-import { runPrintPdfTool, withPrintPdfDirectory } from './printing/pdf-tools.js';
 
 export class PrintPacketError extends Error {}
 
@@ -55,18 +53,6 @@ export async function readPrintCoverPages(
         `Cover PDFs must contain at most ${MAX_COVER_PAGES} pages in total.`,
       );
     }
-    const structure = cover.catalog.lookup(PDFName.of('StructTreeRoot'));
-    const language = cover.catalog.lookup(PDFName.of('Lang'));
-    if (
-      !(structure instanceof PDFDict) ||
-      !structure.has(PDFName.of('K')) ||
-      !(language instanceof PDFString || language instanceof PDFHexString) ||
-      !language.decodeText().trim()
-    ) {
-      throw new PrintPacketError(
-        `“${file.name}” needs document tags and a document language. Export a tagged PDF with its language set, then upload it again.`,
-      );
-    }
     covers.push({ pdf: bytes, pageCount: cover.getPageCount() });
   }
   return covers;
@@ -110,61 +96,48 @@ export async function assemblePrintPacket({
     return Buffer.from(forms[0].pdf);
   }
 
-  return await withPrintPdfDirectory(async (directory) => {
-    const formPaths = await Promise.all(
-      forms.map(async ({ pdf }, index) => {
-        const filename = path.join(directory, `form-${index}.pdf`);
-        await writeFile(filename, pdf);
-        return filename;
-      }),
-    );
-    const coverPaths = await Promise.all(
-      covers.map(async (cover, index) => {
-        const filename = path.join(directory, `cover-${index}.pdf`);
-        await writeFile(filename, cover.pdf);
-        return filename;
-      }),
-    );
-    const keyPaths = await Promise.all(
-      answerKeys.map(async (pdf, index) => {
-        const filename = path.join(directory, `answer-key-${index}.pdf`);
-        await writeFile(filename, pdf);
-        return filename;
-      }),
-    );
-    const parts: string[] = [];
-    const append = (filename: string, first = 0, last = 0) => {
-      parts.push(`${filename}\t${first}\t${last}`);
-    };
-    for (let copy = 0; copy < copies; copy++) {
-      const index = copy % sources.length;
-      const form = sources[index];
-      const filename = formPaths[index];
-      if (covers.length === 0) {
-        append(filename);
-        continue;
-      }
-      if (form.coverPageCount > 0) append(filename, 1, form.coverPageCount);
-      for (const cover of coverPaths) append(cover);
-      if (form.coverPageCount < form.document.getPageCount()) {
-        append(filename, form.coverPageCount + 1, form.document.getPageCount());
-      }
+  // A packet preserves printed pages; its new catalog does not claim PDF/UA conformance.
+  const packet = await PDFDocument.create();
+  packet.setTitle(`${sources[0].document.getTitle() ?? 'Assessment'} — print packet`);
+  const language = sources[0].document.catalog.lookup(PDFName.of('Lang'));
+  if (language instanceof PDFString || language instanceof PDFHexString) {
+    packet.setLanguage(language.decodeText());
+  }
+  const copiedCovers = [];
+  for (const cover of covers) {
+    signal?.throwIfAborted();
+    const document = await PDFDocument.load(cover.pdf, { updateMetadata: false });
+    copiedCovers.push(...(await packet.copyPages(document, document.getPageIndices())));
+  }
+  const copiedForms = [];
+  for (const { document, coverPageCount } of sources) {
+    signal?.throwIfAborted();
+    copiedForms.push({
+      pages: await packet.copyPages(document, document.getPageIndices()),
+      coverPageCount,
+    });
+  }
+  for (let copy = 0; copy < copies; copy++) {
+    await setImmediate();
+    signal?.throwIfAborted();
+    const form = copiedForms[copy % copiedForms.length];
+    const pages = [
+      ...form.pages.slice(0, form.coverPageCount),
+      ...copiedCovers,
+      ...form.pages.slice(form.coverPageCount),
+    ];
+    for (const page of pages) {
+      // Each physical page needs its own page-tree entry, while sharing fonts and images.
+      const node = page.node.clone();
+      packet.addPage(PDFPage.of(node, packet.context.register(node), packet));
     }
-    for (const key of keyPaths) append(key);
-    const manifest = path.join(directory, 'parts.tsv');
-    await writeFile(manifest, parts.join('\n'));
-    const title = `${sources[0].document.getTitle() ?? 'Assessment'} — print packet`;
-    const language = sources[0].document.catalog
-      .lookup(PDFName.of('Lang'), PDFString, PDFHexString)
-      .decodeText();
-    const merged = path.join(directory, 'merged.pdf');
-    const output = path.join(directory, 'packet.pdf');
-    await runPrintPdfTool('PrintPdf', ['merge', merged, title, language, manifest], signal);
-    await runPrintPdfTool(
-      'PrintPdfFinalize',
-      ['metadata', merged, output, title, language],
-      signal,
-    );
-    return await readFile(output);
-  });
+  }
+  for (const key of answerKeyDocuments) {
+    signal?.throwIfAborted();
+    const pages = await packet.copyPages(key, key.getPageIndices());
+    for (const page of pages) packet.addPage(page);
+  }
+  const output = await packet.save();
+  signal?.throwIfAborted();
+  return Buffer.from(output);
 }
