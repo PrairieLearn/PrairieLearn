@@ -13,6 +13,7 @@ import {
 } from '../../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import type { File } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
   getGroupConfig,
@@ -267,7 +268,14 @@ router.get(
       ({ instance_question: iq, assessment_question: aq }) =>
         aq.max_auto_points || iq.auto_points || !aq.max_points,
     );
-    const assessment_text_templated = renderText(res.locals.assessment, res.locals.urlPrefix);
+    const markdownEnabled = await features.enabledFromLocals(
+      'assessment-text-markdown',
+      res.locals,
+    );
+    const assessment_text_templated = renderText(res.locals.assessment, {
+      urlPrefix: res.locals.urlPrefix,
+      markdownEnabled,
+    });
     res.locals.assessment_text_templated = assessment_text_templated;
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
