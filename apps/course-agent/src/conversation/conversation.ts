@@ -26,6 +26,7 @@ const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
 });
+
 /**
  * A saved expiry for a turn or idle workspace. The sandbox ID prevents stale alarms
  * from shutting down a replacement workspace. Turn expiry includes startup time.
