@@ -9,6 +9,33 @@ import pytest
 import sympy
 
 
+@pytest.mark.parametrize(
+    ("assumptions", "expected"),
+    [
+        ({}, True),
+        ({"x": {"positive": True}}, True),
+        ({"x": {"positive": False}}, True),
+        ({"x": {"positive": "false"}}, False),
+        ({"x": {"positive": 1}}, False),
+        ({"x": []}, False),
+        ({"x": {"unknown_assumption": True}}, False),
+        ({1: {"positive": True}}, False),
+    ],
+)
+def test_is_sympy_json_validates_assumptions(
+    assumptions: object,
+    expected: bool,  # ruff: ignore[boolean-type-hint-positional-argument]
+) -> None:
+    value = {
+        "_type": "sympy",
+        "_value": "x",
+        "_variables": ["x"],
+        "_assumptions": assumptions,
+    }
+
+    assert psu.is_sympy_json(value) is expected
+
+
 def _caret_template(template_expr: str) -> tuple[str, str]:
     """Build a caret assertion from a single-string template.
 
