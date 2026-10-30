@@ -39,6 +39,7 @@ it('exports tagged PDF math, figures, and document structure from source semanti
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="24">
                 <text x="0" y="18">x²</text>
               </svg>
+              <mjx-speech role="img" aria-label="x squared, math" style="display: inline-block; width: 1px; height: 1px"></mjx-speech>
             </mjx-container>.
           </p>
           <svg xmlns="http://www.w3.org/2000/svg" role="img" width="48" height="48" style="display: block">
@@ -207,6 +208,14 @@ it('exports tagged PDF math, figures, and document structure from source semanti
     const xmp = Buffer.from(decodePDFRawStream(metadata).decode()).toString('utf8');
     expect(xmp).toContain('<pdfuaid:part>1</pdfuaid:part>');
     expect(xmp).toContain('<rdf:li xml:lang="x-default">Accessible assessment</rdf:li>');
+    await page.setContent(`<!doctype html><html lang="en"><title>Linked graphic</title><body>
+      <svg aria-label="Course diagram" width="40" height="40">
+        <a href="https://www.prairielearn.com/"><rect width="30" height="30" /></a>
+      </svg>
+    </body></html>`);
+    await expect(createPdfOutput().produce(page)).rejects.toThrow(
+      'Place the link outside the image',
+    );
   } finally {
     await browser.close();
   }
