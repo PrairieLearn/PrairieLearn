@@ -7,7 +7,6 @@ export interface PdfAccessibilityManifest {
     alt?: string;
     decorativePaint?: boolean;
   }[];
-  links: { uri: string; alt: string }[];
 }
 
 /** Runs in the export browser after pagination; the preview remains unchanged. */
@@ -15,10 +14,9 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
   const title = document.title.trim();
   const language = document.documentElement.lang.trim();
   if (!title || !language) {
-    return { error: 'PDF export requires a document title and language.' };
+    throw new Error('PDF export requires a document title and language.');
   }
   const tags: PdfAccessibilityManifest['tags'] = [];
-  const links: PdfAccessibilityManifest['links'] = [];
   const prefix = `pl-pdf-${crypto.getRandomValues(new Uint32Array(4)).join('-')}-`;
   // Object methods avoid compiler naming helpers that are unavailable in page.evaluate().
   const helpers = {
@@ -37,8 +35,8 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
     },
     description(element: Element, fallbackName = '') {
       const name = (
-        element.getAttribute('aria-label') ||
         helpers.referencedText(element, 'aria-labelledby') ||
+        element.getAttribute('aria-label') ||
         element.getAttribute('alt') ||
         element.getAttribute('alttext') ||
         element.querySelector(':scope > title')?.textContent ||
@@ -60,7 +58,7 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
       const marker = `${prefix}${tags.length}`;
       tags.push({ marker, role, alt, decorativePaint });
       // Figure preserves child headings, lists, and tables while carrying a source marker into PDF.
-      element.setAttribute('role', decorativePaint ? 'figure' : 'img');
+      element.setAttribute('role', decorativePaint || role === 'Link' ? 'figure' : 'img');
       element.setAttribute('aria-label', marker);
       element.removeAttribute('aria-labelledby');
       element.removeAttribute('aria-hidden');
@@ -72,11 +70,11 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
     if (!helpers.visible(element)) continue;
     const role = element.getAttribute('data-print-pdf-role')!;
     if (!/^(Artifact|Div|Span|P|H[1-6])$/.test(role)) {
-      return { error: `Unsupported PDF structure role: ${role}.` };
+      throw new Error(`Unsupported PDF structure role: ${role}.`);
     }
     const decorativePaint = element.hasAttribute('data-print-pdf-decorative-paint');
     if (role !== 'Artifact' && !decorativePaint) {
-      return { error: 'PDF container annotations must identify their decorative paint.' };
+      throw new Error('PDF container annotations must identify their decorative paint.');
     }
     helpers.mark(element, role, { decorativePaint });
   }
@@ -111,11 +109,13 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
     helpers.mark(element, 'Formula', { alt });
   }
 
-  for (const element of document.querySelectorAll('img, svg, canvas')) {
+  for (const element of document.querySelectorAll('img, svg, canvas, [role="img"]')) {
     if (
       !helpers.visible(element) ||
       element.hasAttribute('data-print-pdf-marked') ||
-      element.closest('[data-print-pdf-marked="Artifact"], [data-print-pdf-marked="Formula"]')
+      element.closest(
+        '[data-print-pdf-marked="Artifact"], [data-print-pdf-marked="Formula"], [data-print-pdf-marked="Figure"]',
+      )
     ) {
       continue;
     }
@@ -128,10 +128,25 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
       (!alt &&
         (element.getAttribute('alt') === '' ||
           ['none', 'presentation'].includes(element.getAttribute('role') ?? '')));
+    // Chromium can omit a labeled wrapper around an SVG; put its semantics on the graphic.
+    const child = element.children.length === 1 ? element.firstElementChild : null;
+    const graphic = !element.matches('img, svg') && child?.matches('img, svg') ? child : element;
+    if (graphic !== element) {
+      element.setAttribute('role', 'presentation');
+      for (const attribute of [
+        'aria-label',
+        'aria-labelledby',
+        'aria-description',
+        'aria-describedby',
+        'aria-hidden',
+      ]) {
+        element.removeAttribute(attribute);
+      }
+    }
     if (decorative) {
-      helpers.mark(element, 'Artifact');
+      helpers.mark(graphic, 'Artifact');
     } else if (alt) {
-      helpers.mark(element, 'Figure', { alt });
+      helpers.mark(graphic, 'Figure', { alt });
     } else {
       return {
         error: 'Add an alternative description to each meaningful image or SVG before PDF export.',
@@ -142,7 +157,7 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
     if (!helpers.visible(element)) continue;
     const uri = element.href;
     const alt = helpers.description(element, element.textContent.trim() || uri);
-    links.push({ uri, alt });
+    helpers.mark(element, 'Link', { alt });
   }
 
   // The PDF page is already white; avoid painting a second white canvas behind the tagged content.
@@ -155,5 +170,5 @@ export function preparePdfAccessibility(): PdfAccessibilityManifest | { error: s
       element.style.setProperty('background', 'transparent', 'important');
     }
   }
-  return { title, language, tags, links };
+  return { title, language, tags };
 }

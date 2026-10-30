@@ -46,11 +46,17 @@ it('exports tagged PDF math, figures, and document structure from source semanti
             <desc>All four sides are equal</desc>
             <rect x="4" y="4" width="40" height="40" fill="none" stroke="black" />
           </svg>
-          <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A circle"
+          <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A generic diagram" aria-labelledby="circle-name"
                aria-describedby="circle-description" width="48" height="48" style="display: block">
             <circle cx="24" cy="24" r="20" fill="none" stroke="black" />
           </svg>
+          <p id="circle-name" hidden>A circle</p>
           <p id="circle-description" hidden>The radius is twenty units</p>
+          <div role="img" aria-label="A directed graph" aria-description="A points to B">
+            <svg width="40" height="40"><svg width="40" height="40">
+              <path d="M0 0L40 40" stroke="black" />
+            </svg></svg>
+          </div>
           <table>
             <caption>Values</caption>
             <thead><tr><th id="input" scope="col">Input</th><th id="result" scope="col">Result</th></tr></thead>
@@ -58,8 +64,12 @@ it('exports tagged PDF math, figures, and document structure from source semanti
           </table>
           <section data-print-pdf-role="Div" data-print-pdf-decorative-paint style="border: 1px solid; padding: 8px">
             <div data-print-pdf-role="Div" data-print-pdf-decorative-paint style="border-left: 2px solid; padding-left: 8px">
-              <h2>References</h2>
+              <h2 id="references">References</h2>
               <p>Read the <a href="https://www.prairielearn.com/">PrairieLearn home page</a>.</p>
+              <p><a href="https://www.prairielearn.com/" aria-label="Course website">
+                <svg aria-label="PrairieLearn logo" width="20" height="20"><rect width="10" height="10" /></svg>
+              </a></p>
+              <p><a href="#references">Return to references</a></p>
             </div>
           </section>
           <footer data-print-pdf-role="Artifact">Page 1</footer>
@@ -142,6 +152,8 @@ it('exports tagged PDF math, figures, and document structure from source semanti
         'x squared',
         'A square. All four sides are equal',
         'A circle. The radius is twenty units',
+        'A directed graph. A points to B',
+        'PrairieLearn logo',
       ]),
     );
     expect(
@@ -174,10 +186,18 @@ it('exports tagged PDF math, figures, and document structure from source semanti
     expect(Buffer.from(decodePDFRawStream(contents).decode()).toString('latin1')).toContain(
       '/Artifact BMC',
     );
-    const link = pdfPage.node.lookup(PDFName.of('Annots'), PDFArray).lookup(0, PDFDict);
-    expect(link.lookup(PDFName.of('Contents'), PDFString, PDFHexString).decodeText()).toBe(
-      'PrairieLearn home page',
-    );
+    const links = pdfPage.node
+      .lookup(PDFName.of('Annots'), PDFArray)
+      .asArray()
+      .map((entry) => context.lookup(entry, PDFDict));
+    expect([
+      ...new Set(
+        links.map((link) =>
+          link.lookup(PDFName.of('Contents'), PDFString, PDFHexString).decodeText(),
+        ),
+      ),
+    ]).toEqual(['PrairieLearn home page', 'Course website', 'Return to references']);
+    expect(links.at(-1)!.lookup(PDFName.of('Dest'), PDFName).decodeText()).toBe('references');
     expect(pdfPage.node.lookup(PDFName.of('Tabs'))).toBe(PDFName.of('S'));
     expect(pdf.getTitle()).toBe('Accessible assessment');
     expect(pdf.catalog.lookup(PDFName.of('Lang'), PDFString, PDFHexString).decodeText()).toBe('en');
@@ -187,18 +207,6 @@ it('exports tagged PDF math, figures, and document structure from source semanti
     const xmp = Buffer.from(decodePDFRawStream(metadata).decode()).toString('utf8');
     expect(xmp).toContain('<pdfuaid:part>1</pdfuaid:part>');
     expect(xmp).toContain('<rdf:li xml:lang="x-default">Accessible assessment</rdf:li>');
-
-    await page.setContent(`<!doctype html>
-      <html lang="en">
-        <head><title>Assessment instructions</title></head>
-        <body>
-          <a href="#instructions">Read instructions</a>
-          <h1 id="instructions">Instructions</h1>
-        </body>
-      </html>`);
-    await expect(createPdfOutput().produce(page)).rejects.toThrow(
-      'cannot describe an internal link',
-    );
   } finally {
     await browser.close();
   }

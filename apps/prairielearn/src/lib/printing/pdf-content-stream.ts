@@ -1,3 +1,5 @@
+import { setImmediate } from 'node:timers/promises';
+
 import {
   PDFArray,
   PDFBool,
@@ -12,8 +14,6 @@ import {
   PDFString,
 } from 'pdf-lib';
 
-import { PrintPdfAccessibilityError } from './pdf-accessibility-error.js';
-
 export interface PdfContentMark {
   tagged: boolean;
   artifact: 'all' | 'decoration' | null;
@@ -23,7 +23,7 @@ export interface PdfContentOptions {
   classify: (mcid: number) => PdfContentMark | undefined;
   inheritedMarks?: readonly PdfContentMark[];
   resolveProperties: (name: string) => PDFDict | undefined;
-  visitForm: (name: string, marks: readonly PdfContentMark[]) => void;
+  visitForm: (name: string, marks: readonly PdfContentMark[]) => Promise<void>;
   location: string;
   signal?: AbortSignal;
 }
@@ -67,7 +67,7 @@ function* parseContent(
   let offset = 0;
 
   function fail(message: string): never {
-    throw new PrintPdfAccessibilityError(`${message} in ${location} at byte ${offset}.`);
+    throw new Error(`${message} in ${location} at byte ${offset}.`);
   }
 
   function skipSpace() {
@@ -219,7 +219,7 @@ function* parseContent(
 }
 
 /** Preserve drawing bytes while marking only source-declared decoration as artifacts. */
-export function rewritePdfContent(
+export async function rewritePdfContent(
   bytes: Uint8Array,
   {
     classify,
@@ -229,20 +229,22 @@ export function rewritePdfContent(
     location,
     signal,
   }: PdfContentOptions,
-): Uint8Array {
+): Promise<Uint8Array> {
   const marks = inheritedMarks.map((mark) => ({ ...mark }));
   const initialDepth = marks.length;
   const replacements: { start: number; end: number }[] = [];
 
   function fail(message: string): never {
-    throw new PrintPdfAccessibilityError(`${message} in ${location}.`);
+    throw new Error(`${message} in ${location}.`);
   }
 
   function requireOperands(instruction: ContentInstruction, count: number) {
     if (instruction.operands.length !== count) fail(`Invalid ${instruction.operator} operands`);
   }
 
+  let instructionCount = 0;
   for (const instruction of parseContent(bytes, location, signal)) {
+    if (++instructionCount % 4096 === 0) await setImmediate(undefined, { signal });
     const { operator, operands } = instruction;
     if (operator === 'BDC' || operator === 'BMC') {
       requireOperands(instruction, operator === 'BDC' ? 2 : 1);
@@ -298,7 +300,7 @@ export function rewritePdfContent(
         requireOperands(instruction, 1);
         const name = operands[0];
         if (!(name instanceof PDFName)) fail('XObject resource must be a name');
-        visitForm(
+        await visitForm(
           name.decodeText(),
           marks.map((mark) => ({ ...mark })),
         );

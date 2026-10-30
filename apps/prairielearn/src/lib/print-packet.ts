@@ -1,6 +1,17 @@
 import { setImmediate } from 'node:timers/promises';
 
-import { PDFDocument, PDFHexString, PDFName, PDFPage, PDFString } from 'pdf-lib';
+import {
+  AnnotationFlags,
+  PDFAnnotation,
+  PDFBool,
+  PDFDict,
+  PDFDocument,
+  PDFHexString,
+  PDFName,
+  PDFPage,
+  PDFRawStream,
+  PDFString,
+} from 'pdf-lib';
 
 import {
   MAX_COVER_BYTES,
@@ -14,6 +25,34 @@ export class PrintPacketError extends Error {}
 export interface PrintCover {
   pdf: Uint8Array;
   pageCount: number;
+}
+
+function needsFormAppearances(document: PDFDocument): boolean {
+  const form = document.catalog.lookup(PDFName.of('AcroForm'));
+  if (form instanceof PDFDict && form.lookup(PDFName.of('NeedAppearances')) === PDFBool.True) {
+    return true;
+  }
+  for (const page of document.getPages()) {
+    for (const reference of page.node.Annots()?.asArray() ?? []) {
+      const dictionary = document.context.lookup(reference, PDFDict);
+      if (dictionary.lookup(PDFName.of('Subtype')) !== PDFName.of('Widget')) continue;
+      const widget = PDFAnnotation.fromDict(dictionary);
+      if (
+        widget.hasFlag(AnnotationFlags.Hidden) ||
+        (widget.hasFlag(AnnotationFlags.NoView) && !widget.hasFlag(AnnotationFlags.Print))
+      ) {
+        continue;
+      }
+      const normal = widget.AP()?.lookup(PDFName.of('N'));
+      if (normal instanceof PDFRawStream) continue;
+      const state = widget.getAppearanceState();
+      if (normal instanceof PDFDict && state && normal.lookup(state) instanceof PDFRawStream) {
+        continue;
+      }
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Parse uploads once, before starting any browser renders. */
@@ -32,12 +71,14 @@ export async function readPrintCoverPages(
   for (const file of files) {
     signal?.throwIfAborted();
     let cover: PDFDocument;
+    let needsAppearances: boolean;
     const bytes = new Uint8Array(await file.arrayBuffer());
     try {
       cover = await PDFDocument.load(bytes, {
         throwOnInvalidObject: true,
         updateMetadata: false,
       });
+      needsAppearances = needsFormAppearances(cover);
     } catch (error) {
       throw new PrintPacketError(
         `“${file.name}” could not be read. Upload a valid PDF without password protection.`,
@@ -46,6 +87,11 @@ export async function readPrintCoverPages(
     }
     if (cover.getPageCount() === 0) {
       throw new PrintPacketError(`“${file.name}” contains no pages.`);
+    }
+    if (needsAppearances) {
+      throw new PrintPacketError(
+        `“${file.name}” has form fields that need a PDF viewer to draw them. Print or export it as a flattened PDF, then upload that file.`,
+      );
     }
     pageCount += cover.getPageCount();
     if (pageCount > MAX_COVER_PAGES) {

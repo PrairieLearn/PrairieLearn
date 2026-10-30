@@ -38,9 +38,15 @@ export async function renderPrintExport(
   const renderer = getPrintRenderer();
   const forms: { pdf: Buffer; coverPageCount: number }[] = [];
   const answerKeys: Buffer[] = [];
+  const pdfOutput = createPdfOutput({
+    accessible:
+      work.document !== 'booklet' &&
+      work.snapshots.length === 1 &&
+      work.copies === 1 &&
+      covers.length === 0,
+  });
   for (const snapshot of work.snapshots) {
     if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
-    const pdfOutput = createPdfOutput();
     const rendered = await renderer.render(
       {
         url: snapshot.localPreviewUrl,
