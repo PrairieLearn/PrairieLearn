@@ -27,9 +27,8 @@
     overflow: auto;
   }
 
-  /* Banners and navigation retain their natural height as the question panes shrink. */
-  .question-page-layout > :not(#content),
-  .question-page-layout > #content > :not(.question-page-row) {
+  /* Navigation retains its natural height as the question panes shrink. */
+  .question-page-layout > :not(#content) {
     flex-shrink: 0;
   }
 
@@ -38,16 +37,21 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    /* Override Bootstrap spacing utilities so the scroll panes own their padding. */
+    padding: 0 !important;
   }
 
   .question-page-layout .question-page-row {
     flex: 1;
-    /* Let the outer area scroll rather than collapse the panes below long warnings. */
+    /* Keep the panes usable when navigation exceeds the viewport. */
     min-height: min(20rem, 50dvh);
+    margin: 0;
   }
 
+  /* The templates make each pane focusable so keyboard users can choose which pane to scroll. */
   .question-page-layout :is(.question-page-question, .question-page-sidebar) {
     height: 100%;
+    padding: 1rem;
     overflow: auto;
     overscroll-behavior-y: contain;
   }
