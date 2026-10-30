@@ -89,9 +89,9 @@ it('exports tagged PDF math, figures, and document structure from source semanti
           parents.set(numbers.lookup(index, PDFNumber).asNumber(), numbers.get(index + 1));
         }
       }
-      const kids = node.lookup(PDFName.of('Kids'));
-      if (kids instanceof PDFArray) {
-        for (const child of kids.asArray()) readParents(context.lookup(child, PDFDict));
+      const children = node.lookup(PDFName.of('Kids'));
+      if (children instanceof PDFArray) {
+        for (const child of children.asArray()) readParents(context.lookup(child, PDFDict));
       }
     }
     readParents(root.lookup(PDFName.of('ParentTree'), PDFDict));
@@ -100,7 +100,7 @@ it('exports tagged PDF math, figures, and document structure from source semanti
     const structureReferences: PDFObject[] = [];
     const relationships: { actual: PDFObject | undefined; expected: PDFDict }[] = [];
 
-    function collectKids(owner: PDFDict, inheritedPage?: PDFDict): void {
+    function collectChildren(owner: PDFDict, inheritedPage?: PDFDict): void {
       const page = owner.lookupMaybe(PDFName.of('Pg'), PDFDict) ?? inheritedPage;
       for (const raw of owner.lookup(PDFName.of('K'), PDFArray).asArray()) {
         const child = context.lookup(raw);
@@ -108,7 +108,7 @@ it('exports tagged PDF math, figures, and document structure from source semanti
           structureReferences.push(raw);
           relationships.push({ actual: child.lookup(PDFName.of('P')), expected: owner });
           elements.push(child);
-          collectKids(child, page);
+          collectChildren(child, page);
         } else if (child instanceof PDFNumber) {
           const parent = page!.lookup(PDFName.of('StructParents'), PDFNumber).asNumber();
           relationships.push({
@@ -125,7 +125,7 @@ it('exports tagged PDF math, figures, and document structure from source semanti
         }
       }
     }
-    collectKids(root);
+    collectChildren(root);
     for (const reference of structureReferences) expect(reference).toBeInstanceOf(PDFRef);
     for (const { actual, expected } of relationships) expect(actual).toBe(expected);
 
