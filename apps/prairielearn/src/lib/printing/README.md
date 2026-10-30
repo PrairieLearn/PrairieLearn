@@ -44,9 +44,9 @@ The browser permits only same-origin `GET` requests during rendering; mutating r
 
 The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative for the physical paper size.
 
-For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page, signal)` callback can inspect the DOM and then call `createPdfOutput().produce(page, signal)` to reuse the standard PDF output.
+For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
-`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy printed pages, sharing fonts and images across repeated copies. Packets do not preserve document tags or internal PDF navigation and do not claim PDF/UA conformance. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits; they do not need accessibility tags.
+`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy printed pages, sharing fonts and images across repeated copies. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
 
 ### Word output
 
@@ -76,7 +76,7 @@ The PrairieLearn print endpoint accepts layout choices as query parameters. `blo
 
 `grading_table=true` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
 
-The print preparation page can combine multiple assessment instances and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that instance's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included only in student copies within packets. Individual form and answer key downloads exclude uploaded covers and preserve the finalized PDF bytes. Generated page numbers and identification codes continue to identify pages within the original form; uploaded pages retain their own appearance and have no generated identification codes.
+The print preparation page can combine multiple assessment instances and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that instance's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included in student copies, including individual form downloads. Answer key downloads exclude uploaded covers. Generated page numbers and identification codes continue to identify pages within the original form; uploaded pages retain their own appearance and have no generated identification codes.
 
 Small packets use the direct PDF response when a render slot is free and the output is at most 15 MB. Larger packets are queued in the shared `jobs` table. The request stores signed page snapshots and encrypted rendering credentials in S3; a cron worker claims up to two exports across all hosts and uploads completed PDFs to S3. Each claim has a renewable lease so another worker can retry it after a process crash. Download links are available to the requesting instructor for 24 hours. Run `processPrintExports` and `cleanPrintExports` cron jobs, and configure Cloudflare rendering on worker hosts.
 
@@ -93,30 +93,6 @@ This sets a half-page default and allows Question 3 to size itself automatically
 ```text
 ?paper_size=A4&block_size=half&question_block_size=3:auto
 ```
-
-### PDF processing
-
-`createPdfOutput()` uses Chromium and the existing `pdf-lib` dependency entirely in Node. It preserves browser tags, restores source-declared formulas and decorative content, and adds document metadata. It rejects missing descriptions, lost structure, and unclassified drawing. Processing errors are returned to the export caller; no PDF temporary files or external processors are used. These safeguards do not establish PDF/UA-1 conformance. Print-only packet sources use `createPdfOutput({ accessible: false })` to skip accessibility processing and source-description requirements.
-
-The finalizer handles the content stream syntax emitted by the supported Chromium renderer. Inline image streams, tagged Form XObjects, and unsupported stream encodings are rejected instead of being silently rewritten. Check representative downloads after browser upgrades.
-
-The source must provide a title, language, correctly nested headings/lists/tables, and descriptions for meaningful graphics. MathJax SVG output must retain its spoken description. A template can identify wholly decorative content with `data-print-pdf-role="Artifact"`. For a container whose own background/border is decorative, set `data-print-pdf-role="Div"` (or its actual paragraph/heading role) and `data-print-pdf-decorative-paint`; its descendants remain meaningful. Only that container's marked drawing is made decorative, and the processor rejects text or images in it. Materialize repeated CSS-generated footer text as real DOM content before marking it decorative. Never use these annotations to hide meaningful author content.
-
-### Optional local validation
-
-veraPDF runs only when requested locally; production exports and CI do not install or run it. To check actual downloaded PDFs, install the pinned, checksum-verified veraPDF **1.30.3** CLI and run the validation script from the repository root:
-
-```sh
-./scripts/install-print-pdf-validator.sh
-node scripts/validate-print-pdfs.mts \
-  --verapdf .local/print-pdf-validator/verapdf \
-  --output /tmp/print-pdfua-review \
-  assessment.pdf answer-key.pdf
-```
-
-The output directory must be new and its parent must exist. The script checks the veraPDF version, retains the exact input bytes, runs `--flavour ua1`, and saves full JSON reports, validator logs, readable failure details, and a summary. It exits unsuccessfully for validation failures, unreadable inputs, parsing errors, or tool errors. Omit `--verapdf` when the executable is on `PATH`; set `JAVA_HOME` if your Java installation requires it.
-
-Include math, figures, lists, and tables in the individual assessment and answer key downloads. Combined packets are intended for printing and are outside the PDF/UA compliance scope. A passing automated report covers only machine-verifiable requirements: review the final files with assistive technology for reading order, navigation, mathematical meaning, table relationships, and useful descriptions before claiming PDF/UA-1 compliance.
 
 ## Combining question fragments
 
