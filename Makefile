@@ -48,6 +48,17 @@ refresh-workspace-hosts:
 refresh-workspace-hosts-dev:
 	@pnpm refresh-workspace-hosts-dev
 
+PL_USER ?= 1000
+.PHONY: setup-devuser devuser devuser-all
+setup-devuser:
+	@scripts/setup-devuser.sh "$(PL_USER)"
+
+devuser: setup-devuser start-support python-deps
+	@su -s /bin/bash devuser -c 'export XDG_CACHE_HOME="$$HOME/.cache"; exec pnpm dev'
+devuser-all:
+	@echo "WARNING: Workspaces require PL to run as root; expect them to fail."
+	@$(MAKE) -s -j2 devuser dev-workspace-host
+
 dev: start-support python-deps
 	@pnpm dev
 dev-bun: python-deps
