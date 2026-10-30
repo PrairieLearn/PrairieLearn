@@ -26,9 +26,9 @@ In some situations, a student may not be able to submit an answer to a question,
 6. When you are finished, open the top-right user menu and return to **Staff view**.
 7. If you reopened the instance and need to close it again, return to the assessment's **Students** tab, select the student's instance, and choose **Actions &rarr; Grade & close**.
 
-For [workspace questions](workspaces/index.md), this procedure also works if the student saved code in the workspace but never clicked **Save** or **Save & Grade** in PrairieLearn. Open the student's existing question and click **Save & Grade** (or **Save** if real-time grading is disabled) to submit the files currently saved in their workspace. Saving files in the workspace editor alone does not create a PrairieLearn submission.
+For [workspace questions](workspaces/index.md), this procedure also works if the student saved code in the workspace but never clicked **Save** or **Save & Grade** in PrairieLearn. Open the student's existing question and click **Save** or **Save & Grade** to submit the files currently saved in their workspace. Saving files in the workspace editor alone does not create a PrairieLearn submission.
 
-This submits the workspace's current files, which may have changed since the exam ended; it does not recover a snapshot from the exam deadline. Review the submitted files in the submission panel to confirm that the intended code was captured.
+This submits the workspace's current files, which may have changed since the exam ended; it does not recover a snapshot from the exam deadline. Review the submitted files to confirm that the intended code was captured.
 
 !!! warning "Overriding access rules"
 
