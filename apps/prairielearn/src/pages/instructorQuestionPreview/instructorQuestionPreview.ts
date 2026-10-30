@@ -139,6 +139,10 @@ router.get(
 
     res.send(
       InstructorQuestionPreview({
+        independentScrolling: await features.enabledFromLocals(
+          'question-hosting-update',
+          res.locals,
+        ),
         normalPreviewUrl,
         questionRenderContext,
         manualGradingPreviewUrl,

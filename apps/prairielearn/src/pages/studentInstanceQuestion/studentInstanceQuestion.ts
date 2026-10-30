@@ -11,6 +11,7 @@ import { gradeAssessmentInstance } from '../../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { type File } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
@@ -312,6 +313,10 @@ router.get(
 router.get(
   '/',
   typedAsyncHandler<'instance-question'>(async (req, res) => {
+    const independentScrolling = await features.enabledFromLocals(
+      'question-hosting-update',
+      res.locals,
+    );
     let variant_id =
       res.locals.assessment.type === 'Exam' || typeof req.query.variant_id !== 'string'
         ? null
@@ -338,6 +343,7 @@ router.get(
       if (last_variant_id == null) {
         res.status(403).send(
           StudentInstanceQuestion({
+            independentScrolling,
             resLocals: res.locals,
             renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
@@ -400,6 +406,7 @@ router.get(
       : null;
     res.send(
       StudentInstanceQuestion({
+        independentScrolling,
         resLocals: res.locals,
         renderState,
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),

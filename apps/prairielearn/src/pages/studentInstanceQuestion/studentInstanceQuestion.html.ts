@@ -1,4 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import {
@@ -28,6 +29,7 @@ import { CalculatorSettingsSchema } from '../../schemas/infoAssessment.js';
 
 export function StudentInstanceQuestion({
   resLocals,
+  independentScrolling,
   renderState,
   userCanDeleteAssessmentInstance,
   assignedGrader,
@@ -35,6 +37,7 @@ export function StudentInstanceQuestion({
   questionCopyTargets,
   enabledTools = [],
 }: {
+  independentScrolling: boolean;
   resLocals: ResLocalsForPage<'instance-question'>;
   renderState: ResLocalsInstanceQuestionRender | null;
   userCanDeleteAssessmentInstance: boolean;
@@ -48,6 +51,7 @@ export function StudentInstanceQuestion({
   // TODO: support more tools
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const calculator = enabledTools.find((t) => t.tool === 'calculator');
+  const regenerateAlert = userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : '';
 
   return PageLayout({
     resLocals,
@@ -56,7 +60,11 @@ export function StudentInstanceQuestion({
       type: 'student',
       page: 'assessment_instance',
     },
+    options: {
+      contentContainerClassName: independentScrolling ? 'question-page-layout' : '',
+    },
     headContent: html`
+      ${independentScrolling ? compiledStylesheetTag('questionLayout.css') : ''}
       <meta
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
@@ -120,9 +128,13 @@ export function StudentInstanceQuestion({
         })
       : '',
     content: html`
-      ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
-      <div class="row">
-        <div class="col-lg-9 col-sm-12">
+      ${independentScrolling ? '' : regenerateAlert}
+      <div class="row question-page-row">
+        <div
+          class="col-lg-9 col-sm-12 question-page-question"
+          ${independentScrolling ? html`role="region" aria-label="Question" tabindex="0"` : ''}
+        >
+          ${independentScrolling ? regenerateAlert : ''}
           ${
             resLocals.instance_question_info.question_access_mode === 'read_only_lockpoint'
               ? html`
@@ -162,7 +174,10 @@ export function StudentInstanceQuestion({
           }
         </div>
 
-        <div class="col-lg-3 col-sm-12">
+        <div
+          class="col-lg-3 col-sm-12 question-page-sidebar"
+          ${independentScrolling ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
+        >
           ${
             resLocals.assessment.type === 'Exam'
               ? html`

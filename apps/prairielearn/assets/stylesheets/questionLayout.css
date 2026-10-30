@@ -1,0 +1,77 @@
+/* Match the breakpoint where the question and information columns sit side by side. */
+@media screen and (min-width: 992px) {
+  body:has(.question-page-layout) {
+    overflow: hidden;
+  }
+
+  .app-container:has(.question-page-layout) {
+    height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .app-container:not(.side-nav-enabled):has(.question-page-layout) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'top-nav' 'content';
+  }
+
+  .app-container:has(.question-page-layout) > :last-child {
+    grid-area: content;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .question-page-layout {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  /* Navigation retains its natural height as the question panes shrink. */
+  .question-page-layout > :not(#content) {
+    flex-shrink: 0;
+  }
+
+  .question-page-layout > #content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    /* Override Bootstrap spacing utilities so the scroll panes own their padding. */
+    padding: 0 !important;
+  }
+
+  .question-page-layout .question-page-row {
+    flex: 1;
+    /* Keep the panes usable when navigation exceeds the viewport. */
+    min-height: min(20rem, 50dvh);
+    margin: 0;
+  }
+
+  /* The templates make each pane focusable so keyboard users can choose which pane to scroll. */
+  .question-page-layout :is(.question-page-question, .question-page-sidebar) {
+    height: 100%;
+    padding: 1rem;
+    overflow: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* The instructor shell normally scrolls internally; let all question content print. */
+@media print {
+  body:has(.question-page-layout),
+  .app-container:has(.question-page-layout),
+  .app-container:has(.question-page-layout) > .app-main,
+  .question-page-layout {
+    height: auto;
+    overflow: visible !important;
+  }
+
+  .app-container:has(.question-page-layout) {
+    display: block;
+  }
+
+  .app-container:has(.question-page-layout) > .app-side-nav {
+    display: none;
+  }
+}
