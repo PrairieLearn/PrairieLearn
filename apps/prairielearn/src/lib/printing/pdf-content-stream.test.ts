@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 
 import { type PdfContentOptions, rewritePdfContent } from './pdf-content-stream.js';
 
-it('preserves text containing PDF syntax while marking only declared decoration', () => {
+it('preserves text containing PDF syntax while marking only declared decoration', async () => {
   const context = PDFContext.create();
   const propertyReference = context.register(context.obj({ MCID: 1 }));
   const options: PdfContentOptions = {
@@ -15,7 +15,7 @@ it('preserves text containing PDF syntax while marking only declared decoration'
           : undefined,
     resolveProperties: (name) =>
       name === 'Decoration' ? context.lookup(propertyReference, PDFDict) : undefined,
-    visitForm: () => {},
+    visitForm: async () => {},
     location: 'test page',
   };
   const source = String.raw`% /Artifact BMC is a comment
@@ -26,7 +26,7 @@ EMC
 0 0 m 10 10 l S
 EMC
 `;
-  const rewritten = rewritePdfContent(Buffer.from(source), options);
+  const rewritten = await rewritePdfContent(Buffer.from(source), options);
   expect(Buffer.from(rewritten).toString()).toBe(
     source.replace('/Span /Decoration BDC', '/Artifact BMC'),
   );
@@ -39,6 +39,6 @@ EMC
     ['/Span <</MCID null>> BDC EMC', /nonnegative integer/],
     ['EMC', /Unbalanced/],
   ] as const) {
-    expect(() => rewritePdfContent(Buffer.from(content), options)).toThrow(error);
+    await expect(rewritePdfContent(Buffer.from(content), options)).rejects.toThrow(error);
   }
 });
