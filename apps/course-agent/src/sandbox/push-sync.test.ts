@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { ReviewOutcome } from '@prairielearn/course-agent-types';
 
@@ -7,7 +7,10 @@ import type { CourseSandbox } from './sandbox.js';
 
 const turn = { id: 'turn', status: 'inProgress', error: null };
 
-function runner(savedReview?: ReviewOutcome) {
+function runner(
+  savedReview?: ReviewOutcome,
+  onReview?: Parameters<CodexAppServerClient['beginTurn']>[1],
+) {
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -40,7 +43,7 @@ function runner(savedReview?: ReviewOutcome) {
                 {
                   type: 'functionCallOutput',
                   id: 'review-output',
-                  name: 'push_sync',
+                  name: 'request_changes',
                   namespace: null,
                   output: JSON.stringify(savedReview),
                 },
@@ -61,10 +64,11 @@ function runner(savedReview?: ReviewOutcome) {
     fetch: async () => ({ status: 101, webSocket: socket }),
   } as unknown as DurableObjectStub<CourseSandbox>;
   const native = new CodexAppServerClient(sandbox);
-  native.beginTurn('assistant');
+  native.beginTurn('assistant', onReview);
   return {
     native,
     commands,
+    emit,
     disconnect: () => socket.close(),
   };
 }
@@ -98,7 +102,7 @@ describe('Codex native stream', () => {
               threadId: 'thread',
               input: [],
               toolOutput: {
-                name: 'push_sync',
+                name: 'request_changes',
                 namespace: null,
                 output: JSON.stringify(outcome),
                 retain: true,
@@ -109,4 +113,44 @@ describe('Codex native stream', () => {
     native.closeStream();
     disconnect();
   });
+});
+
+it('returns native tool success after an approved local save and sync', async () => {
+  const { native, commands, emit, disconnect } = runner(undefined, async (_call, ready) => {
+    ready();
+    return {
+      decision: 'approved',
+      publication: { status: 'saved_locally' },
+      sync: { status: 'succeeded' },
+    };
+  });
+  await native.connect();
+  await native.thread({ model: 'test', instructions: 'Edit course', threadId: 'thread' });
+  const running = native.run('Edit the course', () => {});
+  await vi.waitFor(() =>
+    expect(commands).toContainEqual(expect.objectContaining({ method: 'turn/start' })),
+  );
+  emit({
+    id: 100,
+    method: 'item/tool/call',
+    params: {
+      callId: 'review',
+      threadId: 'thread',
+      turnId: 'turn',
+      namespace: null,
+      tool: 'request_changes',
+      arguments: {},
+    },
+  });
+  await vi.waitFor(() =>
+    expect(commands).toContainEqual(
+      expect.objectContaining({ id: 100, result: expect.objectContaining({ success: true }) }),
+    ),
+  );
+  emit({
+    method: 'turn/completed',
+    params: { threadId: 'thread', turn: { ...turn, status: 'completed' } },
+  });
+  await running;
+  disconnect();
 });

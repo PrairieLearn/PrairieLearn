@@ -11,6 +11,7 @@ import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import {
   MAX_REVIEW_BYTES,
   MAX_REVIEW_FILE_BYTES,
+  type ReviewBaseFile,
   type ReviewSnapshot,
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
@@ -154,6 +155,11 @@ export class CourseSandbox extends DurableObject<Env> {
         );
         await this.exec(['rm', '/tmp/course-source.tar.gz']);
         await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
+        // Local Git must track exact bytes for both the baseline and later reviews.
+        await files.writeFile(
+          `${SESSION}/repository/.git/info/attributes`,
+          '* -text -filter -ident -working-tree-encoding\n',
+        );
         await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
         await this.exec(
           [
@@ -203,10 +209,21 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
     // Keep the parent root-owned so the agent cannot rename or replace course/home directories.
     await this.exec(['chown', 'root:root', SESSION]);
+    if (config.type === 'local' && !checkpoint) {
+      const result = await this.exec(
+        ['git', '-C', `${SESSION}/course`, 'rev-parse', 'HEAD'],
+        'node',
+      );
+      return new TextDecoder().decode(result.stdout).trim();
+    }
+    return null;
   }
 
   /** Capture changed-file contents; Conversation persists the returned snapshot. */
-  async captureReview(repository: string, branch: string) {
+  async captureReview(
+    source: CourseSource,
+    baseline?: { commit: string; files: ReviewBaseFile[] },
+  ) {
     const course = `${SESSION}/course`;
     const files = new Files(this.container);
     const options = { cwd: course, user: NODE_UID_GID };
@@ -217,28 +234,64 @@ export class CourseSandbox extends DurableObject<Env> {
       );
       return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
     };
-    await git('check-ref-format', `refs/heads/${branch}`);
-    // Pin the review to the remote-tracking commit; local HEAD may include agent commits.
-    const baseCommit = (
-      await git('rev-parse', '--verify', `refs/remotes/origin/${branch}^{commit}`)
-    ).trim();
-
-    // Comparing with the remote base includes local commits and staged/unstaged edits.
-    // Untracked files need a separate listing; NUL delimiters preserve spaces in paths.
-    const tracked = await git('diff', '--name-only', '-z', '--no-renames', baseCommit, '--');
+    if (source.type === 'github') await git('check-ref-format', `refs/heads/${source.branch}`);
+    const baseCommit =
+      source.type === 'local'
+        ? baseline!.commit
+        : (
+            await git('rev-parse', '--verify', `refs/remotes/origin/${source.branch}^{commit}`)
+          ).trim();
+    const saved = new Map(baseline?.files.map((file) => [file.path, file.contents]));
+    // Include local commits, working files, untracked files, and previously saved paths.
+    const tracked = await git(
+      'diff',
+      '--relative',
+      '--name-only',
+      '-z',
+      '--no-renames',
+      baseCommit,
+      '--',
+    );
     const untracked = await git('ls-files', '--others', '--exclude-standard', '-z');
-    const paths = [...new Set((tracked + untracked).split('\0').filter(Boolean))];
-    if (paths.length > 100) throw new Error('A review may change at most 100 files');
-
+    const paths = [
+      ...new Set([...(tracked + untracked).split('\0').filter(Boolean), ...saved.keys()]),
+    ];
+    const originals: ReviewBaseFile[] = [];
     const additions: ReviewSnapshot['additions'] = [];
     const deletions: ReviewSnapshot['deletions'] = [];
     let total = 0;
     for (const path of paths) {
+      if (additions.length + deletions.length > 100) {
+        throw new Error('A review may change at most 100 files');
+      }
+      const entry = await git('ls-tree', baseCommit, '--', path);
+      let original = saved.get(path);
+      if (source.type === 'local' && original === undefined) {
+        if (entry && !entry.startsWith('100644 blob ')) {
+          throw new Error(`Unsupported course file: ${path}`);
+        }
+        if (entry) {
+          const blob = await this.exec(
+            ['git', '-C', course, 'cat-file', 'blob', `${baseCommit}:./${path}`],
+            'node',
+          );
+          if (blob.stdout.byteLength > MAX_REVIEW_FILE_BYTES) {
+            throw new Error(`Review file is too large: ${path}`);
+          }
+          original = Buffer.from(blob.stdout).toString('base64');
+        } else {
+          original = null;
+        }
+      }
       let info;
       try {
         info = await files.lstat(path, options);
       } catch (error) {
         if (!SandboxFileError.is(error) || error.code !== 'ENOENT') throw error;
+        if (source.type === 'local') {
+          if (original === null) continue;
+          originals.push({ path, contents: original! });
+        }
         deletions.push({ path });
         continue;
       }
@@ -246,8 +299,10 @@ export class CourseSandbox extends DurableObject<Env> {
       if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
         throw new Error(`Review file is too large: ${path}`);
       }
-      // Git records executable bits; the publication API accepts contents, not mode changes.
-      const old = await git('ls-tree', baseCommit, '--', path);
+      // 0o100 is the octal owner-execute permission bit. Git modes 100644 and
+      // 100755 mean regular non-executable and executable files, respectively.
+      // Reviewed changes support file contents, not executable-mode changes.
+      const old = entry;
       const mode = info.mode & 0o100 ? '100755' : '100644';
       if (mode !== '100644' || (old && old.slice(0, 6) !== mode)) {
         throw new Error(`File mode changes are not supported: ${path}`);
@@ -256,11 +311,30 @@ export class CourseSandbox extends DurableObject<Env> {
       // Capture bytes now: later edits must not change what the instructor approves.
       const response = await files.readFile(path, options);
       const contents = Buffer.from(await response.arrayBuffer()).toString('base64');
+      if (source.type === 'local') {
+        if (contents === original) continue;
+        originals.push({ path, contents: original! });
+        total += original?.length ?? 0;
+      }
       total += contents.length;
       if (total > MAX_REVIEW_BYTES) throw new Error('Reviewed changes are too large');
       additions.push({ path, contents });
+      if (additions.length + deletions.length > 100) {
+        throw new Error('A review may change at most 100 files');
+      }
     }
-    return ReviewSnapshotSchema.parse({ repository, branch, baseCommit, additions, deletions });
+    return ReviewSnapshotSchema.parse(
+      source.type === 'github'
+        ? {
+            type: 'github',
+            repository: source.repository,
+            branch: source.branch,
+            baseCommit,
+            additions,
+            deletions,
+          }
+        : { type: 'local', originals, additions, deletions },
+    );
   }
 
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */

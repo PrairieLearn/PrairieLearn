@@ -53,7 +53,7 @@ make dev
 
 Open [http://localhost:3000](http://localhost:3000), navigate to an instructor page in a non-example course (e.g. Test Course), click the stars button, and send a message in a new conversation. Both the authenticated and effective user must have Owner permission.
 
-In PrairieLearn dev mode with the default `fileEditorUseGit: false`, creation copies current course files, including uncommitted edits, and exports their Git history using standard Git. Nested courses such as `testCourse` include only that directory’s history. Host Git metadata and dependency/cache directories are excluded. The first message unpacks the snapshot into the sandbox and commits a private baseline on top of the imported history. Courses without Git history start with just that baseline. Sandbox edits remain in that conversation; this PR does not save them back to the local course files.
+In PrairieLearn dev mode with the default `fileEditorUseGit: false`, creation copies current course files, including uncommitted edits, and exports their Git history using standard Git. Nested courses such as `testCourse` include only that directory’s history. Host Git metadata and dependency/cache directories are excluded. The first message unpacks the snapshot into the sandbox and commits a private baseline on top of the imported history. Courses without Git history start with just that baseline. Sandbox edits remain private until the instructor approves a `request_changes` review; approval saves the captured files back to the local course and runs Course Sync.
 
 ### HTTP requests
 
@@ -117,7 +117,7 @@ The Conversation DO owns the pending snapshot; PL adds no table or conversation 
 
 Explicit Resume recovers a missed callback through PL's service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. The route returns `{ callId, jobSequenceId, status, result, error }`; status is running, completed, or blocked. Before ordinary job completion, callId may be null. Interrupted publication requires inspection and is never automatically retried. There is no PL delivery cron.
 
-Snapshot limits are 100 files, 64 KiB decoded per file, and 1 MiB of base64 contents. Only non-executable regular files are supported initially. Commits use the approving instructor’s name and email. Reviewed edits reject a changed branch base instead of retrying on top of newer commits. Sharing validation runs before publication; Course Sync includes the existing chunk updates. Git attribute/filter transformations of approved bytes are rejected. The agent handles fetching published changes into its sandbox. See [CONTRACT.md](CONTRACT.md#pending-reviews-and-publication-outcomes) for persistence and recovery.
+Snapshot limits are 100 files, 64 KiB decoded per file, and 1 MiB of base64 contents. Only non-executable regular files are supported initially. Commits use the approving instructor’s name and email. Reviewed edits reject a changed branch base instead of retrying on top of newer commits. Sharing validation runs before publication; Course Sync includes the existing chunk updates. Git attribute/filter transformations of approved bytes are rejected. The agent handles fetching published changes into its sandbox. See [CONTRACT.md](CONTRACT.md#pending-reviews-and-save-outcomes) for persistence and recovery.
 
 ## Deployment environments and monitoring
 
@@ -126,3 +126,9 @@ Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env pr
 Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. Set `PL_SERVICE_URL` to the matching PrairieLearn origin in each deployed environment so Resume can retrieve saved publication outcomes. No deployment or resource provisioning is performed by local checks.
 
 Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local reporting is disabled while the DSN is empty.
+
+### Reviewing course edits locally
+
+Local conversations can request instructor approval with `request_changes`. When `devMode` is enabled and `fileEditorUseGit` is disabled, approval saves the captured files into the local course directory and runs Course Sync, without committing or pushing. Denial leaves the edits private to the conversation.
+
+If an affected local file changed since the conversation's saved baseline, approval rejects the stale request before writing files. Reconcile manually or start a new conversation to upload current course files; the old conversation retains its private work. Local pull/refresh is a separate follow-up. A save can succeed while Course Sync fails; the review card reports those outcomes separately.

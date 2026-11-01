@@ -2,8 +2,8 @@ import { stripVTControlCharacters } from 'node:util';
 
 import {
   type PendingReview,
-  type PushSyncResult,
-  PushSyncResultSchema,
+  type RequestChangesResult,
+  RequestChangesResultSchema,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -41,6 +41,18 @@ function claims(conversation: CourseAgentConversation, review: PendingReview, re
 }
 
 function verifyBinding(course: Pick<Course, 'repository' | 'branch'>, review: PendingReview) {
+  if (review.snapshot.type === 'local') {
+    if (!config.devMode || config.fileEditorUseGit) {
+      throw new HttpStatusError(
+        409,
+        'Local course requests require local file editing. Start a new conversation.',
+      );
+    }
+    return;
+  }
+  if (!config.fileEditorUseGit) {
+    throw new HttpStatusError(409, 'Git editing was disabled. Start a new conversation.');
+  }
   const repository = parseGithubRepository(course.repository ?? '');
   if (
     !repository ||
@@ -100,7 +112,9 @@ export async function postReviewDecision({
   }
   verifyBinding(course, review);
   if (review.status !== 'pending') {
-    if ((decision === 'approved') !== (review.jobSequenceId !== null)) {
+    // Approval starts a job; denial has no job. Repeated decisions must agree.
+    const previousDecision = review.jobSequenceId === null ? 'denied' : 'approved';
+    if (decision !== previousDecision) {
       throw new HttpStatusError(409, 'This review already has a different decision.');
     }
     return { decision, jobSequenceId: review.jobSequenceId };
@@ -112,19 +126,17 @@ export async function postReviewDecision({
       callId: review.callId,
       decision,
     });
-    await runInTransactionAsync(async () => {
-      await insertAuditEvent({
-        tableName: 'course_agent_conversations',
-        rowId: conversation.id,
-        courseId: course.id,
-        action: 'update',
-        actionDetail: 'push_sync_review',
-        oldRow: conversation,
-        newRow: conversation,
-        agentAuthnUserId: authnUserId,
-        agentUserId: user.id,
-        context: { decision, callId: review.callId },
-      });
+    await insertAuditEvent({
+      tableName: 'course_agent_conversations',
+      rowId: conversation.id,
+      courseId: course.id,
+      action: 'update',
+      actionDetail: 'push_sync_review',
+      oldRow: conversation,
+      newRow: conversation,
+      agentAuthnUserId: authnUserId,
+      agentUserId: user.id,
+      context: { decision, callId: review.callId },
     });
     await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
       callId: review.callId,
@@ -142,7 +154,7 @@ export async function postReviewDecision({
       userId: user.id,
       authnUserId,
       type: 'course_agent_push_sync',
-      description: 'Publish and sync reviewed course edits',
+      description: 'Save and sync reviewed course edits',
     });
     const [job] = await selectJobsByJobSequenceId(executor.jobSequenceId);
     await insertAuditEvent({
@@ -167,16 +179,80 @@ export async function postReviewDecision({
     await executor.execute(async (job) => {
       job.data.agentConversationId = conversation.agent_conversation_id;
       job.data.callId = review.callId;
-      job.data.error = 'Publication was not started. Inspect the review before continuing.';
+      job.data.error = 'Saving was not started. Inspect the review before continuing.';
       job.stop(String(job.data.error));
     });
     throw error;
   }
-  // execute() persists ordinary job data before the callback is attempted.
+  // This is the editor's only job: executeWithJob() reuses it rather than creating
+  // another sync job. Persist its outcome before attempting the callback.
   void executor
-    .execute((job) => executePushSync(job, course, conversation, review, user, authzData))
+    .execute(async (job) => {
+      job.data.agentConversationId = conversation.agent_conversation_id;
+      job.data.callId = review.callId;
+      const lines: string[] = [];
+      const log = (method: keyof ServerJobLogger, line: string) => {
+        lines.push(line);
+        job[method](line);
+      };
+      const editorJob: ServerJob = {
+        data: job.data,
+        exec: job.exec.bind(job),
+        fail: job.fail.bind(job),
+        stop: job.stop.bind(job),
+        info: (line) => log('info', line),
+        error: (line) => log('error', line),
+        warn: (line) => log('warn', line),
+        verbose: (line) => log('verbose', line),
+      };
+      let failure: string | null = null;
+      try {
+        const current = await selectCourseById(course.id);
+        verifyBinding(current, review);
+        const editor = new ReviewedChangesEditor({
+          course: current,
+          user,
+          authzData,
+          snapshot: review.snapshot,
+        });
+        await editor.executeWithJob(
+          editorJob,
+          review.snapshot.type === 'github'
+            ? { expectedBaseCommit: review.snapshot.baseCommit }
+            : {},
+        );
+      } catch (error) {
+        failure = error instanceof Error ? error.message : String(error);
+        editorJob.error(failure);
+      }
+      if (job.data.publicationUncertain) {
+        job.data.error = failure;
+        job.fail(failure!);
+      }
+      const diagnostics = stripVTControlCharacters(lines.join('\n'));
+      const result: RequestChangesResult = job.data.saveSucceeded
+        ? {
+            decision: 'approved',
+            publication:
+              review.snapshot.type === 'local'
+                ? { status: 'saved_locally' }
+                : { status: 'published', commitSha: String(job.data.commitHash) },
+            sync: job.data.syncSucceeded
+              ? { status: 'succeeded' }
+              : { status: 'failed', error: diagnostics },
+          }
+        : {
+            decision: 'approved',
+            publication: { status: 'failed', error: diagnostics },
+            sync: { status: 'not_attempted' },
+          };
+      job.data.result = result;
+      if (!job.data.saveSucceeded || result.sync.status !== 'succeeded') {
+        job.fail('Reviewed changes were not saved and synced successfully.');
+      }
+    })
     .then(async ({ data }) => {
-      const result = PushSyncResultSchema.safeParse(data.result);
+      const result = RequestChangesResultSchema.safeParse(data.result);
       if (result.success) {
         await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
           callId: review.callId,
@@ -191,69 +267,4 @@ export async function postReviewDecision({
       ),
     );
   return { decision, jobSequenceId: executor.jobSequenceId };
-}
-
-/** Keep agent review/result delivery separate from the shared editor workflow. */
-async function executePushSync(
-  job: ServerJob,
-  course: Course,
-  conversation: CourseAgentConversation,
-  review: PendingReview,
-  user: Pick<User, 'id' | 'name' | 'email' | 'uid'>,
-  authzData: { has_course_permission_edit: boolean; authn_user: Pick<User, 'id'> },
-) {
-  job.data.agentConversationId = conversation.agent_conversation_id;
-  job.data.callId = review.callId;
-  const lines: string[] = [];
-  const log = (method: keyof ServerJobLogger, line: string) => {
-    lines.push(line);
-    job[method](line);
-  };
-  const editorJob: ServerJob = {
-    data: job.data,
-    exec: job.exec.bind(job),
-    fail: job.fail.bind(job),
-    stop: job.stop.bind(job),
-    info: (line) => log('info', line),
-    error: (line) => log('error', line),
-    warn: (line) => log('warn', line),
-    verbose: (line) => log('verbose', line),
-  };
-  let failure: string | null = null;
-  try {
-    const current = await selectCourseById(course.id);
-    verifyBinding(current, review);
-    const editor = new ReviewedChangesEditor({
-      course: current,
-      user,
-      authzData,
-      snapshot: review.snapshot,
-    });
-    await editor.executeWithJob(editorJob, { expectedBaseCommit: review.snapshot.baseCommit });
-  } catch (error) {
-    failure = error instanceof Error ? error.message : String(error);
-    editorJob.error(failure);
-  }
-  if (job.data.publicationUncertain) {
-    job.data.error = failure;
-    job.fail(failure!);
-  }
-  const diagnostics = stripVTControlCharacters(lines.join('\n'));
-  const result: PushSyncResult = job.data.saveSucceeded
-    ? {
-        decision: 'approved',
-        publication: { status: 'published', commitSha: String(job.data.commitHash) },
-        sync: job.data.syncSucceeded
-          ? { status: 'succeeded' }
-          : { status: 'failed', error: diagnostics },
-      }
-    : {
-        decision: 'approved',
-        publication: { status: 'failed', error: diagnostics },
-        sync: { status: 'not_attempted' },
-      };
-  job.data.result = result;
-  if (result.publication.status !== 'published' || result.sync.status !== 'succeeded') {
-    job.fail('Reviewed changes were not published and synced successfully.');
-  }
 }

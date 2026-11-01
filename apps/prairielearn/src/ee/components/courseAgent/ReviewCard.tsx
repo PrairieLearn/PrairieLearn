@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button, Modal, Spinner } from 'react-bootstrap';
 
-import { type PushSyncResult, PushSyncResultSchema } from '@prairielearn/course-agent-types';
+import {
+  type RequestChangesResult,
+  RequestChangesResultSchema,
+} from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
@@ -65,7 +68,7 @@ export function ReviewCard({
       });
     },
   });
-  const result = output === undefined ? null : PushSyncResultSchema.parse(output);
+  const result = output === undefined ? null : RequestChangesResultSchema.parse(output);
   const failure = result
     ? null
     : (getAppError<CourseAgentError['GetPendingReview']>(review.error) ??
@@ -127,7 +130,7 @@ export function ReviewCard({
           </div>
           {current?.status === 'running' && jobSequenceId !== null && (
             <p className="small text-muted mt-2 mb-0" role="status">
-              Publishing and syncing…
+              Saving and syncing…
             </p>
           )}
           {current?.error && (
@@ -207,17 +210,21 @@ export function ReviewCard({
   );
 }
 
-function ReviewResult({ result }: { result: PushSyncResult }) {
+function ReviewResult({ result }: { result: RequestChangesResult }) {
   return (
     <div role="status">
       <p className="mb-0">
         {result.decision === 'denied'
           ? 'Changes kept in your workspace.'
-          : result.publication.status === 'published'
+          : result.publication.status === 'saved_locally'
             ? result.sync.status === 'succeeded'
-              ? 'Changes published and course synced.'
-              : 'Changes published. Course Sync failed.'
-            : 'Changes could not be published.'}
+              ? 'Changes saved locally and course synced.'
+              : 'Changes saved locally. Course Sync failed.'
+            : result.publication.status === 'published'
+              ? result.sync.status === 'succeeded'
+                ? 'Changes published and course synced.'
+                : 'Changes published. Course Sync failed.'
+              : 'Changes could not be saved.'}
       </p>
       {result.publication.status === 'failed' && (
         <pre className="small text-wrap mt-2 mb-0">{result.publication.error}</pre>
