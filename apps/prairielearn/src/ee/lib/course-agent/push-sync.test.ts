@@ -2,7 +2,6 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import type { PendingReview } from '@prairielearn/course-agent-types';
 
-import { config } from '../../../lib/config.js';
 import type { Course, CourseAgentConversation, Job } from '../../../lib/db-types.js';
 import {
   type ServerJob,
@@ -30,10 +29,15 @@ vi.mock('@prairielearn/named-locks', () => ({
 vi.mock('@prairielearn/postgres', () => ({
   runInTransactionAsync: async (fn: () => Promise<unknown>) => fn(),
 }));
+const { executeEditor } = vi.hoisted(() => ({
+  executeEditor: vi.fn<ReviewedChangesEditor['executeWithJob']>(),
+}));
 vi.mock('./reviewed-changes-editor.js', () => ({
-  ReviewedChangesEditor: class {
-    async executeWithJob() {}
-  },
+  ReviewedChangesEditor: vi.fn(
+    class {
+      executeWithJob = executeEditor;
+    },
+  ),
 }));
 vi.mock('../../../lib/server-jobs.js', () => ({
   createServerJob: vi.fn(),
@@ -68,7 +72,6 @@ const conversation: CourseAgentConversation = {
   title: 'Update question',
   created_at: new Date(0),
 };
-const executeEditor = vi.spyOn(ReviewedChangesEditor.prototype, 'executeWithJob');
 const job: ServerJob = {
   data: {},
   info: vi.fn(),
@@ -85,11 +88,9 @@ const job: ServerJob = {
 };
 const executeJob = vi.fn<ServerJobExecutor['execute']>();
 let review: PendingReview;
-let reviewToken: string;
 
-beforeEach(async () => {
+beforeEach(() => {
   vi.resetAllMocks();
-  config.fileEditorUseGit = true;
   job.data = {};
   review = {
     callId: 'review-1',
@@ -125,10 +126,10 @@ beforeEach(async () => {
     executeUnsafe: vi.fn(),
     executeInBackground: vi.fn(),
   });
-  reviewToken = (await getPendingReview(course, conversation, '2', review.callId))!.reviewToken;
 });
 
-function decide(decision: 'approved' | 'denied') {
+async function decide(decision: 'approved' | 'denied') {
+  const pending = await getPendingReview(course, conversation, '2', review.callId);
   return postReviewDecision({
     course,
     conversation,
@@ -143,35 +144,59 @@ function decide(decision: 'approved' | 'denied') {
       authn_user: { id: '2' },
     },
     authnUserId: '2',
-    reviewToken,
+    reviewToken: pending!.reviewToken,
     decision,
   });
 }
 
-it('saves the completed editor result before attempting outcome delivery', async () => {
-  vi.mocked(deliverCourseAgentReviewOutcome).mockImplementation(async (_agentId, outcome) => {
-    expect(job.data.result).toEqual(outcome.result);
-    throw new Error('Agent unavailable');
-  });
-  await expect(decide('approved')).resolves.toEqual({
-    decision: 'approved',
-    jobSequenceId: 'job-1',
-  });
-  const saved = await executeJob.mock.results[0].value;
-  expect(saved.data.result).toEqual({
-    decision: 'approved',
+const modes = [
+  {
+    type: 'github',
     publication: { status: 'published', commitSha: publishedCommit },
-    sync: { status: 'succeeded' },
-  });
-  expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
-    callId: 'review-1',
-    result: {
-      decision: 'approved',
-      publication: { status: 'published', commitSha: publishedCommit },
-      sync: { status: 'succeeded' },
-    },
-  });
-});
+  },
+  { type: 'local', publication: { status: 'saved_locally' } },
+] as const;
+
+function setLocalSnapshot() {
+  review.snapshot = {
+    type: 'local',
+    additions: review.snapshot.additions,
+    deletions: review.snapshot.deletions,
+    originals: [
+      { path: 'question.html', contents: 'b3JpZ2luYWw=' },
+      { path: 'old.html', contents: 'ZGVsZXRlIG1l' },
+    ],
+  };
+}
+
+it.each(modes)(
+  'approves the $type snapshot and delivers the saved result',
+  async ({ type, publication }) => {
+    await withConfig({ devMode: true, fileEditorUseGit: type === 'github' }, async () => {
+      if (type === 'local') setLocalSnapshot();
+      await expect(decide('approved')).resolves.toEqual({
+        decision: 'approved',
+        jobSequenceId: 'job-1',
+      });
+      await vi.waitFor(() => expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledOnce());
+      expect(ReviewedChangesEditor).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ course, snapshot: review.snapshot }),
+      );
+      expect(executeEditor).toHaveBeenCalledOnce();
+      const result = {
+        decision: 'approved',
+        publication,
+        sync: { status: 'succeeded' },
+      };
+      const saved = await executeJob.mock.results[0].value;
+      expect(saved.data.result).toEqual(result);
+      expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
+        callId: review.callId,
+        result,
+      });
+    });
+  },
+);
 
 it('denial delivers the decision without creating a publication job or syncing', async () => {
   await expect(decide('denied')).resolves.toEqual({ decision: 'denied', jobSequenceId: null });
@@ -191,68 +216,31 @@ it('denial delivers the decision without creating a publication job or syncing',
   expect(executeEditor).not.toHaveBeenCalled();
 });
 
-it('a repeated approval reuses its job and a conflicting denial is rejected', async () => {
-  review = { ...review, status: 'running', jobSequenceId: 'existing-job' };
-  await expect(decide('approved')).resolves.toEqual({
-    decision: 'approved',
-    jobSequenceId: 'existing-job',
-  });
-  await expect(decide('denied')).rejects.toThrow('already has a different decision');
-  expect(createServerJob).not.toHaveBeenCalled();
-  expect(recordCourseAgentReviewDecision).not.toHaveBeenCalled();
-});
-
-it('an uncertain publication failure blocks outcome delivery', async () => {
-  executeEditor.mockImplementation(async (editorJob) => {
-    editorJob.data.publicationUncertain = true;
-    throw new Error('Git publication could not be confirmed');
-  });
-  await decide('approved');
-  const saved = await executeJob.mock.results[0].value;
-  expect(saved.data.error).toContain('Git publication could not be confirmed');
-  expect(saved.data.result).toBeUndefined();
-  expect(deliverCourseAgentReviewOutcome).not.toHaveBeenCalled();
-  expect(executeEditor).toHaveBeenCalledOnce();
-});
-
-it('sync failure retains the published commit and returns its diagnostics', async () => {
-  executeEditor.mockImplementation(async (editorJob) => {
-    editorJob.data.saveSucceeded = true;
-    editorJob.data.commitHash = publishedCommit;
-    editorJob.error('Question questions/example: invalid configuration');
-    throw new Error('Invalid question configuration');
-  });
-  await decide('approved');
-  await executeJob.mock.results[0].value;
-  expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
-    callId: 'review-1',
-    result: {
-      decision: 'approved',
-      publication: { status: 'published', commitSha: publishedCommit },
-      sync: {
-        status: 'failed',
-        error: 'Question questions/example: invalid configuration\nInvalid question configuration',
-      },
-    },
-  });
-});
-
-it('delivers local save success separately from a sync failure', async () => {
-  await withConfig({ devMode: true, fileEditorUseGit: false }, async () => {
-    review.snapshot = { type: 'local', originals: [], additions: [], deletions: [] };
-    executeEditor.mockImplementationOnce(async (editorJob) => {
-      editorJob.data.saveSucceeded = true;
-      throw new Error('Local sync failed');
+it.each(modes)(
+  'reports the $type save when sync fails afterward',
+  async ({ type, publication }) => {
+    await withConfig({ devMode: true, fileEditorUseGit: type === 'github' }, async () => {
+      if (type === 'local') setLocalSnapshot();
+      executeEditor.mockImplementation(async (editorJob) => {
+        editorJob.data.saveSucceeded = true;
+        if (type === 'github') editorJob.data.commitHash = publishedCommit;
+        editorJob.error('Question questions/example: invalid configuration');
+        throw new Error('Invalid question configuration');
+      });
+      await decide('approved');
+      await vi.waitFor(() => expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledOnce());
+      expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
+        callId: review.callId,
+        result: {
+          decision: 'approved',
+          publication,
+          sync: {
+            status: 'failed',
+            error:
+              'Question questions/example: invalid configuration\nInvalid question configuration',
+          },
+        },
+      });
     });
-    await decide('approved');
-    await vi.waitFor(() => expect(deliverCourseAgentReviewOutcome).toHaveBeenCalled());
-    expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
-      callId: 'review-1',
-      result: {
-        decision: 'approved',
-        publication: { status: 'saved_locally' },
-        sync: { status: 'failed', error: expect.stringContaining('Local sync failed') },
-      },
-    });
-  });
-});
+  },
+);

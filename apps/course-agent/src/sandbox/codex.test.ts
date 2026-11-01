@@ -1,6 +1,8 @@
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ReviewOutcome } from '@prairielearn/course-agent-types';
+
 import { CodexAppServerClient } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
@@ -23,6 +25,9 @@ function runner({ loseAcceptance = false } = {}) {
       if (frame.method === 'initialize') emit({ id: frame.id, result: {} });
       if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
         emit({ id: frame.id, result: { thread: { id: 'thread' } } });
+      }
+      if (frame.method === 'thread/read') {
+        emit({ id: frame.id, result: { thread: { id: 'thread', turns: [] } } });
       }
       if (frame.method === 'turn/start' && !loseAcceptance) {
         emit({ id: frame.id, result: { turn: { id: 'turn' } } });
@@ -60,6 +65,40 @@ function options(onAccepted: () => void, threadId: string | null = null) {
 }
 
 describe('course agent turns', () => {
+  it('continues an offline review with its saved decision and empty user input', async () => {
+    const outcome: ReviewOutcome = {
+      callId: 'pending-review',
+      result: {
+        decision: 'denied',
+        publication: { status: 'not_attempted' },
+        sync: { status: 'not_attempted' },
+      },
+    };
+    const { native, commands, disconnect } = runner();
+    native.beginTurn('assistant');
+    await native.connect();
+    await native.thread({ ...thread, threadId: 'thread' });
+    await native.run(outcome, () => {});
+    expect(commands.filter((command) => command.method === 'turn/start')).toEqual([
+      {
+        id: expect.any(Number),
+        method: 'turn/start',
+        params: {
+          threadId: 'thread',
+          input: [],
+          toolOutput: {
+            name: 'request_changes',
+            namespace: null,
+            output: JSON.stringify(outcome),
+            retain: true,
+          },
+        },
+      },
+    ]);
+    native.closeStream();
+    disconnect();
+  });
+
   it('reuses the native session for follow-ups and stops processes only on explicit Stop', async () => {
     const { sandbox, native, commands, emit } = runner();
     for (const threadId of [null, 'thread']) {

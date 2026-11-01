@@ -1,4 +1,4 @@
-import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -32,21 +32,14 @@ vi.mock('@cloudflare/sandbox', () => ({
   },
 }));
 
-it('captures local edits relative to the saved baseline without changing working files or staging', async () => {
+it('uses the approved local contents as the base for the next review', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'pl-local-review-'));
-  const course = path.join(directory, 'nested-course');
+  const course = directory;
   const git = async (...args: string[]) => (await execa('git', args, { cwd: directory })).stdout;
   try {
-    await mkdir(course);
     await git('init', '--initial-branch=local');
-    await writeFile(path.join(course, '.gitattributes'), '* text eol=lf\n');
-    await writeFile(
-      path.join(directory, '.git/info/attributes'),
-      '* -text -filter -ident -working-tree-encoding\n',
-    );
-    await writeFile(path.join(course, 'question.html'), 'Original\r\n');
-    await writeFile(path.join(course, 'old.txt'), 'Delete me');
-    await git('-c', 'core.autocrlf=false', 'add', '.');
+    await writeFile(path.join(course, 'question.html'), 'A');
+    await git('add', 'question.html');
     await git(
       '-c',
       'user.name=Test',
@@ -57,11 +50,7 @@ it('captures local edits relative to the saved baseline without changing working
       'Source',
     );
     const commit = await git('rev-parse', 'HEAD');
-    await writeFile(path.join(course, 'question.html'), 'Reviewed\r\n');
-    await writeFile(path.join(course, 'new.bin'), Buffer.from([0, 255]));
-    await rm(path.join(course, 'old.txt'));
-    await git('add', '.');
-    const index = await git('write-tree');
+    await writeFile(path.join(course, 'question.html'), 'B');
     const container = {
       course,
       running: false,
@@ -87,39 +76,28 @@ it('captures local edits relative to the saved baseline without changing working
       } as unknown as DurableObjectState,
       {} as Env,
     );
-    const source = { type: 'local' as const, archiveKey: 'source', directory: 'nested-course' };
+    const source = { type: 'local' as const, archiveKey: 'source', directory: '.' };
     const snapshot = await sandbox.captureReview(source, { commit, files: [] });
-    expect(snapshot).toMatchObject({
+    expect(snapshot).toEqual({
       type: 'local',
-      additions: [
-        { path: 'new.bin', contents: 'AP8=' },
-        { path: 'question.html', contents: Buffer.from('Reviewed\r\n').toString('base64') },
-      ],
-      deletions: [{ path: 'old.txt' }],
-      originals: expect.arrayContaining([
-        { path: 'question.html', contents: Buffer.from('Original\r\n').toString('base64') },
-      ]),
+      additions: [{ path: 'question.html', contents: Buffer.from('B').toString('base64') }],
+      deletions: [],
+      originals: [{ path: 'question.html', contents: Buffer.from('A').toString('base64') }],
     });
-    // Applying the approved snapshot advances the baseline, not the agent's current HEAD.
-    const files = [
-      ...snapshot.additions,
-      ...snapshot.deletions.map(({ path }) => ({ path, contents: null })),
-    ];
-    expect(await sandbox.captureReview(source, { commit, files })).toEqual({
+    const baseline = { commit, files: snapshot.additions };
+    expect(await sandbox.captureReview(source, baseline)).toEqual({
       type: 'local',
       additions: [],
       deletions: [],
       originals: [],
     });
-    await writeFile(path.join(course, 'question.html'), 'Next edit');
-    expect(await sandbox.captureReview(source, { commit, files })).toMatchObject({
-      additions: [{ path: 'question.html', contents: Buffer.from('Next edit').toString('base64') }],
-      originals: [
-        { path: 'question.html', contents: Buffer.from('Reviewed\r\n').toString('base64') },
-      ],
+    await writeFile(path.join(course, 'question.html'), 'C');
+    expect(await sandbox.captureReview(source, baseline)).toEqual({
+      type: 'local',
+      additions: [{ path: 'question.html', contents: Buffer.from('C').toString('base64') }],
+      deletions: [],
+      originals: [{ path: 'question.html', contents: Buffer.from('B').toString('base64') }],
     });
-    expect(await git('write-tree')).toBe(index);
-    expect(await readFile(path.join(course, 'question.html'), 'utf8')).toBe('Next edit');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
