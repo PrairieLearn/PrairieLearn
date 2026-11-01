@@ -2,25 +2,29 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
 import {
+  getPendingReview,
+  getReviewJob,
+  postReviewDecision,
+} from '../../ee/lib/course-agent/apply-changes.js';
+import {
   createCourseAgentConversation,
-  getCourseAgentPendingReview,
+  createLocalCourseAgentConversation,
   resumeCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
-import { getPendingReview, postReviewDecision } from '../../ee/lib/course-agent/push-sync.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
-  updateCourseAgentConversationTitleIfDefault,
 } from '../../ee/models/course-agent-conversation.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
-import { getJobSequence } from '../../lib/server-jobs.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
 
@@ -81,22 +85,8 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      const jobSequence = await getJobSequence(input.jobSequenceId, ctx.course.id);
-      const bound =
-        jobSequence.status === 'Running'
-          ? (await getCourseAgentPendingReview(conversation.agent_conversation_id))
-              ?.jobSequenceId === input.jobSequenceId
-          : jobSequence.jobs.some(
-              (job) => job.data.agentConversationId === conversation.agent_conversation_id,
-            );
-      if (
-        jobSequence.type !== 'course_agent_push_sync' ||
-        jobSequence.authn_user_id !== ctx.locals.authn_user.id ||
-        !bound
-      ) {
-        throw new TRPCError({ code: 'NOT_FOUND' });
-      }
-      return getJobSequenceResultsProps({ course: ctx.course, jobSequence });
+      const jobSequence = await getReviewJob(conversation, input.jobSequenceId);
+      return getJobSequenceResultsProps({ course: ctx.locals.course, jobSequence });
     }),
   list: courseAgentProcedure.query(async ({ ctx }) => {
     const conversations = await selectCourseAgentConversationsForUser({
@@ -105,22 +95,6 @@ export const courseAgentRouter = t.router({
     });
     return z.array(StaffCourseAgentConversationSchema).parse(conversations);
   }),
-
-  setTitle: courseAgentProcedure
-    .input(z.object({ conversationId: IdSchema, text: z.string().trim().min(1).max(20_000) }))
-    .mutation(async ({ ctx, input }) => {
-      const conversation = await selectOptionalCourseAgentConversation({
-        id: input.conversationId,
-        course_id: ctx.course.id,
-        user_id: ctx.locals.authn_user.id,
-      });
-      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      const title = input.text.replaceAll(/\s+/g, ' ');
-      await updateCourseAgentConversationTitleIfDefault({
-        id: conversation.id,
-        title: title.length > 80 ? `${title.slice(0, 77)}...` : title,
-      });
-    }),
 
   resume: courseAgentProcedure
     .input(z.object({ conversationId: IdSchema }))
@@ -136,38 +110,47 @@ export const courseAgentRouter = t.router({
     }),
 
   // Record only conversations whose Cloudflare startup succeeded.
-  create: courseAgentProcedure.mutation(async ({ ctx }) => {
-    const repository = parseGithubRepository(ctx.course.repository ?? '');
-    if (!repository || !ctx.course.branch) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Configure a GitHub repository and branch before starting a conversation.',
+  create: courseAgentProcedure
+    .input(z.object({ text: z.string().trim().min(1).max(20_000) }))
+    .mutation(async ({ ctx, input }) => {
+      const agentConversationId = await run(async () => {
+        if (config.devMode && !config.fileEditorUseGit) {
+          return createLocalCourseAgentConversation(ctx.course.path);
+        } else {
+          const repository = parseGithubRepository(ctx.course.repository ?? '');
+          if (!repository || !ctx.course.branch) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Configure a GitHub repository and branch before starting a conversation.',
+            });
+          }
+          const binding = CreateConversationInput.safeParse({
+            repository: `${repository.owner}/${repository.repo}`,
+            branch: ctx.course.branch,
+          });
+          if (!binding.success) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'The course repository or branch is invalid.',
+            });
+          }
+          return createCourseAgentConversation(binding.data);
+        }
       });
-    }
-    const binding = CreateConversationInput.safeParse({
-      repository: `${repository.owner}/${repository.repo}`,
-      branch: ctx.course.branch,
-    });
-    if (!binding.success) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'The course repository or branch is invalid.',
+      const title = input.text.replaceAll(/\s+/g, ' ');
+      const conversation = await insertCourseAgentConversation({
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+        agent_conversation_id: agentConversationId,
+        title: title.length > 80 ? `${title.slice(0, 77)}...` : title,
       });
-    }
-    const agentConversationId = await createCourseAgentConversation(binding.data);
-    const conversation = await insertCourseAgentConversation({
-      course_id: ctx.course.id,
-      user_id: ctx.locals.authn_user.id,
-      agent_conversation_id: agentConversationId,
-    });
-    return StaffCourseAgentConversationSchema.parse(conversation);
-  }),
+      return StaffCourseAgentConversationSchema.parse(conversation);
+    }),
 });
 
 export interface CourseAgentError {
   List: never;
   Create: never;
-  SetTitle: never;
   Resume: never;
   GetPendingReview: never;
   PostReviewDecision: never;

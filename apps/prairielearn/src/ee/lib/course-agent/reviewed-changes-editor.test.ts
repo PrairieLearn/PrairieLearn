@@ -60,8 +60,16 @@ function execute(snapshot: ReviewSnapshot) {
     authzData: { has_course_permission_edit: true, authn_user: user },
     snapshot,
   });
-  return editor.executeWithJob(
-    job,
+  return editor.executeWithServerJob(
+    {
+      jobSequenceId: '1',
+      execute: vi.fn(),
+      executeInBackground: vi.fn(),
+      executeUnsafe: async (fn) => {
+        await fn(job);
+        return { data: job.data };
+      },
+    },
     snapshot.type === 'github' ? { expectedBaseCommit: snapshot.baseCommit } : {},
   );
 }
