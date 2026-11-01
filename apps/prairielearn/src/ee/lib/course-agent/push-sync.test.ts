@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import type { PendingReview } from '@prairielearn/course-agent-types';
 
+import { config } from '../../../lib/config.js';
 import type { Course, CourseAgentConversation, Job } from '../../../lib/db-types.js';
 import {
   type ServerJob,
@@ -10,6 +11,7 @@ import {
   selectJobsByJobSequenceId,
 } from '../../../lib/server-jobs.js';
 import { selectCourseById } from '../../../models/course.js';
+import { withConfig } from '../../../tests/utils/config.js';
 
 import {
   deliverCourseAgentReviewOutcome,
@@ -87,6 +89,7 @@ let reviewToken: string;
 
 beforeEach(async () => {
   vi.resetAllMocks();
+  config.fileEditorUseGit = true;
   job.data = {};
   review = {
     callId: 'review-1',
@@ -95,6 +98,7 @@ beforeEach(async () => {
     jobSequenceId: null,
     error: null,
     snapshot: {
+      type: 'github',
       repository: 'PrairieLearn/course',
       branch: 'master',
       baseCommit,
@@ -230,5 +234,25 @@ it('sync failure retains the published commit and returns its diagnostics', asyn
         error: 'Question questions/example: invalid configuration\nInvalid question configuration',
       },
     },
+  });
+});
+
+it('delivers local save success separately from a sync failure', async () => {
+  await withConfig({ devMode: true, fileEditorUseGit: false }, async () => {
+    review.snapshot = { type: 'local', originals: [], additions: [], deletions: [] };
+    executeEditor.mockImplementationOnce(async (editorJob) => {
+      editorJob.data.saveSucceeded = true;
+      throw new Error('Local sync failed');
+    });
+    await decide('approved');
+    await vi.waitFor(() => expect(deliverCourseAgentReviewOutcome).toHaveBeenCalled());
+    expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
+      callId: 'review-1',
+      result: {
+        decision: 'approved',
+        publication: { status: 'saved_locally' },
+        sync: { status: 'failed', error: expect.stringContaining('Local sync failed') },
+      },
+    });
   });
 });

@@ -15,11 +15,19 @@ import { config } from '../../../lib/config.js';
 import type { Course } from '../../../lib/db-types.js';
 import { getLockNameForCoursePath } from '../../../models/course.js';
 
-/** Read immutable Git objects without changing the working tree or staging area. */
+/** Read saved local originals or immutable Git objects without changing the checkout. */
 export async function readReviewBaseFiles(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   snapshot: ReviewSnapshot,
 ) {
+  if (snapshot.type === 'local') {
+    return new Map(
+      snapshot.originals.map((file) => [
+        file.path,
+        file.contents === null ? null : Buffer.from(file.contents, 'base64'),
+      ]),
+    );
+  }
   const options = {
     cwd: course.path,
     env: {
@@ -88,7 +96,7 @@ export async function readReviewBaseFiles(
   return baseFiles;
 }
 
-/** Build the displayed diff from saved file contents and the checkout's immutable base blobs. */
+/** Build the displayed diff from the immutable originals and proposed file contents. */
 export async function createReviewDiff(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   snapshot: ReviewSnapshot,

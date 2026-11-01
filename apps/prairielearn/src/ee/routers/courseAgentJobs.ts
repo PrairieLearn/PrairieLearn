@@ -3,7 +3,10 @@ import { timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { PushSyncResultSchema, SavedJobOutcomeSchema } from '@prairielearn/course-agent-types';
+import {
+  RequestChangesResultSchema,
+  SavedJobOutcomeSchema,
+} from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 
@@ -42,7 +45,7 @@ router.get(
     if (!running && job.data.agentConversationId !== agentId) {
       throw new HttpStatusError(404, 'Job not found.');
     }
-    const result = PushSyncResultSchema.safeParse(job.data.result);
+    const result = RequestChangesResultSchema.safeParse(job.data.result);
     res.json(
       SavedJobOutcomeSchema.parse({
         callId: typeof job.data.callId === 'string' ? job.data.callId : null,
@@ -54,7 +57,7 @@ router.get(
             ? null
             : typeof job.data.error === 'string'
               ? job.data.error
-              : 'Publication was interrupted. Inspect the job before retrying.',
+              : 'Saving was interrupted. Inspect the job before retrying.',
       }),
     );
   }),

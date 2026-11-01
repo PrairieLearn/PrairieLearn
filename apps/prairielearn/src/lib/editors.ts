@@ -84,11 +84,11 @@ function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJson
 
 async function syncCourseFromDisk(
   course: Course,
-  startGitHash: string,
+  startGitHash: string | null,
   job: ServerJob,
   courseData?: courseDB.CourseData,
 ) {
-  const endGitHash = await getCourseCommitHash(course.path);
+  const endGitHash = startGitHash === null ? null : await getCourseCommitHash(course.path);
 
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
@@ -107,7 +107,7 @@ async function syncCourseFromDisk(
     logChunkChangesToJob(chunkChanges, job);
   }
 
-  await updateCourseCommitHash(course);
+  if (endGitHash !== null) await updateCourseCommitHash(course);
 
   // JSON errors mean individual entities failed to sync (e.g., a question has
   // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
@@ -246,8 +246,6 @@ export abstract class Editor {
 
     const lockName = getLockNameForCoursePath(this.course.path);
     await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-      const startGitHash = await getOrUpdateCourseCommitHash(this.course);
-
       if (!config.fileEditorUseGit) {
         if (expectedBaseCommit) {
           throw new Error('Publishing reviewed edits requires fileEditorUseGit.');
@@ -266,11 +264,13 @@ export abstract class Editor {
 
         job.info('Sync changes from disk');
         job.data.syncAttempted = true;
-        await syncCourseFromDisk(this.course, startGitHash, job);
+        await syncCourseFromDisk(this.course, null, job);
         job.data.syncSucceeded = true;
 
         return;
       }
+
+      const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
       // Safety check: refuse to perform git operations if the course is a
       // subdirectory of the PrairieLearn repository. Otherwise the `git clean`

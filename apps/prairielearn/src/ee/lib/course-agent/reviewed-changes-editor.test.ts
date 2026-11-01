@@ -45,7 +45,7 @@ vi.mock('../../../lib/chunks.js', () => ({
 
 let directory: string;
 let course: Course;
-let snapshot: ReviewSnapshot;
+let snapshot: Extract<ReviewSnapshot, { type: 'github' }>;
 let job: ServerJob;
 const user = { id: '2', uid: 'instructor@example.com', name: 'Instructor', email: null } as User;
 
@@ -112,6 +112,7 @@ beforeEach(async () => {
   await git('remote', 'add', 'origin', course.repository!);
   await git('push', '--set-upstream', 'origin', 'master');
   snapshot = {
+    type: 'github',
     repository: 'PrairieLearn/course',
     branch: 'master',
     baseCommit: await git('rev-parse', 'HEAD'),
@@ -283,4 +284,52 @@ it('rejects writes through a tracked symlink', async () => {
   snapshot.additions.push({ path: 'outside/escaped.txt', contents: 'eA==' });
   await expect(execute()).rejects.toThrow('Only regular course files');
   expect(await fs.pathExists(path.join(directory, 'escaped.txt'))).toBe(false);
+});
+
+function localSnapshot(): ReviewSnapshot {
+  return {
+    type: 'local',
+    additions: snapshot.additions,
+    deletions: snapshot.deletions,
+    originals: [
+      { path: 'question.html', contents: Buffer.from('Original\n').toString('base64') },
+      { path: 'new [file].bin', contents: null },
+      { path: 'old.txt', contents: Buffer.from('Delete me\n').toString('base64') },
+    ],
+  };
+}
+
+async function executeLocal() {
+  config.fileEditorUseGit = false;
+  const editor = new ReviewedChangesEditor({
+    course,
+    user,
+    authzData: { has_course_permission_edit: true, authn_user: user },
+    snapshot: localSnapshot(),
+  });
+  return editor.executeWithJob(job);
+}
+
+it('saves a local review without publication and retains saved files when sync fails', async () => {
+  const head = await git('rev-parse', 'HEAD');
+  await fs.remove(path.join(course.path, '.git'));
+  vi.mocked(syncDiskToSqlWithLock).mockRejectedValueOnce(new Error('Sync failed'));
+  await expect(executeLocal()).rejects.toThrow('Sync failed');
+  expect(await fs.readFile(path.join(course.path, 'question.html'), 'utf8')).toBe('Reviewed\n');
+  expect(await fs.readFile(path.join(course.path, 'new [file].bin'))).toEqual(
+    Buffer.from([0, 255, 1]),
+  );
+  expect(await fs.pathExists(path.join(course.path, 'old.txt'))).toBe(false);
+  expect(await git('--git-dir', course.repository!, 'rev-parse', 'master')).toBe(head);
+  expect(job.data).toMatchObject({ saveSucceeded: true, syncAttempted: true });
+});
+
+it('rejects a stale local deletion before applying any other reviewed files', async () => {
+  await fs.writeFile(path.join(course.path, 'old.txt'), 'Instructor edit\n');
+  expect(await createReviewDiff(course, localSnapshot())).toContain('-Delete me');
+  await expect(executeLocal()).rejects.toThrow('Local course files changed: old.txt');
+  expect(await fs.readFile(path.join(course.path, 'question.html'), 'utf8')).toBe('Original\n');
+  expect(await fs.pathExists(path.join(course.path, 'new [file].bin'))).toBe(false);
+  expect(await fs.readFile(path.join(course.path, 'old.txt'), 'utf8')).toBe('Instructor edit\n');
+  expect(syncDiskToSqlWithLock).not.toHaveBeenCalled();
 });

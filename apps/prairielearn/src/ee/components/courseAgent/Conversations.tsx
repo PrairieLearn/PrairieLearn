@@ -198,7 +198,9 @@ function Chat({
   const pendingReview = messages.some((message) =>
     message.parts.some(
       (part) =>
-        isToolUIPart(part) && part.type === 'tool-push_sync' && part.state !== 'output-available',
+        isToolUIPart(part) &&
+        part.type === 'tool-request_changes' &&
+        part.state !== 'output-available',
     ),
   );
   const readyToSend =
@@ -367,7 +369,7 @@ function Message({
         const key = `part-${index}`;
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-        if (isToolUIPart(part) && part.type === 'tool-push_sync') {
+        if (isToolUIPart(part) && part.type === 'tool-request_changes') {
           return (
             <ReviewCard
               key={key}
