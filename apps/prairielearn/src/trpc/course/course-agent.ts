@@ -69,6 +69,7 @@ export const courseAgentRouter = t.router({
         conversation,
         user: ctx.authz_data.user,
         authnUserId: ctx.locals.authn_user.id,
+        authzData: ctx.authz_data,
       });
     }),
   reviewJob: courseAgentProcedure

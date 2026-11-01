@@ -35,7 +35,7 @@ Merge the following into `apps/prairielearn/config.json`, using the same service
 }
 ```
 
-For GitHub publication, set `fileEditorUseGit: true`, configure the course repository and branch, and set PrairieLearn `githubClientToken` to an API credential with write access. Worker `PL_SERVICE_URL` defaults to `http://localhost:3000`; change it to your PrairieLearn origin if different so Resume can retrieve saved job outcomes.
+For publication, set `fileEditorUseGit: true`, configure the course repository and branch, and configure PrairieLearn’s normal Git credentials with write access to that repository. The push-sync workflow does not require `githubClientToken`. Worker `PL_SERVICE_URL` defaults to `http://localhost:3000`; change it to your PrairieLearn origin if different so Resume can retrieve saved job outcomes.
 
 Start the Worker:
 
@@ -113,11 +113,11 @@ Focused tests cover native termination, stream adaptation, lost acceptance, and 
 
 ### Push sync
 
-The Conversation DO owns the pending snapshot; PL adds no table or conversation column. PL publishes the reviewed full-file contents using Octokit GraphQL, runs Course Sync, and stores the outcome in the existing job record before attempting one callback. Native call IDs identify reviews; there is no extra request UUID.
+The Conversation DO owns the pending snapshot; PL adds no table or conversation column. PL reads review base blobs from its existing course checkout, then publishes approved full-file contents through the shared editor commit/push/sync workflow, and stores the outcome in the existing job record before attempting one callback. Native call IDs identify reviews; there is no extra request UUID.
 
 Explicit Resume recovers a missed callback through PL's service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. The route returns `{ callId, jobSequenceId, status, result, error }`; status is running, completed, or blocked. Before ordinary job completion, callId may be null. Interrupted publication requires inspection and is never automatically retried. There is no PL delivery cron.
 
-Snapshot limits are 100 files, 64 KiB decoded per file, and 1 MiB of base64 contents. Only non-executable regular files are supported initially. GitHub attributes commits to the API credential. The agent handles fetching published changes into its sandbox. See [CONTRACT.md](CONTRACT.md#pending-reviews-and-publication-outcomes) for persistence and recovery.
+Snapshot limits are 100 files, 64 KiB decoded per file, and 1 MiB of base64 contents. Only non-executable regular files are supported initially. Commits use the approving instructor’s name and email. Reviewed edits reject a changed branch base instead of retrying on top of newer commits. Sharing validation runs before publication; Course Sync includes the existing chunk updates. Git attribute/filter transformations of approved bytes are rejected. The agent handles fetching published changes into its sandbox. See [CONTRACT.md](CONTRACT.md#pending-reviews-and-publication-outcomes) for persistence and recovery.
 
 ## Deployment environments and monitoring
 

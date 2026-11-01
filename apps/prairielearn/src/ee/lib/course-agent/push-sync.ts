@@ -1,7 +1,5 @@
 import { stripVTControlCharacters } from 'node:util';
 
-import { z } from 'zod';
-
 import {
   type PendingReview,
   type PushSyncResult,
@@ -9,16 +7,12 @@ import {
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import * as namedLocks from '@prairielearn/named-locks';
-import { contains } from '@prairielearn/path-utils';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
 import type { Course, CourseAgentConversation, User } from '../../../lib/db-types.js';
 import { parseGithubRepository } from '../../../lib/github-utils.js';
-import { getGithubClient } from '../../../lib/github.js';
-import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import {
   type ServerJob,
   type ServerJobLogger,
@@ -26,12 +20,7 @@ import {
   selectJobsByJobSequenceId,
 } from '../../../lib/server-jobs.js';
 import { insertAuditEvent } from '../../../models/audit-event.js';
-import {
-  getLockNameForCoursePath,
-  selectCourseById,
-  updateCourseCommitHash,
-} from '../../../models/course.js';
-import { syncDiskToSqlWithLock } from '../../../sync/syncFromDisk.js';
+import { selectCourseById } from '../../../models/course.js';
 
 import {
   deliverCourseAgentReviewOutcome,
@@ -39,6 +28,7 @@ import {
   recordCourseAgentReviewDecision,
 } from './client.js';
 import { createReviewDiff } from './review-diff.js';
+import { ReviewedChangesEditor } from './reviewed-changes-editor.js';
 
 function claims(conversation: CourseAgentConversation, review: PendingReview, reviewerId: string) {
   return {
@@ -59,26 +49,19 @@ function verifyBinding(course: Pick<Course, 'repository' | 'branch'>, review: Pe
   ) {
     throw new HttpStatusError(409, 'The course repository or branch changed. Start a new review.');
   }
-  return repository;
 }
 
-function githubClient() {
-  const client = getGithubClient();
-  if (!client) throw new HttpStatusError(503, 'GitHub API publication is not configured.');
-  return client;
-}
-
-/** Generate the review from immutable base blobs and saved bytes, without a checkout. */
+/** Generate the review from immutable local Git objects and saved bytes. */
 export async function getPendingReview(
-  course: Pick<Course, 'repository' | 'branch'>,
+  course: Pick<Course, 'path' | 'repository' | 'branch'>,
   conversation: CourseAgentConversation,
   reviewerId: string,
   callId: string,
 ) {
   const review = await getCourseAgentPendingReview(conversation.agent_conversation_id);
   if (review?.callId !== callId) return null;
-  const repository = verifyBinding(course, review);
-  const patch = await createReviewDiff(githubClient(), repository, review.snapshot);
+  verifyBinding(course, review);
+  const patch = await createReviewDiff(course, review.snapshot);
   return {
     callId: review.callId,
     card: review.card,
@@ -95,12 +78,14 @@ export async function postReviewDecision({
   conversation,
   user,
   authnUserId,
+  authzData,
   reviewToken,
   decision,
 }: {
   course: Pick<Course, 'id'>;
   conversation: CourseAgentConversation;
-  user: Pick<User, 'id'>;
+  user: Pick<User, 'id' | 'name' | 'email' | 'uid'>;
+  authzData: { has_course_permission_edit: boolean; authn_user: Pick<User, 'id'> };
   authnUserId: string;
   reviewToken: string;
   decision: 'approved' | 'denied';
@@ -189,7 +174,7 @@ export async function postReviewDecision({
   }
   // execute() persists ordinary job data before the callback is attempted.
   void executor
-    .execute((job) => executePushSync(job, course, conversation, review))
+    .execute((job) => executePushSync(job, course, conversation, review, user, authzData))
     .then(async ({ data }) => {
       const result = PushSyncResultSchema.safeParse(data.result);
       if (result.success) {
@@ -208,134 +193,67 @@ export async function postReviewDecision({
   return { decision, jobSequenceId: executor.jobSequenceId };
 }
 
-/** Publish once, then sync PL's checkout; retain the outcome in the ordinary job record. */
+/** Keep agent review/result delivery separate from the shared editor workflow. */
 async function executePushSync(
   job: ServerJob,
   course: Course,
   conversation: CourseAgentConversation,
   review: PendingReview,
+  user: Pick<User, 'id' | 'name' | 'email' | 'uid'>,
+  authzData: { has_course_permission_edit: boolean; authn_user: Pick<User, 'id'> },
 ) {
   job.data.agentConversationId = conversation.agent_conversation_id;
   job.data.callId = review.callId;
-  const result: PushSyncResult = {
-    decision: 'approved',
-    publication: { status: 'not_attempted' },
-    sync: { status: 'not_attempted' },
-  };
-  const publication = { attempted: false };
-  try {
-    await namedLocks.doWithLock(
-      getLockNameForCoursePath(course.path),
-      { timeout: 5000 },
-      async () => {
-        const current = await selectCourseById(course.id);
-        const { owner, repo } = verifyBinding(current, review);
-        const client = githubClient();
-        const head = (await client.repos.getBranch({ owner, repo, branch: review.snapshot.branch }))
-          .data.commit.sha;
-        if (head !== review.snapshot.baseCommit) {
-          throw new Error(
-            'The course branch changed. Ask the agent to fetch updates and request a new review.',
-          );
-        }
-        publication.attempted = true;
-        const commitSha = await publishReviewedFiles(client, review);
-        result.publication = { status: 'published', commitSha };
-        job.info(`Published ${commitSha}`);
-        result.sync = await syncPublishedCourse(current, review.snapshot.branch, commitSha, job);
-      },
-    );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (publication.attempted && result.publication.status !== 'published') {
-      job.data.error = `GitHub publication could not be confirmed. Inspect the branch before retrying. ${message}`;
-      job.fail(String(job.data.error));
-    }
-    if (result.publication.status === 'published') {
-      result.sync = { status: 'failed', error: message };
-    } else {
-      result.publication = { status: 'failed', error: message };
-    }
-  }
-  job.data.result = result;
-  if (result.publication.status !== 'published' || result.sync.status !== 'succeeded') {
-    job.fail('Reviewed changes were not published and synced successfully.');
-  }
-}
-
-async function publishReviewedFiles(
-  client: ReturnType<typeof githubClient>,
-  review: PendingReview,
-) {
-  const published = await client.graphql<{
-    createCommitOnBranch: { commit: { oid: string } };
-  }>(
-    `
-mutation PublishCourseEdits($input: CreateCommitOnBranchInput!) {
-  createCommitOnBranch(input: $input) { commit { oid } }
-}
-    `,
-    {
-      input: {
-        branch: {
-          repositoryNameWithOwner: review.snapshot.repository,
-          branchName: review.snapshot.branch,
-        },
-        expectedHeadOid: review.snapshot.baseCommit,
-        message: { headline: 'Apply reviewed course agent edits' },
-        fileChanges: {
-          additions: review.snapshot.additions,
-          deletions: review.snapshot.deletions,
-        },
-      },
-    },
-  );
-  const commitSha = z
-    .string()
-    .regex(/^[0-9a-f]{40}$/)
-    .parse(published.createCommitOnBranch.commit.oid);
-  return commitSha;
-}
-
-async function syncPublishedCourse(
-  course: Course,
-  branch: string,
-  commitSha: string,
-  job: ServerJob,
-): Promise<PushSyncResult['sync']> {
   const lines: string[] = [];
   const log = (method: keyof ServerJobLogger, line: string) => {
     lines.push(line);
     job[method](line);
   };
-  const syncLogger: ServerJobLogger = {
+  const editorJob: ServerJob = {
+    data: job.data,
+    exec: job.exec.bind(job),
+    fail: job.fail.bind(job),
+    stop: job.stop.bind(job),
     info: (line) => log('info', line),
     error: (line) => log('error', line),
     warn: (line) => log('warn', line),
     verbose: (line) => log('verbose', line),
   };
+  let failure: string | null = null;
   try {
-    if (contains(REPOSITORY_ROOT_PATH, course.path)) {
-      throw new Error('Cannot replace a course checkout inside the PrairieLearn repository.');
-    }
-    const env = {
-      ...process.env,
-      ...(config.gitSshCommand ? { GIT_SSH_COMMAND: config.gitSshCommand } : {}),
-    };
-    await job.exec('git', ['fetch', '--', course.repository!, branch], {
-      cwd: course.path,
-      env,
+    const current = await selectCourseById(course.id);
+    verifyBinding(current, review);
+    const editor = new ReviewedChangesEditor({
+      course: current,
+      user,
+      authzData,
+      snapshot: review.snapshot,
     });
-    await job.exec('git', ['reset', '--hard', commitSha], { cwd: course.path, env });
-    await job.exec('git', ['clean', '-fd'], { cwd: course.path, env });
-    const sync = await syncDiskToSqlWithLock(course, syncLogger);
-    await updateCourseCommitHash(course);
-    if (sync.status !== 'complete' || sync.hadJsonErrors) {
-      throw new Error('Course Sync failed. See the diagnostics above.');
-    }
-    return { status: 'succeeded' };
+    await editor.executeWithJob(editorJob, { expectedBaseCommit: review.snapshot.baseCommit });
   } catch (error) {
-    syncLogger.error(error instanceof Error ? error.message : String(error));
-    return { status: 'failed', error: stripVTControlCharacters(lines.join('\n')) };
+    failure = error instanceof Error ? error.message : String(error);
+    editorJob.error(failure);
+  }
+  if (job.data.publicationUncertain) {
+    job.data.error = failure;
+    job.fail(failure!);
+  }
+  const diagnostics = stripVTControlCharacters(lines.join('\n'));
+  const result: PushSyncResult = job.data.saveSucceeded
+    ? {
+        decision: 'approved',
+        publication: { status: 'published', commitSha: String(job.data.commitHash) },
+        sync: job.data.syncSucceeded
+          ? { status: 'succeeded' }
+          : { status: 'failed', error: diagnostics },
+      }
+    : {
+        decision: 'approved',
+        publication: { status: 'failed', error: diagnostics },
+        sync: { status: 'not_attempted' },
+      };
+  job.data.result = result;
+  if (result.publication.status !== 'published' || result.sync.status !== 'succeeded') {
+    job.fail('Reviewed changes were not published and synced successfully.');
   }
 }
