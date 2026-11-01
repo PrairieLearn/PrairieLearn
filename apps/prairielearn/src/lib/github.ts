@@ -23,7 +23,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 /**
  * Creates an octokit client from the client token specified in the config.
  */
-export function getGithubClient(): Octokit | null {
+function getGithubClient(): Octokit | null {
   if (config.githubClientToken === null) {
     return null;
   }

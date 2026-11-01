@@ -1,7 +1,7 @@
 import { isUtf8 } from 'node:buffer';
 
-import type { Octokit } from '@octokit/rest';
 import { createTwoFilesPatch } from 'diff';
+import { execa } from 'execa';
 
 import {
   MAX_REVIEW_BYTES,
@@ -9,28 +9,50 @@ import {
   type ReviewSnapshot,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
+import * as namedLocks from '@prairielearn/named-locks';
 
-/** Build the displayed diff from saved file contents and immutable GitHub blobs. */
-export async function createReviewDiff(
-  client: Octokit,
-  { owner, repo }: { owner: string; repo: string },
+import { config } from '../../../lib/config.js';
+import type { Course } from '../../../lib/db-types.js';
+import { getLockNameForCoursePath } from '../../../models/course.js';
+
+/** Read immutable Git objects without changing the working tree or staging area. */
+export async function readReviewBaseFiles(
+  course: Pick<Course, 'path' | 'repository' | 'branch'>,
   snapshot: ReviewSnapshot,
 ) {
-  const { data: tree } = await client.git.getTree({
-    owner,
-    repo,
-    tree_sha: snapshot.baseCommit,
-    recursive: '1',
+  const options = {
+    cwd: course.path,
+    env: {
+      ...process.env,
+      ...(config.gitSshCommand ? { GIT_SSH_COMMAND: config.gitSshCommand } : {}),
+    },
+  };
+  const exists = await execa('git', ['cat-file', '-e', `${snapshot.baseCommit}^{commit}`], {
+    ...options,
+    reject: false,
   });
-  if (tree.truncated) {
-    throw new HttpStatusError(
-      400,
-      'This repository is too large to review through the course agent.',
-    );
+  if (exists.exitCode !== 0) {
+    await execa('git', ['fetch', '--', course.repository!, course.branch], {
+      ...options,
+      timeout: 30_000,
+    });
   }
-  const entries = new Map(tree.tree.map((entry) => [entry.path, entry]));
+  const paths = [...snapshot.additions, ...snapshot.deletions].map((file) => file.path);
+  const entries = new Map<string, { mode: string; type: string; sha: string; size: number }>();
+  if (paths.length > 0) {
+    const { stdout } = await execa(
+      'git',
+      ['--literal-pathspecs', 'ls-tree', '-r', '-z', '-l', snapshot.baseCommit, '--', ...paths],
+      options,
+    );
+    for (const entry of stdout.split('\0').filter(Boolean)) {
+      const [metadata, path] = entry.split('\t');
+      const [mode, type, sha, size] = metadata.trim().split(/\s+/);
+      entries.set(path, { mode, type, sha, size: Number(size) });
+    }
+  }
   const additions = new Map(snapshot.additions.map((file) => [file.path, file.contents]));
-  const patches: string[] = [];
+  const baseFiles = new Map<string, Buffer | null>();
   let total = 0;
   for (const file of [...snapshot.additions, ...snapshot.deletions]) {
     const entry = entries.get(file.path);
@@ -48,28 +70,57 @@ export async function createReviewDiff(
     }
     const old = entry
       ? Buffer.from(
-          (await client.git.getBlob({ owner, repo, file_sha: entry.sha })).data.content,
-          'base64',
+          (
+            await execa('git', ['cat-file', 'blob', entry.sha], {
+              ...options,
+              encoding: 'buffer',
+              stripFinalNewline: false,
+            })
+          ).stdout,
         )
-      : Buffer.alloc(0);
+      : null;
     const contents = additions.get(file.path);
     const next = contents === undefined ? Buffer.alloc(0) : Buffer.from(contents, 'base64');
-    total += old.length + next.length;
+    total += (old?.length ?? 0) + next.length;
     if (total > MAX_REVIEW_BYTES) throw new HttpStatusError(400, 'Reviewed changes are too large.');
-    if (old.includes(0) || next.includes(0) || !isUtf8(old) || !isUtf8(next)) {
-      patches.push(
-        `Binary file ${file.path}: ${entry ? (contents === undefined ? 'deleted' : 'modified') : 'added'}\n`,
-      );
-    } else {
-      patches.push(
-        createTwoFilesPatch(
-          entry ? file.path : '/dev/null',
-          contents === undefined ? '/dev/null' : file.path,
-          old.toString('utf8'),
-          next.toString('utf8'),
-        ),
-      );
-    }
+    baseFiles.set(file.path, old);
   }
-  return patches.join('\n');
+  return baseFiles;
+}
+
+/** Build the displayed diff from saved file contents and the checkout's immutable base blobs. */
+export async function createReviewDiff(
+  course: Pick<Course, 'path' | 'repository' | 'branch'>,
+  snapshot: ReviewSnapshot,
+) {
+  return namedLocks.doWithLock(
+    getLockNameForCoursePath(course.path),
+    { timeout: 5000 },
+    async () => {
+      const baseFiles = await readReviewBaseFiles(course, snapshot);
+      const additions = new Map(snapshot.additions.map((file) => [file.path, file.contents]));
+      const patches: string[] = [];
+      for (const file of [...snapshot.additions, ...snapshot.deletions]) {
+        const base = baseFiles.get(file.path) ?? null;
+        const old = base ?? Buffer.alloc(0);
+        const contents = additions.get(file.path);
+        const next = contents === undefined ? Buffer.alloc(0) : Buffer.from(contents, 'base64');
+        if (old.includes(0) || next.includes(0) || !isUtf8(old) || !isUtf8(next)) {
+          patches.push(
+            `Binary file ${file.path}: ${base !== null ? (contents === undefined ? 'deleted' : 'modified') : 'added'}\n`,
+          );
+        } else {
+          patches.push(
+            createTwoFilesPatch(
+              base !== null ? file.path : '/dev/null',
+              contents === undefined ? '/dev/null' : file.path,
+              old.toString('utf8'),
+              next.toString('utf8'),
+            ),
+          );
+        }
+      }
+      return patches.join('\n');
+    },
+  );
 }

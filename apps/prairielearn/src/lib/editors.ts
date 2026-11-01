@@ -4,6 +4,7 @@ import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
 import debugfn from 'debug';
+import { execa } from 'execa';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -166,7 +167,7 @@ interface BaseEditorOptions<ResLocals = object> {
   locals: {
     authz_data: Record<string, any>;
     course: Course;
-    user: User;
+    user: Pick<User, 'id' | 'name' | 'email' | 'uid'>;
   } & ResLocals;
 }
 
@@ -182,7 +183,7 @@ interface WriteResult {
 export abstract class Editor {
   protected authz_data: Record<string, any>;
   protected course: Course;
-  protected user: User;
+  protected user: Pick<User, 'id' | 'name' | 'email' | 'uid'>;
   public readonly description: string;
 
   protected constructor(params: BaseEditorOptionsInternal) {
@@ -229,140 +230,174 @@ export abstract class Editor {
     // for the edit to complete during the request during which it was
     // made. We use `executeUnsafe` instead of `execute` because we want
     // errors to be thrown and handled by the caller.
-    await serverJob.executeUnsafe(async (job) => {
-      const gitEnv = process.env;
-      if (config.gitSshCommand != null) {
-        gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-      }
+    await serverJob.executeUnsafe((job) => this.executeWithJob(job));
+  }
 
-      const lockName = getLockNameForCoursePath(this.course.path);
-      await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
+  /** Run within an existing job so callers can retain their own result and recovery state. */
+  async executeWithJob(
+    job: ServerJob,
+    { expectedBaseCommit }: { expectedBaseCommit?: string } = {},
+  ) {
+    this.assertCanEdit();
+    const gitEnv = process.env;
+    if (config.gitSshCommand != null) {
+      gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+    }
 
-        if (!config.fileEditorUseGit) {
-          // If we are not using git (e.g., if we are running locally), then we:
-          //
-          // - Write changes to disk
-          // - Sync changes from disk
-          //
-          // Either the job ends with a thrown error or with the return statement.
+    const lockName = getLockNameForCoursePath(this.course.path);
+    await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
+      const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
-          job.info('Write changes to disk');
-          job.data.saveAttempted = true;
-          await this.write();
-          job.data.saveSucceeded = true;
-
-          job.info('Sync changes from disk');
-          job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
-          job.data.syncSucceeded = true;
-
-          return;
+      if (!config.fileEditorUseGit) {
+        if (expectedBaseCommit) {
+          throw new Error('Publishing reviewed edits requires fileEditorUseGit.');
         }
-
-        // Safety check: refuse to perform git operations if the course is a
-        // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
-        // and `git reset` commands could delete or modify files with pending changes.
-        if (contains(REPOSITORY_ROOT_PATH, this.course.path)) {
-          job.fail(
-            'Cannot perform git operations on courses inside the PrairieLearn repository. Exiting...',
-          );
-          return;
-        }
-
-        // If we are using git (e.g., if we are running in production), then we:
+        // If we are not using git (e.g., if we are running locally), then we:
         //
-        // - Clean and reset the repository
         // - Write changes to disk
-        // - Commit changes to the repository
-        // - Push to remote
-        //   - If the push fails, pull from remote, clean, reset, write, commit, and push
-        // - Clean and reset the repository
         // - Sync changes from disk
         //
-        // Note that we only fetch from the remote if the push fails. This avoids an
-        // expensive `fetch` operation in the majority of cases where the local course
-        // repository is up to date with the remote. If the push fails, we assume that
-        // the remote has changes that we need to pull in before we can push.
-        //
-        // If anything goes wrong in the write or push, we make sure to clean/reset
-        // (removing changes made by this edit) and sync (because changes were made
-        // by the pull) before we error and exit.
+        // Either the job ends with a thrown error or with the return statement.
 
-        // Safety check: make sure the course has a defined branch and repository.
-        if (!this.course.branch || !this.course.repository) {
-          job.fail('Git repository or branch are not set for this course. Exiting...');
+        job.info('Write changes to disk');
+        job.data.saveAttempted = true;
+        await this.write();
+        job.data.saveSucceeded = true;
+
+        job.info('Sync changes from disk');
+        job.data.syncAttempted = true;
+        await syncCourseFromDisk(this.course, startGitHash, job);
+        job.data.syncSucceeded = true;
+
+        return;
+      }
+
+      // Safety check: refuse to perform git operations if the course is a
+      // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
+      // and `git reset` commands could delete or modify files with pending changes.
+      if (contains(REPOSITORY_ROOT_PATH, this.course.path)) {
+        job.fail(
+          'Cannot perform git operations on courses inside the PrairieLearn repository. Exiting...',
+        );
+      }
+
+      // If we are using git (e.g., if we are running in production), then we:
+      //
+      // - Clean and reset the repository
+      // - Write changes to disk
+      // - Commit changes to the repository
+      // - Push to remote
+      //   - If the push fails, pull from remote, clean, reset, write, commit, and push
+      // - Clean and reset the repository
+      // - Sync changes from disk
+      //
+      // Reviewed edits fetch first and reject a changed base instead of retrying.
+      // Other editors only fetch from the remote if the push fails. This avoids an
+      // expensive `fetch` operation in the majority of cases where the local course
+      // repository is up to date with the remote. If the push fails, we assume that
+      // the remote has changes that we need to pull in before we can push.
+      //
+      // If anything goes wrong in the write or push, we make sure to clean/reset
+      // (removing changes made by this edit) and sync (because changes were made
+      // by the pull) before we error and exit.
+
+      // Safety check: make sure the course has a defined branch and repository.
+      if (!this.course.branch || !this.course.repository) {
+        job.fail('Git repository or branch are not set for this course. Exiting...');
+      }
+
+      job.info('Update to latest remote origin address');
+      await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
+        cwd: this.course.path,
+        env: gitEnv,
+      });
+
+      if (expectedBaseCommit) {
+        job.info('Fetch the reviewed branch');
+        await this.fetchReviewedBranch(job, gitEnv);
+        const { stdout } = await execa(
+          'git',
+          ['rev-parse', `refs/remotes/origin/${this.course.branch}`],
+          {
+            cwd: this.course.path,
+            env: gitEnv,
+          },
+        );
+        if (stdout.trim() !== expectedBaseCommit) {
+          throw new Error(
+            'The course branch changed. Ask the agent to fetch updates and request a new review.',
+          );
+        }
+      }
+
+      await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+
+      const writeAndCommitChanges = async () => {
+        job.data.saveAttempted = true;
+
+        job.info('Write changes to disk');
+        const writeResult = await this.write();
+
+        if (!writeResult) {
+          job.info('No files were changed');
           return;
         }
 
-        job.info('Update to latest remote origin address');
-        await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
+        job.info('Commit changes');
+        await job.exec('git', ['add', '--', ...writeResult.pathsToAdd], {
           cwd: this.course.path,
           env: gitEnv,
         });
-
-        await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
-
-        const writeAndCommitChanges = async () => {
-          job.data.saveAttempted = true;
-
-          job.info('Write changes to disk');
-          const writeResult = await this.write();
-
-          if (!writeResult) {
-            job.info('No files were changed');
-            return;
-          }
-
-          job.info('Commit changes');
-          await job.exec('git', ['add', ...writeResult.pathsToAdd], {
+        await this.validateStagedChanges();
+        await job.exec(
+          'git',
+          [
+            '-c',
+            `user.name="${this.user.name}"`,
+            '-c',
+            `user.email="${this.user.email || this.user.uid}"`,
+            'commit',
+            '-m',
+            writeResult.commitMessage,
+          ],
+          {
             cwd: this.course.path,
             env: gitEnv,
-          });
+          },
+        );
+      };
+
+      let courseData: courseDB.CourseData | undefined;
+      try {
+        await writeAndCommitChanges();
+
+        await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
+        // Before pushing the changes, ensure that we don't allow someone
+        // to put their course into an invalid state by deleting a shared
+        // question or otherwise breaking the invariants we rely upon for
+        // question sharing.
+        const possibleCourseData = await courseDB.loadFullCourse(this.course.id, this.course.path);
+        const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
+          this.course,
+          possibleCourseData,
+          job,
+        );
+        if (!sharingConfigurationValid) {
+          await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
+          throw new Error('Invalid sharing operation, reverted to last known good state.');
+        }
+
+        try {
+          job.info('Push changes to remote git repository');
+          if (expectedBaseCommit) {
+            job.data.commitHash = await getCourseCommitHash(this.course.path);
+          }
           await job.exec(
             'git',
-            [
-              '-c',
-              `user.name="${this.user.name}"`,
-              '-c',
-              `user.email="${this.user.email || this.user.uid}"`,
-              'commit',
-              '-m',
-              writeResult.commitMessage,
-            ],
+            expectedBaseCommit
+              ? ['push', 'origin', `HEAD:refs/heads/${this.course.branch}`]
+              : ['push'],
             {
-              cwd: this.course.path,
-              env: gitEnv,
-            },
-          );
-        };
-
-        let courseData: courseDB.CourseData | undefined;
-        try {
-          await writeAndCommitChanges();
-
-          await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
-          // Before pushing the changes, ensure that we don't allow someone
-          // to put their course into an invalid state by deleting a shared
-          // question or otherwise breaking the invariants we rely upon for
-          // question sharing.
-          const possibleCourseData = await courseDB.loadFullCourse(
-            this.course.id,
-            this.course.path,
-          );
-          const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
-            this.course,
-            possibleCourseData,
-            job,
-          );
-          if (!sharingConfigurationValid) {
-            await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
-            throw new Error('Invalid sharing operation, reverted to last known good state.');
-          }
-
-          try {
-            job.info('Push changes to remote git repository');
-            await job.exec('git', ['push'], {
               cwd: this.course.path,
               env: gitEnv,
               // During GitHub incidents, we've observed GitHub taking multiple
@@ -371,61 +406,97 @@ export abstract class Editor {
               // to respond to the request in time, we'll use a relatively short
               // timeout to fail the push if it takes too long.
               cancelSignal: AbortSignal.timeout(30_000),
-            });
-            job.data.saveSucceeded = true;
+            },
+          );
+          job.data.saveSucceeded = true;
 
-            // If we were able to push the change to GitHub, we can safely
-            // use the course data that we already loaded from disk because
-            // we can be sure that there weren't any further changes to the
-            // files on disk. This helps keep syncing fast by avoiding loading
-            // all course JSON files twice.
-            //
-            // If pushing fails, we'll need to incorporate the latest changes
-            // from the remote repository, so we'll have to load the latest
-            // course data from disk after we do so.
-            courseData = possibleCourseData;
-          } catch {
-            job.info('Failed to push changes to remote git repository');
-            job.info('Pulling changes from remote git repository and trying again');
-
-            job.info('Fetch from remote git repository');
-            await job.exec('git', ['fetch'], {
-              cwd: this.course.path,
-              env: gitEnv,
-              // As with `git push` above, we'll use a timeout here to avoid
-              // long delays during GitHub incidents resulting in 504 errors.
-              cancelSignal: AbortSignal.timeout(30_000),
-            });
-
-            // This will both discard the commit we made locally and also pull
-            // in any new changes from the remote.
-            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
-
-            await writeAndCommitChanges();
-
+          // If we were able to push the change to GitHub, we can safely
+          // use the course data that we already loaded from disk because
+          // we can be sure that there weren't any further changes to the
+          // files on disk. This helps keep syncing fast by avoiding loading
+          // all course JSON files twice.
+          //
+          // If pushing fails, we'll need to incorporate the latest changes
+          // from the remote repository, so we'll have to load the latest
+          // course data from disk after we do so.
+          courseData = possibleCourseData;
+        } catch (pushError) {
+          if (expectedBaseCommit) {
+            // A failed connection may hide a successful push. Fetch before deciding
+            // whether publication failed; never reapply reviewed bytes to a newer base.
             try {
-              job.info('Push changes to remote git repository');
-              await job.exec('git', ['push'], {
-                cwd: this.course.path,
-                env: gitEnv,
-                // See above `git push` attempt for an explanation of this timeout.
-                cancelSignal: AbortSignal.timeout(30_000),
-              });
-              job.data.saveSucceeded = true;
-            } finally {
-              // Clean up to remove any empty directories that might have been
-              // left behind by operations like renames. This will also ensure
-              // that we get back to a good state if the changes couldn't be
-              // pushed to the remote.
-              await cleanAndResetRepository(
-                this.course,
-                `origin/${this.course.branch}`,
-                gitEnv,
-                job,
+              await this.fetchReviewedBranch(job, gitEnv);
+              const result = await execa(
+                'git',
+                [
+                  'merge-base',
+                  '--is-ancestor',
+                  String(job.data.commitHash),
+                  `refs/remotes/origin/${this.course.branch}`,
+                ],
+                { cwd: this.course.path, env: gitEnv, reject: false },
+              );
+              if (result.exitCode === 0) {
+                job.data.saveSucceeded = true;
+                courseData = possibleCourseData;
+                return;
+              }
+              if (result.exitCode !== 1) throw new Error(result.stderr, { cause: pushError });
+            } catch (error) {
+              job.data.publicationUncertain = true;
+              throw new Error(
+                'Git publication could not be confirmed. Inspect the branch before retrying.',
+                { cause: error },
               );
             }
+            throw pushError;
           }
-        } finally {
+          job.info('Failed to push changes to remote git repository');
+          job.info('Pulling changes from remote git repository and trying again');
+
+          job.info('Fetch from remote git repository');
+          await job.exec('git', ['fetch'], {
+            cwd: this.course.path,
+            env: gitEnv,
+            // As with `git push` above, we'll use a timeout here to avoid
+            // long delays during GitHub incidents resulting in 504 errors.
+            cancelSignal: AbortSignal.timeout(30_000),
+          });
+
+          // This will both discard the commit we made locally and also pull
+          // in any new changes from the remote.
+          await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+
+          await writeAndCommitChanges();
+
+          try {
+            job.info('Push changes to remote git repository');
+            await job.exec('git', ['push'], {
+              cwd: this.course.path,
+              env: gitEnv,
+              // See above `git push` attempt for an explanation of this timeout.
+              cancelSignal: AbortSignal.timeout(30_000),
+            });
+            job.data.saveSucceeded = true;
+          } finally {
+            // Clean up to remove any empty directories that might have been
+            // left behind by operations like renames. This will also ensure
+            // that we get back to a good state if the changes couldn't be
+            // pushed to the remote.
+            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+          }
+        }
+      } finally {
+        if (expectedBaseCommit && !job.data.saveSucceeded) {
+          await cleanAndResetRepository(
+            this.course,
+            job.data.publicationUncertain ? startGitHash : `origin/${this.course.branch}`,
+            gitEnv,
+            job,
+          );
+        }
+        // An unconfirmed push is deliberately left for explicit inspection/recovery.
+        if (!job.data.publicationUncertain) {
           // Whether or not we error, we'll sync the course.
           //
           // If pushing succeeded, then we will be syncing the changes made
@@ -438,8 +509,23 @@ export abstract class Editor {
           await syncCourseFromDisk(this.course, startGitHash, job, courseData);
           job.data.syncSucceeded = true;
         }
-      });
+      }
     });
+  }
+
+  /** Editors publishing reviewed bytes can reject Git attribute/filter transformations. */
+  protected async validateStagedChanges(): Promise<void> {}
+
+  private async fetchReviewedBranch(job: ServerJob, env: NodeJS.ProcessEnv) {
+    await job.exec(
+      'git',
+      [
+        'fetch',
+        'origin',
+        `+refs/heads/${this.course.branch}:refs/remotes/origin/${this.course.branch}`,
+      ],
+      { cwd: this.course.path, env, cancelSignal: AbortSignal.timeout(30_000) },
+    );
   }
 
   /**

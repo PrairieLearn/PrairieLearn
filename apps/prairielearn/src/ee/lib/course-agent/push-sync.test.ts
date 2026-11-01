@@ -3,7 +3,6 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import type { PendingReview } from '@prairielearn/course-agent-types';
 
 import type { Course, CourseAgentConversation, Job } from '../../../lib/db-types.js';
-import { getGithubClient } from '../../../lib/github.js';
 import {
   type ServerJob,
   type ServerJobExecutor,
@@ -11,7 +10,6 @@ import {
   selectJobsByJobSequenceId,
 } from '../../../lib/server-jobs.js';
 import { selectCourseById } from '../../../models/course.js';
-import { syncDiskToSqlWithLock } from '../../../sync/syncFromDisk.js';
 
 import {
   deliverCourseAgentReviewOutcome,
@@ -19,6 +17,7 @@ import {
   recordCourseAgentReviewDecision,
 } from './client.js';
 import { getPendingReview, postReviewDecision } from './push-sync.js';
+import { ReviewedChangesEditor } from './reviewed-changes-editor.js';
 
 // Other suites can load the real dependencies because Vitest disables module isolation.
 vi.hoisted(() => vi.resetModules());
@@ -29,7 +28,11 @@ vi.mock('@prairielearn/named-locks', () => ({
 vi.mock('@prairielearn/postgres', () => ({
   runInTransactionAsync: async (fn: () => Promise<unknown>) => fn(),
 }));
-vi.mock('../../../lib/github.js', () => ({ getGithubClient: vi.fn() }));
+vi.mock('./reviewed-changes-editor.js', () => ({
+  ReviewedChangesEditor: class {
+    async executeWithJob() {}
+  },
+}));
 vi.mock('../../../lib/server-jobs.js', () => ({
   createServerJob: vi.fn(),
   selectJobsByJobSequenceId: vi.fn(),
@@ -40,7 +43,6 @@ vi.mock('../../../models/course.js', () => ({
   getLockNameForCoursePath: vi.fn(),
   updateCourseCommitHash: vi.fn(),
 }));
-vi.mock('../../../sync/syncFromDisk.js', () => ({ syncDiskToSqlWithLock: vi.fn() }));
 vi.mock('./client.js', () => ({
   getCourseAgentPendingReview: vi.fn(),
   recordCourseAgentReviewDecision: vi.fn(),
@@ -64,8 +66,7 @@ const conversation: CourseAgentConversation = {
   title: 'Update question',
   created_at: new Date(0),
 };
-const graphql = vi.fn();
-const getBranch = vi.fn();
+const executeEditor = vi.spyOn(ReviewedChangesEditor.prototype, 'executeWithJob');
 const job: ServerJob = {
   data: {},
   info: vi.fn(),
@@ -103,16 +104,11 @@ beforeEach(async () => {
   };
   vi.mocked(selectCourseById).mockResolvedValue(course);
   vi.mocked(getCourseAgentPendingReview).mockImplementation(async () => review);
-  vi.mocked(getGithubClient).mockReturnValue({
-    repos: { getBranch },
-    graphql,
-  } as unknown as ReturnType<typeof getGithubClient>);
-  getBranch.mockResolvedValue({ data: { commit: { sha: baseCommit } } });
-  graphql.mockResolvedValue({ createCommitOnBranch: { commit: { oid: publishedCommit } } });
-  vi.mocked(syncDiskToSqlWithLock).mockResolvedValue({
-    status: 'complete',
-    hadJsonErrors: false,
-  } as Awaited<ReturnType<typeof syncDiskToSqlWithLock>>);
+  executeEditor.mockImplementation(async (editorJob) => {
+    editorJob.data.saveSucceeded = true;
+    editorJob.data.commitHash = publishedCommit;
+    editorJob.data.syncSucceeded = true;
+  });
   vi.mocked(selectJobsByJobSequenceId).mockResolvedValue([{ id: 'job-1' } as Job]);
   // The job runner retains data even when job.fail() ends its callback.
   executeJob.mockImplementation(async (fn) => {
@@ -132,14 +128,23 @@ function decide(decision: 'approved' | 'denied') {
   return postReviewDecision({
     course,
     conversation,
-    user: { id: '2' },
+    user: {
+      id: '2',
+      name: 'Instructor',
+      email: 'instructor@example.com',
+      uid: 'instructor@example.com',
+    },
+    authzData: {
+      has_course_permission_edit: true,
+      authn_user: { id: '2' },
+    },
     authnUserId: '2',
     reviewToken,
     decision,
   });
 }
 
-it('approval publishes reviewed files, syncs, and saves the result even if delivery fails', async () => {
+it('saves the completed editor result before attempting outcome delivery', async () => {
   vi.mocked(deliverCourseAgentReviewOutcome).mockImplementation(async (_agentId, outcome) => {
     expect(job.data.result).toEqual(outcome.result);
     throw new Error('Agent unavailable');
@@ -154,15 +159,6 @@ it('approval publishes reviewed files, syncs, and saves the result even if deliv
     publication: { status: 'published', commitSha: publishedCommit },
     sync: { status: 'succeeded' },
   });
-  expect(graphql).toHaveBeenCalledExactlyOnceWith(expect.any(String), {
-    input: {
-      branch: { repositoryNameWithOwner: 'PrairieLearn/course', branchName: 'master' },
-      expectedHeadOid: baseCommit,
-      message: { headline: 'Apply reviewed course agent edits' },
-      fileChanges: { additions: review.snapshot.additions, deletions: review.snapshot.deletions },
-    },
-  });
-  expect(syncDiskToSqlWithLock).toHaveBeenCalledOnce();
   expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
     callId: 'review-1',
     result: {
@@ -188,8 +184,7 @@ it('denial delivers the decision without creating a publication job or syncing',
     },
   });
   expect(createServerJob).not.toHaveBeenCalled();
-  expect(graphql).not.toHaveBeenCalled();
-  expect(syncDiskToSqlWithLock).not.toHaveBeenCalled();
+  expect(executeEditor).not.toHaveBeenCalled();
 });
 
 it('a repeated approval reuses its job and a conflicting denial is rejected', async () => {
@@ -203,31 +198,26 @@ it('a repeated approval reuses its job and a conflicting denial is rejected', as
   expect(recordCourseAgentReviewDecision).not.toHaveBeenCalled();
 });
 
-it('an advanced branch head rejects publication and skips sync', async () => {
-  getBranch.mockResolvedValue({ data: { commit: { sha: 'c'.repeat(40) } } });
-  await decide('approved');
-  await executeJob.mock.results[0].value;
-  expect(graphql).not.toHaveBeenCalled();
-  expect(syncDiskToSqlWithLock).not.toHaveBeenCalled();
-  expect(job.data.result).toMatchObject({
-    publication: { status: 'failed' },
-    sync: { status: 'not_attempted' },
+it('an uncertain publication failure blocks outcome delivery', async () => {
+  executeEditor.mockImplementation(async (editorJob) => {
+    editorJob.data.publicationUncertain = true;
+    throw new Error('Git publication could not be confirmed');
   });
-});
-
-it('an uncertain publication failure blocks delivery and never starts sync', async () => {
-  graphql.mockRejectedValue(new Error('GitHub connection lost'));
   await decide('approved');
   const saved = await executeJob.mock.results[0].value;
-  expect(saved.data.error).toContain('GitHub publication could not be confirmed');
+  expect(saved.data.error).toContain('Git publication could not be confirmed');
   expect(saved.data.result).toBeUndefined();
-  expect(syncDiskToSqlWithLock).not.toHaveBeenCalled();
   expect(deliverCourseAgentReviewOutcome).not.toHaveBeenCalled();
-  expect(graphql).toHaveBeenCalledOnce();
+  expect(executeEditor).toHaveBeenCalledOnce();
 });
 
 it('sync failure retains the published commit and returns its diagnostics', async () => {
-  vi.mocked(syncDiskToSqlWithLock).mockRejectedValue(new Error('Invalid question configuration'));
+  executeEditor.mockImplementation(async (editorJob) => {
+    editorJob.data.saveSucceeded = true;
+    editorJob.data.commitHash = publishedCommit;
+    editorJob.error('Question questions/example: invalid configuration');
+    throw new Error('Invalid question configuration');
+  });
   await decide('approved');
   await executeJob.mock.results[0].value;
   expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
@@ -235,7 +225,10 @@ it('sync failure retains the published commit and returns its diagnostics', asyn
     result: {
       decision: 'approved',
       publication: { status: 'published', commitSha: publishedCommit },
-      sync: { status: 'failed', error: 'Invalid question configuration' },
+      sync: {
+        status: 'failed',
+        error: 'Question questions/example: invalid configuration\nInvalid question configuration',
+      },
     },
   });
 });
