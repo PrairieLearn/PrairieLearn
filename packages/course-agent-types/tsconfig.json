@@ -1,5 +1,5 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.package.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist", "lib": ["ES2024", "DOM"] },
+  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
   "include": ["src/**/*"]
 }

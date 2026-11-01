@@ -2,53 +2,38 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import type { PendingReview } from '@prairielearn/course-agent-types';
 
-import type { Course, CourseAgentConversation, Job } from '../../../lib/db-types.js';
-import {
-  type ServerJob,
-  type ServerJobExecutor,
-  createServerJob,
-  selectJobsByJobSequenceId,
-} from '../../../lib/server-jobs.js';
+import type { Course, CourseAgentConversation } from '../../../lib/db-types.js';
+import { getJobSequence } from '../../../lib/server-jobs.js';
+import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
 import { selectCourseById } from '../../../models/course.js';
 import { withConfig } from '../../../tests/utils/config.js';
 
+import { getPendingReview, getReviewJobOutcome, postReviewDecision } from './apply-changes.js';
 import {
   deliverCourseAgentReviewOutcome,
   getCourseAgentPendingReview,
   recordCourseAgentReviewDecision,
 } from './client.js';
-import { getPendingReview, postReviewDecision } from './push-sync.js';
 import { ReviewedChangesEditor } from './reviewed-changes-editor.js';
 
 // Other suites can load the real dependencies because Vitest disables module isolation.
 vi.hoisted(() => vi.resetModules());
 
-vi.mock('@prairielearn/named-locks', () => ({
-  doWithLock: async (_name: string, _options: unknown, fn: () => Promise<void>) => fn(),
-}));
-vi.mock('@prairielearn/postgres', () => ({
-  runInTransactionAsync: async (fn: () => Promise<unknown>) => fn(),
-}));
-const { executeEditor } = vi.hoisted(() => ({
-  executeEditor: vi.fn<ReviewedChangesEditor['executeWithJob']>(),
+const { executeEditor, prepareJob } = vi.hoisted(() => ({
+  executeEditor: vi.fn<ReviewedChangesEditor['executeWithServerJob']>(),
+  prepareJob: vi.fn<ReviewedChangesEditor['prepareServerJob']>(),
 }));
 vi.mock('./reviewed-changes-editor.js', () => ({
+  REVIEWED_CHANGES_DESCRIPTION: 'Apply reviewed course agent edits',
   ReviewedChangesEditor: vi.fn(
     class {
-      executeWithJob = executeEditor;
+      prepareServerJob = prepareJob;
+      executeWithServerJob = executeEditor;
     },
   ),
 }));
-vi.mock('../../../lib/server-jobs.js', () => ({
-  createServerJob: vi.fn(),
-  selectJobsByJobSequenceId: vi.fn(),
-}));
-vi.mock('../../../models/audit-event.js', () => ({ insertAuditEvent: vi.fn() }));
-vi.mock('../../../models/course.js', () => ({
-  selectCourseById: vi.fn(),
-  getLockNameForCoursePath: vi.fn(),
-  updateCourseCommitHash: vi.fn(),
-}));
+vi.mock('../../../lib/server-jobs.js', () => ({ getJobSequence: vi.fn() }));
+vi.mock('../../../models/course.js', () => ({ selectCourseById: vi.fn() }));
 vi.mock('./client.js', () => ({
   getCourseAgentPendingReview: vi.fn(),
   recordCourseAgentReviewDecision: vi.fn(),
@@ -72,26 +57,18 @@ const conversation: CourseAgentConversation = {
   title: 'Update question',
   created_at: new Date(0),
 };
-const job: ServerJob = {
-  data: {},
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn(),
-  verbose: vi.fn(),
-  exec: vi.fn(),
-  fail: (message) => {
-    throw new Error(message);
-  },
-  stop: (message) => {
-    throw new Error(message);
-  },
-};
-const executeJob = vi.fn<ServerJobExecutor['execute']>();
+let sequence: JobSequenceWithTokens;
 let review: PendingReview;
 
 beforeEach(() => {
   vi.resetAllMocks();
-  job.data = {};
+  sequence = {
+    id: '1',
+    type: 'sync',
+    description: 'Apply reviewed course agent edits',
+    authn_user_id: '2',
+    jobs: [{ data: {}, status: 'Success', output: '' }],
+  } as JobSequenceWithTokens;
   review = {
     callId: 'review-1',
     card: { messageId: 'assistant-1', partId: 'review-1' },
@@ -109,20 +86,17 @@ beforeEach(() => {
   };
   vi.mocked(selectCourseById).mockResolvedValue(course);
   vi.mocked(getCourseAgentPendingReview).mockImplementation(async () => review);
-  executeEditor.mockImplementation(async (editorJob) => {
-    editorJob.data.saveSucceeded = true;
-    editorJob.data.commitHash = publishedCommit;
-    editorJob.data.syncSucceeded = true;
+  executeEditor.mockImplementation(async () => {
+    sequence.jobs[0].data = {
+      saveSucceeded: true,
+      ...(review.snapshot.type === 'github' ? { commitHash: publishedCommit } : {}),
+      syncSucceeded: true,
+    };
   });
-  vi.mocked(selectJobsByJobSequenceId).mockResolvedValue([{ id: 'job-1' } as Job]);
-  // The job runner retains data even when job.fail() ends its callback.
-  executeJob.mockImplementation(async (fn) => {
-    await fn(job).catch(() => {});
-    return { data: structuredClone(job.data) };
-  });
-  vi.mocked(createServerJob).mockResolvedValue({
-    jobSequenceId: 'job-1',
-    execute: executeJob,
+  vi.mocked(getJobSequence).mockResolvedValue(sequence);
+  prepareJob.mockResolvedValue({
+    jobSequenceId: sequence.id,
+    execute: vi.fn(),
     executeUnsafe: vi.fn(),
     executeInBackground: vi.fn(),
   });
@@ -176,7 +150,7 @@ it.each(modes)(
       if (type === 'local') setLocalSnapshot();
       await expect(decide('approved')).resolves.toEqual({
         decision: 'approved',
-        jobSequenceId: 'job-1',
+        jobSequenceId: '1',
       });
       await vi.waitFor(() => expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledOnce());
       expect(ReviewedChangesEditor).toHaveBeenCalledExactlyOnceWith(
@@ -188,8 +162,7 @@ it.each(modes)(
         publication,
         sync: { status: 'succeeded' },
       };
-      const saved = await executeJob.mock.results[0].value;
-      expect(saved.data.result).toEqual(result);
+      expect(getReviewJobOutcome(sequence).result).toEqual(result);
       expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
         callId: review.callId,
         result,
@@ -212,7 +185,7 @@ it('denial delivers the decision without creating a publication job or syncing',
       sync: { status: 'not_attempted' },
     },
   });
-  expect(createServerJob).not.toHaveBeenCalled();
+  expect(prepareJob).not.toHaveBeenCalled();
   expect(executeEditor).not.toHaveBeenCalled();
 });
 
@@ -221,10 +194,14 @@ it.each(modes)(
   async ({ type, publication }) => {
     await withConfig({ devMode: true, fileEditorUseGit: type === 'github' }, async () => {
       if (type === 'local') setLocalSnapshot();
-      executeEditor.mockImplementation(async (editorJob) => {
-        editorJob.data.saveSucceeded = true;
-        if (type === 'github') editorJob.data.commitHash = publishedCommit;
-        editorJob.error('Question questions/example: invalid configuration');
+      executeEditor.mockImplementation(async () => {
+        sequence.jobs[0].data = {
+          saveSucceeded: true,
+          ...(type === 'github' ? { commitHash: publishedCommit } : {}),
+        };
+        sequence.jobs[0].status = 'Error';
+        sequence.jobs[0].output =
+          'Question questions/example: invalid configuration\nInvalid question configuration';
         throw new Error('Invalid question configuration');
       });
       await decide('approved');

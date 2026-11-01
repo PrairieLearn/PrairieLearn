@@ -10,6 +10,8 @@ import { FileDeleteEditor, FileUploadEditor, MultiEditor } from '../../../lib/ed
 
 import { readReviewBaseFiles } from './review-diff.js';
 
+export const REVIEWED_CHANGES_DESCRIPTION = 'Apply reviewed course agent edits';
+
 export class ReviewedChangesEditor extends MultiEditor {
   private snapshot: ReviewSnapshot;
 
@@ -26,7 +28,7 @@ export class ReviewedChangesEditor extends MultiEditor {
   }) {
     const locals = { course, user, authz_data: authzData };
     const container = { rootPath: course.path, invalidRootPaths: [path.join(course.path, '.git')] };
-    super({ locals, description: 'Apply reviewed course agent edits' }, [
+    super({ locals, description: REVIEWED_CHANGES_DESCRIPTION }, [
       new FileUploadEditor({
         locals,
         container,
