@@ -58,8 +58,10 @@ export async function handleInput(
     }
 
     return {
-      data: 'success',
-      needsFullRestart: !!restartErr || !success,
+      data: restartErr || !success ? 'restart-required' : 'success',
+      // The host must destroy the container before reusing its course mount.
+      // Leave the failed caller in place rather than starting another interpreter.
+      needsFullRestart: false,
     };
   }
 
