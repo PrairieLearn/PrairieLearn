@@ -4,14 +4,6 @@ Question preferences allow a single question to be customized for different asse
 
 Preferences are available in both `server.py` (via `data["preferences"]`) and `question.html` (via `{{preferences.key}}`).
 
-## When preference values are saved
-
-Preferences are saved on each question variant when that variant is created, using the question's defaults merged with any assessment overrides. All later uses of that variant read the saved values, including `render()`, grading, and `question.html`. The relevant time is when the **question variant** is created, rather than when the assessment instance is created.
-
-Changing a default in `info.json` or an override in `infoAssessment.json` and syncing affects newly created variants only. Existing variants keep their saved preferences, even after students reload the page or an instructor regrades their submissions. For example, changing `show_hints` from `true` to `false` does not hide hints on variants that were created with `show_hints` set to `true`.
-
-If you add a new preference, existing variants will not contain that key. In Python code that may run on existing variants, use a suitable fallback, such as `data["preferences"].get("show_hints", True)`. This handles a missing key; it does not replace a value already saved on the variant.
-
 ## Defining preferences
 
 Preferences can be managed through the **Question Settings** page or by editing `info.json` directly.
@@ -118,6 +110,14 @@ Preferences can also be set on individual alternatives within a question alterna
   ]
 }
 ```
+
+## When preference values are saved
+
+Preferences are saved on each question variant when that variant is created, using the question's defaults merged with any assessment overrides. All later uses of that variant read the saved values, including `render()`, grading, and `question.html`. The relevant time is when the **question variant** is created, rather than when the assessment instance is created.
+
+Changing a default in `info.json` or an override in `infoAssessment.json` and syncing affects newly created variants only. Existing variants keep their saved preferences, even after students reload the page or an instructor regrades their submissions. For example, changing `show_hints` from `true` to `false` does not hide hints on variants that were created with `show_hints` set to `true`.
+
+If you add a new preference, existing variants will not contain that key. In Python code that may run on existing variants, use a suitable fallback, such as `data["preferences"].get("show_hints", True)`. This handles a missing key; it does not replace a value already saved on the variant.
 
 ## Using preferences in `question.html`
 
