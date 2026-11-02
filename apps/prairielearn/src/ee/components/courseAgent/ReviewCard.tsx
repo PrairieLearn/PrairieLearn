@@ -161,13 +161,12 @@ function ReviewActions({
     <div className="d-flex flex-wrap align-items-center gap-2">
       <div className="d-flex align-items-center gap-2">
         <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
-        <span className="text-nowrap">Review course changes</span>
-        <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
-          View changes
-        </Button>
+        <span>Review course changes</span>
       </div>
-      <div className="d-flex align-items-center gap-2 flex-shrink-0">
-        <span aria-hidden="true">·</span>
+      <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
+        View changes
+      </Button>
+      <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
         <Button size="sm" disabled={disabled} onClick={() => onDecision('approved')}>
           Approve
         </Button>
@@ -236,7 +235,7 @@ function ReviewChangesModal({
 function ReviewResult({ result }: { result: RequestChangesResult }) {
   let message = 'Changes could not be saved.';
   if (result.decision === 'denied') {
-    message = 'Changes kept in your workspace.';
+    message = 'Changes denied.';
   } else if (result.publication.status === 'saved_locally') {
     if (result.sync.status === 'succeeded') {
       message = 'Changes saved locally and course synced.';
