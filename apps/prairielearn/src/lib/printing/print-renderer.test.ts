@@ -147,7 +147,6 @@ describe('PrintRenderer', () => {
 
     const first = await renderPdf(renderer, {
       url: 'https://localhost:3000/print?paper_size=Letter',
-      cookieHeader: 'session=test',
     });
     const second = await renderPdf(renderer, { url: 'https://localhost:3000/print?paper_size=A4' });
 
@@ -163,7 +162,6 @@ describe('PrintRenderer', () => {
       ignoreHTTPSErrors: true,
       serviceWorkers: 'block',
       javaScriptEnabled: false,
-      extraHTTPHeaders: { cookie: 'session=test' },
     });
     expect(harness.browser.newContext).toHaveBeenNthCalledWith(2, {
       ignoreHTTPSErrors: true,
@@ -243,9 +241,19 @@ describe('PrintRenderer', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('allows same-origin GET requests and blocks everything else', async () => {
+  it('sends a credential for protected assets and blocks other requests', async () => {
     const harness = createBrowserHarness();
-    await renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print?paper_size=A4' });
+    await renderPdf(new PrintRenderer(), {
+      url: 'http://localhost:3000/print?paper_size=A4',
+      assetScope: {
+        courseInstanceId: '10',
+        assessmentId: '20',
+        assessmentInstanceId: '30',
+        instanceQuestionIds: ['40'],
+        authnUserId: '50',
+        userId: '50',
+      },
+    });
     const routeHandler = harness.getRouteHandler();
     expect(routeHandler).toBeDefined();
 
@@ -262,10 +270,34 @@ describe('PrintRenderer', () => {
       fulfill,
     } as unknown as Route);
     expect(fulfill).toHaveBeenCalledExactlyOnceWith({ response });
+    expect(fetch).toHaveBeenLastCalledWith({ maxRedirects: 0 });
+
+    for (const pathname of [
+      '/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
+      '/pl/static/elements/pl-drawing/pl-drawing.css',
+    ]) {
+      await routeHandler!({
+        request: () => ({ method: () => 'GET', url: () => `http://localhost:3000${pathname}` }),
+        fetch,
+        fulfill,
+      } as unknown as Route);
+      expect(fetch).toHaveBeenLastCalledWith({
+        maxRedirects: 0,
+        headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
+      });
+    }
 
     for (const request of [
       { method: 'POST', url: 'http://localhost:3000/pl/mutate' },
       { method: 'GET', url: 'https://example.com/exfiltrate' },
+      {
+        method: 'GET',
+        url: 'http://localhost:3000/pl/course_instance/10/instructor/assessment/20/questions',
+      },
+      {
+        method: 'GET',
+        url: 'http://localhost:3000/pl/course_instance/10/instructor/instance_question/41/clientFilesQuestion/image.png',
+      },
       // socket.io polling would otherwise hold HTTP connections open for the whole render.
       { method: 'GET', url: 'http://localhost:3000/socket.io/?EIO=4&transport=polling' },
     ]) {
@@ -277,7 +309,7 @@ describe('PrintRenderer', () => {
       } as unknown as Route);
       expect(abort).toHaveBeenCalledExactlyOnceWith('blockedbyclient');
     }
-    expect(fetch).toHaveBeenCalledExactlyOnceWith({ maxRedirects: 0 });
+    expect(fetch).toHaveBeenCalledTimes(3);
 
     const webSocketHandler = harness.getWebSocketHandler();
     expect(webSocketHandler).toBeDefined();
@@ -382,7 +414,14 @@ describe('PrintRenderer', () => {
     await renderPdf(renderer, {
       url: 'http://localhost:3000/print',
       browserOrigin: 'https://us.prairielearn.com',
-      cookieHeader: 'session=test',
+      assetScope: {
+        courseInstanceId: '10',
+        assessmentId: '20',
+        assessmentInstanceId: '30',
+        instanceQuestionIds: ['40'],
+        authnUserId: '50',
+        userId: '50',
+      },
     });
 
     const routeHandler = harness.getRouteHandler()!;
@@ -404,7 +443,8 @@ describe('PrintRenderer', () => {
     await routeHandler({
       request: () => ({
         method: () => 'GET',
-        url: () => 'https://us.prairielearn.com/pl/course_instance/1/figure.svg',
+        url: () =>
+          'https://us.prairielearn.com/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/figure.svg',
       }),
       continue: continueRequest,
       fulfill,
@@ -413,10 +453,10 @@ describe('PrintRenderer', () => {
     expect(continueRequest).toHaveBeenCalledOnce();
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch.mock.calls[0][0].toString()).toBe(
-      'http://localhost:3000/pl/course_instance/1/figure.svg',
+      'http://localhost:3000/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/figure.svg',
     );
     expect(fetch.mock.calls[0][1]).toMatchObject({
-      headers: { cookie: 'session=test' },
+      headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
       redirect: 'manual',
     });
     expect(fulfill).toHaveBeenCalledWith({
@@ -454,7 +494,7 @@ describe('PrintRenderer', () => {
     );
   });
 
-  it('keeps Cloudflare navigation and asset requests on their intended hosts', async () => {
+  it('keeps Cloudflare navigation on its intended host and rejects other paths', async () => {
     const fetch = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(
@@ -466,7 +506,6 @@ describe('PrintRenderer', () => {
     await renderPdf(renderer, {
       url: 'http://localhost:3000//attacker.com/preview',
       browserOrigin: 'https://example.com',
-      cookieHeader: 'session=test',
     });
 
     expect(harness.pages[0].goto).toHaveBeenCalledWith(
@@ -474,27 +513,17 @@ describe('PrintRenderer', () => {
       { waitUntil: 'load', timeout: expect.any(Number) },
     );
 
-    const fulfill = vi.fn(async () => undefined);
+    const abort = vi.fn(async () => undefined);
     await harness.getRouteHandler()!({
       request: () => ({
         method: () => 'GET',
         url: () => 'https://example.com//attacker.com/evil?x=1',
       }),
-      abort: vi.fn(),
-      fulfill,
+      abort,
     } as unknown as Route);
 
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(fetch.mock.calls[0][0].toString()).toBe('http://localhost:3000//attacker.com/evil?x=1');
-    expect(fetch.mock.calls[0][1]).toMatchObject({
-      headers: { cookie: 'session=test' },
-      redirect: 'manual',
-    });
-    expect(fulfill).toHaveBeenCalledWith({
-      status: 200,
-      contentType: 'image/png',
-      body: Buffer.from('asset'),
-    });
+    expect(abort).toHaveBeenCalledWith('blockedbyclient');
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('runs four Cloudflare renders concurrently and queues the next one', async () => {
