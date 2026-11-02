@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Button, Modal, Spinner } from 'react-bootstrap';
 
 import {
@@ -82,52 +82,15 @@ export function ReviewCard({
         <ReviewResult result={result} />
       ) : (
         <>
-          <div className="d-flex flex-wrap align-items-center gap-2">
-            <div className="d-flex align-items-center gap-2">
-              <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
-              <span className="text-nowrap">Review course changes</span>
-              <Button
-                variant="link"
-                size="sm"
-                className="p-0 text-nowrap"
-                onClick={() => setShowChanges(true)}
-              >
-                View changes
-              </Button>
-            </div>
-            <div className="d-flex align-items-center gap-2 flex-shrink-0">
-              <span aria-hidden="true">·</span>
-              <Button
-                size="sm"
-                disabled={disabled}
-                onClick={() =>
-                  current &&
-                  decision.mutate({
-                    conversationId,
-                    reviewToken: current.reviewToken,
-                    decision: 'approved',
-                  })
-                }
-              >
-                Approve
-              </Button>
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                disabled={disabled}
-                onClick={() =>
-                  current &&
-                  decision.mutate({
-                    conversationId,
-                    reviewToken: current.reviewToken,
-                    decision: 'denied',
-                  })
-                }
-              >
-                Deny
-              </Button>
-            </div>
-          </div>
+          <ReviewActions
+            disabled={disabled}
+            onViewChanges={() => setShowChanges(true)}
+            onDecision={(value) => {
+              if (current) {
+                decision.mutate({ conversationId, callId: current.callId, decision: value });
+              }
+            }}
+          />
           {current?.status === 'running' && jobSequenceId !== null && (
             <p className="small text-muted mt-2 mb-0" role="status">
               Saving and syncing…
@@ -160,43 +123,18 @@ export function ReviewCard({
               Reload review
             </Button>
           )}
-          <Modal
+          <ReviewChangesModal
+            id={partId}
             show={showChanges}
-            size="lg"
-            aria-labelledby={`review-title-${partId}`}
-            onHide={() => setShowChanges(false)}
-          >
-            <Modal.Header closeButton>
-              <Modal.Title id={`review-title-${partId}`}>Review course changes</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              {review.isLoading && (
-                <Spinner animation="border" size="sm" role="status">
-                  <span className="visually-hidden">Loading changes</span>
-                </Spinner>
-              )}
-              {current && (
-                <pre
-                  className="small mb-0 overflow-auto"
-                  style={{ maxHeight: '60vh' }}
-                  aria-label="Reviewed course changes"
-                >
-                  {current.diff.patch || 'No file changes'}
-                </pre>
-              )}
-              {!current && !review.isLoading && !failure && (
-                <p className="mb-0">This review is no longer pending.</p>
-              )}
-              {failure && (
+            loading={review.isLoading}
+            patch={current?.diff.patch ?? null}
+            error={
+              failure && (
                 <AppErrorAlert error={failure} render={{ UNKNOWN: ({ message }) => message }} />
-              )}
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={() => setShowChanges(false)}>
-                Close
-              </Button>
-            </Modal.Footer>
-          </Modal>
+              )
+            }
+            onHide={() => setShowChanges(false)}
+          />
         </>
       )}
       {failure && (
@@ -210,22 +148,111 @@ export function ReviewCard({
   );
 }
 
+function ReviewActions({
+  disabled,
+  onViewChanges,
+  onDecision,
+}: {
+  disabled: boolean;
+  onViewChanges: () => void;
+  onDecision: (decision: 'approved' | 'denied') => void;
+}) {
+  return (
+    <div className="d-flex flex-wrap align-items-center gap-2">
+      <div className="d-flex align-items-center gap-2">
+        <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
+        <span className="text-nowrap">Review course changes</span>
+        <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
+          View changes
+        </Button>
+      </div>
+      <div className="d-flex align-items-center gap-2 flex-shrink-0">
+        <span aria-hidden="true">·</span>
+        <Button size="sm" disabled={disabled} onClick={() => onDecision('approved')}>
+          Approve
+        </Button>
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onDecision('denied')}
+        >
+          Deny
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ReviewChangesModal({
+  id,
+  show,
+  onHide,
+  loading,
+  patch,
+  error,
+}: {
+  id: string;
+  show: boolean;
+  onHide: () => void;
+  loading: boolean;
+  patch: string | null;
+  error: ReactNode;
+}) {
+  return (
+    <Modal show={show} size="lg" aria-labelledby={`review-title-${id}`} onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title id={`review-title-${id}`}>Review course changes</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {loading && (
+          <Spinner animation="border" size="sm" role="status">
+            <span className="visually-hidden">Loading changes</span>
+          </Spinner>
+        )}
+        {patch !== null && (
+          <pre
+            className="small mb-0 overflow-auto"
+            style={{ maxHeight: '60vh' }}
+            aria-label="Reviewed course changes"
+          >
+            {patch || 'No file changes'}
+          </pre>
+        )}
+        {patch === null && !loading && !error && (
+          <p className="mb-0">This review is no longer pending.</p>
+        )}
+        {error}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
 function ReviewResult({ result }: { result: RequestChangesResult }) {
+  let message = 'Changes could not be saved.';
+  if (result.decision === 'denied') {
+    message = 'Changes kept in your workspace.';
+  } else if (result.publication.status === 'saved_locally') {
+    if (result.sync.status === 'succeeded') {
+      message = 'Changes saved locally and course synced.';
+    } else {
+      message = 'Changes saved locally. Course Sync failed.';
+    }
+  } else if (result.publication.status === 'published') {
+    if (result.sync.status === 'succeeded') {
+      message = 'Changes published and course synced.';
+    } else {
+      message = 'Changes published. Course Sync failed.';
+    }
+  }
   return (
     <div role="status">
-      <p className="mb-0">
-        {result.decision === 'denied'
-          ? 'Changes kept in your workspace.'
-          : result.publication.status === 'saved_locally'
-            ? result.sync.status === 'succeeded'
-              ? 'Changes saved locally and course synced.'
-              : 'Changes saved locally. Course Sync failed.'
-            : result.publication.status === 'published'
-              ? result.sync.status === 'succeeded'
-                ? 'Changes published and course synced.'
-                : 'Changes published. Course Sync failed.'
-              : 'Changes could not be saved.'}
-      </p>
+      <p className="mb-0">{message}</p>
       {result.publication.status === 'failed' && (
         <pre className="small text-wrap mt-2 mb-0">{result.publication.error}</pre>
       )}

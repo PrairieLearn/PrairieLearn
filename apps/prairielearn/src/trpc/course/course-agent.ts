@@ -50,13 +50,13 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      return getPendingReview(ctx.course, conversation, ctx.locals.authn_user.id, input.callId);
+      return getPendingReview(ctx.course, conversation, input.callId);
     }),
   postReviewDecision: courseAgentProcedure
     .input(
       z.object({
         conversationId: IdSchema,
-        reviewToken: z.string(),
+        callId: z.string(),
         decision: z.enum(['approved', 'denied']),
       }),
     )
@@ -71,8 +71,7 @@ export const courseAgentRouter = t.router({
         ...input,
         course: ctx.course,
         conversation,
-        user: ctx.authz_data.user,
-        authnUserId: ctx.locals.authn_user.id,
+        user: ctx.locals.user,
         authzData: ctx.authz_data,
       });
     }),

@@ -39,7 +39,10 @@ export const RequestChangesResultSchema = z
       z.strictObject({ status: z.literal('saved_locally') }),
       z.strictObject({
         status: z.literal('published'),
-        commitSha: z.string().regex(/^[0-9a-f]{40}$/),
+        commitSha: z
+          .string()
+          .regex(/^[0-9a-f]{40}$/)
+          .optional(),
       }),
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
     ]),

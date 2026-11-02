@@ -2,30 +2,31 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import type { PendingReview } from '@prairielearn/course-agent-types';
 
-import type { Course, CourseAgentConversation } from '../../../lib/db-types.js';
+import type { Course, CourseAgentConversation, User } from '../../../lib/db-types.js';
+import { FileDeleteEditor, FileUploadEditor, MultiEditor } from '../../../lib/editors.js';
 import { getJobSequence } from '../../../lib/server-jobs.js';
 import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
 import { selectCourseById } from '../../../models/course.js';
 import { withConfig } from '../../../tests/utils/config.js';
 
-import { getPendingReview, getReviewJobOutcome, postReviewDecision } from './apply-changes.js';
+import { getReviewJobOutcome, postReviewDecision } from './apply-changes.js';
 import {
   deliverCourseAgentReviewOutcome,
   getCourseAgentPendingReview,
   recordCourseAgentReviewDecision,
 } from './client.js';
-import { ReviewedChangesEditor } from './reviewed-changes-editor.js';
 
 // Other suites can load the real dependencies because Vitest disables module isolation.
 vi.hoisted(() => vi.resetModules());
 
 const { executeEditor, prepareJob } = vi.hoisted(() => ({
-  executeEditor: vi.fn<ReviewedChangesEditor['executeWithServerJob']>(),
-  prepareJob: vi.fn<ReviewedChangesEditor['prepareServerJob']>(),
+  executeEditor: vi.fn<MultiEditor['executeWithServerJob']>(),
+  prepareJob: vi.fn<MultiEditor['prepareServerJob']>(),
 }));
-vi.mock('./reviewed-changes-editor.js', () => ({
-  REVIEWED_CHANGES_DESCRIPTION: 'Apply reviewed course agent edits',
-  ReviewedChangesEditor: vi.fn(
+vi.mock('../../../lib/editors.js', () => ({
+  FileUploadEditor: vi.fn(function () {}),
+  FileDeleteEditor: vi.fn(function () {}),
+  MultiEditor: vi.fn(
     class {
       prepareServerJob = prepareJob;
       executeWithServerJob = executeEditor;
@@ -42,7 +43,6 @@ vi.mock('./client.js', () => ({
 vi.mock('./review-diff.js', () => ({ createReviewDiff: vi.fn(async () => 'reviewed diff') }));
 
 const baseCommit = 'a'.repeat(40);
-const publishedCommit = 'b'.repeat(40);
 const course = {
   id: '1',
   repository: 'https://github.com/PrairieLearn/course.git',
@@ -65,7 +65,7 @@ beforeEach(() => {
   sequence = {
     id: '1',
     type: 'sync',
-    description: 'Apply reviewed course agent edits',
+    description: 'Publish and sync reviewed course edits',
     authn_user_id: '2',
     jobs: [{ data: {}, status: 'Success', output: '' }],
   } as JobSequenceWithTokens;
@@ -89,7 +89,6 @@ beforeEach(() => {
   executeEditor.mockImplementation(async () => {
     sequence.jobs[0].data = {
       saveSucceeded: true,
-      ...(review.snapshot.type === 'github' ? { commitHash: publishedCommit } : {}),
       syncSucceeded: true,
     };
   });
@@ -102,8 +101,7 @@ beforeEach(() => {
   });
 });
 
-async function decide(decision: 'approved' | 'denied') {
-  const pending = await getPendingReview(course, conversation, '2', review.callId);
+async function decide(decision: 'approved' | 'denied', callId = review.callId) {
   return postReviewDecision({
     course,
     conversation,
@@ -112,13 +110,12 @@ async function decide(decision: 'approved' | 'denied') {
       name: 'Instructor',
       email: 'instructor@example.com',
       uid: 'instructor@example.com',
-    },
+    } as User,
     authzData: {
       has_course_permission_edit: true,
       authn_user: { id: '2' },
     },
-    authnUserId: '2',
-    reviewToken: pending!.reviewToken,
+    callId,
     decision,
   });
 }
@@ -126,12 +123,13 @@ async function decide(decision: 'approved' | 'denied') {
 const modes = [
   {
     type: 'github',
-    publication: { status: 'published', commitSha: publishedCommit },
+    publication: { status: 'published' },
   },
   { type: 'local', publication: { status: 'saved_locally' } },
 ] as const;
 
 function setLocalSnapshot() {
+  sequence.description = 'Save and sync reviewed local course edits';
   review.snapshot = {
     type: 'local',
     additions: review.snapshot.additions,
@@ -153,8 +151,14 @@ it.each(modes)(
         jobSequenceId: '1',
       });
       await vi.waitFor(() => expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledOnce());
-      expect(ReviewedChangesEditor).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({ course, snapshot: review.snapshot }),
+      expect(MultiEditor).toHaveBeenCalledOnce();
+      expect(FileUploadEditor).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          files: { '/tmp/course-agent-unit-test/question.html': Buffer.from('reviewed') },
+        }),
+      );
+      expect(FileDeleteEditor).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ deletePath: '/tmp/course-agent-unit-test/old.html' }),
       );
       expect(executeEditor).toHaveBeenCalledOnce();
       const result = {
@@ -197,7 +201,6 @@ it.each(modes)(
       executeEditor.mockImplementation(async () => {
         sequence.jobs[0].data = {
           saveSucceeded: true,
-          ...(type === 'github' ? { commitHash: publishedCommit } : {}),
         };
         sequence.jobs[0].status = 'Error';
         sequence.jobs[0].output =
@@ -221,3 +224,9 @@ it.each(modes)(
     });
   },
 );
+
+it('rejects a decision for an older pending call before starting a job', async () => {
+  await expect(decide('approved', 'previous-review')).rejects.toThrow('This review has changed');
+  expect(prepareJob).not.toHaveBeenCalled();
+  expect(recordCourseAgentReviewDecision).not.toHaveBeenCalled();
+});

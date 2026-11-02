@@ -4,7 +4,6 @@ import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
 import debugfn from 'debug';
-import { execa } from 'execa';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -84,11 +83,11 @@ function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJson
 
 async function syncCourseFromDisk(
   course: Course,
-  startGitHash: string | null,
+  startGitHash: string,
   job: ServerJob,
   courseData?: courseDB.CourseData,
 ) {
-  const endGitHash = startGitHash === null ? null : await getCourseCommitHash(course.path);
+  const endGitHash = await getCourseCommitHash(course.path);
 
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
@@ -107,7 +106,7 @@ async function syncCourseFromDisk(
     logChunkChangesToJob(chunkChanges, job);
   }
 
-  if (endGitHash !== null) await updateCourseCommitHash(course);
+  await updateCourseCommitHash(course);
 
   // JSON errors mean individual entities failed to sync (e.g., a question has
   // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
@@ -167,7 +166,7 @@ interface BaseEditorOptions<ResLocals = object> {
   locals: {
     authz_data: Record<string, any>;
     course: Course;
-    user: Pick<User, 'id' | 'name' | 'email' | 'uid'>;
+    user: User;
   } & ResLocals;
 }
 
@@ -183,7 +182,7 @@ interface WriteResult {
 export abstract class Editor {
   protected authz_data: Record<string, any>;
   protected course: Course;
-  protected user: Pick<User, 'id' | 'name' | 'email' | 'uid'>;
+  protected user: User;
   public readonly description: string;
 
   protected constructor(params: BaseEditorOptionsInternal) {
@@ -225,16 +224,12 @@ export abstract class Editor {
     return serverJob;
   }
 
-  async executeWithServerJob(
-    serverJob: ServerJobExecutor,
-    { expectedBaseCommit }: { expectedBaseCommit?: string } = {},
-  ) {
+  async executeWithServerJob(serverJob: ServerJobExecutor) {
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
     // made. We use `executeUnsafe` instead of `execute` because we want
     // errors to be thrown and handled by the caller.
     await serverJob.executeUnsafe(async (job) => {
-      this.assertCanEdit();
       const gitEnv = process.env;
       if (config.gitSshCommand != null) {
         gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
@@ -242,10 +237,9 @@ export abstract class Editor {
 
       const lockName = getLockNameForCoursePath(this.course.path);
       await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
+        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
+
         if (!config.fileEditorUseGit) {
-          if (expectedBaseCommit) {
-            throw new Error('Publishing reviewed edits requires fileEditorUseGit.');
-          }
           // If we are not using git (e.g., if we are running locally), then we:
           //
           // - Write changes to disk
@@ -260,13 +254,11 @@ export abstract class Editor {
 
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, null, job);
+          await syncCourseFromDisk(this.course, startGitHash, job);
           job.data.syncSucceeded = true;
 
           return;
         }
-
-        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
         // Safety check: refuse to perform git operations if the course is a
         // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
@@ -288,8 +280,7 @@ export abstract class Editor {
         // - Clean and reset the repository
         // - Sync changes from disk
         //
-        // Reviewed edits fetch first and reject a changed base instead of retrying.
-        // Other editors only fetch from the remote if the push fails. This avoids an
+        // Note that we only fetch from the remote if the push fails. This avoids an
         // expensive `fetch` operation in the majority of cases where the local course
         // repository is up to date with the remote. If the push fails, we assume that
         // the remote has changes that we need to pull in before we can push.
@@ -310,24 +301,6 @@ export abstract class Editor {
           env: gitEnv,
         });
 
-        if (expectedBaseCommit) {
-          job.info('Fetch the reviewed branch');
-          await this.fetchReviewedBranch(job, gitEnv);
-          const { stdout } = await execa(
-            'git',
-            ['rev-parse', `refs/remotes/origin/${this.course.branch}`],
-            {
-              cwd: this.course.path,
-              env: gitEnv,
-            },
-          );
-          if (stdout.trim() !== expectedBaseCommit) {
-            throw new Error(
-              'The course branch changed. Ask the agent to fetch updates and request a new review.',
-            );
-          }
-        }
-
         await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
         const writeAndCommitChanges = async () => {
@@ -342,11 +315,10 @@ export abstract class Editor {
           }
 
           job.info('Commit changes');
-          await job.exec('git', ['add', '--', ...writeResult.pathsToAdd], {
+          await job.exec('git', ['add', ...writeResult.pathsToAdd], {
             cwd: this.course.path,
             env: gitEnv,
           });
-          await this.validateStagedChanges();
           await job.exec(
             'git',
             [
@@ -390,25 +362,16 @@ export abstract class Editor {
 
           try {
             job.info('Push changes to remote git repository');
-            if (expectedBaseCommit) {
-              job.data.commitHash = await getCourseCommitHash(this.course.path);
-            }
-            await job.exec(
-              'git',
-              expectedBaseCommit
-                ? ['push', 'origin', `HEAD:refs/heads/${this.course.branch}`]
-                : ['push'],
-              {
-                cwd: this.course.path,
-                env: gitEnv,
-                // During GitHub incidents, we've observed GitHub taking multiple
-                // minutes to handle a `git push`. To avoid the job sitting for
-                // an unreasonable amount of time and causing a 504 when we fail
-                // to respond to the request in time, we'll use a relatively short
-                // timeout to fail the push if it takes too long.
-                cancelSignal: AbortSignal.timeout(30_000),
-              },
-            );
+            await job.exec('git', ['push'], {
+              cwd: this.course.path,
+              env: gitEnv,
+              // During GitHub incidents, we've observed GitHub taking multiple
+              // minutes to handle a `git push`. To avoid the job sitting for
+              // an unreasonable amount of time and causing a 504 when we fail
+              // to respond to the request in time, we'll use a relatively short
+              // timeout to fail the push if it takes too long.
+              cancelSignal: AbortSignal.timeout(30_000),
+            });
             job.data.saveSucceeded = true;
 
             // If we were able to push the change to GitHub, we can safely
@@ -421,37 +384,7 @@ export abstract class Editor {
             // from the remote repository, so we'll have to load the latest
             // course data from disk after we do so.
             courseData = possibleCourseData;
-          } catch (pushError) {
-            if (expectedBaseCommit) {
-              // A failed connection may hide a successful push. Fetch before deciding
-              // whether publication failed; never reapply reviewed bytes to a newer base.
-              try {
-                await this.fetchReviewedBranch(job, gitEnv);
-                const result = await execa(
-                  'git',
-                  [
-                    'merge-base',
-                    '--is-ancestor',
-                    String(job.data.commitHash),
-                    `refs/remotes/origin/${this.course.branch}`,
-                  ],
-                  { cwd: this.course.path, env: gitEnv, reject: false },
-                );
-                if (result.exitCode === 0) {
-                  job.data.saveSucceeded = true;
-                  courseData = possibleCourseData;
-                  return;
-                }
-                if (result.exitCode !== 1) throw new Error(result.stderr, { cause: pushError });
-              } catch (error) {
-                job.data.publicationUncertain = true;
-                throw new Error(
-                  'Git publication could not be confirmed. Inspect the branch before retrying.',
-                  { cause: error },
-                );
-              }
-              throw pushError;
-            }
+          } catch {
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
 
@@ -493,46 +426,20 @@ export abstract class Editor {
             }
           }
         } finally {
-          if (expectedBaseCommit && !job.data.saveSucceeded) {
-            await cleanAndResetRepository(
-              this.course,
-              job.data.publicationUncertain ? startGitHash : `origin/${this.course.branch}`,
-              gitEnv,
-              job,
-            );
-          }
-          // An unconfirmed push is deliberately left for explicit inspection/recovery.
-          if (!job.data.publicationUncertain) {
-            // Whether or not we error, we'll sync the course.
-            //
-            // If pushing succeeded, then we will be syncing the changes made
-            // by this edit.
-            //
-            // If pushing (or anything before pushing) failed, then we will be
-            // syncing the changes we pulled from the remote git repository.
-            job.info('Sync changes from disk');
-            job.data.syncAttempted = true;
-            await syncCourseFromDisk(this.course, startGitHash, job, courseData);
-            job.data.syncSucceeded = true;
-          }
+          // Whether or not we error, we'll sync the course.
+          //
+          // If pushing succeeded, then we will be syncing the changes made
+          // by this edit.
+          //
+          // If pushing (or anything before pushing) failed, then we will be
+          // syncing the changes we pulled from the remote git repository.
+          job.info('Sync changes from disk');
+          job.data.syncAttempted = true;
+          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
+          job.data.syncSucceeded = true;
         }
       });
     });
-  }
-
-  /** Editors publishing reviewed bytes can reject Git attribute/filter transformations. */
-  protected async validateStagedChanges(): Promise<void> {}
-
-  private async fetchReviewedBranch(job: ServerJob, env: NodeJS.ProcessEnv) {
-    await job.exec(
-      'git',
-      [
-        'fetch',
-        'origin',
-        `+refs/heads/${this.course.branch}:refs/remotes/origin/${this.course.branch}`,
-      ],
-      { cwd: this.course.path, env, cancelSignal: AbortSignal.timeout(30_000) },
-    );
   }
 
   /**

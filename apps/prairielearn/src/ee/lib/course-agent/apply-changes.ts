@@ -2,6 +2,7 @@
  * Local editing writes the approved files and syncs from disk. Git editing writes,
  * commits, and pushes the approved files, then syncs from disk. Both use the editor's job.
  */
+import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
 
 import {
@@ -12,10 +13,10 @@ import {
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
 import type { Course, CourseAgentConversation, User } from '../../../lib/db-types.js';
+import { FileDeleteEditor, FileUploadEditor, MultiEditor } from '../../../lib/editors.js';
 import { parseGithubRepository } from '../../../lib/github-utils.js';
 import { type ServerJobExecutor, getJobSequence } from '../../../lib/server-jobs.js';
 import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
@@ -27,7 +28,11 @@ import {
   recordCourseAgentReviewDecision,
 } from './client.js';
 import { createReviewDiff } from './review-diff.js';
-import { REVIEWED_CHANGES_DESCRIPTION, ReviewedChangesEditor } from './reviewed-changes-editor.js';
+
+const jobDescriptions = {
+  local: 'Save and sync reviewed local course edits',
+  github: 'Publish and sync reviewed course edits',
+};
 
 function verifyReviewBinding(
   course: Pick<Course, 'repository' | 'branch'>,
@@ -55,21 +60,10 @@ function verifyReviewBinding(
   }
 }
 
-function claims(conversation: CourseAgentConversation, review: PendingReview, reviewerId: string) {
-  return {
-    purpose: 'course_agent_review',
-    conversationId: conversation.id,
-    courseId: conversation.course_id,
-    reviewerId,
-    callId: review.callId,
-  };
-}
-
 /** Generate the review from immutable local Git objects and saved bytes. */
 export async function getPendingReview(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   conversation: CourseAgentConversation,
-  reviewerId: string,
   callId: string,
 ) {
   const review = await getCourseAgentPendingReview(conversation.agent_conversation_id);
@@ -82,7 +76,6 @@ export async function getPendingReview(
     status: review.status,
     jobSequenceId: review.jobSequenceId,
     error: review.error,
-    reviewToken: generateSignedToken(claims(conversation, review, reviewerId), config.secretKey),
     diff: { patch },
   };
 }
@@ -91,25 +84,20 @@ export async function postReviewDecision({
   course: courseContext,
   conversation,
   user,
-  authnUserId,
   authzData,
-  reviewToken,
+  callId,
   decision,
 }: {
   course: Pick<Course, 'id'>;
   conversation: CourseAgentConversation;
-  user: Pick<User, 'id' | 'name' | 'email' | 'uid'>;
+  user: User;
   authzData: { has_course_permission_edit: boolean; authn_user: Pick<User, 'id'> };
-  authnUserId: string;
-  reviewToken: string;
+  callId: string;
   decision: 'approved' | 'denied';
 }) {
   const course = await selectCourseById(courseContext.id);
   const review = await getCourseAgentPendingReview(conversation.agent_conversation_id);
-  if (
-    !review ||
-    !checkSignedToken(reviewToken, claims(conversation, review, authnUserId), config.secretKey)
-  ) {
+  if (review?.callId !== callId) {
     throw new HttpStatusError(409, 'This review has changed. Reload it before deciding.');
   }
   verifyReviewBinding(course, review.snapshot);
@@ -138,7 +126,24 @@ export async function postReviewDecision({
     });
     return { decision, jobSequenceId: null };
   }
-  const editor = new ReviewedChangesEditor({ course, user, authzData, snapshot: review.snapshot });
+  const locals = { course, user, authz_data: authzData };
+  const container = { rootPath: course.path, invalidRootPaths: [path.join(course.path, '.git')] };
+  const editor = new MultiEditor({ locals, description: jobDescriptions[review.snapshot.type] }, [
+    new FileUploadEditor({
+      locals,
+      container,
+      files: Object.fromEntries(
+        review.snapshot.additions.map((file) => [
+          path.join(course.path, file.path),
+          Buffer.from(file.contents, 'base64'),
+        ]),
+      ),
+    }),
+    ...review.snapshot.deletions.map(
+      (file) =>
+        new FileDeleteEditor({ locals, container, deletePath: path.join(course.path, file.path) }),
+    ),
+  ]);
   const serverJob = await editor.prepareServerJob();
   try {
     await recordCourseAgentReviewDecision(conversation.agent_conversation_id, {
@@ -157,17 +162,14 @@ export async function postReviewDecision({
 }
 
 async function applyChanges(
-  editor: ReviewedChangesEditor,
+  editor: MultiEditor,
   serverJob: ServerJobExecutor,
   conversation: CourseAgentConversation,
   review: PendingReview,
 ) {
   try {
     try {
-      await editor.executeWithServerJob(
-        serverJob,
-        review.snapshot.type === 'github' ? { expectedBaseCommit: review.snapshot.baseCommit } : {},
-      );
+      await editor.executeWithServerJob(serverJob);
     } catch {
       // The editor has already persisted the failure and save/sync flags in its job.
     }
@@ -191,7 +193,7 @@ export async function getReviewJob(conversation: CourseAgentConversation, jobSeq
   const sequence = await getJobSequence(jobSequenceId, conversation.course_id);
   if (
     sequence.type !== 'sync' ||
-    sequence.description !== REVIEWED_CHANGES_DESCRIPTION ||
+    !Object.values(jobDescriptions).includes(sequence.description ?? '') ||
     sequence.authn_user_id !== conversation.user_id
   ) {
     throw new HttpStatusError(404, 'Job not found.');
@@ -205,30 +207,43 @@ export function getReviewJobOutcome(sequence: JobSequenceWithTokens) {
   const data: Record<string, unknown> = job.data;
   const running = job.status === 'Running';
   const diagnostics = stripVTControlCharacters(job.output ?? '');
-  const result: RequestChangesResult | null =
-    !data.publicationUncertain && (job.status === 'Success' || job.status === 'Error')
-      ? {
-          decision: 'approved',
-          publication: data.saveSucceeded
-            ? typeof data.commitHash === 'string'
-              ? { status: 'published', commitSha: data.commitHash }
-              : { status: 'saved_locally' }
-            : { status: 'failed', error: diagnostics },
-          sync: !data.saveSucceeded
-            ? { status: 'not_attempted' }
-            : data.syncSucceeded
-              ? { status: 'succeeded' }
-              : { status: 'failed', error: diagnostics },
-        }
-      : null;
+  let result: RequestChangesResult | null = null;
+  if (job.status === 'Success' || job.status === 'Error') {
+    let publication: RequestChangesResult['publication'];
+    let sync: RequestChangesResult['sync'];
+    if (!data.saveSucceeded) {
+      publication = { status: 'failed', error: diagnostics };
+      sync = { status: 'not_attempted' };
+    } else {
+      // The description retains the selected mode for Resume, even if configuration changes.
+      if (sequence.description === jobDescriptions.github) {
+        publication = { status: 'published' };
+      } else {
+        publication = { status: 'saved_locally' };
+      }
+      if (data.syncSucceeded) {
+        sync = { status: 'succeeded' };
+      } else {
+        sync = { status: 'failed', error: diagnostics };
+      }
+    }
+    result = { decision: 'approved', publication, sync };
+  }
+  let status: 'running' | 'completed' | 'blocked';
+  let error: string | null = null;
+  if (running) {
+    status = 'running';
+  } else if (result) {
+    status = 'completed';
+  } else {
+    status = 'blocked';
+    error = diagnostics || 'Saving was interrupted. Inspect the job before retrying.';
+  }
   return SavedJobOutcomeSchema.parse({
     callId: null,
     jobSequenceId: sequence.id,
-    status: running ? 'running' : result ? 'completed' : 'blocked',
+    status,
     result,
-    error:
-      running || result
-        ? null
-        : diagnostics || 'Saving was interrupted. Inspect the job before retrying.',
+    error,
   });
 }
