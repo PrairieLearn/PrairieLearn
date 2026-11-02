@@ -130,7 +130,7 @@ function DefaultRuleSummaryContent({
             {rule.prairieTestExams.length > 0 && (
               <PrairieTestExamsTable
                 exams={rule.prairieTestExams}
-                beforeReleaseListed={rule.beforeReleaseListed}
+                dateControlEnabled={rule.dateControlEnabled}
                 initialMetadata={prairieTestExamMetadata}
                 ptHost={ptHost}
                 formErrors={formErrors}
