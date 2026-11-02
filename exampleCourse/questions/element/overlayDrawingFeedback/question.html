@@ -1,0 +1,30 @@
+<pl-question-panel>
+    <p>Place a point on the target, then submit your answer.</p>
+    <p>
+        The score appears below the drawing without moving the canvas away from the background target. The overlay grows to keep the score in normal page flow.
+    </p>
+</pl-question-panel>
+
+<pl-overlay width="480" height="200">
+    <pl-background>
+        <div class="position-relative bg-body-secondary" style="width: 320px; height: 200px;">
+            <span class="visually-hidden">Target at the center of the drawing</span>
+            <span class="position-absolute rounded-circle border border-2 border-danger" aria-hidden="true" style="left: 160px; top: 100px; width: 24px; height: 24px; transform: translate(-50%, -50%);"></span>
+        </div>
+    </pl-background>
+    <pl-location left="0" top="0" halign="left" valign="top">
+        <pl-drawing answers-name="point" gradable="true" width="320" height="200" grid-size="0" allow-blank="true" show-score="true" show-tolerance-hint="false">
+            <pl-drawing-answer>
+                <pl-point x1="160" y1="100"></pl-point>
+            </pl-drawing-answer>
+            <pl-controls>
+                <pl-controls-group label="Add a point:">
+                    <pl-drawing-button type="pl-point"></pl-drawing-button>
+                    <pl-drawing-button type="delete"></pl-drawing-button>
+                </pl-controls-group>
+            </pl-controls>
+        </pl-drawing>
+    </pl-location>
+</pl-overlay>
+
+<p class="mt-2">This text should remain below the complete drawing, including feedback.</p>
