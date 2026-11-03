@@ -98,7 +98,7 @@ Before you can use AI grading, you'll need:
 
 4. **Select a model.** Use PrairieLearn's recommended model for your question type.
 
-5. **Grade submissions.** Test on a small batch (5 submissions), review the output, and refine your rubric before running on the full set.
+5. **Grade submissions.** Start with your existing rubric, grade a small batch (5 submissions), and review the output before running on the full set.
 
 ## Best practices
 
@@ -113,11 +113,9 @@ Before you can use AI grading, you'll need:
 
 ## Bias and fairness
 
-AI models can exhibit biases, such as favoring polished English or familiar solution methods even when those features are unrelated to the rubric. Differences in handwriting recognition can also affect grading. Rubrics and human review help manage these risks, but do not eliminate them.
+Frontier models often work well with the same grading criteria you would give a human grader. Start with your existing rubric and guidelines, and add detail only when it addresses a specific issue in the results.
 
-- Specify what earns credit, including acceptable alternative solutions. Make clear whether grammar, notation, or presentation should affect the grade.
-- Compare AI results with independently assigned human grades on submissions covering different writing styles, solution methods, and submission formats. High overall agreement can still hide systematic errors.
-- If you find a pattern of unfair deductions, correct affected grades and refine the rubric or grader guidelines before grading more submissions. Recheck representative submissions when changing models.
+Models can still make systematic errors, such as favoring polished English or familiar solution methods when those features are unrelated to the rubric. Differences in handwriting recognition can also affect grading. When reviewing grades, look for deductions that are unsupported by the rubric. If you find a pattern, correct affected grades and consider a targeted clarification or a different model.
 
 ## Reviewing AI grading
 

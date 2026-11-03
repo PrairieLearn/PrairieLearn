@@ -31,11 +31,7 @@ Finalizing makes the question available for normal use on assessments and redire
 
 ## Bias and fairness
 
-AI-generated questions may contain stereotypes or cultural assumptions unrelated to the intended learning objective. For example, a probability question might assume familiarity with the rules of an American sport.
-
-- Review wording and examples for stereotypes and unnecessary assumptions about students' backgrounds. Use clear language appropriate for the intended students.
-- Check that questions assess the intended knowledge or skill without requiring unrelated cultural knowledge.
-- Test valid alternative answers and solution methods across randomized variants to check that generated grading code awards credit as intended.
+Frontier models can produce useful question drafts from straightforward prompts. When reviewing a draft, look for stereotypes or cultural assumptions unrelated to the intended learning objective. For example, a probability question might assume familiarity with the rules of an American sport. If you notice an issue, ask for a targeted revision or edit the draft directly.
 
 ## Supported question content
 
