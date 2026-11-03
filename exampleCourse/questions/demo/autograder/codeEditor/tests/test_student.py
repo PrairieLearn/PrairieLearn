@@ -19,15 +19,26 @@ def test_fib_7(sandbox: StudentFixture) -> None:
 @pytest.mark.grading_data(name="Check random values", points=3)
 def test_random_values(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
     test_values = [2, 3, 5, 8, 13, 17, 19, 23, 27, 29]
-    for index, n in enumerate(test_values):
-        assert_fn_equal(
-            sandbox,
-            "fib",
-            args=(n,),
-            expected=_fib(n),
-            description=f"fib({n})",
-        )
-        feedback.set_score((index + 1) / len(test_values))
+    num_correct = 0
+    failures = []
+
+    for n in test_values:
+        try:
+            assert_fn_equal(
+                sandbox,
+                "fib",
+                args=(n,),
+                expected=_fib(n),
+                description=f"fib({n})",
+            )
+        except AssertionError as error:
+            failures.append(str(error))
+        else:
+            num_correct += 1
+
+    if failures:
+        feedback.add_message("\n\n".join(failures))
+    feedback.set_score_final(num_correct / len(test_values))
 
 
 def _fib(n: int) -> int:
