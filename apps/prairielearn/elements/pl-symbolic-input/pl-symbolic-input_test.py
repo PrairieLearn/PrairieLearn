@@ -299,15 +299,44 @@ def test_blank_value_is_not_validated_when_blank_submissions_are_disabled() -> N
     assert data["format_errors"]["test"] == "No submitted answer."
 
 
+@pytest.mark.parametrize(
+    ("correct_answer", "submission", "expected_submission", "expected_score"),
+    [
+        (
+            "[1, 2] & Integers",
+            "{1, 2}",
+            sympy.FiniteSet(1, 2),
+            1,
+        ),
+        (
+            "{1, 2}",
+            "[1, 2] & Integers",
+            sympy.Range(1, 3),
+            1,
+        ),
+        (
+            "[1, 3] & Integers",
+            "{1, 2}",
+            sympy.FiniteSet(1, 2),
+            0,
+        ),
+    ],
+)
 @pytest.mark.parametrize("display_simplified", [True, False])
-def test_range_answer_is_accepted_consistently(*, display_simplified: bool) -> None:
-    answer = "[1, 2] & Integers"
+def test_finite_range_and_finite_set_grading(
+    correct_answer: str,
+    submission: str,
+    expected_submission: sympy.Set,
+    expected_score: int,
+    *,
+    display_simplified: bool,
+) -> None:
     element_html = build_element_html(
         'allowed-types="finite-set"',
-        f'correct-answer="{answer}"',
+        f'correct-answer="{correct_answer}"',
         f'display-simplified-expression="{str(display_simplified).lower()}"',
     )
-    data = make_question_data(submitted_answers={"test": answer})
+    data = make_question_data(submitted_answers={"test": submission})
 
     symbolic_input.prepare(element_html, data)
     symbolic_input.parse(element_html, data)
@@ -319,10 +348,10 @@ def test_range_answer_is_accepted_consistently(*, display_simplified: bool) -> N
         allow_sets=True,
         simplify_expression=display_simplified,
     )
-    assert restored.doit() == sympy.Range(1, 3)
+    assert restored.doit() == expected_submission
 
     symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 1
+    assert data["partial_scores"]["test"]["score"] == expected_score
 
 
 @pytest.mark.parametrize(
