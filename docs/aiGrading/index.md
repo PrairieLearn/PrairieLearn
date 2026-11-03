@@ -113,9 +113,9 @@ Before you can use AI grading, you'll need:
 
 ## Bias and fairness
 
-Frontier models often work well with the same grading criteria you would give a human grader. Start with your existing rubric and guidelines, and add detail only when it addresses a specific issue in the results.
+AI models can exhibit biases, such as favoring polished English or familiar solution methods when those features are unrelated to the rubric. Differences in handwriting recognition can also affect grading. When reviewing grades, look for deductions that are unsupported by the rubric.
 
-Models can still make systematic errors, such as favoring polished English or familiar solution methods when those features are unrelated to the rubric. Differences in handwriting recognition can also affect grading. When reviewing grades, look for deductions that are unsupported by the rubric. If you find a pattern, correct affected grades and consider a targeted clarification or a different model.
+Frontier models often work well with the same grading criteria you would give a human grader, so start with your existing rubric and guidelines. If you find a pattern of unfair deductions, correct affected grades and consider a targeted clarification or a different model.
 
 ## Reviewing AI grading
 

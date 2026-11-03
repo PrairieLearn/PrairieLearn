@@ -31,7 +31,7 @@ Finalizing makes the question available for normal use on assessments and redire
 
 ## Bias and fairness
 
-Frontier models can produce useful question drafts from straightforward prompts. When reviewing a draft, look for stereotypes or cultural assumptions unrelated to the intended learning objective. For example, a probability question might assume familiarity with the rules of an American sport. If you notice an issue, ask for a targeted revision or edit the draft directly.
+When reviewing a draft, look for stereotypes or cultural assumptions unrelated to the intended learning objective. For example, a probability question might assume familiarity with the rules of an American sport. If you notice an issue, ask for a targeted revision or edit the draft directly.
 
 ## Supported question content
 
