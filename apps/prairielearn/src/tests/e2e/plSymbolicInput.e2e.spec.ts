@@ -113,6 +113,12 @@ test.describe('pl-symbolic-input formula editor', () => {
     await fillFormulaEditor(formulaEditor, '');
     for (const key of '3|y') await formulaEditor.press(key);
     await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(/^3.*y.+$/);
+
+    await fillFormulaEditor(formulaEditor, '');
+    for (const key of '3|y/2') await formulaEditor.press(key);
+    await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(
+      String.raw`3\left|\frac{y}{2}\right|`,
+    );
   });
 
   test('keeps preceding content outside square roots inserted from the context menu', async ({
