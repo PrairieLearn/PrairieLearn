@@ -66,7 +66,7 @@ const TYPESCRIPT_RESTRICTED_SYNTAX = [
 export default [
   // Use the shared PrairieLearn ESLint config
   ...prairielearn({
-    allowDefaultProject: ['playwright.config.ts', 'vite.config.ts', 'vitest.config.ts'],
+    allowDefaultProject: ['playwright.config.ts', 'vitest.config.ts'],
     prairieLearnOptions: {
       allowDbTypes: [
         // This is innocuous, it's just a string enum.
