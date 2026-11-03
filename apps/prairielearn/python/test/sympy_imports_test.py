@@ -7,7 +7,12 @@ import pytest
 
 _PYTHON_ROOT = Path(__file__).parent.parent
 _PACKAGE_ROOT = _PYTHON_ROOT / "prairielearn"
-_CORE_MODULES = ("sympy_constants", "sympy_source")
+_CORE_MODULES = (
+    "sympy_constants",
+    "sympy_source",
+    "sympy_evaluation",
+    "sympy_expression",
+)
 
 
 def _module_source(module: str) -> Path:
@@ -44,8 +49,19 @@ def _imports_internal_sympy_module(node: ast.AST) -> bool:
             "prairielearn.sympy_utils",
             "prairielearn.internal.sympy_source",
             "prairielearn.internal.sympy_constants",
+            "prairielearn.internal.sympy_evaluation",
+            "prairielearn.internal.sympy_expression",
         ),
         (
+            "prairielearn.internal.sympy_source",
+            "prairielearn.internal.sympy_constants",
+            "prairielearn.internal.sympy_evaluation",
+            "prairielearn.internal.sympy_expression",
+            "prairielearn.sympy_utils",
+        ),
+        (
+            "prairielearn.internal.sympy_expression",
+            "prairielearn.internal.sympy_evaluation",
             "prairielearn.internal.sympy_source",
             "prairielearn.internal.sympy_constants",
             "prairielearn.sympy_utils",

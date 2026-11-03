@@ -119,6 +119,13 @@ set_operators: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
     name: operator.or_ if desugared == "|" else operator.and_
     for name, desugared in set_operator_desugars.items()
 })
+union_operators: Final = frozenset(
+    name for name, desugared in set_operator_desugars.items() if desugared == "|"
+) | frozenset({"|"})
+intersection_operators: Final = frozenset(
+    name for name, desugared in set_operator_desugars.items() if desugared == "&"
+) | frozenset({"&"})
+set_operator_names: Final = union_operators | intersection_operators
 
 # Unicode operators that the formula editor or common pastes produce. They must
 # be mapped before unidecode, which would otherwise turn them into "[?]"
@@ -142,6 +149,23 @@ unicode_operators: Final[FrozenDict[str, str]] = FrozenDict({
 # Operators that give two values; unidecode would turn "±" into "+-".
 plus_minus_operators: Final = frozenset({"±", "∓"})
 
+# Variables that were honored in the old parsing scheme.
+legacy_global_variables: Final[FrozenDict[str, sympy.Basic | complex]] = FrozenDict({
+    "Catalan": sympy.Catalan,
+    "EmptySet": sympy.EmptySet,
+    "E": sympy.E,
+    "EulerGamma": sympy.EulerGamma,
+    "GoldenRatio": sympy.GoldenRatio,
+    "I": sympy.I,
+    "TribonacciConstant": sympy.TribonacciConstant,
+    "UniversalSet": sympy.UniversalSet,
+    "false": sympy.false,
+    "nan": sympy.nan,
+    "oo": sympy.oo,
+    "true": sympy.true,
+    "zoo": sympy.zoo,
+})
+
 
 def _load_sympy_globals() -> FrozenDict[str, Any]:
     # Based on code here:
@@ -152,6 +176,10 @@ def _load_sympy_globals() -> FrozenDict[str, Any]:
 
 
 sympy_globals: Final = _load_sympy_globals()
+sympy_global_names: Final = frozenset(sympy_globals)
+sympy_global_functions: Final = frozenset(
+    name for name, value in sympy_globals.items() if callable(value)
+)
 
 # `sqrt` is a plain function whose second parameter is `evaluate`, so it has no
 # `nargs` and would silently accept a second argument.
@@ -161,6 +189,17 @@ builtin_function_arity_overrides: Final[FrozenDict[str, tuple[int, ...]]] = Froz
 
 # Complement was accepted as a custom function before it became a set builtin.
 legacy_custom_function_overrides: Final = frozenset({"Complement"})
+
+evaluate_false_functions: Final = frozenset(trig_functions) | frozenset({
+    "Abs",
+    "abs",
+    "exp",
+    "ln",
+    "log",
+    "sgn",
+    "sign",
+    "sqrt",
+})
 
 # From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
 greek_alphabet: Final = FrozenDict({

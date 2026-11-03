@@ -1,0 +1,46 @@
+start: union
+
+union: intersection (UNION intersection)*
+intersection: sum (INTERSECTION sum)*
+sum: product (ADD product)*
+product: factor product_tail*
+?product_tail: PRODUCT factor -> explicit_product_tail
+             | power          -> implicit_product_tail
+
+?factor: unary | power
+unary: (ADD | INVERT) factor
+power: postfix [POWER factor]
+postfix: primary FACTORIAL*
+
+?primary: interval | set_literal | call | group | NUMBER | NAME
+
+call: NAME LPAR [arguments] RPAR
+arguments: union (_COMMA union)*
+
+group: LPAR union RPAR
+
+set_literal: LBRACE [arguments] RBRACE
+
+interval: (LPAR | LBRACKET) union _COMMA union (RPAR | RBRACKET)
+
+// .3 sets the precedence higher than NAME so it captures alphanumeric ops reliably
+UNION.3: "cup" | "U" | "∪" | "|"
+INTERSECTION.3: "cap" | "∩" | "&"
+
+ADD: "+" | "-"
+INVERT: "~"
+PRODUCT: "*" | "/" | "%"
+POWER: "**"
+FACTORIAL: "!"
+LPAR: "("
+RPAR: ")"
+LBRACKET: "["
+RBRACKET: "]"
+LBRACE: "{"
+RBRACE: "}"
+_COMMA: ","
+
+NUMBER: /(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/
+NAME: /[A-Za-z_][A-Za-z_0-9]*/
+
+%ignore /\s+/
