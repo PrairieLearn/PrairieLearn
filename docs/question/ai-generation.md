@@ -29,6 +29,14 @@ The AI question generator starts by creating a draft question. Draft questions a
 
 Finalizing makes the question available for normal use on assessments and redirects you to the regular question preview page.
 
+## Bias and fairness
+
+AI-generated questions may contain stereotypes or cultural assumptions unrelated to the intended learning objective. For example, a probability question might assume familiarity with the rules of an American sport.
+
+- Review wording and examples for stereotypes and unnecessary assumptions about students' backgrounds. Use clear language appropriate for the intended students.
+- Check that questions assess the intended knowledge or skill without requiring unrelated cultural knowledge.
+- Test valid alternative answers and solution methods across randomized variants to check that generated grading code awards credit as intended.
+
 ## Supported question content
 
 The generator can write ordinary HTML, LaTeX, supported PrairieLearn elements, and Python code in `server.py`. It can use `server.py` to generate random parameters in `data["params"]`, compute correct answers in `data["correct_answers"]`, and provide custom grading or feedback when appropriate.

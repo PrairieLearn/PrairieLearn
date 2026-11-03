@@ -111,6 +111,14 @@ Before you can use AI grading, you'll need:
 - **Test with a small batch first.** Running on 5–10 submissions surfaces rubric problems early, before you spend credits and time on the full set.
 - **Iterate.** If you see systematic errors in the first batch, refine the rubric rather than overriding grades one by one.
 
+## Bias and fairness
+
+AI models can exhibit biases, such as favoring polished English or familiar solution methods even when those features are unrelated to the rubric. Differences in handwriting recognition can also affect grading. Rubrics and human review help manage these risks, but do not eliminate them.
+
+- Specify what earns credit, including acceptable alternative solutions. Make clear whether grammar, notation, or presentation should affect the grade.
+- Compare AI results with independently assigned human grades on submissions covering different writing styles, solution methods, and submission formats. High overall agreement can still hide systematic errors.
+- If you find a pattern of unfair deductions, correct affected grades and refine the rubric or grader guidelines before grading more submissions. Recheck representative submissions when changing models.
+
 ## Reviewing AI grading
 
 Instructors should review AI output before relying on it for grades. For each submission, AI grading produces a graded rubric and explanation.
