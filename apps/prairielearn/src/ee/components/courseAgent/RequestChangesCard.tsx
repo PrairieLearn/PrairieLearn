@@ -249,6 +249,8 @@ function ReviewResult({ result }: { result: RequestChangesResult }) {
   let message = 'Changes could not be saved.';
   if (result.decision === 'denied') {
     message = 'Changes denied.';
+  } else if (result.publication.status === 'conflict') {
+    message = 'Course files changed since this proposal. No proposed changes were saved.';
   } else if (result.publication.status === 'saved_locally') {
     if (result.sync.status === 'succeeded') {
       message = 'Changes saved locally and course synced.';
@@ -265,6 +267,15 @@ function ReviewResult({ result }: { result: RequestChangesResult }) {
   return (
     <div role="status">
       <p className="mb-0">{message}</p>
+      {result.publication.status === 'conflict' && (
+        <ul className="mt-2 mb-0">
+          {result.publication.paths.map((path) => (
+            <li key={path}>
+              <code>{path}</code>
+            </li>
+          ))}
+        </ul>
+      )}
       {result.publication.status === 'failed' && (
         <pre className="small text-wrap mt-2 mb-0">{result.publication.error}</pre>
       )}

@@ -27,6 +27,7 @@ import {
   getCourseAgentPendingReview,
   recordCourseAgentReviewDecision,
 } from './client.js';
+import { ReviewConflictSchema, checkReviewConflicts } from './review-conflicts.js';
 import { createReviewDiff } from './review-diff.js';
 
 const jobDescriptions = {
@@ -167,19 +168,22 @@ export async function postReviewDecision({
     });
     throw error;
   }
-  void applyChanges(editor, serverJob, conversation, review);
+  void applyChanges(editor, serverJob, course, conversation, review);
   return { decision, jobSequenceId: serverJob.jobSequenceId };
 }
 
 async function applyChanges(
   editor: MultiEditor,
   serverJob: ServerJobExecutor,
+  course: Course,
   conversation: CourseAgentConversation,
   review: PendingReview,
 ) {
   try {
     try {
-      await editor.executeWithServerJob(serverJob);
+      await editor.executeWithServerJob(serverJob, {
+        beforeWrite: (job) => checkReviewConflicts(course, review.snapshot, job),
+      });
     } catch {
       // The editor has already persisted the failure and save/sync flags in its job.
     }
@@ -189,6 +193,7 @@ async function applyChanges(
       await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
         callId: review.callId,
         result: outcome.result,
+        conflictFiles: outcome.conflictFiles,
       });
     }
   } catch (error) {
@@ -217,11 +222,17 @@ export function getReviewJobOutcome(sequence: JobSequenceWithTokens) {
   const data: Record<string, unknown> = job.data;
   const running = job.status === 'Running';
   const diagnostics = stripVTControlCharacters(job.output ?? '');
+  const conflict = data.courseAgentConflict
+    ? ReviewConflictSchema.parse(data.courseAgentConflict)
+    : null;
   let result: RequestChangesResult | null = null;
   if (job.status === 'Success' || job.status === 'Error') {
     let publication: RequestChangesResult['publication'];
     let sync: RequestChangesResult['sync'];
-    if (!data.saveSucceeded) {
+    if (conflict) {
+      publication = { status: 'conflict', paths: conflict.paths };
+      sync = { status: 'not_attempted' };
+    } else if (!data.saveSucceeded) {
       publication = { status: 'failed', error: diagnostics };
       sync = { status: 'not_attempted' };
     } else {
@@ -253,6 +264,7 @@ export function getReviewJobOutcome(sequence: JobSequenceWithTokens) {
     jobSequenceId: sequence.id,
     status,
     result,
+    conflictFiles: conflict?.files,
     error,
   });
 }

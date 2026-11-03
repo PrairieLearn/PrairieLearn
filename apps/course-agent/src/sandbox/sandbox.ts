@@ -323,6 +323,26 @@ export class CourseSandbox extends DurableObject<Env> {
     );
   }
 
+  /** Supply refreshed local files without changing the private draft or its Git history. */
+  async writeReviewConflict(
+    files: { path: string; original: string | null; current: string | null }[],
+  ) {
+    const directory = `${SESSION}/review-conflicts`;
+    await this.exec(['mkdir', '-p', directory]);
+    const storage = new Files(this.container);
+    const manifest: { path: string; original: string | null; current: string | null }[] = [];
+    for (const [index, file] of files.entries()) {
+      const original = file.original === null ? null : `${directory}/${index}.original`;
+      const current = file.current === null ? null : `${directory}/${index}.current`;
+      if (original) await storage.writeFile(original, Buffer.from(file.original!, 'base64'));
+      if (current) await storage.writeFile(current, Buffer.from(file.current!, 'base64'));
+      manifest.push({ path: file.path, original, current });
+    }
+    // Kept outside the course tree, so context files cannot become proposed course edits.
+    // Checkpoints preserve these files; a recovered delivery can safely rewrite them.
+    await storage.writeFile(`${directory}/manifest.json`, JSON.stringify(manifest));
+  }
+
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */
   override async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
