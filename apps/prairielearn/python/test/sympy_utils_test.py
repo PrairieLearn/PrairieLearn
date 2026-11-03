@@ -969,6 +969,61 @@ class TestExceptions:
         with pytest.raises(psu.HasFloatError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize(
+        ("a_sub", "expected_error", "expected_symbol"),
+        [
+            ("m*0", 'invalid symbol "m"', "m"),
+            ("0*m", 'invalid symbol "m"', "m"),
+            ("x + m - m", 'invalid symbol "m"', "m"),
+            ("i - i", 'invalid symbol "i"', "i"),
+            ("0*1.5", "floating-point number 1.5", None),
+            ("1.5 - 1.5", "floating-point number 1.5", None),
+        ],
+    )
+    def test_structural_errors_are_independent_of_simplification(
+        self,
+        a_sub: str,
+        expected_error: str,
+        expected_symbol: str | None,
+        *,
+        simplify_expression: bool,
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            a_sub,
+            ["x"],
+            simplify_expression=simplify_expression,
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert expected_error in result.error
+        if expected_symbol is not None:
+            assert (
+                f"<pre>{psu.point_to_error(a_sub, psu.find_symbol_offset(a_sub, expected_symbol))}</pre>"
+                in result.error
+            )
+
+    @pytest.mark.parametrize(
+        ("a_sub", "simplify_expression", "expected"),
+        [
+            ("x*0", True, "0"),
+            ("x-x", True, "0"),
+            ("x*0", False, "x*0"),
+            ("x-x", False, "-x + x"),
+        ],
+    )
+    def test_valid_cancellations_preserve_simplification_setting(
+        self, a_sub: str, *, simplify_expression: bool, expected: str
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            a_sub,
+            ["x"],
+            simplify_expression=simplify_expression,
+        )
+
+        assert isinstance(result, psu.SympyParseSuccess)
+        assert str(result.expr) == expected
+
     @pytest.mark.parametrize("a_sub", INVALID_EXPRESSION_CASES)
     def test_invalid_expression(self, a_sub: str) -> None:
         with pytest.raises(psu.HasInvalidExpressionError):
