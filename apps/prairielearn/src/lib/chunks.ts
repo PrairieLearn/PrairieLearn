@@ -873,6 +873,21 @@ interface UpdateChunksForCourseOptions {
   changedFiles?: string[];
 }
 
+/** Publishes the chunk for a known question without reconciling the entire course. */
+export async function updateQuestionContentChunk({
+  coursePath,
+  courseId,
+  qid,
+}: {
+  coursePath: string;
+  courseId: string;
+  qid: string;
+}): Promise<ChunksDiff> {
+  const updatedChunks: ChunkMetadata[] = [{ type: 'question', questionName: qid }];
+  await createAndUploadChunks(coursePath, courseId, updatedChunks);
+  return { updatedChunks, deletedChunks: [] };
+}
+
 export async function updateChunksForCourse({
   coursePath,
   courseId,

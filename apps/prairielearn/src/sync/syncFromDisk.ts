@@ -14,6 +14,7 @@ import {
   getGitDefaultBranch,
   getGitRemoteUrl,
   getLockNameForCoursePath,
+  invalidateCourseSync,
   selectOrInsertCourseByPath,
 } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
@@ -113,6 +114,8 @@ export async function syncDiskToSqlWithLock(
   logger: ServerJobLogger,
   courseData?: courseDB.CourseData,
 ): Promise<SyncResults> {
+  await invalidateCourseSync(course.id);
+
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
 
