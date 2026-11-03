@@ -709,7 +709,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block('runtime_failed');
       return;
     }
-    if (this.record.review) {
+    if (this.record.review && !this.savedOutcome()) {
       await this.backupAndShutdown();
       return;
     }
@@ -738,6 +738,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       operation?.resolveNativeCall &&
       operation.callId === this.record.review?.callId
     ) {
+      await this.prepareReviewConflict(outcome);
       live.requestId = options.requestId;
       live.sdkFinished = Promise.withResolvers<undefined>();
       const stream = live.execution.openStream();
@@ -886,6 +887,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         });
         if (outcome) {
           await this.sandbox.stopProcesses();
+          await this.prepareReviewConflict(outcome);
         }
       },
       thread: {
@@ -937,6 +939,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** The single completion path chooses waiting, startup cleanup, or deadline shutdown. */
   private async finishTurn(active: ActiveTurn) {
     const result = await active.execution.finished;
+    const reviewIncorporated =
+      this.record.review && this.native?.hasIncorporatedReview(this.record.review.callId);
     if (result.stopped || result.error) this.native = null;
     if (result.error) {
       this.reportError(result.error);
@@ -958,9 +962,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       if (!this.reviewOperation.delivery) this.reviewOperation = null;
     }
     if (this.record.review) {
-      if (this.savedOutcome() && !result.error && !result.stopped) {
+      if (this.savedOutcome() && !result.error && (!result.stopped || reviewIncorporated)) {
         this.clearReview();
       } else {
+        // Stop before native acceptance must leave an actionable Resume, not an
+        // offline conversation whose settled review silently rejects new messages.
+        if (this.savedOutcome() && result.stopped && !result.error) {
+          this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
+        }
         return;
       }
     }
@@ -1029,7 +1038,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             saved.error ?? 'Saving was interrupted. Inspect the job before retrying.',
           );
         }
-        return await this.recordReviewOutcome({ callId: review.callId, result: saved.result });
+        return await this.recordReviewOutcome({
+          callId: review.callId,
+          result: saved.result,
+          conflictFiles: saved.conflictFiles,
+        });
       } finally {
         this.recovering = false;
       }
@@ -1125,6 +1138,23 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       );
     }
     this.setRecord({ ...this.record, review: null });
+  }
+
+  /** Refresh context beside the private draft, never by overwriting the agent's working files. */
+  private async prepareReviewConflict(result: RequestChangesResult) {
+    const review = this.record.review;
+    if (result.publication.status !== 'conflict' || review?.snapshot.type !== 'local') return;
+    const originals = review.snapshot.originals;
+    await this.sandbox.writeReviewConflict(
+      result.publication.paths.map((path) => {
+        const index = originals.findIndex((file) => file.path === path);
+        return {
+          path,
+          original: this.ctx.storage.kv.get<string | null>(`review-original:${index}`)!,
+          current: this.ctx.storage.kv.get<string | null>(`local-base:${path}`)!,
+        };
+      }),
+    );
   }
 
   /** The review remains available without restoring or waking a sandbox. */
@@ -1255,6 +1285,31 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ) {
       return false;
     }
+    if (outcome.result.publication.status === 'conflict' && review.snapshot.type === 'local') {
+      const files = outcome.conflictFiles;
+      const paths = outcome.result.publication.paths;
+      if (
+        !files ||
+        files.length !== paths.length ||
+        files.some((file) => !paths.includes(file.path)) ||
+        paths.some(
+          (path) =>
+            !review.snapshot.additions.some((file) => file.path === path) &&
+            !review.snapshot.deletions.some((file) => file.path === path),
+        )
+      ) {
+        return false;
+      }
+      const baseline = this.record.localBaseline!;
+      for (const file of files) this.ctx.storage.kv.put(`local-base:${file.path}`, file.contents);
+      this.setRecord({
+        ...this.record,
+        localBaseline: {
+          ...baseline,
+          paths: [...new Set([...baseline.paths, ...paths])],
+        },
+      });
+    }
     if (outcome.result.publication.status === 'saved_locally') {
       const baseline = this.record.localBaseline!;
       const paths = new Set(baseline.paths);
@@ -1297,7 +1352,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       })),
     );
     const response = await this.continueLastTurn();
-    if (response.status !== 'completed') throw new Error('Could not incorporate review result');
+    if (response.status !== 'completed' && response.status !== 'aborted') {
+      throw new Error('Could not incorporate review result');
+    }
     const stored = this.messages
       .flatMap((message) => message.parts)
       .find(
@@ -1321,7 +1378,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       deadline: null,
     });
     const result = await this.continueLastTurn();
-    if (result.status !== 'completed') this.block('runtime_failed');
+    if (result.status !== 'completed' && result.status !== 'aborted') this.block('runtime_failed');
   }
 
   /** Commit a replacement backup before shutdown; cleanup of the old archive is independent. */
