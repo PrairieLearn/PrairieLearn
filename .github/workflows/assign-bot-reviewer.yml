@@ -4,7 +4,7 @@ name: Assign bot PR reviewer
 # Dependabot PRs. This workflow never checks out or executes PR code.
 on:
   pull_request_target:
-    types: [opened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
 
 permissions: {}
 
