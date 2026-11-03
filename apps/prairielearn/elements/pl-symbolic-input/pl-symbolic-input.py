@@ -36,7 +36,8 @@ SIZE_DEFAULT = 35
 SHOW_FORMULA_EDITOR_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
-BLANK_VALUE_DEFAULT = "0"
+EXPRESSION_BLANK_VALUE_DEFAULT = "0"
+SET_BLANK_VALUE_DEFAULT = "{}"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
 INITIAL_VALUE_DEFAULT = None
@@ -114,6 +115,18 @@ def _allows_sets(allowed_types: set[psu.AllowedSympyType]) -> bool:
     return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
 
 
+def _get_blank_value(
+    element: lxml.html.HtmlElement,
+    allowed_types: set[psu.AllowedSympyType],
+) -> str:
+    default = (
+        EXPRESSION_BLANK_VALUE_DEFAULT
+        if not allowed_types.isdisjoint({"all", "expression"})
+        else SET_BLANK_VALUE_DEFAULT
+    )
+    return pl.get_string_attrib(element, "blank-value", default)
+
+
 def _serialize_and_validate_sympy(
     answer: psu.SympyValue,
     *,
@@ -171,6 +184,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = _allows_sets(allowed_types)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    blank_value = _get_blank_value(element, allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -193,8 +208,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         a_true = pl.get_string_attrib(element, "correct-answer")
 
-        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-        blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
         if a_true.strip() == "" and allow_blank and blank_value == "":
             a_true = ""
         elif a_true.strip() == "":
@@ -252,6 +265,39 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         except Exception as exc:
             raise ValueError(
                 f"Serializing correct answer {a_true!r} for {name!r} failed."
+            ) from exc
+
+    if allow_blank and blank_value != "":
+        assumptions = a_true.get("_assumptions") if isinstance(a_true, dict) else None
+        blank_result = psu.try_parse_string_as_sympy(
+            blank_value,
+            variables,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
+            custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions,
+            allowed_types=allowed_types,
+        )
+        if isinstance(blank_result, psu.SympyParseFailure):
+            raise ValueError(
+                f"Parsing blank value {blank_value!r} for {name!r} failed: "
+                f"{blank_result.error}"
+            )
+
+        try:
+            _serialize_and_validate_sympy(
+                blank_result.expr,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
+            )
+        except Exception as exc:
+            raise ValueError(
+                f"Serializing blank value {blank_value!r} for {name!r} failed."
             ) from exc
 
     formula_editor = pl.get_boolean_attrib(
@@ -612,7 +658,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+    blank_value = _get_blank_value(element, allowed_types)
 
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)

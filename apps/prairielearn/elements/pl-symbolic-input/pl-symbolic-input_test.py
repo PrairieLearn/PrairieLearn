@@ -215,6 +215,90 @@ def test_prepare_accepts_simplified_correct_answer_type() -> None:
     assert data["correct_answers"]["test"] == "[0, sin(pi/2)] U {1}"
 
 
+@pytest.mark.parametrize(
+    ("allowed_types", "correct_answer", "expected_blank"),
+    [
+        ("expression", "1", sympy.Integer(0)),
+        ("all", "1", sympy.Integer(0)),
+        ("set", "{1}", sympy.EmptySet),
+        ("finite-set", "{1}", sympy.EmptySet),
+        ("interval", "[0, 1]", sympy.EmptySet),
+        ("finite-set, interval", "{1}", sympy.EmptySet),
+    ],
+)
+def test_blank_submission_uses_type_compatible_default(
+    allowed_types: str,
+    correct_answer: str,
+    expected_blank: sympy.Basic,
+) -> None:
+    element_html = build_element_html(
+        'allow-blank="true"',
+        f'allowed-types="{allowed_types}"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": ""})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert (
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
+        == expected_blank
+    )
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 0
+
+
+def test_prepare_rejects_disallowed_explicit_blank_value() -> None:
+    element_html = build_element_html(
+        'allow-blank="true"',
+        'blank-value="0"',
+        'allowed-types="finite-set"',
+        'correct-answer="{1}"',
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Parsing blank value '0'.*uses expression",
+    ):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+def test_explicit_empty_blank_value_remains_supported() -> None:
+    element_html = build_element_html(
+        'allow-blank="true"',
+        'blank-value=""',
+        'allowed-types="finite-set"',
+        'correct-answer="{1}"',
+    )
+    data = make_question_data(submitted_answers={"test": ""})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert data["submitted_answers"]["test"] == ""
+    assert data["partial_scores"]["test"]["score"] == 0
+
+
+def test_blank_value_is_not_validated_when_blank_submissions_are_disabled() -> None:
+    element_html = build_element_html(
+        'blank-value="0"',
+        'allowed-types="finite-set"',
+        'correct-answer="{1}"',
+    )
+    data = make_question_data(submitted_answers={"test": ""})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert data["format_errors"]["test"] == "No submitted answer."
+
+
 @pytest.mark.parametrize("display_simplified", [True, False])
 def test_range_answer_is_accepted_consistently(*, display_simplified: bool) -> None:
     answer = "[1, 2] & Integers"
