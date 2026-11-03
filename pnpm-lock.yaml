@@ -15973,8 +15973,6 @@ snapshots:
 
   dateformat@4.6.3: {}
 
-  debounce@3.0.0: {}
-
   debug@2.6.9(supports-color@10.2.2):
     dependencies:
       ms: 2.0.0
