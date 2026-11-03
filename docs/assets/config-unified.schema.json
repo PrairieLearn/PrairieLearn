@@ -318,10 +318,6 @@
       "default": 10,
       "type": "number"
     },
-    "startServer": {
-      "default": true,
-      "type": "boolean"
-    },
     "namedLocksRenewIntervalMs": {
       "default": 60000,
       "type": "number"
