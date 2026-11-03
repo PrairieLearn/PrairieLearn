@@ -181,6 +181,19 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     ) == sympy.FiniteSet(1, 2)
 
 
+def test_parse_rejects_accumulation_bounds_without_storing_an_answer() -> None:
+    element_html = build_element_html()
+    data = make_question_data(submitted_answers={"test": "sin(infty)"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert (
+        "simplifies to a range of possible values, which is not supported"
+        in data["format_errors"]["test"]
+    )
+
+
 @pytest.mark.parametrize(
     ("submission", "used_type"),
     [
