@@ -30,11 +30,13 @@ import { RequestChangesCard } from './RequestChangesCard.js';
 
 const BLOCKED_MESSAGES = {
   startup_failed:
-    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
+    'The course agent could not start. Resume to clear the incomplete setup, then send a new message.',
   runtime_failed:
-    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
-  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
-  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
+    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover its edits. Your previous message will not run again.',
+  checkpoint_failed:
+    "The course agent's edits could not be saved. Resume to try saving them again.",
+  cleanup_failed:
+    "The course agent's edits are saved, but cleanup did not finish. Resume to finish cleanup.",
 } satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
 
 const NEW_CONVERSATION = 'new';
@@ -370,11 +372,17 @@ function Chat({
               </Button>
             </Alert>
           )}
+          {lifecycle?.sandboxLost && (
+            <Alert variant="warning">
+              The course agent stopped unexpectedly and lost edits it hadn't saved yet. Changes you
+              already approved are not affected.
+            </Alert>
+          )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
             <p className="text-muted" role="status">
               {lifecycle.status === 'stopping'
                 ? 'Stopping the course agent…'
-                : 'Saving your workspace…'}
+                : "Saving the course agent's edits…"}
             </p>
           )}
           {resume.isError && (

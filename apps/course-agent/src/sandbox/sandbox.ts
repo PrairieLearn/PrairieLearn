@@ -128,7 +128,7 @@ export class CourseSandbox extends DurableObject<Env> {
     return result;
   }
 
-  /** Start an isolated workspace, restore or clone its files, and configure Codex. */
+  /** Start an isolated sandbox, restore or clone its files, and configure Codex. */
   async prepare(
     config: CourseSource & { model: string },
     checkpoint: DirectoryBackupRecord | null,
@@ -365,8 +365,8 @@ export class CourseSandbox extends DurableObject<Env> {
     if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
       return new Response('WebSocket required', { status: 426 });
     }
-    if (!this.container.running) throw new Error('Native runner has no live workspace');
-    // A fresh connection follows workspace startup or Conversation DO recovery. Replace any
+    if (!this.container.running) throw new Error('Native runner has no live sandbox');
+    // A fresh connection follows sandbox startup or Conversation DO recovery. Replace any
     // orphaned runner before reconnecting; ordinary turns reuse the existing connection.
     await this.stopProcesses();
     this.nativeToken = crypto.randomUUID();
@@ -412,6 +412,14 @@ export class CourseSandbox extends DurableObject<Env> {
         await scheduler.wait(100);
       }
     }
+  }
+
+  /**
+   * A stopped container has lost its files: crashes, host maintenance, and restarts
+   * do not preserve it, so only the last checkpoint remains.
+   */
+  isRunning() {
+    return this.container.running;
   }
 
   /** Stop all agent/tool processes and verify none can keep editing files. */

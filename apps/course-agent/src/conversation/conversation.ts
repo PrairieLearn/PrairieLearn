@@ -35,8 +35,8 @@ const CourseContextSchema = z.object({
 });
 
 /**
- * A saved expiry for a turn or idle workspace. The sandbox ID prevents stale alarms
- * from shutting down a replacement workspace. Turn expiry includes startup time.
+ * A saved expiry for a turn or idle sandbox. The sandbox ID prevents stale alarms
+ * from shutting down a replacement sandbox. Turn expiry includes startup time.
  */
 interface Deadline {
   at: string;
@@ -50,6 +50,8 @@ interface RecordData {
   nativeThreadId: string | null;
   checkpoint: DirectoryBackupRecord | null;
   deadline: Deadline | null;
+  /** Shown until the next message that does not itself find the sandbox lost. */
+  sandboxLost: boolean;
   review:
     | (Omit<PendingReview, 'snapshot'> & {
         /** Contents are placeholders; per-file KV entries keep durable values small. */
@@ -86,12 +88,17 @@ interface ReviewOperation {
 }
 
 /**
- * Owns a conversation's workspace lifecycle: admit one turn, preserve edits, and recover failures.
+ * Owns a conversation's sandbox lifecycle: admit one turn, preserve edits, and recover failures.
  * Chat history and browser reconnect replay belong to AIChatAgent. The private record below
- * persists workspace configuration and recovery data; browsers receive only its status/deadline.
+ * persists sandbox configuration and recovery data; browsers receive only its status/deadline.
  */
 export class Conversation extends AIChatAgent<Env, ConversationState> {
-  override initialState: ConversationState = { status: 'offline', deadlineAt: null };
+  override initialState: ConversationState = {
+    status: 'offline',
+    deadlineAt: null,
+    sandboxLost: false,
+  };
+
   private _record: ConversationRecord | null = null;
   // Process connections and completion promises exist only in this DO instance.
   private active: ActiveTurn | null = null;
@@ -99,7 +106,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private recovering = false;
   private reviewOperation: ReviewOperation | null = null;
   /** Continuations wait for the current checkpoint/destruction before starting execution. */
-  private workspaceShutdown: Promise<void> | null = null;
+  private sandboxShutdown: Promise<void> | null = null;
 
   private reportError(error: unknown) {
     reportError(error, {
@@ -131,6 +138,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return {
       ...(lifecycle.status === 'destroying' ? { status: 'suspending' as const } : lifecycle),
       deadlineAt: this.record.deadline?.at ?? null,
+      sandboxLost: this.record.sandboxLost,
     };
   }
 
@@ -163,7 +171,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         // Offline awaits a message; blocked awaits Resume. Neither should start work on wake.
         return;
       case 'waiting_for_user':
-        // The workspace is ready for input; restore its idle shutdown using the saved expiry.
+        // The sandbox is ready for input; restore its idle shutdown using the saved expiry.
         await this.scheduleDeadline('idle', this.record.deadline?.at);
         return;
       case 'starting':
@@ -180,7 +188,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         this.block('cleanup_failed');
         return;
       case 'suspending':
-        // Backup was interrupted. Retain the workspace and previous checkpoint for Resume to retry.
+        // Backup was interrupted. Retain the sandbox and previous checkpoint for Resume to retry.
         this.block('checkpoint_failed');
     }
   }
@@ -191,8 +199,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    */
   initialize(config: CourseSource) {
     if (this._record) throw new Error('Conversation is already initialized');
-    // TODO: Define how existing workspaces follow course repository/branch changes. Never
-    // retarget an edited workspace just because a reconnect supplies updated course labels.
+    // TODO: Define how existing sandboxes follow course repository/branch changes. Never
+    // retarget an edited sandbox just because a reconnect supplies updated course labels.
     this.setRecord({
       lifecycle: { status: 'offline' },
       config: { ...config, model: this.env.OPENAI_MODEL },
@@ -202,6 +210,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       checkpoint: null,
       review: null,
       deadline: null,
+      sandboxLost: false,
     });
   }
 
@@ -239,7 +248,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Restore a request_changes tool part that SDK restart recovery persisted after the wake hook. */
   async recoverRequestChangesToolPart() {
-    if (!this.record.review || this.active || this.workspaceShutdown) return;
+    if (!this.record.review || this.active || this.sandboxShutdown) return;
     if (
       this.record.lifecycle.status === 'blocked' &&
       this.record.lifecycle.reason !== 'runtime_failed'
@@ -275,12 +284,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Save a turn or idle deadline for the current workspace and schedule onDeadline().
+   * Save a turn or idle deadline for the current sandbox and schedule onDeadline().
    * Use the supplied expiry when restoring an idle deadline; otherwise start the configured budget now.
    */
   private async scheduleDeadline(kind: Deadline['kind'], at?: string) {
     const sandboxId = this.record.sandboxId;
-    if (!sandboxId) throw new Error('Deadline requires a live workspace');
+    if (!sandboxId) throw new Error('Deadline requires a live sandbox');
     const seconds = kind === 'turn' ? this.env.AGENT_TURN_SECONDS : this.env.USER_IDLE_SECONDS;
     const deadline: Deadline = {
       at: at ?? new Date(Date.now() + Number(seconds) * 1000).toISOString(),
@@ -297,10 +306,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     );
   }
 
-  /** Expired turns stop before backup; idle workspaces can be backed up immediately. */
+  /** Expired turns stop before backup; idle sandboxes can be backed up immediately. */
   async onDeadline(expected: Deadline) {
     const current = this.record.deadline;
-    // State changes can replace the deadline or workspace after a callback was queued.
+    // State changes can replace the deadline or sandbox after a callback was queued.
     if (
       current?.at !== expected.at ||
       current.kind !== expected.kind ||
@@ -338,7 +347,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!options) throw new Error('Missing SDK chat options');
     // The SDK identifies continuations; saved tool history supplies their result.
     const continuation = options.continuation === true;
-    if (continuation && this.workspaceShutdown) await this.workspaceShutdown;
+    if (continuation && this.sandboxShutdown) await this.sandboxShutdown;
     const outcome = continuation ? this.savedOutcome() : null;
     if (continuation && !outcome) throw new Error('No saved review outcome');
     const operation = this.reviewOperation;
@@ -371,22 +380,30 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       );
       return createUIMessageStreamResponse({ stream });
     }
+    const checkedSandboxId = this.record.sandboxId;
+    const lost =
+      checkedSandboxId !== null &&
+      !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
     if (
       this.active ||
       (!continuation && this.record.review) ||
       (!continuation && this.recovering) ||
       (!continuation && !['offline', 'waiting_for_user'].includes(this.record.lifecycle.status))
     ) {
-      throw new Error('The course agent workspace is not ready.');
+      throw new Error('The course agent sandbox is not ready.');
     }
     // Capture input before asynchronous setup allows another connection to change history.
     const message = this.messages.at(-1);
     if (!continuation && message?.role !== 'user') throw new Error('Expected a new user message');
     const text = message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
+    const abandoned = lost && this.record.sandboxId === checkedSandboxId;
+    if (abandoned) this.abandonLostSandbox();
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     this.setRecord({
       ...this.record,
+      // A user message acknowledges an earlier loss unless this message found it.
+      sandboxLost: abandoned || (continuation && this.record.sandboxLost),
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
     });
@@ -542,7 +559,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
   }
 
-  /** Explicit Resume repairs the workspace; it never repeats an interrupted prompt. */
+  /** Explicit Resume repairs the sandbox; it never repeats an interrupted prompt. */
   async resume(): Promise<boolean> {
     const review = this.record.review;
     if (review?.decision && !this.savedOutcome()) {
@@ -601,7 +618,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         this.recovering = false;
       }
     }
-    // Another Resume or an unfinished turn must not modify this workspace concurrently.
+    // Another Resume or an unfinished turn must not modify this sandbox concurrently.
     if (this.record.lifecycle.status !== 'blocked' || this.active || this.recovering) return false;
     const reason = this.record.lifecycle.reason;
     this.recovering = true;
@@ -639,6 +656,24 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block('startup_failed');
       throw error;
     }
+  }
+
+  /**
+   * A stopped container has already lost its edits since the last checkpoint, so backing it up
+   * can never succeed. Drop it; the next turn restores the checkpoint (or the course source).
+   */
+  private abandonLostSandbox() {
+    this.native?.close();
+    this.native = null;
+    this.setRecord({
+      ...this.record,
+      sandboxId: null,
+      deadline: null,
+      // The native thread lives in the sandbox, so it survives only through a checkpoint.
+      nativeThreadId: this.record.checkpoint ? this.record.nativeThreadId : null,
+      sandboxLost: true,
+      lifecycle: { status: 'offline' },
+    });
   }
 
   private reviewPart() {
@@ -797,7 +832,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ) {
       return false;
     }
-    if (!this.workspaceShutdown) {
+    if (!this.sandboxShutdown) {
       this.setRecord({
         ...this.record,
         lifecycle: { status: 'waiting_for_agent' },
@@ -840,7 +875,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Scheduled and explicit recovery uses only the saved tool result, never old user input. */
   async continueReview() {
-    if (!this.record.review || this.active || this.workspaceShutdown || !this.savedOutcome()) {
+    if (!this.record.review || this.active || this.sandboxShutdown || !this.savedOutcome()) {
       return;
     }
     this.setRecord({
@@ -855,13 +890,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Commit a replacement backup before shutdown; cleanup of the old archive is independent. */
   private async backupAndShutdown() {
     // Outcome delivery must await the same shutdown started by idle expiry or recovery.
-    if (this.workspaceShutdown) return this.workspaceShutdown;
+    if (this.sandboxShutdown) return this.sandboxShutdown;
     const shutdown = this.checkpointAndDestroy();
-    this.workspaceShutdown = shutdown;
+    this.sandboxShutdown = shutdown;
     try {
       await shutdown;
     } finally {
-      this.workspaceShutdown = null;
+      this.sandboxShutdown = null;
     }
   }
 
@@ -878,6 +913,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       }
       this.native?.close();
       this.native = null;
+      if (!this.record.sandboxId) {
+        this.setRecord({ ...this.record, sandboxId: null, lifecycle: { status: 'offline' } });
+        return;
+      }
+      if (!(await this.sandbox.isRunning())) {
+        this.abandonLostSandbox();
+        return;
+      }
       const previous = this.record.checkpoint;
       const checkpoint = await this.sandbox.checkpoint();
       this.setRecord({ ...this.record, checkpoint, lifecycle: { status: 'destroying' } });
@@ -913,11 +956,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     await this.env.CHECKPOINTS.delete(archiveKey);
   }
 
-  /** A committed backup is required before discarding a workspace containing edits. */
+  /** A committed backup is required before discarding a sandbox containing edits. */
   private async destroyCheckpointed() {
     if (!this.record.checkpoint) throw new Error('No checkpoint-backed sandbox to destroy');
     try {
-      if (this.record.sandboxId) await this.sandbox.destroy();
+      if (this.record.sandboxId && (await this.sandbox.isRunning())) await this.sandbox.destroy();
       this.setRecord({ ...this.record, sandboxId: null, lifecycle: { status: 'offline' } });
     } catch (error) {
       this.block('cleanup_failed');

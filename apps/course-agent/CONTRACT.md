@@ -2,7 +2,7 @@
 
 This document describes implementation invariants for maintainers. For configuration, local development, review controls, and deployment checks, see [README.md](README.md).
 
-`Conversation` is the chat Durable Object, extending `AIChatAgent`. It decides when a user may send a message and when a workspace must stop, back up, or recover. The chat SDK owns message history, response persistence, and browser reconnect replay.
+`Conversation` is the chat Durable Object, extending `AIChatAgent`. It decides when a user may send a message and when a sandbox must stop, back up, or recover. The chat SDK owns message history, response persistence, and browser reconnect replay.
 
 `SandboxTurn` is an in-memory execution helper in the Conversation DO. It owns one turn's setup, cancellation, and output stream. The Conversation DO retains the Codex adapter across normal turns, so finishing a reply does not restart the native process. `CourseSandbox` is a separate DO that owns the container and private process channel. Keeping execution in one helper avoids making the conversation's lifecycle depend on individual native protocol commands.
 
@@ -22,7 +22,7 @@ The private `destroying` phase means that a replacement checkpoint has been comm
 | Start/resume thread | Native thread ID returned and saved before prompt submission.                                                                                                                            | Treat as setup failure for a new sandbox, or runtime failure for an existing one.                                    |
 | Execute             | New input submitted once; native output translated to SDK chunks; normal stream completion preserves the running session for follow-up input.                                            | Preserve output already recorded by the SDK and require explicit recovery. Never retry uncertain submission.         |
 | Stop                | Pending submission prevented, or execution interrupted and processes verified stopped.                                                                                                   | An interrupt acknowledgment alone is insufficient; fall back to stopping processes. Failed cleanup blocks admission. |
-| Backup              | Writers stopped; a new archive created and its reference returned.                                                                                                                       | Retain the live workspace and previous committed reference for explicit recovery.                                    |
+| Backup              | Writers stopped; a new archive created and its reference returned.                                                                                                                       | Retain the live sandbox and previous committed reference for explicit recovery.                                      |
 | Destroy             | Container removed.                                                                                                                                                                       | Retain the sandbox identity and committed replacement checkpoint for cleanup retry.                                  |
 | Delete backup       | The specified obsolete archive removed.                                                                                                                                                  | Retry independently; this does not change the current checkpoint.                                                    |
 
@@ -30,9 +30,9 @@ The private `destroying` phase means that a replacement checkpoint has been comm
 
 Only `offline` and `waiting_for_user` without a pending review accept new input. A pending review blocks new messages even after shutdown. Capture the input before asynchronous setup. Only the newest message is submitted to the native thread; SDK history is not resubmitted as another prompt.
 
-SDK response completion and explicit Stop cleanup are separate events. Normal completion leaves the native process and background tools running until workspace cleanup. Explicit Stop may complete the SDK response first. One completion path waits for both before releasing the active operation. Manual Stop retains an established workspace for another message; Stop during initial setup discards the incomplete sandbox.
+SDK response completion and explicit Stop cleanup are separate events. Normal completion leaves the native process and background tools running until sandbox cleanup. Explicit Stop may complete the SDK response first. One completion path waits for both before releasing the active operation. Manual Stop retains an established sandbox for another message; Stop during initial setup discards the incomplete sandbox.
 
-The turn deadline includes setup. Expiry stops the active operation, then backs up and shuts down without an intervening admission window. Idle expiry backs up and shuts down directly. Persisted deadlines identify the expected expiry and workspace so superseded callbacks do nothing. Scheduling and record persistence are separate SDK operations: wake reconciliation restores idle scheduling or blocks an interrupted active operation.
+The turn deadline includes setup. Expiry stops the active operation, then backs up and shuts down without an intervening admission window. Idle expiry backs up and shuts down directly. Persisted deadlines identify the expected expiry and sandbox so superseded callbacks do nothing. Scheduling and record persistence are separate SDK operations: wake reconciliation restores idle scheduling or blocks an interrupted active operation.
 
 ## Backup and recovery
 
@@ -43,13 +43,13 @@ The replacement sequence is:
 3. Destroy the live container and become `offline`.
 4. Schedule deletion of the previous archive independently.
 
-An older checkpoint does not prove the latest edits are backed up. Never discard a workspace containing edits merely because an older archive exists. Missing live workspace data remains blocked instead of silently restoring an older version.
+An older checkpoint does not prove the latest edits are backed up. Never discard a running sandbox merely because an older archive exists. A stopped container is different: crashes, restarts, and host maintenance do not preserve it, so its edits since the last checkpoint are already gone and no backup can succeed. Shutdown, Resume, and the next message therefore check whether the container is running. A stopped sandbox is abandoned and the conversation becomes `offline` with `sandboxLost` set, which the UI shows until the next message; that turn restores the last checkpoint, or the course source if none exists. Blocking instead would leave Resume retrying a backup that can never succeed.
 
 Resume directly awaits recovery and rejects overlapping recovery or unfinished execution. It discards incomplete startup, backs up interrupted execution, or retries destruction of an already checkpointed container, depending on the recorded failure. Failure remains actionable through another explicit Resume; no interrupted prompt is replayed. The PL recovery request waits for the result rather than using the short conversation-creation timeout.
 
 ## Native protocol boundary
 
-The first execution in a workspace starts Codex app-server under the dedicated agent user with an authenticated WebSocket listener. The Conversation DO connects through the private CourseSandbox binding. The sandbox forwards the upgrade to the container port, injecting a fresh per-runner capability token; the runner receives only its SHA-256 hash. The public Worker does not route requests to this endpoint. Tokens remain outside the checkpoint directory and are discarded with the runner.
+The first execution in a sandbox starts Codex app-server under the dedicated agent user with an authenticated WebSocket listener. The Conversation DO connects through the private CourseSandbox binding. The sandbox forwards the upgrade to the container port, injecting a fresh per-runner capability token; the runner receives only its SHA-256 hash. The public Worker does not route requests to this endpoint. Tokens remain outside the checkpoint directory and are discarded with the runner.
 
 JSON-RPC messages preserve Codex's wire format, with one object per WebSocket text message. A small transport adapter validates envelopes and adds/removes the version field expected by `vscode-jsonrpc`. The library owns request correlation and notification/server-request dispatch; there is no PL-owned RPC dispatcher. Outgoing requests are checked against types generated from the pinned runtime. Incoming replies and subscribed notifications use Zod schemas for the fields the adapter consumes; additional data is ignored. Initialization and interrupt acknowledgments require only a JSON object. The chat adapter subscribes only to the text, reasoning, and completion events it needs. The experimental protocol also registers a validated `item/tool/call` handler for `request_changes`; the human wait is an inbound request and does not inherit outbound command timeouts.
 

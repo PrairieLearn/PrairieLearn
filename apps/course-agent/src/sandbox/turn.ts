@@ -13,7 +13,7 @@ interface TurnResult {
   error?: unknown;
 }
 
-/** One turn's cancellation and output; the workspace owns the longer-lived native connection. */
+/** One turn's cancellation and output; the sandbox owns the longer-lived native connection. */
 export class SandboxTurn {
   private abort = new AbortController();
   private interruptible = false;

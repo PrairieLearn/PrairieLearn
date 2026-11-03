@@ -72,7 +72,7 @@ conversations.post('/:id/resume', async (c) => {
   } catch (error) {
     // This handled RPC failure would otherwise be returned as a successful HTTP handler.
     reportError(error);
-    return c.json({ error: 'Could not recover workspace' }, 503);
+    return c.json({ error: 'Could not recover the course agent' }, 503);
   }
 });
 

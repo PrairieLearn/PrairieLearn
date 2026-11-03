@@ -78,7 +78,7 @@ const ThreadHistory = z.object({
   }),
 });
 
-/** A workspace's app-server connection, reused across turns until Stop or workspace cleanup. */
+/** A sandbox's app-server connection, reused across turns until Stop or sandbox cleanup. */
 export class CodexAppServerClient {
   private rpc: MessageConnection | null = null;
   private controller: ReadableStreamDefaultController<UIMessageChunk> | null = null;
@@ -414,7 +414,7 @@ export class CodexAppServerClient {
       this.controller.enqueue({
         type: 'error',
         errorText:
-          'The course agent stopped unexpectedly. Resume the conversation to recover your workspace.',
+          'The course agent stopped unexpectedly. Resume the conversation to recover its edits.',
       });
     }
     this.controller.enqueue({ type: 'finish' });
