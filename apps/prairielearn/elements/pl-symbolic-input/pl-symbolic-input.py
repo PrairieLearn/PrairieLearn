@@ -2,6 +2,7 @@ import html
 import pathlib
 import random
 from enum import Enum
+from functools import lru_cache
 from sys import get_int_max_str_digits
 from typing import Any, assert_never, cast
 
