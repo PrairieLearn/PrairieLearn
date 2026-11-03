@@ -4,8 +4,10 @@ import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 
 import { IssueSchema, type Variant } from './db-types.js';
 import type { RubricData } from './manualGrading.types.js';
+import type { SubmissionInfo } from './submission-info.js';
 
 export interface SubmissionPanels {
+  submissionInfo?: SubmissionInfo;
   submissionPanel: string | null;
   extraHeadersHtml: string | null;
   answerPanel?: string | null;

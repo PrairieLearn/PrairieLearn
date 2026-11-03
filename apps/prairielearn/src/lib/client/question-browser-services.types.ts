@@ -13,6 +13,10 @@ export type QuestionContentPanels = Pick<
  * Native form submission remains separate until the iframe transport is introduced.
  */
 export interface QuestionBrowserServices {
+  openCopyQuestion(): Promise<void>;
+
+  openSubmissionInfo(request: { submissionId: string }): Promise<void>;
+
   renderSubmission(
     request: { submissionId: string; purpose: 'history' | 'grading-result' },
     options: { signal: AbortSignal },

@@ -76,6 +76,11 @@ router.get(
     });
 
     const panels = await renderPanelsForSubmission({
+      questionHostingUpdate: await features.enabled('question-hosting-update', {
+        institution_id: res.locals.course.institution_id,
+        course_id: res.locals.course.id,
+        user_id: res.locals.authn_user.id,
+      }),
       unsafe_submission_id: req.params.unsafe_submission_id,
       course: res.locals.course,
       question: res.locals.question,

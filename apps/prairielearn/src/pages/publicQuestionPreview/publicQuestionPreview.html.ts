@@ -5,6 +5,7 @@ import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionBrowserServicesData } from '../../components/QuestionBrowserServicesData.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { QuestionDialogData } from '../../components/QuestionDialogData.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
@@ -53,6 +54,9 @@ export function PublicQuestionPreview({
       }
       ${unsafeHtml(resLocals.extraHeadersHtml)}
     `,
+    postContent: questionHostingUpdate
+      ? QuestionDialogData({ resLocals, questionCopyTargets })
+      : '',
     content: html`
       ${questionHostingUpdate ? QuestionBrowserServicesData({ resLocals, questionContext: 'public' }) : ''}
       <div class="row question-page-row">
