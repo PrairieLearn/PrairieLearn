@@ -15,6 +15,7 @@ import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { type ConversationState } from '@prairielearn/course-agent-types';
+import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -301,14 +302,12 @@ function Chat({
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
-  const activity =
-    connectionFailed || connectionError
-      ? null
-      : lifecycle?.status === 'starting'
-        ? 'Starting workspace…'
-        : lifecycle?.status === 'waiting_for_agent'
-          ? 'Thinking…'
-          : null;
+  const activity = run(() => {
+    if (connectionFailed || connectionError) return null;
+    if (lifecycle?.status === 'starting') return 'Starting workspace…';
+    if (lifecycle?.status === 'waiting_for_agent') return 'Thinking…';
+    return null;
+  });
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
