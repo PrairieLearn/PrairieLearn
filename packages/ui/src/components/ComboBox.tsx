@@ -66,6 +66,8 @@ export interface ComboBoxProps<T = void> extends Omit<
 }
 
 export interface TagPickerProps<T = void> {
+  /** Accept a trimmed custom value. */
+  onCreate?: (value: string) => void;
   items: ComboBoxItem<T>[];
   value: string[];
   onChange: (value: string[]) => void;
@@ -225,6 +227,7 @@ export function ComboBox<T = void>({
  */
 export function TagPicker<T = void>({
   items,
+  onCreate,
   value,
   onChange,
   placeholder = 'Select...',
@@ -242,8 +245,10 @@ export function TagPicker<T = void>({
   const { contains } = useFilter({ sensitivity: 'base' });
   const [filterText, setFilterText] = useState('');
 
-  const filteredItems = items.filter((item) =>
-    contains(item.searchableText ?? item.label, filterText),
+  const filteredItems = items.filter(
+    (item) =>
+      (!onCreate || !value.includes(item.id)) &&
+      contains(item.searchableText ?? item.label, filterText),
   );
   const selectedItems = items.filter((item) => value.includes(item.id));
 
@@ -253,8 +258,8 @@ export function TagPicker<T = void>({
         value.length > 0 &&
         value.map((v) => <input key={v} name={name} type="hidden" value={v} />)}
 
-      {/* Render selected tags outside the Select trigger button. The HTML spec prohibits
-          interactive content (buttons) inside buttons: https://adrianroselli.com/2016/12/be-wary-of-nesting-roles.html */}
+      {/* Keep the two collection contexts as siblings. Nesting TagGroup inside
+          ComboBox mixes their React Aria collection state when the input filters. */}
       {selectedItems.length > 0 && (
         <TagGroup
           aria-label="Selected items"
@@ -275,13 +280,12 @@ export function TagPicker<T = void>({
                 {renderTagContent(item.data as T) ?? item.label}
                 {!disabled && (
                   <Button
-                    aria-label={`Remove ${item.label}`}
                     className="border-0 bg-transparent p-0 lh-1"
                     slot="remove"
                     style={{ fontSize: '0.75em', marginRight: '-0.25em' }}
                   >
                     <i
-                      className="bi bi-x-lg d-flex align-items-center justify-content-center"
+                      className="bi bi-x d-flex align-items-center justify-content-center"
                       aria-hidden="true"
                       style={{ width: '1.25em', height: '1.25em' }}
                     />
@@ -302,7 +306,8 @@ export function TagPicker<T = void>({
         menuTrigger="focus"
         selectionMode="multiple"
         value={value}
-        allowsEmptyCollection
+        allowsEmptyCollection={!onCreate}
+        allowsCustomValue={!!onCreate}
         onChange={(keys) => {
           setFilterText('');
           onChange(keys as string[]);
@@ -327,17 +332,32 @@ export function TagPicker<T = void>({
                 id={id}
                 placeholder={placeholder}
                 style={{ outline: 'none' }}
+                onKeyDown={(event) => {
+                  if (!onCreate || event.nativeEvent.isComposing) return;
+                  if (event.key !== 'Enter' && event.key !== ',') return;
+                  if (event.key === 'Enter' && isComboBoxOpen) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const nextValue = filterText.trim();
+                  if (nextValue && !value.includes(nextValue)) onCreate(nextValue);
+                  setFilterText('');
+                }}
               />
-              <Button aria-label="Show suggestions" className="border-0 bg-transparent p-0 ms-auto">
-                <i
-                  aria-hidden="true"
-                  className={clsx(
-                    'bi',
-                    isComboBoxOpen ? 'bi-chevron-up' : 'bi-chevron-down',
-                    'text-muted',
-                  )}
-                />
-              </Button>
+              {(!onCreate || filteredItems.length > 0) && (
+                <Button
+                  aria-label="Show suggestions"
+                  className="border-0 bg-transparent p-0 ms-auto"
+                >
+                  <i
+                    aria-hidden="true"
+                    className={clsx(
+                      'bi',
+                      isComboBoxOpen ? 'bi-chevron-up' : 'bi-chevron-down',
+                      'text-muted',
+                    )}
+                  />
+                </Button>
+              )}
             </Group>
 
             {description && (
