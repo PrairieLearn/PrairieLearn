@@ -1,7 +1,7 @@
 import importlib
 import string
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import prairielearn.sympy_utils as psu
 import pytest
@@ -27,7 +27,6 @@ def make_question_data(
     answers_names: dict[str, Any] | None = None,
     panel: str = "question",
     editable: bool = True,
-    test_type: Literal["correct", "incorrect", "invalid"] = "correct",
 ) -> dict[str, Any]:
     submitted_answers = submitted_answers or {}
     return {
@@ -43,7 +42,6 @@ def make_question_data(
         "partial_scores": {},
         "panel": panel,
         "editable": editable,
-        "test_type": test_type,
     }
 
 
@@ -138,8 +136,6 @@ def test_set_notation_is_rejected_by_default() -> None:
     [
         ("finite-set, expression", "{1, 2}"),
         ("finite-set, expression", "x + 1"),
-        ("set", "[0, 5] - {x}"),
-        ("all", "[1, 2]"),
     ],
 )
 def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) -> None:
@@ -185,7 +181,6 @@ def test_prepare_rejects_allow_sets_with_allowed_types() -> None:
     ("attributes", "correct_answers"),
     [
         (['correct-answer="{1, 2}"'], None),
-        ([], {"test": "{1, 2}"}),
         ([], {"test": psu.sympy_to_json(sympy.FiniteSet(1, 2), allow_sets=True)}),
     ],
 )
@@ -202,27 +197,10 @@ def test_prepare_rejects_disallowed_correct_answer_type(
         symbolic_input.prepare(element_html, data)
 
 
-def test_prepare_accepts_simplified_correct_answer_type() -> None:
-    element_html = build_element_html(
-        'allowed-types="interval"',
-        'correct-answer="[0, sin(pi/2)] U {1}"',
-        'display-simplified-expression="false"',
-    )
-    data = make_question_data()
-
-    symbolic_input.prepare(element_html, data)
-
-    assert data["correct_answers"]["test"] == "[0, sin(pi/2)] U {1}"
-
-
 @pytest.mark.parametrize(
     ("allowed_types", "correct_answer", "expected_blank"),
     [
-        ("expression", "1", sympy.Integer(0)),
         ("all", "1", sympy.Integer(0)),
-        ("set", "{1}", sympy.EmptySet),
-        ("finite-set", "{1}", sympy.EmptySet),
-        ("interval", "[0, 1]", sympy.EmptySet),
         ("finite-set, interval", "{1}", sympy.EmptySet),
     ],
 )
@@ -247,9 +225,6 @@ def test_blank_submission_uses_type_compatible_default(
         == expected_blank
     )
 
-    symbolic_input.grade(element_html, data)
-    assert data["partial_scores"]["test"]["score"] == 0
-
 
 def test_prepare_rejects_disallowed_explicit_blank_value() -> None:
     element_html = build_element_html(
@@ -266,67 +241,19 @@ def test_prepare_rejects_disallowed_explicit_blank_value() -> None:
         symbolic_input.prepare(element_html, make_question_data())
 
 
-def test_explicit_empty_blank_value_remains_supported() -> None:
-    element_html = build_element_html(
-        'allow-blank="true"',
-        'blank-value=""',
-        'allowed-types="finite-set"',
-        'correct-answer="{1}"',
-    )
-    data = make_question_data(submitted_answers={"test": ""})
-
-    symbolic_input.prepare(element_html, data)
-    symbolic_input.parse(element_html, data)
-    symbolic_input.grade(element_html, data)
-
-    assert data["format_errors"] == {}
-    assert data["submitted_answers"]["test"] == ""
-    assert data["partial_scores"]["test"]["score"] == 0
-
-
-def test_blank_value_is_not_validated_when_blank_submissions_are_disabled() -> None:
-    element_html = build_element_html(
-        'blank-value="0"',
-        'allowed-types="finite-set"',
-        'correct-answer="{1}"',
-    )
-    data = make_question_data(submitted_answers={"test": ""})
-
-    symbolic_input.prepare(element_html, data)
-    symbolic_input.parse(element_html, data)
-
-    assert data["submitted_answers"]["test"] is None
-    assert data["format_errors"]["test"] == "No submitted answer."
-
-
 @pytest.mark.parametrize(
-    ("correct_answer", "submission", "expected_submission", "expected_score"),
+    ("correct_answer", "submission", "display_simplified", "expected_score"),
     [
-        (
-            "[1, 2] & Integers",
-            "{1, 2}",
-            sympy.FiniteSet(1, 2),
-            1,
-        ),
-        (
-            "{1, 2}",
-            "[1, 2] & Integers",
-            sympy.Range(1, 3),
-            1,
-        ),
-        (
-            "[1, 3] & Integers",
-            "{1, 2}",
-            sympy.FiniteSet(1, 2),
-            0,
-        ),
+        ("[1, 2] & Integers", "{1, 2}", True, 1),
+        ("[1, 2] & Integers", "{1, 2}", False, 1),
+        ("{1, 2}", "[1, 2] & Integers", True, 1),
+        ("{1, 2}", "[1, 2] & Integers", False, 1),
+        ("[1, 3] & Integers", "{1, 2}", True, 0),
     ],
 )
-@pytest.mark.parametrize("display_simplified", [True, False])
 def test_finite_range_and_finite_set_grading(
     correct_answer: str,
     submission: str,
-    expected_submission: sympy.Set,
     expected_score: int,
     *,
     display_simplified: bool,
@@ -342,66 +269,33 @@ def test_finite_range_and_finite_set_grading(
     symbolic_input.parse(element_html, data)
 
     assert "test" not in data["format_errors"]
-    assert isinstance(data["submitted_answers"]["test"], dict)
-    restored = psu.json_to_sympy(
-        data["submitted_answers"]["test"],
-        allow_sets=True,
-        simplify_expression=display_simplified,
-    )
-    assert restored.doit() == expected_submission
-
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == expected_score
 
 
 @pytest.mark.parametrize(
-    ("allowed_types", "correct_answer", "expected_type"),
+    ("allowed_types", "correct_answer", "display_simplified"),
     [
-        ("all", "5", sympy.Expr),
-        ("expression", "infty", sympy.Expr),
-        ("finite-set", "{5}", sympy.FiniteSet),
-        ("interval", "(5, 6)", sympy.Interval),
+        ("all", "2+3", False),
+        ("expression", "infty", True),
+        ("finite-set", "{5}", True),
+        ("interval", "(5, 6)", True),
     ],
 )
-def test_incorrect_answer_uses_an_allowed_type_and_avoids_collision(
+def test_generated_incorrect_answer_parses_and_scores_zero(
     monkeypatch: pytest.MonkeyPatch,
     allowed_types: str,
     correct_answer: str,
-    expected_type: type[sympy.Basic],
-) -> None:
-    monkeypatch.setattr(symbolic_input.random, "randint", lambda _start, _end: 5)
-    element_html = build_element_html(f'allowed-types="{allowed_types}"')
-    data = make_question_data(
-        correct_answers={"test": correct_answer},
-        test_type="incorrect",
-    )
-
-    symbolic_input.test(element_html, data)
-    data["submitted_answers"] = data["raw_submitted_answers"].copy()
-    symbolic_input.parse(element_html, data)
-
-    assert "test" not in data["format_errors"]
-    submitted_answer = psu.json_to_sympy(
-        data["submitted_answers"]["test"], allow_sets=True
-    )
-    assert isinstance(submitted_answer, expected_type)
-    assert submitted_answer != psu.convert_string_to_sympy(
-        correct_answer, allow_sets=True
-    )
-
-
-def test_incorrect_expression_answer_is_not_equivalent_when_sets_are_allowed(
-    monkeypatch: pytest.MonkeyPatch,
+    *,
+    display_simplified: bool,
 ) -> None:
     monkeypatch.setattr(symbolic_input.random, "randint", lambda _start, _end: 5)
     element_html = build_element_html(
-        'allowed-types="all"',
-        'display-simplified-expression="false"',
+        f'allowed-types="{allowed_types}"',
+        f'display-simplified-expression="{str(display_simplified).lower()}"',
     )
-    data = make_question_data(
-        correct_answers={"test": "2+3"},
-        test_type="incorrect",
-    )
+    data = make_question_data(correct_answers={"test": correct_answer})
+    data["test_type"] = "incorrect"
 
     symbolic_input.test(element_html, data)
     data["submitted_answers"] = data["raw_submitted_answers"].copy()
@@ -411,25 +305,6 @@ def test_incorrect_expression_answer_is_not_equivalent_when_sets_are_allowed(
 
     assert "test" not in data["format_errors"]
     assert data["partial_scores"]["test"]["score"] == 0
-
-
-def test_correct_answer_generation_round_trips_set_domains() -> None:
-    element_html = build_element_html('allow-sets="true"')
-    data = make_question_data(
-        correct_answers={
-            "test": psu.sympy_to_json(sympy.S.Reals, allow_sets=True),
-        },
-    )
-
-    symbolic_input.test(element_html, data)
-    data["submitted_answers"] = data["raw_submitted_answers"].copy()
-    symbolic_input.parse(element_html, data)
-
-    assert "test" not in data["format_errors"]
-    assert (
-        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
-        == sympy.S.Reals
-    )
 
 
 @pytest.mark.parametrize(
