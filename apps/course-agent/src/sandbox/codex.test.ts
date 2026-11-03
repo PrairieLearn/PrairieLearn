@@ -7,7 +7,7 @@ import { CodexAppServerClient } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
-function runner({ loseAcceptance = false } = {}) {
+function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -27,7 +27,7 @@ function runner({ loseAcceptance = false } = {}) {
         emit({ id: frame.id, result: { thread: { id: 'thread' } } });
       }
       if (frame.method === 'thread/read') {
-        emit({ id: frame.id, result: { thread: { id: 'thread', turns: [] } } });
+        emit({ id: frame.id, result: { thread: { id: 'thread', turns: [{ items: history }] } } });
       }
       if (frame.method === 'turn/start' && !loseAcceptance) {
         emit({ id: frame.id, result: { turn: { id: 'turn' } } });
@@ -65,6 +65,47 @@ function options(onAccepted: () => void, threadId: string | null = null) {
 }
 
 describe('course agent turns', () => {
+  it.each(['live', 'continuation'])(
+    'does not redeliver a result already consumed through a %s tool call',
+    async (kind) => {
+      const outcome: ReviewOutcome = {
+        callId: 'review',
+        result: {
+          decision: 'denied',
+          publication: { status: 'not_attempted' },
+          sync: { status: 'not_attempted' },
+        },
+      };
+      const item =
+        kind === 'live'
+          ? {
+              type: 'dynamicToolCall',
+              id: outcome.callId,
+              tool: 'request_changes',
+              status: 'failed',
+              contentItems: [{ type: 'inputText', text: JSON.stringify(outcome.result) }],
+            }
+          : {
+              type: 'functionCallOutput',
+              name: 'request_changes',
+              output: JSON.stringify(outcome),
+            };
+      const { native, commands, disconnect } = runner({ history: [item] });
+      native.beginTurn('assistant');
+      await native.connect();
+      await native.thread({ ...thread, threadId: 'thread' });
+      await native.run(outcome, () => {});
+      await native.finished;
+      expect(commands.filter((command) => command.method === 'turn/start')).toHaveLength(0);
+      // Identical decisions for another call must still reach the agent.
+      native.closeStream();
+      native.beginTurn('next-assistant');
+      await native.run({ ...outcome, callId: 'another-review' }, () => {});
+      expect(commands.filter((command) => command.method === 'turn/start')).toHaveLength(1);
+      native.closeStream();
+      disconnect();
+    },
+  );
   it('continues an offline review with its saved decision and empty user input', async () => {
     const outcome: ReviewOutcome = {
       callId: 'pending-review',
