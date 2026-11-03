@@ -413,8 +413,7 @@ export class CodexAppServerClient {
     if (error) {
       this.controller.enqueue({
         type: 'error',
-        errorText:
-          'The course agent stopped unexpectedly. Resume the conversation to recover its edits.',
+        errorText: 'The course agent stopped unexpectedly. Resume the conversation to continue.',
       });
     }
     this.controller.enqueue({ type: 'finish' });
