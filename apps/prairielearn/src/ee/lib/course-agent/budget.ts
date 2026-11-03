@@ -6,10 +6,8 @@ import {
 import { HttpStatusError } from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { selectCoursePermissionForUser } from '../../../models/course-permissions.js';
-import { selectOptionalCourseById } from '../../../models/course.js';
-import { selectInstitutionForCourse } from '../../../models/institution.js';
-import { selectUserById } from '../../../models/user.js';
+import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
+import { selectUserById, userIsAdministrator } from '../../../models/user.js';
 import {
   recordCourseAgentConversationUsage,
   selectOptionalCourseAgentConversationByAgentIdForUpdate,
@@ -25,27 +23,31 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
     // TODO: Recover replies lost after commit so the DO can receive its credit
     // without counting usage twice. For now, duplicate reports are rejected.
     // https://github.com/PrairieLearn/PrairieLearn/issues/15684
-    if (request.sequence !== conversation.usage_report_sequence + 1) {
+    if (request.sequence !== conversation.usage_report_count + 1) {
       throw new HttpStatusError(409, 'The usage report is out of order.');
     }
     let allocation: BudgetResponse['allocation'] = { status: 'not_requested' };
     if (request.requestCredit) {
       const user = await selectUserById(conversation.user_id);
-      const course = await selectOptionalCourseById(conversation.course_id);
-      const permission = await selectCoursePermissionForUser({
+      const { course, institution, authzData } = await constructCourseOrInstanceContext({
+        user,
         course_id: conversation.course_id,
-        user_id: user.id,
+        course_instance_id: null,
+        is_administrator: await userIsAdministrator({ user_id: user.id }),
+        ip: null,
+        req_date: new Date(),
+        // Background accounting checks ownership without a browser's exam context.
+        overrides: { mode: 'Public' },
       });
       const allowed =
         course !== null &&
-        course.deleted_at === null &&
         (await courseAgentEnabled({
           course,
-          institution: await selectInstitutionForCourse({ course_id: course.id }),
+          institution,
           authn_user: user,
           authz_data: {
-            has_course_permission_own: permission === 'Owner',
-            authn_has_course_permission_own: permission === 'Owner',
+            has_course_permission_own: authzData.has_course_permission_own,
+            authn_has_course_permission_own: authzData.has_course_permission_own,
           },
         }));
       if (!allowed) {

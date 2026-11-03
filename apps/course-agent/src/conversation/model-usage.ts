@@ -58,9 +58,7 @@ export async function observeModelUsage(
   if (!response.headers.get('Content-Type')?.includes('text/event-stream')) {
     const value: unknown = await response.json();
     const event = ModelEventSchema.parse({ type: 'response.completed', response: value });
-    const usage = requestUsage(event);
-    if (usage) recordUsage(usage);
-    else recordUsage(null);
+    recordUsage(requestUsage(event));
     return { response: Response.json(value), finished: Promise.resolve() };
   }
   if (!response.body) throw new Error('Provider returned no response stream');

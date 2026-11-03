@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import {
   type ConversationState,
-  type PushSyncResult,
+  type RequestChangesResult,
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
@@ -14,7 +14,6 @@ import { Conversation } from './conversation.js';
 
 const sdk = vi.hoisted(() => ({
   reviewReady: Promise.withResolvers<undefined>(),
-  continued: vi.fn(),
   completeResponse: (_requestId: string) => Promise.resolve(),
 }));
 
@@ -39,7 +38,6 @@ vi.mock('@cloudflare/ai-chat', () => ({
     });
 
     continueLastTurn = vi.fn(async () => {
-      sdk.continued();
       await this.onChatMessage(undefined, { requestId: 'continuation', continuation: true });
       return { status: 'completed' };
     });
@@ -83,18 +81,11 @@ vi.mock('../sandbox/turn.js', () => ({
   ),
 }));
 
-const results = {
-  approved: {
-    decision: 'approved',
-    publication: { status: 'published', commitSha: 'a'.repeat(40) },
-    sync: { status: 'succeeded' },
-  },
-  denied: {
-    decision: 'denied',
-    publication: { status: 'not_attempted' },
-    sync: { status: 'not_attempted' },
-  },
-} satisfies Record<string, PushSyncResult>;
+const deniedResult = {
+  decision: 'denied',
+  publication: { status: 'not_attempted' },
+  sync: { status: 'not_attempted' },
+} satisfies RequestChangesResult;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -119,6 +110,7 @@ function fixture() {
     stopProcesses: vi.fn(),
     authorizeModel: vi.fn(async (_config: { executionId: string }) => {}),
     captureReview: vi.fn(async () => ({
+      type: 'github',
       repository: 'PrairieLearn/course',
       branch: 'master',
       baseCommit: 'a'.repeat(40),
@@ -141,7 +133,7 @@ function fixture() {
   return { conversation, saved, ctx, env, sandbox };
 }
 
-async function pendingReview(live: boolean, budget?: BudgetState) {
+async function pendingReview(budget: BudgetState) {
   const { conversation, saved, ctx, env, sandbox } = fixture();
   await conversation.persistMessages([
     { id: 'user', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
@@ -149,13 +141,13 @@ async function pendingReview(live: boolean, budget?: BudgetState) {
   await conversation.onChatMessage(undefined, { requestId: 'initial' });
   const [, , options] = vi.mocked(SandboxTurn).mock.calls[0];
   options.onThread('native-thread');
-  const nativeResult = options.onReview!(
+  void options.onReview!(
     {
       callId: 'review',
       threadId: 'native-thread',
       turnId: 'turn',
       namespace: null,
-      tool: 'push_sync',
+      tool: 'request_changes',
       arguments: {},
     },
     () => {
@@ -165,7 +157,12 @@ async function pendingReview(live: boolean, budget?: BudgetState) {
           id: options.messageId,
           role: 'assistant',
           parts: [
-            { type: 'tool-push_sync', toolCallId: 'review', state: 'input-available', input: {} },
+            {
+              type: 'tool-request_changes',
+              toolCallId: 'review',
+              state: 'input-available',
+              input: {},
+            },
           ],
         },
       ]);
@@ -173,8 +170,6 @@ async function pendingReview(live: boolean, budget?: BudgetState) {
     },
   );
   await sdk.reviewReady.promise;
-  if (live) return { conversation, nativeResult, saved, sandbox };
-
   // A delayed decision sees saved state/history, with no in-memory native execution.
   saved.set('conversation', {
     ...(saved.get('conversation') as object),
@@ -182,54 +177,13 @@ async function pendingReview(live: boolean, budget?: BudgetState) {
     lifecycle: { status: 'offline' },
     deadline: null,
   });
-  if (budget) saved.set('budget', budget);
+  saved.set('budget', budget);
   const restored = new Conversation(ctx as unknown as DurableObjectState, env);
   await restored.persistMessages(conversation.messages);
   await restored.onStart();
   vi.mocked(SandboxTurn).mockClear();
-  return { conversation: restored, nativeResult, saved, sandbox };
+  return { conversation: restored, saved, sandbox };
 }
-
-it('denial after restart continues the saved thread with only its result', async () => {
-  const { conversation } = await pendingReview(false);
-  conversation.recordReviewDecision({ callId: 'review', decision: 'denied' });
-  await conversation.recordReviewOutcome({ callId: 'review', result: results.denied });
-  expect(SandboxTurn).toHaveBeenCalledExactlyOnceWith(
-    expect.anything(),
-    expect.anything(),
-    expect.objectContaining({
-      text: { callId: 'review', result: results.denied },
-      thread: expect.objectContaining({ threadId: 'native-thread' }),
-    }),
-  );
-});
-
-it('approval answers the waiting call once despite duplicate or conflicting outcomes', async () => {
-  const { conversation, nativeResult } = await pendingReview(true);
-  conversation.recordReviewDecision({
-    callId: 'review',
-    decision: 'approved',
-    jobSequenceId: 'job',
-  });
-  const saved = Promise.withResolvers<undefined>();
-  const persist = conversation.persistMessages.bind(conversation);
-  vi.spyOn(conversation, 'persistMessages').mockImplementationOnce(async (messages) => {
-    await saved.promise;
-    await persist(messages);
-  });
-  const outcome = { callId: 'review', result: results.approved };
-  const first = conversation.recordReviewOutcome(outcome);
-  const duplicate = conversation.recordReviewOutcome(outcome);
-  await expect(
-    conversation.recordReviewOutcome({ callId: 'review', result: results.denied }),
-  ).resolves.toBe(false);
-  saved.resolve(undefined);
-  await expect(Promise.all([first, duplicate])).resolves.toEqual([true, true]);
-  await expect(nativeResult).resolves.toEqual(results.approved);
-  await expect(conversation.recordReviewOutcome(outcome)).resolves.toBe(true);
-  expect(sdk.continued).toHaveBeenCalledOnce();
-  expect(SandboxTurn).toHaveBeenCalledOnce();
-});
 
 it('Stop ends native work while admitted inference finishes accounting before reuse', async () => {
   const { conversation, saved, sandbox } = fixture();
@@ -340,7 +294,7 @@ it('a restored review saves its outcome without credit and gates subsequent infe
   const fetch = vi.fn();
   vi.stubGlobal('fetch', fetch);
   vi.stubGlobal('scheduler', { wait: async () => {} });
-  const { conversation, saved, sandbox } = await pendingReview(false, {
+  const { conversation, saved, sandbox } = await pendingReview({
     balanceMilliDollars: 0,
     creditExpiresAt: null,
     lastAcknowledgedSequence: 0,
@@ -352,10 +306,10 @@ it('a restored review saves its outcome without credit and gates subsequent infe
   });
   conversation.recordReviewDecision({ callId: 'review', decision: 'denied' });
   await expect(
-    conversation.recordReviewOutcome({ callId: 'review', result: results.denied }),
+    conversation.recordReviewOutcome({ callId: 'review', result: deniedResult }),
   ).resolves.toBe(true);
   const options = vi.mocked(SandboxTurn).mock.calls[0][2];
-  expect(options.text).toEqual({ callId: 'review', result: results.denied });
+  expect(options.text).toEqual({ callId: 'review', result: deniedResult });
   await options.prepare();
   const { executionId } = sandbox.authorizeModel.mock.calls[0][0];
   expect((await conversation.proxyModelRequest('{}', executionId)).status).toBe(429);

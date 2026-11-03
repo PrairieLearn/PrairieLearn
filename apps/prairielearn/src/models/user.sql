@@ -6,6 +6,17 @@ FROM
 WHERE
   id = $user_id;
 
+-- BLOCK user_is_administrator
+SELECT
+  EXISTS (
+    SELECT
+      *
+    FROM
+      administrators
+    WHERE
+      user_id = $user_id
+  );
+
 -- BLOCK select_user_by_uid
 SELECT
   *

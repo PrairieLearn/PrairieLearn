@@ -722,7 +722,8 @@ export const CourseAgentConversationSchema = z.object({
   usage_input_tokens_cache_read: z.coerce.number(),
   usage_output_tokens: z.coerce.number(),
   usage_output_tokens_reasoning: z.coerce.number(),
-  usage_report_sequence: z.coerce.number(),
+  // Number of usage reports accepted in order; rejects duplicate and out-of-order reports.
+  usage_report_count: z.coerce.number(),
   user_id: IdSchema,
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;

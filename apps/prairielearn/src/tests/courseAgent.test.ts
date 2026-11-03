@@ -1,7 +1,11 @@
 import { once } from 'node:events';
-import { createServer } from 'node:http';
+import { type IncomingMessage, createServer, request } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { setTimeout as sleep } from 'node:timers/promises';
+
 import * as path from 'node:path';
 
+import { io } from 'socket.io-client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { Redis } from 'ioredis';
@@ -15,6 +19,7 @@ import {
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { withResolvers } from '@prairielearn/utils';
 
 import {
   insertCourseAgentConversation,
@@ -26,9 +31,11 @@ import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { RedisRateLimiter } from '../lib/redis-rate-limiter.js';
 import {
   insertCoursePermissionsByUserUid,
+  selectCoursePermissionForUser,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
 import { updateCourseColumn } from '../models/course.js';
+import { selectUserById } from '../models/user.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -140,7 +147,31 @@ describe('Course agent access and conversation privacy', () => {
   });
   afterAll(() => Object.assign(config, originalConfig));
 
-  test('rejects duplicate usage reports and preserves final usage after access revocation', async () => {
+  test('grants credit to an administrator without explicit course permissions', async () => {
+    const administrator = await selectUserById('1');
+    expect(
+      await selectCoursePermissionForUser({ course_id: '1', user_id: administrator.id }),
+    ).toBeNull();
+    await withUser(administrator, () =>
+      expect(createClient(administrator).courseAgent.list.query()).resolves.toEqual([]),
+    );
+    const conversation = await createConversation(administrator);
+    const response = await fetch(
+      `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/usage`,
+      {
+        method: 'POST',
+        headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sequence: 1, usageDelta: emptyUsage(), requestCredit: true }),
+      },
+    );
+    expect(response.status).toBe(200);
+    expect(BudgetResponseSchema.parse(await response.json()).allocation).toMatchObject({
+      status: 'granted',
+      grantedMilliDollars: 3000,
+    });
+  });
+
+  test('rejects duplicate and skipped reports and preserves final usage after access revocation', async () => {
     const conversation = await createConversation(owner);
     const url = `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/usage`;
     const report = (body: BudgetRequest, token = 'test-token') =>
@@ -159,6 +190,15 @@ describe('Course agent access and conversation privacy', () => {
     expect(accepted.status).toBe(200);
     const first = BudgetResponseSchema.parse(await accepted.json());
     expect(first.allocation).toMatchObject({ status: 'granted', grantedMilliDollars: 3000 });
+    const skipped = await report({
+      ...request,
+      sequence: 3,
+      usageDelta: { ...emptyUsage(), costMilliDollars: 50000 },
+    });
+    expect(skipped.status).toBe(409);
+    expect(await skipped.json()).toEqual({
+      error: { code: 'report_conflict', message: 'The usage report is out of order.' },
+    });
     expect((await report(request)).status).toBe(409);
     expect(
       (await report({ ...request, usageDelta: { ...request.usageDelta, costMilliDollars: 80 } }))
@@ -173,6 +213,7 @@ describe('Course agent access and conversation privacy', () => {
       usage_input_tokens: 10000,
       usage_output_tokens: 2000,
       usage_cost_milli_dollars: 40,
+      usage_report_count: 1,
     });
     await updateCoursePermissionsRole({
       course_id: '1',
@@ -205,7 +246,11 @@ describe('Course agent access and conversation privacy', () => {
       course_id: '1',
       user_id: owner.id,
     });
-    expect(saved).toMatchObject({ usage_output_tokens: 2500, usage_cost_milli_dollars: 55 });
+    expect(saved).toMatchObject({
+      usage_output_tokens: 2500,
+      usage_cost_milli_dollars: 55,
+      usage_report_count: 3,
+    });
     expect((await report(request)).status).toBe(409);
   });
 
@@ -428,6 +473,83 @@ describe('Course agent access and conversation privacy', () => {
     } finally {
       await fs.remove(fixture);
       await output.cleanup();
+    }
+  });
+
+  // startServer() closes unknown upgrade paths; its Socket.IO exemption must stay intact.
+  // Force WebSocket: polling fallback could hide an accidentally rejected upgrade.
+  test('allows Socket.IO WebSocket upgrades alongside chat', async () => {
+    const socket = io(siteUrl, {
+      transports: ['websocket'],
+      reconnection: false,
+      autoConnect: false,
+    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        socket.once('connect', () => resolve());
+        socket.once('connect_error', reject);
+        socket.connect();
+      });
+    } finally {
+      socket.disconnect();
+    }
+  });
+
+  test('proxies a slow WebSocket handshake with non-ASCII course context', async () => {
+    const title = 'Mécanique — 日本語 📚';
+    await updateCourseColumn({
+      courseId: '1',
+      columnName: 'title',
+      value: title,
+      authnUserId: owner.id,
+    });
+    const conversation = await createConversation(owner);
+    const upstream = withResolvers<IncomingMessage>();
+    const service = createServer(async (req, res) => {
+      upstream.resolve(req);
+      // Engine.IO used to close other protocols' unanswered upgrades after one second.
+      await sleep(1250);
+      res.writeHead(101, { Upgrade: 'websocket', Connection: 'Upgrade' });
+      res.end();
+    });
+    service.listen(0, '127.0.0.1');
+    await once(service, 'listening');
+    const { port } = service.address() as AddressInfo;
+    try {
+      await withUser(owner, () =>
+        withConfig({ courseAgentServiceUrl: `http://127.0.0.1:${port}` }, async () => {
+          const path = `/pl/course/1/course_agent/conversations/${conversation.id}`;
+          const csrfToken = generatePrefixCsrfToken(
+            { url: path, authn_user_id: owner.id },
+            config.secretKey,
+          );
+          const handshake = request(`${siteUrl}${path}?csrfToken=${csrfToken}`, {
+            headers: { Connection: 'Upgrade', Upgrade: 'websocket', Cookie: 'browser=secret' },
+          });
+          const upgraded = withResolvers<number | undefined>();
+          handshake.once('error', upgraded.reject);
+          handshake.once('response', (response) => {
+            response.resume();
+            upgraded.resolve(response.statusCode);
+          });
+          handshake.once('upgrade', (response, socket) => {
+            socket.destroy();
+            upgraded.resolve(response.statusCode);
+          });
+          handshake.end();
+          expect(await upgraded.promise).toBe(101);
+          const forwarded = await upstream.promise;
+          expect(forwarded.url).toBe(`/conversations/${conversation.agent_conversation_id}`);
+          expect(forwarded.headers.authorization).toBe('Bearer test-token');
+          expect(forwarded.headers.cookie).toBeUndefined();
+          expect(
+            JSON.parse(decodeURIComponent(forwarded.headers['x-pl-course-context'] as string)),
+          ).toMatchObject({ courseTitle: title });
+        }),
+      );
+    } finally {
+      service.close();
+      await once(service, 'close');
     }
   });
 });

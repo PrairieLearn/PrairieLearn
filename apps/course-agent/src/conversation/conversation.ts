@@ -14,8 +14,9 @@ import {
   type ConversationLifecycle,
   type ConversationState,
   type PendingReview,
-  type PushSyncResult,
-  PushSyncResultSchema,
+  type RequestChangesResult,
+  RequestChangesResultSchema,
+  type ReviewBaseFile,
   type ReviewDecision,
   type ReviewOutcome,
   type ReviewSnapshot,
@@ -36,6 +37,7 @@ const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
 });
+
 /**
  * A saved expiry for a turn or idle workspace. The sandbox ID prevents stale alarms
  * from shutting down a replacement workspace. Turn expiry includes startup time.
@@ -52,9 +54,11 @@ interface RecordData {
   nativeThreadId: string | null;
   checkpoint: DirectoryBackupRecord | null;
   deadline: Deadline | null;
+  localBaseline: { commit: string; paths: string[] } | null;
   review:
     | (Omit<PendingReview, 'snapshot'> & {
-        snapshot: Omit<ReviewSnapshot, 'additions'> & { additions: { path: string }[] };
+        /** Contents are placeholders; per-file KV entries keep durable values small. */
+        snapshot: ReviewSnapshot;
         decision: ReviewDecision | null;
       })
     | null;
@@ -82,9 +86,9 @@ interface ActiveTurn {
 interface ReviewOperation {
   callId: string;
   /** Present while the original native tool call is still waiting for its answer. */
-  resolveNativeCall: ((result: PushSyncResult) => void) | null;
+  resolveNativeCall: ((result: RequestChangesResult) => void) | null;
   /** Once PL supplies a result, duplicate callbacks share its persistence and continuation promise. */
-  delivery: { result: PushSyncResult; done: Promise<boolean> } | null;
+  delivery: { result: RequestChangesResult; done: Promise<boolean> } | null;
 }
 
 /**
@@ -250,7 +254,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!this._record) return;
     if (this.budget.blocked) this.setRecord({ ...this.record, deadline: null });
     if (this.record.review) {
-      await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
+      await this.schedule(1, 'recoverRequestChangesToolPart', undefined, { idempotent: true });
     }
     this.setState(this.publicState);
     if (this.budget.blocked) return;
@@ -301,6 +305,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       checkpoint: null,
       review: null,
       deadline: null,
+      localBaseline: null,
     });
   }
 
@@ -310,7 +315,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    */
   override async onConnect(connection: Connection, context: ConnectionContext) {
     const courseContext = CourseContextSchema.parse(
-      JSON.parse(context.request.headers.get('X-PL-Course-Context') ?? 'null'),
+      JSON.parse(decodeURIComponent(context.request.headers.get('X-PL-Course-Context') ?? 'null')),
     );
     this.setRecord({ ...this.record, courseContext });
     connection.send(
@@ -327,15 +332,17 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** SDK restart recovery preserves buffered output but must never repeat file edits. */
   protected override async onChatRecovery() {
-    if (this._record) await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
+    if (this._record) {
+      await this.schedule(1, 'recoverRequestChangesToolPart', undefined, { idempotent: true });
+    }
     if (this._record && !this.record.review && this.record.lifecycle.status !== 'blocked') {
       this.block('runtime_failed');
     }
     return { continue: false };
   }
 
-  /** Restore a card that SDK restart recovery persisted after the wake hook. */
-  async recoverReviewCard() {
+  /** Restore a request_changes tool part that SDK restart recovery persisted after the wake hook. */
+  async recoverRequestChangesToolPart() {
     if (!this.record.review || this.active || this.workspaceShutdown) return;
     if (
       this.record.lifecycle.status === 'blocked' &&
@@ -493,62 +500,94 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       messageId: crypto.randomUUID(),
       text: outcome ? { callId: this.record.review!.callId, result: outcome } : text,
       startup,
-      onReview:
-        source.type === 'local'
-          ? undefined
-          : async ({ callId }, ready) => {
-              if (this.reviewOperation?.resolveNativeCall) {
-                throw new Error('A review is already pending');
-              }
-              const result = Promise.withResolvers<PushSyncResult>();
-              const operation: ReviewOperation = {
-                callId,
-                resolveNativeCall: result.resolve,
-                delivery: null,
-              };
-              this.reviewOperation = operation;
-              try {
-                const snapshot: ReviewSnapshot = await this.sandbox.captureReview(
-                  source.repository,
-                  source.branch,
-                );
-                this.clearReview();
-                snapshot.additions.forEach((file, index) =>
-                  this.ctx.storage.kv.put(`review-file:${index}`, file.contents),
-                );
-                this.setRecord({
-                  ...this.record,
-                  review: {
-                    callId,
-                    card: { messageId: this.active!.execution.messageId, partId: callId },
-                    snapshot: {
-                      ...snapshot,
-                      additions: snapshot.additions.map(({ path }) => ({ path })),
-                    },
-                    status: 'pending',
-                    jobSequenceId: null,
-                    error: null,
-                    decision: null,
-                  },
-                });
-                ready();
-                await this.active!.sdkFinished.promise;
-                this.setRecord({
-                  ...this.record,
-                  lifecycle: { status: 'waiting_for_user' },
-                  deadline: null,
-                });
-                await this.scheduleDeadline('idle');
-              } catch (error) {
-                if (this.reviewOperation === operation) this.reviewOperation = null;
-                throw error;
-              }
-              return result.promise;
+      onReview: async ({ callId }, ready) => {
+        if (this.reviewOperation?.resolveNativeCall) {
+          throw new Error('A review is already pending');
+        }
+        const result = Promise.withResolvers<RequestChangesResult>();
+        const operation: ReviewOperation = {
+          callId,
+          resolveNativeCall: result.resolve,
+          delivery: null,
+        };
+        this.reviewOperation = operation;
+        try {
+          const snapshot: ReviewSnapshot = await this.sandbox.captureReview(
+            source,
+            this.record.localBaseline
+              ? {
+                  commit: this.record.localBaseline.commit,
+                  files: this.record.localBaseline.paths.map((path) => ({
+                    path,
+                    contents: this.ctx.storage.kv.get<string | null>(`local-base:${path}`)!,
+                  })),
+                }
+              : undefined,
+          );
+          this.clearReview();
+          snapshot.additions.forEach((file, index) =>
+            this.ctx.storage.kv.put(`review-file:${index}`, file.contents),
+          );
+          if (snapshot.type === 'local') {
+            snapshot.originals.forEach((file, index) =>
+              this.ctx.storage.kv.put(`review-original:${index}`, file.contents),
+            );
+          }
+          this.setRecord({
+            ...this.record,
+            review: {
+              callId,
+              request_changes_tool_part: {
+                messageId: this.active!.execution.messageId,
+                partId: callId,
+              },
+              snapshot: {
+                ...snapshot,
+                ...(snapshot.type === 'local'
+                  ? {
+                      originals: snapshot.originals.map((file) => ({
+                        ...file,
+                        contents: file.contents === null ? null : '',
+                      })),
+                    }
+                  : {}),
+                additions: snapshot.additions.map(({ path }) => ({ path, contents: '' })),
+              },
+              status: 'pending',
+              jobSequenceId: null,
+              error: null,
+              decision: null,
             },
+          });
+          ready();
+          await this.active!.sdkFinished.promise;
+          this.setRecord({
+            ...this.record,
+            lifecycle: { status: 'waiting_for_user' },
+            deadline: null,
+          });
+          await this.scheduleDeadline('idle');
+        } catch (error) {
+          if (this.reviewOperation === operation) this.reviewOperation = null;
+          throw error;
+        }
+        return result.promise;
+      },
       prepare: async () => {
         await this.scheduleDeadline('turn');
         if (startup) {
-          await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+          const commit = await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+          if (source.type === 'local') {
+            if (commit) {
+              // Retrying initial setup recreates the same source with a new commit SHA.
+              this.setRecord({
+                ...this.record,
+                localBaseline: { commit, paths: this.record.localBaseline?.paths ?? [] },
+              });
+            } else if (!this.record.localBaseline) {
+              throw new Error('The local course baseline is missing. Start a new conversation.');
+            }
+          }
         }
         await this.sandbox.authorizeModel({
           model: this.record.config.model,
@@ -680,18 +719,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
               review: {
                 ...review,
                 status: 'blocked',
-                error: 'The publication job could not be verified. Inspect it before retrying.',
+                error: 'The save job could not be verified. Inspect it before retrying.',
               },
             });
           }
-          throw new Error('Could not retrieve the publication outcome.');
+          throw new Error('Could not retrieve the save outcome.');
         }
         const saved = SavedJobOutcomeSchema.parse(await response.json());
-        if (
-          (saved.callId !== null && saved.callId !== review.callId) ||
-          saved.jobSequenceId !== review.jobSequenceId
-        ) {
-          throw new Error('Publication job does not match the pending review.');
+        if (saved.jobSequenceId !== review.jobSequenceId) {
+          throw new Error('Save job does not match the pending review.');
         }
         if (saved.status === 'running') return false;
         if (saved.status === 'blocked' || !saved.result) {
@@ -700,7 +736,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             review: { ...review, status: 'blocked', error: saved.error },
           });
           throw new Error(
-            saved.error ?? 'Publication was interrupted. Inspect the job before retrying.',
+            saved.error ?? 'Saving was interrupted. Inspect the job before retrying.',
           );
         }
         return await this.recordReviewOutcome({ callId: review.callId, result: saved.result });
@@ -779,7 +815,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private savedOutcome() {
     const saved = this.reviewPart();
     return saved?.part.state === 'output-available'
-      ? PushSyncResultSchema.parse(saved.part.output)
+      ? RequestChangesResultSchema.parse(saved.part.output)
       : null;
   }
 
@@ -787,6 +823,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.record.review?.snapshot.additions.forEach((_, index) =>
       this.ctx.storage.kv.delete(`review-file:${index}`),
     );
+    if (this.record.review?.snapshot.type === 'local') {
+      this.record.review.snapshot.originals.forEach((_, index) =>
+        this.ctx.storage.kv.delete(`review-original:${index}`),
+      );
+    }
     this.setRecord({ ...this.record, review: null });
   }
 
@@ -803,12 +844,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     return {
       callId: review.callId,
-      card: review.card,
+      request_changes_tool_part: review.request_changes_tool_part,
       status: review.status,
       jobSequenceId: review.jobSequenceId,
       error: review.error,
       snapshot: {
         ...review.snapshot,
+        ...(review.snapshot.type === 'local'
+          ? {
+              originals: review.snapshot.originals.map((file, index) => ({
+                ...file,
+                contents: this.ctx.storage.kv.get<string | null>(`review-original:${index}`)!,
+              })),
+            }
+          : {}),
         additions: review.snapshot.additions.map((file, index) => ({
           ...file,
           contents: this.ctx.storage.kv.get<string>(`review-file:${index}`)!,
@@ -828,7 +877,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (
       !this.messages.some(
         (message) =>
-          message.id === review.card.messageId &&
+          message.id === review.request_changes_tool_part.messageId &&
           message.parts.some(
             (part) =>
               isToolUIPart(part) &&
@@ -890,7 +939,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           part.state === 'output-available'
         ) {
           if (
-            JSON.stringify(PushSyncResultSchema.parse(part.output)) !==
+            JSON.stringify(RequestChangesResultSchema.parse(part.output)) !==
             JSON.stringify(outcome.result)
           ) {
             return false;
@@ -910,6 +959,22 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ) {
       return false;
     }
+    if (outcome.result.publication.status === 'saved_locally') {
+      const baseline = this.record.localBaseline!;
+      const paths = new Set(baseline.paths);
+      const files: ReviewBaseFile[] = [
+        ...review.snapshot.additions.map((file, index) => ({
+          path: file.path,
+          contents: this.ctx.storage.kv.get<string>(`review-file:${index}`)!,
+        })),
+        ...review.snapshot.deletions.map(({ path }) => ({ path, contents: null })),
+      ];
+      for (const file of files) {
+        paths.add(file.path);
+        this.ctx.storage.kv.put(`local-base:${file.path}`, file.contents);
+      }
+      this.setRecord({ ...this.record, localBaseline: { ...baseline, paths: [...paths] } });
+    }
     if (!this.workspaceShutdown) {
       this.setRecord({
         ...this.record,
@@ -925,7 +990,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         parts: message.parts.map((part) =>
           isToolUIPart(part) && part.toolCallId === outcome.callId
             ? {
-                type: 'tool-push_sync' as const,
+                type: 'tool-request_changes' as const,
                 toolCallId: part.toolCallId,
                 input: part.input,
                 state: 'output-available' as const,
@@ -992,7 +1057,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       const previous = this.record.checkpoint;
       const checkpoint = await this.sandbox.checkpoint();
       this.setRecord({ ...this.record, checkpoint, lifecycle: { status: 'destroying' } });
-      // TODO: Revisit source retention when implementing local save-back baselines.
+      // The initial Git baseline is retained in the checkpoint; saved contents live in DO storage.
       if (!previous && this.record.config.type === 'local') {
         await this.schedule(0, 'deleteLocalSource', this.record.config.archiveKey, {
           retry: { maxAttempts: 3 },

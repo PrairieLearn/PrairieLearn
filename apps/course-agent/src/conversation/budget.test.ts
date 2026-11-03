@@ -79,13 +79,26 @@ describe('conversation credit', () => {
     expect(state.saved().balanceMilliDollars).toBe(2800);
   });
 
-  it('retries a frozen refill after restart without admitting more inference or losing debt', async () => {
+  it.each([
+    {
+      failure: 'network error',
+      response: () => Promise.reject(new Error('PL unavailable before processing')),
+    },
+    {
+      failure: 'timeout',
+      response: () => Promise.reject(new DOMException('Request timed out', 'TimeoutError')),
+    },
+    {
+      failure: '5xx response',
+      response: () => Promise.resolve(new Response('Unavailable', { status: 503 })),
+    },
+  ])('retries the same persisted refill through Resume after a $failure', async ({ response }) => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime('2026-10-27T03:10:00Z');
     const fetch = vi
       .fn()
       .mockResolvedValueOnce(grant(1))
-      .mockRejectedValueOnce(new Error('PL unavailable before processing'))
+      .mockImplementationOnce(response)
       .mockResolvedValueOnce(grant(2));
     vi.stubGlobal('fetch', fetch);
     const state = fixture();
@@ -94,6 +107,7 @@ describe('conversation credit', () => {
     budget.recordRequestUsage('a', { ...emptyUsage(), costMilliDollars: 3400 });
     expect(await budget.tryStartRequest('b')).toBe(false);
     expect(await budget.tryStartRequest('b')).toBe(false);
+    expect(fetch).toHaveBeenCalledTimes(2);
     const restored = state.restart();
     expect(await restored.resume()).toBe(true);
     expect(fetch.mock.calls[1][1].body).toBe(fetch.mock.calls[2][1].body);
@@ -101,6 +115,37 @@ describe('conversation credit', () => {
       balanceMilliDollars: 2600,
       accounting: { phase: 'idle', usage: emptyUsage() },
       lastAcknowledgedSequence: 2,
+    });
+  });
+
+  it('waits for acknowledgement before creating another report or admitting inference', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime('2026-10-27T03:10:00Z');
+    const acknowledgement = Promise.withResolvers<Response>();
+    const fetch = vi
+      .fn()
+      .mockReturnValueOnce(acknowledgement.promise)
+      .mockResolvedValueOnce(grant(2));
+    vi.stubGlobal('fetch', fetch);
+    const state = fixture();
+    const budget = state.restart();
+    const first = budget.tryStartRequest('a');
+    const concurrent = budget.tryStartRequest('b');
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(state.saved().accounting).toMatchObject({
+      phase: 'reporting',
+      request: { sequence: 1 },
+    });
+    acknowledgement.resolve(grant(1));
+    expect(await first).toBe(true);
+    expect(await concurrent).toBe(false);
+    expect(fetch).toHaveBeenCalledOnce();
+    budget.recordRequestUsage('a', { ...emptyUsage(), costMilliDollars: 3400 });
+    expect(await budget.tryStartRequest('b')).toBe(true);
+    expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({
+      sequence: 2,
+      usageDelta: { ...emptyUsage(), costMilliDollars: 3400 },
+      requestCredit: true,
     });
   });
 
