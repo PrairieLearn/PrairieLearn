@@ -35,7 +35,11 @@ import { CURRENT_SYNC_VERSION } from '../sync/version.js';
 import * as helperDb from './helperDb.js';
 import * as util from './sync/util.js';
 
-const git = vi.hoisted(() => vi.fn());
+// Other suites share this worker's module cache and may have loaded the real Git client.
+const git = vi.hoisted(() => {
+  vi.resetModules();
+  return vi.fn();
+});
 vi.mock('execa', () => ({ execa: git }));
 
 const user: User = {
@@ -66,7 +70,14 @@ describe('content-only question save', () => {
   let commitCounter: number;
 
   beforeAll(helperDb.before);
-  afterAll(helperDb.after);
+  afterAll(async () => {
+    try {
+      await helperDb.after();
+    } finally {
+      vi.doUnmock('execa');
+      vi.resetModules();
+    }
+  });
   afterEach(() => vi.restoreAllMocks());
   beforeEach(async () => {
     await helperDb.resetDatabase();
