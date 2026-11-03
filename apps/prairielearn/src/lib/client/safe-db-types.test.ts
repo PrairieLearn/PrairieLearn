@@ -510,6 +510,7 @@ const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
 };
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
+  authors: null,
   client_files: null,
   copied_from: null,
   copied_from_question_id: null,
