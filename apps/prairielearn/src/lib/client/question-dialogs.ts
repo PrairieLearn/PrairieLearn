@@ -1,4 +1,4 @@
-import { Modal } from 'bootstrap';
+import type { Modal } from 'bootstrap';
 
 import { parseHTMLElement } from '@prairielearn/browser-utils';
 import type { HtmlSafeString } from '@prairielearn/html';
@@ -31,7 +31,8 @@ export function createQuestionDialogs(document: Document, data: QuestionDialogDa
     if (root.matches('.js-copy-question-form')) {
       copyContentModal(root as HTMLFormElement);
     }
-    const modal = new Modal(element);
+    // HeadContents loads Bootstrap; bundling it again duplicates its document event handlers.
+    const modal = new window.bootstrap.Modal(element);
     const closed = new Promise<void>((resolve) => {
       element.addEventListener(
         'hidden.bs.modal',

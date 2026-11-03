@@ -78,14 +78,23 @@ onDocumentReady(() => {
         );
         const services = browserServices.get(container);
         if (!button || !services) return;
+        let triggerSelector: string;
         if (button.dataset.questionDialog === 'copy-question') {
+          triggerSelector = 'button[data-question-dialog="copy-question"]';
           await services.openCopyQuestion();
         } else if (button.dataset.questionDialog === 'submission-info') {
-          await services.openSubmissionInfo({
-            submissionId: button.dataset.submissionId!,
-          });
+          const submissionId = button.dataset.submissionId!;
+          triggerSelector = `button[data-question-dialog="submission-info"][data-submission-id="${CSS.escape(submissionId)}"]`;
+          await services.openSubmissionInfo({ submissionId });
+        } else {
+          return;
         }
-        if (button.isConnected) button.focus({ preventScroll: true });
+        if (!container.isConnected) return;
+        // Rendering a submission can replace the trigger while its dialog is open.
+        const focusTarget =
+          container.querySelector<HTMLButtonElement>(triggerSelector) ??
+          container.closest<HTMLElement>('.question-page-question');
+        focusTarget?.focus({ preventScroll: true });
       });
 
       const externalGrading =
@@ -336,7 +345,10 @@ function fetchResults({
   submissionId: string;
   signal: AbortSignal;
 }): void {
-  window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
+  // Application dialogs stay open and receive the refreshed submission metadata.
+  if (!browserServices.has(container)) {
+    window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
+  }
 
   const submissionPanel = container.querySelector<HTMLElement>(`#submission-${submissionId}`);
   if (!submissionPanel) return;
