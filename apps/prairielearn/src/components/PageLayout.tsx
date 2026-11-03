@@ -256,6 +256,8 @@ export function PageLayout({
     forcedInitialNavToggleState?: boolean;
     /** Whether or not to show the branded page footer. */
     showFooter?: boolean;
+    /** Whether to show the course agent panel. Disable on pages with their own AI chat. */
+    showCourseAgentPanel?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
@@ -276,6 +278,7 @@ export function PageLayout({
     enableNavbar: true,
     hideNavbarSessionControls: false,
     showFooter: false,
+    showCourseAgentPanel: true,
     ...options,
   };
 
@@ -289,6 +292,10 @@ export function PageLayout({
 
   const sideNavExpanded =
     sideNavEnabled && (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
+
+  // Rendered by the course agent panel middleware (EE) when the user has access.
+  const courseAgentPanel =
+    sideNavEnabled && resolvedOptions.showCourseAgentPanel ? resLocals.course_agent_panel : null;
 
   let showContextNavigation = [
     'instructor',
@@ -336,13 +343,17 @@ export function PageLayout({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({
-          resLocals,
-          pageTitle,
-          pageNote: resolvedOptions.pageNote,
-        })}
-        ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
-        ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
+        ${[
+          HeadContents({
+            resLocals,
+            pageTitle,
+            pageNote: resolvedOptions.pageNote,
+          }),
+          compiledStylesheetTag('pageLayout.css'),
+          courseAgentPanel ? compiledStylesheetTag('courseAgent.css') : '',
+          headContentString,
+          sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : '',
+        ]}
       </head>
       <body
         class="${clsx({
@@ -494,6 +505,7 @@ export function PageLayout({
               ${postContentString}
             </div>
           </div>
+          ${courseAgentPanel ?? ''}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

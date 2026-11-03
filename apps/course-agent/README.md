@@ -14,18 +14,17 @@ There is one SDK-owned message history and its native temporary stream buffer. T
 
 The browser uses `useAgent()` from `agents/react` and `useAgentChat()` from `@cloudflare/ai-chat/react`. The browser connects through PrairieLearn. On each connection, the DO sends saved history using the SDK's `CF_AGENT_CHAT_MESSAGES` message, then the SDK handles replay and live output. The hook sets `getInitialMessages: null` to avoid a separate HTTP history fetch racing startup recovery. Send stays disabled until that initial transcript arrives. The SDK's history HTTP route remains available:
 
-| Browser route                                                   | Internal service route                   | Behavior                                                           |
-| --------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------ |
-| tRPC `courseAgent.create`                                       | `POST /conversations`                    | Create a Cloudflare-generated UUID, then record it in PL's catalog |
-| WebSocket `/pl/course/{course}/course_agent/conversations/{id}` | WebSocket `/conversations/{uuid}`        | Native Cloudflare chat protocol: send, stream, resume, Stop        |
-| `GET .../conversations/{id}/get-messages`                       | `GET /conversations/{uuid}/get-messages` | SDK-owned saved history                                            |
-| tRPC `courseAgent.setTitle`                                     | None                                     | Set the catalog title from the first submitted message             |
+| Browser route                                                   | Internal service route                   | Behavior                                                                  |
+| --------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------- |
+| tRPC `courseAgent.create`                                       | `POST /conversations`                    | On first send, create a UUID and record it with the title in PL's catalog |
+| WebSocket `/pl/course/{course}/course_agent/conversations/{id}` | WebSocket `/conversations/{uuid}`        | Native Cloudflare chat protocol: send, stream, resume, Stop               |
+| `GET .../conversations/{id}/get-messages`                       | `GET /conversations/{uuid}/get-messages` | SDK-owned saved history                                                   |
 
 Browser IDs are PL catalog IDs. Service IDs are Cloudflare-generated UUIDs. The service requires `Authorization: Bearer <PL_SERVICE_TOKEN>` on every request, including upgrades. It trusts PrairieLearn's catalog/ownership checks when routing a valid UUID.
 
 PrairieLearn sends WebSocket upgrades through the existing Express session, authentication, and course authorization middleware before proxying. The handshake also requires a signed, user-bound prefix CSRF token in its query string. The proxy removes that token and browser cookies, replaces authorization with the service credential, and supplies `X-PL-User-Id` and `X-PL-Course-Context`. Browser state-update messages cannot overwrite the DO's model or trusted course context.
 
-Refreshing, switching conversations, or closing the panel disconnects the reader; the SDK keeps the turn running. Returning to the same conversation loads saved history and resumes the existing stream without submitting another prompt. The selected conversation is retained in the URL. The hook's `stop()` explicitly cancels the server turn, using the abort signal passed into `onChatMessage()`.
+Refreshing, switching conversations, or closing the panel disconnects the reader; the SDK keeps the turn running. Returning to the same conversation loads saved history and resumes the existing stream without submitting another prompt. The selected conversation is retained per tab in session storage. The hook's `stop()` explicitly cancels the server turn, using the abort signal passed into `onChatMessage()`.
 
 The native SDK protocol replaces the earlier HTTP `/chat` and `/stop` adapter. The SDK generates user-message/request IDs in its client and assistant-message IDs on the server. It sends the transcript using its own protocol; consumers do not construct that payload. Cloudflare still generates conversation IDs. User-message validation, transcript synchronization, and replay follow the pinned SDK's behavior rather than a separate application protocol.
 
@@ -35,20 +34,55 @@ Conversation-list activity indicators, unread/read markers, sandbox execution, a
 
 ## Local development
 
-Configure the Worker locally using `.dev.vars.example`, then start it:
+Assumes a working [native PrairieLearn development setup](../../docs/dev-guide/installingNative.md). Run commands from the repository root.
+
+Copy the Worker secrets template:
 
 ```sh
-pnpm --filter @prairielearn/course-agent dev
+cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
 ```
 
-Configure PL's `courseAgentServiceUrl`, `courseAgentServiceToken`, and the `course-agent` feature flag, then run the PL development server. Open the course agent as a course owner. Send a message, refresh or switch conversations during its reply, and return to the same conversation. Stop should cancel execution; simply closing the panel should leave it running.
+Set `OPENAI_API_KEY` and a random `PL_SERVICE_TOKEN` in `.dev.vars` (e.g. generate the token with `openssl rand -hex 32`).
 
-The new chat interface uses the SDK WebSocket protocol, so the previous chat `curl` examples no longer apply. Conversation creation and saved-history requests remain HTTP:
+Merge the following into `apps/prairielearn/config.json`, using the same token:
+
+```json
+{
+  "isEnterprise": true,
+  "courseAgentServiceUrl": "http://127.0.0.1:8790",
+  "courseAgentServiceToken": "paste-the-same-PL_SERVICE_TOKEN-here",
+  "features": {
+    "course-agent": true
+  }
+}
+```
+
+Start the Worker:
+
+```sh
+pnpm --filter @prairielearn/course-agent dev --local
+```
+
+Start PrairieLearn in a second terminal:
+
+```sh
+make dev
+```
+
+Open [http://localhost:3000](http://localhost:3000), navigate to an instructor page in a non-example course (e.g. Test Course), and click the stars button at the bottom right. Both the authenticated and effective user must have Owner permission.
+
+### HTTP requests
+
+Set `PL_SERVICE_TOKEN` in your shell to the value from `.dev.vars`. Create a conversation:
 
 ```sh
 curl --fail-with-body -X POST -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
   http://localhost:8790/conversations
+```
 
+Set `conversation_id` to the returned `id`, then fetch its saved history:
+
+```sh
 curl --fail-with-body -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
   "http://localhost:8790/conversations/$conversation_id/get-messages"
 ```
