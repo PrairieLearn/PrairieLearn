@@ -921,26 +921,21 @@ export async function updateChunksForCourse({
       { course_id: courseId },
       IdSchema,
     );
-    await sqldb.execute(sql.lock_chunks_for_publication);
-    const historyEnabled = await sqldb.queryScalar(sql.select_chunk_history_enabled, z.boolean());
     const createdAt = await sqldb.queryScalar(
       sql.select_chunk_publication_date,
       { course_id: courseId },
       DateFromISOString,
     );
-    if (historyEnabled) {
-      await sqldb.execute(sql.establish_chunk_baseline, {
-        course_id: courseId,
-        created_at: createdAt,
-      });
-    }
+    await sqldb.execute(sql.establish_chunk_baseline, {
+      course_id: courseId,
+      created_at: createdAt,
+    });
     await sqldb.execute(sql.publish_chunks, {
       course_id: courseId,
       chunks: JSON.stringify(generatedChunks),
       deleted_chunk_ids: deletedChunks.map((chunk) => chunk.id),
       created_at: createdAt,
       commit_hash: commitHash,
-      history_enabled: historyEnabled,
     });
   });
 

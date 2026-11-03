@@ -141,25 +141,6 @@ WHERE
   id = $course_id
 FOR UPDATE;
 
--- BLOCK lock_chunks_for_publication
--- Keep the activation migration from changing writer mode mid-publication.
-LOCK TABLE chunks IN ROW EXCLUSIVE MODE;
-
--- BLOCK select_chunk_history_enabled
--- Removing this index activates history after compatible writers are deployed.
-SELECT
-  NOT EXISTS (
-    SELECT
-      1
-    FROM
-      pg_index AS i
-      JOIN pg_class AS index ON (index.oid = i.indexrelid)
-    WHERE
-      i.indrelid = 'chunks'::regclass
-      AND index.relname = 'chunks_unique_values_key'
-      AND i.indisunique
-  );
-
 -- BLOCK select_chunk_publication_date
 SELECT
   GREATEST(
@@ -229,34 +210,6 @@ WITH
     WHERE
       id = ANY ($deleted_chunk_ids::bigint[])
       AND course_id = $course_id
-  ),
-  legacy_deletions AS (
-    DELETE FROM chunks
-    WHERE
-      NOT $history_enabled::boolean
-      AND course_id = $course_id
-      AND id = ANY ($deleted_chunk_ids::bigint[])
-  ),
-  legacy_updates AS (
-    UPDATE chunks AS target
-    SET
-      uuid = source.uuid,
-      created_at = $created_at,
-      commit_hash = $commit_hash,
-      size_compressed = source.size_compressed,
-      size_uncompressed = source.size_uncompressed
-    FROM
-      new_chunks AS source
-    WHERE
-      NOT $history_enabled::boolean
-      AND NOT source.deleted
-      AND target.course_id = source.course_id
-      AND target.type = source.type
-      AND coalesce(target.question_id, -1) = coalesce(source.question_id, -1)
-      AND coalesce(target.course_instance_id, -1) = coalesce(source.course_instance_id, -1)
-      AND coalesce(target.assessment_id, -1) = coalesce(source.assessment_id, -1)
-    RETURNING
-      target.uuid
   )
 INSERT INTO
   chunks (
@@ -285,20 +238,7 @@ SELECT
   source.size_compressed,
   source.size_uncompressed
 FROM
-  new_chunks AS source
-WHERE
-  $history_enabled::boolean
-  OR (
-    NOT source.deleted
-    AND NOT EXISTS (
-      SELECT
-        1
-      FROM
-        legacy_updates
-      WHERE
-        uuid = source.uuid
-    )
-  );
+  new_chunks AS source;
 
 -- BLOCK select_active_assessment_ids_by_tid
 SELECT
