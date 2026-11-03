@@ -29,8 +29,11 @@ RUN make python-deps-core
 # code that will be built during the install process.
 COPY --parents pnpm-lock.yaml pnpm-workspace.yaml package.json apps/*/package.json packages/*/package.json packages/bind-mount/ packages/*/bin/ /PrairieLearn/
 
-# Install Node dependencies without retaining the build-time package store.
-RUN pnpm install --frozen-lockfile && rm -rf "$(pnpm store path)"
+# Pruning clears registry metadata outside the package store. Remove both
+# caches in this layer so they do not add to the final image.
+RUN pnpm install --frozen-lockfile \
+    && pnpm store prune \
+    && rm -rf "$(pnpm store path)"
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . .
