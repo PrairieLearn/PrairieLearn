@@ -16,6 +16,8 @@ indexes
     chunks_pkey: PRIMARY KEY (id) USING btree (id)
     chunks_unique_values_key: UNIQUE USING btree (course_id, type, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint))
     chunks_uuid_key: UNIQUE (uuid) USING btree (uuid)
+    chunks_course_created_at_idx: USING btree (course_id, created_at DESC NULLS LAST)
+    chunks_latest_revision_idx: USING btree (course_id, type, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint), created_at DESC NULLS LAST, id DESC)
 
 foreign-key constraints
     chunks_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
