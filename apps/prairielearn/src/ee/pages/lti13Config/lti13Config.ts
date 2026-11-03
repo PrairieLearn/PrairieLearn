@@ -10,7 +10,8 @@ const router = Router({ mergeParams: true });
 
 const ltiConfig = {
   title: 'PrairieLearn',
-  description: 'The best platform for online assessments',
+  description:
+    'Interactive, auto-graded assessments with randomized question variants and instant feedback',
   oidc_initiation_url: 'PLACEHOLDER--will be replaced later',
   target_link_uri: 'PLACEHOLDER--will be replaced later',
   extensions: [
@@ -29,6 +30,12 @@ const ltiConfig = {
             message_type: 'LtiResourceLinkRequest',
             target_link_uri: 'PLACEHOLDER--will be replaced later',
             windowTarget: '_blank',
+          },
+          {
+            enabled: true,
+            placement: 'assignment_selection',
+            message_type: 'LtiDeepLinkingRequest',
+            target_link_uri: 'PLACEHOLDER--will be replaced later',
           },
         ],
       },
@@ -65,6 +72,7 @@ router.get(
     // Use URL to extract just the hostname
     lmsConfig.extensions[0].domain = url.hostname || '';
     lmsConfig.extensions[0].settings.placements[0].target_link_uri = `${host}/pl/lti13_instance/${lti13_instance.id}/course_navigation`;
+    lmsConfig.extensions[0].settings.placements[1].target_link_uri = `${host}/pl/lti13_instance/${lti13_instance.id}/assignment_selection`;
 
     lmsConfig.public_jwk_url = `${host}/pl/lti13_instance/${lti13_instance.id}/jwks`;
     lmsConfig.custom_fields = lti13_instance.custom_fields;
