@@ -14688,7 +14688,7 @@ snapshots:
 
   '@types/pg-pool@2.0.7':
     dependencies:
-      '@types/pg': 8.23.1
+      '@types/pg': 8.15.6
 
   '@types/pg@8.15.6':
     dependencies:
@@ -20002,13 +20002,7 @@ snapshots:
       media-typer: 0.3.0
       mime-types: 2.1.35
 
-  type-is@2.1.0:
-    dependencies:
-      content-type: 2.1.0
-      media-typer: 1.1.0
-      mime-types: 3.0.2
-
-  typescript-cp@0.1.11(@typescript/typescript6@6.0.2):
+  typescript-cp@0.1.11:
     dependencies:
       chokidar: 3.6.0
       commander: 10.0.1
