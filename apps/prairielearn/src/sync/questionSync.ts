@@ -1,18 +1,27 @@
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import jju from 'jju';
 import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { type Course, QuestionSchema } from '../lib/db-types.js';
+import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
+
+import { loadInfoFile } from './course-db.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+export type QuestionSyncChange =
+  | { kind: 'content'; qid: string }
+  | { kind: 'title'; qid: string; title: string };
+
 /** Requires the course lock and final checkout. Returns null when changes require full sync. */
-export async function getQuestionContentPlan({
+export async function getQuestionSyncPlan({
   course,
   oldHash,
   newHash,
@@ -22,7 +31,7 @@ export async function getQuestionContentPlan({
   oldHash: string | null;
   newHash: string;
   editedPaths?: string[];
-}): Promise<string[] | null> {
+}): Promise<QuestionSyncChange[] | null> {
   if (!oldHash) return null;
   const diff = await execa(
     'git',
@@ -56,17 +65,46 @@ export async function getQuestionContentPlan({
     { course_id: course.id, file_paths: [...files] },
     z.object({ file_path: z.string(), question: QuestionSchema.nullable() }),
   );
-  const qids = new Set<string>();
+  const plan = new Map<string, QuestionSyncChange>();
   const realCoursePath = await fs.realpath(course.path);
   for (const { file_path: file, question } of rows) {
-    if (!question?.qid || file === `questions/${question.qid}/info.json`) return null;
+    if (!question?.qid) return null;
     const absolutePath = path.join(course.path, file);
     if (!contains(course.path, absolutePath)) return null;
     if (await fs.pathExists(absolutePath)) {
       if ((await fs.realpath(absolutePath)) !== path.join(realCoursePath, file)) return null;
       if (!(await fs.lstat(absolutePath)).isFile()) return null;
     }
-    qids.add(question.qid);
+    if (file === `questions/${question.qid}/info.json`) {
+      // A narrow update cannot recover other fields left unapplied by an error.
+      if (question.sync_errors) return null;
+      const loaded = await loadInfoFile<Record<string, unknown>>({
+        coursePath: course.path,
+        filePath: file,
+      });
+      if (!loaded?.data || loaded.errors.length > 0) return null;
+      const validated = QuestionJsonSchema.safeParse(loaded.data);
+      if (!validated.success) return null;
+      const original = await execa('git', ['show', `${oldHash}:./${file}`], {
+        cwd: course.path,
+        reject: false,
+      });
+      if (original.exitCode !== 0) return null;
+      let previous: unknown;
+      try {
+        previous = jju.parse(original.stdout);
+      } catch {
+        return null;
+      }
+      const parsed = z.record(z.string(), z.unknown()).safeParse(previous);
+      if (!parsed.success) return null;
+      const { title: _oldTitle, ...oldMetadata } = parsed.data;
+      const { title: _newTitle, ...newMetadata } = loaded.data;
+      if (!isDeepStrictEqual(oldMetadata, newMetadata)) return null;
+      plan.set(question.qid, { kind: 'title', qid: question.qid, title: validated.data.title });
+    } else if (!plan.has(question.qid)) {
+      plan.set(question.qid, { kind: 'content', qid: question.qid });
+    }
   }
-  return [...qids];
+  return [...plan.values()];
 }

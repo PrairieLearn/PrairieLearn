@@ -23,7 +23,12 @@ import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';
 import { ChunkSchema, QuestionSchema, type User } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editorUtil.js';
-import { FileModifyEditor, classifyEditOutcome } from '../lib/editors.js';
+import {
+  FileModifyEditor,
+  MultiEditor,
+  QuestionRenameEditor,
+  classifyEditOutcome,
+} from '../lib/editors.js';
 import { features } from '../lib/features/index.js';
 import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import * as courseModel from '../models/course.js';
@@ -86,15 +91,39 @@ describe('content-only question save', () => {
     await sync();
   });
 
-  async function save(targetPath = filePath, content = '<p>Updated</p>') {
+  async function save(
+    targetPath = filePath,
+    content = '<p>Updated</p>',
+    mode: 'file' | 'settings' | 'rename' = 'file',
+  ) {
     const course = await selectCourseById(courseId);
-    const editor = new FileModifyEditor({
-      locals: { course, user, authz_data: { has_course_permission_edit: true, authn_user: user } },
+    const locals = {
+      course,
+      user,
+      authz_data: { has_course_permission_edit: true, authn_user: user },
+    };
+    const fileEditor = new FileModifyEditor({
+      locals,
       container: { rootPath: courseDir, invalidRootPaths: [] },
       filePath: targetPath,
       editContents: b64EncodeUnicode(content),
       origHash: (await getOriginalHash(targetPath))!,
     });
+    const question = await selectQuestionByQid({ course_id: courseId, qid });
+    const renameEditor = new QuestionRenameEditor({
+      locals: { ...locals, question },
+      qid_new: question.qid!,
+      title_new: mode === 'rename' ? (JSON.parse(content) as { title: string }).title : undefined,
+    });
+    const editor =
+      mode === 'settings'
+        ? new MultiEditor({ locals, description: 'Update question settings' }, [
+            fileEditor,
+            renameEditor,
+          ])
+        : mode === 'rename'
+          ? renameEditor
+          : fileEditor;
     const job = await editor.prepareServerJob();
     return {
       editor,
@@ -243,7 +272,12 @@ describe('content-only question save', () => {
       const load = vi.spyOn(courseDB, 'loadFullCourse');
       const operation = await save(
         path.join(path.dirname(filePath), 'info.json'),
-        JSON.stringify({ ...info, sharePublicly: true, title: 'Changed title' }),
+        JSON.stringify({
+          ...info,
+          sharePublicly: true,
+          title: 'Changed title',
+          singleVariant: !info.singleVariant,
+        }),
       );
       await expect(
         operation.run({
@@ -483,11 +517,45 @@ describe('content-only question save', () => {
     assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
   });
 
+  it.each(['file', 'settings', 'rename'] as const)(
+    'syncs a title-only %s edit without loading the course',
+    async (mode) => {
+      config.chunksGenerator = true;
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      const targeted = vi.spyOn(chunks, 'prepareQuestionContentChunks');
+      const before = await util.dumpTableWithSchema('questions', QuestionSchema);
+      const infoPath = path.join(path.dirname(filePath), 'info.json');
+      const info = await fs.readJson(infoPath);
+      const operation = await save(infoPath, JSON.stringify({ ...info, title: 'New title' }), mode);
+      await operation.run();
+      expect(load).not.toHaveBeenCalled();
+      expect(targeted).toHaveBeenCalledExactlyOnceWith({
+        coursePath: courseDir,
+        courseId,
+        qids: [qid],
+      });
+      assert.sameDeepMembers(
+        await util.dumpTableWithSchema('questions', QuestionSchema),
+        before.map((question) =>
+          question.qid === qid ? { ...question, title: 'New title' } : question,
+        ),
+      );
+      assert.equal(
+        (await selectCourseById(courseId)).commit_hash,
+        await getCourseCommitHash(courseDir),
+      );
+      assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
+    },
+  );
+
   it('fully syncs restored question metadata and records JSON errors', async () => {
     const jsonPath = path.join(path.dirname(filePath), 'info.json');
     const info = await fs.readJson(jsonPath);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
-    const operation = await save(jsonPath, JSON.stringify({ ...info, title: 'Changed title' }));
+    const operation = await save(
+      jsonPath,
+      JSON.stringify({ ...info, title: 'Changed title', topic: 'Changed topic' }),
+    );
     await fs.remove(jsonPath);
     await operation.run();
     expect(load).toHaveBeenCalledOnce();
@@ -540,7 +608,7 @@ describe('content-only question save', () => {
     assert.equal(classifyEditOutcome(job.data), 'save_failed');
   });
 
-  it('uses full sync after incorporating remote changes during push recovery', async () => {
+  it('includes remote title changes during push recovery without loading the course', async () => {
     const remoteInfoPath = path.join(
       fixture.courseDevDir,
       'questions',
@@ -557,7 +625,7 @@ describe('content-only question save', () => {
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const operation = await save();
     await operation.run();
-    expect(load).toHaveBeenCalled();
+    expect(load).not.toHaveBeenCalled();
     assert.equal(
       (await selectQuestionByQid({ course_id: courseId, qid: util.QUESTION_ID })).title,
       'Remote title',
@@ -713,7 +781,7 @@ describe('content-only question save', () => {
       const infoPath = path.join(path.dirname(filePath), 'info.json');
       const original = await fs.readFile(infoPath, 'utf8');
       const changed = JSON.stringify({ ...JSON.parse(original), title: 'Changed title' });
-      const upload = vi.spyOn(chunks, 'prepareChunksForCourse');
+      const upload = vi.spyOn(chunks, 'prepareQuestionContentChunks');
       if (failure === 'upload') upload.mockRejectedValueOnce(new Error('Upload failed'));
       const checkpoint = vi.spyOn(courseModel, 'updateCourseCommitHash');
       if (failure === 'database') checkpoint.mockRejectedValueOnce(new Error('Database failed'));
