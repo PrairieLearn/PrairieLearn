@@ -1,14 +1,14 @@
 # Course agent service
 
-A Cloudflare Worker hosts private course-editing conversations behind PrairieLearn’s Enterprise `course-agent` flag. PrairieLearn owns authorization and the conversation catalog; `AIChatAgent` owns chat history, streaming, replay and Stop. The Conversation Durable Object owns sandbox lifecycle and one private persisted record. SandboxTurn owns each in-memory execution, and CourseSandbox owns container, native process and directory-backup operations. See [the execution contract](CONTRACT.md).
+A Cloudflare Worker runs private course-editing conversations behind PrairieLearn’s Enterprise `course-agent` flag. Instructors review the agent’s proposed changes before PrairieLearn saves them to the course. This guide covers setup, operation, and development. See [CONTRACT.md](CONTRACT.md) for state ownership, protocol behavior, and recovery guarantees.
 
 ## Configuration
 
-Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). GitHub-backed conversations additionally require `GITHUB_READ_TOKEN` with read access to the course repository. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. The container cannot publish; PrairieLearn performs approved publication and Course Sync outside it.
+Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). GitHub-backed conversations additionally require `GITHUB_READ_TOKEN` with read access to the course repository. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; only the configured model endpoint, repository smart-HTTP read operations, and the SDK’s temporary backup grant are available. PrairieLearn saves approved changes and syncs the course using its file editor workflow. The container has no write access to the course repository.
 
 Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings.
 
-`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after normal turn completion and chat persistence, or after a review card has been persisted while the native tool waits for a decision. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout covers the configured turn and idle budgets plus one hour, and is reapplied on Sandbox DO wake.
+`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (six hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after normal turn completion and chat persistence, or after a request for instructor review has been saved to chat history. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp.
 
 ## Local development
 
@@ -35,7 +35,7 @@ Merge the following into `apps/prairielearn/config.json`, using the same service
 }
 ```
 
-For publication, set `fileEditorUseGit: true`, configure the course repository and branch, and configure PrairieLearn’s normal Git credentials with write access to that repository. The apply-changes workflow does not require `githubClientToken`. Worker `PL_SERVICE_URL` defaults to `http://localhost:3000`; change it to your PrairieLearn origin if different so Resume can retrieve saved job outcomes.
+To commit and push approved changes, set `fileEditorUseGit: true`, configure the course repository and branch, and configure PrairieLearn’s normal Git credentials with write access to that repository. Worker `PL_SERVICE_URL` defaults to `http://localhost:3000`; change it to your PrairieLearn origin if different so Resume can retrieve saved job outcomes.
 
 Start the Worker:
 
@@ -53,7 +53,7 @@ make dev
 
 Open [http://localhost:3000](http://localhost:3000), navigate to an instructor page in a non-example course (e.g. Test Course), click the stars button, and send a message in a new conversation. Both the authenticated and effective user must have Owner permission.
 
-In PrairieLearn dev mode with the default `fileEditorUseGit: false`, creation copies current course files, including uncommitted edits, and exports their Git history using standard Git. Nested courses such as `testCourse` include only that directory’s history. Host Git metadata and dependency/cache directories are excluded. The first message unpacks the snapshot into the sandbox and commits a private baseline on top of the imported history. The local course remains a Git checkout; `fileEditorUseGit: false` disables committing and pushing during approval. Sandbox edits remain private until the instructor approves a `request_changes` review; approval saves the captured files back to the local course and runs Course Sync.
+With the default `fileEditorUseGit: false`, a new conversation starts from current local course files, including uncommitted edits, and their Git history. Sandbox edits stay private until the instructor approves them. See [Reviewing course edits](#reviewing-course-edits) for save behavior and limitations.
 
 ### HTTP requests
 
@@ -78,13 +78,13 @@ These requests do not start a sandbox or add the conversation to PrairieLearn's 
 
 ## Lifecycle and recovery
 
-The + button opens a local draft. First send creates the conversation and its title without starting a container. In dev mode it snapshots local course files; otherwise it binds a GitHub repository and branch. Execution unpacks the local snapshot or clones that branch; later turns reuse the running Codex connection and native thread. Only the newest input is submitted. Ordinary turn completion leaves Codex and background tools running until the next message or workspace cleanup. Stop interrupts the turn and terminates all agent/tool processes before another turn is admitted; the container and edited files remain available. Turn deadline expiry also backs up and shuts down the workspace. Closing or switching the panel leaves execution running. The selected conversation is retained per tab in session storage.
+The + button opens a draft; the first message creates the conversation. In development it starts from local course files; otherwise it uses the configured GitHub repository and branch. Later messages reuse the workspace. Closing the panel or disconnecting leaves execution running. Stop interrupts the current turn and stops agent processes while retaining the workspace.
 
-After idle expiry, the service stops native writers, backs up `/workspace/session` with `DirectoryBackup`, commits its returned reference, then destroys the container. A later send restores that checkpoint before resuming the native thread. A fresh random sandbox ID identifies every newly provisioned runtime. Caches, dependencies and native authentication files are excluded from backups.
+After the turn deadline or idle timeout, the service backs up the workspace and shuts down the container. The next message restores that backup. Connections, history reads, and streamed progress do not extend these deadlines.
 
-Uncertain execution enters `blocked`. Resume waits for recovery to finish; it never repeats the old prompt. Concurrent recovery is rejected. A failed or interrupted recovery requires another explicit Resume. Startup failures discard incomplete setup while preserving the committed checkpoint. Runtime and checkpoint failures require stopped processes and a new checkpoint. Cleanup failures retain the sandbox ID and committed archive for destruction retry. Missing live workspace data stays blocked rather than silently restoring older edits.
+If an operation fails or a Worker restarts during execution, the conversation becomes blocked. Resume repairs the workspace without repeating the interrupted prompt. It can also retrieve a saved review outcome if the callback from PrairieLearn was missed. If recovery fails, inspect the error before trying Resume again.
 
-Browser refresh or disconnect leaves execution running; the SDK replays saved output on reconnect. A Worker/DO restart loses the native connection. Output that Codex generated before it reached the SDK may be missing from the chat even when the associated file edit completed. The interrupted turn is marked blocked, with a warning that its reply may be incomplete. Resume recovers the workspace without resubmitting the old prompt. Recovering completed answers from persisted native thread history is follow-up work; this PR does not promise reconstruction of missing output.
+Saved chat output is replayed on reconnect. Output lost before it reached chat history may be missing even if the associated file edits completed. Resume preserves those edits but does not reconstruct the missing reply. See [Backup and recovery](CONTRACT.md#backup-and-recovery) for failure handling.
 
 ## Private service endpoints
 
@@ -95,42 +95,34 @@ All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 - `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
 - `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.
 - `GET /conversations/{uuid}/get-messages` returns SDK history.
-- `GET /conversations/{uuid}/pending-review` returns the DO-owned full-file snapshot, card identity, status, and PL job reference, or `null`.
-- `POST /conversations/{uuid}/pending-review/decision` accepts `{ callId, decision, jobSequenceId }` for approval or `{ callId, decision }` for denial, and claims the operation before publication. Identical decisions succeed; conflicts return `409`.
+- `GET /conversations/{uuid}/pending-review` returns the captured files, chat message/tool-part IDs, status, and PrairieLearn job ID, or `null`.
+- `POST /conversations/{uuid}/pending-review/decision` accepts `{ callId, decision, jobSequenceId }` for approval or `{ callId, decision }` for denial, and records the decision before saving files. Identical decisions succeed; conflicts return `409`.
 - `POST /conversations/{uuid}/pending-review/outcome` accepts `{ callId, result }` after a PrairieLearn review decision. It acknowledges SDK persistence; conflicting redelivery returns `409`.
 
-PrairieLearn’s owner- and creator-scoped tRPC routes create and recover conversations. Its existing authenticated proxy carries SDK traffic without parsing native Codex messages. The conversation connects to Codex over a private WebSocket through the CourseSandbox DO binding. CourseSandbox forwards upgrades to the container port and injects a fresh capability token; only its hash reaches the runner, and neither value enters a checkpoint. There is no public native-server route. Process execution still uses private Container exec.
+PrairieLearn’s tRPC routes check course ownership and conversation ownership before creating or recovering conversations. Its authenticated proxy carries chat traffic. Native Codex connections are private to the Worker and sandbox; see [Native protocol boundary](CONTRACT.md#native-protocol-boundary).
 
 ## Protocol generation and validation
 
 Run `pnpm --filter @prairielearn/course-agent generate-protocol` after changing the exact Codex dependency, and update the Dockerfile to match. The script invokes the pinned CLI with `--experimental`, adds ESM import suffixes, and retains only types imported by application code and their transitive dependencies. Regenerate after adding or removing protocol imports, too. CI regenerates and checks tracked changes and new files.
 
-Outgoing requests are checked against the generated types with TypeScript. Incoming replies and subscribed notifications use small Zod schemas in `codex.ts` that validate only fields the adapter consumes, ignoring additional data. Initialization and interrupt acknowledgments require only a JSON object. Native connections opt into the experimental API during initialization. `vscode-jsonrpc` owns request correlation and notification/server-request dispatch. `codex-connection.ts` adapts the accepted Cloudflare WebSocket and normalizes Codex’s omitted JSON-RPC version field. `CodexAppServerClient` bounds command waits, initializes the native session, and converts output to chat chunks. Unsupported server requests receive a method-not-found error.
+Outgoing requests are checked against generated TypeScript types. Incoming replies and notifications are validated with Zod for the fields the adapter consumes. See [Native protocol boundary](CONTRACT.md#native-protocol-boundary) for validation and connection failure behavior.
 
-Malformed messages and invalid consumed fields in replies or subscribed notifications fail the connection and pending work. Unknown notifications and late replies are ignored. Connection loss and command timeouts never replay a prompt. Codex currently labels WebSocket transport experimental and unsupported for production; deployed validation is required before enabling a pilot.
-
-Focused tests cover native turn behavior, service authentication, review decisions, save/sync outcomes, and local baseline capture. Before enabling a pilot, verify real outbound restrictions, credential exclusion, native child-process termination, backup replacement/restore and failed destruction in a deployed sandbox, then exercise reconnect, Stop and Resume through the PL proxy. Review cards wait for a PrairieLearn approval or denial result. Idle expiry checkpoints a pending review; the saved result continues the restored native thread without repeating the user prompt. Accounting remains separate work.
-
-### Apply changes
-
-The Conversation DO owns the pending snapshot; PL adds no table or conversation column. PL reads review base blobs from its existing course checkout, then applies approved full-file contents using `prepareServerJob()` and `executeWithServerJob()`. This ordinary `sync` job writes files and syncs locally, or commits/pushes before syncing when Git editing is enabled. PL derives the outcome from the job's persisted save/sync flags and logs before attempting one callback. Native call IDs identify reviews; there is no extra request UUID.
-
-Explicit Resume recovers a missed callback through PL's service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. The route returns `{ callId, jobSequenceId, status, result, error }`; status is running, completed, or blocked. The job does not store a separate review payload, so `callId` is null; the DO matches its saved job ID to the pending call. An interrupted job remains blocked for inspection; Resume delivers saved outcomes without starting another save. There is no PL delivery cron.
-
-Snapshot limits are 100 files, 64 KiB decoded per file, and 1 MiB of base64 contents. Only non-executable regular files are supported initially. PL uses `MultiEditor` with the existing upload/delete editors. Commits use the approving instructor’s name and email. Git editing follows the normal editor behavior, including Git attributes/filters and fetching/reapplying edits when a push fails. Sharing validation runs before publication; Course Sync includes the existing chunk updates. The agent handles fetching published changes into its sandbox. See [CONTRACT.md](CONTRACT.md#pending-reviews-and-save-outcomes) for persistence and recovery.
+Focused tests cover native turns, authentication, review decisions, save/sync outcomes, and local baseline capture. Before enabling a pilot, verify outbound restrictions, credential exclusion, process termination, and backup/restore in a deployed sandbox, then exercise approval, commit/push, reconnect, Stop, and Resume through PrairieLearn’s proxy. Codex labels the WebSocket transport experimental and unsupported for production.
 
 ## Deployment environments and monitoring
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings are repeated explicitly because Wrangler does not inherit them into named environments. Container image configuration is shared; the container instances belong to each environment's separate Durable Objects.
 
-Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. Set `PL_SERVICE_URL` to the matching PrairieLearn origin in each deployed environment so Resume can retrieve saved publication outcomes. No deployment or resource provisioning is performed by local checks.
+Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. Set `PL_SERVICE_URL` to the matching PrairieLearn origin in each deployed environment so Resume can retrieve saved job outcomes.
 
 Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local reporting is disabled while the DSN is empty.
 
-### Reviewing course edits locally
+## Reviewing course edits
 
-Local conversations can request instructor approval with `request_changes`. When `devMode` is enabled and `fileEditorUseGit` is disabled, approval saves the captured files into the local course directory and runs Course Sync, without committing or pushing. Denial leaves the edits private to the conversation.
+The agent calls `request_changes` to capture files for review. The chat shows View changes, Approve, and Deny controls. Approval saves the captured files through PrairieLearn’s upload/delete editors and syncs the course. With `fileEditorUseGit: true`, the editor commits and pushes using the approving instructor’s name and email and PrairieLearn’s configured Git credentials. With `fileEditorUseGit: false` in development, it saves locally without committing or pushing. Denial leaves the edits private to the conversation.
 
-Approval uses the normal upload/delete editor semantics and can replace local edits made since the conversation's snapshot. Start a new conversation to import current course files; the old conversation retains its private work. Local pull/refresh is a separate follow-up. A save can succeed while Course Sync fails; the review card reports those outcomes separately.
+Approval can overwrite course edits made since the snapshot was captured. A save can succeed while syncing fails; the chat reports the two outcomes separately and includes sync diagnostics. After a Git save, the agent fetches and reconciles the changes in its sandbox before continuing.
 
-Local reviews contain file changes, not directory removal. Deleting every file in a question or assessment directory can leave an empty directory and cause Course Sync errors. Use PrairieLearn's existing question or assessment delete action to remove those entities.
+Reviews support up to 100 non-executable regular files, 64 KiB decoded per file, and 1 MiB of base64 contents in total. Local reviews count both original and proposed contents toward the limit. Larger files are not supported yet.
+
+Local saves do not refresh unrelated sandbox files. Start a new conversation to import current local course files; the old conversation retains its private work. Local reviews delete files, not directories. Deleting every file in a question or assessment can leave an empty directory and cause sync errors. Use PrairieLearn’s question or assessment delete action to remove those entities.
