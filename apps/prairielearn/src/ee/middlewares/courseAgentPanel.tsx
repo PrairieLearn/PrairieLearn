@@ -41,6 +41,7 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
         trpcCsrfToken={csrfToken(getCourseTrpcUrl(courseId))}
         chatCsrfToken={csrfToken(`/pl/course/${courseId}/course_agent`)}
         initialOpen={req.session.course_agent_panel_open === true}
+        showConversationStats={config.devMode}
       />
     </Hydrate>,
   );

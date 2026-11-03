@@ -7,21 +7,30 @@
     "check-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false --check",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --port 8790 --persist-to .wrangler/local",
+    "generate-protocol": "node scripts/generate-codex-protocol.mjs",
     "generate-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false",
     "test": "vitest run"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.78",
     "@cloudflare/ai-chat": "0.12.1",
+    "@cloudflare/sandbox": "1.0.2",
+    "@prairielearn/course-agent-types": "workspace:^",
+    "@sentry/cloudflare": "^11.9.0",
     "agents": "0.28.0",
     "ai": "^7.0.116",
+    "hono": "^4.13.13",
+    "vscode-jsonrpc": "^9.0.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260917.1",
+    "@openai/codex": "0.163.0",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
+    "execa": "^10.0.1",
+    "prettier": "^3.9.9",
+    "ts-morph": "^28.0.0",
     "vitest": "^5.0.2",
     "wrangler": "^4.134.0"
   }

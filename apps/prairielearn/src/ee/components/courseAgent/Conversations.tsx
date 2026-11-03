@@ -3,10 +3,18 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import type { UIMessage } from 'ai';
-import { type KeyboardEvent, type SyntheticEvent, useEffect, useRef, useState } from 'react';
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  type SyntheticEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
+import type { ConversationState } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
@@ -17,6 +25,17 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import { ConversationStats } from './ConversationStats.js';
+
+const BLOCKED_MESSAGES = {
+  startup_failed:
+    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
+  runtime_failed:
+    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
+  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
+  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
+} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
+
 const NEW_CONVERSATION = 'new';
 
 /** The conversation picker plus the selected conversation's chat. */
@@ -25,11 +44,13 @@ export function Conversations({
   authnUserId,
   chatCsrfToken,
   active,
+  showConversationStats,
 }: {
   courseId: string;
   authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
+  showConversationStats: boolean;
 }) {
   const trpc = useTRPC();
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
@@ -51,6 +72,7 @@ export function Conversations({
           authnUserId={authnUserId}
           chatCsrfToken={chatCsrfToken}
           active={active}
+          showConversationStats={showConversationStats}
         />
       )}
     </>
@@ -59,6 +81,7 @@ export function Conversations({
 
 function ConversationPicker({
   conversations,
+  showConversationStats,
   courseId,
   authnUserId,
   chatCsrfToken,
@@ -69,6 +92,7 @@ function ConversationPicker({
   authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
+  showConversationStats: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -164,6 +188,7 @@ function ConversationPicker({
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
+          showConversationStats={showConversationStats}
           chatCsrfToken={chatCsrfToken}
           initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
           onInitialMessageSent={create.reset}
@@ -207,23 +232,29 @@ function Chat({
   chatCsrfToken,
   initialMessage,
   onInitialMessageSent,
+  showConversationStats,
 }: {
   courseId: string;
   conversationId: string;
+  showConversationStats: boolean;
   chatCsrfToken: string;
   initialMessage: string | undefined;
   onInitialMessageSent: () => void;
 }) {
+  const trpc = useTRPC();
   const [historyReady, setHistoryReady] = useState(false);
+  const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
   const [connectionFailed, setConnectionFailed] = useState(false);
-  const agent = useAgent({
+  const agent = useAgent<ConversationState>({
     agent: 'Conversation',
     basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
     query: { csrfToken: chatCsrfToken },
+    onStateUpdate: setLifecycle,
     onOpen: () => setConnectionFailed(false),
     onError: () => setConnectionFailed(true),
     onClose: () => {
       setHistoryReady(false);
+      setLifecycle(null);
       setConnectionFailed(true);
     },
     onMessage: (event) => {
@@ -245,17 +276,21 @@ function Chat({
     throttle: 100,
     getInitialMessages: null,
   });
+  const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
+  const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
+  const readyToSend = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
+  const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
   const [draft, setDraft] = useState('');
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
   const initialMessageSentRef = useRef(false);
   // A newly created conversation must receive history before its first prompt is handed to the SDK.
   useEffect(() => {
-    if (!connected || !initialMessage || initialMessageSentRef.current) return;
+    if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
     initialMessageSentRef.current = true;
     void sendMessage({ text: initialMessage });
     onInitialMessageSent();
-  }, [connected, initialMessage, onInitialMessageSent, sendMessage]);
+  }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
@@ -279,7 +314,7 @@ function Chat({
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || responseActive || !connected) return;
+    if (!text || responseActive || !connected || !readyToSend) return;
     void sendMessage({ text });
     setDraft('');
   };
@@ -303,6 +338,29 @@ function Chat({
               Thinking…
             </div>
           )}
+          {lifecycle?.status === 'blocked' && (
+            <Alert variant="warning">
+              <p>{BLOCKED_MESSAGES[lifecycle.reason]}</p>
+              <Button
+                variant="outline-dark"
+                size="sm"
+                disabled={!connected || resume.isPending}
+                onClick={() => resume.mutate({ conversationId })}
+              >
+                Resume
+              </Button>
+            </Alert>
+          )}
+          {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
+            <p className="text-muted" role="status">
+              {lifecycle.status === 'stopping'
+                ? 'Stopping the course agent…'
+                : 'Saving your workspace…'}
+            </p>
+          )}
+          {resume.isError && (
+            <AppErrorAlert error={resumeError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
           {(connectionError || connectionFailed) && (
             <Alert variant="danger">
               Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
@@ -317,11 +375,14 @@ function Chat({
       </div>
       <Composer
         draft={draft}
-        disabled={!connected}
+        disabled={!connected || !readyToSend}
+        stopDisabled={!connected || !canStop}
         onDraftChange={setDraft}
         onSubmit={submit}
-        onStop={responseActive ? () => void stop() : undefined}
-      />
+        onStop={responseActive || canStop ? () => void stop() : undefined}
+      >
+        {showConversationStats && <ConversationStats state={lifecycle} />}
+      </Composer>
     </div>
   );
 }
@@ -332,6 +393,8 @@ function Composer({
   onSubmit,
   disabled,
   pending = false,
+  stopDisabled = false,
+  children,
   onStop,
 }: {
   draft: string;
@@ -339,6 +402,8 @@ function Composer({
   onSubmit: (event?: SyntheticEvent) => void;
   disabled: boolean;
   pending?: boolean;
+  stopDisabled?: boolean;
+  children?: ReactNode;
   onStop?: () => void;
 }) {
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -359,9 +424,10 @@ function Composer({
         onChange={(event) => onDraftChange(event.target.value)}
         onKeyDown={onKeyDown}
       />
-      <div className="d-flex justify-content-end mt-2">
+      <div className="d-flex justify-content-end gap-2 mt-2">
+        {children}
         {onStop ? (
-          <Button variant="outline-secondary" size="sm" disabled={disabled} onClick={onStop}>
+          <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
             <i className="bi bi-stop-fill me-1" aria-hidden="true" />
             Stop
           </Button>
