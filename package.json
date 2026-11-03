@@ -7,12 +7,12 @@
   ],
   "engines": {
     "node": ">=24.15.0",
-    "pnpm": "^11.19.0"
+    "pnpm": "^12.17.0"
   },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.19.0",
+      "version": "^12.17.0",
       "onFail": "warn"
     },
     "runtime": {

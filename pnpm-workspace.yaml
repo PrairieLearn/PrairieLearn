@@ -2,13 +2,25 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+# These tools need TypeScript 6's JS compiler API. Replace their TypeScript
+# peers with direct dependencies so they cannot resolve to TypeScript 7.
+packageExtensions:
+  typescript-cp:
+    dependencies:
+      typescript: npm:@typescript/typescript6@^6.0.2
+  cosmiconfig:
+    dependencies:
+      typescript: npm:@typescript/typescript6@^6.0.2
+
 overrides:
-  # These tools need the JS compiler API, which TypeScript 7 does not provide.
-  'typescript-cp>typescript': npm:@typescript/typescript6@^6.0.2
-  'cosmiconfig>typescript': npm:@typescript/typescript6@^6.0.2
+  # TypeScript 6 is installed via packageExtensions above.
+  'typescript-cp>typescript:peer': '-'
+  'cosmiconfig>typescript:peer': '-'
+
   # We use Sentry's runtime SDK, not its bundler-plugin entry points. Omit the
   # plugins and their CLI/parser dependencies to reduce install size.
   '@sentry/node>@sentry/bundler-plugins': '-'
+
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
@@ -20,6 +32,7 @@ overrides:
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
+
   # jsdom pins Undici exactly; require a patched release.
   'jsdom>undici': '^8.12.3'
 
