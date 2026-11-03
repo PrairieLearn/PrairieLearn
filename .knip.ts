@@ -185,6 +185,9 @@ const config: KnipConfig = {
       // Tell knip not to flag these as unused.
       ignoreDependencies: [...autoDetectedDeps, ...EXTERNAL_ELEMENT_DEPS, ...DEPS_OF_DEAD_CODE],
     },
+    'apps/course-agent': {
+      project: ['**/*.{ts,cts,mts,tsx}'],
+    },
     'apps/workspace-host': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
