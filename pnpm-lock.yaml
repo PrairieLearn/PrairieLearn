@@ -6,195 +6,154 @@ importers:
   .:
     configDependencies: {}
     packageManagerDependencies:
-      '@pnpm/exe':
-        specifier: 11.19.0
-        version: 11.19.0
       pnpm:
-        specifier: 11.19.0
-        version: 11.19.0
+        specifier: ^12.17.0
+        version: 12.17.0
 
 packages:
 
-  '@pnpm/exe@11.19.0':
-    resolution: {integrity: sha512-P1mw8BZaNkEpttlyzKsxTj7PVs94bMB4cQ8pJhgbrCTSBP7xCzKS3VlOwIInS7aS5by6KAbfO5Vs9yK/ekugrg==}
-    hasBin: true
-
-  '@pnpm/linux-arm64@11.19.0':
-    resolution: {integrity: sha512-c5AJqnsj0BMqMCOtctOzsCqyfY+afFe1kdM9F2FrNhYwtnQRMHoJy+51qfee4yuTPOVRyk3Yh1dwvyAadiznvA==}
+  '@pnpm/exe.android-arm64@12.17.0':
+    resolution: {integrity: sha512-gwu/F5YyoJp1bIbrIBl7B8JO3rkjkGlKikwQg9s0aVa5xWaBYIqPX+ZJqQ7I4D1YfbdI/Omfze0+6vnYiWHG6A==}
     cpu: [arm64]
-    os: [linux]
+    os: [android]
 
-  '@pnpm/linux-x64@11.19.0':
-    resolution: {integrity: sha512-KOKpA9o75SvmRQgWO+EqEpQzJg1b9uHk5y61PAx90sSpdYtKDPua2eBXBglzv8YK1xM3DsYXFEf7Scs+3HeDsA==}
+  '@pnpm/exe.android-x64@12.17.0':
+    resolution: {integrity: sha512-qUNhCvWyeBrUByNWkqqQ3Koy1gIAQ8UV5HDHXxoo5NUWVTde0Ld2BxweNwWJw8CNKpqEGceCUdjZ506JYpTjJg==}
     cpu: [x64]
-    os: [linux]
+    os: [android]
 
-  '@pnpm/linuxstatic-arm64@11.19.0':
-    resolution: {integrity: sha512-Ci9WxgCInZc3F43R6BfaHevi+dYqaI5CLi6421egFsK649eHvYPytvu+zABhTNlYGNJbD8j9w+AUYInz/TPsyQ==}
+  '@pnpm/exe.darwin-arm64@12.17.0':
+    resolution: {integrity: sha512-0nkEqRLIbrm7dWl+p2EPpmyNKyM0bbdPEovdtMhHYbhkO+Vls38S+6emkx8kSTAr75BNXYXkCl4RtGinGG4Erg==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@pnpm/exe.darwin-x64@12.17.0':
+    resolution: {integrity: sha512-w89cboNi4KCzmt/dSKrE4ijVNKICKiZsE9TcIWf77Tz+VpoDfuhPSmWPZK+iCHBvlI/9dIN+M3HiPPVsFnAx4Q==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@pnpm/exe.freebsd-x64@12.17.0':
+    resolution: {integrity: sha512-DJ0FOaUDXc71icSgiuBFEvqReqoSiS/rmnC6kltoiC3MzPyw3awcGbT/7FnnYzi/ziuoTC7v6vfBh0Vzv7VKOQ==}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@pnpm/exe.linux-arm64-musl@12.17.0':
+    resolution: {integrity: sha512-w5ZwZ4j8S804DGhMYlLLpc+G3Kkc+5GlDO++LLvO/nDIXBTHRhdxPfQBQU08q31k0JYfp3wXCQk0Y7DnsuVF6w==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@pnpm/linuxstatic-x64@11.19.0':
-    resolution: {integrity: sha512-GNMk96vNJ4uEWigekarjHofXNDFsTYRL0Mw2YlDkv/W+u0cn/UAVPHfd5aAfsf6Arel2ZQfxPUTXlpunFujWnA==}
-    cpu: [x64]
-    os: [linux]
-    libc: [musl]
-
-  '@pnpm/macos-arm64@11.19.0':
-    resolution: {integrity: sha512-I3Ee/GQlPxEOeBSzqxBNwcTHxVebjMiN2xLdTBS6OK2TAPzbWMIExjU5brxhr8rAk73p7mbv/a/2tFC/3gl6FA==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@pnpm/win-arm64@11.19.0':
-    resolution: {integrity: sha512-rOiWuJ9wjaFY9ZDVPGVjpvjIQHZNB72rioxvuyzDKJ7dqKQ97VF27a4rmOtjhMB5u83cdDGEJ+OY+H1+TP+frw==}
-    cpu: [arm64]
-    os: [win32]
-
-  '@pnpm/win-x64@11.19.0':
-    resolution: {integrity: sha512-l26XeTxoGxfU+mVcZ5jFdP9hNe5yrOlLPSkAlwwpXPI1iyyU4JUSxm6Jdyxu1UAU1FerD/BvLK2vrlR6d9ogag==}
-    cpu: [x64]
-    os: [win32]
-
-  '@reflink/reflink-darwin-arm64@0.1.19':
-    resolution: {integrity: sha512-ruy44Lpepdk1FqDz38vExBY/PVUsjxZA+chd9wozjUH9JjuDT/HEaQYA6wYN9mf041l0yLVar6BCZuWABJvHSA==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@reflink/reflink-darwin-x64@0.1.19':
-    resolution: {integrity: sha512-By85MSWrMZa+c26TcnAy8SDk0sTUkYlNnwknSchkhHpGXOtjNDUOxJE9oByBnGbeuIE1PiQsxDG3Ud+IVV9yuA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@reflink/reflink-linux-arm64-gnu@0.1.19':
-    resolution: {integrity: sha512-7P+er8+rP9iNeN+bfmccM4hTAaLP6PQJPKWSA4iSk2bNvo6KU6RyPgYeHxXmzNKzPVRcypZQTpFgstHam6maVg==}
-    engines: {node: '>= 10'}
+  '@pnpm/exe.linux-arm64@12.17.0':
+    resolution: {integrity: sha512-Cj2nIzWTVm6ZuhQHqL9SiJ11scBnEGxJyNg7tYQPzh9fVF5UVRkv+LbyfwdftnAtJerK/7HDpK/55WeQqp8OkA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@reflink/reflink-linux-arm64-musl@0.1.19':
-    resolution: {integrity: sha512-37iO/Dp6m5DDaC2sf3zPtx/hl9FV3Xze4xoYidrxxS9bgP3S8ALroxRK6xBG/1TtfXKTvolvp+IjrUU6ujIGmA==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
+  '@pnpm/exe.linux-ppc64@12.17.0':
+    resolution: {integrity: sha512-Gb//Wm15fXl+qWcxjNQmwlYDjGiJOnLU/A9uRZYmtkyZie2Yx8AHI6XkUIJioQz99TwVDKQ87ywD5Jtk8zcgyg==}
+    cpu: [ppc64]
+    os: [linux]
+    libc: [glibc]
+
+  '@pnpm/exe.linux-riscv64@12.17.0':
+    resolution: {integrity: sha512-+kItEcFjdVZEDzODsc7icb8cB+3AouCrEzOCezzxLITRhw86m9t3J/qyPdcFELBjeMnS+IXV8sJaSCQcpSqfgA==}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [glibc]
+
+  '@pnpm/exe.linux-s390x@12.17.0':
+    resolution: {integrity: sha512-jf5ghD2uDeknWQgK/EsCFNwlyL7BYLWfXe687g5UMVFclPLt524CREZ8Yl5hf4u7p3evCIPBN/m5I1QXUmJpHw==}
+    cpu: [s390x]
+    os: [linux]
+    libc: [glibc]
+
+  '@pnpm/exe.linux-x64-musl@12.17.0':
+    resolution: {integrity: sha512-JGxrGSxkDkqRAUD49T9dOnKyJkQ3bWBeHnYH4o4mvj09R9eUzhWFi8oa6WPNyCO0/7/Max2gsSfgXOHj3QW7ug==}
+    cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@reflink/reflink-linux-x64-gnu@0.1.19':
-    resolution: {integrity: sha512-jbI8jvuYCaA3MVUdu8vLoLAFqC+iNMpiSuLbxlAgg7x3K5bsS8nOpTRnkLF7vISJ+rVR8W+7ThXlXlUQ93ulkw==}
-    engines: {node: '>= 10'}
+  '@pnpm/exe.linux-x64@12.17.0':
+    resolution: {integrity: sha512-vQAusDzMofc/Ee4KOUYjE6FWeHOlMGQyvhR7W39QSamVeJWS16co/n+bhjdjwjI3UFh8IWOpamvTS+b4lvQUog==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@reflink/reflink-linux-x64-musl@0.1.19':
-    resolution: {integrity: sha512-e9FBWDe+lv7QKAwtKOt6A2W/fyy/aEEfr0g6j/hWzvQcrzHCsz07BNQYlNOjTfeytrtLU7k449H1PI95jA4OjQ==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-    libc: [musl]
-
-  '@reflink/reflink-win32-arm64-msvc@0.1.19':
-    resolution: {integrity: sha512-09PxnVIQcd+UOn4WAW73WU6PXL7DwGS6wPlkMhMg2zlHHG65F3vHepOw06HFCq+N42qkaNAc8AKIabWvtk6cIQ==}
-    engines: {node: '>= 10'}
+  '@pnpm/exe.win32-arm64@12.17.0':
+    resolution: {integrity: sha512-qDQh8rmyK5sxlaCSCADcmPrvytJabMCbxtJ0nCitzRo2j3/8BhzLjlOcWF3C6iPGhR5CbIb+btNy+VCVhd06mQ==}
     cpu: [arm64]
     os: [win32]
 
-  '@reflink/reflink-win32-x64-msvc@0.1.19':
-    resolution: {integrity: sha512-E//yT4ni2SyhwP8JRjVGWr3cbnhWDiPLgnQ66qqaanjjnMiu3O/2tjCPQXlcGc/DEYofpDc9fvhv6tALQsMV9w==}
-    engines: {node: '>= 10'}
+  '@pnpm/exe.win32-x64@12.17.0':
+    resolution: {integrity: sha512-qCo1OQlE3WrFZIAUK0O5EoupLaQ1fST7zNX8Qd+Tc4ojWgCvYA/ze0uP9hox8mSFC/JPAGRSG5o8gUBSq2rRxw==}
     cpu: [x64]
     os: [win32]
 
-  '@reflink/reflink@0.1.19':
-    resolution: {integrity: sha512-DmCG8GzysnCZ15bres3N5AHCmwBwYgp0As6xjhQ47rAUTUXxJiK+lLUxaGsX3hd/30qUpVElh05PbGuxRPgJwA==}
-    engines: {node: '>= 10'}
-
-  detect-libc@2.1.2:
-    resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
-    engines: {node: '>=8'}
-
-  pnpm@11.19.0:
-    resolution: {integrity: sha512-eIHz7VkNRyxKlV4riLISF5ERYGbcyIy8o4SeybYPG7qm0syyIfqR2k4cZb7yvL43k2Wup6xTnHv4be3DobItzg==}
-    engines: {node: '>=22.13'}
+  pnpm@12.17.0:
+    resolution: {integrity: sha512-uNIj6+wEtYContIG2qcdG8y2oe4dUu+pXMOw23UnFWHfjw2OLEOt05xewIAYr3qKlRCOcJD5Win4hye3pA/VPQ==}
+    engines: {node: '>=18'}
     hasBin: true
 
 snapshots:
 
-  '@pnpm/exe@11.19.0':
-    dependencies:
-      '@reflink/reflink': 0.1.19
-      detect-libc: 2.1.2
+  '@pnpm/exe.android-arm64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.android-x64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.darwin-arm64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.darwin-x64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.freebsd-x64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.linux-arm64-musl@12.17.0':
+    optional: true
+
+  '@pnpm/exe.linux-arm64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.linux-ppc64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.linux-riscv64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.linux-s390x@12.17.0':
+    optional: true
+
+  '@pnpm/exe.linux-x64-musl@12.17.0':
+    optional: true
+
+  '@pnpm/exe.linux-x64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.win32-arm64@12.17.0':
+    optional: true
+
+  '@pnpm/exe.win32-x64@12.17.0':
+    optional: true
+
+  pnpm@12.17.0:
     optionalDependencies:
-      '@pnpm/linux-arm64': 11.19.0
-      '@pnpm/linux-x64': 11.19.0
-      '@pnpm/linuxstatic-arm64': 11.19.0
-      '@pnpm/linuxstatic-x64': 11.19.0
-      '@pnpm/macos-arm64': 11.19.0
-      '@pnpm/win-arm64': 11.19.0
-      '@pnpm/win-x64': 11.19.0
-
-  '@pnpm/linux-arm64@11.19.0':
-    optional: true
-
-  '@pnpm/linux-x64@11.19.0':
-    optional: true
-
-  '@pnpm/linuxstatic-arm64@11.19.0':
-    optional: true
-
-  '@pnpm/linuxstatic-x64@11.19.0':
-    optional: true
-
-  '@pnpm/macos-arm64@11.19.0':
-    optional: true
-
-  '@pnpm/win-arm64@11.19.0':
-    optional: true
-
-  '@pnpm/win-x64@11.19.0':
-    optional: true
-
-  '@reflink/reflink-darwin-arm64@0.1.19':
-    optional: true
-
-  '@reflink/reflink-darwin-x64@0.1.19':
-    optional: true
-
-  '@reflink/reflink-linux-arm64-gnu@0.1.19':
-    optional: true
-
-  '@reflink/reflink-linux-arm64-musl@0.1.19':
-    optional: true
-
-  '@reflink/reflink-linux-x64-gnu@0.1.19':
-    optional: true
-
-  '@reflink/reflink-linux-x64-musl@0.1.19':
-    optional: true
-
-  '@reflink/reflink-win32-arm64-msvc@0.1.19':
-    optional: true
-
-  '@reflink/reflink-win32-x64-msvc@0.1.19':
-    optional: true
-
-  '@reflink/reflink@0.1.19':
-    optionalDependencies:
-      '@reflink/reflink-darwin-arm64': 0.1.19
-      '@reflink/reflink-darwin-x64': 0.1.19
-      '@reflink/reflink-linux-arm64-gnu': 0.1.19
-      '@reflink/reflink-linux-arm64-musl': 0.1.19
-      '@reflink/reflink-linux-x64-gnu': 0.1.19
-      '@reflink/reflink-linux-x64-musl': 0.1.19
-      '@reflink/reflink-win32-arm64-msvc': 0.1.19
-      '@reflink/reflink-win32-x64-msvc': 0.1.19
-
-  detect-libc@2.1.2: {}
-
-  pnpm@11.19.0: {}
+      '@pnpm/exe.android-arm64': 12.17.0
+      '@pnpm/exe.android-x64': 12.17.0
+      '@pnpm/exe.darwin-arm64': 12.17.0
+      '@pnpm/exe.darwin-x64': 12.17.0
+      '@pnpm/exe.freebsd-x64': 12.17.0
+      '@pnpm/exe.linux-arm64': 12.17.0
+      '@pnpm/exe.linux-arm64-musl': 12.17.0
+      '@pnpm/exe.linux-ppc64': 12.17.0
+      '@pnpm/exe.linux-riscv64': 12.17.0
+      '@pnpm/exe.linux-s390x': 12.17.0
+      '@pnpm/exe.linux-x64': 12.17.0
+      '@pnpm/exe.linux-x64-musl': 12.17.0
+      '@pnpm/exe.win32-arm64': 12.17.0
+      '@pnpm/exe.win32-x64': 12.17.0
 
 ---
 lockfileVersion: '9.0'
@@ -204,8 +163,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  typescript-cp>typescript: npm:@typescript/typescript6@^6.0.2
-  cosmiconfig>typescript: npm:@typescript/typescript6@^6.0.2
+  typescript-cp>typescript:peer: '-'
+  cosmiconfig>typescript:peer: '-'
   '@sentry/node>@sentry/bundler-plugins': '-'
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
@@ -219,6 +178,8 @@ overrides:
   markdownlint-cli2>smol-toml: ^1
   notebookjs>jsdom: '*'
   jsdom>undici: ^8.12.3
+
+packageExtensionsChecksum: sha256-LckhG+wN9aD0P/2uyuYtxEB0UnE8W92DruMPvPTkFtM=
 
 importers:
 
@@ -447,7 +408,7 @@ importers:
         version: 4.23.15
       typescript-cp:
         specifier: ^0.1.11
-        version: 0.1.11(@typescript/typescript6@6.0.2)
+        version: 0.1.11
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -630,7 +591,7 @@ importers:
         version: link:../../packages/signed-token
       '@prairielearn/sketchresponse':
         specifier: ^0.2.1
-        version: 0.2.1(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))
+        version: 0.2.1(stylelint@16.26.1(supports-color@7.2.0))
       '@prairielearn/tree-sitter-htmlmustache':
         specifier: ^1.4.3
         version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.9.9)
@@ -750,13 +711,13 @@ importers:
         version: 3.0.9(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33)
       '@trpc/client':
         specifier: ^11.19.0
-        version: 11.19.0(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2)
+        version: 11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2)
       '@trpc/server':
         specifier: ^11.19.0
-        version: 11.19.0(@typescript/typescript6@6.0.2)
+        version: 11.19.0(typescript@7.0.2)
       '@trpc/tanstack-react-query':
         specifier: ^11.19.0
-        version: 11.19.0(@tanstack/react-query@5.104.0(react@19.3.0))(@trpc/client@11.19.0(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2))(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2)(react@19.3.0)
+        version: 11.19.0(@tanstack/react-query@5.104.0(react@19.3.0))(@trpc/client@11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2))(@trpc/server@11.19.0(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2)
       '@viz-js/viz':
         specifier: ^3.30.0
         version: 3.30.0
@@ -1357,7 +1318,7 @@ importers:
         version: 4.23.15
       typescript-cp:
         specifier: ^0.1.11
-        version: 0.1.11(@typescript/typescript6@6.0.2)
+        version: 0.1.11
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -1475,7 +1436,7 @@ importers:
         version: 4.23.15
       typescript-cp:
         specifier: ^0.1.11
-        version: 0.1.11(@typescript/typescript6@6.0.2)
+        version: 0.1.11
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -1808,7 +1769,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       typescript-cp:
         specifier: ^0.1.11
-        version: 0.1.11(@typescript/typescript6@6.0.2)
+        version: 0.1.11
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -2186,7 +2147,7 @@ importers:
         version: 3.0.3
       typescript-cp:
         specifier: ^0.1.11
-        version: 0.1.11(@typescript/typescript6@6.0.2)
+        version: 0.1.11
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -2437,7 +2398,7 @@ importers:
         version: typescript@7.0.2
       typescript-cp:
         specifier: ^0.1.11
-        version: 0.1.11(@typescript/typescript6@6.0.2)
+        version: 0.1.11
 
   packages/public-fetch:
     dependencies:
@@ -2752,10 +2713,10 @@ importers:
         version: 5.104.0(react@19.3.0)
       '@trpc/client':
         specifier: ^11.18.0
-        version: 11.19.0(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2)
+        version: 11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2)
       '@trpc/server':
         specifier: ^11.18.0
-        version: 11.19.0(@typescript/typescript6@6.0.2)
+        version: 11.19.0(typescript@7.0.2)
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
@@ -2852,7 +2813,7 @@ importers:
         version: typescript@7.0.2
       typescript-cp:
         specifier: ^0.1.11
-        version: 0.1.11(@typescript/typescript6@6.0.2)
+        version: 0.1.11
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -2941,7 +2902,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       typescript-cp:
         specifier: ^0.1.11
-        version: 0.1.11(@typescript/typescript6@6.0.2)
+        version: 0.1.11
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -6577,7 +6538,6 @@ packages:
 
   bunyan@1.8.15:
     resolution: {integrity: sha512-0tECWShh6wUysgucJcBAoYegf3JJoZWibxdqhTm7OHPeT42qdjkZ29QCMcKwbgU1kiH+auSIasNRXMLWXafXig==}
-    engines: {'0': node >=0.10.0}
     hasBin: true
 
   busboy@0.3.1:
@@ -6866,20 +6826,10 @@ packages:
   cosmiconfig@8.3.6:
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
-    peerDependencies:
-      typescript: '>=4.9.5'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   cosmiconfig@9.0.2:
     resolution: {integrity: sha512-gtTZxTDau1wL7Y7zifc2dd8jHSK/k6BTx/2Xp/BpdlAdnlYWFVt7qhJqgwi7637yRwRQ3qL4ZidbB4I8tA5VOg==}
     engines: {node: '>=14'}
-    peerDependencies:
-      typescript: '>=4.9.5'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   cpu-features@0.0.10:
     resolution: {integrity: sha512-9IkYqtX3YHPCzoVg1Py+o9057a3i0fp7S530UWokCSaFVTc7CwXPRiOjRjBQQ18ZCNafx78YfnG+HALxtVmOGA==}
@@ -10410,8 +10360,6 @@ packages:
     resolution: {integrity: sha512-LF7Mp0qMuYweByCBdxuDSB/HfPPJfWBRA5GHYjwnMFjiMz/kSrBn6vN/bu1WcInJKczs9eOINGeIcEYagVmKsg==}
     engines: {node: '>= 20', pnpm: '11'}
     hasBin: true
-    peerDependencies:
-      typescript: '>=4.2.3'
 
   typescript-eslint@8.70.1:
     resolution: {integrity: sha512-AcWG7KDjZ2THNXsgwttMaGmzVi0VFRlFYfqFHYQRbDpF3owuYbuiL8c7UUrd2k8s3PoSfIQrWfrGXfcElrWLYA==}
@@ -12978,7 +12926,7 @@ snapshots:
 
   '@prairielearn/excalidraw-builds@1.0.0': {}
 
-  '@prairielearn/sketchresponse@0.2.1(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))':
+  '@prairielearn/sketchresponse@0.2.1(stylelint@16.26.1(supports-color@7.2.0))':
     dependencies:
       buffer: 6.0.3
       deep-extend: 0.6.0
@@ -12989,7 +12937,7 @@ snapshots:
       pepjs: 0.5.3
       sass: 1.105.0
       sass-loader: 16.0.8(sass@1.105.0)
-      stylelint-scss: 6.14.0(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))
+      stylelint-scss: 6.14.0(stylelint@16.26.1(supports-color@7.2.0))
       sweetalert2: 11.26.25
     transitivePeerDependencies:
       - '@rspack/core'
@@ -13503,22 +13451,22 @@ snapshots:
 
   '@tombi-toml/wasm-lib@1.5.5': {}
 
-  '@trpc/client@11.19.0(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2)':
+  '@trpc/client@11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2)':
     dependencies:
-      '@trpc/server': 11.19.0(@typescript/typescript6@6.0.2)
-      typescript: '@typescript/typescript6@6.0.2'
+      '@trpc/server': 11.19.0(typescript@7.0.2)
+      typescript: 7.0.2
 
-  '@trpc/server@11.19.0(@typescript/typescript6@6.0.2)':
+  '@trpc/server@11.19.0(typescript@7.0.2)':
     dependencies:
-      typescript: '@typescript/typescript6@6.0.2'
+      typescript: 7.0.2
 
-  '@trpc/tanstack-react-query@11.19.0(@tanstack/react-query@5.104.0(react@19.3.0))(@trpc/client@11.19.0(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2))(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2)(react@19.3.0)':
+  '@trpc/tanstack-react-query@11.19.0(@tanstack/react-query@5.104.0(react@19.3.0))(@trpc/client@11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2))(@trpc/server@11.19.0(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2)':
     dependencies:
       '@tanstack/react-query': 5.104.0(react@19.3.0)
-      '@trpc/client': 11.19.0(@trpc/server@11.19.0(@typescript/typescript6@6.0.2))(@typescript/typescript6@6.0.2)
-      '@trpc/server': 11.19.0(@typescript/typescript6@6.0.2)
+      '@trpc/client': 11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2)
+      '@trpc/server': 11.19.0(typescript@7.0.2)
       react: 19.3.0
-      typescript: '@typescript/typescript6@6.0.2'
+      typescript: 7.0.2
 
   '@turbo/darwin-64@2.11.5':
     optional: true
@@ -14903,22 +14851,20 @@ snapshots:
       object-assign: 4.1.1
       vary: 1.1.2
 
-  cosmiconfig@8.3.6(@typescript/typescript6@6.0.2):
+  cosmiconfig@8.3.6:
     dependencies:
       import-fresh: 3.3.1
       js-yaml: 4.3.1
       parse-json: 5.2.0
       path-type: 4.0.0
-    optionalDependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
-  cosmiconfig@9.0.2(@typescript/typescript6@6.0.2):
+  cosmiconfig@9.0.2:
     dependencies:
       env-paths: 2.2.1
       import-fresh: 3.3.1
       js-yaml: 4.3.1
       parse-json: 5.2.0
-    optionalDependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
   cpu-features@0.0.10:
@@ -18815,7 +18761,7 @@ snapshots:
     dependencies:
       inline-style-parser: 0.2.7
 
-  stylelint-scss@6.14.0(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0)):
+  stylelint-scss@6.14.0(stylelint@16.26.1(supports-color@7.2.0)):
     dependencies:
       css-tree: 3.2.1
       is-plain-object: 5.1.0
@@ -18825,9 +18771,9 @@ snapshots:
       postcss-resolve-nested-selector: 0.1.6
       postcss-selector-parser: 7.1.6
       postcss-value-parser: 4.2.0
-      stylelint: 16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0)
+      stylelint: 16.26.1(supports-color@7.2.0)
 
-  stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0):
+  stylelint@16.26.1(supports-color@7.2.0):
     dependencies:
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-syntax-patches-for-csstree': 1.1.14(css-tree@3.2.1)
@@ -18837,7 +18783,7 @@ snapshots:
       '@dual-bundle/import-meta-resolve': 4.2.1
       balanced-match: 2.0.0
       colord: 2.9.3
-      cosmiconfig: 9.0.2(@typescript/typescript6@6.0.2)
+      cosmiconfig: 9.0.2
       css-functions-list: 3.3.3
       css-tree: 3.2.1
       debug: 4.4.3(supports-color@7.2.0)
@@ -18870,7 +18816,6 @@ snapshots:
       write-file-atomic: 5.0.1
     transitivePeerDependencies:
       - supports-color
-      - typescript
 
   superjson@2.2.6:
     dependencies:
@@ -19092,11 +19037,11 @@ snapshots:
       media-typer: 0.3.0
       mime-types: 2.1.35
 
-  typescript-cp@0.1.11(@typescript/typescript6@6.0.2):
+  typescript-cp@0.1.11:
     dependencies:
       chokidar: 3.6.0
       commander: 10.0.1
-      cosmiconfig: 8.3.6(@typescript/typescript6@6.0.2)
+      cosmiconfig: 8.3.6
       fs-extra: 11.4.1
       globby: 11.1.0
       lodash: 4.18.1
