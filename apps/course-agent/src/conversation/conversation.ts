@@ -326,7 +326,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block('runtime_failed');
       return;
     }
-    if (this.record.review) {
+    if (this.record.review && !this.savedOutcome()) {
       await this.backupAndShutdown();
       return;
     }
@@ -540,6 +540,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** The single completion path chooses waiting, startup cleanup, or deadline shutdown. */
   private async finishTurn(active: ActiveTurn) {
     const result = await active.execution.finished;
+    const reviewIncorporated =
+      this.record.review && this.native?.hasIncorporatedReview(this.record.review.callId);
     if (result.stopped || result.error) this.native = null;
     if (result.error) {
       this.reportError(result.error);
@@ -558,9 +560,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       if (!this.reviewOperation.delivery) this.reviewOperation = null;
     }
     if (this.record.review) {
-      if (this.savedOutcome() && !result.error && !result.stopped) {
+      if (this.savedOutcome() && !result.error && (!result.stopped || reviewIncorporated)) {
         this.clearReview();
       } else {
+        // Stop before native acceptance must leave an actionable Resume, not an
+        // offline conversation whose settled review silently rejects new messages.
+        if (this.savedOutcome() && result.stopped && !result.error) {
+          this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
+        }
         return;
       }
     }
@@ -918,7 +925,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       })),
     );
     const response = await this.continueLastTurn();
-    if (response.status !== 'completed') throw new Error('Could not incorporate review result');
+    if (response.status !== 'completed' && response.status !== 'aborted') {
+      throw new Error('Could not incorporate review result');
+    }
     const stored = this.messages
       .flatMap((message) => message.parts)
       .find(
@@ -942,7 +951,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       deadline: null,
     });
     const result = await this.continueLastTurn();
-    if (result.status !== 'completed') this.block('runtime_failed');
+    if (result.status !== 'completed' && result.status !== 'aborted') this.block('runtime_failed');
   }
 
   /** Commit a replacement backup before shutdown; cleanup of the old archive is independent. */

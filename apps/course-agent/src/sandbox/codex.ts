@@ -87,6 +87,7 @@ export class CodexAppServerClient {
   private threadId: string | null = null;
   private parts = new Map<string, 'text' | 'reasoning'>();
   private failure: Error | null = null;
+  private incorporatedReview: string | null = null;
   private onReview?: (
     call: DynamicToolCallParams,
     ready: () => void,
@@ -175,6 +176,7 @@ export class CodexAppServerClient {
     );
     onNotification('item/completed', ItemCompleted, ({ threadId, item }) => {
       if (threadId !== this.threadId) return;
+      if (item.type === 'dynamicToolCall') this.incorporatedReview = item.id;
       const type =
         item.type === 'agentMessage' ? 'text' : item.type === 'reasoning' ? 'reasoning' : null;
       if (!type) return;
@@ -317,6 +319,7 @@ export class CodexAppServerClient {
         }),
       );
       if (incorporated) {
+        this.incorporatedReview = text.callId;
         this.terminal.resolve(undefined);
         return;
       }
@@ -340,7 +343,12 @@ export class CodexAppServerClient {
       TurnResult,
     );
     this.turnId = result.turn.id;
+    if (typeof text !== 'string') this.incorporatedReview = text.callId;
     accepted(this.turnId);
+  }
+
+  hasIncorporatedReview(callId: string) {
+    return this.incorporatedReview === callId;
   }
 
   async interrupt() {
