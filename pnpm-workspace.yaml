@@ -65,6 +65,8 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
+  # Fixes Stop for server-started chat continuations (cloudflare/agents#2803).
+  - agents@0.33.0
   # Includes the October 2026 Undici security fixes.
   - 'undici@8.12.3'
   - '@prairielearn/sketchresponse@0.2.1'
