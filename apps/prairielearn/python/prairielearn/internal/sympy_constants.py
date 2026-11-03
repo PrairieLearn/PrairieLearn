@@ -24,6 +24,18 @@ set_notation_operators: Final = (
     "( , )",
 )
 
+set_domain_names: Final = frozenset({
+    "Complexes",
+    "Integers",
+    "Naturals",
+    "Naturals0",
+    "Rationals",
+    "Reals",
+})
+set_domains: Final[frozenset[sympy.Set]] = frozenset(
+    getattr(sympy.S, name) for name in set_domain_names
+)
+
 helpers: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
     "Number": sympy.Number,
     "_Integer": sympy.Integer,
