@@ -1192,50 +1192,51 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
         a = a.doit(deep=True)
         b = b.doit(deep=True)
 
-    comparison_cache: dict[tuple[sympy.Basic, sympy.Basic], bool] = {}
-
+    @lru_cache(maxsize=128)
     def compare(left: sympy.Basic, right: sympy.Basic) -> bool:
-        pair = (left, right)
-        if pair in comparison_cache:
-            return comparison_cache[pair]
-        reverse_pair = (right, left)
-        if reverse_pair in comparison_cache:
-            return comparison_cache[reverse_pair]
-
         if left is right or left == right:
-            result = True
-        elif type(left) is type(right) and isinstance(
+            return True
+        if (
+            isinstance(left, sympy.Range)
+            and left.is_finite_set is True
+            and isinstance(right, sympy.FiniteSet)
+        ) or (
+            isinstance(right, sympy.Range)
+            and right.is_finite_set is True
+            and isinstance(left, sympy.FiniteSet)
+        ):
+            return (
+                sympy.SymmetricDifference(left, right, evaluate=False).doit()
+                == sympy.EmptySet
+            )
+        if type(left) is type(right) and isinstance(
             left, (sympy.FiniteSet, sympy.Union, sympy.Intersection)
         ):
-            result = all(
+            return all(
                 any(compare(value, candidate) for candidate in right.args)
                 for value in left.args
             ) and all(
                 any(compare(value, candidate) for candidate in left.args)
                 for value in right.args
             )
-        elif isinstance(left, sympy.Interval) and isinstance(right, sympy.Interval):
-            result = (
+        if isinstance(left, sympy.Interval) and isinstance(right, sympy.Interval):
+            return (
                 left.left_open == right.left_open
                 and left.right_open == right.right_open
                 and compare(left.start, right.start)
                 and compare(left.end, right.end)
             )
-        elif isinstance(left, sympy.Complement) and isinstance(right, sympy.Complement):
-            result = len(left.args) == len(right.args) and all(
+        if isinstance(left, sympy.Complement) and isinstance(right, sympy.Complement):
+            return len(left.args) == len(right.args) and all(
                 compare(left_arg, right_arg)
                 for left_arg, right_arg in zip(left.args, right.args, strict=True)
             )
-        elif isinstance(left, (sympy.Expr, sympy.logic.boolalg.Boolean)) and isinstance(
+        if isinstance(left, (sympy.Expr, sympy.logic.boolalg.Boolean)) and isinstance(
             right, (sympy.Expr, sympy.logic.boolalg.Boolean)
         ):
-            result = left.equals(right) is True
-        else:
-            result = False
+            return left.equals(right) is True
 
-        comparison_cache[pair] = result
-        comparison_cache[reverse_pair] = result
-        return result
+        return False
 
     return compare(a, b)
 
