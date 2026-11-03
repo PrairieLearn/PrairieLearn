@@ -144,7 +144,7 @@ export type ReviewSnapshot = z.infer<typeof ReviewSnapshotSchema>;
 export const PendingReviewSchema = z.strictObject({
   callId: z.string(),
   // Identifies the request_changes tool part in chat history so its result can be updated.
-  card: z.strictObject({ messageId: z.string(), partId: z.string() }),
+  request_changes_tool_part: z.strictObject({ messageId: z.string(), partId: z.string() }),
   snapshot: ReviewSnapshotSchema,
   status: z.enum(['pending', 'running', 'blocked']),
   jobSequenceId: IdSchema.nullable(),
@@ -172,8 +172,6 @@ export const ReviewOutcomeSchema = z.strictObject({
 export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
 
 export const SavedJobOutcomeSchema = z.strictObject({
-  // Editor jobs do not store native call IDs; Resume matches the saved jobSequenceId instead.
-  callId: z.string().nullable(),
   jobSequenceId: IdSchema,
   status: z.enum(['running', 'completed', 'blocked']),
   result: RequestChangesResultSchema.nullable(),

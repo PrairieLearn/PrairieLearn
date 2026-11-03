@@ -12,7 +12,7 @@ import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 
-export function ReviewCard({
+export function RequestChangesCard({
   conversationId,
   messageId,
   partId,
@@ -36,7 +36,8 @@ export function ReviewCard({
     retry: false,
   });
   const current =
-    review.data?.card.messageId === messageId && review.data.card.partId === partId
+    review.data?.request_changes_tool_part.messageId === messageId &&
+    review.data.request_changes_tool_part.partId === partId
       ? review.data
       : null;
   const jobSequenceId = startedJob ?? current?.jobSequenceId ?? null;
