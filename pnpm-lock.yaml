@@ -629,8 +629,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/signed-token
       '@prairielearn/sketchresponse':
-        specifier: ^0.2.1
-        version: 0.2.1(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))
+        specifier: ^0.3.0
+        version: 0.3.0(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))
       '@prairielearn/tree-sitter-htmlmustache':
         specifier: ^1.4.3
         version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.9.9)
@@ -4841,8 +4841,8 @@ packages:
   '@prairielearn/excalidraw-builds@1.0.0':
     resolution: {integrity: sha512-/4KoKjF0Fbmvy2VsDXdoagP+IFViHHQXfSbRejGdIVIlby3dHJTDetXATMygOqa6IdNo6bFvaX8C6mmsN4X3Xg==}
 
-  '@prairielearn/sketchresponse@0.2.1':
-    resolution: {integrity: sha512-3ZX0Gx6LXkNJQcG7vwF86JNMFJweQVF5Az1Fr3b6sCgV+n9wyCrVZ8hpNJxIk2vqxnFcSeCwnGf2wkEF6w5BlQ==}
+  '@prairielearn/sketchresponse@0.3.0':
+    resolution: {integrity: sha512-qml4RicHe5pv4z9tVanNiy0h3inwXUg4uvcx13+yKPf4q+LTNfUN6LATBLLOgjuhPul2PC6hm4XhyKSLrDLsTw==}
 
   '@prairielearn/tree-sitter-htmlmustache@1.4.3':
     resolution: {integrity: sha512-McCgDJUHy+V74YHRlKx4/WuI0SB+vafqYmssYKunzFEXPTnIwQGg9mZ8o7Xumlh0fqJOZiVxr5ia2C0vvpZaew==}
@@ -12978,7 +12978,7 @@ snapshots:
 
   '@prairielearn/excalidraw-builds@1.0.0': {}
 
-  '@prairielearn/sketchresponse@0.2.1(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))':
+  '@prairielearn/sketchresponse@0.3.0(stylelint@16.26.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0))':
     dependencies:
       buffer: 6.0.3
       deep-extend: 0.6.0
