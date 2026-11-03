@@ -5,6 +5,14 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
+class SourceSpan:
+    """Half-open offsets into raw symbolic input."""
+
+    start: int
+    end: int
+
+
+@dataclass(frozen=True, slots=True)
 class SourceToken:
     """One transformed character and its position in the raw source."""
 
