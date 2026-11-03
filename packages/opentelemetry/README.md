@@ -29,6 +29,8 @@ When using code from the OpenTelemetry libraries, make sure you import it via `@
 
 ## Traces
 
+This package uses OpenTelemetry SDK 3. Custom trace exporters and span processors passed to `init()` must be compatible with SDK 3. Trace limits and batch processor settings use SDK defaults; `OTEL_SPAN_*`, `OTEL_ATTRIBUTE_*`, and `OTEL_BSP_*` environment variables are not read.
+
 To easily instrument individual pieces of functionality, you can use the `instrumented()` helper function:
 
 ```ts
