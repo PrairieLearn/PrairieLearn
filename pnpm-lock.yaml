@@ -5471,9 +5471,6 @@ packages:
   '@types/estree-jsx@1.0.5':
     resolution: {integrity: sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==}
 
-  '@types/estree@1.0.10':
-    resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
-
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
@@ -9202,9 +9199,6 @@ packages:
   pg-protocol@1.16.0:
     resolution: {integrity: sha512-sILXutLVjCLjcDuOmvhX5e2Z4cS5qG/6Bu3VkpFwdf/633ElGLpEh9bgmuI5I4sqKqkifQiGyiCcx1HdtrK7tg==}
 
-  pg-protocol@1.16.1:
-    resolution: {integrity: sha512-p9VOFMiHB/ZbJATetbg+99PxssTVSQRnyuPSQ67mN1+1KBOjZaZ83ZQzltnxPhJwSsC3nwVjJ10DVJlerbFzLg==}
-
   pg-types@2.2.0:
     resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
     engines: {node: '>=4'}
@@ -9420,10 +9414,6 @@ packages:
 
   protobufjs@7.6.5:
     resolution: {integrity: sha512-/FPD0nUc9jH6rfFjji9IBqOz4pcSE3CsT1m7Ep6Mdb0LxSUMj8hgl6GomOvZzpNpAqqGaXA0P3VSrZLFzIhQrw==}
-    engines: {node: '>=12.0.0'}
-
-  protobufjs@7.6.6:
-    resolution: {integrity: sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg==}
     engines: {node: '>=12.0.0'}
 
   proxy-addr@2.0.7:
@@ -9913,10 +9903,6 @@ packages:
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
-    engines: {node: '>=0.10.0'}
-
-  source-map-js@1.2.2:
-    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
   source-map@0.7.6:
@@ -11932,7 +11918,7 @@ snapshots:
     dependencies:
       lodash.camelcase: 4.3.0
       long: 5.3.2
-      protobufjs: 7.6.6
+      protobufjs: 7.6.5
       yargs: 17.7.3
 
   '@html-eslint/core@0.66.1':
@@ -13490,8 +13476,6 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.9
 
-  '@types/estree@1.0.10': {}
-
   '@types/estree@1.0.9': {}
 
   '@types/express-serve-static-core@4.19.9':
@@ -13629,12 +13613,12 @@ snapshots:
 
   '@types/pg-pool@2.0.7':
     dependencies:
-      '@types/pg': 8.15.6
+      '@types/pg': 8.23.1
 
   '@types/pg@8.15.6':
     dependencies:
       '@types/node': 24.19.0
-      pg-protocol: 1.16.1
+      pg-protocol: 1.16.0
       pg-types: 2.2.0
 
   '@types/pg@8.23.1':
@@ -14712,7 +14696,7 @@ snapshots:
   css-tree@3.2.1:
     dependencies:
       mdn-data: 2.27.1
-      source-map-js: 1.2.2
+      source-map-js: 1.2.1
 
   css-what@6.2.2: {}
 
@@ -15536,7 +15520,7 @@ snapshots:
 
   estree-walker@3.0.3:
     dependencies:
-      '@types/estree': 1.0.10
+      '@types/estree': 1.0.9
 
   esutils@2.0.3: {}
 
@@ -17584,8 +17568,6 @@ snapshots:
 
   pg-protocol@1.16.0: {}
 
-  pg-protocol@1.16.1: {}
-
   pg-types@2.2.0:
     dependencies:
       pg-int8: 1.0.1
@@ -17679,7 +17661,7 @@ snapshots:
     dependencies:
       nanoid: 3.3.19
       picocolors: 1.1.1
-      source-map-js: 1.2.2
+      source-map-js: 1.2.1
 
   postgres-array@2.0.0: {}
 
@@ -17828,20 +17810,6 @@ snapshots:
       prosemirror-transform: 1.12.0
 
   protobufjs@7.6.5:
-    dependencies:
-      '@protobufjs/aspromise': 1.1.2
-      '@protobufjs/base64': 1.1.2
-      '@protobufjs/codegen': 2.0.5
-      '@protobufjs/eventemitter': 1.1.1
-      '@protobufjs/fetch': 1.1.1
-      '@protobufjs/float': 1.0.2
-      '@protobufjs/path': 1.1.2
-      '@protobufjs/pool': 1.1.0
-      '@protobufjs/utf8': 1.1.2
-      '@types/node': 24.19.0
-      long: 5.3.2
-
-  protobufjs@7.6.6:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
       '@protobufjs/base64': 1.1.2
@@ -18240,7 +18208,7 @@ snapshots:
     dependencies:
       chokidar: 5.0.0
       immutable: 5.1.9
-      source-map-js: 1.2.2
+      source-map-js: 1.2.1
     optionalDependencies:
       '@parcel/watcher': 2.5.6
 
@@ -18452,8 +18420,6 @@ snapshots:
       atomic-sleep: 1.0.0
 
   source-map-js@1.2.1: {}
-
-  source-map-js@1.2.2: {}
 
   source-map@0.7.6: {}
 
