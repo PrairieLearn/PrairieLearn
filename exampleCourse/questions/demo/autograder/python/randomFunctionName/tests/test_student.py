@@ -1,5 +1,5 @@
 import pytest
-from pytest_prairielearn_grader.assertions import assert_equal
+from pytest_prairielearn_grader.assertions import assert_fn_equal
 from pytest_prairielearn_grader.fixture import (
     DataFixture,
     FeedbackFixture,
@@ -20,16 +20,13 @@ def test_input(
     for pair in params["pairs"]:
         func_input = pair["input"]
         expected_output = pair["output"]
-        try:
-            assert_equal(
-                sandbox.query_function(function_name, func_input),
-                expected_output,
-                description=f'{function_name}("{func_input}")',
-            )
-        except (AssertionError, RuntimeError) as error:
-            failures.append(str(error))
-        else:
+        response = sandbox.query_function_raw(function_name, func_input)
+        if response["status"] == "success" and response["value"] == expected_output:
             num_correct += 1
+        else:
+            failures.append(
+                _format_failure(function_name, func_input, expected_output, response)
+            )
 
     if failures:
         feedback.add_message("\n\n".join(failures))
@@ -39,21 +36,17 @@ def test_input(
 @pytest.mark.output(level="friendly")
 @pytest.mark.grading_data(name="Test default output", points=1)
 def test_default_output(
-    sandbox: StudentFixture, data_json: DataFixture, feedback: FeedbackFixture
+    sandbox: StudentFixture, data_json: DataFixture
 ) -> None:
     params = data_json["params"]
     function_name = params["function_name"]
     func_input = params["invalid_input"]
     expected_output = params["default_output"]
 
-    try:
-        assert_equal(
-            sandbox.query_function(function_name, func_input),
-            expected_output,
-            description=f'{function_name}("{func_input}")',
-        )
-    except (AssertionError, RuntimeError) as error:
-        feedback.add_message(str(error))
-        feedback.set_score_final(0)
-    else:
-        feedback.set_score_final(1)
+    assert_fn_equal(
+        sandbox,
+        function_name,
+        args=(func_input,),
+        expected=expected_output,
+        description=f'{function_name}("{func_input}")',
+    )
