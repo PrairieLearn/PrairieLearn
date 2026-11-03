@@ -43,15 +43,8 @@ def _fib(n: int) -> int:
 
 def _format_failure(description: str, expected: int, response: dict) -> str:
     if response["status"] == "success":
-        return (
-            f"Checking: {description}\n"
-            f"Expected output: {expected}\n"
-            f"Your code output: {response['value']}\n"
-            "The expected and actual output do not match."
-        )
+        return f"{description}: expected {expected}, got {response['value']}"
     return (
-        f"Checking: {description}\n"
-        f"Expected output: {expected}\n"
-        f"Your code raised {response['exception_name']}: "
+        f"{description}: raised {response['exception_name']}: "
         f"{response['exception_message']}"
     )
