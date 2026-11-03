@@ -23,18 +23,12 @@ def test_random_values(sandbox: StudentFixture, feedback: FeedbackFixture) -> No
     failures = []
 
     for n in test_values:
-        try:
-            assert_fn_equal(
-                sandbox,
-                "fib",
-                args=(n,),
-                expected=_fib(n),
-                description=f"fib({n})",
-            )
-        except AssertionError as error:
-            failures.append(str(error))
-        else:
+        response = sandbox.query_function_raw("fib", n)
+        expected = _fib(n)
+        if response["status"] == "success" and response["value"] == expected:
             num_correct += 1
+        else:
+            failures.append(_format_failure(f"fib({n})", expected, response))
 
     if failures:
         feedback.add_message("\n\n".join(failures))
@@ -45,3 +39,19 @@ def _fib(n: int) -> int:
     if n <= 1:
         return n
     return _fib(n - 1) + _fib(n - 2)
+
+
+def _format_failure(description: str, expected: int, response: dict) -> str:
+    if response["status"] == "success":
+        return (
+            f"Checking: {description}\n"
+            f"Expected output: {expected}\n"
+            f"Your code output: {response['value']}\n"
+            "The expected and actual output do not match."
+        )
+    return (
+        f"Checking: {description}\n"
+        f"Expected output: {expected}\n"
+        f"Your code raised {response['exception_name']}: "
+        f"{response['exception_message']}"
+    )
