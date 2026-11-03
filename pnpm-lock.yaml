@@ -220,8 +220,8 @@ importers:
         specifier: workspace:^
         version: link:packages/tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -290,7 +290,7 @@ importers:
         version: '@typescript/typescript6@6.0.2'
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -395,8 +395,8 @@ importers:
         specifier: ^11.0.4
         version: 11.0.4
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -411,7 +411,7 @@ importers:
         version: 0.1.11
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/prairielearn:
     dependencies:
@@ -1071,7 +1071,7 @@ importers:
         version: 2.5.1
       sharp:
         specifier: ^0.35.4
-        version: 0.35.5(@types/node@24.19.0)
+        version: 0.35.5(@types/node@25.9.9)
       shlex:
         specifier: ^3.0.0
         version: 3.0.0
@@ -1095,7 +1095,7 @@ importers:
         version: 7.2.0
       stripe:
         specifier: ^22.6.2
-        version: 22.6.2(@types/node@24.19.0)
+        version: 22.6.2(@types/node@25.9.9)
       superjson:
         specifier: ^2.2.6
         version: 2.2.6
@@ -1242,8 +1242,8 @@ importers:
         specifier: ^4.2.6
         version: 4.2.6
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@types/node-jose':
         specifier: ^1.1.13
         version: 1.1.13
@@ -1321,7 +1321,7 @@ importers:
         version: 0.1.11
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/workspace-host:
     dependencies:
@@ -1423,8 +1423,8 @@ importers:
         specifier: ^1.2.5
         version: 1.2.5
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1439,7 +1439,7 @@ importers:
         version: 0.1.11
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/actions-report-bundle-sizes:
     dependencies:
@@ -1454,8 +1454,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1473,8 +1473,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1495,8 +1495,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1511,8 +1511,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1521,7 +1521,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/bind-mount:
     dependencies:
@@ -1542,8 +1542,8 @@ importers:
         specifier: ^1.5.5
         version: 1.5.5
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1586,8 +1586,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1629,8 +1629,8 @@ importers:
         specifier: ^11.0.4
         version: 11.0.4
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1645,7 +1645,7 @@ importers:
         version: 7.2.0
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/config:
     dependencies:
@@ -1678,8 +1678,8 @@ importers:
         specifier: ^11.0.4
         version: 11.0.4
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1691,7 +1691,7 @@ importers:
         version: 3.0.3
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/csv:
     dependencies:
@@ -1706,8 +1706,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1716,7 +1716,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/docker-utils:
     dependencies:
@@ -1734,8 +1734,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1744,7 +1744,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/encrypted-storage:
     dependencies:
@@ -1759,8 +1759,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1772,7 +1772,7 @@ importers:
         version: 0.1.11
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/error:
     dependencies:
@@ -1787,8 +1787,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1797,7 +1797,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/eslint-config:
     dependencies:
@@ -1869,8 +1869,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1897,8 +1897,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript-eslint/rule-tester':
         specifier: ^8.70.1
         version: 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)
@@ -1913,7 +1913,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/express-list-endpoints:
     devDependencies:
@@ -1924,8 +1924,8 @@ importers:
         specifier: ^4.17.25 <5
         version: 4.17.25
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1937,7 +1937,7 @@ importers:
         version: 4.22.3(supports-color@7.2.0)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/express-test-utils:
     dependencies:
@@ -1949,8 +1949,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1968,8 +1968,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -1978,7 +1978,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/formatter:
     dependencies:
@@ -1996,8 +1996,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2006,7 +2006,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/html:
     devDependencies:
@@ -2014,8 +2014,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2024,7 +2024,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/logger:
     dependencies:
@@ -2039,8 +2039,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2070,8 +2070,8 @@ importers:
         specifier: ^30.0.0
         version: 30.0.0
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2080,7 +2080,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/marked-mathjax:
     devDependencies:
@@ -2101,7 +2101,7 @@ importers:
         version: 4.1.3
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/migrations:
     dependencies:
@@ -2134,8 +2134,8 @@ importers:
         specifier: ^11.0.4
         version: 11.0.4
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2150,7 +2150,7 @@ importers:
         version: 0.1.11
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/named-locks:
     dependencies:
@@ -2165,8 +2165,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@types/pg':
         specifier: ^8.23.1
         version: 8.23.1
@@ -2190,8 +2190,8 @@ importers:
         specifier: ^1.2.4
         version: 1.2.4
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2269,8 +2269,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2279,7 +2279,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/path-utils:
     devDependencies:
@@ -2287,8 +2287,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2297,7 +2297,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/pin-github-actions:
     devDependencies:
@@ -2305,8 +2305,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2336,8 +2336,8 @@ importers:
         specifier: ^4.1.13
         version: 4.1.13
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@types/pg':
         specifier: ^8.23.1
         version: 8.23.1
@@ -2352,7 +2352,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/postgres-tools:
     dependencies:
@@ -2391,8 +2391,8 @@ importers:
         specifier: ^11.0.4
         version: 11.0.4
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2413,8 +2413,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@types/pem':
         specifier: ^1.14.4
         version: 1.14.4
@@ -2429,7 +2429,7 @@ importers:
         version: 1.14.8
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/question-conversion:
     dependencies:
@@ -2480,8 +2480,8 @@ importers:
         specifier: ^1.2.3
         version: 1.2.3
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2493,7 +2493,7 @@ importers:
         version: 8.12.3
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -2541,8 +2541,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2553,8 +2553,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2563,7 +2563,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/sanitize:
     devDependencies:
@@ -2571,8 +2571,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2581,7 +2581,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/sentry:
     dependencies:
@@ -2602,8 +2602,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2612,7 +2612,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/session:
     dependencies:
@@ -2648,8 +2648,8 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@types/on-headers':
         specifier: ^1.0.4
         version: 1.0.4
@@ -2673,7 +2673,7 @@ importers:
         version: 3.1.2
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/signed-token:
     dependencies:
@@ -2694,8 +2694,8 @@ importers:
         specifier: ^4.1.13
         version: 4.1.13
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2704,7 +2704,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/trpc:
     dependencies:
@@ -2731,8 +2731,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@types/react-dom':
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
@@ -2750,7 +2750,7 @@ importers:
         version: 19.3.0(react@19.3.0)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/tsconfig: {}
 
@@ -2806,8 +2806,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2816,7 +2816,7 @@ importers:
         version: 0.1.11
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/utils:
     dependencies:
@@ -2837,8 +2837,8 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@types/yauzl':
         specifier: ^3.4.0
         version: 3.4.0
@@ -2853,7 +2853,7 @@ importers:
         version: 8.0.0
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/workspace-utils:
     dependencies:
@@ -2892,8 +2892,8 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2905,7 +2905,7 @@ importers:
         version: 0.1.11
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/zod:
     dependencies:
@@ -2923,8 +2923,8 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/node':
-        specifier: ^24.19.0
-        version: 24.19.0
+        specifier: ^25.9.9
+        version: 25.9.9
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -2933,7 +2933,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       vitest:
         specifier: ^5.0.2
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
 packages:
 
@@ -5648,6 +5648,9 @@ packages:
 
   '@types/node@24.19.0':
     resolution: {integrity: sha512-zY+5tKxXdhGh1PYI0ac+7juvEu4OI6vWtVVoj5i2m42jxAY1U+zHGt6QCyOFwykdP62sM3MJ9stoYYUw5aCWew==}
+
+  '@types/node@25.9.9':
+    resolution: {integrity: sha512-b4e2xxj/yMeT2hNlD6x7zNFiQK2Dlmkb9CQ6v3/1G2RezKN4YS2lcEv8lzGm1mhs4f2lM4yNAMI/zUDBZBBt7w==}
 
   '@types/oauth-signature@1.5.2':
     resolution: {integrity: sha512-YDiDWgkEBoouGfm9O5SN9wUlCE5QRTHxrrijqqQyP0uXPljOnx3qEHw/gxmlSBgMkTc/IuFa6kbCLqG6mK318Q==}
@@ -13493,27 +13496,27 @@ snapshots:
 
   '@types/archiver@8.0.0':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@types/readdir-glob': 1.1.5
 
   '@types/async@3.2.26': {}
 
   '@types/bindings@1.5.5':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/blocked-at@1.0.4':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/blocked@1.3.5':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/bootstrap@5.2.11':
     dependencies:
@@ -13521,7 +13524,7 @@ snapshots:
 
   '@types/byline@4.2.36':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/chai@5.2.3':
     dependencies:
@@ -13530,7 +13533,7 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/cookie-parser@1.4.10(@types/express@4.17.25)':
     dependencies:
@@ -13538,13 +13541,13 @@ snapshots:
 
   '@types/cookie-signature@1.1.2':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/cookie@0.6.0': {}
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/css-tree@2.3.11': {}
 
@@ -13673,13 +13676,13 @@ snapshots:
 
   '@types/docker-modem@3.0.6':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@types/ssh2': 1.15.5
 
   '@types/dockerode@4.0.1':
     dependencies:
       '@types/docker-modem': 3.0.6
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@types/ssh2': 1.15.5
 
   '@types/esrecurse@4.3.1': {}
@@ -13692,7 +13695,7 @@ snapshots:
 
   '@types/express-serve-static-core@4.19.9':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@types/qs': 6.15.1
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -13709,7 +13712,7 @@ snapshots:
   '@types/fs-extra@11.0.4':
     dependencies:
       '@types/jsonfile': 6.1.4
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/geojson@7946.0.16': {}
 
@@ -13731,7 +13734,7 @@ snapshots:
 
   '@types/jsdom@30.0.0':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@types/tough-cookie': 4.0.5
       parse5: 8.0.1
       undici-types: 8.11.2
@@ -13742,17 +13745,17 @@ snapshots:
 
   '@types/jsonfile@6.1.4':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/katex@0.16.8': {}
 
   '@types/klaw@3.0.7':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/loopbench@1.2.4':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/mdast@4.0.4':
     dependencies:
@@ -13760,7 +13763,7 @@ snapshots:
 
   '@types/memorystream@0.3.4':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/mime@1.3.5': {}
 
@@ -13776,7 +13779,7 @@ snapshots:
 
   '@types/node-jose@1.1.13':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/node@18.19.130':
     dependencies:
@@ -13786,17 +13789,21 @@ snapshots:
     dependencies:
       undici-types: 7.24.6
 
+  '@types/node@25.9.9':
+    dependencies:
+      undici-types: 7.24.6
+
   '@types/oauth-signature@1.5.2': {}
 
   '@types/object-hash@3.0.6': {}
 
   '@types/on-finished@2.3.5':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/on-headers@1.0.4':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/passport-azure-ad@4.3.6':
     dependencies:
@@ -13816,11 +13823,11 @@ snapshots:
 
   '@types/pem@1.14.4':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/pg-cursor@2.7.2':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@types/pg': 8.23.1
 
   '@types/pg-pool@2.0.7':
@@ -13829,13 +13836,13 @@ snapshots:
 
   '@types/pg@8.15.6':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       pg-protocol: 1.16.0
       pg-types: 2.2.0
 
   '@types/pg@8.23.1':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       pg-protocol: 1.16.0
       pg-types: 2.2.0
 
@@ -13859,18 +13866,18 @@ snapshots:
 
   '@types/readdir-glob@1.1.5':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/sarif@2.1.7': {}
 
   '@types/send@0.17.6':
     dependencies:
       '@types/mime': 1.3.5
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/serve-favicon@2.5.7':
     dependencies:
@@ -13879,13 +13886,13 @@ snapshots:
   '@types/serve-static@1.15.10':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@types/send': 0.17.6
 
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/sizzle@2.3.10': {}
 
@@ -13912,7 +13919,7 @@ snapshots:
 
   '@types/unzipper@0.10.11':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/use-sync-external-store@0.0.6': {}
 
@@ -13920,24 +13927,24 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/xml-encryption@1.2.4':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/xml2js@0.4.14':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
     optional: true
 
   '@types/yauzl@3.4.0':
     dependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   '@typescript-eslint/eslint-plugin@8.70.1(@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
@@ -14192,7 +14199,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   '@vitest/eslint-plugin@1.6.27(@typescript-eslint/eslint-plugin@8.70.1(@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(vitest@5.0.2)':
     dependencies:
@@ -14202,7 +14209,7 @@ snapshots:
     optionalDependencies:
       '@typescript-eslint/eslint-plugin': 8.70.1(@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)
       typescript: '@typescript/typescript6@6.0.2'
-      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -14222,14 +14229,14 @@ snapshots:
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.1
 
-  '@vitest/mocker@5.0.2(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))':
+  '@vitest/mocker@5.0.2(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.2
       estree-walker: 3.0.3
       magic-string: 1.4.1
     optionalDependencies:
-      vite: 8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)
 
   '@vitest/pretty-format@4.1.10':
     dependencies:
@@ -15327,7 +15334,7 @@ snapshots:
   engine.io@6.6.9(supports-color@7.2.0):
     dependencies:
       '@types/cors': 2.8.19
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@types/ws': 8.18.1
       accepts: 1.3.8
       base64id: 2.0.0
@@ -16250,7 +16257,7 @@ snapshots:
       semver: 7.8.5
     optionalDependencies:
       '@vitest/expect': 4.1.10
-      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
 
   htmlhint@1.9.2:
     dependencies:
@@ -18030,7 +18037,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.2
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       long: 5.3.2
 
   proxy-addr@2.0.7:
@@ -18494,7 +18501,7 @@ snapshots:
 
   sh-syntax@0.7.0: {}
 
-  sharp@0.35.5(@types/node@24.19.0):
+  sharp@0.35.5(@types/node@25.9.9):
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -18525,7 +18532,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   shebang-command@2.0.0:
     dependencies:
@@ -18739,9 +18746,9 @@ snapshots:
 
   strip-json-comments@5.0.3: {}
 
-  stripe@22.6.2(@types/node@24.19.0):
+  stripe@22.6.2(@types/node@25.9.9):
     optionalDependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
 
   strnum@1.1.2: {}
 
@@ -19244,7 +19251,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1):
+  vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -19252,7 +19259,7 @@ snapshots:
       rolldown: 1.2.11
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       esbuild: 0.28.2
       fsevents: 2.3.3
       jiti: 2.7.0
@@ -19260,10 +19267,10 @@ snapshots:
       tsx: 4.23.15
       yaml: 2.9.1
 
-  vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)):
+  vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.2(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+      '@vitest/mocker': 5.0.2(vite@8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -19274,11 +19281,11 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.1(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)
       why-is-node-running: 3.2.2
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
-      '@types/node': 24.19.0
+      '@types/node': 25.9.9
       '@vitest/coverage-v8': 5.0.2(vitest@5.0.2)
       jsdom: 30.1.1
     transitivePeerDependencies:
