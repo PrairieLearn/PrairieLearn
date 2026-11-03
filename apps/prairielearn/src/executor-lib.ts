@@ -59,8 +59,7 @@ export async function handleInput(
 
     return {
       data: restartErr || !success ? 'restart-required' : 'success',
-      // The host must destroy the container before reusing its course mount.
-      // Leave the failed caller in place rather than starting another interpreter.
+     // Failed restarts require container disposal, so don't start a replacement interpreter.
       needsFullRestart: false,
     };
   }
