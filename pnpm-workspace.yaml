@@ -21,6 +21,9 @@ overrides:
   # plugins and their CLI/parser dependencies to reduce install size.
   '@sentry/node>@sentry/bundler-plugins': '-'
 
+  # Azure's Bunyan logger only uses stdout/stderr, not rotating log files.
+  'bunyan>mv': '-'
+
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
@@ -69,3 +72,5 @@ minimumReleaseAgeExclude:
   - 'typescript-cp@0.1.11'
   - express@4.22.3
   - prettier@3.9.7
+  # Pull in glob 14 and its minimatch security fixes through rimraf.
+  - 'rimraf@6.1.4'
