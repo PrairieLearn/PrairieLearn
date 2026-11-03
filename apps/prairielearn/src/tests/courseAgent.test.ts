@@ -1,13 +1,12 @@
 import { once } from 'node:events';
 import { type IncomingMessage, createServer, request } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import * as path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import * as path from 'node:path';
-
-import { io } from 'socket.io-client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import { io } from 'socket.io-client';
 import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
