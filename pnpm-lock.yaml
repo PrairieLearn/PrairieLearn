@@ -628,7 +628,7 @@ importers:
         version: link:../../packages/signed-token
       '@prairielearn/sketchresponse':
         specifier: ^0.2.1
-        version: 0.2.1(stylelint@16.26.1(supports-color@7.2.0))
+        version: 0.2.1(stylelint@16.26.1(supports-color@10.2.2))
       '@prairielearn/tree-sitter-htmlmustache':
         specifier: ^1.4.3
         version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.9.9)
@@ -13020,7 +13020,7 @@ snapshots:
     dependencies:
       '@hono/node-server': 2.1.4(hono@4.13.13)
       ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
+      ajv-formats: 3.0.1
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
@@ -13731,7 +13731,7 @@ snapshots:
 
   '@prairielearn/excalidraw-builds@1.0.0': {}
 
-  '@prairielearn/sketchresponse@0.2.1(stylelint@16.26.1(supports-color@7.2.0))':
+  '@prairielearn/sketchresponse@0.2.1(stylelint@16.26.1(supports-color@10.2.2))':
     dependencies:
       buffer: 6.0.3
       deep-extend: 0.6.0
@@ -13742,7 +13742,7 @@ snapshots:
       pepjs: 0.5.3
       sass: 1.105.0
       sass-loader: 16.0.8(sass@1.105.0)
-      stylelint-scss: 6.14.0(stylelint@16.26.1(supports-color@7.2.0))
+      stylelint-scss: 6.14.0(stylelint@16.26.1(supports-color@10.2.2))
       sweetalert2: 11.26.25
     transitivePeerDependencies:
       - '@rspack/core'
@@ -15170,8 +15170,8 @@ snapshots:
     dependencies:
       ajv: 8.20.0
 
-  ajv-formats@3.0.1(ajv@8.20.0):
-    optionalDependencies:
+  ajv-formats@3.0.1:
+    dependencies:
       ajv: 8.20.0
 
   ajv-i18n@4.2.0(ajv@8.20.0):
@@ -19815,7 +19815,7 @@ snapshots:
     dependencies:
       inline-style-parser: 0.2.7
 
-  stylelint-scss@6.14.0(stylelint@16.26.1(supports-color@7.2.0)):
+  stylelint-scss@6.14.0(stylelint@16.26.1(supports-color@10.2.2)):
     dependencies:
       css-tree: 3.2.1
       is-plain-object: 5.1.0
@@ -19825,9 +19825,9 @@ snapshots:
       postcss-resolve-nested-selector: 0.1.6
       postcss-selector-parser: 7.1.6
       postcss-value-parser: 4.2.0
-      stylelint: 16.26.1(supports-color@7.2.0)
+      stylelint: 16.26.1(supports-color@10.2.2)
 
-  stylelint@16.26.1(supports-color@7.2.0):
+  stylelint@16.26.1(supports-color@10.2.2):
     dependencies:
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-syntax-patches-for-csstree': 1.1.14(css-tree@3.2.1)
