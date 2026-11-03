@@ -53,6 +53,13 @@ const FunctionCallOutput = z.object({
   name: z.string(),
   output: z.string(),
 });
+const DynamicToolCall = z.object({
+  type: z.literal('dynamicToolCall'),
+  id: z.string(),
+  tool: z.string(),
+  status: z.string(),
+  contentItems: z.array(z.object({ type: z.string(), text: z.string().optional() })).nullable(),
+});
 const ThreadHistory = z.object({
   thread: z.object({
     turns: z.array(
@@ -60,7 +67,10 @@ const ThreadHistory = z.object({
         items: z.array(
           z.union([
             FunctionCallOutput,
-            z.object({ type: z.string() }).refine((item) => item.type !== 'functionCallOutput'),
+            DynamicToolCall,
+            z
+              .object({ type: z.string() })
+              .refine((item) => !['functionCallOutput', 'dynamicToolCall'].includes(item.type)),
           ]),
         ),
       }),
@@ -281,13 +291,30 @@ export class CodexAppServerClient {
         ThreadHistory,
       );
       const incorporated = saved.thread.turns.some((turn) =>
-        turn.items.some(
-          (item) =>
+        turn.items.some((item) => {
+          // Live tool replies and cold continuations have different persisted forms.
+          // Match the call as well as its result: separate denials often have identical results.
+          if (
+            item.type === 'dynamicToolCall' &&
+            'id' in item &&
+            item.id === text.callId &&
+            item.tool === 'request_changes' &&
+            // Denials and publication failures are delivered with success: false,
+            // so Codex records them as failed calls despite receiving the result.
+            ['completed', 'failed'].includes(item.status)
+          ) {
+            return item.contentItems?.some(
+              (content) =>
+                content.type === 'inputText' && content.text === JSON.stringify(text.result),
+            );
+          }
+          return (
             item.type === 'functionCallOutput' &&
             'name' in item &&
             item.name === 'request_changes' &&
-            item.output === JSON.stringify(text),
-        ),
+            item.output === JSON.stringify(text)
+          );
+        }),
       );
       if (incorporated) {
         this.terminal.resolve(undefined);
