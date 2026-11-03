@@ -505,3 +505,79 @@ def test_converts_symbol_expression_shorthands() -> None:
 def test_rejects_string_literals_in_algebraic_expression_positions() -> None:
     with pytest.raises(MathJsonStudentError, match="numeric expression"):
         mathjson_to_sympy_expr(["Add", "'test'", 1])
+
+
+@pytest.mark.parametrize("simplify_expression", [False, True])
+@pytest.mark.parametrize("head", ["Max", "Min"])
+def test_legacy_apply_preserves_builtin_extrema(
+    head: str, simplify_expression: bool
+) -> None:
+    expr = mathjson_to_sympy_expr(
+        ["Apply", head, "x", 1],
+        simplify_expression=simplify_expression,
+    )
+
+    assert expr.func is getattr(sympy, head)
+    assert expr == mathjson_to_sympy_expr(
+        [head, "x", 1],
+        simplify_expression=simplify_expression,
+    )
+
+
+@pytest.mark.parametrize(
+    ("simplify_expression", "expected"),
+    [
+        (False, sympy.Mul(2, sympy.Pow(4, -1, evaluate=False), evaluate=False)),
+        (True, sympy.Rational(1, 2)),
+    ],
+)
+def test_rational_respects_simplification(
+    simplify_expression: bool, expected: sympy.Basic
+) -> None:
+    assert (
+        mathjson_to_sympy_expr(
+            ["Rational", 2, 4],
+            simplify_expression=simplify_expression,
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("mathjson", "expected"),
+    [
+        (["Rational", ["Rational", 1, 2]], "1/2"),
+        (["Rational", ["Rational", 1, 2], 3], "(1/2)/3"),
+    ],
+)
+def test_nested_rational_preserves_unsimplified_operands(
+    mathjson: MathJsonExpression, expected: str
+) -> None:
+    assert str(mathjson_to_sympy_expr(mathjson, simplify_expression=False)) == expected
+
+
+@pytest.mark.parametrize("simplify_expression", [False, True])
+@pytest.mark.parametrize("head", ["SetMinus", "Subtract"])
+def test_set_difference_respects_simplification(
+    head: str, simplify_expression: bool
+) -> None:
+    expr = mathjson_to_sympy_expr(
+        [head, ["Set", "x"], ["Set", "x"]],
+        allow_sets=True,
+        simplify_expression=simplify_expression,
+    )
+    operand = sympy.FiniteSet(sympy.Symbol("x"))
+
+    assert expr == (
+        sympy.S.EmptySet
+        if simplify_expression
+        else sympy.Complement(operand, operand, evaluate=False)
+    )
+
+
+@pytest.mark.parametrize("simplify_expression", [False, True])
+def test_set_difference_rejects_scalar_operands(simplify_expression: bool) -> None:
+    with pytest.raises(MathJsonStudentError, match="Expected a set expression"):
+        mathjson_to_sympy_expr(
+            ["SetMinus", 1, 2], allow_sets=True, simplify_expression=simplify_expression
+        )

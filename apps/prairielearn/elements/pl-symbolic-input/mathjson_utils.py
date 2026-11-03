@@ -9,6 +9,7 @@ from typing import cast
 import sympy
 import sympy.logic.boolalg
 from mathjson import ExpressionObject, MathJsonExpression, MathJsonFunctionExpression
+from sympy.core.parameters import global_parameters
 from sympy.core.symbol import Str
 
 
@@ -238,6 +239,8 @@ def raw_mathjson_to_sympy_expr(
             - ``["Delimiter", ["Sequence", *args], {"str": ","}]`` -> ``["Set", *args]``.
         allow_trig: If false, raises on trig functions.
         simplify_expression: Whether to evaluate expressions during conversion.
+            Disabling evaluation preserves arithmetic, but SymPy still normalizes
+            some constructs, including sets and degenerate intervals.
 
     Returns:
         The converted SymPy object.
@@ -272,6 +275,8 @@ def mathjson_to_sympy_expr(
             - ``["Delimiter", ["Sequence", *args], {"str": ","}]`` -> ``["Set", *args]``
         allow_trig: If false, raises on trig functions.
         simplify_expression: Whether to evaluate expressions during conversion.
+            Disabling evaluation preserves arithmetic, but SymPy still normalizes
+            some constructs, including sets and degenerate intervals.
 
     Returns:
         The converted SymPy object.
@@ -279,8 +284,6 @@ def mathjson_to_sympy_expr(
     # pretend that expr is in the shape of MathJsonExpression
     expr = cast(MathJsonExpression, expr)
     _raise_mathjson_errors(expr, allow_trig=allow_trig)
-    # Constructors and arithmetic helpers must preserve the expression before
-    # it reaches the existing SymPy validation and serialization pipeline.
     with sympy.evaluate(simplify_expression):
         return _mathjson_to_sympy_expr(expr, allow_sets=allow_sets)
 
@@ -594,7 +597,7 @@ def _function(
             if len(args) == 1:
                 return sympy.Mul(-1, _as_expr(args[0]))
             if allow_sets and all(isinstance(arg, sympy.Set) for arg in args):
-                return functools.reduce(sympy.Complement, args)
+                return functools.reduce(_set_difference, args)
             left, *rest = args
             return sympy.Add(_as_expr(left), *(-_as_expr(arg) for arg in rest))
         # Invisible operator is always interpreted as multiplication
@@ -612,6 +615,9 @@ def _function(
             return sympy.root(_as_expr(args[0]), _as_expr(args[1]))
         case "Rational":
             _require_arity(head, args, 1, 2)
+            if all(arg.is_number and arg.is_rational for arg in args):
+                # Rational always reduces its arguments, even with evaluation disabled.
+                return args[0] if len(args) == 1 else _divide(args[0], args[1])
             if len(args) == 1:
                 return sympy.Rational(_as_expr(args[0]))
             return sympy.Rational(_as_expr(args[0]), _as_expr(args[1]))
@@ -657,7 +663,7 @@ def _function(
             return sympy.Intersection(*args)
         case "SetMinus":
             _require_arity(head, args, 2)
-            return sympy.Complement(args[0], args[1])
+            return _set_difference(args[0], args[1])
         case _:
             pass
 
@@ -762,6 +768,13 @@ def _pluralize_arg(count: int) -> str:
 
 def _divide(left: sympy.Basic, right: sympy.Basic) -> sympy.Basic:
     return sympy.Mul(_as_expr(left), sympy.Pow(_as_expr(right), -1))
+
+
+def _set_difference(left: sympy.Basic, right: sympy.Basic) -> sympy.Basic:
+    if not isinstance(left, sympy.Set) or not isinstance(right, sympy.Set):
+        raise MathJsonConversionError("Expected a set expression.")
+    # Complement defaults to evaluating rather than respecting the evaluation context.
+    return sympy.Complement(left, right, evaluate=global_parameters.evaluate)
 
 
 def _relation(head: str, args: tuple[sympy.Basic, ...]) -> sympy.Basic:
@@ -1002,6 +1015,9 @@ def _symbol_name(expr: object) -> str:
 
 
 def _undefined_function(name: str) -> Callable[..., sympy.Basic]:
+    # Legacy backfills serialize Max/Min as Apply rather than built-in heads.
+    if name in {"Max", "Min"}:
+        return _VARIADIC_FUNCTIONS[name]
     # sympy.Function(name) returns a callable undefined function class at
     # runtime, but Pylance reports the intermediate class as the final value.
     return cast(Callable[..., sympy.Basic], sympy.Function(name))
