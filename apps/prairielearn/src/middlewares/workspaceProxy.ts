@@ -1,5 +1,5 @@
-import type http from 'http';
-import type { Socket } from 'net';
+import type http from 'node:http';
+import type { Socket } from 'node:net';
 
 import { type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -19,6 +19,8 @@ import {
 } from '../lib/workspace-sandbox.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+class WorkspaceWebSocketAuthorizationError extends Error {}
 
 /**
  * Removes "sensitive" cookies from the request to avoid exposing them to
@@ -131,9 +133,9 @@ export function makeWorkspaceProxyMiddleware(
       workspaceId: string,
     ) => boolean;
     authorizeWebSocketRequest?: (
-      req: Pick<http.IncomingMessage, 'headers'>,
+      req: http.IncomingMessage,
       workspaceId: string,
-    ) => boolean;
+    ) => boolean | Promise<boolean>;
     responseHeaders?: Record<string, string>;
     removeResponseHeaders?: string[];
     cookieDomainRewrite?: string;
@@ -161,15 +163,6 @@ export function makeWorkspaceProxyMiddleware(
       // Each proxy installs a server-level WebSocket upgrade listener, so the
       // host must be checked before one proxy can reject another proxy's request.
       if (!options.matchesRequestHost(req, workspaceId.data)) return false;
-
-      if (
-        req.headers.upgrade?.toLowerCase() === 'websocket' &&
-        options.authorizeWebSocketRequest != null &&
-        !options.authorizeWebSocketRequest(req, workspaceId.data)
-      ) {
-        req.socket.destroy();
-        return false;
-      }
 
       return true;
     },
@@ -209,6 +202,15 @@ export function makeWorkspaceProxyMiddleware(
       if (!match) throw new Error(`Could not match path: ${path}`);
 
       const workspace_id = IdSchema.parse(match[1]);
+      if (
+        req.headers.upgrade?.toLowerCase() === 'websocket' &&
+        options.authorizeWebSocketRequest != null
+      ) {
+        if (!(await options.authorizeWebSocketRequest(req, workspace_id))) {
+          throw new WorkspaceWebSocketAuthorizationError();
+        }
+      }
+
       const hostname = await queryOptionalScalar(
         sql.select_hostname_from_workspace_id,
         { workspace_id },
@@ -251,11 +253,13 @@ export function makeWorkspaceProxyMiddleware(
         }
       },
       error: (err, req, res) => {
-        logger.error('Error proxying workspace request', {
-          err,
-          url: req.url,
-          originalUrl: req.originalUrl,
-        });
+        if (!(err instanceof WorkspaceWebSocketAuthorizationError)) {
+          logger.error('Error proxying workspace request', {
+            err,
+            url: req.url,
+            originalUrl: req.originalUrl,
+          });
+        }
 
         if (isResponseLike(res)) {
           // Check to make sure we weren't already in the middle of sending a

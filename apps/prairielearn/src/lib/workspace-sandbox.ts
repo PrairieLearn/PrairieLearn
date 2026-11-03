@@ -78,6 +78,41 @@ export type WorkspaceSandboxAccessResult =
       reason: 'invalid-host' | 'invalid-origin' | 'workspace-mismatch' | 'unauthorized';
     };
 
+function validateWorkspaceSandboxHost(
+  req: Pick<IncomingMessage, 'headers'>,
+  expectedWorkspaceId: string,
+): WorkspaceSandboxAccessResult {
+  const workspaceId = IdSchema.safeParse(expectedWorkspaceId);
+  if (!workspaceId.success) {
+    return { authorized: false, reason: 'workspace-mismatch' };
+  }
+
+  const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
+  if (workspaceHost.type !== 'workspace') {
+    return { authorized: false, reason: 'invalid-host' };
+  }
+  if (!idsEqual(workspaceHost.workspaceId, workspaceId.data)) {
+    return { authorized: false, reason: 'workspace-mismatch' };
+  }
+
+  return { authorized: true, workspaceHost };
+}
+
+function hasValidWorkspaceSandboxCookie(
+  req: Pick<IncomingMessage, 'headers'>,
+  workspaceId: string,
+): boolean {
+  const cookies = cookie.parse(req.headers.cookie ?? '');
+  if (!Object.hasOwn(cookies, WORKSPACE_SANDBOX_COOKIE_NAME)) return false;
+
+  return checkSignedToken(
+    cookies[WORKSPACE_SANDBOX_COOKIE_NAME],
+    getWorkspaceSandboxCookieData(workspaceId),
+    config.secretKey,
+    { maxAge: getWorkspaceSandboxCookieMaxAgeMilliseconds() },
+  );
+}
+
 function getWorkspaceSandboxCookieData(workspaceId: string) {
   return {
     purpose: WORKSPACE_SANDBOX_AUTHORIZATION_COOKIE_PURPOSE,
@@ -157,44 +192,22 @@ export function validateWorkspaceSandboxAccess(
   req: Pick<IncomingMessage, 'headers'>,
   expectedWorkspaceId: string,
 ): WorkspaceSandboxAccessResult {
-  const workspaceId = IdSchema.safeParse(expectedWorkspaceId);
-  if (!workspaceId.success) {
-    return { authorized: false, reason: 'workspace-mismatch' };
-  }
+  const hostAccess = validateWorkspaceSandboxHost(req, expectedWorkspaceId);
+  if (!hostAccess.authorized) return hostAccess;
 
-  const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
-  if (workspaceHost.type !== 'workspace') {
-    return { authorized: false, reason: 'invalid-host' };
-  }
-  if (!idsEqual(workspaceHost.workspaceId, workspaceId.data)) {
-    return { authorized: false, reason: 'workspace-mismatch' };
-  }
-
-  const cookies = cookie.parse(req.headers.cookie ?? '');
-  if (!Object.hasOwn(cookies, WORKSPACE_SANDBOX_COOKIE_NAME)) {
+  if (!hasValidWorkspaceSandboxCookie(req, hostAccess.workspaceHost.workspaceId)) {
     return { authorized: false, reason: 'unauthorized' };
   }
 
-  if (
-    !checkSignedToken(
-      cookies[WORKSPACE_SANDBOX_COOKIE_NAME],
-      getWorkspaceSandboxCookieData(workspaceHost.workspaceId),
-      config.secretKey,
-      { maxAge: getWorkspaceSandboxCookieMaxAgeMilliseconds() },
-    )
-  ) {
-    return { authorized: false, reason: 'unauthorized' };
-  }
-
-  return { authorized: true, workspaceHost };
+  return hostAccess;
 }
 
 export function validateWorkspaceSandboxWebSocketAccess(
   req: Pick<IncomingMessage, 'headers'>,
   expectedWorkspaceId: string,
 ): WorkspaceSandboxAccessResult {
-  const access = validateWorkspaceSandboxAccess(req, expectedWorkspaceId);
-  if (!access.authorized) return access;
+  const hostAccess = validateWorkspaceSandboxHost(req, expectedWorkspaceId);
+  if (!hostAccess.authorized) return hostAccess;
 
   const origin = req.headers.origin;
   if (origin == null) {
@@ -202,14 +215,18 @@ export function validateWorkspaceSandboxWebSocketAccess(
   }
 
   try {
-    if (new URL(origin).origin !== getWorkspaceSandboxOrigin(access.workspaceHost)) {
+    if (new URL(origin).origin !== getWorkspaceSandboxOrigin(hostAccess.workspaceHost)) {
       return { authorized: false, reason: 'invalid-origin' };
     }
   } catch {
     return { authorized: false, reason: 'invalid-origin' };
   }
 
-  return access;
+  if (!hasValidWorkspaceSandboxCookie(req, hostAccess.workspaceHost.workspaceId)) {
+    return { authorized: false, reason: 'unauthorized' };
+  }
+
+  return hostAccess;
 }
 
 export function getWorkspaceSandboxHostname({ workspaceId }: { workspaceId: string }): string {

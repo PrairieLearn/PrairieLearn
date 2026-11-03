@@ -63,7 +63,7 @@ describe('workspace proxy', () => {
     app.use(
       makeWorkspaceProxyMiddleware(CONTAINER_PATH_REGEX, {
         matchesRequestHost: () => true,
-        authorizeWebSocketRequest: (_req, workspaceId) => {
+        authorizeWebSocketRequest: async (_req, workspaceId) => {
           authorizedWorkspaceId = workspaceId;
           return false;
         },

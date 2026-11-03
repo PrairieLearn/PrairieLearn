@@ -1,6 +1,8 @@
+import { type IncomingMessage, ServerResponse } from 'node:http';
+
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
-import {
+import express, {
   type ErrorRequestHandler,
   type NextFunction,
   type Request,
@@ -12,7 +14,7 @@ import asyncHandler from 'express-async-handler';
 import * as Sentry from '@prairielearn/sentry';
 import { loadExistingSession } from '@prairielearn/session';
 
-import { config } from '../lib/config.js';
+import { config, setLocalsFromConfig } from '../lib/config.js';
 import { idsEqual } from '../lib/id.js';
 import { PostgresSessionStore } from '../lib/session-store.js';
 import { extendSessionExpirationIfNeeded } from '../lib/session.js';
@@ -66,6 +68,17 @@ function sendAuthorizationExpired(res: Response, status = 401) {
     <script>window.parent.postMessage(${message}, ${targetOrigin});</script>
   </body>
 </html>`);
+}
+
+function isClientError(err: unknown): err is { status: number } {
+  return (
+    err != null &&
+    typeof err === 'object' &&
+    'status' in err &&
+    typeof err.status === 'number' &&
+    err.status >= 400 &&
+    err.status < 500
+  );
 }
 
 function getWorkspaceHost(res: Response): Extract<WorkspaceSandboxHost, { type: 'workspace' }> {
@@ -139,10 +152,12 @@ export function makeWorkspaceSandboxMiddleware({
   // The short-lived authorization cookie keeps normal proxy requests off the database. After it
   // expires, the longer-lived sandbox session cookie lets us reauthorize and renew it without
   // reloading the workspace iframe.
-  const workspaceAuthorizationRouter = Router({ mergeParams: true });
-  workspaceAuthorizationRouter.use(checkWorkspaceAuthorizationCookie);
-  workspaceAuthorizationRouter.use(
+  const workspaceSessionAuthorizationRouter = Router({ mergeParams: true });
+  workspaceSessionAuthorizationRouter.use(
     asyncHandler(async (req, res, next) => {
+      setLocalsFromConfig(res.locals);
+      res.locals.workspace_id = req.params.workspace_id;
+
       const sandboxSession = getWorkspaceSandboxSession(req, req.params.workspace_id);
       if (sandboxSession == null) {
         sendAuthorizationExpired(res);
@@ -170,26 +185,68 @@ export function makeWorkspaceSandboxMiddleware({
       next();
     }),
   );
-  workspaceAuthorizationRouter.use(date, authn);
-  workspaceAuthorizationRouter.use((req, res, next) => {
+  workspaceSessionAuthorizationRouter.use(date, authn);
+  workspaceSessionAuthorizationRouter.use((req, res, next) => {
     const authorization = getWorkspaceSession(res).public_question_endpoint
       ? publicWorkspaceAuthorization
       : privateWorkspaceAuthorization;
     authorization(req, res, next);
   });
-  workspaceAuthorizationRouter.use(
+  workspaceSessionAuthorizationRouter.use(
     asyncHandler(async (_req, res, next) => {
       if (!(await areWorkspaceSpecificHostsEnabled(res.locals))) {
         sendAuthorizationExpired(res);
         return;
       }
 
-      const sandboxSession = getWorkspaceSession(res);
-      setWorkspaceSessionCookie(res, sandboxSession);
-      setWorkspaceAuthorizationCookie(res, sandboxSession.workspace_id);
       next();
     }),
   );
+
+  const workspaceAuthorizationRouter = Router({ mergeParams: true });
+  workspaceAuthorizationRouter.use(checkWorkspaceAuthorizationCookie);
+  workspaceAuthorizationRouter.use(workspaceSessionAuthorizationRouter);
+  workspaceAuthorizationRouter.use((_req, res, next) => {
+    const sandboxSession = getWorkspaceSession(res);
+    setWorkspaceSessionCookie(res, sandboxSession);
+    setWorkspaceAuthorizationCookie(res, sandboxSession.workspace_id);
+    next();
+  });
+
+  // WebSocket upgrades bypass the main Express middleware stack, so run the shared
+  // session authorization router against the handshake before proxying it.
+  const websocketAuthorizationApp = express();
+  websocketAuthorizationApp.set('trust proxy', config.trustProxy);
+  websocketAuthorizationApp.use(cookieParser());
+  websocketAuthorizationApp.use(
+    '/pl/workspace/:workspace_id(\\d+)/container',
+    workspaceSessionAuthorizationRouter,
+  );
+  const runWebSocketAuthorization: (
+    req: IncomingMessage,
+    res: ServerResponse,
+    next: (err?: unknown) => void,
+  ) => void = websocketAuthorizationApp;
+
+  async function authorizeWebSocketWithSandboxSession(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<boolean> {
+    return await new Promise<boolean>((resolve, reject) => {
+      const handleFinish = () => resolve(false);
+      res.once('finish', handleFinish);
+      runWebSocketAuthorization(req, res, (err) => {
+        res.off('finish', handleFinish);
+        if (err == null) {
+          resolve(true);
+        } else if (isClientError(err)) {
+          resolve(false);
+        } else {
+          reject(err);
+        }
+      });
+    });
+  }
 
   router.use((req, res, next) => {
     const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
@@ -248,8 +305,19 @@ export function makeWorkspaceSandboxMiddleware({
           workspaceHost.type === 'workspace' && idsEqual(workspaceHost.workspaceId, workspaceId)
         );
       },
-      authorizeWebSocketRequest: (req, workspaceId) =>
-        validateWorkspaceSandboxWebSocketAccess(req, workspaceId).authorized,
+      authorizeWebSocketRequest: async (req, workspaceId) => {
+        const access = validateWorkspaceSandboxWebSocketAccess(req, workspaceId);
+        if (access.authorized) return true;
+        if (access.reason !== 'unauthorized') return false;
+
+        const res = new ServerResponse(req);
+        res.assignSocket(req.socket);
+        try {
+          return await authorizeWebSocketWithSandboxSession(req, res);
+        } finally {
+          if (!res.writableEnded) res.detachSocket(req.socket);
+        }
+      },
       cookieDomainRewrite: '',
       rewriteContainerCookiesForCrossOrigin: true,
       removeResponseHeaders: ['X-Frame-Options'],
@@ -272,14 +340,7 @@ export function makeWorkspaceSandboxMiddleware({
       return;
     }
 
-    if (
-      err != null &&
-      typeof err === 'object' &&
-      'status' in err &&
-      typeof err.status === 'number' &&
-      err.status >= 400 &&
-      err.status < 500
-    ) {
+    if (isClientError(err)) {
       sendAuthorizationExpired(res);
       return;
     }
