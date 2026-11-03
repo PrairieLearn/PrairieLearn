@@ -85,3 +85,4 @@ UV_PYTHON_INSTALL_DIR=/opt/uv/python UV_PYTHON_BIN_DIR=/usr/local/bin uv python 
 # Clear various caches to minimize the final image size.
 dnf clean all
 nvm cache clear
+npm cache clean --force
