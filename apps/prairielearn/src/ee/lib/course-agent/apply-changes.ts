@@ -68,15 +68,25 @@ export async function getPendingReview(
 ) {
   const review = await getCourseAgentPendingReview(conversation.agent_conversation_id);
   if (review?.callId !== callId) return null;
-  verifyReviewBinding(course, review.snapshot);
-  const patch = await createReviewDiff(course, review.snapshot);
+  let diff: { patch: string | null; error: string | null };
+  try {
+    verifyReviewBinding(course, review.snapshot);
+    diff = { patch: await createReviewDiff(course, review.snapshot), error: null };
+  } catch (error) {
+    // A broken diff must not hide the pending review or prevent its owner from denying it.
+    if (!(error instanceof HttpStatusError)) logger.error('Course agent review diff failed', error);
+    diff = {
+      patch: null,
+      error: error instanceof Error ? error.message : 'Could not load the reviewed changes.',
+    };
+  }
   return {
     callId: review.callId,
     request_changes_tool_part: review.request_changes_tool_part,
     status: review.status,
     jobSequenceId: review.jobSequenceId,
     error: review.error,
-    diff: { patch },
+    diff,
   };
 }
 
@@ -100,7 +110,6 @@ export async function postReviewDecision({
   if (review?.callId !== callId) {
     throw new HttpStatusError(409, 'This review has changed. Reload it before deciding.');
   }
-  verifyReviewBinding(course, review.snapshot);
   if (review.status !== 'pending') {
     // Approval starts a job; denial has no job. Repeated decisions must agree.
     const previousDecision = review.jobSequenceId === null ? 'denied' : 'approved';
@@ -126,6 +135,7 @@ export async function postReviewDecision({
     });
     return { decision, jobSequenceId: null };
   }
+  verifyReviewBinding(course, review.snapshot);
   const locals = { course, user, authz_data: authzData };
   const container = { rootPath: course.path, invalidRootPaths: [path.join(course.path, '.git')] };
   const editor = new MultiEditor({ locals, description: jobDescriptions[review.snapshot.type] }, [

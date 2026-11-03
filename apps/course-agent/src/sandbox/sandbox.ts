@@ -261,23 +261,20 @@ export class CourseSandbox extends DurableObject<Env> {
     const deletions: ReviewSnapshot['deletions'] = [];
     let total = 0;
     for (const path of paths) {
-      if (additions.length + deletions.length > 100) {
-        throw new Error('A review may change at most 100 files');
-      }
-      const entry = await git('ls-tree', baseCommit, '--', path);
-      let original = saved.get(path);
-      if (source.type === 'local' && original === undefined) {
+      const entry = await git('ls-tree', '-l', baseCommit, '--', path);
+      let original: string | null = saved.get(path) ?? null;
+      if (!saved.has(path)) {
         if (entry && !entry.startsWith('100644 blob ')) {
           throw new Error(`Unsupported course file: ${path}`);
         }
         if (entry) {
+          if (Number(entry.split('\t')[0].trim().split(/\s+/)[3]) > MAX_REVIEW_FILE_BYTES) {
+            throw new Error(`Review file is too large: ${path}`);
+          }
           const blob = await this.exec(
             ['git', '-C', course, 'cat-file', 'blob', `${baseCommit}:./${path}`],
             'node',
           );
-          if (blob.stdout.byteLength > MAX_REVIEW_FILE_BYTES) {
-            throw new Error(`Review file is too large: ${path}`);
-          }
           original = Buffer.from(blob.stdout).toString('base64');
         } else {
           original = null;
@@ -288,37 +285,26 @@ export class CourseSandbox extends DurableObject<Env> {
         info = await files.lstat(path, options);
       } catch (error) {
         if (!SandboxFileError.is(error) || error.code !== 'ENOENT') throw error;
-        if (source.type === 'local') {
-          if (original === null) continue;
-          originals.push({ path, contents: original! });
+      }
+      let contents: string | null = null;
+      if (info) {
+        if (info.type !== 'file' || (info.mode & 0o100) !== 0) {
+          throw new Error(`Only non-executable regular files are supported: ${path}`);
         }
-        deletions.push({ path });
-        continue;
+        if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
+          throw new Error(`Review file is too large: ${path}`);
+        }
+        // Capture bytes now: later edits must not change what the instructor approves.
+        const response = await files.readFile(path, options);
+        contents = Buffer.from(await response.arrayBuffer()).toString('base64');
       }
-      if (info.type !== 'file') throw new Error(`Unsupported course file: ${path}`);
-      if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
-        throw new Error(`Review file is too large: ${path}`);
-      }
-      // 0o100 is the octal owner-execute permission bit. Git modes 100644 and
-      // 100755 mean regular non-executable and executable files, respectively.
-      // Reviewed changes support file contents, not executable-mode changes.
-      const old = entry;
-      const mode = info.mode & 0o100 ? '100755' : '100644';
-      if (mode !== '100644' || (old && old.slice(0, 6) !== mode)) {
-        throw new Error(`File mode changes are not supported: ${path}`);
-      }
-
-      // Capture bytes now: later edits must not change what the instructor approves.
-      const response = await files.readFile(path, options);
-      const contents = Buffer.from(await response.arrayBuffer()).toString('base64');
-      if (source.type === 'local') {
-        if (contents === original) continue;
-        originals.push({ path, contents: original! });
-        total += original?.length ?? 0;
-      }
-      total += contents.length;
+      if (contents === original) continue;
+      originals.push({ path, contents: original });
+      if (contents === null) deletions.push({ path });
+      else additions.push({ path, contents });
+      // Count originals in both modes, including deletions: PL must be able to display the diff.
+      total += (original?.length ?? 0) + (contents?.length ?? 0);
       if (total > MAX_REVIEW_BYTES) throw new Error('Reviewed changes are too large');
-      additions.push({ path, contents });
       if (additions.length + deletions.length > 100) {
         throw new Error('A review may change at most 100 files');
       }

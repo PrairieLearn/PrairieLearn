@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
-import { Button, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
 import {
   type RequestChangesResult,
@@ -85,6 +85,7 @@ export function RequestChangesCard({
         <>
           <ReviewActions
             disabled={disabled}
+            canApprove={typeof current?.diff.patch === 'string'}
             onViewChanges={() => setShowChanges(true)}
             onDecision={(value) => {
               if (current) {
@@ -124,14 +125,23 @@ export function RequestChangesCard({
               Reload review
             </Button>
           )}
+          {current?.diff.error && (
+            <Alert variant="danger" className="mt-2 mb-0">
+              {current.diff.error}
+            </Alert>
+          )}
           <ReviewChangesModal
             id={partId}
             show={showChanges}
             loading={review.isLoading}
             patch={current?.diff.patch ?? null}
             error={
-              failure && (
-                <AppErrorAlert error={failure} render={{ UNKNOWN: ({ message }) => message }} />
+              current?.diff.error ? (
+                <Alert variant="danger">{current.diff.error}</Alert>
+              ) : (
+                failure && (
+                  <AppErrorAlert error={failure} render={{ UNKNOWN: ({ message }) => message }} />
+                )
               )
             }
             onHide={() => setShowChanges(false)}
@@ -151,10 +161,12 @@ export function RequestChangesCard({
 
 function ReviewActions({
   disabled,
+  canApprove,
   onViewChanges,
   onDecision,
 }: {
   disabled: boolean;
+  canApprove: boolean;
   onViewChanges: () => void;
   onDecision: (decision: 'approved' | 'denied') => void;
 }) {
@@ -168,7 +180,7 @@ function ReviewActions({
         View changes
       </Button>
       <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
-        <Button size="sm" disabled={disabled} onClick={() => onDecision('approved')}>
+        <Button size="sm" disabled={disabled || !canApprove} onClick={() => onDecision('approved')}>
           Approve
         </Button>
         <Button
