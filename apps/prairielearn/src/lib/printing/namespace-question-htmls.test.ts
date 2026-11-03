@@ -239,7 +239,7 @@ describe('namespaceQuestionHtmls', () => {
     expect($second('input').attr('name')).toBe('ans');
   });
 
-  it('namespaces each Graphviz SVG and its internal references independently', () => {
+  it('namespaces repeated IDs inside Graphviz SVGs and their internal references', () => {
     const graph = `
       <div class="pl-graph">
         <svg>
@@ -253,7 +253,7 @@ describe('namespaceQuestionHtmls', () => {
     const [html] = namespaceQuestionHtmls([
       {
         namespace: 'question-1',
-        html: `<div id="question-1-graph-1-graph0"></div>${graph}${graph}`,
+        html: `<div id="question-1-svg-1-graph0"></div>${graph}${graph}`,
       },
     ]);
     const $ = load(html, undefined, false);
@@ -263,13 +263,34 @@ describe('namespaceQuestionHtmls', () => {
 
     expect(new Set(ids).size).toBe(ids.length);
     expect($('.pl-graph > svg')).toHaveLength(2);
-    expect($('[id="question-1-graph-1-graph0"]')).toHaveLength(1);
+    expect($('[id="question-1-svg-1-graph0"]')).toHaveLength(1);
     $('.pl-graph > svg').each((index, element) => {
       const graphId = $(element).find('g').first().attr('id');
       const clipId = $(element).find('[id$="-clip"]').attr('id');
-      expect(graphId).toMatch(new RegExp(`^question-1-graph-${index + 1}-graph0`));
+      expect(graphId).toMatch(new RegExp(`^question-1-svg-${index + 1}-graph0`));
       expect($(element).find('g[id$="node1"]').attr('clip-path')).toBe(`url(#${clipId})`);
       expect($(element).find('use').attr('href')).toBe(`#${graphId}`);
+    });
+  });
+
+  it('namespaces repeated IDs inside ordinary SVGs with nested SVG content', () => {
+    const svg = `
+      <svg>
+        <defs><clipPath id="clip"><rect /></clipPath></defs>
+        <svg><g id="shape" clip-path="url(#clip)"><use href="#clip" /></g></svg>
+      </svg>
+    `;
+    const [html] = namespaceQuestionHtmls([{ namespace: 'question-1', html: svg + svg }]);
+    const $ = load(html, undefined, false);
+    const outerSvgs = $('svg').filter((_index, element) => $(element).parents('svg').length === 0);
+
+    expect(outerSvgs).toHaveLength(2);
+    outerSvgs.each((index, element) => {
+      const clipId = $(element).find('[id$="-clip"]').attr('id');
+      expect(clipId).toBe(`question-1-svg-${index + 1}-clip`);
+      expect($(element).find('g').attr('id')).toBe(`question-1-svg-${index + 1}-shape`);
+      expect($(element).find('g').attr('clip-path')).toBe(`url(#${clipId})`);
+      expect($(element).find('use').attr('href')).toBe(`#${clipId}`);
     });
   });
 

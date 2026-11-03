@@ -260,19 +260,28 @@ function reserveUniqueId(preferredId: string, reservedIds: Set<string>): string 
   return candidate;
 }
 
-function namespaceGraphSvgs($: cheerio.CheerioAPI, namespace: string): void {
-  const reservedIds = new Set(getIds($));
-  $('.pl-graph > svg').each((index, element) => {
-    const svg = cheerio.load($.html(element), undefined, false);
-    const idRenames = new Map(
-      [...new Set(getIds(svg))].map((id) => [
-        id,
-        reserveUniqueId(`${namespace}-graph-${index + 1}-${id}`, reservedIds),
-      ]),
-    );
-    renameIdsAndReferences(svg, idRenames);
-    $(element).replaceWith(svg.root().html() ?? '');
-  });
+function namespaceSvgs($: cheerio.CheerioAPI, namespace: string): void {
+  const reservedIds = new Set<string>();
+  const duplicateIds = new Set<string>();
+  for (const id of getIds($)) {
+    if (reservedIds.has(id)) duplicateIds.add(id);
+    reservedIds.add(id);
+  }
+  if (duplicateIds.size === 0) return;
+
+  $('svg')
+    .filter((_index, element) => $(element).parents('svg').length === 0)
+    .each((index, element) => {
+      const svg = cheerio.load($.html(element), undefined, false);
+      const idRenames = new Map(
+        [...new Set(getIds(svg))]
+          .filter((id) => duplicateIds.has(id))
+          .map((id) => [id, reserveUniqueId(`${namespace}-svg-${index + 1}-${id}`, reservedIds)]),
+      );
+      if (idRenames.size === 0) return;
+      renameIdsAndReferences(svg, idRenames);
+      $(element).replaceWith(svg.root().html() ?? '');
+    });
 }
 
 /** Namespaces IDs that occur in more than one independently rendered question fragment. */
@@ -289,7 +298,7 @@ export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespa
 
   const fragments = questions.map(({ html, namespace }) => {
     const $ = cheerio.load(html, undefined, false);
-    namespaceGraphSvgs($, namespace);
+    namespaceSvgs($, namespace);
     assertNoDuplicateIds($, namespace);
     return { $, namespace };
   });
