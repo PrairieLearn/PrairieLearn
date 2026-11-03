@@ -50,3 +50,15 @@ def test_default_output(
         expected=expected_output,
         description=f'{function_name}("{func_input}")',
     )
+
+
+def _format_failure(
+    function_name: str, func_input: str, expected: str, response: dict
+) -> str:
+    description = f'{function_name}("{func_input}")'
+    if response["status"] == "success":
+        return f"{description}: expected {expected}, got {response['value']}"
+    return (
+        f"{description}: raised {response['exception_name']}: "
+        f"{response['exception_message']}"
+    )
