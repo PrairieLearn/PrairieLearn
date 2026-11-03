@@ -20,17 +20,31 @@ import {
   getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
+  invalidateCourseSync,
+  recordSuccessfulCourseSync,
+  selectCourseById,
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
+import { flushElementCache } from '../question-servers/freeform.js';
 import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
+import {
+  type QuestionContentScope,
+  getQuestionContentScope,
+  isQuestionContentOnlyChange,
+} from '../sync/questionContent.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
+import { CURRENT_SYNC_VERSION } from '../sync/version.js';
 
 import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
 import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import {
+  logChunkChangesToJob,
+  updateChunksForCourse,
+  updateQuestionContentChunk,
+} from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
 import {
@@ -106,7 +120,14 @@ async function syncCourseFromDisk(
     logChunkChangesToJob(chunkChanges, job);
   }
 
-  await updateCourseCommitHash(course);
+  const commitHash = await updateCourseCommitHash(course);
+  if (config.fileEditorUseGit && !syncResult.hadJsonErrors) {
+    await recordSuccessfulCourseSync(course.id, {
+      commitHash,
+      version: CURRENT_SYNC_VERSION,
+      chunksGenerated: config.chunksGenerator,
+    });
+  }
 
   // JSON errors mean individual entities failed to sync (e.g., a question has
   // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
@@ -123,7 +144,7 @@ async function syncCourseFromDisk(
  * {@link Editor.executeWithServerJob} records on `job.data`.
  *
  * A save-and-sync writes the file to disk (and pushes to git in production),
- * then syncs the entire course from disk to the database:
+ * then syncs the affected content or the entire course:
  *
  * - `save_failed`: the write/push failed; nothing reached the database.
  * - `sync_failed`: the save succeeded but the sync hard-failed.
@@ -200,6 +221,10 @@ export abstract class Editor {
    */
   abstract write(): Promise<WriteResult | null>;
 
+  protected async getContentSyncScope(): Promise<QuestionContentScope | null> {
+    return null;
+  }
+
   assertCanEdit() {
     // Do not allow users to edit without permission
     if (!this.authz_data.has_course_permission_edit) {
@@ -237,7 +262,15 @@ export abstract class Editor {
 
       const lockName = getLockNameForCoursePath(this.course.path);
       await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
+        const latestCourse = await selectCourseById(this.course.id);
+        // File paths and the acquired lock belong to the directory from the request.
+        if (latestCourse.path !== this.course.path) {
+          throw new Error('The course directory changed. Reload the page before saving.');
+        }
+        this.course = latestCourse;
         const startGitHash = await getOrUpdateCourseCommitHash(this.course);
+        const contentScope = config.fileEditorUseGit ? await this.getContentSyncScope() : null;
+        await invalidateCourseSync(this.course.id);
 
         if (!config.fileEditorUseGit) {
           // If we are not using git (e.g., if we are running locally), then we:
@@ -338,6 +371,7 @@ export abstract class Editor {
         };
 
         let courseData: courseDB.CourseData | undefined;
+        let useContentSync = false;
         try {
           await writeAndCommitChanges();
 
@@ -346,18 +380,27 @@ export abstract class Editor {
           // to put their course into an invalid state by deleting a shared
           // question or otherwise breaking the invariants we rely upon for
           // question sharing.
-          const possibleCourseData = await courseDB.loadFullCourse(
-            this.course.id,
-            this.course.path,
-          );
-          const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
-            this.course,
-            possibleCourseData,
-            job,
-          );
-          if (!sharingConfigurationValid) {
-            await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
-            throw new Error('Invalid sharing operation, reverted to last known good state.');
+          useContentSync =
+            contentScope !== null &&
+            (await isQuestionContentOnlyChange({
+              coursePath: this.course.path,
+              oldHash: startGitHash,
+              newHash: await getCourseCommitHash(this.course.path),
+              scope: contentScope,
+            }));
+          let possibleCourseData: courseDB.CourseData | undefined;
+          // Content-only edits preserve sharing declarations and question identity.
+          if (!useContentSync) {
+            possibleCourseData = await courseDB.loadFullCourse(this.course.id, this.course.path);
+            const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
+              this.course,
+              possibleCourseData,
+              job,
+            );
+            if (!sharingConfigurationValid) {
+              await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
+              throw new Error('Invalid sharing operation, reverted to last known good state.');
+            }
           }
 
           try {
@@ -385,6 +428,7 @@ export abstract class Editor {
             // course data from disk after we do so.
             courseData = possibleCourseData;
           } catch {
+            useContentSync = false;
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
 
@@ -435,7 +479,31 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
+          if (useContentSync && contentScope && job.data.saveSucceeded) {
+            const contentSyncStart = performance.now();
+            job.info(`Syncing question content only: ${contentScope.qid}`);
+            if (config.chunksGenerator) {
+              const changes = await updateQuestionContentChunk({
+                coursePath: this.course.path,
+                courseId: this.course.id,
+                qid: contentScope.qid,
+              });
+              logChunkChangesToJob(changes, job);
+            }
+            if (config.devMode) flushElementCache();
+            const commitHash = await updateCourseCommitHash(this.course);
+            await recordSuccessfulCourseSync(this.course.id, {
+              commitHash,
+              version: CURRENT_SYNC_VERSION,
+              chunksGenerated: config.chunksGenerator,
+            });
+            job.verbose(
+              `Synced question content in ${(performance.now() - contentSyncStart).toFixed(2)}ms`,
+            );
+          } else {
+            job.info('Using full course sync');
+            await syncCourseFromDisk(this.course, startGitHash, job, courseData);
+          }
           job.data.syncSucceeded = true;
         }
       });
@@ -2578,6 +2646,15 @@ export class FileModifyEditor extends Editor {
       debug('edit contents are different from orig contents, so continue');
       return true;
     }
+  }
+
+  protected override async getContentSyncScope() {
+    if (!this.course.last_successful_sync) return null;
+    return await getQuestionContentScope(
+      this.course,
+      this.filePath,
+      await getCourseCommitHash(this.course.path),
+    );
   }
 
   assertCanEdit() {
