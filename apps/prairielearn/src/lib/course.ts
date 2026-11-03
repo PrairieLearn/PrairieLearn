@@ -17,10 +17,11 @@ import {
   updateCourseCommitHash,
   updateCourseSyncConfiguration,
 } from '../models/course.js';
+import { syncQuestionTitle } from '../models/question.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 import { assessmentDependenciesRequireFullSync } from '../sync/assessmentDependencies.js';
 import * as courseDB from '../sync/course-db.js';
-import { getQuestionContentPlan } from '../sync/questionContent.js';
+import { getQuestionSyncPlan } from '../sync/questionSync.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import { checkSharingConfigurationValid, syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
@@ -101,9 +102,9 @@ export async function syncCourseFromDisk({
     if (configurationChanged) {
       job.info('Sync configuration changed; reprocessing all course metadata');
     }
-    let qids =
+    let questionChanges =
       config.fileEditorUseGit && !forceFull && !configurationChanged
-        ? await getQuestionContentPlan({
+        ? await getQuestionSyncPlan({
             course,
             oldHash: startGitHash,
             newHash: endGitHash,
@@ -112,15 +113,16 @@ export async function syncCourseFromDisk({
         : null;
 
     if (
-      qids !== null &&
+      questionChanges !== null &&
       checkExternalDependencies &&
       (await assessmentDependenciesRequireFullSync(course))
     ) {
       job.info('External assessment dependencies require full course sync');
-      qids = null;
+      questionChanges = null;
     }
 
-    if (qids !== null) {
+    if (questionChanges !== null) {
+      const qids = questionChanges.map((change) => change.qid);
       job.info(`Syncing question content: ${qids.join(', ') || 'no changes'}`);
       const prepared =
         config.chunksGenerator && qids.length > 0
@@ -131,6 +133,11 @@ export async function syncCourseFromDisk({
             })
           : undefined;
       await sqldb.runInTransactionAsync(async () => {
+        for (const change of questionChanges) {
+          if (change.kind === 'title') {
+            await syncQuestionTitle({ course_id: course.id, qid: change.qid, title: change.title });
+          }
+        }
         if (prepared) await chunks.applyPreparedChunks(course.id, prepared);
         await updateCourseCommitHash(course);
         await updateCourseSyncConfiguration(course.id, configuration);
