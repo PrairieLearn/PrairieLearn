@@ -1102,6 +1102,7 @@ export const InstanceQuestionSchema = z.object({
   duration: IntervalSchema.nullable(),
   first_duration: IntervalSchema.nullable(),
   first_submission_score: z.number().nullable(),
+  grading_pending: z.boolean(),
   highest_submission_score: z.number().nullable(),
   id: IdSchema,
   incremental_submission_points_array: z.array(z.number().nullable()).nullable(),

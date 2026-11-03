@@ -552,6 +552,20 @@ WHERE
 
 -- BLOCK update_instance_question_score
 WITH
+  submission_state AS (
+    SELECT
+      EXISTS (
+        SELECT
+          1
+        FROM
+          variants AS v
+          JOIN submissions AS s ON s.variant_id = v.id
+          JOIN submissions AS graded ON graded.id = $submission_id
+        WHERE
+          v.instance_question_id = $instance_question_id
+          AND (s.date, s.id) > (graded.date, graded.id)
+      ) AS has_newer_submission
+  ),
   updated_instance_question AS (
     UPDATE instance_questions AS iq
     SET
@@ -568,9 +582,15 @@ WITH
       -- TODO: this might not be correct. Matt suggested that we might want to
       -- refactor `highest_submission_score` to track only auto points.
       highest_submission_score = COALESCE($score, highest_submission_score),
-      requires_manual_grading = FALSE,
+      -- Grading an older submission does not acknowledge newer saved work.
+      requires_manual_grading = iq.requires_manual_grading
+      AND ss.has_newer_submission,
+      grading_pending = iq.grading_pending
+      AND ss.has_newer_submission,
       last_grader = $authn_user_id,
       is_ai_graded = $is_ai_graded
+    FROM
+      submission_state AS ss
     WHERE
       iq.id = $instance_question_id
     RETURNING

@@ -27,17 +27,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK update_assigned_grader
-UPDATE instance_questions AS iq
-SET
-  requires_manual_grading = $requires_manual_grading::boolean,
-  assigned_grader = CASE
-    WHEN $requires_manual_grading::boolean THEN $assigned_grader::bigint
-    ELSE assigned_grader
-  END
-WHERE
-  iq.id = $instance_question_id;
-
 -- BLOCK close_issues_for_instance_question
 WITH
   updated_issues AS (

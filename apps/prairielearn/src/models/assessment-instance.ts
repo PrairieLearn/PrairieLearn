@@ -1,6 +1,14 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryScalar,
+  queryScalars,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
 
@@ -72,4 +80,37 @@ export async function insertGroupAssessmentInstance({
     { assessment_id, team_id, authn_user_id },
     AssessmentInstanceSchema,
   );
+}
+
+/** Returns the visible attempts with pending questions, without reading submission history. */
+export async function selectGradingPendingAssessmentInstanceIds(
+  assessment_instance_ids: string[],
+): Promise<string[]> {
+  if (assessment_instance_ids.length === 0) return [];
+  return await queryScalars(
+    sql.select_grading_pending_assessment_instance_ids,
+    { assessment_instance_ids },
+    IdSchema,
+  );
+}
+
+/** Acknowledges existing pending work without changing scores or the manual grading queue. */
+export async function clearAssessmentInstancesGradingPending({
+  assessment_id,
+  assessment_instance_ids,
+}: {
+  assessment_id: string;
+  assessment_instance_ids: string[] | null;
+}): Promise<void> {
+  await runInTransactionAsync(async () => {
+    const locked_ids = await queryScalars(
+      sql.select_and_lock_assessment_instances_for_pending_clear,
+      { assessment_id, assessment_instance_ids },
+      IdSchema,
+    );
+    if (locked_ids.length === 0) return;
+    await execute(sql.clear_assessment_instances_grading_pending, {
+      assessment_instance_ids: locked_ids,
+    });
+  });
 }

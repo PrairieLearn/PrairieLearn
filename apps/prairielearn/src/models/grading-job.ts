@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import {
+  execute,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -200,19 +201,26 @@ export async function updateGradingJobAfterGrading({
       GradingJobSchema,
     );
 
-    if (gradable && instance_question_id != null && assessment_instance_id != null) {
-      await updateInstanceQuestionGrade({
-        variant_id,
+    if (instance_question_id != null && assessment_instance_id != null) {
+      if (gradable) {
+        await updateInstanceQuestionGrade({
+          variant_id,
+          instance_question_id,
+          submissionScore: gradingJob.score ?? 0,
+          grading_job_id,
+          authn_user_id: gradingJob.auth_user_id,
+        });
+      }
+      await execute(sql.update_instance_question_grading_pending_after_grading, {
         instance_question_id,
-        submissionScore: gradingJob.score ?? 0,
-        grading_job_id,
-        authn_user_id: gradingJob.auth_user_id,
       });
-      await updateAssessmentInstanceGrade({
-        assessment_instance_id,
-        authn_user_id: gradingJob.auth_user_id,
-        credit,
-      });
+      if (gradable) {
+        await updateAssessmentInstanceGrade({
+          assessment_instance_id,
+          authn_user_id: gradingJob.auth_user_id,
+          credit,
+        });
+      }
     }
 
     return gradingJob;
