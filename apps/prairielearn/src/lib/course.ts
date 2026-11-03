@@ -23,7 +23,7 @@ import { assessmentDependenciesRequireFullSync } from '../sync/assessmentDepende
 import * as courseDB from '../sync/course-db.js';
 import * as syncQuestions from '../sync/fromDisk/questions.js';
 import * as infofile from '../sync/infofile.js';
-import { getQuestionSyncPlan } from '../sync/questionSync.js';
+import { getQuestionSyncPlan, syncQuestionMetadata } from '../sync/questionSync.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import { checkSharingConfigurationValid, syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
@@ -146,6 +146,8 @@ export async function syncCourseFromDisk({
               'metadata',
             );
             for (const error of change.info.errors) job.error(error);
+          } else if (change.kind === 'metadata') {
+            await syncQuestionMetadata(course, change);
           }
         }
         if (prepared) await chunks.applyPreparedChunks(course.id, prepared);

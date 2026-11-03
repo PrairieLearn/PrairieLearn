@@ -26,6 +26,9 @@ import {
   AssessmentSchema,
   ChunkSchema,
   QuestionSchema,
+  QuestionTagSchema,
+  TagSchema,
+  TopicSchema,
   type User,
 } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editorUtil.js';
@@ -40,6 +43,7 @@ import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import { selectAssessmentQuestionByQuestionId } from '../models/assessment-question.js';
 import * as courseModel from '../models/course.js';
 import { getCourseCommitHash, selectCourseById, updateCourseColumn } from '../models/course.js';
+import * as questionModel from '../models/question.js';
 import { selectQuestionByQid, updateQuestion } from '../models/question.js';
 import { selectSharingSetsForQuestion } from '../models/sharing-set.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
@@ -450,7 +454,10 @@ describe('content-only question save', () => {
     const jsonPath = path.join(path.dirname(filePath), 'info.json');
     const info = await fs.readJson(jsonPath);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
-    const operation = await save(jsonPath, JSON.stringify({ ...info, title: 'Changed title', topic: 'Changed topic' }));
+    const operation = await save(
+      jsonPath,
+      JSON.stringify({ ...info, title: 'Changed title', gradingMethod: 'Manual' }),
+    );
     await operation.run();
     expect(load).toHaveBeenCalledOnce();
     assert.equal((await selectQuestionByQid({ course_id: courseId, qid })).title, 'Changed title');
@@ -696,6 +703,67 @@ describe('content-only question save', () => {
         );
       },
     );
+  });
+
+  async function metadataSnapshot() {
+    return await Promise.all([
+      util.dumpTableWithSchema('tags', TagSchema),
+      util.dumpTableWithSchema('topics', TopicSchema),
+      util.dumpTableWithSchema('question_tags', QuestionTagSchema),
+      util.dumpTableWithSchema('questions', QuestionSchema),
+    ]);
+  }
+
+  it.each(['tags', 'topic'] as const)(
+    'matches full sync through the %s lifecycle',
+    async (field) => {
+      const infoPath = path.join(path.dirname(filePath), 'info.json');
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      const values =
+        field === 'tags'
+          ? [['test', 'numeric', 'zz-new', 'zz-new'], []]
+          : ['zz-new-topic', '', 'Another test'];
+      for (const value of values) {
+        const info = await fs.readJson(infoPath);
+        const operation = await save(
+          infoPath,
+          JSON.stringify({ ...info, title: 'Updated alongside metadata', [field]: value }),
+          'settings',
+        );
+        await operation.run();
+        assert.equal(load.mock.calls.length, 0);
+        assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
+        const targeted = await metadataSnapshot();
+        await util.syncCourseData(courseDir);
+        await sync();
+        const full = await metadataSnapshot();
+        targeted.forEach((rows, index) => assert.sameDeepMembers<unknown>(rows, full[index]));
+        load.mockClear();
+      }
+    },
+  );
+
+  it('rolls back catalogs and associations when a metadata update fails', async () => {
+    const before = await metadataSnapshot();
+    const previousCommit = (await selectCourseById(courseId)).commit_hash;
+    vi.spyOn(questionModel, 'syncQuestionTopic').mockRejectedValue(
+      new Error('Topic update failed'),
+    );
+    const operation = await save(
+      path.join(path.dirname(filePath), 'info.json'),
+      JSON.stringify({
+        ...(await fs.readJson(path.join(path.dirname(filePath), 'info.json'))),
+        tags: ['new-tag'],
+        topic: 'New topic',
+        title: 'New title',
+      }),
+      'settings',
+    );
+    await expect(operation.run()).rejects.toThrow('Topic update failed');
+    const after = await metadataSnapshot();
+    before.forEach((rows, index) => assert.sameDeepMembers<unknown>(rows, after[index]));
+    assert.equal((await selectCourseById(courseId)).commit_hash, previousCommit);
+    assert.equal(classifyEditOutcome((await operation.result()).data), 'sync_failed');
   });
 
   it('refreshes eligibility after acquiring the lock instead of trusting the request snapshot', async () => {

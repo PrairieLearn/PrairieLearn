@@ -6,17 +6,22 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { type Course, QuestionSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
+import { selectQuestionByQid, syncQuestionTitle, syncQuestionTopic } from '../models/question.js';
 import { selectSharingSetsForQuestion } from '../models/sharing-set.js';
-import { selectTagsByQuestionId } from '../models/tags.js';
-import { selectTopicsByCourseId } from '../models/topics.js';
+import { selectTagNamesForOtherQuestions, selectTagsByQuestionId } from '../models/tags.js';
+import { selectTopicNamesForOtherQuestions, selectTopicsByCourseId } from '../models/topics.js';
+import { type CourseJson, CourseJsonSchema } from '../schemas/infoCourse.js';
 import { type QuestionJson, QuestionJsonSchema } from '../schemas/infoQuestion.js';
 
-import { loadInfoFile, loadQuestionInfo } from './course-db.js';
+import { getDefaultTagsInUse, loadInfoFile, loadQuestionInfo } from './course-db.js';
+import { deduplicateByName } from './deduplicate.js';
+import { syncQuestionTags } from './fromDisk/tags.js';
+import { syncTopics } from './fromDisk/topics.js';
 import { type InfoFile } from './infofile.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -24,7 +29,15 @@ const sql = loadSqlEquiv(import.meta.url);
 export type QuestionSyncChange =
   | { kind: 'content'; qid: string }
   | { kind: 'title'; qid: string; title: string }
-  | { kind: 'recover'; qid: string; info: InfoFile<QuestionJson> };
+  | { kind: 'recover'; qid: string; info: InfoFile<QuestionJson> }
+  | {
+      kind: 'metadata';
+      qid: string;
+      metadata: { title: string; tags: string[]; topic: string };
+      tagsChanged: boolean;
+      topicChanged: boolean;
+      courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
+    };
 
 /** Requires the course lock and final checkout. Returns null when changes require full sync. */
 export async function getQuestionSyncPlan({
@@ -157,13 +170,90 @@ export async function getQuestionSyncPlan({
       if (!loaded?.data || loaded.errors.length > 0) return null;
       const validated = QuestionJsonSchema.safeParse(loaded.data);
       if (!validated.success) return null;
-      const { title: _oldTitle, ...oldMetadata } = parsed.data;
-      const { title: _newTitle, ...newMetadata } = loaded.data;
+      const { title: _oldTitle, tags: oldTags, topic: oldTopic, ...oldMetadata } = parsed.data;
+      const { title: _newTitle, tags: newTags, topic: newTopic, ...newMetadata } = loaded.data;
       if (!isDeepStrictEqual(oldMetadata, newMetadata)) return null;
-      plan.set(question.qid, { kind: 'title', qid: question.qid, title: validated.data.title });
+      const tagsChanged = !isDeepStrictEqual(oldTags, newTags);
+      const topicChanged = oldTopic !== newTopic;
+      if (!tagsChanged && !topicChanged) {
+        plan.set(question.qid, { kind: 'title', qid: question.qid, title: validated.data.title });
+      } else {
+        const courseInfo = await loadInfoFile({
+          coursePath: course.path,
+          filePath: 'infoCourse.json',
+        });
+        if (!courseInfo?.data || courseInfo.errors.length > 0) return null;
+        const courseMetadata = CourseJsonSchema.safeParse(courseInfo.data);
+        if (!courseMetadata.success) return null;
+        plan.set(question.qid, {
+          kind: 'metadata',
+          qid: question.qid,
+          metadata: {
+            title: validated.data.title,
+            tags: validated.data.tags,
+            topic: validated.data.topic,
+          },
+          tagsChanged,
+          topicChanged,
+          courseMetadata: courseMetadata.data,
+        });
+      }
     } else if (!plan.has(question.qid)) {
       plan.set(question.qid, { kind: 'content', qid: question.qid });
     }
   }
   return [...plan.values()];
+}
+
+/** Requires the course lock; metadata and chunk activation share the caller transaction. */
+export async function syncQuestionMetadata(
+  course: Course,
+  change: Extract<QuestionSyncChange, { kind: 'metadata' }>,
+) {
+  await runInTransactionAsync(async () => {
+    const question = await selectQuestionByQid({ course_id: course.id, qid: change.qid });
+    if (change.tagsChanged) {
+      const knownNames = new Set(
+        await selectTagNamesForOtherQuestions({ course_id: course.id, question_id: question.id }),
+      );
+      change.metadata.tags.forEach((name) => knownNames.add(name));
+      const courseTags = deduplicateByName(
+        change.courseMetadata.tags ?? [],
+        getDefaultTagsInUse(knownNames),
+      ).entries;
+      await syncQuestionTags({
+        courseId: course.id,
+        courseTags,
+        questionTags: [{ questionId: question.id, tags: change.metadata.tags }],
+        knownNames,
+        isInfoCourseValid: true,
+        deleteUnused: true,
+      });
+    }
+    if (change.topicChanged) {
+      const knownNames = new Set(
+        await selectTopicNamesForOtherQuestions({ course_id: course.id, question_id: question.id }),
+      );
+      knownNames.add(change.metadata.topic);
+      await syncTopics({
+        courseId: course.id,
+        courseTopics: deduplicateByName(change.courseMetadata.topics).entries,
+        knownNames,
+        isInfoCourseValid: true,
+        deleteUnused: true,
+      });
+      await syncQuestionTopic({
+        course_id: course.id,
+        qid: change.qid,
+        topic: change.metadata.topic,
+      });
+    }
+    if (question.title !== change.metadata.title) {
+      await syncQuestionTitle({
+        course_id: course.id,
+        qid: change.qid,
+        title: change.metadata.title,
+      });
+    }
+  });
 }
