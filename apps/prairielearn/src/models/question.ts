@@ -190,3 +190,15 @@ export async function syncQuestionTitle({
 }): Promise<Question> {
   return await queryRow(sql.sync_question_title, { course_id, qid, title }, QuestionSchema);
 }
+
+export async function syncQuestionTopic({
+  course_id,
+  qid,
+  topic,
+}: {
+  course_id: string;
+  qid: string;
+  topic: string;
+}): Promise<Question> {
+  return await queryRow(sql.sync_question_topic, { course_id, qid, topic }, QuestionSchema);
+}

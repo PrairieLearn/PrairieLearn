@@ -18,7 +18,14 @@ import {
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { ChunkSchema, QuestionSchema, type User } from '../lib/db-types.js';
+import {
+  ChunkSchema,
+  QuestionSchema,
+  QuestionTagSchema,
+  TagSchema,
+  TopicSchema,
+  type User,
+} from '../lib/db-types.js';
 import { computeEncodedFileContentHash } from '../lib/editorUtil.js';
 import {
   FileModifyEditor,
@@ -35,6 +42,7 @@ import {
   updateCourseColumn,
   updateCourseCommitHash,
 } from '../models/course.js';
+import * as questionModel from '../models/question.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 import * as courseDB from '../sync/course-db.js';
@@ -71,6 +79,8 @@ describe('content-only question save', () => {
     config.chunksGenerator = false;
     config.chunksConsumer = false;
     const data = util.getCourseData();
+    data.questions[util.QUESTION_ID].tags = ['test', 'shared-implicit'];
+    data.questions[util.QUESTION_ID].topic = 'Shared implicit';
     data.questions[qid] = { ...data.questions[util.QUESTION_ID], uuid: randomUUID() };
     fixture = await createCourseRepoFixture({
       populateOrigin: async (directory) => {
@@ -281,7 +291,7 @@ describe('content-only question save', () => {
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const operation = await save(
       jsonPath,
-      JSON.stringify({ ...info, title: 'Changed title', topic: 'Changed topic' }),
+      JSON.stringify({ ...info, title: 'Changed title', gradingMethod: 'Manual' }),
     );
     await fs.remove(jsonPath);
     await operation.run();
@@ -294,6 +304,66 @@ describe('content-only question save', () => {
     expect(load).toHaveBeenCalled();
     assert.isNull((await selectCourseById(courseId)).last_successful_sync);
     assert.equal(classifyEditOutcome((await invalid.result()).data), 'sync_json_errors');
+  });
+
+  async function metadataSnapshot() {
+    return await Promise.all([
+      util.dumpTableWithSchema('tags', TagSchema),
+      util.dumpTableWithSchema('topics', TopicSchema),
+      util.dumpTableWithSchema('question_tags', QuestionTagSchema),
+      util.dumpTableWithSchema('questions', QuestionSchema),
+    ]);
+  }
+
+  it.each(['tags', 'topic'] as const)(
+    'matches full sync through the %s lifecycle',
+    async (field) => {
+      const infoPath = path.join(path.dirname(filePath), 'info.json');
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      const values =
+        field === 'tags'
+          ? [['test', 'numeric', 'zz-new', 'zz-new'], []]
+          : ['zz-new-topic', '', 'Another test'];
+      for (const value of values) {
+        const info = await fs.readJson(infoPath);
+        const operation = await save(
+          infoPath,
+          JSON.stringify({ ...info, title: 'Updated alongside metadata', [field]: value }),
+          'settings',
+        );
+        await operation.run();
+        assert.equal(load.mock.calls.length, 0);
+        assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
+        const targeted = await metadataSnapshot();
+        await util.syncCourseData(courseDir);
+        const full = await metadataSnapshot();
+        targeted.forEach((rows, index) => assert.sameDeepMembers<unknown>(rows, full[index]));
+        await establishBaseline();
+        load.mockClear();
+      }
+    },
+  );
+
+  it('rolls back catalogs and associations when a metadata update fails', async () => {
+    const before = await metadataSnapshot();
+    vi.spyOn(questionModel, 'syncQuestionTopic').mockRejectedValue(
+      new Error('Topic update failed'),
+    );
+    const operation = await save(
+      path.join(path.dirname(filePath), 'info.json'),
+      JSON.stringify({
+        ...(await fs.readJson(path.join(path.dirname(filePath), 'info.json'))),
+        tags: ['new-tag'],
+        topic: 'New topic',
+        title: 'New title',
+      }),
+      'settings',
+    );
+    await expect(operation.run()).rejects.toThrow('Topic update failed');
+    const after = await metadataSnapshot();
+    before.forEach((rows, index) => assert.sameDeepMembers<unknown>(rows, after[index]));
+    assert.isNull((await selectCourseById(courseId)).last_successful_sync);
+    assert.equal(classifyEditOutcome((await operation.result()).data), 'sync_failed');
   });
 
   it('refreshes eligibility after acquiring the lock instead of trusting the request snapshot', async () => {
