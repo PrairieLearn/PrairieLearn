@@ -13,6 +13,7 @@ import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
 import { parseLocalDateTime } from '../../lib/timezones.js';
 import {
   type TimeLimitBaseTime,
+  clearAssessmentInstancesGradingPending,
   updateAssessmentInstancesTimeLimit,
 } from '../../models/assessment-instance.js';
 import {
@@ -97,6 +98,7 @@ export interface AssessmentInstancesError {
   gradeAndClose: never;
   regrade: never;
   regradePreview: never;
+  clearGradingPending: never;
 }
 
 /**
@@ -222,6 +224,16 @@ const deleteInstances = t.procedure
     );
   });
 
+const clearGradingPending = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .input(AssessmentInstanceIdsInputSchema)
+  .mutation(async ({ input, ctx }) => {
+    await clearAssessmentInstancesGradingPending({
+      assessment_id: ctx.assessment.id,
+      assessment_instance_ids: input.assessmentInstanceIds,
+    });
+  });
+
 const grade = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(AssessmentInstanceIdsInputSchema)
@@ -290,4 +302,5 @@ export const assessmentInstancesRouter = t.router({
   gradeAndClose,
   regrade,
   regradePreview,
+  clearGradingPending,
 });
