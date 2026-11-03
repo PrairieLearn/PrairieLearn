@@ -324,6 +324,7 @@ export class CodeCallerContainer implements CodeCaller {
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
+      if (result === 'restart-required') return false;
       this.forbiddenModules = [];
       this.coursePath = null;
       this.callCount = 0;
