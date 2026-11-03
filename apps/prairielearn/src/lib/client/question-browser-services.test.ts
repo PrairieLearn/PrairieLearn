@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { Modal } from 'bootstrap';
-import { afterEach, expect, it, vi } from 'vitest';
+import * as bootstrap from 'bootstrap';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { QuestionDialogData } from '../question-dialogs.types.js';
 import type { SubmissionPanels } from '../question-render.types.js';
@@ -38,8 +38,14 @@ function createServices(dialogData: QuestionDialogData) {
   });
 }
 
+beforeEach(() => {
+  vi.stubGlobal('bootstrap', bootstrap);
+});
+
 afterEach(() => {
-  document.querySelectorAll('.modal').forEach((element) => Modal.getInstance(element)?.hide());
+  document
+    .querySelectorAll('.modal')
+    .forEach((element) => bootstrap.Modal.getInstance(element)?.hide());
   document.body.replaceChildren();
   vi.unstubAllGlobals();
 });
