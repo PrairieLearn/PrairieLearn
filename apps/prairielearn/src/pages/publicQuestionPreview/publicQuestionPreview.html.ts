@@ -4,6 +4,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { QuestionDialogData } from '../../components/QuestionDialogData.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
@@ -52,6 +53,9 @@ export function PublicQuestionPreview({
       }
       ${unsafeHtml(resLocals.extraHeadersHtml)}
     `,
+    postContent: questionHostingUpdate
+      ? QuestionDialogData({ resLocals, questionCopyTargets })
+      : '',
     content: html`
       <div class="row question-page-row">
         <div

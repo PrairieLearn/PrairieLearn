@@ -17,6 +17,7 @@ import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.js';
+import { QuestionDialogData } from '../../components/QuestionDialogData.js';
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -118,15 +119,20 @@ export function StudentInstanceQuestion({
           : ''
       }
     `,
-    postContent: calculator
-      ? CalculatorDrawer({
-          storageKey: `calculator-${resLocals.assessment.uuid}-${resLocals.assessment_instance.id}`,
-          features:
-            CALCULATOR_PRESETS[
-              CalculatorSettingsSchema.parse(calculator.settings).type ?? 'advanced'
-            ],
-        })
-      : '',
+    postContent: html`
+      ${questionHostingUpdate && renderState?.variant ? QuestionDialogData({ resLocals, questionCopyTargets }) : ''}
+      ${
+        calculator
+          ? CalculatorDrawer({
+              storageKey: `calculator-${resLocals.assessment.uuid}-${resLocals.assessment_instance.id}`,
+              features:
+                CALCULATOR_PRESETS[
+                  CalculatorSettingsSchema.parse(calculator.settings).type ?? 'advanced'
+                ],
+            })
+          : ''
+      }
+    `,
     content: html`
       ${questionHostingUpdate ? '' : regenerateAlert}
       <div class="row question-page-row">

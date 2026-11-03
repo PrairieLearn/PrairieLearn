@@ -28,7 +28,7 @@ import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
-import { Modal } from './Modal.js';
+import { CopyQuestionModal } from './CopyQuestionModal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
 
@@ -109,6 +109,7 @@ export function QuestionContainer({
                   manualGradingPreviewUrl,
                   aiGradingPreviewUrl,
                   questionCopyTargets,
+                  questionHostingUpdate,
                 })}
               </form>
             `
@@ -161,6 +162,7 @@ export function QuestionContainer({
                 submissionHtmls,
                 submissionCount: submissions.length,
                 renderSubmissionSearchParams,
+                questionHostingUpdate,
               })}
               ${
                 submissions.length > MAX_TOP_RECENTS
@@ -188,6 +190,7 @@ export function QuestionContainer({
                           submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                           submissionCount: submissions.length,
                           renderSubmissionSearchParams,
+                          questionHostingUpdate,
                         })}
                       </div>
                     `
@@ -196,7 +199,7 @@ export function QuestionContainer({
             `
           : ''
       }
-      ${CopyQuestionModal({ resLocals, questionCopyTargets })}
+      ${!questionHostingUpdate && questionCopyTargets != null ? CopyQuestionModal({ questionId: question.id, courseId: course.id, targets: questionCopyTargets }) : ''}
     </div>
   `;
 }
@@ -950,6 +953,7 @@ function QuestionPanel({
   manualGradingPreviewUrl,
   aiGradingPreviewUrl,
   questionCopyTargets,
+  questionHostingUpdate = false,
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
@@ -958,6 +962,7 @@ function QuestionPanel({
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
   questionCopyTargets?: CopyTarget[] | null;
+  questionHostingUpdate?: boolean;
 }) {
   const { question, questionHtml, course, instance_question_info } = resLocals;
   // Show even when questionCopyTargets is empty.
@@ -993,8 +998,11 @@ function QuestionPanel({
                       class="btn btn-sm btn-outline-light"
                       type="button"
                       aria-label="Copy question"
-                      data-bs-toggle="modal"
-                      data-bs-target="#copyQuestionModal"
+                      ${
+                        questionHostingUpdate
+                          ? html`data-question-dialog="copy-question"`
+                          : html`data-bs-toggle="modal" data-bs-target="#copyQuestionModal"`
+                      }
                     >
                       <i class="fa fa-clone"></i>
                       <span class="d-none d-sm-inline">Copy question</span>
@@ -1073,6 +1081,7 @@ function SubmissionList({
   submissionHtmls,
   submissionCount,
   renderSubmissionSearchParams,
+  questionHostingUpdate,
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
@@ -1081,9 +1090,11 @@ function SubmissionList({
   submissionHtmls: string[];
   submissionCount: number;
   renderSubmissionSearchParams?: URLSearchParams;
+  questionHostingUpdate: boolean;
 }) {
   return submissions.map((submission, idx) =>
     SubmissionPanel({
+      questionHostingUpdate,
       questionContext,
       questionRenderContext,
       question: resLocals.question,
@@ -1100,74 +1111,4 @@ function SubmissionList({
       renderSubmissionSearchParams,
     }),
   );
-}
-
-function CopyQuestionModal({
-  questionCopyTargets,
-  resLocals,
-}: {
-  questionCopyTargets: CopyTarget[] | null;
-  resLocals: UntypedResLocals;
-}) {
-  const { question, course } = resLocals;
-  if (questionCopyTargets == null) return '';
-  return Modal({
-    id: 'copyQuestionModal',
-    title: 'Copy question',
-    formAction: questionCopyTargets.at(0)?.copy_url ?? '',
-    formClass: 'js-copy-question-form',
-    body:
-      questionCopyTargets.length === 0
-        ? html`
-            <p>
-              You can't copy this question because you don't have editor permissions in any courses.
-              <a href="/pl/request_course">Request a course</a> if you don't have one already.
-              Otherwise, contact the owner of the course you expected to have access to.
-            </p>
-          `
-        : html`
-            <p>
-              This question can be copied to any course for which you have editor permissions.
-              Select one of your courses to copy this question.
-            </p>
-            <select
-              class="form-select"
-              name="to_course_id"
-              required
-              aria-label="Destination course"
-            >
-              ${questionCopyTargets.map(
-                (course, index) => html`
-                  <option
-                    value="${course.id}"
-                    data-csrf-token="${course.__csrf_token}"
-                    data-copy-url="${course.copy_url}"
-                    ${index === 0 ? 'selected' : ''}
-                  >
-                    ${course.short_name}
-                  </option>
-                `,
-              )}
-            </select>
-          `,
-    footer: html`
-      <input
-        type="hidden"
-        name="__csrf_token"
-        value="${questionCopyTargets.at(0)?.__csrf_token ?? ''}"
-      />
-      <input type="hidden" name="question_id" value="${question.id}" />
-      <input type="hidden" name="course_id" value="${course.id}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${
-        questionCopyTargets.length > 0
-          ? html`
-              <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
-                Copy question
-              </button>
-            `
-          : ''
-      }
-    `,
-  });
 }

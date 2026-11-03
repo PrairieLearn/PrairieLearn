@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
+import { copyContentModal } from '../../src/lib/client/copy-content.js';
 import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 import { createLocalQuestionBrowserServices } from '../../src/lib/client/question-browser-services.js';
 import type {
@@ -14,11 +15,11 @@ import type {
   StatusMessage,
   StatusMessageSubmission,
 } from '../../src/lib/externalGradingSocket.types.js';
+import type { QuestionDialogData } from '../../src/lib/question-dialogs.types.js';
 import type { SubmissionPanels } from '../../src/lib/question-render.types.js';
 import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
-import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
 import './behaviors/bootstrap-compat.js';
 
@@ -55,6 +56,9 @@ onDocumentReady(() => {
               document: container.ownerDocument,
               variantId: container.dataset.variantId!,
               variantToken: container.dataset.variantToken!,
+              dialogData: decodeData<QuestionDialogData>(
+                `question-dialog-data-${container.dataset.variantId}`,
+              ),
               submissionRenderUrls: new Map(
                 Array.from(
                   container.querySelectorAll<HTMLElement>(
@@ -67,6 +71,22 @@ onDocumentReady(() => {
             })
           : undefined;
       if (localServices) browserServices.set(container, localServices.services);
+
+      container.addEventListener('click', async (event) => {
+        const button = (event.target as Element).closest<HTMLButtonElement>(
+          'button[data-question-dialog]',
+        );
+        const services = browserServices.get(container);
+        if (!button || !services) return;
+        if (button.dataset.questionDialog === 'copy-question') {
+          await services.openCopyQuestion();
+        } else if (button.dataset.questionDialog === 'submission-info') {
+          await services.openSubmissionInfo({
+            submissionId: button.dataset.submissionId!,
+          });
+        }
+        if (button.isConnected) button.focus({ preventScroll: true });
+      });
 
       const externalGrading =
         container.dataset.gradingMethod === 'External'
