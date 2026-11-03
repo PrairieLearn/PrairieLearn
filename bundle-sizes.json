@@ -175,9 +175,9 @@
     "brotli": 107
   },
   "stylesheets/instructorQuestionSettings.css": {
-    "raw": 1159,
-    "gzip": 449,
-    "brotli": 356
+    "raw": 1186,
+    "gzip": 461,
+    "brotli": 364
   },
   "stylesheets/pageLayout.css": {
     "raw": 7061,
@@ -260,9 +260,9 @@
     "brotli": 317080
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionSettingsForm.ts": {
-    "raw": 1732736,
-    "gzip": 486358,
-    "brotli": 396744
+    "raw": 1732943,
+    "gzip": 486369,
+    "brotli": 396765
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionsTable.ts": {
     "raw": 1701237,
