@@ -16,7 +16,6 @@ import {
   type PendingReview,
   type RequestChangesResult,
   RequestChangesResultSchema,
-  type ReviewBaseFile,
   type ReviewDecision,
   type ReviewOutcome,
   type ReviewSnapshot,
@@ -51,7 +50,6 @@ interface RecordData {
   nativeThreadId: string | null;
   checkpoint: DirectoryBackupRecord | null;
   deadline: Deadline | null;
-  localBaseline: { commit: string; paths: string[] } | null;
   review:
     | (Omit<PendingReview, 'snapshot'> & {
         /** Contents are placeholders; per-file KV entries keep durable values small. */
@@ -204,7 +202,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       checkpoint: null,
       review: null,
       deadline: null,
-      localBaseline: null,
     });
   }
 
@@ -353,7 +350,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       operation?.resolveNativeCall &&
       operation.callId === this.record.review?.callId
     ) {
-      await this.prepareReviewConflict(outcome);
+      await this.advanceLocalBaseline(outcome);
       live.requestId = options.requestId;
       live.sdkFinished = Promise.withResolvers<undefined>();
       const stream = live.execution.openStream();
@@ -410,27 +407,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         };
         this.reviewOperation = operation;
         try {
-          const snapshot: ReviewSnapshot = await this.sandbox.captureReview(
-            source,
-            this.record.localBaseline
-              ? {
-                  commit: this.record.localBaseline.commit,
-                  files: this.record.localBaseline.paths.map((path) => ({
-                    path,
-                    contents: this.ctx.storage.kv.get<string | null>(`local-base:${path}`)!,
-                  })),
-                }
-              : undefined,
-          );
+          const snapshot: ReviewSnapshot = await this.sandbox.captureReview(source);
           this.clearReview();
           snapshot.additions.forEach((file, index) =>
             this.ctx.storage.kv.put(`review-file:${index}`, file.contents),
           );
-          if (snapshot.type === 'local') {
-            snapshot.originals.forEach((file, index) =>
-              this.ctx.storage.kv.put(`review-original:${index}`, file.contents),
-            );
-          }
           this.setRecord({
             ...this.record,
             review: {
@@ -441,14 +422,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
               },
               snapshot: {
                 ...snapshot,
-                ...(snapshot.type === 'local'
-                  ? {
-                      originals: snapshot.originals.map((file) => ({
-                        ...file,
-                        contents: file.contents === null ? null : '',
-                      })),
-                    }
-                  : {}),
                 additions: snapshot.additions.map(({ path }) => ({ path, contents: '' })),
               },
               status: 'pending',
@@ -473,23 +446,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
       prepare: async () => {
         await this.scheduleDeadline('turn');
-        if (startup) {
-          const commit = await this.sandbox.prepare(this.record.config, this.record.checkpoint);
-          if (source.type === 'local') {
-            if (commit) {
-              // Retrying initial setup recreates the same source with a new commit SHA.
-              this.setRecord({
-                ...this.record,
-                localBaseline: { commit, paths: this.record.localBaseline?.paths ?? [] },
-              });
-            } else if (!this.record.localBaseline) {
-              throw new Error('The local course baseline is missing. Start a new conversation.');
-            }
-          }
-        }
+        if (startup) await this.sandbox.prepare(this.record.config, this.record.checkpoint);
         if (outcome) {
           await this.sandbox.stopProcesses();
-          await this.prepareReviewConflict(outcome);
+          await this.advanceLocalBaseline(outcome);
         }
       },
       thread: {
@@ -636,11 +596,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             saved.error ?? 'Saving was interrupted. Inspect the job before retrying.',
           );
         }
-        return await this.recordReviewOutcome({
-          callId: review.callId,
-          result: saved.result,
-          conflictFiles: saved.conflictFiles,
-        });
+        return await this.recordReviewOutcome({ callId: review.callId, result: saved.result });
       } finally {
         this.recovering = false;
       }
@@ -705,29 +661,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.record.review?.snapshot.additions.forEach((_, index) =>
       this.ctx.storage.kv.delete(`review-file:${index}`),
     );
-    if (this.record.review?.snapshot.type === 'local') {
-      this.record.review.snapshot.originals.forEach((_, index) =>
-        this.ctx.storage.kv.delete(`review-original:${index}`),
-      );
-    }
     this.setRecord({ ...this.record, review: null });
   }
 
-  /** Refresh context beside the private draft, never by overwriting the agent's working files. */
-  private async prepareReviewConflict(result: RequestChangesResult) {
+  /** Before the agent continues, make saved local files the next review's baseline. */
+  private async advanceLocalBaseline(result: RequestChangesResult) {
     const review = this.record.review;
-    if (result.publication.status !== 'conflict' || review?.snapshot.type !== 'local') return;
-    const originals = review.snapshot.originals;
-    await this.sandbox.writeReviewConflict(
-      result.publication.paths.map((path) => {
-        const index = originals.findIndex((file) => file.path === path);
-        return {
-          path,
-          original: this.ctx.storage.kv.get<string | null>(`review-original:${index}`)!,
-          current: this.ctx.storage.kv.get<string | null>(`local-base:${path}`)!,
-        };
-      }),
-    );
+    if (result.publication.status !== 'saved_locally' || !review) return;
+    await this.sandbox.advanceLocalBaseline([
+      ...review.snapshot.additions.map((file, index) => ({
+        path: file.path,
+        contents: this.ctx.storage.kv.get<string>(`review-file:${index}`)!,
+      })),
+      ...review.snapshot.deletions.map((file) => ({ path: file.path, contents: null })),
+    ]);
   }
 
   /** The review remains available without restoring or waking a sandbox. */
@@ -749,14 +696,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       error: review.error,
       snapshot: {
         ...review.snapshot,
-        ...(review.snapshot.type === 'local'
-          ? {
-              originals: review.snapshot.originals.map((file, index) => ({
-                ...file,
-                contents: this.ctx.storage.kv.get<string | null>(`review-original:${index}`)!,
-              })),
-            }
-          : {}),
         additions: review.snapshot.additions.map((file, index) => ({
           ...file,
           contents: this.ctx.storage.kv.get<string>(`review-file:${index}`)!,
@@ -858,47 +797,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ) {
       return false;
     }
-    if (outcome.result.publication.status === 'conflict' && review.snapshot.type === 'local') {
-      const files = outcome.conflictFiles;
-      const paths = outcome.result.publication.paths;
-      if (
-        !files ||
-        files.length !== paths.length ||
-        files.some((file) => !paths.includes(file.path)) ||
-        paths.some(
-          (path) =>
-            !review.snapshot.additions.some((file) => file.path === path) &&
-            !review.snapshot.deletions.some((file) => file.path === path),
-        )
-      ) {
-        return false;
-      }
-      const baseline = this.record.localBaseline!;
-      for (const file of files) this.ctx.storage.kv.put(`local-base:${file.path}`, file.contents);
-      this.setRecord({
-        ...this.record,
-        localBaseline: {
-          ...baseline,
-          paths: [...new Set([...baseline.paths, ...paths])],
-        },
-      });
-    }
-    if (outcome.result.publication.status === 'saved_locally') {
-      const baseline = this.record.localBaseline!;
-      const paths = new Set(baseline.paths);
-      const files: ReviewBaseFile[] = [
-        ...review.snapshot.additions.map((file, index) => ({
-          path: file.path,
-          contents: this.ctx.storage.kv.get<string>(`review-file:${index}`)!,
-        })),
-        ...review.snapshot.deletions.map(({ path }) => ({ path, contents: null })),
-      ];
-      for (const file of files) {
-        paths.add(file.path);
-        this.ctx.storage.kv.put(`local-base:${file.path}`, file.contents);
-      }
-      this.setRecord({ ...this.record, localBaseline: { ...baseline, paths: [...paths] } });
-    }
     if (!this.workspaceShutdown) {
       this.setRecord({
         ...this.record,
@@ -983,7 +881,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       const previous = this.record.checkpoint;
       const checkpoint = await this.sandbox.checkpoint();
       this.setRecord({ ...this.record, checkpoint, lifecycle: { status: 'destroying' } });
-      // The initial Git baseline is retained in the checkpoint; saved contents live in DO storage.
+      // The checkpoint retains the local baseline ref, so the source archive is no longer needed.
       if (!previous && this.record.config.type === 'local') {
         await this.schedule(0, 'deleteLocalSource', this.record.config.archiveKey, {
           retry: { maxAttempts: 3 },

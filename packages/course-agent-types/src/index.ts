@@ -55,22 +55,6 @@ const ReviewPathSchema = z
 
 const ReviewContentsSchema = z.base64().max(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3));
 
-const ReviewBaseFileSchema = z.strictObject({
-  path: ReviewPathSchema,
-  contents: ReviewContentsSchema.nullable(),
-});
-
-export type ReviewBaseFile = z.infer<typeof ReviewBaseFileSchema>;
-
-export const ReviewBaseFilesSchema = z
-  .array(ReviewBaseFileSchema)
-  .max(100)
-  .refine(
-    (files) =>
-      new Set(files.map((file) => file.path)).size === files.length &&
-      files.reduce((size, file) => size + (file.contents?.length ?? 0), 0) <= MAX_REVIEW_BYTES,
-  );
-
 /** The save and sync outcomes are separate: files may be saved even if syncing fails. */
 export const RequestChangesResultSchema = z
   .strictObject({
@@ -131,26 +115,14 @@ export const ReviewSnapshotSchema = z
       branch: CreateConversationInput.shape.branch,
       baseCommit: z.string().regex(/^[0-9a-f]{40}$/),
     }),
-    z.strictObject({
-      ...ReviewFilesShape,
-      type: z.literal('local'),
-      originals: z.array(ReviewBaseFileSchema).max(100),
-    }),
+    z.strictObject({ ...ReviewFilesShape, type: z.literal('local') }),
   ])
   .refine((snapshot) => {
     const paths = [...snapshot.additions, ...snapshot.deletions].map((file) => file.path);
-    const originals = snapshot.type === 'local' ? snapshot.originals : [];
     return (
       paths.length <= 100 &&
       new Set(paths).size === paths.length &&
-      (snapshot.type !== 'local' ||
-        (originals.length === paths.length &&
-          new Set(originals.map((file) => file.path)).size === paths.length &&
-          originals.every((file) => paths.includes(file.path)))) &&
-      [...snapshot.additions, ...originals].reduce(
-        (size, file) => size + (file.contents?.length ?? 0),
-        0,
-      ) <= MAX_REVIEW_BYTES
+      snapshot.additions.reduce((size, file) => size + file.contents.length, 0) <= MAX_REVIEW_BYTES
     );
   });
 
@@ -183,8 +155,6 @@ export type ReviewDecision = z.infer<typeof ReviewDecisionSchema>;
 export const ReviewOutcomeSchema = z.strictObject({
   callId: z.string(),
   result: RequestChangesResultSchema,
-  // Private refresh data; file contents never enter SDK chat history.
-  conflictFiles: ReviewBaseFilesSchema.optional(),
 });
 
 export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
@@ -193,6 +163,5 @@ export const SavedJobOutcomeSchema = z.strictObject({
   jobSequenceId: IdSchema,
   status: z.enum(['running', 'completed', 'blocked']),
   result: RequestChangesResultSchema.nullable(),
-  conflictFiles: ReviewBaseFilesSchema.optional(),
   error: z.string().nullable(),
 });

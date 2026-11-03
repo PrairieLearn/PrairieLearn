@@ -1,4 +1,6 @@
 import { isUtf8 } from 'node:buffer';
+import { lstat, readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import { createTwoFilesPatch } from 'diff';
 import { execa } from 'execa';
@@ -15,19 +17,29 @@ import { config } from '../../../lib/config.js';
 import type { Course } from '../../../lib/db-types.js';
 import { getLockNameForCoursePath } from '../../../models/course.js';
 
-/** Read saved local originals or immutable Git objects without changing the checkout. */
+/** Local development reviews compare against, and then overwrite, the files on disk. */
+async function readLocalFiles(coursePath: string, snapshot: ReviewSnapshot) {
+  const files = new Map<string, Buffer | null>();
+  for (const { path: file } of [...snapshot.additions, ...snapshot.deletions]) {
+    const filePath = path.join(coursePath, file);
+    const stat = await lstat(filePath).catch((error: unknown) => {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (stat && (!stat.isFile() || stat.size > MAX_REVIEW_FILE_BYTES)) {
+      throw new HttpStatusError(400, `Course file cannot be reviewed: ${file}`);
+    }
+    files.set(file, stat ? await readFile(filePath) : null);
+  }
+  return files;
+}
+
+/** Read immutable Git objects (or local files in development) without changing the checkout. */
 export async function readReviewBaseFiles(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   snapshot: ReviewSnapshot,
 ) {
-  if (snapshot.type === 'local') {
-    return new Map(
-      snapshot.originals.map((file) => [
-        file.path,
-        file.contents === null ? null : Buffer.from(file.contents, 'base64'),
-      ]),
-    );
-  }
+  if (snapshot.type === 'local') return readLocalFiles(course.path, snapshot);
   const options = {
     cwd: course.path,
     env: {
@@ -54,9 +66,9 @@ export async function readReviewBaseFiles(
       options,
     );
     for (const entry of stdout.split('\0').filter(Boolean)) {
-      const [metadata, path] = entry.split('\t');
+      const [metadata, entryPath] = entry.split('\t');
       const [mode, type, sha, size] = metadata.trim().split(/\s+/);
-      entries.set(path, { mode, type, sha, size: Number(size) });
+      entries.set(entryPath, { mode, type, sha, size: Number(size) });
     }
   }
   const additions = new Map(snapshot.additions.map((file) => [file.path, file.contents]));
@@ -96,7 +108,7 @@ export async function readReviewBaseFiles(
   return baseFiles;
 }
 
-/** Build the displayed diff from the immutable originals and proposed file contents. */
+/** Build the displayed diff from the base files and proposed file contents. */
 export async function createReviewDiff(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   snapshot: ReviewSnapshot,

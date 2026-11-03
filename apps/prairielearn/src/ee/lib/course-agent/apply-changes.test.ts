@@ -136,10 +136,6 @@ function setLocalSnapshot() {
     type: 'local',
     additions: review.snapshot.additions,
     deletions: review.snapshot.deletions,
-    originals: [
-      { path: 'question.html', contents: 'b3JpZ2luYWw=' },
-      { path: 'old.html', contents: 'ZGVsZXRlIG1l' },
-    ],
   };
 }
 

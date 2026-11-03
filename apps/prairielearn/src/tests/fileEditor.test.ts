@@ -253,116 +253,83 @@ describe('test file editor', { timeout: 20_000 }, function () {
     });
     afterAll(helperServer.after);
 
-    it.each(['local', 'github'] as const)(
-      'preserves concurrent edits and the other proposed files in a %s review',
-      async (mode) => {
-        const course = await selectCourseById('1');
-        const user = await selectUserById('1');
-        const original = await fs.readFile(path.join(course.path, questionHtmlPath));
-        const proposed = Buffer.concat([original, Buffer.from('\nAgent change\n')]);
-        const concurrent = Buffer.concat([original, Buffer.from('\nInstructor change\n')]);
-        const addition = 'clientFilesCourse/review-addition.txt';
-        const { stdout: baseCommit } = await execa('git', ['rev-parse', 'HEAD'], {
-          cwd: course.path,
+    it('preserves concurrent edits and the other proposed files in a Git review', async () => {
+      const course = await selectCourseById('1');
+      const user = await selectUserById('1');
+      const original = await fs.readFile(path.join(course.path, questionHtmlPath));
+      const proposed = Buffer.concat([original, Buffer.from('\nAgent change\n')]);
+      const concurrent = Buffer.concat([original, Buffer.from('\nInstructor change\n')]);
+      const addition = 'clientFilesCourse/review-addition.txt';
+      const { stdout: baseCommit } = await execa('git', ['rev-parse', 'HEAD'], {
+        cwd: course.path,
+      });
+      const snapshot: Extract<ReviewSnapshot, { type: 'github' }> = {
+        type: 'github',
+        repository: 'PrairieLearn/course',
+        branch: 'master',
+        baseCommit,
+        additions: [
+          { path: addition, contents: Buffer.from('New file').toString('base64') },
+          { path: questionHtmlPath, contents: proposed.toString('base64') },
+        ],
+        deletions: [],
+      };
+      // Leave PL's checkout stale so the conflict is discovered on push retry.
+      await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), concurrent);
+      await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
+      await execa('git', ['commit', '-m', 'Concurrent instructor edit'], {
+        cwd: courseRepo.courseOriginDir,
+      });
+      try {
+        await withConfig({ fileEditorUseGit: true }, async () => {
+          const editor = new FileUploadEditor({
+            locals: {
+              course,
+              user,
+              authz_data: { has_course_permission_edit: true, authn_user: user },
+            },
+            container: {
+              rootPath: course.path,
+              invalidRootPaths: [path.join(course.path, '.git')],
+            },
+            files: Object.fromEntries(
+              snapshot.additions.map((file) => [
+                path.join(course.path, file.path),
+                Buffer.from(file.contents, 'base64'),
+              ]),
+            ),
+          });
+          const job = await editor.prepareServerJob();
+          await expect(
+            withoutLogging(() =>
+              editor.executeWithServerJob(job, {
+                beforeWrite: (job) => checkReviewConflicts(course, snapshot, job),
+              }),
+            ),
+          ).rejects.toThrow('Course files changed since this proposal');
+          assert.deepEqual(await fs.readFile(path.join(course.path, questionHtmlPath)), concurrent);
+          assert.isFalse(await fs.pathExists(path.join(course.path, addition)));
+          const sequence = await getJobSequence(job.jobSequenceId, course.id);
+          const outcome = getReviewJobOutcome(sequence);
+          assert.deepEqual(outcome.result?.publication, {
+            status: 'conflict',
+            paths: [questionHtmlPath],
+          });
+          assert.deepEqual(
+            await fs.readFile(path.join(courseRepo.courseOriginDir, questionHtmlPath)),
+            concurrent,
+          );
         });
-        const files = {
-          additions: [
-            { path: addition, contents: Buffer.from('New file').toString('base64') },
-            { path: questionHtmlPath, contents: proposed.toString('base64') },
-          ],
-          deletions: [],
-        };
-        const snapshot: ReviewSnapshot =
-          mode === 'github'
-            ? {
-                ...files,
-                type: 'github',
-                repository: 'PrairieLearn/course',
-                branch: 'master',
-                baseCommit,
-              }
-            : {
-                ...files,
-                type: 'local',
-                originals: [
-                  { path: addition, contents: null },
-                  { path: questionHtmlPath, contents: original.toString('base64') },
-                ],
-              };
-        // For Git, leave PL's checkout stale so the conflict is discovered on push retry.
-        if (mode === 'github') {
-          await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), concurrent);
-          await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
-          await execa('git', ['commit', '-m', 'Concurrent instructor edit'], {
-            cwd: courseRepo.courseOriginDir,
-          });
-        } else {
-          await fs.writeFile(path.join(course.path, questionHtmlPath), concurrent);
-        }
-        try {
-          await withConfig({ fileEditorUseGit: mode === 'github' }, async () => {
-            const editor = new FileUploadEditor({
-              locals: {
-                course,
-                user,
-                authz_data: { has_course_permission_edit: true, authn_user: user },
-              },
-              container: {
-                rootPath: course.path,
-                invalidRootPaths: [path.join(course.path, '.git')],
-              },
-              files: Object.fromEntries(
-                snapshot.additions.map((file) => [
-                  path.join(course.path, file.path),
-                  Buffer.from(file.contents, 'base64'),
-                ]),
-              ),
-            });
-            const job = await editor.prepareServerJob();
-            await expect(
-              withoutLogging(() =>
-                editor.executeWithServerJob(job, {
-                  beforeWrite: (job) => checkReviewConflicts(course, snapshot, job),
-                }),
-              ),
-            ).rejects.toThrow('Course files changed since this proposal');
-            assert.deepEqual(
-              await fs.readFile(path.join(course.path, questionHtmlPath)),
-              concurrent,
-            );
-            assert.isFalse(await fs.pathExists(path.join(course.path, addition)));
-            const sequence = await getJobSequence(job.jobSequenceId, course.id);
-            const outcome = getReviewJobOutcome(sequence);
-            assert.deepEqual(outcome.result?.publication, {
-              status: 'conflict',
-              paths: [questionHtmlPath],
-            });
-            if (mode === 'local') {
-              assert.deepEqual(outcome.conflictFiles, [
-                { path: questionHtmlPath, contents: concurrent.toString('base64') },
-              ]);
-            } else {
-              assert.deepEqual(
-                await fs.readFile(path.join(courseRepo.courseOriginDir, questionHtmlPath)),
-                concurrent,
-              );
-            }
-          });
-        } finally {
-          if (mode === 'local') {
-            await fs.writeFile(path.join(course.path, questionHtmlPath), original);
-          } else {
-            await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), original);
-            await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
-            await execa('git', ['commit', '-m', 'Restore fixture'], {
-              cwd: courseRepo.courseOriginDir,
-            });
-            await execa('git', ['fetch'], { cwd: course.path });
-            await execa('git', ['reset', '--hard', 'origin/master'], { cwd: course.path });
-          }
-        }
-      },
-    );
+      } finally {
+        await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), original);
+        await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
+        await execa('git', ['commit', '-m', 'Restore fixture'], {
+          cwd: courseRepo.courseOriginDir,
+        });
+        await execa('git', ['fetch'], { cwd: course.path });
+        await execa('git', ['reset', '--hard', 'origin/master'], { cwd: course.path });
+      }
+    });
 
     describe('the locals object', function () {
       it('should be cleared', function () {

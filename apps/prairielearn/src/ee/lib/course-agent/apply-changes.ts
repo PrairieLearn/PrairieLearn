@@ -179,11 +179,16 @@ async function applyChanges(
   conversation: CourseAgentConversation,
   review: PendingReview,
 ) {
+  const snapshot = review.snapshot;
   try {
     try {
-      await editor.executeWithServerJob(serverJob, {
-        beforeWrite: (job) => checkReviewConflicts(course, review.snapshot, job),
-      });
+      // Local development saves overwrite the files on disk, which the reviewed diff was built from.
+      await editor.executeWithServerJob(
+        serverJob,
+        snapshot.type === 'github'
+          ? { beforeWrite: (job) => checkReviewConflicts(course, snapshot, job) }
+          : {},
+      );
     } catch {
       // The editor has already persisted the failure and save/sync flags in its job.
     }
@@ -193,7 +198,6 @@ async function applyChanges(
       await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
         callId: review.callId,
         result: outcome.result,
-        conflictFiles: outcome.conflictFiles,
       });
     }
   } catch (error) {
@@ -264,7 +268,6 @@ export function getReviewJobOutcome(sequence: JobSequenceWithTokens) {
     jobSequenceId: sequence.id,
     status,
     result,
-    conflictFiles: conflict?.files,
     error,
   });
 }

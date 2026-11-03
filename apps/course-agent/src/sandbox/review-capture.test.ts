@@ -1,4 +1,4 @@
-import { lstat, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -29,17 +29,25 @@ vi.mock('@cloudflare/sandbox', () => ({
     async readFile(file: string) {
       return new Response(await readFile(path.join(this.container.course, file)));
     }
+
+    async writeFile(file: string, contents: Buffer) {
+      await writeFile(file, contents);
+    }
   },
 }));
 
-it('uses the approved local contents as the base for the next review', async () => {
+it('uses the saved local contents as the base for the next review', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'pl-local-review-'));
-  const course = directory;
+  // Local sandboxes reach the course through a link into a subdirectory of the repository.
+  const course = path.join(directory, 'course');
   const git = async (...args: string[]) => (await execa('git', args, { cwd: directory })).stdout;
+  const base64 = (text: string) => Buffer.from(text).toString('base64');
   try {
     await git('init', '--initial-branch=local');
+    await mkdir(course);
     await writeFile(path.join(course, 'question.html'), 'A');
-    await git('add', 'question.html');
+    await writeFile(path.join(course, 'old.html'), 'old');
+    await git('add', '--all');
     await git(
       '-c',
       'user.name=Test',
@@ -49,8 +57,10 @@ it('uses the approved local contents as the base for the next review', async () 
       '-m',
       'Source',
     );
-    const commit = await git('rev-parse', 'HEAD');
+    await git('update-ref', 'refs/prairielearn/saved', 'HEAD');
+    const head = await git('rev-parse', 'HEAD');
     await writeFile(path.join(course, 'question.html'), 'B');
+    await rm(path.join(course, 'old.html'));
     const container = {
       course,
       running: false,
@@ -76,28 +86,31 @@ it('uses the approved local contents as the base for the next review', async () 
       } as unknown as DurableObjectState,
       {} as Env,
     );
-    const source = { type: 'local' as const, archiveKey: 'source', directory: '.' };
-    const snapshot = await sandbox.captureReview(source, { commit, files: [] });
+    const source = { type: 'local' as const, archiveKey: 'source', directory: 'course' };
+    const snapshot = await sandbox.captureReview(source);
     expect(snapshot).toEqual({
       type: 'local',
-      additions: [{ path: 'question.html', contents: Buffer.from('B').toString('base64') }],
-      deletions: [],
-      originals: [{ path: 'question.html', contents: Buffer.from('A').toString('base64') }],
+      additions: [{ path: 'question.html', contents: base64('B') }],
+      deletions: [{ path: 'old.html' }],
     });
-    const baseline = { commit, files: snapshot.additions };
-    expect(await sandbox.captureReview(source, baseline)).toEqual({
-      type: 'local',
-      additions: [],
-      deletions: [],
-      originals: [],
-    });
+    // A write after capture must still be proposed: only the approved bytes were saved.
     await writeFile(path.join(course, 'question.html'), 'C');
-    expect(await sandbox.captureReview(source, baseline)).toEqual({
+    await sandbox.advanceLocalBaseline([
+      ...snapshot.additions,
+      ...snapshot.deletions.map(({ path }) => ({ path, contents: null })),
+    ]);
+    expect(await git('ls-tree', '-r', '--name-only', 'refs/prairielearn/saved')).toBe(
+      'course/question.html',
+    );
+    expect(await git('show', 'refs/prairielearn/saved:course/question.html')).toBe('B');
+    expect(await sandbox.captureReview(source)).toEqual({
       type: 'local',
-      additions: [{ path: 'question.html', contents: Buffer.from('C').toString('base64') }],
+      additions: [{ path: 'question.html', contents: base64('C') }],
       deletions: [],
-      originals: [{ path: 'question.html', contents: Buffer.from('B').toString('base64') }],
     });
+    // The agent's checkout is untouched: its commit and unstaged edits remain.
+    expect(await git('rev-parse', 'HEAD')).toBe(head);
+    expect(await git('status', '--porcelain')).toBe(' D course/old.html\n M course/question.html');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

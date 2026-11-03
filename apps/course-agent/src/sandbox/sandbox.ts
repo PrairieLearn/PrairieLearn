@@ -11,7 +11,6 @@ import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import {
   MAX_REVIEW_BYTES,
   MAX_REVIEW_FILE_BYTES,
-  type ReviewBaseFile,
   type ReviewSnapshot,
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
@@ -20,6 +19,16 @@ const SESSION = '/workspace/session';
 // The node user and group in the base container image both have ID 1000.
 const NODE_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
+// Local reviews diff against this ref, which tracks the contents PrairieLearn has saved.
+const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
+const GIT_IDENTITY = [
+  '-c',
+  'user.name=PrairieLearn',
+  '-c',
+  'user.email=course-agent@prairielearn.com',
+  '-c',
+  'commit.gpgsign=false',
+];
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
@@ -166,17 +175,16 @@ export class CourseSandbox extends DurableObject<Env> {
             'git',
             '-C',
             `${SESSION}/repository`,
-            '-c',
-            'user.name=PrairieLearn',
-            '-c',
-            'user.email=course-agent@prairielearn.com',
-            '-c',
-            'commit.gpgsign=false',
+            ...GIT_IDENTITY,
             'commit',
             '--allow-empty',
             '-m',
             'Initial local course snapshot',
           ],
+          'node',
+        );
+        await this.exec(
+          ['git', '-C', `${SESSION}/repository`, 'update-ref', LOCAL_SAVED_REF, 'HEAD'],
           'node',
         );
         // Preserve the original Git paths while keeping the native runner's course path stable.
@@ -209,21 +217,10 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
     // Keep the parent root-owned so the agent cannot rename or replace course/home directories.
     await this.exec(['chown', 'root:root', SESSION]);
-    if (config.type === 'local' && !checkpoint) {
-      const result = await this.exec(
-        ['git', '-C', `${SESSION}/course`, 'rev-parse', 'HEAD'],
-        'node',
-      );
-      return new TextDecoder().decode(result.stdout).trim();
-    }
-    return null;
   }
 
   /** Capture changed-file contents; Conversation persists the returned snapshot. */
-  async captureReview(
-    source: CourseSource,
-    baseline?: { commit: string; files: ReviewBaseFile[] },
-  ) {
+  async captureReview(source: CourseSource) {
     const course = `${SESSION}/course`;
     const files = new Files(this.container);
     const options = { cwd: course, user: NODE_UID_GID };
@@ -235,14 +232,10 @@ export class CourseSandbox extends DurableObject<Env> {
       return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
     };
     if (source.type === 'github') await git('check-ref-format', `refs/heads/${source.branch}`);
-    const baseCommit =
-      source.type === 'local'
-        ? baseline!.commit
-        : (
-            await git('rev-parse', '--verify', `refs/remotes/origin/${source.branch}^{commit}`)
-          ).trim();
-    const saved = new Map(baseline?.files.map((file) => [file.path, file.contents]));
-    // Include local commits, working files, untracked files, and previously saved paths.
+    const baseRef =
+      source.type === 'local' ? LOCAL_SAVED_REF : `refs/remotes/origin/${source.branch}`;
+    const baseCommit = (await git('rev-parse', '--verify', `${baseRef}^{commit}`)).trim();
+    // Include local commits, working files, and untracked files.
     const tracked = await git(
       'diff',
       '--relative',
@@ -253,32 +246,23 @@ export class CourseSandbox extends DurableObject<Env> {
       '--',
     );
     const untracked = await git('ls-files', '--others', '--exclude-standard', '-z');
-    const paths = [
-      ...new Set([...(tracked + untracked).split('\0').filter(Boolean), ...saved.keys()]),
-    ];
-    const originals: ReviewBaseFile[] = [];
+    const paths = [...new Set((tracked + untracked).split('\0').filter(Boolean))];
     const additions: ReviewSnapshot['additions'] = [];
     const deletions: ReviewSnapshot['deletions'] = [];
     let total = 0;
     for (const path of paths) {
       const entry = await git('ls-tree', '-l', baseCommit, '--', path);
-      let original: string | null = saved.get(path) ?? null;
-      if (!saved.has(path)) {
-        if (entry && !entry.startsWith('100644 blob ')) {
-          throw new Error(`Unsupported course file: ${path}`);
+      let original: string | null = null;
+      if (entry) {
+        if (!entry.startsWith('100644 blob ')) throw new Error(`Unsupported course file: ${path}`);
+        if (Number(entry.split('\t')[0].trim().split(/\s+/)[3]) > MAX_REVIEW_FILE_BYTES) {
+          throw new Error(`Review file is too large: ${path}`);
         }
-        if (entry) {
-          if (Number(entry.split('\t')[0].trim().split(/\s+/)[3]) > MAX_REVIEW_FILE_BYTES) {
-            throw new Error(`Review file is too large: ${path}`);
-          }
-          const blob = await this.exec(
-            ['git', '-C', course, 'cat-file', 'blob', `${baseCommit}:./${path}`],
-            'node',
-          );
-          original = Buffer.from(blob.stdout).toString('base64');
-        } else {
-          original = null;
-        }
+        const blob = await this.exec(
+          ['git', '-C', course, 'cat-file', 'blob', `${baseCommit}:./${path}`],
+          'node',
+        );
+        original = Buffer.from(blob.stdout).toString('base64');
       }
       let info;
       try {
@@ -299,10 +283,9 @@ export class CourseSandbox extends DurableObject<Env> {
         contents = Buffer.from(await response.arrayBuffer()).toString('base64');
       }
       if (contents === original) continue;
-      originals.push({ path, contents: original });
       if (contents === null) deletions.push({ path });
       else additions.push({ path, contents });
-      // Count originals in both modes, including deletions: PL must be able to display the diff.
+      // Count originals, including deletions: PL must be able to display the diff.
       total += (original?.length ?? 0) + (contents?.length ?? 0);
       if (total > MAX_REVIEW_BYTES) throw new Error('Reviewed changes are too large');
       if (additions.length + deletions.length > 100) {
@@ -319,28 +302,62 @@ export class CourseSandbox extends DurableObject<Env> {
             additions,
             deletions,
           }
-        : { type: 'local', originals, additions, deletions },
+        : { type: 'local', additions, deletions },
     );
   }
 
-  /** Supply refreshed local files without changing the private draft or its Git history. */
-  async writeReviewConflict(
-    files: { path: string; original: string | null; current: string | null }[],
-  ) {
-    const directory = `${SESSION}/review-conflicts`;
-    await this.exec(['mkdir', '-p', directory]);
-    const storage = new Files(this.container);
-    const manifest: { path: string; original: string | null; current: string | null }[] = [];
-    for (const [index, file] of files.entries()) {
-      const original = file.original === null ? null : `${directory}/${index}.original`;
-      const current = file.current === null ? null : `${directory}/${index}.current`;
-      if (original) await storage.writeFile(original, Buffer.from(file.original!, 'base64'));
-      if (current) await storage.writeFile(current, Buffer.from(file.current!, 'base64'));
-      manifest.push({ path: file.path, original, current });
+  /**
+   * Record the approved bytes on the baseline ref without touching the agent's checkout.
+   * Stage the captured contents, not the working tree, which may have changed since capture.
+   */
+  async advanceLocalBaseline(files: { path: string; contents: string | null }[]) {
+    const scratch = '/tmp/course-agent-saved';
+    const git = async (...args: string[]) => {
+      const result = await this.exec(
+        ['env', `GIT_INDEX_FILE=${scratch}/index`, 'git', '-C', `${SESSION}/course`, ...args],
+        'node',
+      );
+      return new TextDecoder().decode(result.stdout).trim();
+    };
+    await this.exec(['mkdir', '-p', scratch], 'node');
+    try {
+      // update-index paths are relative to the repository root, which contains the course.
+      const prefix = await git('rev-parse', '--show-prefix');
+      const toplevel = await git('rev-parse', '--show-toplevel');
+      const storage = new Files(this.container);
+      await git('read-tree', LOCAL_SAVED_REF);
+      for (const [index, file] of files.entries()) {
+        const fullPath = `${prefix}${file.path}`;
+        if (file.contents === null) {
+          await git('-C', toplevel, 'update-index', '--force-remove', '--', fullPath);
+          continue;
+        }
+        const blobPath = `${scratch}/${index}`;
+        await storage.writeFile(blobPath, Buffer.from(file.contents, 'base64'));
+        const sha = await git('hash-object', '-w', '--no-filters', '--', blobPath);
+        await git(
+          '-C',
+          toplevel,
+          'update-index',
+          '--add',
+          '--cacheinfo',
+          `100644,${sha},${fullPath}`,
+        );
+      }
+      const tree = await git('write-tree');
+      const commit = await git(
+        ...GIT_IDENTITY,
+        'commit-tree',
+        tree,
+        '-p',
+        LOCAL_SAVED_REF,
+        '-m',
+        'Saved by PrairieLearn',
+      );
+      await git('update-ref', LOCAL_SAVED_REF, commit);
+    } finally {
+      await this.exec(['rm', '-rf', scratch]);
     }
-    // Kept outside the course tree, so context files cannot become proposed course edits.
-    // Checkpoints preserve these files; a recovered delivery can safely rewrite them.
-    await storage.writeFile(`${directory}/manifest.json`, JSON.stringify(manifest));
   }
 
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */
