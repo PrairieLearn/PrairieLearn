@@ -55,7 +55,6 @@ const WorkspaceRowSchema = z.object({
 });
 
 const SelectWorkspaceSchema = z.object({
-  version: z.coerce.number(), // BIGINT, but always fits a number
   course_id: z.coerce.string(),
   institution_id: z.coerce.string(),
 });
@@ -1006,11 +1005,11 @@ async function _startContainer(workspace_id: string | number, container: Docker.
  * would mark the host as unhealthy if an error occurred while updating the state.
  */
 function safeUpdateWorkspaceState(
-  workspaceId: string | number,
+  workspace: Pick<Workspace, 'id' | 'launch_uuid' | 'version'>,
   state: 'stopped',
   message?: string,
 ) {
-  workspaceUtils.updateWorkspaceState(workspaceId, state, message).catch((err) => {
+  workspaceUtils.updateWorkspaceState(workspace.id, state, message, workspace).catch((err) => {
     logger.error('Error updating workspace state', err);
     Sentry.captureException(err);
   });
@@ -1021,18 +1020,24 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
-  // Check before pulling or creating a container so failed launches also trigger a check.
-  await checkDiskSpace();
-
   const uuid = crypto.randomUUID();
   const params = {
     workspace_id,
     launch_uuid: uuid,
     instance_id: workspace_server_settings.instance_id,
   };
-  await sqldb.execute(sql.set_workspace_launch_uuid, params);
+  const version = await sqldb.queryOptionalScalar(
+    sql.set_workspace_launch_uuid,
+    params,
+    WorkspaceRowSchema.shape.version,
+  );
+  // A reboot, reset, or host reassignment may have superseded this request.
+  if (version === null) return;
 
-  const { version, course_id, institution_id } = await sqldb.queryRow(
+  // Check before pulling or creating a container so failed launches also trigger a check.
+  await checkDiskSpace();
+
+  const { course_id, institution_id } = await sqldb.queryRow(
     sql.select_workspace,
     { workspace_id },
     SelectWorkspaceSchema,
@@ -1059,7 +1064,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       } catch (err) {
         logger.error(`Error configuring workspace ${workspace_id}`, err);
         safeUpdateWorkspaceState(
-          workspace_id,
+          { id: workspace_id, launch_uuid: uuid, version },
           'stopped',
           'Error configuring workspace. Click "Reboot" to try again.',
         );
@@ -1074,7 +1079,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       const image = workspace.settings.workspace_image;
       logger.error(`Error pulling image ${image} for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
-        workspace.id,
+        workspace,
         'stopped',
         'Error pulling image. Click "Reboot" to try again.',
       );
@@ -1088,7 +1093,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     } catch (err: any) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
-        workspace.id,
+        workspace,
         'stopped',
         `Error creating container${err instanceof SafeForStudentError ? `: ${err.message}` : ''}. Click "Reboot" to try again.`,
       );
@@ -1152,13 +1157,14 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       // workspace. If we do this inside the transaction, there's a chance that the
       // websocket message will reach the client before the state change is committed,
       // which would cause the client to try to load the workspace before it's ready.
+      // Recheck the launch identity atomically in case it changed after the transaction.
       if (hostname) {
-        await workspaceUtils.updateWorkspaceState(workspace.id, 'running');
+        await workspaceUtils.updateWorkspaceState(workspace.id, 'running', '', workspace);
       }
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
-        workspace.id,
+        workspace,
         'stopped',
         'Error starting container. Click "Reboot" to try again.',
       );
