@@ -160,7 +160,11 @@ describe('Course agent access and conversation privacy', () => {
       {
         method: 'POST',
         headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sequence: 1, usageDelta: emptyUsage(), requestCredit: true }),
+        body: JSON.stringify({
+          usageReportCount: 1,
+          usageDelta: emptyUsage(),
+          requestCredit: true,
+        }),
       },
     );
     expect(response.status).toBe(200);
@@ -180,7 +184,7 @@ describe('Course agent access and conversation privacy', () => {
         body: JSON.stringify(body),
       });
     const request: BudgetRequest = {
-      sequence: 1,
+      usageReportCount: 1,
       usageDelta: { ...emptyUsage(), inputTokens: 10000, outputTokens: 2000, costMilliDollars: 40 },
       requestCredit: true,
     };
@@ -191,12 +195,12 @@ describe('Course agent access and conversation privacy', () => {
     expect(first.allocation).toMatchObject({ status: 'granted', grantedMilliDollars: 3000 });
     const skipped = await report({
       ...request,
-      sequence: 3,
+      usageReportCount: 3,
       usageDelta: { ...emptyUsage(), costMilliDollars: 50000 },
     });
     expect(skipped.status).toBe(409);
     expect(await skipped.json()).toEqual({
-      error: { code: 'report_conflict', message: 'The usage report is out of order.' },
+      message: 'The usage report is out of order.',
     });
     expect((await report(request)).status).toBe(409);
     expect(
@@ -221,20 +225,20 @@ describe('Course agent access and conversation privacy', () => {
       authn_user_id: '1',
     });
     const final = {
-      sequence: 2,
+      usageReportCount: 2,
       usageDelta: { ...emptyUsage(), outputTokens: 500, costMilliDollars: 10 },
       requestCredit: true,
     };
     const denied = await report(final);
     expect(denied.status).toBe(403);
     expect(await denied.json()).toEqual({
-      sequence: 2,
+      usageReportCount: 2,
       allocation: { status: 'denied', reason: 'not_allowed' },
     });
     expect(
       (
         await report({
-          sequence: 3,
+          usageReportCount: 3,
           usageDelta: { ...emptyUsage(), costMilliDollars: 5 },
           requestCredit: false,
         })
@@ -262,7 +266,7 @@ describe('Course agent access and conversation privacy', () => {
     });
     const report = (
       agentId: string,
-      sequence: number,
+      usageReportCount: number,
       costMilliDollars: number,
       requestCredit = true,
     ) =>
@@ -270,7 +274,7 @@ describe('Course agent access and conversation privacy', () => {
         method: 'POST',
         headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sequence,
+          usageReportCount,
           usageDelta: { ...emptyUsage(), costMilliDollars },
           requestCredit,
         }),

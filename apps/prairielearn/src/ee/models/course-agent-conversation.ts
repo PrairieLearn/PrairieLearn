@@ -20,7 +20,7 @@ export async function recordCourseAgentConversationUsage(id: string, request: Bu
     output: usage.outputTokens,
     reasoning: usage.reasoningTokens,
     cost: usage.costMilliDollars,
-    sequence: request.sequence,
+    usage_report_count: request.usageReportCount,
   });
 }
 

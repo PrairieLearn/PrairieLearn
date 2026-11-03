@@ -17,7 +17,7 @@ export type ConversationLifecycle =
   | { status: 'stopping' }
   // Creating a replacement checkpoint or destroying its container; new input is not admitted.
   | { status: 'suspending' }
-  // An operation failed or was interrupted. Explicit Resume repairs the workspace without replaying input.
+  // Resume continues a task paused for credit; other failures repair the workspace without replaying input.
   | {
       status: 'blocked';
       reason:
@@ -36,7 +36,10 @@ export type ConversationLifecycle =
  * Public workspace lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.
  * Other states represent in-flight operations and require recovery if their owning DO restarts.
  */
-export type ConversationState = ConversationLifecycle & { deadlineAt: string | null };
+export type ConversationState = ConversationLifecycle & {
+  deadlineAt: string | null;
+  budget: { balanceMilliDollars: number };
+};
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
 

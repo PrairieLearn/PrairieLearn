@@ -6,8 +6,8 @@ import {
 import { HttpStatusError } from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import { selectUserAuthnData } from '../../../lib/authn.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
-import { selectUserById, userIsAdministrator } from '../../../models/user.js';
 import {
   recordCourseAgentConversationUsage,
   selectOptionalCourseAgentConversationByAgentIdForUpdate,
@@ -23,17 +23,17 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
     // TODO: Recover replies lost after commit so the DO can receive its credit
     // without counting usage twice. For now, duplicate reports are rejected.
     // https://github.com/PrairieLearn/PrairieLearn/issues/15684
-    if (request.sequence !== conversation.usage_report_count + 1) {
+    if (request.usageReportCount !== conversation.usage_report_count + 1) {
       throw new HttpStatusError(409, 'The usage report is out of order.');
     }
     let allocation: BudgetResponse['allocation'] = { status: 'not_requested' };
     if (request.requestCredit) {
-      const user = await selectUserById(conversation.user_id);
+      const { user, is_administrator } = await selectUserAuthnData(conversation.user_id);
       const { course, institution, authzData } = await constructCourseOrInstanceContext({
         user,
         course_id: conversation.course_id,
         course_instance_id: null,
-        is_administrator: await userIsAdministrator({ user_id: user.id }),
+        is_administrator,
         ip: null,
         req_date: new Date(),
         // Background accounting checks ownership without a browser's exam context.
@@ -53,17 +53,10 @@ export async function applyCourseAgentBudgetRequest(agentId: string, request: Bu
       if (!allowed) {
         allocation = { status: 'denied', reason: 'not_allowed' };
       } else {
-        const credit = await allocateCourseAgentBudget(
-          user.id,
-          request.usageDelta.costMilliDollars,
-        );
-        allocation =
-          credit.amount > 0
-            ? { status: 'granted', grantedMilliDollars: credit.amount, expiresAt: credit.resetsAt }
-            : { status: 'denied', reason: 'hourly_limit', retryAt: credit.resetsAt };
+        allocation = await allocateCourseAgentBudget(user.id, request.usageDelta.costMilliDollars);
       }
     }
-    const body: BudgetResponse = { sequence: request.sequence, allocation };
+    const body: BudgetResponse = { usageReportCount: request.usageReportCount, allocation };
     await recordCourseAgentConversationUsage(conversation.id, request);
     return {
       body,

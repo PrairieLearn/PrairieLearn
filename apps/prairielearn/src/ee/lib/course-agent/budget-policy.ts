@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
 
+import type { BudgetResponse } from '@prairielearn/course-agent-types';
 import { logger } from '@prairielearn/logger';
 
 import { config } from '../../../lib/config.js';
@@ -22,16 +23,21 @@ const rateLimiter = new RedisRateLimiter({
   intervalSeconds: USAGE_INTERVAL_SECONDS,
 });
 
-export async function allocateCourseAgentBudget(userId: string, reportedCostMilliDollars: number) {
+export async function allocateCourseAgentBudget(
+  userId: string,
+  reportedCostMilliDollars: number,
+): Promise<BudgetResponse['allocation']> {
   const start = Math.floor(Date.now() / USAGE_INTERVAL_MILLISECONDS) * USAGE_INTERVAL_MILLISECONDS;
   const used = await rateLimiter.getIntervalUsage(`user:${userId}`);
+  const resetsAt = new Date(start + USAGE_INTERVAL_MILLISECONDS).toISOString();
   // Include this report's cost before deciding; it reaches Redis after the SQL commit.
+  if (used + reportedCostMilliDollars >= COURSE_AGENT_HOURLY_USAGE_LIMIT_MILLI_DOLLARS) {
+    return { status: 'denied', reason: 'hourly_limit', retryAt: resetsAt };
+  }
   return {
-    amount:
-      used + reportedCostMilliDollars < COURSE_AGENT_HOURLY_USAGE_LIMIT_MILLI_DOLLARS
-        ? COURSE_AGENT_CREDIT_CHUNK_MILLI_DOLLARS
-        : 0,
-    resetsAt: new Date(start + USAGE_INTERVAL_MILLISECONDS).toISOString(),
+    status: 'granted',
+    grantedMilliDollars: COURSE_AGENT_CREDIT_CHUNK_MILLI_DOLLARS,
+    expiresAt: resetsAt,
   };
 }
 

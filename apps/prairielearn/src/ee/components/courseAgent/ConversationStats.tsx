@@ -3,8 +3,14 @@ import { Dropdown } from 'react-bootstrap';
 
 import type { ConversationState } from '@prairielearn/course-agent-types';
 
-import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
+
+const currencyFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
+});
 
 export function ConversationStats({
   state,
@@ -37,7 +43,13 @@ export function ConversationStats({
             <dt>Reasoning tokens</dt>
             <dd>{usage.usage_output_tokens_reasoning.toLocaleString()}</dd>
             <dt>Model cost</dt>
-            <dd className="mb-0">{formatMilliDollars(usage.usage_cost_milli_dollars)}</dd>
+            <dd>{currencyFormat.format(usage.usage_cost_milli_dollars / 1000)}</dd>
+            <dt>Conversation current budget</dt>
+            <dd className="mb-0">
+              {state
+                ? currencyFormat.format(state.budget.balanceMilliDollars / 1000)
+                : 'Connecting'}
+            </dd>
           </dl>
         </Dropdown.Menu>
       )}

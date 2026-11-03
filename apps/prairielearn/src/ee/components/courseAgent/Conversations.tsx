@@ -15,7 +15,6 @@ import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { type ConversationState } from '@prairielearn/course-agent-types';
-import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -302,27 +301,14 @@ function Chat({
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
-  const showThinking = run(() => {
-    if (
-      !responseActive ||
-      pendingReview ||
-      connectionFailed ||
-      connectionError ||
-      lifecycle?.status === 'blocked'
-    ) {
-      return false;
-    }
-    const lastMessage = messages.at(-1);
-    if (lastMessage?.role !== 'assistant') {
-      return true;
-    }
-    return !lastMessage.parts.some((part) => {
-      if (part.type === 'text' || part.type === 'reasoning') {
-        return part.text.trim().length > 0;
-      }
-      return false;
-    });
-  });
+  const activity =
+    connectionFailed || connectionError
+      ? null
+      : lifecycle?.status === 'starting'
+        ? 'Starting workspace…'
+        : lifecycle?.status === 'waiting_for_agent'
+          ? 'Thinking…'
+          : null;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
@@ -355,10 +341,10 @@ function Chat({
               }
             />
           ))}
-          {showThinking && (
-            <div className="text-muted small">
+          {activity && (
+            <div className="text-muted small" role="status">
               <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
-              Thinking…
+              {activity}
             </div>
           )}
           {lifecycle?.status === 'blocked' && (

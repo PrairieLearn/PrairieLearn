@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { type BudgetError, BudgetRequestSchema } from '@prairielearn/course-agent-types';
+import { BudgetRequestSchema } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { parseRequest } from '@prairielearn/zod';
@@ -44,21 +44,12 @@ router.post(
       res.status(result.status).json(result.body);
     } catch (error) {
       const status = error instanceof HttpStatusError ? error.status : 503;
-      const codes: Record<number, BudgetError['error']['code']> = {
-        400: 'invalid_request',
-        401: 'unauthorized',
-        404: 'not_found',
-        409: 'report_conflict',
-      };
       if (!(error instanceof HttpStatusError)) {
         logger.error('Course agent usage request failed', error);
       }
       res.status(status).json({
-        error: {
-          code: codes[status] ?? 'unavailable',
-          message: error instanceof HttpStatusError ? error.message : 'Could not record AI usage.',
-        },
-      } satisfies BudgetError);
+        message: error instanceof HttpStatusError ? error.message : 'Could not record AI usage.',
+      });
     }
   }),
 );

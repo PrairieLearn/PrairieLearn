@@ -19,7 +19,7 @@ SET
   usage_output_tokens = usage_output_tokens + $output,
   usage_output_tokens_reasoning = usage_output_tokens_reasoning + $reasoning,
   usage_cost_milli_dollars = usage_cost_milli_dollars + $cost,
-  usage_report_count = $sequence
+  usage_report_count = $usage_report_count
 WHERE
   id = $id;
 
