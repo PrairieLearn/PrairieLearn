@@ -34,42 +34,6 @@ export const CreateConversationInput = z.strictObject({
   branch: z.string().min(1).max(1024),
 });
 
-/** The save and sync outcomes are separate: files may be saved even if syncing fails. */
-export const RequestChangesResultSchema = z
-  .strictObject({
-    decision: z.enum(['approved', 'denied']),
-    publication: z.discriminatedUnion('status', [
-      z.strictObject({ status: z.literal('not_attempted') }),
-      z.strictObject({ status: z.literal('saved_locally') }),
-      z.strictObject({
-        status: z.literal('published'),
-        commitSha: z
-          .string()
-          .regex(/^[0-9a-f]{40}$/)
-          .optional(),
-      }),
-      z.strictObject({ status: z.literal('failed'), error: z.string() }),
-    ]),
-    sync: z.discriminatedUnion('status', [
-      z.strictObject({ status: z.literal('not_attempted') }),
-      z.strictObject({ status: z.literal('succeeded') }),
-      z.strictObject({ status: z.literal('failed'), error: z.string() }),
-    ]),
-  })
-  .refine((result) => {
-    if (result.decision === 'denied') {
-      return (
-        result.publication.status === 'not_attempted' && result.sync.status === 'not_attempted'
-      );
-    }
-    if (['published', 'saved_locally'].includes(result.publication.status)) {
-      return result.sync.status !== 'not_attempted';
-    }
-    return result.publication.status === 'failed' && result.sync.status === 'not_attempted';
-  });
-
-export type RequestChangesResult = z.infer<typeof RequestChangesResultSchema>;
-
 export const MAX_REVIEW_FILE_BYTES = 64 * 1024;
 export const MAX_REVIEW_BYTES = 1024 * 1024;
 
@@ -97,6 +61,58 @@ const ReviewBaseFileSchema = z.strictObject({
 });
 
 export type ReviewBaseFile = z.infer<typeof ReviewBaseFileSchema>;
+
+export const ReviewBaseFilesSchema = z
+  .array(ReviewBaseFileSchema)
+  .max(100)
+  .refine(
+    (files) =>
+      new Set(files.map((file) => file.path)).size === files.length &&
+      files.reduce((size, file) => size + (file.contents?.length ?? 0), 0) <= MAX_REVIEW_BYTES,
+  );
+
+/** The save and sync outcomes are separate: files may be saved even if syncing fails. */
+export const RequestChangesResultSchema = z
+  .strictObject({
+    decision: z.enum(['approved', 'denied']),
+    publication: z.discriminatedUnion('status', [
+      z.strictObject({ status: z.literal('not_attempted') }),
+      z.strictObject({ status: z.literal('saved_locally') }),
+      z.strictObject({
+        status: z.literal('conflict'),
+        paths: z.array(ReviewPathSchema).min(1).max(100),
+      }),
+      z.strictObject({
+        status: z.literal('published'),
+        commitSha: z
+          .string()
+          .regex(/^[0-9a-f]{40}$/)
+          .optional(),
+      }),
+      z.strictObject({ status: z.literal('failed'), error: z.string() }),
+    ]),
+    sync: z.discriminatedUnion('status', [
+      z.strictObject({ status: z.literal('not_attempted') }),
+      z.strictObject({ status: z.literal('succeeded') }),
+      z.strictObject({ status: z.literal('failed'), error: z.string() }),
+    ]),
+  })
+  .refine((result) => {
+    if (result.decision === 'denied') {
+      return (
+        result.publication.status === 'not_attempted' && result.sync.status === 'not_attempted'
+      );
+    }
+    if (['published', 'saved_locally'].includes(result.publication.status)) {
+      return result.sync.status !== 'not_attempted';
+    }
+    return (
+      ['failed', 'conflict'].includes(result.publication.status) &&
+      result.sync.status === 'not_attempted'
+    );
+  });
+
+export type RequestChangesResult = z.infer<typeof RequestChangesResultSchema>;
 
 const ReviewFilesShape = {
   additions: z
@@ -167,6 +183,8 @@ export type ReviewDecision = z.infer<typeof ReviewDecisionSchema>;
 export const ReviewOutcomeSchema = z.strictObject({
   callId: z.string(),
   result: RequestChangesResultSchema,
+  // Private refresh data; file contents never enter SDK chat history.
+  conflictFiles: ReviewBaseFilesSchema.optional(),
 });
 
 export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
@@ -175,5 +193,6 @@ export const SavedJobOutcomeSchema = z.strictObject({
   jobSequenceId: IdSchema,
   status: z.enum(['running', 'completed', 'blocked']),
   result: RequestChangesResultSchema.nullable(),
+  conflictFiles: ReviewBaseFilesSchema.optional(),
   error: z.string().nullable(),
 });

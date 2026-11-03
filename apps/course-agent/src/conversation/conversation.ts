@@ -353,6 +353,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       operation?.resolveNativeCall &&
       operation.callId === this.record.review?.callId
     ) {
+      await this.prepareReviewConflict(outcome);
       live.requestId = options.requestId;
       live.sdkFinished = Promise.withResolvers<undefined>();
       const stream = live.execution.openStream();
@@ -488,6 +489,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         }
         if (outcome) {
           await this.sandbox.stopProcesses();
+          await this.prepareReviewConflict(outcome);
         }
       },
       thread: {
@@ -627,7 +629,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             saved.error ?? 'Saving was interrupted. Inspect the job before retrying.',
           );
         }
-        return await this.recordReviewOutcome({ callId: review.callId, result: saved.result });
+        return await this.recordReviewOutcome({
+          callId: review.callId,
+          result: saved.result,
+          conflictFiles: saved.conflictFiles,
+        });
       } finally {
         this.recovering = false;
       }
@@ -698,6 +704,23 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       );
     }
     this.setRecord({ ...this.record, review: null });
+  }
+
+  /** Refresh context beside the private draft, never by overwriting the agent's working files. */
+  private async prepareReviewConflict(result: RequestChangesResult) {
+    const review = this.record.review;
+    if (result.publication.status !== 'conflict' || review?.snapshot.type !== 'local') return;
+    const originals = review.snapshot.originals;
+    await this.sandbox.writeReviewConflict(
+      result.publication.paths.map((path) => {
+        const index = originals.findIndex((file) => file.path === path);
+        return {
+          path,
+          original: this.ctx.storage.kv.get<string | null>(`review-original:${index}`)!,
+          current: this.ctx.storage.kv.get<string | null>(`local-base:${path}`)!,
+        };
+      }),
+    );
   }
 
   /** The review remains available without restoring or waking a sandbox. */
@@ -827,6 +850,31 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       review.decision?.decision !== outcome.result.decision
     ) {
       return false;
+    }
+    if (outcome.result.publication.status === 'conflict' && review.snapshot.type === 'local') {
+      const files = outcome.conflictFiles;
+      const paths = outcome.result.publication.paths;
+      if (
+        !files ||
+        files.length !== paths.length ||
+        files.some((file) => !paths.includes(file.path)) ||
+        paths.some(
+          (path) =>
+            !review.snapshot.additions.some((file) => file.path === path) &&
+            !review.snapshot.deletions.some((file) => file.path === path),
+        )
+      ) {
+        return false;
+      }
+      const baseline = this.record.localBaseline!;
+      for (const file of files) this.ctx.storage.kv.put(`local-base:${file.path}`, file.contents);
+      this.setRecord({
+        ...this.record,
+        localBaseline: {
+          ...baseline,
+          paths: [...new Set([...baseline.paths, ...paths])],
+        },
+      });
     }
     if (outcome.result.publication.status === 'saved_locally') {
       const baseline = this.record.localBaseline!;

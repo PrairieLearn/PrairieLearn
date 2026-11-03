@@ -16,7 +16,7 @@ import type { Course } from '../../../lib/db-types.js';
 import { getLockNameForCoursePath } from '../../../models/course.js';
 
 /** Read saved local originals or immutable Git objects without changing the checkout. */
-async function readReviewBaseFiles(
+export async function readReviewBaseFiles(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   snapshot: ReviewSnapshot,
 ) {
