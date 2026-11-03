@@ -1,3 +1,5 @@
+import { setImmediate } from 'node:timers/promises';
+
 import { type Expression, parse } from 'acorn';
 import { simple } from 'acorn-walk';
 import * as cheerio from 'cheerio';
@@ -284,8 +286,13 @@ function namespaceSvgs($: cheerio.CheerioAPI, namespace: string): void {
     });
 }
 
-/** Namespaces IDs that occur in more than one independently rendered question fragment. */
-export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespace[]): string[] {
+/**
+ * Namespaces IDs that occur in more than one independently rendered question fragment.
+ * Yields between questions so large exams do not block other requests.
+ */
+export async function namespaceQuestionHtmls(
+  questions: readonly QuestionHtmlToNamespace[],
+): Promise<string[]> {
   const namespaces = questions.map((question) => question.namespace);
   if (new Set(namespaces).size !== namespaces.length) {
     throw new Error('Question HTML namespaces must be unique');
@@ -296,17 +303,23 @@ export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespa
     }
   }
 
-  const fragments = questions.map(({ html, namespace }) => {
+  const fragments: { $: cheerio.CheerioAPI; namespace: string }[] = [];
+  for (const { html, namespace } of questions) {
     const $ = cheerio.load(html, undefined, false);
     namespaceSvgs($, namespace);
     assertNoDuplicateIds($, namespace);
-    return { $, namespace };
-  });
+    fragments.push({ $, namespace });
+    await setImmediate();
+  }
 
-  const reservedIds = new Set(fragments.flatMap(({ $ }) => getIds($)));
+  const reservedIds = new Set<string>();
   const idCounts = new Map<string, number>();
   for (const { $ } of fragments) {
-    for (const id of getIds($)) idCounts.set(id, (idCounts.get(id) ?? 0) + 1);
+    for (const id of getIds($)) {
+      reservedIds.add(id);
+      idCounts.set(id, (idCounts.get(id) ?? 0) + 1);
+    }
+    await setImmediate();
   }
 
   for (const { $, namespace } of fragments) {
@@ -318,15 +331,19 @@ export function namespaceQuestionHtmls(questions: readonly QuestionHtmlToNamespa
     }
     renameIdsAndReferences($, idRenames);
     assertNoDuplicateIds($, namespace);
+    await setImmediate();
   }
 
   const finalIds = new Set<string>();
+  const result: string[] = [];
   for (const { $ } of fragments) {
     for (const id of getIds($)) {
       if (finalIds.has(id)) throw new Error(`Duplicate question HTML ID after namespacing: ${id}`);
       finalIds.add(id);
     }
+    result.push($.root().html() ?? '');
+    await setImmediate();
   }
 
-  return fragments.map(({ $ }) => $.root().html() ?? '');
+  return result;
 }
