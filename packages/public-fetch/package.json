@@ -25,8 +25,8 @@
     "@types/node": "^24.19.0",
     "@types/pem": "^1.14.4",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "pem": "^1.14.8",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.5"
   }
 }

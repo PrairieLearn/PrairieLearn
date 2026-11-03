@@ -16,7 +16,7 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.1141.0",
+    "@aws-sdk/client-auto-scaling": "^3.1161.0",
     "@smithy/property-provider": "^4.5.2",
     "@smithy/types": "^4.19.0"
   },

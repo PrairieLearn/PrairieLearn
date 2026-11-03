@@ -15,7 +15,7 @@
   "dependencies": {
     "@prairielearn/html": "workspace:^",
     "csv-stringify": "^6.9.0",
-    "js-base64": "^3.9.4"
+    "js-base64": "^3.9.5"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

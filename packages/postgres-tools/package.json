@@ -25,7 +25,7 @@
     "chalk": "^6.0.0",
     "commander": "^15.0.0",
     "diff": "^9.0.0",
-    "es-toolkit": "^1.52.0",
+    "es-toolkit": "^1.53.1",
     "fs-extra": "^11.4.1",
     "postgres-array": "^3.0.4"
   },

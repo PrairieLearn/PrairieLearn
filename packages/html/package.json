@@ -20,8 +20,8 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.2",
-    "vitest": "^5.0.2"
+    "@vitest/coverage-v8": "^5.0.5",
+    "vitest": "^5.0.5"
   },
   "sideEffects": false
 }
