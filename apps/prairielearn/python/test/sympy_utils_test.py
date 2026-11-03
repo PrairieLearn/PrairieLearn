@@ -7,7 +7,7 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-from prairielearn.internal import sympy_constants
+from prairielearn.internal import sympy_constants, sympy_expression
 
 
 def test_constants_compatibility_alias() -> None:
@@ -803,17 +803,49 @@ class TestSympy:
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
-    @pytest.mark.parametrize("operator", ["|", "&"])
+    @pytest.mark.parametrize(
+        ("expression", "custom_functions", "expected"),
+        [
+            ("x | y", None, sympy.Or(sympy.Symbol("x"), sympy.Symbol("y"))),
+            ("x & y", None, sympy.And(sympy.Symbol("x"), sympy.Symbol("y"))),
+            (
+                "x | (y & z)",
+                None,
+                sympy.Or(
+                    sympy.Symbol("x"),
+                    sympy.And(sympy.Symbol("y"), sympy.Symbol("z")),
+                ),
+            ),
+            (
+                "(x | y) & z",
+                None,
+                sympy.And(
+                    sympy.Or(sympy.Symbol("x"), sympy.Symbol("y")),
+                    sympy.Symbol("z"),
+                ),
+            ),
+            (
+                "f(x | y)",
+                ["f"],
+                sympy.Function("f")(sympy.Or(sympy.Symbol("x"), sympy.Symbol("y"))),
+            ),
+        ],
+    )
     def test_legacy_scalar_set_operator_json_conversion(
-        self, operator: str, *, simplify_expression: bool
+        self,
+        expression: str,
+        custom_functions: list[str] | None,
+        expected: sympy.Basic,
+        *,
+        simplify_expression: bool,
     ) -> None:
         legacy_json: psu.SympyJson = {
             "_type": "sympy",
-            "_value": f"x {operator} y",
-            "_variables": ["x", "y"],
+            "_value": expression,
+            "_variables": ["x", "y", "z"],
         }
-        x, y = sympy.symbols("x y")
-        expected = x | y if operator == "|" else x & y
+        if custom_functions is not None:
+            legacy_json["_custom_functions"] = custom_functions
 
         assert (
             psu.json_to_sympy(
@@ -823,6 +855,26 @@ class TestSympy:
             )
             == expected
         )
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_legacy_custom_function_set_operator_failure(
+        self, *, simplify_expression: bool
+    ) -> None:
+        legacy_json: psu.SympyJson = {
+            "_type": "sympy",
+            "_value": "f(x) | y",
+            "_variables": ["x", "y"],
+            "_custom_functions": ["f"],
+        }
+
+        with pytest.raises(psu.BaseSympyError) as exc_info:
+            psu.json_to_sympy(
+                legacy_json,
+                allow_sets=True,
+                simplify_expression=simplify_expression,
+            )
+
+        assert type(exc_info.value) is psu.BaseSympyError
 
     @pytest.mark.parametrize(
         "sympy_expr",
@@ -882,6 +934,7 @@ class TestSympy:
             custom_functions=["Complement"],
             simplify_expression=simplify_expression,
         )
+        assert isinstance(parsed, sympy.Expr | sympy.Set)
         encoded = psu.sympy_to_json(parsed, allow_sets=True)
 
         assert parsed == expected
@@ -944,6 +997,7 @@ class TestSympy:
             allow_complex=True,
             custom_functions=custom_functions,
         )
+        assert isinstance(sympy_expr, sympy.Expr | sympy.Set)
         # Check that json serialization works
         json_dict = psu.sympy_to_json(sympy_expr)
 
@@ -982,6 +1036,7 @@ class TestSympy:
             allow_complex=True,
             assumptions=assumptions,
         )
+        assert isinstance(sympy_expr, sympy.Expr | sympy.Set)
 
         json_expr = json.dumps(psu.sympy_to_json(sympy_expr), allow_nan=False)
 
@@ -1059,7 +1114,7 @@ class TestExceptions:
     COMPLEX_CASES = ("i", "5 * i", "j", "I")
     # Expressions that evaluate to complex numbers without containing an explicit
     # imaginary unit. These are important to test with simplify_expression=False,
-    # where evaluateFalse keeps expressions like sqrt(-2) unevaluated.
+    # where expressions like sqrt(-2) remain unevaluated.
     IMPLICIT_COMPLEX_CASES = ("sqrt(-2)", "sqrt(-1)", "(-2)^(1/2)", "sqrt(-2) + 3")
     NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
     INVALID_EXPRESSION_CASES = (
@@ -1368,15 +1423,13 @@ class TestExceptions:
     @pytest.mark.parametrize(
         ("caret_spec", "with_vars"),
         [
-            # #14141: '#' after large integer — stringify_expr wraps it as Integer(1234567890),
-            # shifting the '#' offset. Caret must still point at '#' in the original input.
+            # #14141: '#' after a large integer must point at '#' in the original input.
             ("1234567890 !# abcdefghij", ()),
             # '#' at the very start of the expression
             ("!# x + 1", ()),
             # '#' after '^' which becomes '**' (offset shift from replacement)
             ("n^2 !# comment", ()),
-            # #14141: '\\' at the start — previously misreported as generic "syntax error"
-            # because stringify_expr raised TokenError before ast_check_str ran
+            # #14141: '\\' at the start must not be reported as a generic syntax error.
             ("!\\n + 2", ()),
             # '\\' after a large integer
             ("1234567890 !\\", ()),
@@ -1595,6 +1648,20 @@ class TestExceptions:
     def test_builtin_function_valid_arity(self, expr: str) -> None:
         assert psu.validate_string_as_sympy(expr, self.VARIABLES) is None
 
+    def test_disabled_trig_call_is_an_invalid_function(self) -> None:
+        error_msg = psu.validate_string_as_sympy(
+            "sin(n)",
+            self.VARIABLES,
+            allow_trig_functions=False,
+        )
+        assert error_msg is not None
+        assert 'invalid function "sin"' in error_msg
+        assert psu.point_to_error("sin(n)", 0) in error_msg
+
+    def test_unknown_multi_argument_call_is_an_invalid_expression(self) -> None:
+        with pytest.raises(psu.HasInvalidExpressionError):
+            psu.convert_string_to_sympy("g(n, 1)", self.VARIABLES)
+
 
 @pytest.mark.parametrize("error_type", [TypeError, AttributeError])
 def test_evaluation_errors_have_student_fallback(
@@ -1604,7 +1671,7 @@ def test_evaluation_errors_have_student_fallback(
     def fail_evaluation(*_args: Any, **_kwargs: Any) -> Any:
         raise error_type("evaluation failed")
 
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_evaluation)
+    monkeypatch.setattr(sympy_expression.Evaluator, "evaluate", fail_evaluation)
     result = psu.try_parse_string_as_sympy("x", ["x"])
     assert isinstance(result, psu.SympyParseFailure)
     assert result.error == (
@@ -1619,11 +1686,118 @@ def test_unexpected_evaluation_errors_remain_staff_facing(
     def fail_evaluation(*_args: Any, **_kwargs: Any) -> Any:
         raise RuntimeError("internal failure")
 
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", fail_evaluation)
+    monkeypatch.setattr(sympy_expression.Evaluator, "evaluate", fail_evaluation)
     result = psu.try_parse_string_as_sympy("x", ["x"])
     assert isinstance(result, psu.SympyParseFailure)
     assert result.error.startswith("Unexpected error:")
     assert result.error.endswith("Please contact the course staff.")
+
+
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        ("n**2", "n^2"),
+        ("factorial(n)", "n!"),
+        ("log(n)", "log n"),
+        ("n*log(n)**2", "n log^2 n"),
+    ],
+)
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_source_wrapper_returns_lowered_structure(
+    left: str, right: str, *, simplify_expression: bool
+) -> None:
+    _, left_source = psu.convert_string_to_sympy_with_source(
+        left, ["n"], simplify_expression=simplify_expression
+    )
+    _, right_source = psu.convert_string_to_sympy_with_source(
+        right, ["n"], simplify_expression=simplify_expression
+    )
+    locals_for_eval = psu._prepare_locals_for_eval(["n"])
+    _, evaluated_source = psu.evaluate_with_source(
+        left, locals_for_eval, simplify_expression=simplify_expression
+    )
+
+    assert isinstance(left_source, str)
+    assert isinstance(right_source, str)
+    assert isinstance(evaluated_source, str)
+    assert left_source == right_source
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "x.real",
+        "__import__('os')",
+        "'x'",
+        "lambda x: x",
+        "[x for x in y]",
+        "x[0]",
+        "x == 1",
+        "sin(x=1)",
+    ],
+)
+def test_python_constructs_outside_symbolic_grammar_are_rejected(text: str) -> None:
+    result = psu.try_parse_string_as_sympy(text, ["x", "y"])
+    assert isinstance(result, psu.SympyParseFailure)
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["sin(1, 2)", "atan2(1)", "atan2(1, 2, 3)"],
+)
+def test_invalid_builtin_function_arities(text: str) -> None:
+    with pytest.raises(psu.HasFunctionArityError):
+        psu.convert_string_to_sympy(text)
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_sqrt_second_argument_is_rejected(*, simplify_expression: bool) -> None:
+    with pytest.raises(psu.HasFunctionArityError):
+        psu.convert_string_to_sympy(
+            "sqrt(1, 2)", simplify_expression=simplify_expression
+        )
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
+def test_custom_complement_is_not_treated_as_a_set_constructor(
+    *, simplify_expression: bool
+) -> None:
+    complement = sympy.Function("Complement")
+    x = sympy.Symbol("x")
+    locals_for_eval: psu.LocalsForEval = {
+        "functions": {"Complement": complement},
+        "variables": {"x": x},
+        "helpers": {},
+    }
+
+    assert psu.evaluate_with_source(
+        "Complement(x)",
+        locals_for_eval,
+        allow_sets=True,
+        simplify_expression=simplify_expression,
+    )[0] == complement(x)
+
+
+def test_digit_suffixed_custom_function() -> None:
+    f2 = sympy.Function("f2")
+    assert psu.convert_string_to_sympy("f2(3)", custom_functions=["f2"]) == f2(3)
+
+
+def test_sympy_function_name_configured_as_variable_uses_implicit_multiplication() -> (
+    None
+):
+    gamma, x = sympy.symbols("gamma x")
+    assert psu.convert_string_to_sympy("gamma(x)", ["gamma", "x"]) == gamma * x
+
+
+def test_unsimplified_set_complement_is_evaluated() -> None:
+    result = psu.convert_string_to_sympy(
+        "[0, 5] - {2}",
+        allow_sets=True,
+        simplify_expression=False,
+    )
+    assert result == sympy.Union(sympy.Interval.Ropen(0, 2), sympy.Interval.Lopen(2, 5))
+    assert not isinstance(result, sympy.Complement)
 
 
 @pytest.mark.parametrize(

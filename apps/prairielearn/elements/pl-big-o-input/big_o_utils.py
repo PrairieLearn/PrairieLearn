@@ -63,7 +63,7 @@ def grade_o_expression(
 
     try:
         if sym_true.equals(sym_sub):
-            # Sympy doesn't treat n*m and m*n the same in CodeTypes
+            # The canonical structures preserve the input's multiplication order.
             # So complex feedback needs to be disabled for multivariate
             if len(variables) == 1:
                 return (1, CORRECT_COMPLEX_FEEDBACK)

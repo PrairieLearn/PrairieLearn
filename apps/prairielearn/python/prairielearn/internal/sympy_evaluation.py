@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Any, TypedDict, cast
 
 import sympy
+from sympy.logic.boolalg import Boolean
 
 from prairielearn.internal import sympy_constants, sympy_source
 
@@ -19,7 +20,7 @@ class LocalsForEvaluation(TypedDict):
     helpers: SympyFunctionMap
 
 
-type SympyValue = sympy.Expr | sympy.Set
+type SympyValue = sympy.Expr | Boolean | sympy.Set
 
 
 class SympyType(Enum):

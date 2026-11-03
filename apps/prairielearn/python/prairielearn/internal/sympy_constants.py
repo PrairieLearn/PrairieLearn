@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import operator
 from types import MappingProxyType as FrozenDict
 from typing import TYPE_CHECKING, Any, Final
 
@@ -10,8 +9,6 @@ import sympy
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-    from sympy.parsing.sympy_parser import DICT
 
 standard_operators: Final = ("( )", "+", "-", "*", "/", "^", "**", "!")
 set_notation_operators: Final = (
@@ -108,24 +105,15 @@ set_functions: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
     "Intersection": sympy.Intersection,
 })
 
-set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
-    "U": "|",
-    "cup": "|",
-    "∪": "|",  # ruff:ignore[ambiguous-unicode-character-string]
-    "cap": "&",
-    "∩": "&",
+union_operator_aliases: Final = frozenset({
+    "U",
+    "cup",
+    "∪",  # ruff:ignore[ambiguous-unicode-character-string]
 })
-set_operators: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
-    name: operator.or_ if desugared == "|" else operator.and_
-    for name, desugared in set_operator_desugars.items()
-})
-union_operators: Final = frozenset(
-    name for name, desugared in set_operator_desugars.items() if desugared == "|"
-) | frozenset({"|"})
-intersection_operators: Final = frozenset(
-    name for name, desugared in set_operator_desugars.items() if desugared == "&"
-) | frozenset({"&"})
-set_operator_names: Final = union_operators | intersection_operators
+intersection_operator_aliases: Final = frozenset({"cap", "∩"})
+set_operator_names: Final = union_operator_aliases | intersection_operator_aliases
+union_operators: Final = union_operator_aliases | frozenset({"|"})
+intersection_operators: Final = intersection_operator_aliases | frozenset({"&"})
 
 # Unicode operators that the formula editor or common pastes produce. They must
 # be mapped before unidecode, which would otherwise turn them into "[?]"
@@ -165,20 +153,9 @@ legacy_global_variables: Final[FrozenDict[str, sympy.Basic | complex]] = FrozenD
     "true": sympy.true,
     "zoo": sympy.zoo,
 })
-
-
-def _load_sympy_globals() -> FrozenDict[str, Any]:
-    # Based on code here:
-    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
-    sympy_globals: DICT = {}
-    exec("from sympy import *", sympy_globals)
-    return FrozenDict(sympy_globals)
-
-
-sympy_globals: Final = _load_sympy_globals()
-sympy_global_names: Final = frozenset(sympy_globals)
+sympy_global_names: Final = frozenset(sympy.__all__)
 sympy_global_functions: Final = frozenset(
-    name for name, value in sympy_globals.items() if callable(value)
+    name for name in sympy.__all__ if callable(getattr(sympy, name))
 )
 
 # `sqrt` is a plain function whose second parameter is `evaluate`, so it has no

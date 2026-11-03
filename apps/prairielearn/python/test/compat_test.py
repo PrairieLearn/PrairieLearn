@@ -72,9 +72,7 @@ def test_external_exports():
         from python_helper_sympy import (
             STANDARD_OPERATORS,
             AssumptionsDictT,
-            ASTWhiteListT,
             BaseSympyError,
-            CheckAST,
             FunctionNameWithoutArgumentsError,
             HasCommentError,
             HasComplexError,
@@ -95,7 +93,6 @@ def test_external_exports():
             SympyParseResult,
             SympyParseSuccess,
             _Constants,
-            ast_check_str,
             convert_string_to_sympy,
             convert_string_to_sympy_with_source,
             evaluate,
