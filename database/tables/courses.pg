@@ -13,6 +13,7 @@ columns
     id: bigint not null default nextval('courses_id_seq'::regclass)
     institution_id: bigint not null default 1
     json_comment: jsonb
+    last_successful_sync: jsonb
     options: jsonb not null default '{}'::jsonb
     path: text not null
     questions_receive_user_data: boolean not null default false

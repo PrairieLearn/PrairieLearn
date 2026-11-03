@@ -200,6 +200,20 @@ export async function updateCourseCommitHash(course: {
   return hash;
 }
 
+export async function invalidateCourseSync(course_id: string) {
+  await execute(sql.invalidate_course_sync, { course_id });
+}
+
+export async function recordSuccessfulCourseSync(
+  course_id: string,
+  state: NonNullable<Course['last_successful_sync']>,
+) {
+  await execute(sql.record_successful_course_sync, {
+    course_id,
+    state: JSON.stringify(state),
+  });
+}
+
 /**
  * If the provided course object contains a commit hash, that will be used;
  * otherwise, the commit hash will be loaded from disk and stored in the

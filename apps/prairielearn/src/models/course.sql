@@ -87,6 +87,20 @@ SET
 WHERE
   id = $course_id;
 
+-- BLOCK invalidate_course_sync
+UPDATE courses
+SET
+  last_successful_sync = NULL
+WHERE
+  id = $course_id;
+
+-- BLOCK record_successful_course_sync
+UPDATE courses
+SET
+  last_successful_sync = $state::jsonb
+WHERE
+  id = $course_id;
+
 -- BLOCK select_all_courses
 SELECT
   c.*
