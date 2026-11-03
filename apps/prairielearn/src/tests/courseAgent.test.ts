@@ -1,7 +1,11 @@
 import { once } from 'node:events';
-import { createServer } from 'node:http';
+import { type IncomingMessage, createServer, request } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { setTimeout as sleep } from 'node:timers/promises';
+
 import * as path from 'node:path';
 
+import { io } from 'socket.io-client';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tar from 'tar';
@@ -9,6 +13,7 @@ import { dir as temporaryDirectory } from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { withResolvers } from '@prairielearn/utils';
 
 import {
   insertCourseAgentConversation,
@@ -287,6 +292,83 @@ describe('Course agent access and conversation privacy', () => {
     } finally {
       await fs.remove(fixture);
       await output.cleanup();
+    }
+  });
+
+  // startServer() closes unknown upgrade paths; its Socket.IO exemption must stay intact.
+  // Force WebSocket: polling fallback could hide an accidentally rejected upgrade.
+  test('allows Socket.IO WebSocket upgrades alongside chat', async () => {
+    const socket = io(siteUrl, {
+      transports: ['websocket'],
+      reconnection: false,
+      autoConnect: false,
+    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        socket.once('connect', () => resolve());
+        socket.once('connect_error', reject);
+        socket.connect();
+      });
+    } finally {
+      socket.disconnect();
+    }
+  });
+
+  test('proxies a slow WebSocket handshake with non-ASCII course context', async () => {
+    const title = 'Mécanique — 日本語 📚';
+    await updateCourseColumn({
+      courseId: '1',
+      columnName: 'title',
+      value: title,
+      authnUserId: owner.id,
+    });
+    const conversation = await createConversation(owner);
+    const upstream = withResolvers<IncomingMessage>();
+    const service = createServer(async (req, res) => {
+      upstream.resolve(req);
+      // Engine.IO used to close other protocols' unanswered upgrades after one second.
+      await sleep(1250);
+      res.writeHead(101, { Upgrade: 'websocket', Connection: 'Upgrade' });
+      res.end();
+    });
+    service.listen(0, '127.0.0.1');
+    await once(service, 'listening');
+    const { port } = service.address() as AddressInfo;
+    try {
+      await withUser(owner, () =>
+        withConfig({ courseAgentServiceUrl: `http://127.0.0.1:${port}` }, async () => {
+          const path = `/pl/course/1/course_agent/conversations/${conversation.id}`;
+          const csrfToken = generatePrefixCsrfToken(
+            { url: path, authn_user_id: owner.id },
+            config.secretKey,
+          );
+          const handshake = request(`${siteUrl}${path}?csrfToken=${csrfToken}`, {
+            headers: { Connection: 'Upgrade', Upgrade: 'websocket', Cookie: 'browser=secret' },
+          });
+          const upgraded = withResolvers<number | undefined>();
+          handshake.once('error', upgraded.reject);
+          handshake.once('response', (response) => {
+            response.resume();
+            upgraded.resolve(response.statusCode);
+          });
+          handshake.once('upgrade', (response, socket) => {
+            socket.destroy();
+            upgraded.resolve(response.statusCode);
+          });
+          handshake.end();
+          expect(await upgraded.promise).toBe(101);
+          const forwarded = await upstream.promise;
+          expect(forwarded.url).toBe(`/conversations/${conversation.agent_conversation_id}`);
+          expect(forwarded.headers.authorization).toBe('Bearer test-token');
+          expect(forwarded.headers.cookie).toBeUndefined();
+          expect(
+            JSON.parse(decodeURIComponent(forwarded.headers['x-pl-course-context'] as string)),
+          ).toMatchObject({ courseTitle: title });
+        }),
+      );
+    } finally {
+      service.close();
+      await once(service, 'close');
     }
   });
 });

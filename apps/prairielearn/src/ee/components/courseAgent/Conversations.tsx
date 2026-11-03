@@ -244,14 +244,18 @@ function Chat({
   const trpc = useTRPC();
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
+  const [connectionFailed, setConnectionFailed] = useState(false);
   const agent = useAgent<ConversationState>({
     agent: 'Conversation',
     basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
     query: { csrfToken: chatCsrfToken },
     onStateUpdate: setLifecycle,
+    onOpen: () => setConnectionFailed(false),
+    onError: () => setConnectionFailed(true),
     onClose: () => {
       setHistoryReady(false);
       setLifecycle(null);
+      setConnectionFailed(true);
     },
     onMessage: (event) => {
       const message = JSON.parse(event.data) as OutgoingMessage;
@@ -291,7 +295,7 @@ function Chat({
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive) {
+    if (!responseActive || connectionFailed || connectionError) {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -319,7 +323,7 @@ function Chat({
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
-          {!historyReady && !connectionError && <Loading />}
+          {!historyReady && !connectionError && !connectionFailed && <Loading />}
           {historyReady && messages.length === 0 && (
             <p className="text-muted text-center my-4">
               Ask the course agent about your course or about PrairieLearn.
@@ -357,8 +361,10 @@ function Chat({
           {resume.isError && (
             <AppErrorAlert error={resumeError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
-          {connectionError && (
-            <Alert variant="danger">Could not connect to the course agent.</Alert>
+          {(connectionError || connectionFailed) && (
+            <Alert variant="danger">
+              Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
+            </Alert>
           )}
           {error && (
             <Alert variant="danger" className="mb-0">
