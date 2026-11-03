@@ -34,6 +34,7 @@ const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
 });
+
 /**
  * A saved expiry for a turn or idle workspace. The sandbox ID prevents stale alarms
  * from shutting down a replacement workspace. Turn expiry includes startup time.
@@ -213,7 +214,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    */
   override async onConnect(connection: Connection, context: ConnectionContext) {
     const courseContext = CourseContextSchema.parse(
-      JSON.parse(context.request.headers.get('X-PL-Course-Context') ?? 'null'),
+      JSON.parse(decodeURIComponent(context.request.headers.get('X-PL-Course-Context') ?? 'null')),
     );
     this.setRecord({ ...this.record, courseContext });
     connection.send(
