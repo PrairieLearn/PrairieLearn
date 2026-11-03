@@ -19,7 +19,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
-import { ReviewCard } from './ReviewCard.js';
+import { RequestChangesCard } from './RequestChangesCard.js';
 
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
@@ -371,7 +371,7 @@ function Message({
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
         if (isToolUIPart(part) && part.type === 'tool-request_changes') {
           return (
-            <ReviewCard
+            <RequestChangesCard
               key={key}
               conversationId={conversationId}
               messageId={message.id}

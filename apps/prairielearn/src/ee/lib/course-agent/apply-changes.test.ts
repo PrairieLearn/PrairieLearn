@@ -71,7 +71,7 @@ beforeEach(() => {
   } as JobSequenceWithTokens;
   review = {
     callId: 'review-1',
-    card: { messageId: 'assistant-1', partId: 'review-1' },
+    request_changes_tool_part: { messageId: 'assistant-1', partId: 'review-1' },
     status: 'pending',
     jobSequenceId: null,
     error: null,
@@ -166,7 +166,12 @@ it.each(modes)(
         publication,
         sync: { status: 'succeeded' },
       };
-      expect(getReviewJobOutcome(sequence).result).toEqual(result);
+      expect(getReviewJobOutcome(sequence)).toEqual({
+        jobSequenceId: sequence.id,
+        status: 'completed',
+        result,
+        error: null,
+      });
       expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
         callId: review.callId,
         result,

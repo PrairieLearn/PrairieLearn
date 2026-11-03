@@ -69,7 +69,7 @@ A Worker/DO restart loses the native connection. SDK-recorded output remains rea
 
 The DO stores file contents in separate durable entries and keeps paths and the base commit in its private review record. The snapshot survives container destruction and cannot be replaced for the same native call ID. See [Reviewing course edits](README.md#reviewing-course-edits) for supported file types and size limits.
 
-The SDK represents the review as a `request_changes` tool part in an assistant message. This is the review “card” shown in chat; its `messageId` and `partId` identify where to display the decision and result. The DO persists the snapshot before emitting this part and waits for chat persistence before accepting a decision. The native tool request stays open while the SDK response finishes. After a restart, the DO locates the tool part using the saved IDs.
+The SDK represents the review as a `request_changes` tool part in an assistant message. Its `messageId` and `partId` identify where to display the decision and result. The DO persists the snapshot before emitting this part and waits for chat persistence before accepting a decision. The native tool request stays open while the SDK response finishes. After a restart, the DO locates the tool part using the saved IDs.
 
 Chat history can be submitted by the browser. PrairieLearn authorizes saves using the DO’s private review record, rather than trusting that history. A pending review blocks new messages, including when its sandbox is offline.
 
@@ -85,7 +85,7 @@ Approved files are passed to `MultiEditor`, which combines the upload and delete
 
 The editor job records whether saving and syncing succeeded, along with its logs. Its description identifies whether it used local or Git editing, allowing recovery even if configuration has changed. Ordinary editor jobs do not record a commit SHA, so that field is optional in the result.
 
-After the job finishes, PrairieLearn sends its outcome to the DO. If this callback is missed, Resume calls the service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. It returns `{ callId, jobSequenceId, status, result, error }`, with status `running`, `completed`, or `blocked`. Both paths build the result from the same job data. The job does not store the native call ID: the DO matches the returned job sequence ID to its pending review. A running job stays pending. An interrupted job stays blocked for inspection; Resume does not start another save. A saved denial can also be delivered through Resume.
+After the job finishes, PrairieLearn sends its outcome to the DO. If this callback is missed, Resume calls the service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. It returns `{ jobSequenceId, status, result, error }`, with status `running`, `completed`, or `blocked`. Both paths build the result from the same job data. The job does not store the native call ID: the DO matches the returned job sequence ID to its pending review. A running job stays pending. An interrupted job stays blocked for inspection; Resume does not start another save. A saved denial can also be delivered through Resume.
 
 The DO saves and broadcasts the result in the chat tool part before continuing the agent. Duplicate callbacks share one in-flight delivery promise. Continuation depends on whether the native call is still live:
 

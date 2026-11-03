@@ -72,7 +72,7 @@ export async function getPendingReview(
   const patch = await createReviewDiff(course, review.snapshot);
   return {
     callId: review.callId,
-    card: review.card,
+    request_changes_tool_part: review.request_changes_tool_part,
     status: review.status,
     jobSequenceId: review.jobSequenceId,
     error: review.error,
@@ -240,7 +240,6 @@ export function getReviewJobOutcome(sequence: JobSequenceWithTokens) {
     error = diagnostics || 'Saving was interrupted. Inspect the job before retrying.';
   }
   return SavedJobOutcomeSchema.parse({
-    callId: null,
     jobSequenceId: sequence.id,
     status,
     result,

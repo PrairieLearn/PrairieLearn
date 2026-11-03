@@ -153,7 +153,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // creates the record; this hook does not provision a sandbox.
     if (!this._record) return;
     if (this.record.review) {
-      await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
+      await this.schedule(1, 'recoverRequestChangesToolPart', undefined, { idempotent: true });
     }
     this.setState(this.publicState);
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
@@ -230,15 +230,17 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** SDK restart recovery preserves buffered output but must never repeat file edits. */
   protected override async onChatRecovery() {
-    if (this._record) await this.schedule(1, 'recoverReviewCard', undefined, { idempotent: true });
+    if (this._record) {
+      await this.schedule(1, 'recoverRequestChangesToolPart', undefined, { idempotent: true });
+    }
     if (this._record && !this.record.review && this.record.lifecycle.status !== 'blocked') {
       this.block('runtime_failed');
     }
     return { continue: false };
   }
 
-  /** Restore a card that SDK restart recovery persisted after the wake hook. */
-  async recoverReviewCard() {
+  /** Restore a request_changes tool part that SDK restart recovery persisted after the wake hook. */
+  async recoverRequestChangesToolPart() {
     if (!this.record.review || this.active || this.workspaceShutdown) return;
     if (
       this.record.lifecycle.status === 'blocked' &&
@@ -431,7 +433,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             ...this.record,
             review: {
               callId,
-              card: { messageId: this.active!.execution.messageId, partId: callId },
+              request_changes_tool_part: {
+                messageId: this.active!.execution.messageId,
+                partId: callId,
+              },
               snapshot: {
                 ...snapshot,
                 ...(snapshot.type === 'local'
@@ -608,10 +613,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           throw new Error('Could not retrieve the save outcome.');
         }
         const saved = SavedJobOutcomeSchema.parse(await response.json());
-        if (
-          (saved.callId !== null && saved.callId !== review.callId) ||
-          saved.jobSequenceId !== review.jobSequenceId
-        ) {
+        if (saved.jobSequenceId !== review.jobSequenceId) {
           throw new Error('Save job does not match the pending review.');
         }
         if (saved.status === 'running') return false;
@@ -710,7 +712,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     return {
       callId: review.callId,
-      card: review.card,
+      request_changes_tool_part: review.request_changes_tool_part,
       status: review.status,
       jobSequenceId: review.jobSequenceId,
       error: review.error,
@@ -743,7 +745,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (
       !this.messages.some(
         (message) =>
-          message.id === review.card.messageId &&
+          message.id === review.request_changes_tool_part.messageId &&
           message.parts.some(
             (part) =>
               isToolUIPart(part) &&
