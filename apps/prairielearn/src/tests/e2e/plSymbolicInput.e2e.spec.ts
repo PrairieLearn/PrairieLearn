@@ -119,6 +119,7 @@ test.describe('pl-symbolic-input formula editor', () => {
     await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(
       String.raw`3\left|\frac{y}{2}\right|`,
     );
+    await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('3|(y)/(2)|');
   });
 
   test('keeps preceding content outside square roots inserted from the context menu', async ({
@@ -153,6 +154,7 @@ test.describe('pl-symbolic-input formula editor', () => {
     await expect(page.locator('#symbolic-input-latex-x')).toHaveValue(
       String.raw`\left|\frac{y}{2}\right|`,
     );
+    await expect(page.locator('#symbolic-input-sub-x')).toHaveValue('|(y)/(2)|');
 
     await expectPrefixInsertion(page, formulaEditor, 'x', async () => {
       await page.getByLabel(/operatorname\{sin\}/).dispatchEvent('pointerdown', {
