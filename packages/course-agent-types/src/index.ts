@@ -1,29 +1,32 @@
 import { z } from 'zod';
 
-export const ConversationStateSchema = z.discriminatedUnion('status', [
-  // No live container. The next message clones the repository or restores the committed checkpoint.
-  z.object({ status: z.literal('offline') }),
+import { IdSchema } from '@prairielearn/zod';
+
+export type ConversationLifecycle =
+  // No live container. The next message initializes a workspace or restores the committed checkpoint.
+  | { status: 'offline' }
   // Creating or restoring the sandbox and configuring it before submitting the new input.
-  z.object({ status: z.literal('starting') }),
-  // Preparing or executing a turn; new input waits for native cleanup and SDK response completion.
-  z.object({ status: z.literal('waiting_for_agent') }),
+  | { status: 'starting' }
+  // Preparing or executing a turn; new input waits for this turn and SDK response completion.
+  | { status: 'waiting_for_agent' }
   // The live workspace is ready for input; idle expiry will checkpoint it and shut it down.
-  z.object({ status: z.literal('waiting_for_user') }),
+  | { status: 'waiting_for_user' }
   // Stop was requested; native execution and SDK response completion must settle before reuse.
-  z.object({ status: z.literal('stopping') }),
+  | { status: 'stopping' }
   // Creating a replacement checkpoint or destroying its container; new input is not admitted.
-  z.object({ status: z.literal('suspending') }),
+  | { status: 'suspending' }
   // An operation failed or was interrupted. Explicit Resume repairs the workspace without replaying input.
-  z.object({
-    status: z.literal('blocked'),
-    reason: z.enum(['startup_failed', 'runtime_failed', 'checkpoint_failed', 'cleanup_failed']),
-  }),
-]);
+  | {
+      status: 'blocked';
+      reason: 'startup_failed' | 'runtime_failed' | 'checkpoint_failed' | 'cleanup_failed';
+    };
+
 /**
  * Public workspace lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.
  * Other states represent in-flight operations and require recovery if their owning DO restarts.
  */
-export type ConversationState = z.infer<typeof ConversationStateSchema>;
+export type ConversationState = ConversationLifecycle & { deadlineAt: string | null };
+
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
 
 export const CreateConversationInput = z.strictObject({
@@ -31,6 +34,7 @@ export const CreateConversationInput = z.strictObject({
   branch: z.string().min(1).max(1024),
 });
 
+/** The save and sync outcomes are separate: files may be saved even if syncing fails. */
 export const RequestChangesResultSchema = z
   .strictObject({
     decision: z.enum(['approved', 'denied']),
@@ -63,9 +67,12 @@ export const RequestChangesResultSchema = z
     }
     return result.publication.status === 'failed' && result.sync.status === 'not_attempted';
   });
+
 export type RequestChangesResult = z.infer<typeof RequestChangesResultSchema>;
+
 export const MAX_REVIEW_FILE_BYTES = 64 * 1024;
 export const MAX_REVIEW_BYTES = 1024 * 1024;
+
 const ReviewPathSchema = z
   .string()
   .min(1)
@@ -81,18 +88,24 @@ const ReviewPathSchema = z
           (part) => part !== '' && part !== '.' && part !== '..' && part.toLowerCase() !== '.git',
         ),
   );
+
 const ReviewContentsSchema = z.base64().max(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3));
+
 const ReviewBaseFileSchema = z.strictObject({
   path: ReviewPathSchema,
   contents: ReviewContentsSchema.nullable(),
 });
+
 export type ReviewBaseFile = z.infer<typeof ReviewBaseFileSchema>;
+
 const ReviewFilesShape = {
   additions: z
     .array(z.strictObject({ path: ReviewPathSchema, contents: ReviewContentsSchema }))
     .max(100),
   deletions: z.array(z.strictObject({ path: ReviewPathSchema })).max(100),
 };
+
+/** Captured file contents for instructor review, independent of the live sandbox. */
 export const ReviewSnapshotSchema = z
   .discriminatedUnion('type', [
     z.strictObject({
@@ -124,33 +137,44 @@ export const ReviewSnapshotSchema = z
       ) <= MAX_REVIEW_BYTES
     );
   });
+
 export type ReviewSnapshot = z.infer<typeof ReviewSnapshotSchema>;
+
+/** Public review state returned to PrairieLearn for display and approval. */
 export const PendingReviewSchema = z.strictObject({
   callId: z.string(),
+  // Identifies the request_changes tool part in chat history so its result can be updated.
   card: z.strictObject({ messageId: z.string(), partId: z.string() }),
   snapshot: ReviewSnapshotSchema,
   status: z.enum(['pending', 'running', 'blocked']),
-  jobSequenceId: z.string().regex(/^\d+$/).nullable(),
+  jobSequenceId: IdSchema.nullable(),
   error: z.string().nullable(),
 });
+
 export type PendingReview = z.infer<typeof PendingReviewSchema>;
+
 export const ReviewDecisionSchema = z.discriminatedUnion('decision', [
   z.strictObject({
     callId: z.string(),
     decision: z.literal('approved'),
-    jobSequenceId: z.string().regex(/^\d+$/),
+    jobSequenceId: IdSchema,
   }),
   z.strictObject({ callId: z.string(), decision: z.literal('denied') }),
 ]);
+
 export type ReviewDecision = z.infer<typeof ReviewDecisionSchema>;
+
 export const ReviewOutcomeSchema = z.strictObject({
   callId: z.string(),
   result: RequestChangesResultSchema,
 });
+
 export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
+
 export const SavedJobOutcomeSchema = z.strictObject({
+  // Editor jobs do not store native call IDs; Resume matches the saved jobSequenceId instead.
   callId: z.string().nullable(),
-  jobSequenceId: z.string().regex(/^\d+$/),
+  jobSequenceId: IdSchema,
   status: z.enum(['running', 'completed', 'blocked']),
   result: RequestChangesResultSchema.nullable(),
   error: z.string().nullable(),

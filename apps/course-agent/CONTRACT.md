@@ -1,5 +1,7 @@
 # Conversation and sandbox contract
 
+This document describes implementation invariants for maintainers. For configuration, local development, review controls, and deployment checks, see [README.md](README.md).
+
 `Conversation` is the chat Durable Object, extending `AIChatAgent`. It decides when a user may send a message and when a workspace must stop, back up, or recover. The chat SDK owns message history, response persistence, and browser reconnect replay.
 
 `SandboxTurn` is an in-memory execution helper in the Conversation DO. It owns one turn's setup, cancellation, and output stream. The Conversation DO retains the Codex adapter across normal turns, so finishing a reply does not restart the native process. `CourseSandbox` is a separate DO that owns the container and private process channel. Keeping execution in one helper avoids making the conversation's lifecycle depend on individual native protocol commands.
@@ -61,23 +63,42 @@ A Worker/DO restart loses the native connection. SDK-recorded output remains rea
 
 ## Pending reviews and save outcomes
 
-`request_changes({})` is a native dynamic tool handled in the Conversation DO. `CourseSandbox.captureReview()` lists tracked changes against the remote base with Git and adds untracked paths separately. SDK file operations read metadata and bytes for those affected paths directly in TypeScript, including local commits and working-tree edits without changing staging. Capture does not pause agent tools: concurrent writes may produce a mixed snapshot, and the instructor reviews the exact saved contents that will be published. The DO stores file contents in separate durable entries (at most 64 KiB decoded per file, 100 changed files, and 1 MiB total base64 contents); its private review record contains their paths and the exact base commit. The snapshot survives container destruction and cannot be replaced for an existing call ID. There is no frozen patch file or DO-managed publication base.
+### Capture and chat history
 
-Persist the snapshot before emitting the SDK tool card. Finish the SDK response while keeping the native request waiting; admit a decision only after card persistence. A restart can recover the card against its saved review record. The SDK manages browser-submitted chat history; PL independently authorizes publication against the DO's saved review. Pending reviews block new input even while offline.
+`request_changes({})` is a native dynamic tool handled by the Conversation DO. `CourseSandbox.captureReview()` uses Git to find tracked changes against the base commit and untracked files. It then reads those files through the sandbox SDK. Agent tools are not paused during capture, so concurrent writes may produce a mixed snapshot. Approval saves the captured bytes, regardless of later sandbox edits.
 
-PL retrieves the snapshot without waking a sandbox, checks the course destination, and generates the review diff from immutable Git objects in its existing course checkout and saved contents, fetching missing objects without changing working files or staging. The authenticated, CSRF-protected review endpoint checks course permissions and conversation ownership, then compares the submitted native call ID with the current pending review. The pending UI is a compact warning row with View changes, Approve, and Deny; View changes opens the diff modal. Approval records its decision and ordinary PL job ID in the DO before publication, rejecting competing claims. Denial has no publication job.
+The DO stores file contents in separate durable entries and keeps paths and the base commit in its private review record. The snapshot survives container destruction and cannot be replaced for the same native call ID. See [Reviewing course edits](README.md#reviewing-course-edits) for supported file types and size limits.
 
-PL applies approved files through `MultiEditor`, combining the existing upload and delete editors, and calls the unchanged `Editor.executeWithServerJob()` workflow. The existing course-directory lock covers writing, optional commit/push, sharing validation, database sync, chunk updates, and course commit-hash updates. Git editing follows the ordinary file editor's retry behavior: a failed push fetches the remote branch and reapplies the edits before retrying. It uses the normal Git attribute/filter behavior and normal file-editor path validation. There is no additional stale-base, symlink, or staged-byte policy for agent reviews. Publication uses the existing checkout and normal Git credentials, without GitHub API requests.
+The SDK represents the review as a `request_changes` tool part in an assistant message. This is the review “card” shown in chat; its `messageId` and `partId` identify where to display the decision and result. The DO persists the snapshot before emitting this part and waits for chat persistence before accepting a decision. The native tool request stays open while the SDK response finishes. After a restart, the DO locates the tool part using the saved IDs.
 
-The editor's existing job API persists save/sync flags and logs before PL attempts one callback. The job description records whether the approved review used local or Git editing, so recovery does not depend on the current configuration. A published commit SHA is optional; ordinary editor jobs do not record it. Callback delivery and Resume reconstruct the same outcome from that completed job. The DO retains the native call and job association; the PL job does not store another copy of the review outcome. There is no delivery cron or shared server-jobs extension. Configure PL_SERVICE_URL so explicit Resume can retrieve a completed job outcome after a missed callback. A running job remains pending. An interrupted job remains blocked for inspection; Resume never starts another save. Denial delivery can also be recovered through Resume from the saved DO decision.
+Chat history can be submitted by the browser. PrairieLearn authorizes saves using the DO’s private review record, rather than trusting that history. A pending review blocks new messages, including when its sandbox is offline.
 
-Every callback saves and broadcasts the result in the SDK tool part before continuing. One in-memory review operation holds the native call's resolver and any in-flight outcome delivery; duplicate callbacks share that delivery promise. The SDK's continuation flag and saved tool history select the path: a live call opens another output stream and receives its result, while a cold call restores the native thread and starts a result-only continuation using empty user input and toolOutput tagged with the native call. Check persisted native history before incorporation; an identical result must not start another turn. Never replay the original prompt or answer a dead RPC ID. Keep the review until SDK persistence and native incorporation settle. Result delivery failures remain recoverable through explicit Resume.
+### Approval and saving
 
-Idle expiry uses the ordinary execution stop path before checkpoint/destruction. The pending review remains saved independently of the stopped execution. All shutdown callers share one backup-and-shutdown promise. Outcomes arriving during shutdown are persisted through the SDK before continuation waits for that promise. Ordinary process cleanup and SDK completion still gate new messages.
+PrairieLearn retrieves the snapshot without starting a sandbox. It checks the course source, repository, and branch and builds the diff from saved contents and immutable Git objects in the course checkout. Missing objects are fetched without changing working files or staging.
 
-For Git-backed courses, the agent receives the publication outcome and owns fetching/reconciling its checkout before further edits; a published SHA is optional. The host does not reset the sandbox; private edits are preserved on denial and publication failure. Settled cards retain outcomes and diagnostics without a historical diff viewer.
+The authenticated, CSRF-protected review endpoint checks course edit permission and conversation ownership. It also checks that the submitted native call ID matches the pending review. Before saving, PrairieLearn records the approval and job sequence ID in the DO. Competing decisions are rejected; denial creates no editor job.
 
-Focused normal-suite tests cover local baseline capture, native transport behavior, review approval/denial, save outcomes after sync failure, and reconstruction of saved job outcomes. The existing file-editor suite covers ordinary file operations and Git execution. Before enabling the pilot, validate real credentials, publication, sandbox checkpoint/result-only continuation, and reconnect/Resume through PL's proxy in the deployed environment.
+Approved files are passed to `MultiEditor`, which combines the upload and delete editors, then to `Editor.executeWithServerJob()`. This uses the file editor’s course-directory lock, path validation, Git attributes/filters, and sync behavior. With Git editing enabled, a failed push fetches the remote branch and reapplies edits before retrying. Commits and pushes use PrairieLearn’s checkout and Git credentials.
+
+### Saved outcomes and Resume
+
+The editor job records whether saving and syncing succeeded, along with its logs. Its description identifies whether it used local or Git editing, allowing recovery even if configuration has changed. Ordinary editor jobs do not record a commit SHA, so that field is optional in the result.
+
+After the job finishes, PrairieLearn sends its outcome to the DO. If this callback is missed, Resume calls the service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. It returns `{ callId, jobSequenceId, status, result, error }`, with status `running`, `completed`, or `blocked`. Both paths build the result from the same job data. The job does not store the native call ID: the DO matches the returned job sequence ID to its pending review. A running job stays pending. An interrupted job stays blocked for inspection; Resume does not start another save. A saved denial can also be delivered through Resume.
+
+The DO saves and broadcasts the result in the chat tool part before continuing the agent. Duplicate callbacks share one in-flight delivery promise. Continuation depends on whether the native call is still live:
+
+- For a live call, open another output stream and return the result to that call.
+- After a restart, restore the native thread and send empty user input plus `toolOutput` tagged with the saved call ID. Check native history first: if the result is already recorded, do not start another turn.
+
+Neither path repeats the original prompt. The review stays saved until both chat persistence and native result handling complete. Failed result delivery can be retried through Resume.
+
+### Shutdown and subsequent edits
+
+Idle expiry stops execution before backing up and destroying the sandbox. The pending review is stored separately and survives shutdown. All shutdown callers share one promise. If an outcome arrives during shutdown, it is saved to chat history first; continuation then waits for shutdown to finish.
+
+For Git-backed courses, the agent fetches and reconciles approved changes before further edits. PrairieLearn does not reset its sandbox checkout. Denial and failed saves preserve private sandbox edits. Completed review messages retain outcomes and diagnostics; their diffs are not available after the review is settled.
 
 ## Local course sources
 
@@ -89,10 +110,8 @@ The initial archive survives startup failures and retries. Execution unpacks it 
 
 Local conversations also expose `request_changes`. Capture compares against the initial uploaded Git commit plus confirmed saved-file overrides held by the Conversation DO. The initial commit hash is pinned before native execution; ordinary agent commits do not advance it. Original bytes and proposed bytes for affected files are persisted with the pending review, so review generation and approval do not need a live sandbox. Local reviews include the original bytes in the size budget.
 
-With `fileEditorUseGit` disabled in development, PL generates the diff from the captured originals and uses the existing local editor execution path. Approval follows ordinary upload/delete editor semantics: it does not compare host files against the conversation baseline before writing. Local courses remain Git checkouts; the editor reads and updates local commit hashes without committing, fetching, or pushing.
+With `fileEditorUseGit: false` in development, PrairieLearn builds the diff from captured originals and saves through the local upload/delete editor workflow. It does not compare current host files against the conversation baseline before writing. The course must remain a Git checkout: the editor reads and updates local commit hashes but does not commit, fetch, or push.
 
-Approved local changes are saved through PL's upload/delete editors with `fileEditorUseGit: false` and synced without commit, fetch, or push. The course is an existing Git checkout, and the normal editor retains its local Git hash reads and updates. The result uses `publication.status = saved_locally`, distinct from Git publication, with the sync outcome reported separately. Before continuing the agent, the DO advances its saved-file overrides to exactly the approved bytes, including when sync fails. Missed callbacks recover through the existing saved job result. Denial or failed saving leaves the baseline unchanged. The initial Git objects survive in sandbox checkpoints, so the source archive can still be removed after checkpointing.
+The result uses `publication.status = saved_locally` for a local save and `published` for a Git commit/push. Sync success or failure is reported separately. Before continuing the agent, the DO updates its local baseline overrides to the approved bytes, even if sync fails. Denial or failed saving preserves the previous baseline. The initial Git objects survive in checkpoints, so removing the source archive does not lose the baseline.
 
-Local save does not refresh unrelated course files in the sandbox. There is no pull/merge operation. To import newer local course files, start a new conversation; the old conversation retains its private edits. Resume restores the checkpoint, not a new copy of the local course.
-
-This pilot changes the native tool and SDK card name from `push_sync` to `request_changes`. Start new development conversations after updating; existing pending `push_sync` requests are not migrated.
+Resume restores the checkpoint. It does not import newer files from the local course.
