@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 
 import type { PendingReview } from '@prairielearn/course-agent-types';
+import { HttpStatusError } from '@prairielearn/error';
 
 import type { Course, CourseAgentConversation, User } from '../../../lib/db-types.js';
 import { FileDeleteEditor, FileUploadEditor, MultiEditor } from '../../../lib/editors.js';
@@ -9,12 +10,13 @@ import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
 import { selectCourseById } from '../../../models/course.js';
 import { withConfig } from '../../../tests/utils/config.js';
 
-import { getReviewJobOutcome, postReviewDecision } from './apply-changes.js';
+import { getPendingReview, getReviewJobOutcome, postReviewDecision } from './apply-changes.js';
 import {
   deliverCourseAgentReviewOutcome,
   getCourseAgentPendingReview,
   recordCourseAgentReviewDecision,
 } from './client.js';
+import { createReviewDiff } from './review-diff.js';
 
 // Other suites can load the real dependencies because Vitest disables module isolation.
 vi.hoisted(() => vi.resetModules());
@@ -180,7 +182,14 @@ it.each(modes)(
   },
 );
 
-it('denial delivers the decision without creating a publication job or syncing', async () => {
+it('allows denying an unreadable review without starting a save job', async () => {
+  vi.mocked(createReviewDiff).mockRejectedValue(new HttpStatusError(400, 'Missing review base'));
+  const pending = await getPendingReview(course, conversation, review.callId);
+  expect(pending).toMatchObject({
+    callId: review.callId,
+    status: 'pending',
+    diff: { patch: null, error: 'Missing review base' },
+  });
   await expect(decide('denied')).resolves.toEqual({ decision: 'denied', jobSequenceId: null });
   expect(recordCourseAgentReviewDecision).toHaveBeenCalledWith('agent-1', {
     callId: 'review-1',

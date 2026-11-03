@@ -75,7 +75,7 @@ Chat history can be submitted by the browser. PrairieLearn authorizes saves usin
 
 ### Approval and saving
 
-PrairieLearn retrieves the snapshot without starting a sandbox. It checks the course source, repository, and branch and builds the diff from saved contents and immutable Git objects in the course checkout. Missing objects are fetched without changing working files or staging.
+PrairieLearn retrieves the snapshot without starting a sandbox. It checks the course source, repository, and branch and builds the diff from saved contents and immutable Git objects in the course checkout. Missing objects are fetched without changing working files or staging. Diff failures preserve the review metadata and Deny action while disabling Approve.
 
 The authenticated, CSRF-protected review endpoint checks course edit permission and conversation ownership. It also checks that the submitted native call ID matches the pending review. Before saving, PrairieLearn records the approval and job sequence ID in the DO. Competing decisions are rejected; denial creates no editor job.
 
