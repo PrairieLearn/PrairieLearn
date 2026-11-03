@@ -16,7 +16,7 @@ interface CalculatorMathLiveInternals {
 }
 
 /**
- * Per-instance MathLive 0.110 guard; do not patch the global parser or other answer fields.
+ * Per-instance MathLive guard; do not patch the global parser or other answer fields.
  * Run assessmentTools.spec.ts when upgrading MathLive: rich paste relies on these private hooks.
  */
 export function guardCalculatorInput(

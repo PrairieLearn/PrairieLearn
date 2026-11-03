@@ -1,6 +1,7 @@
 import {
   CancellationError,
   ComputeEngine,
+  type DisplayDigits,
   type Expression,
   LatexSyntax,
   type MathJsonExpression,
@@ -343,7 +344,7 @@ export function initCalculator(
     input: string,
     angleMode: AngleMode = 'rad',
     displayMode: DisplayMode = 'numeric',
-    latexOptions: { notation: string; fractionalDigits?: number } = { notation: 'auto' },
+    latexOptions: { notation: string; digits?: DisplayDigits } = { notation: 'auto' },
   ) {
     if (!input || input.length === 0) return null;
 
@@ -387,7 +388,7 @@ export function initCalculator(
 
           const evaluated = parsed.evaluate();
           const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
-          let displayed = numericValue.toLatex(latexOptions);
+          let displayed = numericValue.toLatex({ ...latexOptions, repeatingDecimal: 'vinculum' });
           // Compute Engine guesses recurrence from digit patterns, even for finite
           // decimals. Keep an overbar only if it round-trips to the exact result;
           // isSame avoids the tolerance used by numeric equality checks.
@@ -423,7 +424,7 @@ export function initCalculator(
     // exact fractions and avoiding display-only number formatting.
     const options = {
       repeatingDecimal: 'none',
-      fractionalDigits: 'max',
+      digits: 'max',
       avoidExponentsInRange: [-Infinity, Infinity],
       digitGroupSeparator: '',
     } as const;
@@ -511,7 +512,7 @@ export function initCalculator(
     const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
     const result = evaluateExpression(input, angleMode, displayMode, {
       notation: 'adaptiveScientific',
-      fractionalDigits: ce.precision,
+      digits: 'auto',
     });
 
     if (!result) {
