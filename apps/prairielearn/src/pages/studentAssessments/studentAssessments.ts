@@ -11,6 +11,7 @@ import { formatLegacyAssessmentAccess } from '../../lib/assessment-access-contro
 import { SprocAuthzAssessmentSchema } from '../../lib/db-types.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
+import { selectGradingPendingAssessmentInstanceIds } from '../../models/assessment-instance.js';
 
 import {
   StudentAssessments,
@@ -21,9 +22,9 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
-const StudentAssessmentsQueryRowSchema = StudentAssessmentsRowBaseSchema.extend({
-  raw_authz_result: SprocAuthzAssessmentSchema,
-});
+const StudentAssessmentsQueryRowSchema = StudentAssessmentsRowBaseSchema.omit({
+  assessment_instance_grading_pending: true,
+}).extend({ raw_authz_result: SprocAuthzAssessmentSchema });
 
 router.get(
   '/',
@@ -78,13 +79,31 @@ router.get(
           );
         }
 
-        return { ...rowData, authz_result: authzResult };
+        return {
+          ...rowData,
+          authz_result: authzResult,
+          assessment_instance_grading_pending: false,
+        };
       })
       .filter((row): row is NonNullable<typeof row> => {
         if (row == null) return false;
         if (row.authz_result.show_before_release) return true;
         return row.authz_result.authorized;
       });
+
+    const pendingIds = new Set(
+      await selectGradingPendingAssessmentInstanceIds(
+        resolvedRows.flatMap((row) =>
+          row.assessment_instance_id != null && row.authz_result.show_closed_assessment_score
+            ? [row.assessment_instance_id]
+            : [],
+        ),
+      ),
+    );
+    for (const row of resolvedRows) {
+      row.assessment_instance_grading_pending =
+        row.assessment_instance_id != null && pendingIds.has(row.assessment_instance_id);
+    }
 
     res.send(StudentAssessments({ resLocals: res.locals, rows: resolvedRows }));
   }),
