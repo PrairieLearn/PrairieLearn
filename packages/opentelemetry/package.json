@@ -31,7 +31,7 @@
     "@opentelemetry/instrumentation-ioredis": "^0.70.0",
     "@opentelemetry/instrumentation-pg": "^0.74.0",
     "@opentelemetry/instrumentation-redis": "^0.70.0",
-    "@opentelemetry/resource-detector-aws": "^2.22.0",
+    "@opentelemetry/resource-detector-aws": "^3.0.0",
     "@opentelemetry/resources": "^2.11.0",
     "@opentelemetry/sdk-metrics": "^2.11.0",
     "@opentelemetry/sdk-node": "^0.222.0",
