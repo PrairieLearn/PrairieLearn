@@ -38,8 +38,12 @@ export const CreateConversationInput = z.strictObject({
   branch: z.string().min(1).max(1024),
 });
 
-export const MAX_REVIEW_FILE_BYTES = 64 * 1024;
-export const MAX_REVIEW_BYTES = 1024 * 1024;
+// Leave room for base64 encoding within the Durable Object's 2 MB storage-entry limit.
+// TODO: Store review contents in R2 and stream them to PL instead of buffering whole reviews.
+export const MAX_REVIEW_FILE_BYTES = 1024 * 1024;
+// Capture counts base64-encoded originals and proposed contents; leave room for metadata
+// under Cloudflare's 32 MiB serialized RPC limit.
+export const MAX_REVIEW_BYTES = 20 * 1024 * 1024;
 
 const ReviewPathSchema = z
   .string()

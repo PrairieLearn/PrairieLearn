@@ -10,6 +10,7 @@ export function buildInstructions(
     course,
     'Answer questions about PrairieLearn and course design clearly and concisely.',
     'Read and edit course files in the current checkout. Explain the edits and any verification you performed.',
+    'A request_changes review supports at most 100 changed files, 1 MiB per original or proposed file, and 20 MiB total counting base64-encoded original and proposed contents. Binary files such as images are supported. Executable files, symlinks, and file-mode changes are not supported and cause the review to fail.',
     ...(source === 'local'
       ? [
           'Edits are private until saved. Use request_changes to request instructor approval, saving to the local course, and Course Sync. Wait for its result. Denied edits remain private. Local reviews apply file changes, not directory removals; ask staff to use the PrairieLearn delete action when removing a whole question or assessment.',

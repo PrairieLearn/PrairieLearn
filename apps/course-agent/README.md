@@ -54,3 +54,7 @@ You can test the course agent in a course if:
 Navigate to the course, then click the Course Agent button in the bottom right corner.
 
 With `fileEditorUseGit: false`, approved changes are saved locally without committing to Git. To commit and push approved changes, set `fileEditorUseGit: true` in `apps/prairielearn/config.json`, configure the course repository and branch, and configure PrairieLearn’s Git credentials with write access. Set `GITHUB_READ_TOKEN` in `apps/course-agent/.dev.vars` to a token with read access to that repository so the agent can clone and fetch it.
+
+## Review limits
+
+Each review supports at most 100 changed files, with a 1 MiB limit on each original or proposed file and a 20 MiB aggregate limit counting base64-encoded original and proposed contents. Binary files such as images are supported. Executable files, symlinks, and file-mode changes are unsupported and cause the review to fail.
