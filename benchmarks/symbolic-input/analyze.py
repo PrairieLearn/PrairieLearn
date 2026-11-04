@@ -84,8 +84,12 @@ def load_round(path: Path) -> dict[str, Any]:
             measurement["payload_mode"],
             measurement["expected"],
         )
+        # Slices pool families and complexities so each input mode, payload,
+        # and expected outcome gets its own ratio.
+        slice_key = ("all", "all", *cell[2:])
         for key in (
             (*condition, *cell),
+            (*condition, *slice_key),
             (*condition, "all", "all", "all", "all", "all"),
         ):
             totals[key][0] += timing
@@ -176,7 +180,8 @@ def analyze_comparison(comparison_dir: Path) -> dict[str, Any]:
         }
         for key in keys
     ]
-    conditions = [r for r in rows if r["family"] == "all"]
+    conditions = [r for r in rows if r["family"] == "all" and r["input_mode"] == "all"]
+    slices = [r for r in rows if r["family"] == "all" and r["input_mode"] != "all"]
     cells = [r for r in rows if r["family"] != "all"]
 
     means = {
@@ -193,6 +198,7 @@ def analyze_comparison(comparison_dir: Path) -> dict[str, Any]:
         "suite": state["suite"],
         "complete_blocks": len(blocks),
         "conditions": conditions,
+        "slices": slices,
         "cells": cells,
         "rounds": rounds,
         "round_mean_cv": {

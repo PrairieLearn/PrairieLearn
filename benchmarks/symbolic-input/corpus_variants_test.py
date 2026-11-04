@@ -14,6 +14,7 @@ import pytest
 BENCHMARK_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BENCHMARK_DIR))
 
+import behavior  # ruff: ignore[module-import-not-at-top-of-file]
 import generate_ce_corpus  # ruff: ignore[module-import-not-at-top-of-file]
 import oracle  # ruff: ignore[module-import-not-at-top-of-file]
 import translate_corpus  # ruff: ignore[module-import-not-at-top-of-file]
@@ -140,3 +141,55 @@ def test_committed_ce_corpus_matches_manifest_and_pairs_every_case() -> None:
     assert all(
         ("mathjson" in row) == (row["payload_mode"] == "compute-engine") for row in rows
     )
+
+
+def test_compare_cases_classifies_outcomes_ignoring_name_order() -> None:
+    def stored(value: str, variables: list[str]) -> dict[str, object]:
+        return {
+            "_type": "sympy",
+            "_value": value,
+            "_variables": variables,
+            "_custom_functions": [],
+        }
+
+    def accepted(answer: dict[str, object]) -> dict[str, object]:
+        return {"status": "accepted", "stored": answer, "error": None}
+
+    def rejected(error: str) -> dict[str, object]:
+        return {"status": "rejected", "stored": None, "error": error}
+
+    cases = [
+        {"id": case_id, "input_mode": "plain", "payload_mode": "legacy"}
+        | {"intended_status": intended, "submission": case_id}
+        for case_id, intended in [
+            ("reordered", "accepted"),
+            ("equivalent", "accepted"),
+            ("message", "rejected"),
+            ("flipped", "rejected"),
+        ]
+    ]
+    baseline = {
+        "reordered": accepted(stored("x*z", ["z", "x"])),
+        "equivalent": accepted(stored("2*x", ["x"])),
+        "message": rejected("old"),
+        "flipped": rejected("old"),
+    }
+    candidate = {
+        "reordered": accepted(stored("x*z", ["x", "z"])),
+        "equivalent": accepted(stored("x + x", ["x"])),
+        "message": rejected("new"),
+        "flipped": accepted(stored("x", ["x"])),
+    }
+
+    result = behavior.compare_cases(cases, baseline, candidate)
+
+    assert result["outcome_detail"] == {
+        "plain|legacy|different-message": 1,
+        "plain|legacy|equivalent": 1,
+        "plain|legacy|identical": 1,
+    }
+    assert result["confusion"]["plain|legacy|rejected|accepted"] == 1
+    assert result["intended_rejected_accepted"] == {"candidate|legacy": 1}
+    assert result["message_changes"] == [
+        {"payload_mode": "legacy", "baseline": "old", "candidate": "new", "cases": 1}
+    ]
