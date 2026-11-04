@@ -191,6 +191,7 @@ export function CourseAgentPanel({
 
   const launcher = (
     <OverlayTrigger
+      trigger="hover"
       placement="bottom"
       tooltip={{
         body: open ? 'Close course agent' : 'Open course agent',
