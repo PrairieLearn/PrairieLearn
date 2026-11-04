@@ -1,7 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "prairielearn-course-agent",
-  "account_id": "354586f64c63c93d0361575f6dcf42c2",
   "main": "src/worker.ts",
   "compatibility_date": "2026-09-17",
   "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],
