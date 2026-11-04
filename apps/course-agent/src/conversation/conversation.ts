@@ -76,6 +76,8 @@ interface ActiveTurn {
   requestId: string;
   execution: SandboxTurn;
   sdkFinished: PromiseWithResolvers<undefined>;
+  /** Resolved when finishTurn releases execution ownership. */
+  released: PromiseWithResolvers<undefined>;
   stop: Promise<void> | null;
   shutdown: boolean;
 }
@@ -482,6 +484,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       requestId: options.requestId,
       execution,
       sdkFinished: Promise.withResolvers<undefined>(),
+      released: Promise.withResolvers<undefined>(),
       stop: null,
       shutdown: false,
     };
@@ -530,6 +533,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       await active.stop;
     } finally {
       this.active = null;
+      active.released.resolve(undefined);
       if (active.stop) this.native = null;
     }
     if (this.reviewOperation) {
@@ -923,7 +927,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         await active.sdkFinished.promise;
         await active.execution.finished;
         // finishTurn releases execution ownership before checkpointing can proceed.
-        while (this.active === active) await scheduler.wait(0);
+        if (this.active === active) await active.released.promise;
       }
       this.native?.close();
       this.native = null;
