@@ -212,7 +212,7 @@
   "../src/ee/components/courseAgent/CourseAgentChat.tsx": {
     "raw": 1725753,
     "gzip": 482445,
-    "brotli": 414553
+    "brotli": 414579
   },
   "../../../node_modules/.pnpm/@zip.js+zip.js@2.18.2/node_modules/@zip.js/zip.js/lib/core/zip-reader.js": {
     "raw": 64596,
@@ -412,7 +412,7 @@
   "scripts/esm-bundles/hydrated-components/CourseAgentPanel.ts": {
     "raw": 385525,
     "gzip": 126671,
-    "brotli": 110524
+    "brotli": 110521
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
     "raw": 1681877,
