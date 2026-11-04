@@ -470,6 +470,8 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   await Promise.all(extraReadinessPromises);
   await waitForExcalidrawCanvases(source);
   materializePrintableDetails(source);
+  // One animation frame may run before the app is painted, so wait for a second
+  // before copying styles from shadow roots.
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);
