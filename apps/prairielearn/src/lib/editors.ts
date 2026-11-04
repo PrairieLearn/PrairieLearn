@@ -25,10 +25,15 @@ import {
   selectCourseById,
   updateCourseCommitHash,
 } from '../models/course.js';
-import { selectQuestionsForCourseInstanceCopy, syncQuestionTitle } from '../models/question.js';
+import {
+  selectQuestionsForCourseInstanceCopy,
+  syncQuestionQid,
+  syncQuestionTitle,
+} from '../models/question.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
+import { getQuestionRenameScope } from '../sync/questionRenameSync.js';
 import {
   type QuestionSyncChange,
   type QuestionSyncScope,
@@ -404,7 +409,7 @@ export abstract class Editor {
               })
             : null;
           let possibleCourseData: courseDB.CourseData | undefined;
-          // Content and title-only edits preserve sharing declarations and question identity.
+          // Verified edits preserve sharing declarations and question identity.
           if (!questionChange) {
             possibleCourseData = await courseDB.loadFullCourse(this.course.id, this.course.path);
             const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
@@ -500,6 +505,14 @@ export abstract class Editor {
             if (questionChange.kind === 'title') {
               await syncQuestionTitle({
                 course_id: this.course.id,
+                qid: questionChange.qid,
+                title: questionChange.title,
+              });
+            }
+            if (questionChange.kind === 'rename') {
+              await syncQuestionQid({
+                course_id: this.course.id,
+                old_qid: questionChange.oldQid,
                 qid: questionChange.qid,
                 title: questionChange.title,
               });
@@ -1807,12 +1820,15 @@ export class QuestionRenameEditor extends Editor {
   }
 
   override async getQuestionSyncScope(course: Course) {
-    if (!this.title_new || this.qid_new !== this.question.qid) return null;
-    return await getQuestionSyncScope(
+    if (!this.question.qid) return null;
+    if (!this.title_new && this.qid_new === this.question.qid) return null;
+    const scope = await getQuestionSyncScope(
       course,
-      path.join(course.path, 'questions', this.qid_new, 'info.json'),
+      path.join(course.path, 'questions', this.question.qid, 'info.json'),
       await getCourseCommitHash(course.path),
     );
+    if (!scope || this.qid_new === this.question.qid) return scope;
+    return await getQuestionRenameScope(course, this.question.qid, this.qid_new);
   }
 
   private async moveQuestion({
@@ -2795,6 +2811,14 @@ export class MultiEditor extends Editor {
     const scopes = (
       await Promise.all(this.editors.map((editor) => editor.getQuestionSyncScope(course)))
     ).filter((scope) => scope !== null);
+    const rename = scopes.find((scope) => scope.kind === 'rename');
+    if (
+      scopes.length === 2 &&
+      rename &&
+      scopes.some((scope) => scope.kind === 'metadata' && scope.qid === rename.qid)
+    ) {
+      return rename;
+    }
     // Actual Git changes are checked after all child editors have written their files.
     return scopes.length === 1 ? scopes[0] : null;
   }
