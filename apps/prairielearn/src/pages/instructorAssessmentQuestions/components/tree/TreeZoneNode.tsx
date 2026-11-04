@@ -23,6 +23,9 @@ import { TreeQuestionBlockNode } from './TreeQuestionBlockNode.js';
 import { WarningIndicator } from './WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
+const LOCKPOINT_GUIDANCE =
+  'Students must cross this lockpoint before entering this zone. Crossing it makes earlier zones read-only.';
+
 /**
  * Renders a zone node in the assessment tree — a sticky header with zone
  * metadata badges (question count, points, lockpoint, etc.) followed by the
@@ -69,7 +72,7 @@ export function TreeZoneNode({
     );
   }
   if (zone.lockpoint) {
-    zoneGuidance.push('Students must complete this zone before proceeding to the next.');
+    zoneGuidance.push(LOCKPOINT_GUIDANCE);
   }
   const isSelected =
     selectedItem?.type === 'zone' && selectedItem.zoneTrackingId === zone.trackingId;
@@ -245,7 +248,7 @@ export function TreeZoneNode({
                 placement="top"
                 tooltip={{
                   props: { id: `${badgeTooltipId}-lock` },
-                  body: 'Students must complete this zone before proceeding to the next',
+                  body: LOCKPOINT_GUIDANCE,
                 }}
               >
                 <button type="button" className="btn btn-badge color-blue3">
