@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { UserSchema } from '../lib/db-types.js';
+import { UserSchema, WorkspaceSchema } from '../lib/db-types.js';
 import { getModeForRequest } from '../lib/exam-mode.js';
 import { features } from '../lib/features/index.js';
 import { isEnterprise } from '../lib/license.js';
@@ -22,6 +22,7 @@ import { checkStudentAssessmentAccess } from './studentAssessmentAccess.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SelectAuthDataFromWorkspaceSchema = z.object({
+  workspace_state: WorkspaceSchema.shape.state,
   variant_id: IdSchema,
   question_id: IdSchema,
   instance_question_id: IdSchema.nullable(),
@@ -134,6 +135,7 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       publicQuestionPreview: publicQuestionEndpoint,
     });
 
+    res.locals.workspace_access_authorized = true;
     next();
   });
 }

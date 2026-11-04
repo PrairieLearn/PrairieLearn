@@ -1,5 +1,5 @@
-import type http from 'http';
-import type { Socket } from 'net';
+import type http from 'node:http';
+import type { Socket } from 'node:net';
 
 import { type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -13,8 +13,14 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../lib/config.js';
 import { WorkspaceSchema } from '../lib/db-types.js';
 import { LocalCache } from '../lib/local-cache.js';
+import {
+  WORKSPACE_SANDBOX_COOKIE_NAME,
+  WORKSPACE_SANDBOX_SESSION_COOKIE_NAME,
+} from '../lib/workspace-sandbox.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+class WorkspaceWebSocketAuthorizationError extends Error {}
 
 /**
  * Removes "sensitive" cookies from the request to avoid exposing them to
@@ -35,6 +41,8 @@ function stripSensitiveCookies(proxyReq: http.ClientRequest) {
       name !== 'connect.sid' &&
       name !== 'prairielearn_session' &&
       name !== 'pl2_session' &&
+      name !== WORKSPACE_SANDBOX_COOKIE_NAME &&
+      name !== WORKSPACE_SANDBOX_SESSION_COOKIE_NAME &&
       // The workspace authz cookies use a prefix plus the workspace ID, so
       // we need to check for that prefix instead of an exact name match.
       !name.startsWith('pl_authz_workspace_') &&
@@ -43,6 +51,40 @@ function stripSensitiveCookies(proxyReq: http.ClientRequest) {
   });
 
   proxyReq.setHeader('cookie', filteredItems.join(';'));
+}
+
+const RESERVED_WORKSPACE_COOKIE_NAMES = new Set([
+  WORKSPACE_SANDBOX_COOKIE_NAME,
+  WORKSPACE_SANDBOX_SESSION_COOKIE_NAME,
+]);
+
+export function rewriteWorkspaceContainerCookie(setCookieHeader: string): string | null {
+  const [nameValue, ...attributes] = setCookieHeader.split(';');
+  const separatorIndex = nameValue.indexOf('=');
+  if (separatorIndex === -1) return null;
+
+  const name = nameValue.slice(0, separatorIndex).trim();
+  if (RESERVED_WORKSPACE_COOKIE_NAMES.has(name)) return null;
+
+  const preservedAttributes = attributes.filter((attribute) => {
+    const attributeName = attribute.trim().split('=', 1)[0].toLowerCase();
+    return !['domain', 'partitioned', 'samesite', 'secure'].includes(attributeName);
+  });
+
+  return [
+    nameValue.trim(),
+    ...preservedAttributes.map((attribute) => attribute.trim()),
+    'Secure',
+    'SameSite=None',
+    'Partitioned',
+  ]
+    .filter(Boolean)
+    .join('; ');
+}
+
+function normalizeSetCookieHeader(header: number | string | string[] | undefined): string[] {
+  if (header == null || typeof header === 'number') return [];
+  return Array.isArray(header) ? header : [header];
 }
 
 function isResponseLike(obj: any): obj is http.ServerResponse {
@@ -83,17 +125,46 @@ function getRequestPath(req: Request): string {
   return req.originalUrl ?? req.url;
 }
 
-export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
+export function makeWorkspaceProxyMiddleware(
+  containerPathRegex: RegExp,
+  options: {
+    matchesRequestHost: (
+      req: Pick<http.IncomingMessage, 'headers'>,
+      workspaceId: string,
+    ) => boolean;
+    authorizeWebSocketRequest?: (
+      req: http.IncomingMessage,
+      workspaceId: string,
+    ) => boolean | Promise<boolean>;
+    responseHeaders?: Record<string, string>;
+    removeResponseHeaders?: string[];
+    cookieDomainRewrite?: string;
+    rewriteContainerCookiesForCrossOrigin?: boolean;
+  },
+) {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   return createProxyMiddleware<Request, Response>({
     target: 'invalid',
     ws: true,
+    ...(options.cookieDomainRewrite == null
+      ? {}
+      : { cookieDomainRewrite: options.cookieDomainRewrite }),
     pathFilter: (_path, req) => {
       // The path provided to this function doesn't include the full path with
       // the `/pl/workspace/<workspace_id>/container/` prefix, so we need to
       // reconstruct it from the request.
       const path = getRequestPath(req);
-      return containerPathRegex.test(path);
+      const match = path.match(containerPathRegex);
+      if (!match) return false;
+
+      const workspaceId = IdSchema.safeParse(match[1]);
+      if (!workspaceId.success) return false;
+
+      // Each proxy installs a server-level WebSocket upgrade listener, so the
+      // host must be checked before one proxy can reject another proxy's request.
+      if (!options.matchesRequestHost(req, workspaceId.data)) return false;
+
+      return true;
     },
     pathRewrite: async (_path, req) => {
       // The path provided to this function doesn't include the full path with
@@ -131,6 +202,15 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       if (!match) throw new Error(`Could not match path: ${path}`);
 
       const workspace_id = IdSchema.parse(match[1]);
+      if (
+        req.headers.upgrade?.toLowerCase() === 'websocket' &&
+        options.authorizeWebSocketRequest != null
+      ) {
+        if (!(await options.authorizeWebSocketRequest(req, workspace_id))) {
+          throw new WorkspaceWebSocketAuthorizationError();
+        }
+      }
+
       const hostname = await queryOptionalScalar(
         sql.select_hostname_from_workspace_id,
         { workspace_id },
@@ -150,12 +230,36 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       proxyReqWs: (proxyReq) => {
         stripSensitiveCookies(proxyReq);
       },
+      proxyRes: (proxyRes, _req, res) => {
+        for (const header of options.removeResponseHeaders ?? []) {
+          delete proxyRes.headers[header.toLowerCase()];
+        }
+        for (const [header, value] of Object.entries(options.responseHeaders ?? {})) {
+          proxyRes.headers[header.toLowerCase()] = value;
+        }
+
+        const existingCookies = normalizeSetCookieHeader(res.getHeader('set-cookie'));
+        const containerCookies = normalizeSetCookieHeader(proxyRes.headers['set-cookie']);
+        const rewrittenContainerCookies = options.rewriteContainerCookiesForCrossOrigin
+          ? containerCookies.flatMap((containerCookie) => {
+              const rewrittenCookie = rewriteWorkspaceContainerCookie(containerCookie);
+              return rewrittenCookie == null ? [] : [rewrittenCookie];
+            })
+          : containerCookies;
+        if (existingCookies.length > 0 || rewrittenContainerCookies.length > 0) {
+          proxyRes.headers['set-cookie'] = [...existingCookies, ...rewrittenContainerCookies];
+        } else if (options.rewriteContainerCookiesForCrossOrigin && containerCookies.length > 0) {
+          delete proxyRes.headers['set-cookie'];
+        }
+      },
       error: (err, req, res) => {
-        logger.error('Error proxying workspace request', {
-          err,
-          url: req.url,
-          originalUrl: req.originalUrl,
-        });
+        if (!(err instanceof WorkspaceWebSocketAuthorizationError)) {
+          logger.error('Error proxying workspace request', {
+            err,
+            url: req.url,
+            originalUrl: req.originalUrl,
+          });
+        }
 
         if (isResponseLike(res)) {
           // Check to make sure we weren't already in the middle of sending a
