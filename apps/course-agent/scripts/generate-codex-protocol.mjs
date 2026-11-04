@@ -1,11 +1,10 @@
 // Codex ships its protocol generator in the native executable rather than a
 // TypeScript library. Keep only types imported by the app and their dependencies.
 // CI checks that regeneration agrees with the pinned runtime.
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import { execa } from 'execa';
-import { format, resolveConfig } from 'prettier';
 import { Project } from 'ts-morph';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -54,9 +53,5 @@ while (pending.length > 0) {
 for (const source of types) {
   if (!reachable.has(source)) await rm(source.getFilePath());
 }
-const options = await resolveConfig(root);
-for (const entry of await readdir(output, { recursive: true, withFileTypes: true })) {
-  if (!entry.isFile()) continue;
-  const file = path.join(entry.parentPath, entry.name);
-  await writeFile(file, await format(await readFile(file, 'utf8'), { ...options, filepath: file }));
-}
+// Run from the repository root so oxfmt uses the repository's `.oxfmtrc.json`.
+await execa('oxfmt', [output], { cwd: path.resolve(root, '../..'), preferLocal: true });

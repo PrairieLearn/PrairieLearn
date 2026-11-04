@@ -1,15 +1,12 @@
 {
   "name": "@prairielearn/ui",
-  "version": "4.3.0",
-  "type": "module",
+  "version": "4.4.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/ui"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "exports": {
     ".": "./dist/index.js",
     "./*.css": "./dist/*.css"
@@ -42,5 +39,8 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript-cp": "^0.1.11",
     "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

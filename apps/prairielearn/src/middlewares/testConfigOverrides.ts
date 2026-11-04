@@ -16,4 +16,4 @@ export default (function testConfigOverrides(req, res) {
   originalConfig ??= structuredClone(config);
   Object.assign(config, structuredClone(originalConfig), overrides);
   res.sendStatus(204);
-} satisfies RequestHandler);
+}) satisfies RequestHandler;

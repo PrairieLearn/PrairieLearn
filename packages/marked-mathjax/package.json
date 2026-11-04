@@ -1,13 +1,13 @@
 {
   "name": "@prairielearn/marked-mathjax",
   "version": "1.0.0",
-  "type": "module",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/marked-mathjax"
   },
-  "private": true,
+  "type": "module",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",

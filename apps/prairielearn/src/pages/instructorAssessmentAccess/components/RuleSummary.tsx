@@ -901,7 +901,7 @@ export function DateTableView({
           </div>
         </div>
         {rows.map((row, index) => (
-          // eslint-disable-next-line @eslint-react/no-array-index-key
+          // oxlint-disable-next-line react/no-array-index-key
           <div key={index} className="access-summary-row" role="row">
             <div
               className={clsx(
@@ -936,7 +936,7 @@ export function DateTableView({
       {footerItems.length > 0 && (
         <div className="access-summary-card-footer">
           {footerItems.map((item, index) => (
-            // eslint-disable-next-line @eslint-react/no-array-index-key
+            // oxlint-disable-next-line react/no-array-index-key
             <Fragment key={index}>
               <span>{item}</span>
               {index < footerItems.length - 1 && <span className="mx-1">·</span>}
@@ -1212,7 +1212,7 @@ export function PrairieTestExamsTable({
 
           return (
             // We don't use UUID as they might be duplicated in the list.
-            // eslint-disable-next-line @eslint-react/no-array-index-key
+            // oxlint-disable-next-line react/no-array-index-key
             <div key={index} className="access-summary-row" role="row">
               <div className="access-summary-cell access-summary-cell--first" role="cell">
                 {uuidError ? (

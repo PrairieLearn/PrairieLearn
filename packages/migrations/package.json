@@ -1,15 +1,12 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "5.2.5",
-  "type": "module",
+  "version": "5.2.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/migrations"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc && tscp",
@@ -34,5 +31,8 @@
     "tmp-promise": "^3.0.3",
     "typescript-cp": "^0.1.11",
     "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
-// dependencies like `pg` and `express`.
+// dependencies like `pg` and `express`. The comment below keeps import sorting
+// (`partitionByComment` in `.oxfmtrc.json`) from moving these imports.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
-/* eslint-enable import-x/order */
+// End of instrumentation imports.
 
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -114,7 +114,7 @@ if ('h' in argv || 'help' in argv) {
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -892,6 +892,9 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
       res.locals.lti11_enabled = await features.enabledFromLocals('lti11', res.locals);
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -1322,9 +1325,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -2188,23 +2188,18 @@ export async function startServer(app: express.Express) {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
-  // https://github.com/oven-sh/bun/issues/4459
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (server.getConnections) {
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'http.connections.active',
-      {
-        valueType: opentelemetry.ValueType.INT,
-        interval: 1000,
-      },
-      // @ts-expect-error TODO: type correctly
-      () => {
-        return util.promisify(server!.getConnections.bind(server))();
-      },
-    );
-  }
+  opentelemetry.createObservableValueGauges(
+    meter,
+    'http.connections.active',
+    {
+      valueType: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    // @ts-expect-error TODO: type correctly
+    () => {
+      return util.promisify(server!.getConnections.bind(server))();
+    },
+  );
 
   const serverSocketActivity = new SocketActivityMetrics(meter, 'http');
   server.on('connection', (socket) => serverSocketActivity.addSocket(socket));
