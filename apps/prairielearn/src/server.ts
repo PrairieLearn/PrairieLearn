@@ -2,7 +2,7 @@
 
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`. The comment below keeps import sorting
-// (`partitionByComment` in `.oxfmtrc.json`) from moving these imports.
+// (`partitionByComment` in the oxfmt config) from moving these imports.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
 // End of instrumentation imports.

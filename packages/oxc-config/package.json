@@ -1,0 +1,43 @@
+{
+  "name": "@prairielearn/oxc-config",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/oxc-config"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "dependencies": {
+    "@html-eslint/eslint-plugin": "^0.66.1",
+    "@prairielearn/eslint-plugin": "workspace:^",
+    "@tanstack/eslint-plugin-query": "^5.104.0",
+    "eslint-plugin-no-floating-promise": "^2.0.0",
+    "eslint-plugin-perfectionist": "^5.12.1",
+    "eslint-plugin-react-you-might-not-need-an-effect": "^1.0.2",
+    "oxlint-plugin-eslint": "^1.90.0"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
+  },
+  "peerDependencies": {
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

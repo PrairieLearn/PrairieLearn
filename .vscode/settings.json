@@ -8,7 +8,7 @@
   // https://github.com/prettier/prettier-vscode/issues/3235
   "prettier.configPath": "./.prettierrc.json",
 
-  // Run oxlint's type-aware rules in the editor, matching `typeAware` in `.oxlintrc.json`.
+  // Run oxlint's type-aware rules in the editor, matching `typeAware` in the shared oxlint config.
   "oxc.typeAware": true,
 
   "[python]": {

@@ -1,5 +1,5 @@
 // Formats generated file contents exactly like `oxfmt` would format the file on disk.
-// oxfmt's `format()` API doesn't discover `.oxfmtrc.json` or apply its `overrides`, so
+// oxfmt's `format()` API doesn't discover `oxfmt.config.mts` or apply its `overrides`, so
 // this pipes the contents through the CLI instead.
 
 import { spawnSync } from 'node:child_process';

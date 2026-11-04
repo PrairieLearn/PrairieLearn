@@ -88,10 +88,6 @@ const CLI_ONLY_DEPS = [
   '@postgres-language-server/cli',
   '@typescript/native',
   '@prairielearn/pin-github-actions',
-  'oxfmt',
-  'oxlint',
-  // Loaded by oxlint at runtime for type-aware rules.
-  'oxlint-tsgolint',
 ];
 
 // Collect packages referenced by element / question `info.json` files.
@@ -218,6 +214,18 @@ const config: KnipConfig = {
       // Loaded dynamically by eslint-plugin-import-x via the
       // `'import-x/resolver': { typescript: true }` setting.
       ignoreDependencies: ['eslint-import-resolver-typescript'],
+    },
+    'packages/oxc-config': {
+      // JS plugins are resolved by specifier with `import.meta.resolve()` and loaded by oxlint.
+      ignoreDependencies: [
+        '@html-eslint/eslint-plugin',
+        '@prairielearn/eslint-plugin',
+        '@tanstack/eslint-plugin-query',
+        'eslint-plugin-no-floating-promise',
+        'eslint-plugin-perfectionist',
+        'eslint-plugin-react-you-might-not-need-an-effect',
+        'oxlint-plugin-eslint',
+      ],
     },
     'packages/tsconfig': {
       entry: [],

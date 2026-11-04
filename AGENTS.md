@@ -57,7 +57,7 @@ Typechecking:
 
 Linting:
 
-- Individual files: `pnpm oxlint --fix path/to/file.ts`. oxlint (configured in `.oxlintrc.json`) runs nearly all JS/TS rules. ESLint only runs `@prairielearn/safe-db-types` on `.tsx` files in `apps/prairielearn` and lints HTML/mustache files; for those, also run `pnpm eslint --fix path/to/file.tsx`.
+- Individual files: `pnpm oxlint --fix path/to/file.ts`. oxlint runs nearly all JS/TS rules; shared rules are in `packages/oxc-config` and PrairieLearn-specific overrides are in `oxlint.config.mts`. ESLint only runs `@prairielearn/safe-db-types` on `.tsx` files in `apps/prairielearn` and lints HTML/mustache files; for those, also run `pnpm eslint --fix path/to/file.tsx`.
 - All files: `make lint-js`
 - Suppress oxlint rules with `oxlint-disable` comments and ESLint rules with `eslint-disable` comments. Each tool ignores the other's directives, so use the prefix of the tool that reports the error.
 - Check for dead code with `make lint-dependencies`.

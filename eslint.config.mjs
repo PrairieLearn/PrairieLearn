@@ -9,7 +9,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import prairielearn from '@prairielearn/eslint-plugin';
 
 /**
- * oxlint (see `.oxlintrc.json`) lints JS and TS files. ESLint only runs what oxlint can't:
+ * oxlint (see `oxlint.config.mts`) lints JS and TS files. ESLint only runs what oxlint can't:
  *
  * - `@prairielearn/safe-db-types`, which needs TypeScript type information that oxlint
  *   doesn't provide to JS plugins (https://github.com/oxc-project/oxc/issues/19596).

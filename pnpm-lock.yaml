@@ -207,6 +207,9 @@ importers:
       '@prairielearn/eslint-plugin':
         specifier: workspace:^
         version: link:packages/eslint-plugin-prairielearn
+      '@prairielearn/oxc-config':
+        specifier: workspace:^
+        version: link:packages/oxc-config
       '@prairielearn/pin-github-actions':
         specifier: workspace:^
         version: link:packages/pin-github-actions
@@ -219,9 +222,6 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:packages/tsconfig
-      '@tanstack/eslint-plugin-query':
-        specifier: ^5.104.0
-        version: 5.104.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@types/node':
         specifier: ^24.19.0
         version: 24.19.0
@@ -240,15 +240,6 @@ importers:
       eslint:
         specifier: ^10.11.0
         version: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
-      eslint-plugin-no-floating-promise:
-        specifier: ^2.0.0
-        version: 2.0.0
-      eslint-plugin-perfectionist:
-        specifier: ^5.12.1
-        version: 5.12.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
-      eslint-plugin-react-you-might-not-need-an-effect:
-        specifier: ^1.0.2
-        version: 1.0.2(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -279,9 +270,6 @@ importers:
       oxlint:
         specifier: ^1.90.0
         version: 1.90.0(oxlint-tsgolint@7.0.2005)
-      oxlint-plugin-eslint:
-        specifier: ^1.90.0
-        version: 1.90.0
       oxlint-tsgolint:
         specifier: ^7.0.2005
         version: 7.0.2005
@@ -2381,6 +2369,52 @@ importers:
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/oxc-config:
+    dependencies:
+      '@html-eslint/eslint-plugin':
+        specifier: ^0.66.1
+        version: 0.66.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
+      '@prairielearn/eslint-plugin':
+        specifier: workspace:^
+        version: link:../eslint-plugin-prairielearn
+      '@tanstack/eslint-plugin-query':
+        specifier: ^5.104.0
+        version: 5.104.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      eslint-plugin-no-floating-promise:
+        specifier: ^2.0.0
+        version: 2.0.0
+      eslint-plugin-perfectionist:
+        specifier: ^5.12.1
+        version: 5.12.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      eslint-plugin-react-you-might-not-need-an-effect:
+        specifier: ^1.0.2
+        version: 1.0.2(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
+      oxlint-plugin-eslint:
+        specifier: ^1.90.0
+        version: 1.90.0
+      oxlint-tsgolint:
+        specifier: ^7.0.2005
+        version: 7.0.2005
+    devDependencies:
+      '@prairielearn/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^24.19.0
+        version: 24.19.0
+      '@typescript/native':
+        specifier: npm:typescript@^7.0.2
+        version: typescript@7.0.2
+      oxfmt:
+        specifier: ^0.75.0
+        version: 0.75.0
+      oxlint:
+        specifier: ^1.90.0
+        version: 1.90.0(oxlint-tsgolint@7.0.2005)
+      typescript:
+        specifier: npm:@typescript/typescript6@^6.0.2
+        version: '@typescript/typescript6@6.0.2'
 
   packages/path-utils:
     devDependencies:

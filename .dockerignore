@@ -6,8 +6,8 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
-!.oxfmtrc.json
-!.oxlintrc.json
+!oxfmt.config.mts
+!oxlint.config.mts
 !.prettierignore
 !.prettierrc.json
 !pnpm-lock.yaml
