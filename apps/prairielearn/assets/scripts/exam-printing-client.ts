@@ -4,6 +4,7 @@ import {
   waitForPrintImages,
 } from '../../src/lib/client/printing/print-image-layout.js';
 import { planPrintQuestionPages } from '../../src/lib/client/printing/print-question-layout.js';
+import { waitForPrintableElements } from '../../src/lib/client/printing/print-render-readiness.js';
 import {
   normalizeAnswerPresentation,
   normalizeResponseControls,
@@ -24,9 +25,6 @@ declare global {
         stylesheets?: string[],
         renderTo?: HTMLElement,
       ) => Promise<PagedFlow>;
-    };
-    PrairieLearnExamPrinting: {
-      waitUntil: (promise: Promise<unknown>) => void;
     };
     __PL_PRINT_READINESS_PROMISES__?: Promise<unknown>[];
     __PL_PRINT_READY__: Promise<{ totalPages: number }>;
@@ -468,6 +466,7 @@ async function paginateExam(): Promise<{ totalPages: number }> {
   if (!source || !output) throw new Error('Printable exam containers are missing');
 
   await Promise.all(extraReadinessPromises);
+  await waitForPrintableElements(source);
   await waitForExcalidrawCanvases(source);
   materializePrintableDetails(source);
   // One animation frame may run before the app is painted, so wait for a second
