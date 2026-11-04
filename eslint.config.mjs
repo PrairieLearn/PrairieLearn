@@ -132,6 +132,10 @@ export default defineConfig([
     'workspaces/*',
     'apps/*/coverage/*',
     'apps/*/dist/*',
+    'apps/course-agent/.wrangler/*',
+    // Wrangler owns this declaration, including its generated lint directives.
+    'apps/course-agent/src/env.d.ts',
+    'apps/course-agent/generated/**',
     'apps/prairielearn/playwright/.cache/*',
     'apps/prairielearn/public/*',
     'apps/prairielearn/test-results/*',
