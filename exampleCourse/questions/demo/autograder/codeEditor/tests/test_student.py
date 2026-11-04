@@ -1,6 +1,7 @@
 import pytest
 from pytest_prairielearn_grader.assertions import assert_fn_equal
 from pytest_prairielearn_grader.fixture import FeedbackFixture, StudentFixture
+from pytest_prairielearn_grader.utils import FunctionStatusCode
 
 
 @pytest.mark.output(level="friendly")
@@ -24,11 +25,11 @@ def test_random_values(sandbox: StudentFixture, feedback: FeedbackFixture) -> No
 
     for n in test_values:
         response = sandbox.query_function_raw("fib", n)
-        if response["status"] == "timeout":
+        if response["status"] == FunctionStatusCode.TIMEOUT:
             failures.append(f"fib({n}): timed out")
             break
         expected = _fib(n)
-        if response["status"] == "success" and response["value"] == expected:
+        if response["status"] == FunctionStatusCode.SUCCESS and response["value"] == expected:
             num_correct += 1
         else:
             failures.append(_format_failure(f"fib({n})", expected, response))
@@ -45,7 +46,7 @@ def _fib(n: int) -> int:
 
 
 def _format_failure(description: str, expected: int, response: dict) -> str:
-    if response["status"] == "success":
+    if response["status"] == FunctionStatusCode.SUCCESS:
         return f"{description}: expected {expected}, got {response['value']}"
     return (
         f"{description}: raised {response['exception_name']}: "
