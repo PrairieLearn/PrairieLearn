@@ -52,6 +52,7 @@ export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
   };
 
 export function getSubmissionRenderUrl({
+  questionHostingUpdate,
   questionContext,
   urlPrefix,
   question,
@@ -61,6 +62,7 @@ export function getSubmissionRenderUrl({
   submissionId,
   renderSubmissionSearchParams,
 }: {
+  questionHostingUpdate: boolean;
   questionContext: QuestionContext;
   urlPrefix: string;
   question: Question;
@@ -70,6 +72,9 @@ export function getSubmissionRenderUrl({
   submissionId: string;
   renderSubmissionSearchParams?: URLSearchParams;
 }): string {
+  // Keep subsequent renders in this page's mode even if the feature flag changes.
+  const searchParams = new URLSearchParams(renderSubmissionSearchParams);
+  searchParams.set('question_hosting_update', String(questionHostingUpdate));
   const renderUrlPrefix =
     questionContext === 'instructor' || questionContext === 'public'
       ? `${urlPrefix}/question/${question.id}/preview`
@@ -78,7 +83,7 @@ export function getSubmissionRenderUrl({
         : `${urlPrefix}/instance_question/${instance_question?.id}`;
   return url.format({
     pathname: `${renderUrlPrefix}/variant/${variant_id}/submission/${submissionId}`,
-    search: renderSubmissionSearchParams?.toString(),
+    search: searchParams.toString(),
   });
 }
 
@@ -125,6 +130,7 @@ export function SubmissionPanel({
   expanded = expanded || isLatestSubmission;
 
   const renderUrl = getSubmissionRenderUrl({
+    questionHostingUpdate,
     questionContext,
     urlPrefix,
     question,

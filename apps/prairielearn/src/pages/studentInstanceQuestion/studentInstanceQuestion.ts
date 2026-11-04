@@ -4,7 +4,7 @@ import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
+import { IdSchema, parseRequestQuery } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { gradeAssessmentInstance } from '../../lib/assessment.js';
@@ -17,6 +17,7 @@ import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
+import { SubmissionRenderQuerySchema } from '../../lib/question-render.types.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -279,6 +280,7 @@ router.post(
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
   typedAsyncHandler<'instance-question'>(async (req, res) => {
+    const query = parseRequestQuery(req, SubmissionRenderQuerySchema);
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
@@ -292,10 +294,7 @@ router.get(
     });
 
     const panels = await renderPanelsForSubmission({
-      questionHostingUpdate: await features.enabledFromLocals(
-        'question-hosting-update',
-        res.locals,
-      ),
+      questionHostingUpdate: query.question_hosting_update,
       unsafe_submission_id: req.params.unsafe_submission_id,
       course: res.locals.course,
       question: res.locals.question,
@@ -306,7 +305,7 @@ router.get(
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
-      renderScorePanels: req.query.render_score_panels === 'true',
+      renderScorePanels: query.render_score_panels === 'true',
       groupRolePermissions: res.locals.group_role_permissions ?? null,
       authz_result: res.locals.authz_result,
     });
