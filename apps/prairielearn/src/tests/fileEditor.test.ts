@@ -330,6 +330,68 @@ describe('test file editor', { timeout: 20_000 }, function () {
       }
     });
 
+    it('saves a Git review whose base is newer than the PL checkout', async () => {
+      const course = await selectCourseById('1');
+      const user = await selectUserById('1');
+      const original = await fs.readFile(path.join(course.path, questionHtmlPath));
+      const upstream = Buffer.concat([original, Buffer.from('\nInstructor change\n')]);
+      const proposed = Buffer.concat([upstream, Buffer.from('\nAgent change\n')]);
+      // The agent starts from a GitHub commit that PL has not fetched yet.
+      await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), upstream);
+      await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
+      await execa('git', ['commit', '-m', 'Instructor edit on GitHub'], {
+        cwd: courseRepo.courseOriginDir,
+      });
+      const { stdout: baseCommit } = await execa('git', ['rev-parse', 'HEAD'], {
+        cwd: courseRepo.courseOriginDir,
+      });
+      const snapshot: Extract<ReviewSnapshot, { type: 'github' }> = {
+        type: 'github',
+        repository: 'PrairieLearn/course',
+        branch: 'master',
+        baseCommit,
+        additions: [{ path: questionHtmlPath, contents: proposed.toString('base64') }],
+        deletions: [],
+      };
+      try {
+        await withConfig({ fileEditorUseGit: true }, async () => {
+          const editor = new FileUploadEditor({
+            locals: {
+              course,
+              user,
+              authz_data: { has_course_permission_edit: true, authn_user: user },
+            },
+            container: {
+              rootPath: course.path,
+              invalidRootPaths: [path.join(course.path, '.git')],
+            },
+            files: { [path.join(course.path, questionHtmlPath)]: proposed },
+          });
+          const job = await editor.prepareServerJob();
+          await editor.executeWithServerJob(job, {
+            beforeWrite: (job) => checkReviewConflicts(course, snapshot, job),
+          });
+          const sequence = await getJobSequence(job.jobSequenceId, course.id);
+          assert.deepEqual(getReviewJobResult(sequence, 'github').publication, {
+            status: 'published',
+          });
+          const { stdout } = await execa('git', ['show', `HEAD:${questionHtmlPath}`], {
+            cwd: courseRepo.courseOriginDir,
+            stripFinalNewline: false,
+          });
+          assert.equal(stdout, proposed.toString());
+        });
+      } finally {
+        await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), original);
+        await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
+        await execa('git', ['commit', '-m', 'Restore fixture'], {
+          cwd: courseRepo.courseOriginDir,
+        });
+        await execa('git', ['fetch'], { cwd: course.path });
+        await execa('git', ['reset', '--hard', 'origin/master'], { cwd: course.path });
+      }
+    });
+
     describe('the locals object', function () {
       it('should be cleared', function () {
         for (const prop in locals) {
