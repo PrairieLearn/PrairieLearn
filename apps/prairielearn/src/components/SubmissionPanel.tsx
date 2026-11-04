@@ -99,9 +99,12 @@ export function SubmissionPanel({
       : questionContext === 'manual_grading'
         ? `${urlPrefix}/assessment/${assessment_question?.assessment_id}/manual_grading/instance_question/${instance_question?.id}`
         : `${urlPrefix}/instance_question/${instance_question?.id}`;
+  // Keep subsequent renders in this page's mode even if the feature flag changes.
+  const searchParams = new URLSearchParams(renderSubmissionSearchParams);
+  searchParams.set('question_hosting_update', String(questionHostingUpdate));
   const renderUrl = url.format({
     pathname: `${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}`,
-    search: renderSubmissionSearchParams?.toString(),
+    search: searchParams.toString(),
   });
 
   return html`

@@ -6,6 +6,16 @@ import { IssueSchema, type Variant } from './db-types.js';
 import type { RubricData } from './manualGrading.types.js';
 import type { SubmissionInfo } from './submission-info.js';
 
+export const SubmissionRenderQuerySchema = z.object({
+  question_hosting_update: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  manual_grading_preview: z.string().optional(),
+  ai_grading_preview: z.string().optional(),
+  render_score_panels: z.string().optional(),
+});
+
 export interface SubmissionPanels {
   submissionInfo?: SubmissionInfo;
   submissionPanel: string | null;

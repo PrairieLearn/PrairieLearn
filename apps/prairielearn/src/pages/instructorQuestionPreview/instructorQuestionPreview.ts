@@ -9,14 +9,17 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
-import { IdSchema } from '@prairielearn/zod';
+import { IdSchema, parseRequestQuery } from '@prairielearn/zod';
 
 import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
-import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
+import {
+  type ResLocalsQuestionRender,
+  SubmissionRenderQuerySchema,
+} from '../../lib/question-render.types.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -159,13 +162,14 @@ router.get(
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const query = parseRequestQuery(req, SubmissionRenderQuerySchema);
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
     // As with the normal route, we need to respect the `manual_grading_preview`
     // and the `ai_grading_preview` flags.
     const questionRenderContext: 'manual_grading' | 'ai_grading' | undefined = run(() => {
-      if (req.query.manual_grading_preview === 'true') return 'manual_grading';
-      if (aiGradingEnabled && req.query.ai_grading_preview === 'true') return 'ai_grading';
+      if (query.manual_grading_preview === 'true') return 'manual_grading';
+      if (aiGradingEnabled && query.ai_grading_preview === 'true') return 'ai_grading';
       return undefined;
     });
 
@@ -181,10 +185,7 @@ router.get(
     });
 
     const panels = await renderPanelsForSubmission({
-      questionHostingUpdate: await features.enabledFromLocals(
-        'question-hosting-update',
-        res.locals,
-      ),
+      questionHostingUpdate: query.question_hosting_update,
       unsafe_submission_id: req.params.unsafe_submission_id,
       course: res.locals.course,
       question: res.locals.question,

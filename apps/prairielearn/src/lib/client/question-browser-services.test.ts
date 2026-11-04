@@ -158,7 +158,7 @@ it('updates an open submission dialog from server data without returning that da
   };
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue(Response.json({ ...panels, submissionInfo: gradedInfo })),
+    vi.fn(async () => Response.json({ ...panels, submissionInfo: gradedInfo })),
   );
   const result = await services.renderSubmission(
     { submissionId: '2', purpose: 'grading-result' },
@@ -170,8 +170,21 @@ it('updates an open submission dialog from server data without returning that da
     '/pl/course/1/grading_job/8',
   );
 
-  dispose();
+  document.querySelector<HTMLAnchorElement>('.modal-body a')!.focus();
+  await services.renderSubmission(
+    { submissionId: '2', purpose: 'grading-result' },
+    { signal: new AbortController().signal },
+  );
+  expect(document.activeElement).toBe(document.querySelector('.modal-body a'));
+  document.activeElement!.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+  );
   await closed;
+  expect(document.querySelector('.modal')).toBeNull();
+
+  const reopened = services.openSubmissionInfo({ submissionId: '2' });
+  dispose();
+  await reopened;
   expect(document.querySelector('.modal-backdrop')).toBeNull();
   expect(document.body.classList.contains('modal-open')).toBe(false);
   await expect(services.openSubmissionInfo({ submissionId: '2' })).rejects.toMatchObject({

@@ -64,9 +64,16 @@ export function createQuestionDialogs(document: Document, data: QuestionDialogDa
       submissions.set(info.id, info);
       if (active?.submissionId === info.id) {
         const updated = parseHTMLElement(document, SubmissionInfoModal(info).toString());
-        active.element
-          .querySelector('.modal-body')!
-          .replaceWith(updated.querySelector('.modal-body')!);
+        const body = active.element.querySelector('.modal-body')!;
+        const restoreFocus = body.contains(document.activeElement);
+        const updatedBody = updated.querySelector('.modal-body')!;
+        body.replaceWith(updatedBody);
+        // The grading-job link can be focused when a grading result arrives.
+        if (restoreFocus) {
+          (updatedBody.querySelector<HTMLAnchorElement>('a') ?? active.element).focus({
+            preventScroll: true,
+          });
+        }
         active.modal.handleUpdate();
       }
     },
