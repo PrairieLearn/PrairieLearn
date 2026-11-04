@@ -117,13 +117,6 @@ export function Navbar({
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
           </span>
         </a>
-        ${
-          courseAgentPanel
-            ? html`<div class="course-agent-nav ms-auto ms-md-3 me-2 me-md-0 order-md-last">
-                ${courseAgentPanel}
-              </div>`
-            : ''
-        }
         <button
           id="course-nav-toggler"
           class="navbar-toggler"
@@ -145,6 +138,11 @@ export function Navbar({
             })}
           </ul>
 
+          ${
+            courseAgentPanel
+              ? html`<div class="flex-shrink-0 me-md-2 mb-2 mb-md-0">${courseAgentPanel}</div>`
+              : ''
+          }
           ${
             config.devMode
               ? html`

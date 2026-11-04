@@ -186,8 +186,9 @@ export function CourseAgentPanel({
     <>
       <Button
         ref={toggleRef}
-        className="course-agent-launcher d-flex align-items-center gap-2 text-nowrap text-start w-100"
-        variant={open ? 'light' : 'outline-light'}
+        className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
+        variant="primary"
+        active={open}
         size="sm"
         title={open ? 'Close course agent' : 'Open course agent'}
         aria-label={open ? 'Close course agent' : 'Open course agent'}
@@ -198,8 +199,6 @@ export function CourseAgentPanel({
         onClick={() => changeOpen(!open)}
       >
         <i className="bi bi-stars" aria-hidden="true" />
-        <span className="d-none d-xl-inline text-truncate">Ask the course agent…</span>
-        <span className="d-none d-lg-inline d-xl-none">Course agent</span>
       </Button>
       {/* Keep the panel outside the navbar's navigation landmark and stacking context. */}
       {hydrated ? createPortal(panel, document.body) : panel}

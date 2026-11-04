@@ -1,14 +1,3 @@
-/* The launcher stays in the navbar so it never obscures page content. */
-.course-agent-nav {
-  flex-shrink: 0;
-}
-
-@media (min-width: 1200px) {
-  .course-agent-nav {
-    width: clamp(12rem, 20vw, 24rem);
-  }
-}
-
 .course-agent-panel {
   position: fixed;
   top: 0;
