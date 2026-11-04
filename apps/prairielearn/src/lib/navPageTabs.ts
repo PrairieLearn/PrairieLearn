@@ -164,7 +164,7 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/manual_grading`,
         iconClasses: 'fas fa-marker',
         tabLabel: ({ ai_grading_enabled }) =>
-          ai_grading_enabled ? 'AI & manual grading' : 'Manual grading',
+          ai_grading_enabled ? 'Manual & AI grading' : 'Manual grading',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
