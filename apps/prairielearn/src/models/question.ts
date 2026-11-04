@@ -202,3 +202,12 @@ export async function syncQuestionTopic({
 }): Promise<Question> {
   return await queryRow(sql.sync_question_topic, { course_id, qid, topic }, QuestionSchema);
 }
+
+export async function syncQuestionQid(params: {
+  course_id: string;
+  old_qid: string;
+  qid: string;
+  title: string;
+}): Promise<Question> {
+  return await queryRow(sql.sync_question_qid, params, QuestionSchema);
+}

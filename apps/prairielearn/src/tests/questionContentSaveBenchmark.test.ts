@@ -27,7 +27,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const outputPath = process.env.PL_SAVE_BENCHMARK_OUTPUT;
 const realGit = process.env.PL_SAVE_BENCHMARK_REAL_GIT === '1';
 const action = z
-  .enum(['content', 'title', 'tags', 'topic'])
+  .enum(['content', 'title', 'tags', 'topic', 'qid'])
   .parse(process.env.PL_SAVE_BENCHMARK_ACTION ?? 'content');
 const metadataEdit = action !== 'content';
 const baselineOnly = process.env.PL_SAVE_BENCHMARK_BASELINE === '1';
@@ -149,6 +149,7 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       cwd: REPOSITORY_ROOT_PATH,
     });
     const user = await selectUserById('1');
+    let currentQid = 'test/question';
     const filePath = path.join(
       coursePath,
       'questions/test/question',
@@ -169,7 +170,9 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
     for (const [iteration, mode] of schedule.entries()) {
       if (mode === 'full') await invalidateCourseSync('1');
       const course = await selectCourseById('1');
-      const previousContent = b64EncodeUnicode(await fs.readFile(filePath, 'utf8'));
+      const currentFilePath =
+        action === 'qid' ? path.join(coursePath, 'questions', currentQid, 'info.json') : filePath;
+      const previousContent = b64EncodeUnicode(await fs.readFile(currentFilePath, 'utf8'));
       const nextContent = metadataEdit
         ? JSON.stringify({
             ...JSON.parse(originalContent),
@@ -187,35 +190,47 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
           authz_data: { has_course_permission_edit: true, authn_user: user },
         },
         container: { rootPath: coursePath, invalidRootPaths: [] },
-        filePath,
+        filePath: currentFilePath,
         editContents: b64EncodeUnicode(nextContent),
         origHash: computeEncodedFileContentHash(previousContent),
       });
-      const question = await selectQuestionByQid({ course_id: course.id, qid: 'test/question' });
-      const editor = metadataEdit
-        ? new MultiEditor(
-            {
+      const question = await selectQuestionByQid({ course_id: course.id, qid: currentQid });
+      const nextQid = currentQid === 'test/question' ? 'renamed/question' : 'test/question';
+      const editor =
+        action === 'qid'
+          ? new QuestionRenameEditor({
               locals: {
                 course,
                 user,
+                question,
                 authz_data: { has_course_permission_edit: true, authn_user: user },
               },
-              description: 'Update question settings',
-            },
-            [
-              fileEditor,
-              new QuestionRenameEditor({
-                locals: {
-                  course,
-                  user,
-                  question,
-                  authz_data: { has_course_permission_edit: true, authn_user: user },
+              qid_new: nextQid,
+            })
+          : metadataEdit
+            ? new MultiEditor(
+                {
+                  locals: {
+                    course,
+                    user,
+                    authz_data: { has_course_permission_edit: true, authn_user: user },
+                  },
+                  description: 'Update question settings',
                 },
-                qid_new: 'test/question',
-              }),
-            ],
-          )
-        : fileEditor;
+                [
+                  fileEditor,
+                  new QuestionRenameEditor({
+                    locals: {
+                      course,
+                      user,
+                      question,
+                      authz_data: { has_course_permission_edit: true, authn_user: user },
+                    },
+                    qid_new: 'test/question',
+                  }),
+                ],
+              )
+            : fileEditor;
       const start = performance.now();
       let error: string | null = null;
       const job = await editor.prepareServerJob();
@@ -226,9 +241,17 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       }
       const durationMs = performance.now() - start;
       if (error === null) {
-        assert.equal(await fs.readFile(filePath, 'utf8'), nextContent);
+        if (action === 'qid') {
+          currentQid = nextQid;
+          const renamed = await selectQuestionByQid({ course_id: course.id, qid: currentQid });
+          assert.equal(renamed.id, question.id);
+          assert.equal(renamed.directory, currentQid);
+          assert.isFalse(await fs.pathExists(path.join(coursePath, 'questions', question.qid!)));
+        } else {
+          assert.equal(await fs.readFile(filePath, 'utf8'), nextContent);
+        }
         if (metadataEdit) {
-          const updated = await selectQuestionByQid({ course_id: course.id, qid: 'test/question' });
+          const updated = await selectQuestionByQid({ course_id: course.id, qid: currentQid });
           if (action === 'title') assert.equal(updated.title, `Benchmark title ${iteration % 2}`);
           if (action === 'tags') {
             const tags = await selectTagsByQuestionId(updated.id);
@@ -297,7 +320,7 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
         },
         { spaces: 2 },
       );
+      assert.isNull(error);
     }
-    assert.isEmpty(samples.filter((sample) => sample.error !== null));
   }, 120_000);
 });
