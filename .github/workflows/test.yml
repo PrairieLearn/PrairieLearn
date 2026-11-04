@@ -156,7 +156,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - uses: ./.github/actions/native-test-setup
+      # The OS/Python and Node setup chains are independent, so we run them
+      # concurrently.
+      - parallel:
+          - uses: ./.github/actions/native-test-setup-os
+          - uses: ./.github/actions/native-test-setup-node
 
       - name: Vitest suite
         run: |
@@ -223,9 +227,17 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - uses: ./.github/actions/native-test-setup
-        with:
-          install-playwright-browsers: 'true'
+      # The OS/Python and Node setup chains are independent, so we run them
+      # concurrently.
+      - parallel:
+          - uses: ./.github/actions/native-test-setup-os
+          - uses: ./.github/actions/native-test-setup-node
+            with:
+              download-playwright-browsers: 'true'
+
+      # This uses apt, so it has to wait until the OS setup chain is done.
+      - name: Install Playwright browser dependencies
+        run: pnpm playwright install-deps chromium
 
       - name: Playwright suite
         run: |
