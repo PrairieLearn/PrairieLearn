@@ -46,6 +46,7 @@ export async function waitForPrintImages(source: HTMLElement): Promise<void> {
       // Image capture placeholders have no source until a student acts. Images selected through
       // srcset or a picture source still need to finish loading before pagination.
       if (!image.currentSrc && !image.getAttribute('src') && !image.getAttribute('srcset')) return;
+      if (image.loading === 'lazy') image.loading = 'eager';
       if (!image.complete) {
         await new Promise<void>((resolve, reject) => {
           image.addEventListener('load', () => resolve(), { once: true });
