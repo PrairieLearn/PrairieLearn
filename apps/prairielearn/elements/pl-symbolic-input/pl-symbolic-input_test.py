@@ -1,9 +1,9 @@
 import importlib
 import json
-import string
 from pathlib import Path
 from typing import Any, cast
 
+import lxml.html
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -47,61 +47,123 @@ def make_question_data(
     }
 
 
-@pytest.mark.parametrize(
-    ("sub", "expected"),
-    [
-        ("|x|", "abs(x)"),
-        ("||x|+y|", "abs(abs(x)+y)"),
-        ("|a| + |b|", "abs(a) + abs(b)"),
-        ("|||x|||", "abs(abs(abs(x)))"),
-        ("x+y", "x+y"),
-        ("|x+2|", "abs(x+2)"),
-        ("|-x+2|", "abs(-x+2)"),
-        ("|x!|", "abs(x!)"),
-        ("|+4|", "abs(+4)"),
-        ("|x + |y||", "abs(x + abs(y))"),
-        ("|x+|-x+1+2+3+4||", "abs(x+abs(-x+1+2+3+4))"),
-        ("|x+|x+1+2+3+4 ||", "abs(x+abs(x+1+2+3+4 ))"),
-        ("|a|+||b|+c|", "abs(a)+abs(abs(b)+c)"),
-        ("y*|x| + |(|z|+1)|", "y*abs(x) + abs((abs(z)+1))"),
-        ("|x|||y||", "abs(x)abs(abs(y))"),
-        ("", ""),
-        # The formula editor writes \lvert and \rvert as U+2223
-        ("2\u2223x\u2223", "2abs(x)"),
-    ],
-)
-def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
-    out, error_msg = symbolic_input.format_submission_for_sympy(sub)
-    assert (out, error_msg) == (expected, None)
+def test_config_defaults() -> None:
+    element = lxml.html.fragment_fromstring(build_element_html())
+    config = symbolic_input._get_config(element)
 
-
-def test_format_submission_for_sympy_long_input() -> None:
-    out, error_msg = symbolic_input.format_submission_for_sympy(
-        "|x|" * 5000 + "|x+" * 2000 + "y" + "|" * 2000
+    assert config == symbolic_input._SymbolicInputConfig(
+        name="test",
+        weight=1,
+        variables=[],
+        variables_from_element=False,
+        custom_functions=[],
+        label=None,
+        aria_label=None,
+        suffix=None,
+        display=symbolic_input.DisplayType.INLINE,
+        allow_complex=False,
+        allowed_types={"expression"},
+        display_log_as_ln=False,
+        simplify_expression=True,
+        imaginary_unit="i",
+        allow_trig=True,
+        additional_simplifications=[],
+        size=35,
+        formula_editor=False,
+        show_info=True,
+        allow_blank=False,
+        blank_value="0",
+        placeholder="symbolic expression",
+        show_score=True,
+        initial_value=None,
+        correct_answer=None,
     )
-    assert error_msg is None
-    assert out == "abs(x)" * 5000 + "abs(x+" * 2000 + "y" + ")" * 2000
+    assert not config.supports_set_syntax
+
+
+def test_config_custom_values() -> None:
+    element = lxml.html.fragment_fromstring(
+        build_element_html(
+            'weight="3"',
+            'variables="x, y"',
+            'custom-functions="f, g"',
+            'label="value"',
+            'aria-label="answer"',
+            'suffix="units"',
+            'display="block"',
+            'allow-complex="true"',
+            'allowed-types="finite-set, interval"',
+            'display-log-as-ln="true"',
+            'display-simplified-expression="false"',
+            'imaginary-unit-for-display="j"',
+            'allow-trig-functions="false"',
+            'additional-simplifications="expand, powsimp"',
+            'size="12"',
+            'formula-editor="true"',
+            'show-help-text="false"',
+            'allow-blank="true"',
+            'blank-value=""',
+            'placeholder="answer"',
+            'show-score="false"',
+            'initial-value="x + 1"',
+            'correct-answer="x + 2"',
+            answers_name="custom",
+        )
+    )
+
+    config = symbolic_input._get_config(element)
+
+    assert config == symbolic_input._SymbolicInputConfig(
+        name="custom",
+        weight=3,
+        variables=["x", "y"],
+        variables_from_element=True,
+        custom_functions=["f", "g"],
+        label="value",
+        aria_label="answer",
+        suffix="units",
+        display=symbolic_input.DisplayType.BLOCK,
+        allow_complex=True,
+        allowed_types={"finite-set", "interval"},
+        display_log_as_ln=True,
+        simplify_expression=False,
+        imaginary_unit="j",
+        allow_trig=False,
+        additional_simplifications=["expand", "powsimp"],
+        size=12,
+        formula_editor=True,
+        show_info=False,
+        allow_blank=True,
+        blank_value="",
+        placeholder="answer",
+        show_score=False,
+        initial_value="x + 1",
+        correct_answer="x + 2",
+    )
+    assert config.supports_set_syntax
 
 
 @pytest.mark.parametrize(
-    ("sub", "expected"),
+    ("allow_sets", "allowed_types", "supports_set_syntax"),
     [
-        ("{1} | {2}", "{1} | {2}"),
-        ("{1, 2} | {3}", "{1, 2} | {3}"),
-        ("[1, 2] | [3, 4]", "[1, 2] | [3, 4]"),
-        ("|x| | {1}", "abs(x) | {1}"),
-        ("[0,1] | (2,3) | [4,5]", "[0,1] | (2,3) | [4,5]"),
-        ("(0,1) | (2,3)", "(0,1) | (2,3)"),
-        ("{1} | (2,3) | [4,5]", "{1} | (2,3) | [4,5]"),
-        ("(0,|x|) | |y,z|", "(0,abs(x)) | |y,z|"),
-        ("|1,|x||", "|1,abs(x)|"),
+        ("true", {"all"}, True),
+        ("false", {"expression"}, False),
     ],
 )
-def test_format_submission_for_sympy_preserves_set_union(
-    sub: str, expected: str
+def test_config_maps_legacy_allow_sets(
+    allow_sets: str,
+    allowed_types: set[psu.AllowedSympyType],
+    *,
+    supports_set_syntax: bool,
 ) -> None:
-    out, error_msg = symbolic_input.format_submission_for_sympy(sub, allow_sets=True)
-    assert (out, error_msg) == (expected, None)
+    element = lxml.html.fragment_fromstring(
+        build_element_html(f'allow-sets="{allow_sets}"')
+    )
+
+    config = symbolic_input._get_config(element)
+
+    assert config.allowed_types == allowed_types
+    assert config.supports_set_syntax is supports_set_syntax
 
 
 def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
@@ -121,122 +183,202 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     ) == sympy.FiniteSet(1, 2)
 
 
-@pytest.mark.parametrize(
-    ("sub", "allow_trig", "variables", "custom_functions", "expected"),
-    [
-        # Greek letters
-        ("Α", False, ["Α"], [], " Alpha "),  # ruff:ignore[ambiguous-unicode-character-string]
-        ("ΑΑ0Α0ΑΑ", False, ["Α", "Α0"], [], " Alpha  Alpha0 Alpha0 Alpha  Alpha "),  # ruff:ignore[ambiguous-unicode-character-string]
-        (
-            "t h e t a s i n t h e t a c o s t h e t a",
-            True,
-            ["theta"],
-            [],
-            "theta sin theta cos theta",
-        ),
-        (
-            "a b a b l a b l a b l a a b l a",
-            False,
-            ["bla", "abla", "ab"],
-            [],
-            "ab abla bla bla abla",
-        ),
-        (  # Overlapping-match test
-            "a b a b",
-            False,
-            ["ab", "aba"],
-            [],
-            "aba b",
-        ),
-        (  # Longer-match test
-            "a b c a b d",
-            False,
-            ["ab", "abc"],
-            [],
-            "abc ab d",
-        ),
-        (  # Performance test
-            "a b " * 1000,
-            False,
-            ["ab", *list(string.ascii_lowercase)[2:]],
-            [],
-            "ab " * 1000,
-        ),
-        # Trig functions
-        ("s i n ( x )", True, ["x"], [], "sin ( x )"),
-        ("s i n h ( s i n x )", True, ["x"], [], "sinh ( sin x )"),
-        ("s i n ( x )", False, ["x"], [], "s i n ( x )"),
-        ("s i n ( Α )", False, ["Α"], [], "s i n (  Alpha  )"),  # ruff:ignore[ambiguous-unicode-character-string]
-        # Variables
-        ("t i m e + x", True, ["time", "x"], [], "time + x"),
-        # Prefix test
-        ("a c o s h ( a c o s ( x ) )", True, ["x"], [], "acosh ( acos ( x ) )"),
-        # Number spacing
-        ("x2+x10", False, ["x"], [], "x 2+x 10"),
-        ("e^x2", False, ["x"], [], "e^x 2"),
-        # Custom functions
-        ("m y f u n ( x )", False, ["x"], ["myfun"], "myfun ( x )"),
-        ("f2(x) + x2", False, ["x"], ["f2"], "f2(x) + x 2"),
-        ("Α(x) + x2", False, ["x"], ["Α"], " Alpha (x) + x 2"),  # ruff:ignore[ambiguous-unicode-character-string]
-        ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
-        # Formatting operators
-        ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
-        # Bare function arguments ended by "*" (the editor drops the grouping in `{\ln 4}\cdot`)
-        ("l n 4 * c o t (9x)", True, ["x"], [], "ln (4) * cot (9x)"),
-        ("s i n c o s x * x", True, ["x"], [], "sin (cos x) * x"),
-        ("l n 4 / x", False, ["x"], [], "ln 4 / x"),
-        # Bare function arguments ended by a "(" that multiplies them
-        ("l n x (x+1)", False, ["x"], [], "ln (x) (x+1)"),
-        ("l n 2x(x+1)", False, ["x"], [], "ln (2x)(x+1)"),
-        ("l n 2(l n 3(x))", False, ["x"], [], "ln (2)(ln (3)(x))"),
-        # A "(" that groups an exponent or calls a function stays in the argument
-        ("l n x^(2)", False, ["x"], [], "ln x^(2)"),
-        ("l n f(x)", False, ["x"], ["f"], "ln f(x)"),
-        ("l n f2(x)", False, ["x"], ["f2"], "ln f2(x)"),
-        ("l n a t a n 2(y,x)", True, ["x", "y"], [], "ln atan2(y,x)"),
-        ("l n a b s (x)(x+1)", False, ["x"], [], "ln (abs (x))(x+1)"),
-        ("l n Α(x)", False, ["x"], ["Α"], "ln  Alpha (x)"),  # ruff:ignore[ambiguous-unicode-character-string]
-        # Operators the editor writes in AsciiMath form (\div and \ast)
-        ("2 -: x", False, ["x"], [], "2 / x"),
-        ("2 ** x", False, ["x"], [], "2 * x"),
-        ("2 ** ** x", False, ["x"], [], "2 * ** x"),
-        # \star is " *** ", which must not end a function argument
-        ("l n 4 *** x", False, ["x"], [], "ln 4 *** x"),
-        # Without LaTeX, typed "+-" is unchanged
-        ("2+-a -: x", False, ["a"], [], "2+-a / x"),
-    ],
-)
-def test_format_formula_editor_submission_for_sympy(
-    sub: str,
-    allow_trig: bool,
-    variables: list[str],
-    custom_functions: list[str],
-    expected: str,
-) -> None:
-    out = symbolic_input.format_formula_editor_submission_for_sympy(
-        sub, allow_trig, variables, custom_functions
+def test_parse_rejects_accumulation_bounds_without_storing_an_answer() -> None:
+    element_html = build_element_html()
+    data = make_question_data(submitted_answers={"test": "sin(infty)"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert (
+        "simplifies to a range of possible values, which is not supported"
+        in data["format_errors"]["test"]
     )
-    assert out == expected
 
 
 @pytest.mark.parametrize(
-    ("sub", "expected"),
+    ("submission", "used_type"),
     [
-        ("C o m p l e m e n t ({1},{2})", "Complement ({1},{2})"),
-        ("{1} c u p {2} * {3}", "{1} cup {2} * {3}"),
+        ("{1, 2}", "finite-set"),
+        ("[1, 2]", "interval"),
+        ("Reals", "set"),
     ],
 )
-def test_format_formula_editor_submission_with_set_names(
-    sub: str, expected: str
-) -> None:
-    out = symbolic_input.format_formula_editor_submission_for_sympy(
-        sub,
-        False,
-        [],
-        [],
-        allow_sets=True,
+def test_set_notation_is_rejected_by_default(submission: str, used_type: str) -> None:
+    element_html = build_element_html()
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert data["format_errors"]["test"] == (
+        f"Your answer uses {used_type}, which this input does not accept. "
+        "Allowed types: expression."
     )
-    assert out == expected
+
+
+@pytest.mark.parametrize("operator", ["U", "|", "&"])
+def test_set_operators_reject_declared_scalar_variables(operator: str) -> None:
+    element_html = build_element_html(
+        'variables="x, y"',
+        'allowed-types="all"',
+    )
+    submission = f"x {operator} y"
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert "expecting a set, but got a number" in data["format_errors"]["test"]
+    assert (
+        psu.point_to_error(submission, submission.index(operator))
+        in data["format_errors"]["test"]
+    )
+
+
+def test_malformed_set_syntax_reports_a_syntax_error() -> None:
+    element_html = build_element_html()
+    data = make_question_data(submitted_answers={"test": "{1, 2"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert "syntax error" in data["format_errors"]["test"]
+
+
+@pytest.mark.parametrize(
+    ("allowed_types", "submission"),
+    [
+        ("finite-set, expression", "{1, 2}"),
+        ("finite-set, expression", "x + 1"),
+        ("set", "[0, 5] - {x}"),
+        ("all", "[1, 2]"),
+    ],
+)
+def test_parse_accepts_allowed_value_types(allowed_types: str, submission: str) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'allowed-types="{allowed_types}"',
+    )
+    data = make_question_data(submitted_answers={"test": submission})
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert isinstance(data["submitted_answers"]["test"], dict)
+
+
+def test_parse_rejects_disallowed_value_types() -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        'allowed-types="finite-set"',
+    )
+    data = make_question_data(submitted_answers={"test": "x + 1"})
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert data["format_errors"]["test"] == (
+        "Your answer uses expression, which this input does not accept. "
+        "Allowed types: finite-set."
+    )
+
+
+def test_prepare_rejects_allow_sets_with_allowed_types() -> None:
+    element_html = build_element_html(
+        'allow-sets="true"',
+        'allowed-types="all"',
+    )
+
+    with pytest.raises(ValueError, match=r"'allow-sets'.*'allowed-types'"):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+@pytest.mark.parametrize(
+    ("attributes", "correct_answers"),
+    [
+        (['correct-answer="{1, 2}"'], None),
+        ([], {"test": "{1, 2}"}),
+        ([], {"test": psu.sympy_to_json(sympy.FiniteSet(1, 2), allow_sets=True)}),
+    ],
+)
+def test_prepare_rejects_disallowed_correct_answer_type(
+    attributes: list[str], correct_answers: dict[str, Any] | None
+) -> None:
+    element_html = build_element_html('allowed-types="interval"', *attributes)
+    data = make_question_data(correct_answers=correct_answers)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Parsing correct answer.*uses finite-set.*Allowed types: interval",
+    ):
+        symbolic_input.prepare(element_html, data)
+
+
+def test_prepare_accepts_allowed_correct_answer_type() -> None:
+    element_html = build_element_html(
+        'allowed-types="interval"',
+        'correct-answer="[1, 2] U [3, 4]"',
+    )
+    data = make_question_data()
+
+    symbolic_input.prepare(element_html, data)
+
+    assert data["correct_answers"]["test"] == "[1, 2] U [3, 4]"
+
+
+@pytest.mark.parametrize(
+    ("allowed_types", "correct_answer", "expected_type"),
+    [
+        ("all", "5", sympy.Expr),
+        ("expression", "infty", sympy.Expr),
+        ("finite-set", "{5}", sympy.FiniteSet),
+        ("interval", "(5, 6)", sympy.Interval),
+    ],
+)
+def test_incorrect_answer_uses_an_allowed_type_and_avoids_collision(
+    monkeypatch: pytest.MonkeyPatch,
+    allowed_types: str,
+    correct_answer: str,
+    expected_type: type[sympy.Basic],
+) -> None:
+    monkeypatch.setattr(symbolic_input.random, "randint", lambda _start, _end: 5)
+    element_html = build_element_html(f'allowed-types="{allowed_types}"')
+    data = make_question_data(correct_answers={"test": correct_answer})
+    data["test_type"] = "incorrect"
+
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    submitted_answer = psu.json_to_sympy(
+        data["submitted_answers"]["test"], allow_sets=True
+    )
+    assert isinstance(submitted_answer, expected_type)
+    assert submitted_answer != psu.convert_string_to_sympy(
+        correct_answer, allow_sets=True
+    )
+
+
+def test_correct_answer_generation_round_trips_set_domains() -> None:
+    element_html = build_element_html('allow-sets="true"')
+    data = make_question_data(
+        correct_answers={
+            "test": psu.sympy_to_json(sympy.S.Reals, allow_sets=True),
+        }
+    )
+    data["test_type"] = "correct"
+
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert (
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
+        == sympy.S.Reals
+    )
 
 
 @pytest.mark.parametrize(
@@ -281,23 +423,6 @@ def test_formula_editor_reported_chain_rule_answers(a_sub: str) -> None:
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1
-
-
-@pytest.mark.parametrize(
-    ("submission", "latex", "expected"),
-    [
-        # Plain text and LaTeX captured from the formula editor
-        ("2+-a+-b", r"2\pm a+-b", "2±a+-b"),
-        ("(a+-b)+-sqrt(a+-b)", r"\left(a+-b\right)\pm\sqrt{a+-b}", "(a+-b)±sqrt(a+-b)"),
-        ("a+-b+-c", r"a+{-b}\pm c", "a+-b±c"),
-        ("2+-a", "2+-a", "2+-a"),
-        # The plain text and LaTeX don't match up
-        ("2+-a", r"2\pm a\pm b", None),
-        ("2+-a+-b", "2+-a", None),
-    ],
-)
-def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
-    assert symbolic_input._restore_plus_minus(submission, latex) == expected
 
 
 def test_formula_editor_bare_argument_before_implicit_multiplication() -> None:
@@ -383,14 +508,6 @@ def test_formula_editor_plus_minus_is_distinguished_from_typed_plus_minus() -> N
 def test_formula_editor_deeply_nested_bare_arguments() -> None:
     depth = 1200
     submission = "s i n f(" * depth + "x" + ")(y)" * depth
-    expected = "sin (f(" * depth + "x" + "))(y)" * depth
-    assert (
-        symbolic_input.format_formula_editor_submission_for_sympy(
-            submission, True, ["x", "y"], ["f"]
-        )
-        == expected
-    )
-
     element_html = build_element_html(
         'variables="x,y"', 'custom-functions="f"', 'formula-editor="true"'
     )
@@ -765,11 +882,7 @@ def test_legacy_formula_editor_submission_populates_reusable_mathjson(
     def fail_legacy_normalization(*args: object) -> None:
         pytest.fail("The saved MathJSON should bypass legacy normalization")
 
-    monkeypatch.setattr(
-        symbolic_input,
-        "format_formula_editor_submission_for_sympy",
-        fail_legacy_normalization,
-    )
+    monkeypatch.setattr(psu, "try_parse_symbolic_submission", fail_legacy_normalization)
     symbolic_input.parse(element_html, data)
 
     assert data["format_errors"] == {}
@@ -1126,6 +1239,6 @@ def test_additional_simplifications_cannot_be_used_with_set_notation() -> None:
     data = make_question_data(submitted_answers={"test": "1"})
 
     with pytest.raises(
-        ValueError, match=(r"'additional-simplifications'.*'allow-sets'")
+        ValueError, match=(r"'additional-simplifications'.*'allowed-types'")
     ):
         symbolic_input.prepare(element_html, data)
