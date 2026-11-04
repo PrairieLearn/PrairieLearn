@@ -13,6 +13,8 @@ import {
 import { Alert, Button, Offcanvas, Spinner } from 'react-bootstrap';
 import { createPortal } from 'react-dom';
 
+import { OverlayTrigger } from '@prairielearn/ui';
+
 const MOBILE_QUERY = '(max-width: 767.98px)';
 
 function loadChat() {
@@ -184,22 +186,29 @@ export function CourseAgentPanel({
 
   return (
     <>
-      <Button
-        ref={toggleRef}
-        className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
-        variant="primary"
-        active={open}
-        size="sm"
-        title={open ? 'Close course agent' : 'Open course agent'}
-        aria-label={open ? 'Close course agent' : 'Open course agent'}
-        aria-expanded={open}
-        aria-controls="course-agent-panel"
-        onPointerEnter={preloadChat}
-        onFocus={preloadChat}
-        onClick={() => changeOpen(!open)}
+      <OverlayTrigger
+        placement="bottom"
+        tooltip={{
+          body: open ? 'Close course agent' : 'Open course agent',
+          props: { id: 'course-agent-launcher-tooltip' },
+        }}
       >
-        <i className="bi bi-stars" aria-hidden="true" />
-      </Button>
+        <Button
+          ref={toggleRef}
+          className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
+          variant="outline-light"
+          active={open}
+          size="sm"
+          aria-label={open ? 'Close course agent' : 'Open course agent'}
+          aria-expanded={open}
+          aria-controls="course-agent-panel"
+          onPointerEnter={preloadChat}
+          onFocus={preloadChat}
+          onClick={() => changeOpen(!open)}
+        >
+          <i className="bi bi-stars" aria-hidden="true" />
+        </Button>
+      </OverlayTrigger>
       {/* Keep the panel outside the navbar's navigation landmark and stacking context. */}
       {hydrated ? createPortal(panel, document.body) : panel}
     </>

@@ -1,3 +1,8 @@
+.course-agent-launcher {
+  --bs-btn-color: var(--bs-navbar-color);
+  --bs-btn-border-color: var(--bs-navbar-color);
+}
+
 .course-agent-panel {
   position: fixed;
   top: 0;

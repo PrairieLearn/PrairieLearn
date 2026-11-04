@@ -138,42 +138,46 @@ export function Navbar({
             })}
           </ul>
 
-          ${
-            courseAgentPanel
-              ? html`<div class="flex-shrink-0 me-md-2 mb-2 mb-md-0">${courseAgentPanel}</div>`
-              : ''
-          }
-          ${
-            config.devMode
-              ? html`
-                  <a
-                    id="navbar-load-from-disk"
-                    class="btn btn-success btn-sm"
-                    href="/pl/loadFromDisk"
-                  >
-                    Load from disk
-                  </a>
-                `
-              : ''
-          }
-          ${ReportCheatingControl({ resLocals: navbarResLocals, navPage })}
-          ${EndExamControl({ resLocals: navbarResLocals })}
-          ${
-            showSupport
-              ? html`
-                  <button
-                    type="button"
-                    class="btn btn-outline-light btn-sm ms-md-2 me-md-2 mb-2 mb-md-0"
-                    style="--bs-btn-color: var(--bs-navbar-color); --bs-btn-border-color: var(--bs-navbar-color)"
-                    data-bs-toggle="modal tooltip"
-                    data-bs-target="#supportModal"
-                    data-bs-title="Get help with PrairieLearn"
-                  >
-                    Get help
-                  </button>
-                `
-              : ''
-          }
+          <div class="d-md-flex align-items-md-stretch">
+            ${
+              config.devMode
+                ? html`
+                    <a
+                      id="navbar-load-from-disk"
+                      class="btn btn-success btn-sm"
+                      href="/pl/loadFromDisk"
+                    >
+                      Load from disk
+                    </a>
+                  `
+                : ''
+            }
+            ${ReportCheatingControl({ resLocals: navbarResLocals, navPage })}
+            ${EndExamControl({ resLocals: navbarResLocals })}
+            ${
+              showSupport
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-outline-light btn-sm ms-md-2 me-md-2 mb-2 mb-md-0"
+                      style="--bs-btn-color: var(--bs-navbar-color); --bs-btn-border-color: var(--bs-navbar-color)"
+                      data-bs-toggle="modal tooltip"
+                      data-bs-target="#supportModal"
+                      data-bs-title="Get help with PrairieLearn"
+                    >
+                      Get help
+                    </button>
+                  `
+                : ''
+            }
+            ${
+              courseAgentPanel
+                ? html`<div class="d-flex flex-shrink-0 me-md-2 mb-2 mb-md-0">
+                    ${courseAgentPanel}
+                  </div>`
+                : ''
+            }
+          </div>
           ${
             hideSessionControls
               ? ''
