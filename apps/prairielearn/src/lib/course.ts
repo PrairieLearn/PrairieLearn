@@ -17,10 +17,11 @@ import {
   updateCourseCommitHash,
   updateCourseSyncConfiguration,
 } from '../models/course.js';
-import { syncQuestionTitle } from '../models/question.js';
+import { syncQuestionQid, syncQuestionTitle } from '../models/question.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 import * as courseDB from '../sync/course-db.js';
 import * as infofile from '../sync/infofile.js';
+import { type QuestionRenameScope } from '../sync/questionRenameSync.js';
 import {
   getQuestionSyncPlan,
   syncQuestionMetadata,
@@ -80,6 +81,7 @@ export async function syncCourseFromDisk({
   job,
   preparedCourseData,
   editedPaths = [],
+  renameScope,
   forceFull = false,
 }: {
   course: Course;
@@ -87,6 +89,7 @@ export async function syncCourseFromDisk({
   job: ServerJob;
   preparedCourseData?: PreparedCourseData;
   editedPaths?: string[];
+  renameScope?: QuestionRenameScope | null;
   forceFull?: boolean;
 }): Promise<{ status: 'complete'; hadJsonErrors: boolean } | { status: 'sharing_error' }> {
   const configuration = await getSyncConfiguration(course);
@@ -111,6 +114,7 @@ export async function syncCourseFromDisk({
             oldHash: startGitHash,
             newHash: endGitHash,
             editedPaths,
+            renameScope,
           })
         : null;
 
@@ -123,6 +127,9 @@ export async function syncCourseFromDisk({
               coursePath: course.path,
               courseId: course.id,
               qids,
+              replacedQids: questionChanges.map((change) =>
+                change.kind === 'rename' ? change.oldQid : change.qid,
+              ),
             })
           : undefined;
       await sqldb.runInTransactionAsync(async () => {
@@ -133,6 +140,13 @@ export async function syncCourseFromDisk({
             job.info(`Reprocessing question metadata: ${change.qid}`);
             await syncRecoveredQuestion(course, change);
             for (const error of change.info.errors) job.error(error);
+          } else if (change.kind === 'rename') {
+            await syncQuestionQid({
+              course_id: course.id,
+              old_qid: change.oldQid,
+              qid: change.qid,
+              title: change.title,
+            });
           } else if (change.kind === 'metadata') {
             await syncQuestionMetadata(course, change);
           }

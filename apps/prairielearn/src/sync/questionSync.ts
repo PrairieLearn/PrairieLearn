@@ -22,6 +22,7 @@ import * as questions from './fromDisk/questions.js';
 import { syncQuestionTags } from './fromDisk/tags.js';
 import { syncTopics } from './fromDisk/topics.js';
 import { type InfoFile } from './infofile.js';
+import { type QuestionRenameScope, verifyQuestionRename } from './questionRenameSync.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -32,6 +33,7 @@ interface QuestionCatalogSync {
 }
 
 export type QuestionSyncChange =
+  | (QuestionRenameScope & { oldQid: string; title: string })
   | { kind: 'content'; qid: string }
   | { kind: 'title'; qid: string; title: string }
   | {
@@ -55,11 +57,13 @@ export async function getQuestionSyncPlan({
   oldHash,
   newHash,
   editedPaths = [],
+  renameScope,
 }: {
   course: Course;
   oldHash: string | null;
   newHash: string;
   editedPaths?: string[];
+  renameScope?: QuestionRenameScope | null;
 }): Promise<QuestionSyncChange[] | null> {
   if (!oldHash) return null;
   const diff = await execa(
@@ -81,13 +85,26 @@ export async function getQuestionSyncPlan({
     files.add(path.relative(course.path, file));
   }
   if (files.size === 0) return [];
-  if ([...files].some((file) => !file.startsWith('questions/'))) return null;
 
   // Git mode 120000 identifies symlinks, which can redirect content edits into metadata.
   const { stdout: trackedFiles } = await execa('git', ['ls-files', '--stage', '-z', '--', '.'], {
     cwd: course.path,
   });
   if (trackedFiles.split('\0').some((entry) => entry.startsWith('120000 '))) return null;
+  if (
+    renameScope &&
+    files.has(`questions/${renameScope.qid}/info.json`) &&
+    files.has(`questions/${renameScope.newQid}/info.json`)
+  ) {
+    const renamed = await verifyQuestionRename({
+      coursePath: course.path,
+      oldHash,
+      newHash,
+      scope: renameScope,
+    });
+    return renamed ? [renamed] : null;
+  }
+  if ([...files].some((file) => !file.startsWith('questions/'))) return null;
 
   const rows = await queryRows(
     sql.select_questions_for_files,

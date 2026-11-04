@@ -25,6 +25,7 @@ import {
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
+import { type QuestionRenameScope, getQuestionRenameScope } from '../sync/questionRenameSync.js';
 import { getQuestionSyncPlan } from '../sync/questionSync.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -176,6 +177,10 @@ export abstract class Editor {
    */
   abstract write(): Promise<WriteResult | null>;
 
+  async getQuestionRenameScope(_course: Course): Promise<QuestionRenameScope | null> {
+    return null;
+  }
+
   assertCanEdit() {
     // Do not allow users to edit without permission
     if (!this.authz_data.has_course_permission_edit) {
@@ -292,10 +297,12 @@ export abstract class Editor {
 
         await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
         const editedPaths = new Set<string>();
+        let renameScope: QuestionRenameScope | null = null;
 
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
 
+          renameScope = await this.getQuestionRenameScope(this.course);
           job.info('Write changes to disk');
           // Validate the entire edit under the course lock, including after a push
           // retry resets to newer remote files. No part may be written before validation.
@@ -339,6 +346,7 @@ export abstract class Editor {
             oldHash: startGitHash,
             newHash: await getCourseCommitHash(this.course.path),
             editedPaths: [...editedPaths],
+            renameScope,
           });
           if (qids !== null) return undefined;
           const configuration = await getSyncConfiguration(this.course);
@@ -458,6 +466,7 @@ export abstract class Editor {
               job,
               preparedCourseData,
               editedPaths: [...editedPaths],
+              renameScope,
             }),
             job,
           );
@@ -1738,6 +1747,11 @@ export class QuestionRenameEditor extends Editor {
     this.question = question;
   }
 
+  override async getQuestionRenameScope(course: Course) {
+    if (!this.question.qid || this.qid_new === this.question.qid) return null;
+    return await getQuestionRenameScope(course, this.question.qid, this.qid_new);
+  }
+
   private async moveQuestion({
     oldPath,
     newPath,
@@ -2703,6 +2717,13 @@ export class MultiEditor extends Editor {
     super(params);
 
     this.editors = editors;
+  }
+
+  override async getQuestionRenameScope(course: Course) {
+    const scopes = (
+      await Promise.all(this.editors.map((editor) => editor.getQuestionRenameScope(course)))
+    ).filter((scope) => scope !== null);
+    return scopes.length === 1 ? scopes[0] : null;
   }
 
   assertCanEdit() {

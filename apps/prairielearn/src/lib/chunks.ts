@@ -959,10 +959,12 @@ export async function prepareQuestionContentChunks({
   coursePath,
   courseId,
   qids,
+  replacedQids = qids,
 }: {
   coursePath: string;
   courseId: string;
   qids: string[];
+  replacedQids?: string[];
 }): Promise<PreparedChunks> {
   const updatedChunks: ChunkMetadata[] = qids.map((qid) => ({
     type: 'question',
@@ -970,7 +972,7 @@ export async function prepareQuestionContentChunks({
   }));
   const replacedChunkIds = await sqldb.queryScalars(
     sql.select_current_question_chunk_ids,
-    { course_id: courseId, qids },
+    { course_id: courseId, qids: replacedQids },
     IdSchema,
   );
   return {
