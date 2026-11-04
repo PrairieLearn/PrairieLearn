@@ -721,6 +721,8 @@ export const CourseSchema = z.object({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
   branch: z.string(),
+  chunks_history_started_at: DateFromISOString.nullable(),
+  chunks_published_at: DateFromISOString.nullable(),
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),
   created_at: DateFromISOString,
