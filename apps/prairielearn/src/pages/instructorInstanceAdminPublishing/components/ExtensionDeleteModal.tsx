@@ -99,7 +99,7 @@ export function ExtensionDeleteModal({
           disabled={deleteMutation.isPending}
           onClick={() => {
             if (!data) return;
-            void deleteMutation.mutate(data.extensionId);
+            deleteMutation.mutate(data.extensionId);
           }}
         >
           {deleteMutation.isPending ? 'Deleting...' : 'Delete'}

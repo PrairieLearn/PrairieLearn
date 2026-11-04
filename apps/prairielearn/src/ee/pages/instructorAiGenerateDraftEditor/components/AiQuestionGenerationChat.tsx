@@ -414,7 +414,7 @@ function Message({
       )}
       {isLastMessage && showSpinner && <ProgressStatus state="streaming" statusText="Working..." />}
       {jobLogsUrl && (
-        <a className="small" href={jobLogsUrl} target="_blank">
+        <a className="small" href={jobLogsUrl} target="_blank" rel="noreferrer">
           View job logs (link only visible to administrators)
         </a>
       )}
@@ -513,7 +513,7 @@ function useShowSpinner({
 
   // The effect manages the timeout: it resets and starts a new timer when dependencies change.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react/set-state-in-effect
     setTimerElapsed(false);
 
     if (!isActive) return;
@@ -649,7 +649,7 @@ export function AiQuestionGenerationChat({
 
     if (prevIsGeneratingRef.current !== isGenerating) {
       prevIsGeneratingRef.current = isGenerating;
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+      // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       onGeneratingChange?.(isGenerating);
 
       // If generation just finished, call the completion callback
@@ -670,14 +670,12 @@ export function AiQuestionGenerationChat({
     // Don't announce anything for the state we mount in (e.g. idle on page load).
     if (isInitialRender && !isGenerating) return;
     if (isGenerating) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect
+      // oxlint-disable-next-line react/set-state-in-effect
       setAnnouncement('Generating response…');
     } else if (status === 'error') {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect
       setAnnouncement('Generation failed.');
     } else {
       const wasCanceled = messages.at(-1)?.metadata?.status === 'canceled';
-      // eslint-disable-next-line @eslint-react/set-state-in-effect
       setAnnouncement(wasCanceled ? 'Generation stopped.' : 'Response ready.');
     }
   }, [isGenerating, messages, status]);

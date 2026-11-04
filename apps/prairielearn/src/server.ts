@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
-// dependencies like `pg` and `express`.
+// dependencies like `pg` and `express`. The comment below keeps import sorting
+// (`partitionByComment` in `.oxfmtrc.json`) from moving these imports.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
-/* eslint-enable import-x/order */
+// End of instrumentation imports.
 
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -114,7 +114,7 @@ if ('h' in argv || 'help' in argv) {
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -2152,7 +2152,7 @@ export async function startServer(app: express.Express) {
 
   // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
   // https://github.com/oven-sh/bun/issues/4459
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  // oxlint-disable-next-line typescript/no-unnecessary-condition
   if (server.getConnections) {
     opentelemetry.createObservableValueGauges(
       meter,

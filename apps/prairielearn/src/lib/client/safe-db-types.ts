@@ -1,5 +1,3 @@
-/* eslint perfectionist/sort-objects: error */
-
 /**
  * These schemas are used on any client page that needs to display data from the database. They are a more
  * strict version of the db-types.ts schemas.

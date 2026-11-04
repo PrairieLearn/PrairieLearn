@@ -1,5 +1,3 @@
-/* eslint perfectionist/sort-objects: error */
-
 import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 

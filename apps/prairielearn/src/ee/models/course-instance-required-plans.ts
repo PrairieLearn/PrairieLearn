@@ -22,7 +22,7 @@ export async function insertCourseInstanceRequiredPlan(
     { course_instance_id, plan_name: plan },
     CourseInstanceRequiredPlanWithContextSchema,
   );
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  // oxlint-disable-next-line typescript/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'course_instance_required_plans',
@@ -49,7 +49,7 @@ export async function deleteCourseInstanceRequiredPlan(
     },
     CourseInstanceRequiredPlanWithContextSchema,
   );
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  // oxlint-disable-next-line typescript/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'course_instance_required_plans',

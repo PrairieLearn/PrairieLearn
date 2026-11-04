@@ -1,6 +1,5 @@
 import './lib/htmx.js';
 import 'htmx-ext-loading-states/dist/loading-states.js';
-
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { removeCookieClient, setCookieClient } from '../../src/lib/client/cookie.js';

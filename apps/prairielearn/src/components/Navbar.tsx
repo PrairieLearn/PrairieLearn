@@ -14,7 +14,6 @@ import { SupportModal } from './SupportModal.js';
 export function Navbar({
   resLocals,
   navPage,
-  navSubPage,
   navbarType,
   sideNavEnabled = false,
   hideSessionControls = false,
@@ -36,7 +35,6 @@ export function Navbar({
   const navbarResLocals = hideSessionControls ? {} : resLocals;
   const { __csrf_token, course } = navbarResLocals;
   navPage ??= navbarResLocals.navPage;
-  navSubPage ??= navbarResLocals.navSubPage;
   navbarType ??= navbarResLocals.navbarType;
 
   const showSupport =

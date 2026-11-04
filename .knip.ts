@@ -88,6 +88,10 @@ const CLI_ONLY_DEPS = [
   '@postgres-language-server/cli',
   '@typescript/native',
   '@prairielearn/pin-github-actions',
+  'oxfmt',
+  'oxlint',
+  // Loaded by oxlint at runtime for type-aware rules.
+  'oxlint-tsgolint',
 ];
 
 // Collect packages referenced by element / question `info.json` files.

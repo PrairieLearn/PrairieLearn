@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, useEffect, useId, useRef, useState } from 'react';
 import {
-  // eslint-disable-next-line no-restricted-imports
+  // oxlint-disable-next-line no-restricted-imports
   OverlayTrigger as BootstrapOverlayTrigger,
   type OverlayTriggerProps as BootstrapOverlayTriggerProps,
   CloseButton,
@@ -217,7 +217,6 @@ export function OverlayTrigger({
   let triggerChild = children;
   if (popover && isClickTriggered && isValidElement<React.HTMLAttributes<HTMLElement>>(children)) {
     // React-Bootstrap requires the original trigger element, so preserve it while adding ARIA state.
-    // eslint-disable-next-line @eslint-react/no-clone-element
     triggerChild = cloneElement(children, { 'aria-haspopup': 'dialog', 'aria-expanded': isShown });
   }
 

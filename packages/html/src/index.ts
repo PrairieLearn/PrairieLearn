@@ -62,7 +62,14 @@ export class HtmlSafeString {
 }
 
 export type HtmlValue =
-  string | number | boolean | bigint | HtmlSafeString | undefined | null | HtmlValue[];
+  | string
+  | number
+  | boolean
+  | bigint
+  | HtmlSafeString
+  | undefined
+  | null
+  | HtmlValue[];
 
 export function html(strings: TemplateStringsArray, ...values: HtmlValue[]): HtmlSafeString {
   return new HtmlSafeString(strings, values);

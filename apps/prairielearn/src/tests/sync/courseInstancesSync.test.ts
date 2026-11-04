@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
