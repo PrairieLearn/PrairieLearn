@@ -230,6 +230,7 @@ WITH
       s.date,
       s.id AS submission_id,
       s.date AS submission_date,
+      ai_grading.model AS ai_grading_model,
       s.submitted_answer,
       s.partial_scores,
       s.override_score,
@@ -310,6 +311,24 @@ WITH
       LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
       LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
+      LEFT JOIN LATERAL (
+        SELECT
+          agj.model
+        FROM
+          grading_jobs AS gj
+          LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)
+        WHERE
+          gj.submission_id = s.id
+          AND gj.grading_method = 'AI'
+          AND gj.deleted_at IS NULL
+          AND gj.graded_at IS NOT NULL
+        ORDER BY
+          gj.graded_at DESC,
+          gj.id DESC,
+          agj.id DESC
+        LIMIT
+          1
+      ) AS ai_grading ON TRUE
       JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
       JOIN zones AS z ON (z.id = ag.zone_id)
       JOIN courses AS c ON (c.id = q.course_id)

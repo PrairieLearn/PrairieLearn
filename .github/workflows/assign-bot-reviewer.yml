@@ -1,0 +1,82 @@
+name: Assign bot PR reviewer
+
+# Run trusted base-branch code with access to the CI app secrets, including for
+# Dependabot PRs. This workflow never checks out or executes PR code.
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions: {}
+
+concurrency:
+  group: assign-bot-reviewer-${{ github.event.pull_request.number }}
+
+jobs:
+  assign-reviewer:
+    if: >-
+      github.repository == 'PrairieLearn/PrairieLearn' &&
+      !github.event.pull_request.draft &&
+      contains(fromJSON('["dependabot[bot]", "github-actions[bot]", "prairielearn-ci-bot[bot]"]'), github.event.pull_request.user.login)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+          # The CI app and its installation must grant Members: read.
+          permission-members: read
+          permission-pull-requests: write
+
+      - name: Request review from this week's reviewer
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const params = {
+              ...context.repo,
+              pull_number: context.payload.pull_request.number,
+            };
+            const { data: pull } = await github.rest.pulls.get(params);
+            if (pull.state !== 'open' || pull.draft) return;
+
+            // Preserve individual assignments; the CODEOWNERS core team request
+            // should not prevent assigning an individual reviewer.
+            if (pull.requested_reviewers.length > 0) {
+              core.info('An individual reviewer is already requested.');
+              return;
+            }
+            const reviews = await github.paginate(github.rest.pulls.listReviews, params);
+            if (reviews.some((review) => review.user?.type === 'User')) {
+              core.info('A person has already reviewed this PR.');
+              return;
+            }
+
+            const excluded = new Set([
+              'jonatanschroeder', // Not an employee.
+              'mwest1066', // Not in the usual review rotation.
+              'miguelaenlle', // Intern; reconsider if he becomes an employee.
+            ]);
+            const members = await github.paginate(github.rest.teams.listMembersInOrg, {
+              org: context.repo.owner,
+              team_slug: 'core',
+              per_page: 100,
+            });
+            const reviewers = members
+              .filter((member) => member.type === 'User' && !excluded.has(member.login.toLowerCase()))
+              .map((member) => member.login)
+              .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            if (reviewers.length === 0) {
+              core.setFailed('No eligible reviewers in the core team.');
+              return;
+            }
+
+            // Count Monday-based UTC weeks continuously across year boundaries.
+            // Use the creation date so delayed runs and reruns select the same week.
+            const week = Math.floor(
+              (Date.parse(pull.created_at) - Date.UTC(1970, 0, 5)) / (7 * 24 * 60 * 60 * 1000),
+            );
+            const reviewer = reviewers[week % reviewers.length];
+            await github.rest.pulls.requestReviewers({ ...params, reviewers: [reviewer] });
+            core.info(`Requested review from ${reviewer}.`);

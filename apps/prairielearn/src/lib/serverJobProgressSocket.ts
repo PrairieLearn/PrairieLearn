@@ -39,6 +39,11 @@ export function init() {
   namespace.on('connection', connection);
 }
 
+export async function close() {
+  await serverJobProgressCache?.close();
+  serverJobProgressCache = undefined;
+}
+
 function connection(socket: Socket) {
   socket.on('joinServerJobProgress', async (msg: ClientConnectMessage, callback) => {
     if (

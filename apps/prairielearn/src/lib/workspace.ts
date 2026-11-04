@@ -94,6 +94,12 @@ export class SubmissionFormatError extends Error {
   }
 }
 
+const pendingStartups = new Set<Promise<void>>();
+
+export async function stop() {
+  await Promise.allSettled(pendingStartups);
+}
+
 export function init(): void {
   assert(socketServer.io);
   workspaceUtils.init(socketServer.io);
@@ -143,14 +149,17 @@ function connection(socket: Socket) {
   });
 
   socket.on('startWorkspace', () => {
-    startup(workspace_id).catch(async (err) => {
-      logger.error(`Error starting workspace ${workspace_id}`, err);
-      await workspaceUtils.updateWorkspaceState(
-        workspace_id,
-        'stopped',
-        `Error! Click "Reboot" to try again. Detail: ${err}`,
-      );
-    });
+    const promise = startup(workspace_id)
+      .catch(async (err) => {
+        logger.error(`Error starting workspace ${workspace_id}`, err);
+        await workspaceUtils.updateWorkspaceState(
+          workspace_id,
+          'stopped',
+          `Error! Click "Reboot" to try again. Detail: ${err}`,
+        );
+      })
+      .finally(() => pendingStartups.delete(promise));
+    pendingStartups.add(promise);
   });
 
   socket.on('heartbeat', (callback?: (result: any) => void) => {

@@ -22,17 +22,14 @@ import { getQueueUrl } from './sqs.js';
 
 const abortController = new AbortController();
 const processingFinished = withResolvers();
-let enabled = false;
 type DeadLetterQueueType = 'jobs' | 'results';
 
 export async function init() {
-  if (!config.externalGradingUseAws) return;
+  if (!config.externalGradingUseAws || !config.externalGradingEnableResults) return;
 
   const jobsDLQName = config.externalGradingJobsDeadLetterQueueName;
   const resultsDLQName = config.externalGradingResultsDeadLetterQueueName;
   if (!jobsDLQName || !resultsDLQName) return;
-
-  enabled = true;
 
   const sqs = new SQSClient(makeAwsClientConfig());
   const jobsQueueUrl = await getQueueUrl(sqs, jobsDLQName);
@@ -53,7 +50,14 @@ export async function init() {
 }
 
 export async function stop() {
-  if (!enabled) return;
+  if (
+    !config.externalGradingUseAws ||
+    !config.externalGradingEnableResults ||
+    !config.externalGradingJobsDeadLetterQueueName ||
+    !config.externalGradingResultsDeadLetterQueueName
+  ) {
+    return;
+  }
 
   if (abortController.signal.aborted) {
     throw new Error('Already stopped');

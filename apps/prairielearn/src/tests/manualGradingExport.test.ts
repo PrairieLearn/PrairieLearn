@@ -1,11 +1,14 @@
+import * as cheerio from 'cheerio';
+import { parse as csvParse } from 'csv-parse/sync';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { fillInstanceQuestionColumnEntries } from '../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs } from '../ee/lib/ai-grading/ai-grading-util.js';
+import { buildAiGradingInfo, deleteAiGradingJobs } from '../ee/lib/ai-grading/ai-grading-util.js';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
+import { config } from '../lib/config.js';
 import {
   type Assessment,
   type AssessmentQuestion,
@@ -287,7 +290,7 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
     assert.deepEqual(memberUids, expectedUids);
   });
 
-  test('preserves manual scores and feedback across partial edits with separate provenance', async () => {
+  test('preserves grading provenance and model attribution across AI regrades and human edits', async () => {
     const { assessment, aq, grader, iqId, submissionId, options } =
       await createGradingExportFixture();
     const [updater] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
@@ -310,11 +313,39 @@ describe('Manual grading exports', { timeout: 60_000 }, () => {
       auto_points: 0,
       feedback: { manual: 'Original human feedback', extra: 'Retained human feedback' },
     });
-    await grade({ manual_points: 2, feedback: { manual: 'AI feedback' } }, true);
+    for (const [manual_points, model] of [
+      [1, 'earlier-model'],
+      [2, 'current-model'],
+    ] as const) {
+      const result = await grade({ manual_points, feedback: { manual: 'AI feedback' } }, true);
+      await sqldb.execute(sql.insert_ai_grading_metadata, {
+        grading_job_id: result.grading_job_id,
+        course_instance_id: assessment.course_instance_id,
+        model,
+      });
+    }
     const feedbackUpdate = await grade({ feedback: { manual: 'Updated human feedback' } });
     const autoUpdate = await grade({ auto_points: 1 }, false, updater.id);
     const row = await selectExportRow(assessment, aq, iqId);
     const json = getManualGradingJsonData(row, options);
+    assert.equal(json.ai_grading?.model, 'current-model');
+    const aiGradingInfo = await buildAiGradingInfo({
+      submission_id: submissionId,
+      submissionHtmls: [],
+    });
+    assert.equal(aiGradingInfo?.model, 'current-model');
+
+    const downloadsUrl = `http://localhost:${config.serverPort}/pl/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/downloads`;
+    const downloadsPage = await fetch(downloadsUrl);
+    assert.equal(downloadsPage.status, 200);
+    const $ = cheerio.load(await downloadsPage.text());
+    const download = await fetch(
+      new URL($('a[href$="all_submissions.csv"]').attr('href')!, downloadsUrl),
+    );
+    assert.equal(download.status, 200);
+    const records = csvParse<Record<string, string>>(await download.text(), { columns: true });
+    const submission = records.find((record) => record.submission_id === submissionId)!;
+    assert.equal(submission['AI model'], 'current-model');
     assert.equal(json.manual_points, 2);
     assert.equal(json.human_grading?.manual_points, 3);
     assert.equal(json.human_grading?.grading_job_id, humanScore.grading_job_id);

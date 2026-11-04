@@ -324,7 +324,10 @@ const STAFF_ASSESSMENT_QUESTION = {
 };
 
 const STAFF_QUESTION = {
+  authors: null,
   client_files: null,
+  copied_from: null,
+  copied_from_question_id: null,
   course_id: '1',
   deleted_at: null,
   dependencies: null,

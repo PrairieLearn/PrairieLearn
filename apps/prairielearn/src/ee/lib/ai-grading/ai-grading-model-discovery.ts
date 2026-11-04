@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 import { type Cache, cache } from '@prairielearn/cache';
+import { HttpStatusError } from '@prairielearn/error';
 import {
   type PublicFetch,
   ResponseTooLargeError,
@@ -10,6 +11,7 @@ import {
   readResponseWithLimit,
   validatePublicHttpsUrl,
 } from '@prairielearn/public-fetch';
+import { run } from '@prairielearn/run';
 
 // The timeout follows remote-image-copier.ts. The byte limit follows the JSON result limit in
 // externalGraderLocal.ts; count and ID limits additionally bound the catalog retained by the UI.
@@ -30,7 +32,7 @@ const modelListSchema = z.object({
   ),
 });
 
-export class AiGradingModelDiscoveryError extends Error {
+export class AiGradingModelDiscoveryError extends HttpStatusError {
   constructor(
     public readonly code:
       | 'invalid_endpoint'
@@ -47,7 +49,14 @@ export class AiGradingModelDiscoveryError extends Error {
       | 'invalid_response',
     message: string,
   ) {
-    super(message);
+    super(
+      run(() => {
+        if (code === 'rate_limit') return 429;
+        // Failures of a user-configured provider must not count as application 5xx errors.
+        return 400;
+      }),
+      message,
+    );
     this.name = 'AiGradingModelDiscoveryError';
   }
 }

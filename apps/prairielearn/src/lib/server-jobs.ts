@@ -390,23 +390,27 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     }
     this.flush(true);
 
-    delete liveJobs[this.jobId];
+    try {
+      await execute(sql.update_job_on_finish, {
+        job_sequence_id: this.jobSequenceId,
+        job_id: this.jobId,
+        output: this.output,
+        data: this.data,
+        status: run(() => {
+          if (isStop) return 'Stopped';
+          if (err) return 'Error';
+          return 'Success';
+        }),
+      });
 
-    await execute(sql.update_job_on_finish, {
-      job_sequence_id: this.jobSequenceId,
-      job_id: this.jobId,
-      output: this.output,
-      data: this.data,
-      status: run(() => {
-        if (isStop) return 'Stopped';
-        if (err) return 'Error';
-        return 'Success';
-      }),
-    });
-
-    // Notify sockets.
-    socketServer.io?.to('job-' + this.jobId).emit('update');
-    socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
+      // Notify sockets.
+      socketServer.io?.to('job-' + this.jobId).emit('update');
+      socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
+    } finally {
+      // Shutdown must wait for persistence and notifications, even after the
+      // job's own work has finished.
+      delete liveJobs[this.jobId];
+    }
   }
 }
 

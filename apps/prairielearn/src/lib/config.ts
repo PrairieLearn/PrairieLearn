@@ -15,12 +15,6 @@ import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
 
-// We don't compare against 'test' since we use the 'MODE' environment variable
-// for running a subset of our tests.
-const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 'development';
-const IS_VITE = (import.meta as any).env?.MODE === 'development';
-export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
-
 const TokenPricingSchema = z.object({
   input: z.number().nonnegative(),
   cachedInput: z.number().nonnegative(),
@@ -66,7 +60,6 @@ export const STANDARD_COURSE_DIRS = [
 ];
 
 export const ConfigSchema = z.object({
-  startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
   postgresqlDatabase: z.string().default('postgres'),
@@ -674,6 +667,18 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
+  /**
+   * Base URL of the course agent service (`apps/course-agent`), e.g.
+   * `http://localhost:8790` in development. The course agent is unavailable
+   * unless both this and `courseAgentServiceToken` are set.
+   */
+  courseAgentServiceUrl: z.string().nullable().default(null),
+  /**
+   * Bearer token that authenticates PrairieLearn to the course agent service.
+   * Must exactly match the Cloudflare Worker's PL_SERVICE_TOKEN secret, or
+   * PL_SERVICE_TOKEN in its .dev.vars file for local development.
+   */
+  courseAgentServiceToken: z.string().nullable().default(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
   /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */

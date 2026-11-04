@@ -2,10 +2,6 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
-    "startServer": {
-      "default": true,
-      "type": "boolean"
-    },
     "postgresqlUser": {
       "default": "postgres",
       "type": "string"
@@ -1330,6 +1326,14 @@
       "enum": ["process", "network"]
     },
     "courseFilesApiUrl": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "courseAgentServiceUrl": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "courseAgentServiceToken": {
       "default": null,
       "type": ["string", "null"]
     },

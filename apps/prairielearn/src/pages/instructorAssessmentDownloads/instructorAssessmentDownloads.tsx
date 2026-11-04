@@ -25,6 +25,7 @@ import {
 } from '../../lib/canvas-csv.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
+  AiGradingJobSchema,
   type Assessment,
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
@@ -114,6 +115,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   submission_user: UserSchema.shape.uid.nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
   last_grader: UserSchema.shape.uid.nullable(),
+  ai_grading_model: AiGradingJobSchema.shape.model.nullable(),
   zone_number: z.number(),
   zone_title: z.string().nullable(),
 });
@@ -726,6 +728,7 @@ router.get(
         ['Grading date', 'graded_at_formatted'],
         ['Assigned manual grader', 'assigned_grader'],
         ['Last manual grader', 'last_grader'],
+        ['AI model', 'ai_grading_model'],
         ['Score', 'score'],
         ['Correct', 'correct_str'],
         ['Feedback', 'feedback'],

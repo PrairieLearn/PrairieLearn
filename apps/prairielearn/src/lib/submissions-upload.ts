@@ -1,6 +1,5 @@
 import { parseISO } from 'date-fns';
 import memoize from 'p-memoize';
-import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import { formatErrorStack } from '@prairielearn/error';
@@ -166,10 +165,7 @@ export async function uploadSubmissions(
       (sum, assessmentQuestion) => sum + (assessmentQuestion.assessment_question.max_points ?? 0),
       0,
     );
-    const csvStream = streamifier.createReadStream(csvFile.buffer, {
-      encoding: 'utf8',
-    });
-    const csvParser = createCsvParser(csvStream, {
+    const csvParser = createCsvParser(csvFile.buffer, {
       lowercaseHeader: false,
       maxRecordSize: 1 << 21, // 2MB (should be plenty for a single line)
     });

@@ -105,26 +105,31 @@ export function useServerJobProgress({
 
     const socket = io('/server-job-progress');
 
+    // Rooms are lost on disconnect, including when a deployment moves this
+    // connection to another server. Rejoin and refresh cached progress each time.
+    socket.on('connect', () => {
+      for (const [jobSequenceId, token] of Object.entries(ongoingJobSequenceTokens)) {
+        socket.emit(
+          'joinServerJobProgress',
+          {
+            job_sequence_id: jobSequenceId,
+            job_sequence_token: token,
+          },
+          (response: ProgressUpdateMessage | null) => {
+            if (!response?.has_progress_data) {
+              return;
+            }
+
+            setJobsProgressAndEmit((prev) => ({
+              ...prev,
+              [jobSequenceId]: response,
+            }));
+          },
+        );
+      }
+    });
+
     for (const jobSequenceId of Object.keys(ongoingJobSequenceTokens)) {
-      // Join the WebSocket room for this job sequence to receive progress updates.
-      socket.emit(
-        'joinServerJobProgress',
-        {
-          job_sequence_id: jobSequenceId,
-          job_sequence_token: ongoingJobSequenceTokens[jobSequenceId],
-        },
-        (response: ProgressUpdateMessage) => {
-          if (!response.has_progress_data) {
-            return;
-          }
-
-          setJobsProgressAndEmit((prev) => ({
-            ...prev,
-            [jobSequenceId]: response,
-          }));
-        },
-      );
-
       // Listen for progress updates for this job sequence.
       socket.on('serverJobProgressUpdate', (msg: ProgressUpdateMessage) => {
         if (msg.job_sequence_id !== jobSequenceId || !msg.has_progress_data) {

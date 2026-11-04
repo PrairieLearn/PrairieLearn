@@ -773,6 +773,57 @@ def ast_check_str(
     _ast_check_str(expr, locals_for_eval, allow_sets=allow_sets)
 
 
+def _validate_ast_structure(
+    expression_ast: ast.Expression,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_extra_symbols: bool,
+) -> None:
+    """Validate nodes that SymPy evaluation could remove from the result."""
+    valid_symbols = set().union(
+        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
+    )
+    invalid_symbols: set[str] = set()
+    float_value: float | None = None
+    for node in ast.walk(expression_ast):
+        if (
+            not isinstance(node, ast.Call)
+            or not isinstance(node.func, ast.Name)
+            or len(node.args) != 1
+            or not isinstance(node.args[0], ast.Constant)
+        ):
+            continue
+
+        value = node.args[0].value
+        if (
+            node.func.id == "Symbol"
+            and not allow_extra_symbols
+            and isinstance(value, str)
+            and value not in valid_symbols
+        ):
+            invalid_symbols.add(value)
+        if (
+            node.func.id == "Float"
+            and float_value is None
+            and isinstance(value, (int, float, str))
+        ):
+            try:
+                float_value = float(value)
+            except ValueError:
+                continue
+
+    if invalid_symbols:
+        # Evaluated SymPy expressions order symbols canonically before sympy_check
+        # traverses them. Preserve which invalid symbol existing errors identify.
+        invalid_symbol = max(
+            invalid_symbols,
+            key=lambda symbol: sympy.default_sort_key(sympy.Symbol(symbol)),
+        )
+        raise HasInvalidSymbolError(invalid_symbol)
+    if float_value is not None:
+        raise HasFloatError(float_value)
+
+
 class _SetOperationTransformer(ast.NodeTransformer):
     """Rewrite only binary operations validated as set operations."""
 
@@ -831,9 +882,13 @@ def sympy_check(
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
-    checked_nodes: set[sympy.Basic] | None = set() if check_evaluated_complex else None
 
-    def check_nodes(root: sympy.Basic, *, check_structure: bool) -> None:
+    def check_nodes(
+        root: sympy.Basic, *, check_structure: bool, check_complex: bool
+    ) -> None:
+        checked_nodes: set[sympy.Basic] | None = (
+            set() if check_evaluated_complex else None
+        )
         work_stack: deque[sympy.Basic] = deque([root])
 
         while work_stack:
@@ -856,12 +911,20 @@ def sympy_check(
                     raise HasFloatError(float(str(item)))
                 if not allow_sets and isinstance(item, sympy.Set):
                     raise HasSetNotationError
-            if not allow_complex and _is_disallowed_complex(item):
+            if check_complex and not allow_complex and _is_disallowed_complex(item):
                 raise HasComplexError("complex values not allowed")
 
             work_stack.extend(item.args)
 
-    check_nodes(expr, check_structure=True)
+    # SymPy's assumptions can be inconsistent for unevaluated arithmetic trees.
+    # When checking an evaluated copy, only use the original tree for structural
+    # validation so that it remains available for display without determining
+    # whether the expression is complex.
+    check_nodes(
+        expr,
+        check_structure=True,
+        check_complex=not check_evaluated_complex,
+    )
 
     if check_evaluated_complex:
         # Reevaluate the existing tree without reparsing, while preserving the
@@ -870,7 +933,7 @@ def sympy_check(
             evaluated_expr = expr.doit(deep=True)
         except Exception as exc:
             raise BaseSympyError from exc
-        check_nodes(evaluated_expr, check_structure=False)
+        check_nodes(evaluated_expr, check_structure=False, check_complex=True)
 
 
 def _is_disallowed_complex(item: sympy.Basic) -> bool:
@@ -1187,6 +1250,11 @@ def _evaluate_with_source(
             parsed_locals_to_eval,
             allow_sets=allow_sets,
             resolved_names=resolved_names,
+        )
+        _validate_ast_structure(
+            expression_ast,
+            locals_for_eval,
+            allow_extra_symbols=allow_extra_symbols,
         )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
         index = _find_type_error_offset(
@@ -2022,23 +2090,29 @@ def get_builtin_constants(
 
 
 def get_builtin_callable_functions(
-    *, allow_trig_functions: bool = True, allow_sets: bool = False
+    *,
+    allow_trig_functions: bool = True,
+    allow_sets: bool = False,
+    include_helpers: bool = True,
 ) -> set[str]:
     """Return the set of built-in callable function names.
 
     Parameters:
         allow_trig_functions: Whether to include trigonometric functions.
         allow_sets: Whether to include set constructors.
+        include_helpers: Whether to include internal parsing helpers.
 
     Returns:
         A set of built-in callable function names.
     """
     const = _Constants
-    names = const.functions.keys() | const.helpers.keys()
+    names = set(const.functions)
+    if include_helpers:
+        names.update(const.helpers)
     if allow_trig_functions:
-        names |= const.trig_functions.keys()
+        names.update(const.trig_functions)
     if allow_sets:
-        names |= const.set_functions.keys()
+        names.update(const.set_functions)
     return names
 
 

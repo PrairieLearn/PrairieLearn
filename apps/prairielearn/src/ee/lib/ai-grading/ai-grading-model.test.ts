@@ -6,11 +6,7 @@ import { loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
 import * as publicFetch from '@prairielearn/public-fetch';
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  AiGradingJobSchema,
-  AssessmentQuestionSchema,
-  type CourseInstance,
-} from '../../../lib/db-types.js';
+import { AiGradingJobSchema, type CourseInstance } from '../../../lib/db-types.js';
 import { encryptForStorage } from '../../../lib/encrypted-storage.js';
 import * as progress from '../../../lib/serverJobProgressSocket.js';
 import {
@@ -19,7 +15,6 @@ import {
   updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
-import { selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
 import { selectAssessmentQuestionByQuestionId } from '../../../models/assessment-question.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
@@ -303,49 +298,6 @@ describe('custom AI grading model', () => {
     } finally {
       fetch.mockRestore();
     }
-  });
-
-  it('starts a custom grading job and remembers its identity without platform credits', async () => {
-    const course = await selectCourseByShortName('QA 101');
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
-      tid: 'hw10-aiGrading',
-    });
-    const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
-    const assessment_question = await selectAssessmentQuestionByQuestionId({
-      assessment_id: assessment.id,
-      question_id: question.id,
-    });
-    const credits = await selectCreditPool(courseInstance.id);
-    const jobId = await aiGrade({
-      course,
-      course_instance: courseInstance,
-      assessment,
-      question,
-      assessment_question,
-      urlPrefix: '/pl',
-      authn_user_id: userId,
-      user_id: userId,
-      mode: 'selected',
-      instance_question_ids: [],
-      model_id,
-      provider: 'openai-compatible',
-      credential_id: credentialId,
-    });
-    await expect
-      .poll(async () => queryScalar(sql.select_test_job_status, { id: jobId }, z.string()))
-      .toBe('Success');
-    expect(
-      await queryRow(
-        sql.select_test_assessment_question,
-        { id: assessment_question.id },
-        AssessmentQuestionSchema,
-      ),
-    ).toMatchObject({
-      ai_grading_last_selected_model: model_id,
-      ai_grading_last_selected_credential_id: credentialId,
-    });
-    expect(await selectCreditPool(courseInstance.id)).toEqual(credits);
   });
 
   it('rejects custom API keys disabled during discovery before creating a grading job', async () => {

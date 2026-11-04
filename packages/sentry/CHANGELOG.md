@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 6.0.1
+
+### Patch Changes
+
+- d03c74b: Redact credentials from errors reported to Sentry.
+
 ## 6.0.0
 
 ### Major Changes
