@@ -87,11 +87,18 @@ def load_round(path: Path) -> dict[str, Any]:
         # Slices pool families and complexities so each input mode, payload,
         # and expected outcome gets its own ratio.
         slice_key = ("all", "all", *cell[2:])
-        for key in (
+        keys = [
             (*condition, *cell),
             (*condition, *slice_key),
             (*condition, "all", "all", "all", "all", "all"),
-        ):
+        ]
+        # Graded corpora also split each slice by how the submission scores.
+        if measurement["scoring"] is not None:
+            keys += [
+                (*condition, "scoring", "all", *cell[2:4], measurement["scoring"]),
+                (*condition, "scoring", "all", "all", "all", measurement["scoring"]),
+            ]
+        for key in keys:
             totals[key][0] += timing
             totals[key][1] += 1
     return {
@@ -182,7 +189,8 @@ def analyze_comparison(comparison_dir: Path) -> dict[str, Any]:
     ]
     conditions = [r for r in rows if r["family"] == "all" and r["input_mode"] == "all"]
     slices = [r for r in rows if r["family"] == "all" and r["input_mode"] != "all"]
-    cells = [r for r in rows if r["family"] != "all"]
+    scoring = [r for r in rows if r["family"] == "scoring"]
+    cells = [r for r in rows if r["family"] not in {"all", "scoring"}]
 
     means = {
         role: np.array([r["mean_us"] for r in rounds if r["role"] == role])
@@ -199,6 +207,7 @@ def analyze_comparison(comparison_dir: Path) -> dict[str, Any]:
         "complete_blocks": len(blocks),
         "conditions": conditions,
         "slices": slices,
+        "scoring": scoring,
         "cells": cells,
         "rounds": rounds,
         "round_mean_cv": {

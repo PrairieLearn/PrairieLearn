@@ -94,6 +94,9 @@ def run_case(
     start = time.perf_counter_ns()
     try:
         module.parse(element_html, data)
+        # PrairieLearn grades only submissions without format errors.
+        if case.get("scoring") is not None and ANSWER_NAME not in data["format_errors"]:
+            module.grade(element_html, data)
     except BaseException as exc:
         duration_ns = time.perf_counter_ns() - start
         return 2, f"{type(exc).__name__}: {exc}", duration_ns
@@ -108,7 +111,10 @@ def run_case(
             sort_keys=True,
             separators=(",", ":"),
         ).encode()
-        return 0, hashlib.sha256(stored).hexdigest(), duration_ns
+        detail = hashlib.sha256(stored).hexdigest()
+        if case.get("scoring") is not None:
+            detail += f":score={data['partial_scores'][ANSWER_NAME]['score']}"
+        return 0, detail, duration_ns
     return 1, str(data["format_errors"].get(ANSWER_NAME, "rejected")), duration_ns
 
 

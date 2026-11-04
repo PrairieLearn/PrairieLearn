@@ -971,6 +971,7 @@ def load_measurements(
                     "input_mode": case["input_mode"],
                     "payload_mode": case["payload_mode"],
                     "expected": case["baseline_status"],
+                    "scoring": case.get("scoring"),
                     "timing_ns": timing_ns,
                     "outcome": OUTCOMES[outcome],
                 })

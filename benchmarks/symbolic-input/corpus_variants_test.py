@@ -16,6 +16,7 @@ sys.path.insert(0, str(BENCHMARK_DIR))
 
 import behavior  # ruff: ignore[module-import-not-at-top-of-file]
 import generate_ce_corpus  # ruff: ignore[module-import-not-at-top-of-file]
+import generate_graded_corpus  # ruff: ignore[module-import-not-at-top-of-file]
 import oracle  # ruff: ignore[module-import-not-at-top-of-file]
 import translate_corpus  # ruff: ignore[module-import-not-at-top-of-file]
 
@@ -193,3 +194,73 @@ def test_compare_cases_classifies_outcomes_ignoring_name_order() -> None:
     assert result["message_changes"] == [
         {"payload_mode": "legacy", "baseline": "old", "candidate": "new", "cases": 1}
     ]
+
+
+def test_build_graded_rows_expands_accepted_cases_by_scoring() -> None:
+    assumptions = {"_assumptions": {"x": {"real": True}}}
+    source = [
+        {"id": "a", "correct_answers": {"bench": assumptions}},
+        {"id": "r", "correct_answers": {}},
+        {"id": "blank", "correct_answers": {}},
+        {"id": "boom", "correct_answers": {}},
+    ]
+    answers = {
+        "a": {
+            "status": "accepted",
+            "correct": {"_value": "x"},
+            "incorrect": {"_value": "x + 1"},
+        },
+        "r": {"status": "rejected"},
+        "blank": {"status": "accepted", "correct": "", "incorrect": None},
+        "boom": {"status": "exception", "error": "ValueError: no"},
+    }
+
+    rows, skipped = generate_graded_corpus.build_graded_rows(source, answers)
+
+    assert [(row["id"], row["scoring"]) for row in rows] == [
+        ("a-correct", "correct"),
+        ("a-incorrect", "incorrect"),
+        ("r-invalid", "invalid"),
+        ("blank-correct", "correct"),
+    ]
+    assert rows[1]["correct_answers"] == {"bench": {"_value": "x + 1"}}
+    assert source[0]["correct_answers"] == {"bench": assumptions}
+    assert skipped == {"answers-exception": 1}
+
+
+def test_label_rows_drops_mislabeled_rows_and_counts_candidate_changes() -> None:
+    def row(row_id: str, scoring: str) -> dict[str, object]:
+        return {
+            "id": row_id,
+            "scoring": scoring,
+            "input_mode": "formula-editor",
+            "payload_mode": "mathjson",
+            "submission": row_id,
+        }
+
+    rows = [
+        row("same", "correct"),
+        row("changed", "incorrect"),
+        row("wrong", "incorrect"),
+    ]
+    baseline = {
+        "same": {"status": "accepted", "score": 1.0},
+        "changed": {"status": "accepted", "score": 0.0},
+        "wrong": {"status": "accepted", "score": 1.0},
+    }
+    candidate = {
+        "same": {"status": "accepted", "score": 1.0},
+        "changed": {"status": "rejected", "score": None},
+        "wrong": {"status": "accepted", "score": 1.0},
+    }
+
+    kept, labels = generate_graded_corpus.label_rows(rows, baseline, candidate)
+
+    assert [(r["id"], r["baseline_status"]) for r in kept] == [
+        ("same", "accepted"),
+        ("changed", "accepted"),
+    ]
+    assert labels["dropped"] == {"incorrect-scored-correct": 1}
+    assert labels["candidate_changed"] == {
+        "formula-editor|mathjson|incorrect->invalid": 1
+    }
