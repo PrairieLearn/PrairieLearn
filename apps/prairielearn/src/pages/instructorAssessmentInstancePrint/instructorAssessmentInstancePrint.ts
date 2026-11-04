@@ -23,12 +23,14 @@ import {
   type PrintDocument,
   describeOmittedQuestions,
   getPrintRenderer,
+  getPrintableInstanceQuestionIds,
   isBrowserRenderingAvailable,
   renderAssessmentInstanceQuestionsForPrinting,
   validatePrintDocument,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import {
   BLANK_NAME_PLACEHOLDER,
   HONOR_CODE_HEADING,
@@ -210,6 +212,20 @@ function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
   };
 }
 
+function printAssetScope(
+  resLocals: ResLocalsForPage<'assessment-instance'>,
+  instanceQuestionIds: string[],
+): PrintAssetScope {
+  return {
+    courseInstanceId: resLocals.course_instance.id,
+    assessmentId: resLocals.assessment.id,
+    assessmentInstanceId: resLocals.assessment_instance.id,
+    instanceQuestionIds,
+    authnUserId: resLocals.authn_user.id,
+    userId: resLocals.user.id,
+  };
+}
+
 const parseDocxBody: RequestHandler = (req, res, next) => {
   if (!req.is('application/octet-stream')) {
     next(new HttpStatusError(415, 'The Word export request has an unsupported format.'));
@@ -286,12 +302,20 @@ router.get(
         req.originalUrl,
         `${config.serverType}://localhost:${config.serverPort}`,
       );
-      const { html, source } = await getPrintRenderer().render(
+      const { html, source } = await getPrintRenderer().render<{
+        html: string;
+        source: DocxSource;
+      }>(
         {
           url: localPreviewUrl.href,
           browserOrigin: config.serverCanonicalHost ?? undefined,
           html: rawHtml,
-          cookieHeader: req.get('cookie'),
+          assetScope: printAssetScope(
+            res.locals,
+            printingResult.questionResults
+              .filter((result) => result.status === 'rendered')
+              .map(({ instanceQuestionId }) => instanceQuestionId),
+          ),
           runScripts: true,
           signal,
           timeoutMs: remainingTimeoutMs(),
@@ -408,12 +432,17 @@ router.post(
           : undefined,
         footerLabel,
       });
+      const instanceQuestionIds = await getPrintableInstanceQuestionIds(
+        res.locals.assessment_instance.id,
+        layout.excludedQuestionNumbers,
+      );
+      signal.throwIfAborted();
       const contents = await getPrintRenderer().render(
         {
           url: localPreviewUrl.href,
           browserOrigin: config.serverCanonicalHost ?? undefined,
           html: snapshot.html,
-          cookieHeader: req.get('cookie'),
+          assetScope: printAssetScope(res.locals, instanceQuestionIds),
           runScripts: true,
           signal,
           timeoutMs: remainingTimeoutMs(),
