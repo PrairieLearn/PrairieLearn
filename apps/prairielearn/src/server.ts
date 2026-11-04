@@ -2168,6 +2168,8 @@ export async function startServer(app: express.Express) {
     : null;
   server.on('upgrade', (req, socket, head) => {
     if (req.url?.startsWith('/socket.io/')) return;
+    // The workspace proxy (http-proxy-middleware) handles these with its own `upgrade` listener.
+    if (req.url && /^\/pl\/(public\/)?workspace\/\d+\/container\//.test(req.url)) return;
     if (!handleCourseAgentUpgrade?.(app, req, head)) socket.destroy();
   });
 
