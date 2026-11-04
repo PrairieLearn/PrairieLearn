@@ -131,7 +131,7 @@ test('uses the configured honor code for printed pledges even when it is disable
     const xml = (
       await archive.files.find((file) => file.path === 'word/document.xml')!.buffer()
     ).toString();
-    const word = load(xml, { xmlMode: true });
+    const word = load(xml, { xml: true });
     const text = word('w\\:t').text();
     expect(text).toContain(
       'I, ____________________________, agree to follow the course collaboration policy.',
