@@ -6,6 +6,7 @@ import { config } from './config.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
 import { type PrintDocument, getPrintRenderer, validatePrintDocument } from './printing/index.js';
 import { type PaperSize, createPdfOutput } from './printing/pdf-output.js';
+import type { PrintAssetScope } from './printing/print-asset-access.js';
 
 export interface PrintExportWork {
   document: 'assessment' | 'answer_key' | 'booklet';
@@ -17,9 +18,9 @@ export interface PrintExportWork {
     printDocument: PrintDocument;
     localPreviewUrl: string;
     html: string;
+    assetScope: PrintAssetScope;
   }[];
   covers: { name: string; base64: string }[];
-  cookieHeader?: string;
 }
 
 export async function renderPrintExport(
@@ -43,12 +44,12 @@ export async function renderPrintExport(
   const pdfOutput = createPdfOutput();
   for (const snapshot of work.snapshots) {
     if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
-    const rendered = await renderer.render(
+    const rendered = await renderer.render<{ pdf: Buffer; coverPageCount: number }>(
       {
         url: snapshot.localPreviewUrl,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: snapshot.html,
-        cookieHeader: work.cookieHeader,
+        assetScope: snapshot.assetScope,
         signal: shutdownSignal,
       },
       {
