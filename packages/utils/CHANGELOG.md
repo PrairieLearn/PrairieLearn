@@ -1,5 +1,11 @@
 # @prairielearn/utils
 
+## 3.3.3
+
+### Patch Changes
+
+- 0998223: Minor cleanups for oxlint; no behavior changes.
+
 ## 3.3.2
 
 ### Patch Changes

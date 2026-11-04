@@ -8,7 +8,10 @@ import type { useManualGradingActions } from '../utils/useManualGradingActions.j
 const defaultClosedSubmissionsOnly = true;
 
 export type GroupInfoModalState =
-  { type: 'selected'; ids: string[] } | { type: 'all' } | { type: 'ungrouped' } | null;
+  | { type: 'selected'; ids: string[] }
+  | { type: 'all' }
+  | { type: 'ungrouped' }
+  | null;
 
 export function GroupInfoModal({
   modalState,
