@@ -105,6 +105,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private active: ActiveTurn | null = null;
   private native: CodexAppServerClient | null = null;
   private recovering = false;
+  /** Set synchronously so a duplicate delivery cannot queue a second continuation. */
+  private continuing = false;
   private reviewOperation: ReviewOperation | null = null;
   /** Continuations wait for the current checkpoint/destruction before starting execution. */
   private sandboxShutdown: Promise<void> | null = null;
@@ -261,7 +263,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     if (!this.reviewPart()) return;
     if (this.savedOutcome()) {
-      await this.continueReview();
+      this.continueInBackground(() => this.continueReview());
       return;
     }
     if (
@@ -381,13 +383,21 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       operation?.resolveNativeCall &&
       operation.callId === this.record.review?.callId
     ) {
-      await this.advanceLocalBaseline(outcome);
-      live.requestId = options.requestId;
-      live.sdkFinished = Promise.withResolvers<undefined>();
-      const stream = live.execution.openStream();
-      this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' } });
-      await this.scheduleDeadline('turn');
       const resolve = operation.resolveNativeCall;
+      let stream: ReturnType<SandboxTurn['openStream']>;
+      try {
+        await this.advanceLocalBaseline(outcome);
+        live.requestId = options.requestId;
+        live.sdkFinished = Promise.withResolvers<undefined>();
+        stream = live.execution.openStream();
+        this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' } });
+        await this.scheduleDeadline('turn');
+      } catch (error) {
+        // The native turn is parked on this review. Stop it so the turn releases the sandbox
+        // and Resume can deliver the saved result to a fresh turn.
+        live.stop ??= live.execution.stop();
+        throw error;
+      }
       operation.resolveNativeCall = null;
       resolve(outcome);
       const abort = () => {
@@ -431,7 +441,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
     this.native ??= new CodexAppServerClient(this.sandbox);
     const execution = new SandboxTurn(this.sandbox, this.native, {
-      messageId: crypto.randomUUID(),
+      // The SDK appends a continuation to the last assistant message and ignores this ID, so a
+      // review requested during the continuation must point at that message.
+      messageId:
+        (continuation && this.messages.findLast((m) => m.role === 'assistant')?.id) ||
+        crypto.randomUUID(),
       text: outcome ? { callId: this.record.review!.callId, result: outcome } : text,
       startup,
       onReview: async ({ callId }, ready) => {
@@ -801,13 +815,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ) {
       return false;
     }
-    if (!this.sandboxShutdown) {
-      this.setRecord({
-        ...this.record,
-        lifecycle: { status: 'waiting_for_agent' },
-        deadline: null,
-      });
-    }
     // Publish the saved result before resuming the native call. Its completion
     // notification belongs to the closed review stream, not the new response.
     await this.persistMessages(
@@ -835,6 +842,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           part.state === 'output-available',
       );
     if (!stored) throw new Error('SDK did not persist review result');
+    // A failed publish leaves the review as it was, so PrairieLearn's Resume can redeliver it.
+    if (!this.sandboxShutdown) {
+      this.setRecord({
+        ...this.record,
+        lifecycle: { status: 'waiting_for_agent' },
+        deadline: null,
+      });
+    }
     this.continueInBackground(() => this.continueSavedTurn());
     return true;
   }
@@ -844,10 +859,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * any HTTP timeout. A failed continuation leaves Resume available to retry it.
    */
   private continueInBackground(continuation: () => Promise<void>) {
-    void this.keepAliveWhile(continuation).catch((error: unknown) => {
-      this.reportError(error);
-      if (this.record.lifecycle.status !== 'blocked') this.block('runtime_failed');
-    });
+    if (this.continuing) return;
+    this.continuing = true;
+    void this.keepAliveWhile(continuation)
+      .catch((error: unknown) => {
+        this.reportError(error);
+        if (this.record.lifecycle.status !== 'blocked') this.block('runtime_failed');
+      })
+      .finally(() => {
+        this.continuing = false;
+      });
   }
 
   private async continueSavedTurn() {
