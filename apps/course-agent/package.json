@@ -16,7 +16,7 @@
     "@cloudflare/sandbox": "1.0.2",
     "@prairielearn/course-agent-types": "workspace:^",
     "@sentry/cloudflare": "^11.9.0",
-    "agents": "0.28.0",
+    "agents": "0.28.1",
     "ai": "^7.0.116",
     "hono": "^4.13.13",
     "vscode-jsonrpc": "^9.0.3",
@@ -32,6 +32,6 @@
     "prettier": "^3.9.9",
     "ts-morph": "^28.0.0",
     "vitest": "^5.0.2",
-    "wrangler": "^4.134.0"
+    "wrangler": "^4.156.0"
   }
 }
