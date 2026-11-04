@@ -5,4 +5,3 @@ export {
   restrictedSyntax,
   typescriptRestrictedSyntax,
 } from './oxlint.js';
-export { oxfmtConfig } from './oxfmt.js';

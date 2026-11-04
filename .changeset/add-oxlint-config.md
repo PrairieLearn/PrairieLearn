@@ -1,5 +1,5 @@
 ---
-'@prairielearn/oxc-config': major
+'@prairielearn/oxlint-config': major
 ---
 
-Publish shared oxlint and oxfmt configuration.
+Publish shared oxlint configuration.

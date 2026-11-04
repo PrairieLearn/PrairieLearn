@@ -2,7 +2,7 @@
 
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`. The comment below keeps import sorting
-// (`partitionByComment` in the oxfmt config) from moving these imports.
+// (`partitionByComment` in `.oxfmtrc.json`) from moving these imports.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
 // End of instrumentation imports.
@@ -2180,23 +2180,18 @@ export async function startServer(app: express.Express) {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
-  // https://github.com/oven-sh/bun/issues/4459
-  // oxlint-disable-next-line typescript/no-unnecessary-condition
-  if (server.getConnections) {
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'http.connections.active',
-      {
-        valueType: opentelemetry.ValueType.INT,
-        interval: 1000,
-      },
-      // @ts-expect-error TODO: type correctly
-      () => {
-        return util.promisify(server!.getConnections.bind(server))();
-      },
-    );
-  }
+  opentelemetry.createObservableValueGauges(
+    meter,
+    'http.connections.active',
+    {
+      valueType: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    // @ts-expect-error TODO: type correctly
+    () => {
+      return util.promisify(server!.getConnections.bind(server))();
+    },
+  );
 
   const serverSocketActivity = new SocketActivityMetrics(meter, 'http');
   server.on('connection', (socket) => serverSocketActivity.addSocket(socket));

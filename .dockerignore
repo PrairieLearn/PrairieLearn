@@ -6,7 +6,7 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
-!oxfmt.config.mts
+!.oxfmtrc.json
 !oxlint.config.mts
 !.prettierignore
 !.prettierrc.json

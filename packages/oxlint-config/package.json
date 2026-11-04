@@ -1,10 +1,10 @@
 {
-  "name": "@prairielearn/oxc-config",
+  "name": "@prairielearn/oxlint-config",
   "version": "0.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
-    "directory": "packages/oxc-config"
+    "directory": "packages/oxlint-config"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -28,12 +28,10 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "oxfmt": "^0.75.0",
     "oxlint": "^1.90.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "peerDependencies": {
-    "oxfmt": "^0.75.0",
     "oxlint": "^1.90.0",
     "oxlint-tsgolint": "^7.0.2005"
   },

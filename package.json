@@ -33,7 +33,7 @@
     "@playwright/test": "^1.63.0",
     "@postgres-language-server/cli": "^0.25.7",
     "@prairielearn/eslint-plugin": "workspace:^",
-    "@prairielearn/oxc-config": "workspace:^",
+    "@prairielearn/oxlint-config": "workspace:^",
     "@prairielearn/pin-github-actions": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tree-sitter-htmlmustache": "^1.4.3",

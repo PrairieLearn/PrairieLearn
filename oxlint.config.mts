@@ -1,6 +1,6 @@
 import { defineConfig } from 'oxlint';
 
-import { oxlintConfig, restrictedSyntax } from '@prairielearn/oxc-config';
+import { oxlintConfig, restrictedSyntax } from '@prairielearn/oxlint-config';
 
 const elementImportMessage =
   'Element code must not import from outside its own directory. Use a public API or copy the implementation locally.';

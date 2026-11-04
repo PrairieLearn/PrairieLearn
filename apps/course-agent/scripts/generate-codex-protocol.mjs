@@ -53,5 +53,5 @@ while (pending.length > 0) {
 for (const source of types) {
   if (!reachable.has(source)) await rm(source.getFilePath());
 }
-// Run from the repository root so oxfmt uses the repository's `oxfmt.config.mts`.
+// Run from the repository root so oxfmt uses the repository's `.oxfmtrc.json`.
 await execa('oxfmt', [output], { cwd: path.resolve(root, '../..'), preferLocal: true });

@@ -73,7 +73,7 @@ export interface PrairieLearnOxlintOptions {
  *
  * ```ts
  * import { defineConfig } from 'oxlint';
- * import { oxlintConfig } from '@prairielearn/oxc-config';
+ * import { oxlintConfig } from '@prairielearn/oxlint-config';
  *
  * export default defineConfig({
  *   extends: [oxlintConfig({ strictTypeAwareFiles: ['src/**\/*.{ts,tsx}'] })],

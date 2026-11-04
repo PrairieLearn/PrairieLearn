@@ -334,7 +334,7 @@ function UserSettingsCard({
             id="enable-keyboard-shortcuts"
             className="form-check-input"
             type="checkbox"
-            // A native checkbox already exposes its checked state; oxlint still asks for `aria-checked`.
+            // False positive: https://github.com/oxc-project/oxc/issues/24838
             // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props
             role="switch"
             aria-describedby="enable-keyboard-shortcuts-description"

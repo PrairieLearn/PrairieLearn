@@ -88,6 +88,7 @@ const CLI_ONLY_DEPS = [
   '@postgres-language-server/cli',
   '@typescript/native',
   '@prairielearn/pin-github-actions',
+  'oxfmt',
 ];
 
 // Collect packages referenced by element / question `info.json` files.
@@ -215,7 +216,7 @@ const config: KnipConfig = {
       // `'import-x/resolver': { typescript: true }` setting.
       ignoreDependencies: ['eslint-import-resolver-typescript'],
     },
-    'packages/oxc-config': {
+    'packages/oxlint-config': {
       // JS plugins are resolved by specifier with `import.meta.resolve()` and loaded by oxlint.
       ignoreDependencies: [
         '@html-eslint/eslint-plugin',
