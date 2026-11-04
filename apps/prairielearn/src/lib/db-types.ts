@@ -1,3 +1,4 @@
+// `oxlint.config.mts` keeps the objects and sets in this file sorted; update it if this file moves.
 import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';

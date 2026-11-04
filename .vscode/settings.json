@@ -34,12 +34,11 @@
     "editor.formatOnSave": true
   },
   "[markdown]": {
-    // Ruff must be specified as default to format Python blocks in Markdown files, but oxfmt will still run on save because of the codeActionsOnSave config below.
-    "editor.defaultFormatter": "charliermarsh.ruff",
+    // oxfmt formats Markdown on save. Ruff's fixes still run on Python code blocks below, but
+    // only `make format-python` formats them.
+    "editor.defaultFormatter": "oxc.oxc-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      // We want to run both oxfmt and Ruff on Markdown files, so we need to explicitly specify both.
-      "source.format.oxc": "explicit",
       "source.fixAll.ruff": "explicit",
       "source.organizeImports.ruff": "explicit"
     }

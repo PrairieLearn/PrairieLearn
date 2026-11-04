@@ -5,10 +5,10 @@ Shared [oxlint](https://oxc.rs/docs/guide/usage/linter) configuration for Prairi
 ## Installation
 
 ```bash
-pnpm add -D @prairielearn/oxlint-config oxlint oxlint-tsgolint
+pnpm add -D @prairielearn/oxlint-config oxlint oxlint-tsgolint eslint
 ```
 
-The JS plugins used by the config are dependencies of this package, so projects don't need to install them.
+The JS plugins used by the config are dependencies of this package, so projects don't need to install them. They load `eslint` at runtime, so it's a peer dependency.
 
 ## Usage
 

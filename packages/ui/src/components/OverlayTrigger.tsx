@@ -217,6 +217,7 @@ export function OverlayTrigger({
   let triggerChild = children;
   if (popover && isClickTriggered && isValidElement<React.HTMLAttributes<HTMLElement>>(children)) {
     // React-Bootstrap requires the original trigger element, so preserve it while adding ARIA state.
+    // oxlint-disable-next-line @eslint-react/no-clone-element
     triggerChild = cloneElement(children, { 'aria-haspopup': 'dialog', 'aria-expanded': isShown });
   }
 

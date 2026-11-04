@@ -1,3 +1,4 @@
+// `oxlint.config.mts` keeps the objects in this file sorted; update it if this file moves.
 /**
  * These schemas are used on any client page that needs to display data from the database. They are a more
  * strict version of the db-types.ts schemas.

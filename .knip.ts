@@ -219,6 +219,7 @@ const config: KnipConfig = {
     'packages/oxlint-config': {
       // JS plugins are resolved by specifier with `import.meta.resolve()` and loaded by oxlint.
       ignoreDependencies: [
+        '@eslint-react/eslint-plugin',
         '@html-eslint/eslint-plugin',
         '@prairielearn/eslint-plugin',
         '@tanstack/eslint-plugin-query',

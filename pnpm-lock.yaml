@@ -2360,6 +2360,9 @@ importers:
 
   packages/oxlint-config:
     dependencies:
+      '@eslint-react/eslint-plugin':
+        specifier: ^5.21.0
+        version: 5.21.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@html-eslint/eslint-plugin':
         specifier: ^0.66.1
         version: 0.66.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -2369,6 +2372,9 @@ importers:
       '@tanstack/eslint-plugin-query':
         specifier: ^5.104.0
         version: 5.104.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      eslint:
+        specifier: ^10.0.0
+        version: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
       eslint-plugin-no-floating-promise:
         specifier: ^2.0.0
         version: 2.0.0

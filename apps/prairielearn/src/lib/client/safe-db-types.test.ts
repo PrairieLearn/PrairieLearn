@@ -1,3 +1,4 @@
+// `oxlint.config.mts` keeps the objects in this file sorted; update it if this file moves.
 import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 

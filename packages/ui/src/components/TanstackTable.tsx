@@ -302,8 +302,6 @@ export function TanstackTable<RowDataModel extends RowData>({
             className="table table-hover mb-0"
             style={{ display: 'grid', tableLayout: 'fixed' }}
             aria-label={title}
-            // The table uses CSS grid layout, which drops native table semantics, so ARIA roles are set explicitly.
-            // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
             role="grid"
           >
             <thead

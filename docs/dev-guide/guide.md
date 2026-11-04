@@ -741,7 +741,7 @@ Depending on the context, we use different types of assertions.
 
 ## JavaScript equality operator
 
-You should almost always use the `===` operator for comparisons; this is enforced with an ESLint rule.
+You should almost always use the `===` operator for comparisons; this is enforced with an oxlint rule.
 
 The only case where the `==` operator is frequently useful is for comparing entity IDs that may be coming from the client/database/etc. These may be either strings or numbers depending on where they're coming from or how they're fetched. To make it abundantly clear that IDs are being compared, you should use the `idsEqual` utility:
 
