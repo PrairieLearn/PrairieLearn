@@ -1,5 +1,7 @@
 import assert from 'node:assert';
 
+import { z } from 'zod';
+
 import { HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
@@ -8,6 +10,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type AuthzData } from '../lib/authz-data-lib.js';
 // eslint-disable-next-line no-restricted-imports
@@ -311,6 +314,21 @@ export async function selectStudentLabelsForEnrollment(
     { enrollment_id: enrollment.id },
     StudentLabelSchema,
   );
+}
+
+export async function selectStudentLabelNamesForUsers({
+  userIds,
+  courseInstanceId,
+}: {
+  userIds: string[];
+  courseInstanceId: string;
+}): Promise<Map<string, string[]>> {
+  const rows = await queryRows(
+    sql.select_student_label_names_for_users,
+    { user_ids: userIds, course_instance_id: courseInstanceId },
+    z.object({ user_id: IdSchema, labels: z.array(z.string()) }),
+  );
+  return new Map(rows.map(({ user_id, labels }) => [user_id, labels]));
 }
 
 /** Should only be called by sync code and tests. */

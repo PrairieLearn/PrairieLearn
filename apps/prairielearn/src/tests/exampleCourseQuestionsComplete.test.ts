@@ -313,6 +313,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         question,
         course,
         variant_course: course,
+        course_instance_id: null,
         variant_seed: null,
         preferences,
         effective_user_id: null,
@@ -340,6 +341,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         userId: null,
         groupId: null,
         variantCourse: course,
+        courseInstanceId: null,
       };
       const {
         courseIssues: renderIssues,
