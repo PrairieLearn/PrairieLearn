@@ -1,10 +1,10 @@
 name: Native test setup (OS and Python)
 description: Installs OS packages and Python dependencies for running PrairieLearn tests natively on the runner.
 
-# This action and `native-test-setup-node` are meant to run concurrently in a
-# `parallel` step group, since GitHub Actions doesn't allow `parallel` or
-# `background` steps inside a composite action. Neither action may depend on
-# anything the other one sets up.
+# This action runs concurrently with `native-test-setup-node` (see the workflows
+# that use it), since GitHub Actions doesn't allow `parallel` or `background`
+# steps inside a composite action. Neither action may depend on anything the
+# other one sets up.
 
 runs:
   using: composite

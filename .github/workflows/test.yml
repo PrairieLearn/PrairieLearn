@@ -158,11 +158,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # The OS/Python and Node setup chains are independent, so we run them
-      # concurrently.
-      - parallel:
-          - uses: ./.github/actions/native-test-setup-os
-          - uses: ./.github/actions/native-test-setup-node
+      # OS/Python setup doesn't depend on Node setup or the build, so it runs
+      # in the background while they run.
+      - id: setup-os
+        uses: ./.github/actions/native-test-setup-os
+        background: true
+      - uses: ./.github/actions/native-test-setup-node
+      - uses: ./.github/actions/native-test-build
+      - wait: setup-os
 
       - name: Vitest suite
         run: |
@@ -229,15 +232,22 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # The OS/Python and Node setup chains are independent, so we run them
-      # concurrently.
-      - parallel:
-          - uses: ./.github/actions/native-test-setup-os
-          - uses: ./.github/actions/native-test-setup-node
-            with:
-              download-playwright-browsers: 'true'
+      # OS/Python setup doesn't depend on Node setup or the build, so it runs
+      # in the background while they run. The Chromium download only needs the
+      # Node dependencies, so it runs in the background during the build.
+      - id: setup-os
+        uses: ./.github/actions/native-test-setup-os
+        background: true
+      - uses: ./.github/actions/native-test-setup-node
+      - id: download-chromium
+        name: Download Playwright browsers
+        run: pnpm playwright install chromium
+        background: true
+      - uses: ./.github/actions/native-test-build
+      - wait: [setup-os, download-chromium]
 
-      # This uses apt, so it has to wait until the OS setup chain is done.
+      # This uses apt, so it has to wait until OS setup is done, since apt
+      # can't run two installs at once.
       - name: Install Playwright browser dependencies
         run: pnpm playwright install-deps chromium
 

@@ -1,20 +1,10 @@
 name: Native test setup (Node)
-description: Installs Node dependencies and builds all code for running PrairieLearn tests natively on the runner.
+description: Installs Node dependencies for running PrairieLearn tests natively on the runner.
 
-# This action and `native-test-setup-os` are meant to run concurrently in a
-# `parallel` step group, since GitHub Actions doesn't allow `parallel` or
-# `background` steps inside a composite action. Neither action may depend on
-# anything the other one sets up.
-
-inputs:
-  download-playwright-browsers:
-    description: >-
-      Whether to download Playwright's Chromium build. This doesn't install the
-      OS packages Chromium needs, since that uses apt, which can't run at the
-      same time as the apt installs in `native-test-setup-os`. Run
-      `pnpm playwright install-deps chromium` after both actions finish.
-    required: false
-    default: 'false'
+# This action runs concurrently with `native-test-setup-os` (see the workflows
+# that use it), since GitHub Actions doesn't allow `parallel` or `background`
+# steps inside a composite action. Neither action may depend on anything the
+# other one sets up.
 
 runs:
   using: composite
@@ -29,18 +19,3 @@ runs:
     - name: Install Node dependencies
       shell: bash
       run: pnpm install
-    - name: Download Playwright browsers
-      if: inputs.download-playwright-browsers == 'true'
-      shell: bash
-      run: pnpm playwright install chromium
-
-    - name: Set up Turborepo cache
-      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-      with:
-        path: .turbo/cache
-        key: ${{ runner.os }}-turbo-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-turbo-
-    - name: Build all code
-      shell: bash
-      run: make build
