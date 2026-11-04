@@ -261,7 +261,17 @@ function measurePrintablePage(source: HTMLElement): { width: number; height: num
 
 function keepPrintableGroupsTogether(source: HTMLElement, pageHeight: number): void {
   for (const group of source.querySelectorAll<HTMLElement>(
-    '.question-body .card, .printing-details, .printing-order-blocks, .printing-order-choice-group, .sketchresponse, .pl-drawing-container, .printing-subsection, .pl-order-blocks-answer-container, .printing-excalidraw',
+    [
+      '.question-body .card',
+      '.printing-details',
+      '.printing-order-blocks',
+      '.printing-order-choice-group',
+      '.sketchresponse',
+      '.pl-drawing-container',
+      '.printing-subsection',
+      '.pl-order-blocks-answer-container',
+      '.printing-excalidraw',
+    ].join(', '),
   )) {
     if (group.getBoundingClientRect().height < pageHeight - 48) {
       group.classList.add('printing-keep-together');
