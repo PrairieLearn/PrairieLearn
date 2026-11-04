@@ -132,9 +132,18 @@ LIMIT
   100;
 
 -- LIMIT prevents infinite recursion on circular templates
+-- BLOCK select_chunk_publication_state
+SELECT
+  chunks_published_at,
+  chunks_history_started_at
+FROM
+  courses
+WHERE
+  id = $course_id;
+
 -- BLOCK lock_course_for_chunk_publication
 SELECT
-  id
+  chunks_published_at
 FROM
   courses
 WHERE
@@ -145,6 +154,7 @@ FOR UPDATE;
 SELECT
   GREATEST(
     date_trunc('milliseconds', clock_timestamp()),
+    chunks_published_at + INTERVAL '1 millisecond',
     (
       SELECT
         MAX(created_at) + INTERVAL '1 millisecond'
@@ -153,7 +163,19 @@ SELECT
       WHERE
         course_id = $course_id
     )
-  );
+  )
+FROM
+  courses
+WHERE
+  id = $course_id;
+
+-- BLOCK record_chunk_publication
+UPDATE courses
+SET
+  chunks_published_at = $created_at,
+  chunks_history_started_at = coalesce(chunks_history_started_at, $created_at)
+WHERE
+  id = $course_id;
 
 -- BLOCK establish_chunk_baseline
 -- Unknown pre-history dates become a baseline at this publication, not earlier.
