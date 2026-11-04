@@ -189,7 +189,20 @@ export function CourseAgentPanel({
     </Offcanvas>
   );
 
-  const launcher = (
+  const launcherButtonProps = {
+    ref: toggleRef,
+    'aria-label': open ? 'Close course agent' : 'Open course agent',
+    'aria-expanded': open,
+    'aria-controls': 'course-agent-panel',
+    onPointerEnter: preloadChat,
+    onFocus: preloadChat,
+    onClick: () => changeOpen(!open),
+  };
+  const launcher = mobile ? (
+    <button type="button" className="course-agent-launcher navbar-toggler" {...launcherButtonProps}>
+      <i className="bi bi-stars" aria-hidden="true" />
+    </button>
+  ) : (
     <OverlayTrigger
       trigger="hover"
       placement="bottom"
@@ -199,17 +212,11 @@ export function CourseAgentPanel({
       }}
     >
       <Button
-        ref={toggleRef}
         className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
         variant="outline-light"
         active={open}
         size="sm"
-        aria-label={open ? 'Close course agent' : 'Open course agent'}
-        aria-expanded={open}
-        aria-controls="course-agent-panel"
-        onPointerEnter={preloadChat}
-        onFocus={preloadChat}
-        onClick={() => changeOpen(!open)}
+        {...launcherButtonProps}
       >
         <i className="bi bi-stars" aria-hidden="true" />
       </Button>

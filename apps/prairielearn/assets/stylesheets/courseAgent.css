@@ -78,7 +78,6 @@ body:has(.course-agent-panel-animate) .app-main {
 @media (max-width: 767.98px) {
   .course-agent-launcher {
     height: 2.5rem;
-    min-width: 2.5rem;
   }
 
   .course-agent-panel,
