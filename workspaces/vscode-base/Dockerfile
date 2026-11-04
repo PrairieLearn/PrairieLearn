@@ -1,7 +1,7 @@
 # Temporary workaround as we wait for code-server to be patched:
 # https://github.com/coder/code-server/pull/8066
 # https://github.com/PrairieLearn/PrairieLearn/pull/16131
-FROM node:24.22.1-bookworm-slim AS node
+FROM node:26.13.0-bookworm-slim AS node
 
 RUN npm install --prefix /opt/undici --ignore-scripts --no-audit --no-fund 'undici@^7.30.1'
 
