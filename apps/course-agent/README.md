@@ -114,13 +114,13 @@ Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_
 
 Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local reporting is disabled while the DSN is empty.
 
-Deploys defer Durable Object code updates for up to seven hours, so active conversations finish on the old code. For an urgent fix, deploy with `--durable-objects-code-update-mode immediate`, which interrupts active turns.
+Deploys defer Durable Object code updates for up to seven hours, so turns that are running at deploy time finish on the old code. A conversation that keeps starting new turns on the old code is still reset at seven hours, which interrupts any turn in progress. For an urgent fix, deploy with `--durable-objects-code-update-mode immediate`, which interrupts active turns.
 
 ### Rotating the service token
 
-PrairieLearn sends the first token listed in `courseAgentServiceToken`. The Worker accepts `PL_SERVICE_TOKEN` and the optional `PL_SERVICE_TOKEN_PREVIOUS` secret. Rotate without downtime in this order:
+PrairieLearn sends the first token listed in `courseAgentServiceToken`. The Worker accepts `PL_SERVICE_TOKEN` and the optional `PL_SERVICE_TOKEN_PREVIOUS` secret. Rotate without downtime in this order, running the Worker commands from `apps/course-agent` for each deployed environment:
 
 1. Set PrairieLearn's `courseAgentServiceToken` to `["OLD_TOKEN", "NEW_TOKEN"]` and deploy PrairieLearn.
-2. Run `wrangler secret put PL_SERVICE_TOKEN_PREVIOUS` with the old token, then `wrangler secret put PL_SERVICE_TOKEN` with the new token. Each command deploys immediately, so keep this order to avoid rejecting PrairieLearn's old token.
+2. Run `wrangler secret put PL_SERVICE_TOKEN_PREVIOUS --env <environment>` with the old token, then `wrangler secret put PL_SERVICE_TOKEN --env <environment>` with the new token. Each command deploys immediately, so keep this order to avoid rejecting PrairieLearn's old token.
 3. Set PrairieLearn's `courseAgentServiceToken` to `["NEW_TOKEN"]` and deploy PrairieLearn.
-4. Delete the old token with `wrangler secret delete PL_SERVICE_TOKEN_PREVIOUS`.
+4. Delete the old token with `wrangler secret delete PL_SERVICE_TOKEN_PREVIOUS --env <environment>`.

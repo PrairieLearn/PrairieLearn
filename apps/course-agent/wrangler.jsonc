@@ -20,8 +20,8 @@
     "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
   },
   "durable_objects": {
-    // Let active conversations finish on the old code: 7 h covers AGENT_TURN_SECONDS
-    // (6 h) plus USER_IDLE_SECONDS (10 min), with margin.
+    // Let turns running at deploy time finish on the old code: 7 h covers AGENT_TURN_SECONDS
+    // (6 h) plus USER_IDLE_SECONDS (10 min), with margin. Later turns can still be reset.
     "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
     "bindings": [
       {
