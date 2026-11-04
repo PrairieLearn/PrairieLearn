@@ -1,3 +1,14 @@
+/* The launcher stays in the navbar so it never obscures page content. */
+.course-agent-nav {
+  flex-shrink: 0;
+}
+
+@media (min-width: 1200px) {
+  .course-agent-nav {
+    width: clamp(12rem, 20vw, 24rem);
+  }
+}
+
 .course-agent-panel {
   position: fixed;
   top: 0;
@@ -16,21 +27,6 @@
 .course-agent-panel[data-open='true'] {
   transform: translateX(0);
   visibility: visible;
-}
-
-.course-agent-toggle {
-  position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.4rem;
-  box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 20%);
-  z-index: 1040;
 }
 
 .course-agent-user-message {

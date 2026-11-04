@@ -19,6 +19,7 @@ export function Navbar({
   sideNavEnabled = false,
   hideSessionControls = false,
   showInstructorSupport = false,
+  courseAgentPanel,
 }: {
   resLocals: UntypedResLocals;
   navPage?: NavPage;
@@ -32,6 +33,7 @@ export function Navbar({
   hideSessionControls?: boolean;
   /** Enables instructor support on pages without a course authorization context. */
   showInstructorSupport?: boolean;
+  courseAgentPanel?: HtmlValue;
 }) {
   const navbarResLocals = hideSessionControls ? {} : resLocals;
   const { __csrf_token, course } = navbarResLocals;
@@ -115,6 +117,13 @@ export function Navbar({
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
           </span>
         </a>
+        ${
+          courseAgentPanel
+            ? html`<div class="course-agent-nav ms-auto ms-md-3 me-2 me-md-0 order-md-last">
+                ${courseAgentPanel}
+              </div>`
+            : ''
+        }
         <button
           id="course-nav-toggler"
           class="navbar-toggler"

@@ -11,6 +11,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { Alert, Button, Offcanvas, Spinner } from 'react-bootstrap';
+import { createPortal } from 'react-dom';
 
 const MOBILE_QUERY = '(max-width: 767.98px)';
 
@@ -129,69 +130,79 @@ export function CourseAgentPanel({
     [mobile],
   );
 
+  const panel = (
+    <Offcanvas
+      ref={mobileModalRef}
+      id="course-agent-panel"
+      bsPrefix="course-agent-overlay"
+      show={open && mobile}
+      backdrop={false}
+      role={mobile ? 'dialog' : 'complementary'}
+      aria-modal={mobile && open ? true : undefined}
+      aria-label="Course agent"
+      data-open={open}
+      inert={!open}
+      aria-hidden={!open}
+      className={clsx('course-agent-panel', animate && 'course-agent-panel-animate')}
+      onEnter={(node: HTMLElement) => {
+        // This react-bootstrap beta replaces the modal's dialog ref; restore it so focus stays contained.
+        if (mobileModalRef.current) mobileModalRef.current.dialog = node;
+      }}
+      onHide={() => changeOpen(false)}
+    >
+      <div className="d-flex align-items-center justify-content-between border-bottom px-3 py-2">
+        <h2 className="h6 mb-0">
+          <i className="bi bi-stars me-2 text-primary" aria-hidden="true" />
+          Course agent
+        </h2>
+        <Button
+          variant="link"
+          className="p-0 text-muted"
+          aria-label="Close course agent"
+          onClick={() => changeOpen(false)}
+        >
+          <i className="bi bi-x-lg" aria-hidden="true" />
+        </Button>
+      </div>
+      {/* Keep the boundary mounted so the first open avoids Suspense's fallback delay. */}
+      <Suspense fallback={<ChatLoading />}>
+        {hasEverOpened && hydrated ? (
+          <LazyCourseAgentChat
+            courseId={courseId}
+            authnUserId={authnUserId}
+            trpcCsrfToken={trpcCsrfToken}
+            chatCsrfToken={chatCsrfToken}
+            active={open}
+            showConversationStats={showConversationStats}
+          />
+        ) : (
+          <ChatLoading />
+        )}
+      </Suspense>
+    </Offcanvas>
+  );
+
   return (
     <>
       <Button
         ref={toggleRef}
-        hidden={open}
-        className="course-agent-toggle"
-        variant="primary"
-        title="Open course agent"
-        aria-label="Open course agent"
+        className="course-agent-launcher d-flex align-items-center gap-2 text-nowrap text-start w-100"
+        variant={open ? 'light' : 'outline-light'}
+        size="sm"
+        title={open ? 'Close course agent' : 'Open course agent'}
+        aria-label={open ? 'Close course agent' : 'Open course agent'}
+        aria-expanded={open}
+        aria-controls="course-agent-panel"
         onPointerEnter={preloadChat}
         onFocus={preloadChat}
-        onClick={() => changeOpen(true)}
+        onClick={() => changeOpen(!open)}
       >
         <i className="bi bi-stars" aria-hidden="true" />
+        <span className="d-none d-xl-inline text-truncate">Ask the course agent…</span>
+        <span className="d-none d-lg-inline d-xl-none">Course agent</span>
       </Button>
-      <Offcanvas
-        ref={mobileModalRef}
-        bsPrefix="course-agent-overlay"
-        show={open && mobile}
-        backdrop={false}
-        role={mobile ? 'dialog' : 'complementary'}
-        aria-modal={mobile && open ? true : undefined}
-        aria-label="Course agent"
-        data-open={open}
-        inert={!open}
-        aria-hidden={!open}
-        className={clsx('course-agent-panel', animate && 'course-agent-panel-animate')}
-        onEnter={(node: HTMLElement) => {
-          // This react-bootstrap beta replaces the modal's dialog ref; restore it so focus stays contained.
-          if (mobileModalRef.current) mobileModalRef.current.dialog = node;
-        }}
-        onHide={() => changeOpen(false)}
-      >
-        <div className="d-flex align-items-center justify-content-between border-bottom px-3 py-2">
-          <h2 className="h6 mb-0">
-            <i className="bi bi-stars me-2 text-primary" aria-hidden="true" />
-            Course agent
-          </h2>
-          <Button
-            variant="link"
-            className="p-0 text-muted"
-            aria-label="Close course agent"
-            onClick={() => changeOpen(false)}
-          >
-            <i className="bi bi-x-lg" aria-hidden="true" />
-          </Button>
-        </div>
-        {/* Keep the boundary mounted so the first open avoids Suspense's fallback delay. */}
-        <Suspense fallback={<ChatLoading />}>
-          {hasEverOpened && hydrated ? (
-            <LazyCourseAgentChat
-              courseId={courseId}
-              authnUserId={authnUserId}
-              trpcCsrfToken={trpcCsrfToken}
-              chatCsrfToken={chatCsrfToken}
-              active={open}
-              showConversationStats={showConversationStats}
-            />
-          ) : (
-            <ChatLoading />
-          )}
-        </Suspense>
-      </Offcanvas>
+      {/* Keep the panel outside the navbar's navigation landmark and stacking context. */}
+      {hydrated ? createPortal(panel, document.body) : panel}
     </>
   );
 }
