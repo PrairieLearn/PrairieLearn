@@ -3,7 +3,7 @@
   "singleQuote": true,
   "printWidth": 100,
   "sortImports": {
-    "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+    "groups": ["side_effect", "builtin", "external", "internal", "parent", "sibling", "index"],
     "internalPattern": ["@prairielearn/"],
     "newlinesBetween": true,
     "ignoreCase": false,
