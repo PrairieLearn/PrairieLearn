@@ -29,7 +29,10 @@ def test_random_values(sandbox: StudentFixture, feedback: FeedbackFixture) -> No
             failures.append(f"fib({n}): timed out")
             break
         expected = _fib(n)
-        if response["status"] == FunctionStatusCode.SUCCESS and response["value"] == expected:
+        if (
+            response["status"] == FunctionStatusCode.SUCCESS
+            and response["value"] == expected
+        ):
             num_correct += 1
         else:
             failures.append(_format_failure(f"fib({n})", expected, response))
