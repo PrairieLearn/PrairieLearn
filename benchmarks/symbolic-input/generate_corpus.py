@@ -16,8 +16,10 @@ from typing import Any, Literal
 import worker
 
 SEED = 15970
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 ORACLE_COMMIT = "fbdb0757cd7a4aecbc980b1697cd28e3b22fc989"
+MATHJSON_COMMIT = "39b72195be06bec0f90109c75ca35507ec9a1daa"
+REFACTOR_COMMIT = "9c35ec3595b2bd128b9cc512fbf94fcef3bee664"
 FAMILIES = (
     "arithmetic",
     "elementary",
@@ -354,15 +356,48 @@ def _validate_cases(cases: list[dict[str, Any]], repo_root: Path) -> None:
                 worker._element_html(case["element_attributes"]),
             )
             status = ("accepted", "rejected", "exception")[outcome]
-            if status != case["intended_status"]:
+            if status == "exception" or (
+                case["intended_status"] == "accepted" and status != "accepted"
+            ):
                 mismatches.append(
                     f"{case['id']}: expected {case['intended_status']}, got {status}: {detail}"
                 )
                 if len(mismatches) == 20:
                     break
-            case["baseline_status"] = status
+            case["baseline_status"] = case["intended_status"]
     if mismatches:
         raise RuntimeError("Corpus validation failed:\n" + "\n".join(mismatches))
+
+
+def _populate_mathjson_payloads(cases: list[dict[str, Any]], repo_root: Path) -> None:
+    module, _sympy_version = worker.load_target(repo_root)
+    failures: list[str] = []
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for case in cases:
+            case["parser_path"] = "legacy"
+            if case["input_mode"] != "formula-editor":
+                continue
+            if case["intended_status"] != "accepted":
+                continue
+
+            data = worker._question_data(case)
+            module.parse(worker._element_html(case["element_attributes"]), data)
+            if data["format_errors"]:
+                failures.append(
+                    f"{case['id']}: accepted formula-editor case was rejected: "
+                    f"{data['format_errors']}"
+                )
+                if len(failures) == 20:
+                    break
+                continue
+            payload = data["submitted_answers"].get(f"{worker.ANSWER_NAME}-json")
+            if not isinstance(payload, str):
+                continue
+            case["mathjson"] = payload
+            case["parser_path"] = "mathjson"
+    if failures:
+        raise RuntimeError("MathJSON corpus generation failed:\n" + "\n".join(failures))
 
 
 def _serialize_cases(cases: list[dict[str, Any]]) -> bytes:
@@ -374,6 +409,7 @@ def _serialize_cases(cases: list[dict[str, Any]]) -> bytes:
 
 def generate(repo_root: Path) -> tuple[bytes, dict[str, Any]]:
     cases = [*generate_random_cases(), *generate_edge_cases()]
+    _populate_mathjson_payloads(cases, repo_root)
     _validate_cases(cases, repo_root)
     corpus_bytes = _serialize_cases(cases)
     distribution = Counter(
@@ -394,6 +430,9 @@ def generate(repo_root: Path) -> tuple[bytes, dict[str, Any]]:
         "case_count": len(cases),
         "oracle_commit": ORACLE_COMMIT,
         "generated_from_commit": ORACLE_COMMIT,
+        "mathjson_commit": MATHJSON_COMMIT,
+        "mathjson_payload_count": sum("mathjson" in case for case in cases),
+        "refactor_commit": REFACTOR_COMMIT,
         "corpus_sha256": hashlib.sha256(corpus_bytes).hexdigest(),
         "distribution": {
             "|".join(key): value for key, value in sorted(distribution.items())

@@ -80,9 +80,14 @@ def load_round(path: Path) -> dict[str, Any]:
         cell = (
             measurement["family"],
             measurement["complexity"],
+            measurement["input_mode"],
+            measurement["parser_path"],
             measurement["expected"],
         )
-        for key in ((*condition, *cell), (*condition, "all", "all", "all")):
+        for key in (
+            (*condition, *cell),
+            (*condition, "all", "all", "all", "all", "all"),
+        ):
             totals[key][0] += timing
             totals[key][1] += 1
     return {
@@ -146,7 +151,16 @@ def analyze_comparison(comparison_dir: Path) -> dict[str, Any]:
     # starts with (lifecycle, gc, workers).
     keys = sorted(
         {key for data in loaded.values() for key in data["cells"]},
-        key=lambda k: (k[0], k[1], k[2], k[3], SIZE_ORDER.get(k[4], -1), k[5]),
+        key=lambda k: (
+            k[0],
+            k[1],
+            k[2],
+            k[3],
+            SIZE_ORDER.get(k[4], -1),
+            k[5],
+            k[6],
+            k[7],
+        ),
     )
     rows = [
         {
@@ -155,7 +169,9 @@ def analyze_comparison(comparison_dir: Path) -> dict[str, Any]:
             "workers": key[2],
             "family": key[3],
             "complexity": key[4],
-            "expected": key[5],
+            "input_mode": key[5],
+            "parser_path": key[6],
+            "expected": key[7],
             **summarize_ratios(np.array([block_ratio(block, key) for block in blocks])),
         }
         for key in keys
@@ -289,39 +305,27 @@ def plot_cell_changes(
     comparison: dict[str, Any], condition: dict[str, Any], path: Path
 ) -> None:
     cells = [c for c in comparison["cells"] if same_condition(c, condition)]
-    accepted = [c for c in cells if c["expected"] == "accepted"]
-    rejected = {
-        (c["family"], c["complexity"]): c for c in cells if c["expected"] == "rejected"
-    }
-    y = np.arange(len(accepted))[::-1]
-    accepted_delta = np.array([c["delta_percent"] for c in accepted])
-    rejected_delta = np.array([
-        rejected[c["family"], c["complexity"]]["delta_percent"] for c in accepted
-    ])
+    y = np.arange(len(cells))[::-1]
+    deltas = np.array([c["delta_percent"] for c in cells])
     overall = condition["delta_percent"]
 
-    fig, ax = plt.subplots(figsize=(7.6, 0.24 * len(accepted) + 1.6))
-    ax.hlines(y, accepted_delta, rejected_delta, color=GRID, linewidth=2, zorder=1)
-    ax.scatter(
-        accepted_delta,
-        y,
-        s=40,
-        color=ACCENT,
-        edgecolor=SURFACE,
-        linewidth=1.5,
-        zorder=3,
-        label="Accepted answers",
-    )
-    ax.scatter(
-        rejected_delta,
-        y,
-        s=34,
-        color=MUTED,
-        edgecolor=SURFACE,
-        linewidth=1.5,
-        zorder=3,
-        label="Rejected answers",
-    )
+    fig, ax = plt.subplots(figsize=(9.2, 0.24 * len(cells) + 1.6))
+    for parser_path, color in (("mathjson", ACCENT), ("legacy", MUTED)):
+        indices = [
+            i for i, cell in enumerate(cells) if cell["parser_path"] == parser_path
+        ]
+        if not indices:
+            continue
+        ax.scatter(
+            deltas[indices],
+            y[indices],
+            s=40,
+            color=color,
+            edgecolor=SURFACE,
+            linewidth=1.5,
+            zorder=3,
+            label=parser_path,
+        )
     ax.axvline(0, color=AXIS, linewidth=1, zorder=0)
     ax.axvline(overall, color=REFERENCE, linewidth=1, linestyle=(0, (3, 3)), zorder=2)
     ax.text(
@@ -333,18 +337,18 @@ def plot_cell_changes(
         va="bottom",
     )
 
-    labels = []
-    previous_family = None
-    for cell in accepted:
-        family = cell["family"] if cell["family"] != previous_family else ""
-        labels.append(
-            f"{family}  {cell['complexity']}".strip() if family else cell["complexity"]
-        )
-        previous_family = cell["family"]
+    labels = [
+        f"{cell['family']}  {cell['complexity']}  {cell['input_mode']}  "
+        f"{cell['parser_path']}  {cell['expected']}"
+        for cell in cells
+    ]
     ax.set_yticks(y, labels)
     ax.tick_params(axis="y", length=0)
     ax.spines["left"].set_visible(False)
-    ax.set_xlim(-46, 4)
+    margin = max(2.0, (deltas.max() - deltas.min()) * 0.08)
+    ax.set_xlim(
+        min(deltas.min(), overall, 0) - margin, max(deltas.max(), overall, 0) + margin
+    )
     ax.set_ylim(-0.8, y.max() + 1.8)
     ax.xaxis.set_major_formatter(lambda value, _pos: f"{value:.0f}%")
     ax.grid(axis="x", color=GRID, linewidth=0.8)
@@ -353,11 +357,8 @@ def plot_cell_changes(
         f"Change in mean parse latency vs baseline (left is faster); "
         f"{condition_label(condition)}"
     )
-    accepted_range = (-accepted_delta.max(), -accepted_delta.min())
-    rejected_range = (-rejected_delta.max(), -rejected_delta.min())
     ax.set_title(
-        f"Accepted answers parse {accepted_range[0]:.0f}{EN_DASH}{accepted_range[1]:.0f}% faster; "
-        f"rejected answers {rejected_range[0]:.0f}{EN_DASH}{rejected_range[1]:.0f}% faster",
+        f"Per-cell changes range from {deltas.min():.1f}% to {deltas.max():.1f}%",
         pad=24,
     )
     ax.legend(

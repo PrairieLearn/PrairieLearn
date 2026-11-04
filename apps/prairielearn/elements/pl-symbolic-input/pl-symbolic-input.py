@@ -581,6 +581,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if use_mathjson:
         from mathjson_utils import MathJsonStudentError, raw_mathjson_to_sympy_expr
 
+        assert isinstance(raw_mathjson, str)
         try:
             parsed_answer = raw_mathjson_to_sympy_expr(
                 raw_mathjson,

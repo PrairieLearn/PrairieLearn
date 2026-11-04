@@ -35,6 +35,8 @@ def _element_html(attributes: dict[str, str]) -> str:
 
 def _question_data(case: dict[str, Any]) -> dict[str, Any]:
     submitted = {ANSWER_NAME: case["submission"]}
+    if case.get("mathjson") is not None:
+        submitted[f"{ANSWER_NAME}-json"] = case["mathjson"]
     raw_submitted = submitted.copy()
     if case["latex"] is not None:
         raw_submitted[f"{ANSWER_NAME}-latex"] = case["latex"]
@@ -66,6 +68,7 @@ def load_target(checkout: Path) -> tuple[ModuleType, str]:
         )
 
     sys.path.insert(0, os.fspath(python_root))
+    sys.path.insert(0, os.fspath(element_path.parent))
     spec = importlib.util.spec_from_file_location(
         "symbolic_input_benchmark_target", element_path
     )

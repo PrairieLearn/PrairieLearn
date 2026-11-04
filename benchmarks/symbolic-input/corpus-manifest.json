@@ -1,6 +1,6 @@
 {
   "case_count": 6272,
-  "corpus_sha256": "9f4c15d90e24d322283a16748823b9d1588e2d86674a0bad3986fa7f8207cddb",
+  "corpus_sha256": "a35bf7efdf59350b22f7654ed5ae4088415a963b02b26a632712a7c683794759",
   "distribution": {
     "arithmetic|large|formula-editor|false|accepted": 32,
     "arithmetic|large|formula-editor|false|rejected": 32,
@@ -202,8 +202,11 @@
   },
   "edge_case_count": 128,
   "generated_from_commit": "fbdb0757cd7a4aecbc980b1697cd28e3b22fc989",
+  "mathjson_commit": "39b72195be06bec0f90109c75ca35507ec9a1daa",
+  "mathjson_payload_count": 1483,
   "oracle_commit": "fbdb0757cd7a4aecbc980b1697cd28e3b22fc989",
   "random_case_count": 6144,
-  "schema_version": 1,
+  "refactor_commit": "9c35ec3595b2bd128b9cc512fbf94fcef3bee664",
+  "schema_version": 2,
   "seed": 15970
 }

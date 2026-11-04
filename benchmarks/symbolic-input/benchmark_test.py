@@ -84,6 +84,7 @@ def test_committed_corpus_matches_manifest_and_distribution() -> None:
     assert len(cases) == 6272
     assert manifest["random_case_count"] == 6144
     assert manifest["edge_case_count"] == 128
+    assert manifest["mathjson_payload_count"] == 1483
     assert manifest["corpus_sha256"] == hashlib.sha256(corpus_bytes).hexdigest()
     assert len({case["id"] for case in cases}) == len(cases)
     assert Counter(case["baseline_status"] for case in cases) == {
@@ -104,6 +105,17 @@ def test_committed_corpus_matches_manifest_and_distribution() -> None:
     )
     assert len(cells) == 8 * 3 * 2 * 2 * 2
     assert set(cells.values()) == {32}
+
+
+def test_worker_adds_precomputed_mathjson_to_formula_editor_submission() -> None:
+    data = worker._question_data({
+        "submission": "x",
+        "latex": "x",
+        "mathjson": '"x"',
+        "correct_answers": {},
+    })
+
+    assert data["submitted_answers"] == {"bench": "x", "bench-json": '"x"'}
 
 
 def test_corpus_regeneration_is_byte_for_byte_deterministic() -> None:
@@ -202,6 +214,24 @@ def test_target_loader_runs_current_element() -> None:
         worker._element_html(case["element_attributes"]),
     )
     assert sympy_version
+    assert outcome == 0
+    assert duration_ns > 0
+
+
+def test_target_loader_runs_current_mathjson_path() -> None:
+    module, _sympy_version = worker.load_target(benchmark.REPO_ROOT)
+    case = next(
+        json.loads(line)
+        for line in benchmark.DEFAULT_CORPUS.read_text().splitlines()
+        if '"parser_path":"mathjson"' in line
+    )
+
+    outcome, _detail, duration_ns = worker.run_case(
+        module,
+        case,
+        worker._element_html(case["element_attributes"]),
+    )
+
     assert outcome == 0
     assert duration_ns > 0
 
