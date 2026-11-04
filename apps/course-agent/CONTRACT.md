@@ -90,7 +90,7 @@ After the job finishes, PrairieLearn sends its outcome to the DO. If this callba
 The DO saves and broadcasts the result in the chat tool part before continuing the agent. Duplicate callbacks share one in-flight delivery promise. Continuation depends on whether the native call is still live:
 
 - For a live call, open another output stream and return the result to that call.
-- After a restart, restore the native thread and send empty user input plus `toolOutput` tagged with the saved call ID. Check native history first, recognizing both settled dynamic tool calls (including denied/failed results) and result-only continuations by call ID and result. If the result is already recorded, do not start another turn.
+- After a restart, restore the native thread and send empty user input plus `toolOutput` tagged with the saved call ID. Both forms deliver the same text, `{ callId, result }`, which Codex retains verbatim. Before continuing, search the native history for that exact text in any item; if it is present, do not start another turn.
 
 Neither path repeats the original prompt. The review stays saved until both chat persistence and native result handling complete. Failed result delivery can be retried through Resume. Stop after native incorporation clears the settled review; interrupted incorporation remains blocked with Resume available.
 

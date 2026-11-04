@@ -48,35 +48,25 @@ const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
   tool: z.literal('request_changes'),
   arguments: z.strictObject({}),
 });
-const FunctionCallOutput = z.object({
-  type: z.literal('functionCallOutput'),
-  name: z.string(),
-  output: z.string(),
-});
-const DynamicToolCall = z.object({
-  type: z.literal('dynamicToolCall'),
-  id: z.string(),
-  tool: z.string(),
-  status: z.string(),
-  contentItems: z.array(z.object({ type: z.string(), text: z.string().optional() })).nullable(),
-});
-const ThreadHistory = z.object({
-  thread: z.object({
-    turns: z.array(
-      z.object({
-        items: z.array(
-          z.union([
-            FunctionCallOutput,
-            DynamicToolCall,
-            z
-              .object({ type: z.string() })
-              .refine((item) => !['functionCallOutput', 'dynamicToolCall'].includes(item.type)),
-          ]),
-        ),
-      }),
-    ),
-  }),
-});
+const ThreadHistory = z.object({ thread: z.unknown() });
+
+/**
+ * Both delivery forms (a live tool reply and a cold tool output) carry this text, and Codex
+ * retains it verbatim. Including the call ID distinguishes separate reviews with equal results.
+ */
+function deliveredText(outcome: ReviewOutcome) {
+  return JSON.stringify(outcome);
+}
+
+/** Search any part of a saved thread for exact text, independent of Codex's item formats. */
+function containsText(value: unknown, text: string): boolean {
+  if (typeof value === 'string') return value === text;
+  if (Array.isArray(value)) return value.some((item) => containsText(item, text));
+  if (value && typeof value === 'object') {
+    return Object.values(value).some((item) => containsText(item, text));
+  }
+  return false;
+}
 
 /** A sandbox's app-server connection, reused across turns until Stop or sandbox cleanup. */
 export class CodexAppServerClient {
@@ -165,7 +155,9 @@ export class CodexAppServerClient {
         success:
           ['published', 'saved_locally'].includes(result.publication.status) &&
           result.sync.status === 'succeeded',
-        contentItems: [{ type: 'inputText' as const, text: JSON.stringify(result) }],
+        contentItems: [
+          { type: 'inputText' as const, text: deliveredText({ callId: call.callId, result }) },
+        ],
       } satisfies DynamicToolCallResponse;
       return response;
     });
@@ -292,32 +284,7 @@ export class CodexAppServerClient {
         } satisfies ThreadReadParams,
         ThreadHistory,
       );
-      const incorporated = saved.thread.turns.some((turn) =>
-        turn.items.some((item) => {
-          // Live tool replies and cold continuations have different persisted forms.
-          // Match the call as well as its result: separate denials often have identical results.
-          if (
-            item.type === 'dynamicToolCall' &&
-            'id' in item &&
-            item.id === text.callId &&
-            item.tool === 'request_changes' &&
-            // Denials and publication failures are delivered with success: false,
-            // so Codex records them as failed calls despite receiving the result.
-            ['completed', 'failed'].includes(item.status)
-          ) {
-            return item.contentItems?.some(
-              (content) =>
-                content.type === 'inputText' && content.text === JSON.stringify(text.result),
-            );
-          }
-          return (
-            item.type === 'functionCallOutput' &&
-            'name' in item &&
-            item.name === 'request_changes' &&
-            item.output === JSON.stringify(text)
-          );
-        }),
-      );
+      const incorporated = containsText(saved.thread, deliveredText(text));
       if (incorporated) {
         this.incorporatedReview = text.callId;
         this.terminal.resolve(undefined);
@@ -334,7 +301,7 @@ export class CodexAppServerClient {
               toolOutput: {
                 name: 'request_changes',
                 namespace: null,
-                output: JSON.stringify(text),
+                output: deliveredText(text),
                 retain: true,
               },
             }

@@ -83,7 +83,7 @@ describe('course agent turns', () => {
               id: outcome.callId,
               tool: 'request_changes',
               status: 'failed',
-              contentItems: [{ type: 'inputText', text: JSON.stringify(outcome.result) }],
+              contentItems: [{ type: 'inputText', text: JSON.stringify(outcome) }],
             }
           : {
               type: 'functionCallOutput',
