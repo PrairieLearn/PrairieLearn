@@ -713,7 +713,7 @@ function PrintPreparation({
                               variant={id === instanceId ? 'primary' : 'outline-secondary'}
                               aria-pressed={id === instanceId}
                               disabled={busy || isDirty || isSubmitting || download.isPending}
-                              onClick={() => void switchInstance(id)}
+                              onClick={() => switchInstance(id)}
                             >
                               Form {label}
                               {id === instanceId && <span className="float-end">Previewing</span>}
@@ -750,7 +750,7 @@ function PrintPreparation({
                                 isSubmitting ||
                                 download.isPending
                               }
-                              onClick={() => void removeInstance(id)}
+                              onClick={() => removeInstance(id)}
                             >
                               <i className="bi bi-x-lg" aria-hidden="true" />
                             </Button>
