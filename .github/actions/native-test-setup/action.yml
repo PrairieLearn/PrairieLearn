@@ -1,10 +1,11 @@
-name: Native test setup (OS and Python)
-description: Installs OS packages and Python dependencies for running PrairieLearn tests natively on the runner.
+name: Native test setup
+description: Shared setup steps for running PrairieLearn tests natively on the runner.
 
-# This action runs concurrently with `native-test-setup-node` (see the workflows
-# that use it), since GitHub Actions doesn't allow `parallel` or `background`
-# steps inside a composite action. Neither action may depend on anything the
-# other one sets up.
+inputs:
+  install-playwright-browsers:
+    description: Whether to install Playwright browsers (chromium).
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -33,6 +34,21 @@ runs:
           libgvplugin-neato-layout-dev \
           libgvplugin-pango-dev
 
+    - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+    - name: Set up Node
+      uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+      with:
+        node-version: '24'
+        cache: 'pnpm'
+    - name: Install Node dependencies
+      shell: bash
+      run: pnpm install
+    - name: Install Playwright browsers
+      if: inputs.install-playwright-browsers == 'true'
+      shell: bash
+      run: pnpm playwright install chromium --with-deps
+
     - name: Set up Python
       uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       with:
@@ -43,13 +59,22 @@ runs:
         enable-cache: true
         cache-dependency-glob: 'pyproject.toml'
         cache-suffix: core
-    # This builds pygraphviz from source, so it must run after the graphviz
-    # packages are installed.
     - name: Install core Python dependencies
       shell: bash
       env:
         UV_LOCKED: 1
       run: make python-deps-core
+
+    - name: Set up Turborepo cache
+      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      with:
+        path: .turbo/cache
+        key: ${{ runner.os }}-turbo-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-turbo-
+    - name: Build all code
+      shell: bash
+      run: make build
 
     - name: Configure git
       shell: bash
