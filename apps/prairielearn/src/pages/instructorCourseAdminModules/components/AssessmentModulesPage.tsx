@@ -57,8 +57,16 @@ function toFormRow(module: StaffAssessmentModuleWithAssessments): AssessmentModu
   return { ...module, trackingId: module.id };
 }
 
-function isImplicitDefaultModule(module: AssessmentModuleFormRow) {
-  return module.implicit && module.name === DEFAULT_ASSESSMENT_MODULE_NAME;
+function orderModules(modules: AssessmentModuleFormRow[]) {
+  return [
+    ...modules.filter((module) => !module.implicit),
+    ...modules.filter(
+      (module) => module.implicit && module.name !== DEFAULT_ASSESSMENT_MODULE_NAME,
+    ),
+    ...modules.filter(
+      (module) => module.implicit && module.name === DEFAULT_ASSESSMENT_MODULE_NAME,
+    ),
+  ];
 }
 
 function AssessmentModuleRow({
@@ -74,7 +82,7 @@ function AssessmentModuleRow({
   onDelete: () => void;
   onShowUsage: () => void;
 }) {
-  const dragDisabled = isImplicitDefaultModule(module);
+  const dragDisabled = module.implicit;
   const { ref, style, dragHandleProps } = useReorderableRow(module.trackingId, dragDisabled);
 
   return (
@@ -130,15 +138,13 @@ function AssessmentModulesTable({
   handleCreate: () => void;
   handleShowUsage: (module: AssessmentModuleFormRow) => void;
 }) {
-  const implicitDefaultModule = rows.find(isImplicitDefaultModule);
-  const reorderableRows = rows.filter((module) => !isImplicitDefaultModule(module));
+  const implicitRows = rows.filter((module) => module.implicit);
+  const reorderableRows = rows.filter((module) => !module.implicit);
 
   return (
     <ReorderableRowsContext
       rows={reorderableRows}
-      onReorder={(reorderedRows) =>
-        onReorder(implicitDefaultModule ? [...reorderedRows, implicitDefaultModule] : reorderedRows)
-      }
+      onReorder={(reorderedRows) => onReorder([...reorderedRows, ...implicitRows])}
     >
       <table className="table table-sm table-hover table-striped" aria-label="Assessment modules">
         <thead>
@@ -173,16 +179,16 @@ function AssessmentModulesTable({
               </td>
             </tr>
           )}
-          {implicitDefaultModule && (
+          {implicitRows.map((module) => (
             <AssessmentModuleRow
-              key={implicitDefaultModule.trackingId}
-              module={implicitDefaultModule}
+              key={module.trackingId}
+              module={module}
               allowEdit={allowEdit}
-              onEdit={() => handleEdit(implicitDefaultModule.trackingId)}
-              onDelete={() => handleDelete(implicitDefaultModule)}
-              onShowUsage={() => handleShowUsage(implicitDefaultModule)}
+              onEdit={() => handleEdit(module.trackingId)}
+              onDelete={() => handleDelete(module)}
+              onShowUsage={() => handleShowUsage(module)}
             />
-          )}
+          ))}
         </tbody>
       </table>
     </ReorderableRowsContext>
@@ -216,10 +222,10 @@ function AssessmentModulesCard({
   const origHash = data.origHash;
 
   const canEdit = allowEdit && origHash !== null;
-  const form = useForm({ defaultValues: { modules: initialModules.map(toFormRow) } });
+  const form = useForm({ defaultValues: { modules: orderModules(initialModules.map(toFormRow)) } });
   const modulesState = form.watch('modules');
   const setModulesState = (modules: AssessmentModuleFormRow[]) => {
-    form.setValue('modules', modules, { shouldDirty: true });
+    form.setValue('modules', orderModules(modules), { shouldDirty: true });
   };
 
   const saveMutation = useMutation({
@@ -232,7 +238,7 @@ function AssessmentModulesCard({
       );
       const refreshed = await refetch({ throwOnError: true });
       if (refreshed.data) {
-        form.reset({ modules: refreshed.data.modules.map(toFormRow) });
+        form.reset({ modules: orderModules(refreshed.data.modules.map(toFormRow)) });
       }
     },
   });
@@ -260,14 +266,7 @@ function AssessmentModulesCard({
 
   const handleSave = (assessmentModule: AssessmentModuleFormRow) => {
     if (editModal.data?.mode === 'create') {
-      const defaultIndex = modulesState.findIndex(isImplicitDefaultModule);
-      const updatedModules = [...modulesState];
-      updatedModules.splice(
-        defaultIndex === -1 ? updatedModules.length : defaultIndex,
-        0,
-        assessmentModule,
-      );
-      setModulesState(updatedModules);
+      setModulesState([...modulesState, assessmentModule]);
     } else {
       setModulesState(
         modulesState.map((m) =>
