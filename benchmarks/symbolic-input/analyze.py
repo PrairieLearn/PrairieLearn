@@ -81,7 +81,7 @@ def load_round(path: Path) -> dict[str, Any]:
             measurement["family"],
             measurement["complexity"],
             measurement["input_mode"],
-            measurement["parser_path"],
+            measurement["payload_mode"],
             measurement["expected"],
         )
         for key in (
@@ -170,7 +170,7 @@ def analyze_comparison(comparison_dir: Path) -> dict[str, Any]:
             "family": key[3],
             "complexity": key[4],
             "input_mode": key[5],
-            "parser_path": key[6],
+            "payload_mode": key[6],
             "expected": key[7],
             **summarize_ratios(np.array([block_ratio(block, key) for block in blocks])),
         }
@@ -310,9 +310,9 @@ def plot_cell_changes(
     overall = condition["delta_percent"]
 
     fig, ax = plt.subplots(figsize=(9.2, 0.24 * len(cells) + 1.6))
-    for parser_path, color in (("mathjson", ACCENT), ("legacy", MUTED)):
+    for payload_mode, color in (("mathjson", ACCENT), ("legacy", MUTED)):
         indices = [
-            i for i, cell in enumerate(cells) if cell["parser_path"] == parser_path
+            i for i, cell in enumerate(cells) if cell["payload_mode"] == payload_mode
         ]
         if not indices:
             continue
@@ -324,7 +324,7 @@ def plot_cell_changes(
             edgecolor=SURFACE,
             linewidth=1.5,
             zorder=3,
-            label=parser_path,
+            label=payload_mode,
         )
     ax.axvline(0, color=AXIS, linewidth=1, zorder=0)
     ax.axvline(overall, color=REFERENCE, linewidth=1, linestyle=(0, (3, 3)), zorder=2)
@@ -339,7 +339,7 @@ def plot_cell_changes(
 
     labels = [
         f"{cell['family']}  {cell['complexity']}  {cell['input_mode']}  "
-        f"{cell['parser_path']}  {cell['expected']}"
+        f"{cell['payload_mode']}  {cell['expected']}"
         for cell in cells
     ]
     ax.set_yticks(y, labels)

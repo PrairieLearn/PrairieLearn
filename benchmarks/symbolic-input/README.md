@@ -23,7 +23,7 @@ the comparison branch consumes it without including client-side conversion in
 the timed `parse()` call. Rejected formula-editor cases retain their legacy
 payload because they do not have a valid expression to serialize. Accepted
 named-set cases that the proposal cannot serialize are also labeled as legacy.
-Reports split input mode, actual parser path, and acceptance status, so the
+Reports split input mode, payload mode, and acceptance status, so the
 direct MathJSON comparison is the `formula-editor` / `mathjson` / `accepted`
 slice.
 

@@ -223,7 +223,7 @@ def test_target_loader_runs_current_mathjson_path() -> None:
     case = next(
         json.loads(line)
         for line in benchmark.DEFAULT_CORPUS.read_text().splitlines()
-        if '"parser_path":"mathjson"' in line
+        if '"payload_mode":"mathjson"' in line
     )
 
     outcome, _detail, duration_ns = worker.run_case(

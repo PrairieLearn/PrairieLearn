@@ -375,7 +375,7 @@ def _populate_mathjson_payloads(cases: list[dict[str, Any]], repo_root: Path) ->
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         for case in cases:
-            case["parser_path"] = "legacy"
+            case["payload_mode"] = "legacy"
             if case["input_mode"] != "formula-editor":
                 continue
             if case["intended_status"] != "accepted":
@@ -395,7 +395,7 @@ def _populate_mathjson_payloads(cases: list[dict[str, Any]], repo_root: Path) ->
             if not isinstance(payload, str):
                 continue
             case["mathjson"] = payload
-            case["parser_path"] = "mathjson"
+            case["payload_mode"] = "mathjson"
     if failures:
         raise RuntimeError("MathJSON corpus generation failed:\n" + "\n".join(failures))
 
