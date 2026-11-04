@@ -34,12 +34,12 @@ const CourseContextSchema = z.object({
 });
 
 /**
- * A saved expiry for a turn or idle sandbox. The sandbox ID prevents stale alarms
- * from shutting down a replacement sandbox. Turn expiry includes startup time.
+ * A saved expiry for a turn, an idle sandbox, or a blocked sandbox awaiting recovery. The sandbox
+ * ID prevents stale alarms from shutting down a replacement sandbox. Turn expiry includes startup.
  */
 interface Deadline {
   at: string;
-  kind: 'turn' | 'idle';
+  kind: 'turn' | 'idle' | 'recovery';
   sandboxId: string;
 }
 
@@ -168,8 +168,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // reconstructing an in-flight operation. The remaining states need explicit recovery.
     switch (this.record.lifecycle.status) {
       case 'offline':
+        // Offline awaits a message and should not start work on wake.
+        return;
       case 'blocked':
-        // Offline awaits a message; blocked awaits Resume. Neither should start work on wake.
+        // Blocked awaits Resume, with automatic recovery as a fallback while a sandbox remains.
+        if (this.record.sandboxId && !this.record.deadline) this.scheduleRecovery();
         return;
       case 'waiting_for_user':
         // The sandbox is ready for input; restore its idle shutdown using the saved expiry.
@@ -282,6 +285,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       lifecycle: { status: 'blocked', reason },
       deadline: null,
     });
+    if (this.record.sandboxId) this.scheduleRecovery();
+  }
+
+  /**
+   * A blocked conversation still holds a container whose unsaved edits are lost once its
+   * inactivity timeout ends. Recover on the user's behalf if they have not resumed by then.
+   */
+  private scheduleRecovery() {
+    void this.scheduleDeadline('recovery').catch((error: unknown) => this.reportError(error));
   }
 
   /**
@@ -321,6 +333,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     if (expected.kind === 'idle') {
       await this.backupAndShutdown();
+    } else if (expected.kind === 'recovery') {
+      const recovered = await this.resume().catch((error: unknown) => {
+        this.reportError(error);
+        return false;
+      });
+      // Resume declines while other work owns the sandbox; check again later.
+      if (!recovered && this.record.lifecycle.status === 'blocked' && this.record.sandboxId) {
+        this.scheduleRecovery();
+      }
     } else {
       await this.stopLive(true);
     }
@@ -593,7 +614,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Discard interrupted setup while retaining the last committed checkpoint. */
   private async discardStartup() {
     try {
-      if (this.record.sandboxId) await this.sandbox.destroy();
+      if (this.record.sandboxId && (await this.sandbox.isRunning())) await this.sandbox.destroy();
       this.setRecord({
         ...this.record,
         sandboxId: null,
