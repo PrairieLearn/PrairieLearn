@@ -516,11 +516,18 @@ export class CodeCallerNative implements CodeCaller {
   _timeout() {
     this.debug('enter _timeout()');
     this._checkState([IN_CALL]);
-    this.timeoutID = null;
-    const err = new Error('timeout exceeded, killing CodeCallerNative child');
-    this.child?.kill('SIGTERM');
-    this.state = EXITING;
-    this._callCallback(err);
+    const timeoutID = this.timeoutID;
+    // A stalled event loop can run this timer before reading an already-buffered
+    // reply. Give pipe I/O a chance to finish the call before killing the worker.
+    setImmediate(() => {
+      // The reply may also have started a new call with its own timeout.
+      if (this.state !== IN_CALL || this.timeoutID !== timeoutID) return;
+      this.timeoutID = null;
+      const err = new Error('timeout exceeded, killing CodeCallerNative child');
+      this.child?.kill('SIGTERM');
+      this.state = EXITING;
+      this._callCallback(err);
+    });
     this.debug('exit _timeout()');
   }
 
