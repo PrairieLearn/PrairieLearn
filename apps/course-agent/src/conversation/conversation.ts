@@ -634,7 +634,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         case 'cleanup_failed':
           await this.destroyCheckpointed();
       }
-      if (this.record.review && this.savedOutcome()) await this.continueReview();
+      if (this.record.review && this.savedOutcome()) {
+        this.continueInBackground(() => this.continueReview());
+      }
       return true;
     } finally {
       this.recovering = false;
@@ -818,7 +820,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             return false;
           }
           if (this.record.review?.callId === outcome.callId && !this.active) {
-            await this.continueReview();
+            this.continueInBackground(() => this.continueReview());
           }
           return true;
         }
@@ -857,10 +859,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         ),
       })),
     );
-    const response = await this.continueLastTurn();
-    if (response.status !== 'completed' && response.status !== 'aborted') {
-      throw new Error('Could not incorporate review result');
-    }
     const stored = this.messages
       .flatMap((message) => message.parts)
       .find(
@@ -870,7 +868,24 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           part.state === 'output-available',
       );
     if (!stored) throw new Error('SDK did not persist review result');
+    this.continueInBackground(() => this.continueSavedTurn());
     return true;
+  }
+
+  /**
+   * Return to the caller once the result is durable: the agent's follow-up turn can outlast
+   * any HTTP timeout. A failed continuation leaves Resume available to retry it.
+   */
+  private continueInBackground(continuation: () => Promise<void>) {
+    void this.keepAliveWhile(continuation).catch((error: unknown) => {
+      this.reportError(error);
+      if (this.record.lifecycle.status !== 'blocked') this.block('runtime_failed');
+    });
+  }
+
+  private async continueSavedTurn() {
+    const result = await this.continueLastTurn();
+    if (result.status !== 'completed' && result.status !== 'aborted') this.block('runtime_failed');
   }
 
   /** Scheduled and explicit recovery uses only the saved tool result, never old user input. */
@@ -883,8 +898,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       lifecycle: { status: 'waiting_for_agent' },
       deadline: null,
     });
-    const result = await this.continueLastTurn();
-    if (result.status !== 'completed' && result.status !== 'aborted') this.block('runtime_failed');
+    await this.continueSavedTurn();
   }
 
   /** Commit a replacement backup before shutdown; cleanup of the old archive is independent. */

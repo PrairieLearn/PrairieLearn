@@ -175,6 +175,8 @@ export async function deliverCourseAgentReviewOutcome(
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify(outcome),
+    // The agent records the result and continues in the background, so this returns promptly.
+    signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) {
     throw new error.HttpStatusError(

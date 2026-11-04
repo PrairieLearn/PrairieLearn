@@ -102,7 +102,7 @@ conversations.post('/:id/pending-review/outcome', async (c) => {
     return c.json({ outcomeRecorded: true });
   } catch (error) {
     reportError(error);
-    return c.text('Could not incorporate review result', 503);
+    return c.text('Could not record review result', 503);
   }
 });
 

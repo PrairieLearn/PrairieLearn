@@ -87,12 +87,12 @@ The editor job records whether saving and syncing succeeded, along with its logs
 
 After the job finishes, PrairieLearn sends its outcome to the DO. If this callback is missed, Resume calls the service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. It returns `{ jobSequenceId, status, result, error }`, with status `running`, `completed`, or `blocked`. Both paths build the result from the same job data. The job does not store the native call ID: the DO matches the returned job sequence ID to its pending review. A running job stays pending. An interrupted job stays blocked for inspection; Resume does not start another save. A saved denial can also be delivered through Resume.
 
-The DO saves and broadcasts the result in the chat tool part before continuing the agent. Duplicate callbacks share one in-flight delivery promise. Continuation depends on whether the native call is still live:
+The DO saves and broadcasts the result in the chat tool part, then answers the callback and continues the agent in the background, since its follow-up turn can outlast an HTTP timeout. Duplicate callbacks share one in-flight delivery promise. Continuation depends on whether the native call is still live:
 
 - For a live call, open another output stream and return the result to that call.
 - After a restart, restore the native thread and send empty user input plus `toolOutput` tagged with the saved call ID. Both forms deliver the same text, `{ callId, result }`, which Codex retains verbatim. Before continuing, search the native history for that exact text in any item; if it is present, do not start another turn.
 
-Neither path repeats the original prompt. The review stays saved until both chat persistence and native result handling complete. Failed result delivery can be retried through Resume. Stop after native incorporation clears the settled review; interrupted incorporation remains blocked with Resume available.
+Neither path repeats the original prompt. The review stays saved until both chat persistence and native result handling complete. A failed continuation blocks the conversation, and Resume retries it. Stop after native incorporation clears the settled review; interrupted incorporation remains blocked with Resume available.
 
 ### Shutdown and subsequent edits
 
