@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 4.4.0
+
+### Minor Changes
+
+- 0cab990: Allow TagPicker to create typed values.
+
 ## 4.3.0
 
 ### Minor Changes

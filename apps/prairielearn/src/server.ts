@@ -884,6 +884,9 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
       res.locals.lti11_enabled = await features.enabledFromLocals('lti11', res.locals);
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -1314,9 +1317,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
