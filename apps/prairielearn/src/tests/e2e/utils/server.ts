@@ -20,8 +20,6 @@ const USE_BUILD = !!process.env.CI;
 interface WorkerServerOptions {
   /** Additional course directories to include beyond the defaults */
   courseDirs?: string[];
-  /** Additional config overrides to pass to the server */
-  configOverrides?: Partial<Config>;
 }
 
 /**
@@ -52,8 +50,10 @@ export async function setupWorkerServer(
         compiledAssetsDevMode: !USE_BUILD,
         // The worker database is cloned from an already-migrated template.
         runMigrations: false,
+        // Enterprise-only routes are registered at startup, so they can't be
+        // enabled per test with config overrides.
+        isEnterprise: true,
         ...(options.courseDirs && { courseDirs: options.courseDirs }),
-        ...options.configOverrides,
       };
 
       await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
@@ -104,6 +104,7 @@ async function startServerSubprocess(
       ...process.env,
       PL_CONFIG_PATH: configPath,
       NODE_ENV: 'test',
+      DANGEROUSLY_ENABLE_TEST_ROUTES: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     // Create a new process group so we can kill all child processes
