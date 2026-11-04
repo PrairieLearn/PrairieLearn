@@ -50,6 +50,27 @@ export function TreeZoneNode({
   // This warning triggers when questions are deleted from a zone, reducing
   // the count below an already-saved numberChoose/bestQuestions.
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
+  const zoneGuidance: string[] = [];
+  if (zone.numberChoose != null) {
+    zoneGuidance.push(
+      `${zone.numberChoose} question${zone.numberChoose === 1 ? ' is' : 's are'} randomly selected from this zone, spread across pools as evenly as possible.`,
+    );
+  }
+  if (zone.maxPoints != null) {
+    zoneGuidance.push(
+      `At most ${zone.maxPoints} points from this zone count toward the assessment.`,
+    );
+  }
+  if (zone.bestQuestions != null) {
+    zoneGuidance.push(
+      zone.bestQuestions === 1
+        ? 'Only the highest-scoring question in this zone counts toward the total.'
+        : `Only the ${zone.bestQuestions} highest-scoring questions in this zone count toward the total.`,
+    );
+  }
+  if (zone.lockpoint) {
+    zoneGuidance.push('Students must complete this zone before proceeding to the next.');
+  }
   const isSelected =
     selectedItem?.type === 'zone' && selectedItem.zoneTrackingId === zone.trackingId;
 
@@ -253,6 +274,14 @@ export function TreeZoneNode({
             </button>
           )}
         </div>
+
+        {zoneGuidance.length > 0 && (
+          <div className="small text-muted bg-body-tertiary px-3 py-1 border-bottom">
+            {zoneGuidance.map((guidance) => (
+              <div key={guidance}>{guidance}</div>
+            ))}
+          </div>
+        )}
 
         {/* Zone content */}
         {!isCollapsed && (

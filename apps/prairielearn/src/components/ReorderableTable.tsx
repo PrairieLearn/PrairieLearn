@@ -84,7 +84,8 @@ type ReorderableRowHandle = ReturnType<typeof useReorderableRow>;
 /**
  * The drag/edit/delete actions cell of a reorderable row. When
  * `deleteDisabledReason` is set, the delete button is inert and explains why
- * in a click tooltip instead.
+ * in a click tooltip. Callers may supply `deleteDisabledReasonId` to show the
+ * reason inline and disable the button instead.
  */
 export function ReorderableRowActionsCell({
   trackingId,
@@ -92,6 +93,7 @@ export function ReorderableRowActionsCell({
   editLabel,
   deleteLabel,
   deleteDisabledReason,
+  deleteDisabledReasonId,
   onEdit,
   onDelete,
 }: {
@@ -100,6 +102,7 @@ export function ReorderableRowActionsCell({
   editLabel: string;
   deleteLabel: string;
   deleteDisabledReason?: string | null;
+  deleteDisabledReasonId?: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -123,7 +126,17 @@ export function ReorderableRowActionsCell({
         >
           <i className="fa fa-edit" aria-hidden="true" />
         </button>
-        {deleteDisabledReason ? (
+        {deleteDisabledReason && deleteDisabledReasonId ? (
+          <button
+            className="btn btn-sm btn-ghost"
+            type="button"
+            aria-label={deleteLabel}
+            aria-describedby={deleteDisabledReasonId}
+            disabled
+          >
+            <i className="fa fa-trash text-muted" aria-hidden="true" />
+          </button>
+        ) : deleteDisabledReason ? (
           <OverlayTrigger
             trigger="click"
             tooltip={{

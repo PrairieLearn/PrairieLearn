@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 import { useModalState } from '@prairielearn/ui';
 
@@ -47,6 +47,11 @@ function AssessmentSetRow({
   onShowUsage: () => void;
 }) {
   const { ref, style, dragHandleProps } = useReorderableRow(assessmentSet.trackingId);
+  const deleteDisabledReasonId = useId();
+  const deleteDisabledReason =
+    assessmentSet.assessments.length > 0
+      ? `This assessment set cannot be deleted because it is referenced by ${assessmentSet.assessments.length} assessment${assessmentSet.assessments.length === 1 ? '' : 's'}.`
+      : null;
 
   return (
     <tr ref={ref} style={style}>
@@ -56,11 +61,8 @@ function AssessmentSetRow({
           dragHandleProps={dragHandleProps}
           editLabel={`Edit assessment set ${assessmentSet.name}`}
           deleteLabel={`Delete assessment set ${assessmentSet.name}`}
-          deleteDisabledReason={
-            assessmentSet.assessments.length > 0
-              ? `This assessment set cannot be deleted because it is referenced by ${assessmentSet.assessments.length} assessment${assessmentSet.assessments.length === 1 ? '' : 's'}.`
-              : null
-          }
+          deleteDisabledReason={deleteDisabledReason}
+          deleteDisabledReasonId={deleteDisabledReasonId}
           onEdit={onEdit}
           onDelete={onDelete}
         />
@@ -71,6 +73,11 @@ function AssessmentSetRow({
       <td className="align-middle">{assessmentSet.name}</td>
       <td className="align-middle">
         <AssessmentSetHeading assessmentSet={assessmentSet} />
+        {editMode && allowEdit && deleteDisabledReason && (
+          <div id={deleteDisabledReasonId} className="small text-muted">
+            {deleteDisabledReason}
+          </div>
+        )}
       </td>
       <td className="align-middle">
         <button
