@@ -1,0 +1,101 @@
+{
+  "baseline_and_candidate_submission_differences": 696,
+  "baseline_commit": "9c35ec3595b2bd128b9cc512fbf94fcef3bee664",
+  "browser": "153.0.8010.12",
+  "candidate_commit": "f7959d5c787a7e7f27dfc28b3d84fe092aead545",
+  "case_count": 6160,
+  "corpus_sha256": "3cf688a4f0254e9c71f254ae70dd29554b47150d4aa820d0362f763af3409a42",
+  "editor_fidelity_on_baseline": {
+    "accepted-became-rejected": {
+      "count": 128,
+      "examples": [
+        "random-005504",
+        "random-005505",
+        "random-005506",
+        "random-005507",
+        "random-005508",
+        "random-005509",
+        "random-005510",
+        "random-005511",
+        "random-005512",
+        "random-005513",
+        "random-005514",
+        "random-005515",
+        "random-005516",
+        "random-005517",
+        "random-005518",
+        "random-005519",
+        "random-005520",
+        "random-005521",
+        "random-005522",
+        "random-005523"
+      ]
+    },
+    "both-rejected": {
+      "count": 1536,
+      "examples": [
+        "random-000160",
+        "random-000161",
+        "random-000162",
+        "random-000163",
+        "random-000164",
+        "random-000165",
+        "random-000166",
+        "random-000167",
+        "random-000168",
+        "random-000169",
+        "random-000170",
+        "random-000171",
+        "random-000172",
+        "random-000173",
+        "random-000174",
+        "random-000175",
+        "random-000176",
+        "random-000177",
+        "random-000178",
+        "random-000179"
+      ]
+    },
+    "same-answer": {
+      "count": 1416,
+      "examples": [
+        "random-000128",
+        "random-000129",
+        "random-000130",
+        "random-000131",
+        "random-000132",
+        "random-000133",
+        "random-000134",
+        "random-000135",
+        "random-000136",
+        "random-000137",
+        "random-000138",
+        "random-000139",
+        "random-000140",
+        "random-000141",
+        "random-000142",
+        "random-000143",
+        "random-000144",
+        "random-000145",
+        "random-000146",
+        "random-000147"
+      ]
+    }
+  },
+  "schema_version": 1,
+  "source_case_count": 3080,
+  "source_corpus_sha256": "32983278a6afce8a26d98642589062fd8ea05f9f1c21ab752681a959885f781e",
+  "status_distribution": {
+    "compute-engine|accepted|accepted|accepted": 1416,
+    "compute-engine|accepted|rejected|rejected": 128,
+    "compute-engine|rejected|rejected|rejected": 1536,
+    "legacy|accepted|accepted|accepted": 1416,
+    "legacy|accepted|rejected|rejected": 128,
+    "legacy|rejected|rejected|rejected": 1536
+  },
+  "versions": {
+    "computeEngine": "0.102.0",
+    "mathlive": "0.110.0",
+    "playwright": "1.63.0"
+  }
+}

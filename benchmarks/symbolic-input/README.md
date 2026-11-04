@@ -27,6 +27,54 @@ Reports split input mode, payload mode, and acceptance status, so the
 direct MathJSON comparison is the `formula-editor` / `mathjson` / `accepted`
 slice.
 
+## Corpus variants
+
+Two derived corpora reuse the same harness through `compare --corpus`.
+
+### Compute Engine payloads (`corpus-ce.jsonl`)
+
+The committed corpus's MathJSON comes from the server's own SymPy serializer,
+so it is canonical and exists only for accepted cases. `generate_ce_corpus.py`
+instead produces the payloads a browser would send for every formula-editor
+case, accepted or rejected:
+
+1. Build the LaTeX the formula editor holds for the case, in the shapes MathLive
+   produces when the expression is typed (`editor_latex`).
+2. Render each target commit's question panel restoring that saved `-latex`
+   value (`render_questions.py`, run in the target's environment).
+3. In headless Chromium, run the element's own `PLSymbolicInput()`, focus,
+   blur, and submit, then read the hidden fields (`ce_payloads.mjs`).
+4. Label each row with its outcome on the baseline and candidate
+   (`oracle.py`).
+
+Each case appears twice. The `compute-engine` row carries the candidate's
+fields, including `-json`. The `legacy` row carries the baseline's fields,
+which models a page rendered before the upgrade submitting to the new server.
+The manifest's `editor_fidelity_on_baseline` compares each editor submission
+with the source ASCII on the baseline. Named domains such as `Reals` have no
+editor key, so they arrive as separate letters and are rejected.
+
+The browser step needs the main checkout's `node_modules` (MathLive, Compute
+Engine, jQuery, and Playwright with Chromium installed). The script asserts
+the Compute Engine and MathLive versions.
+
+```sh
+uv run python benchmarks/symbolic-input/generate_ce_corpus.py
+uv run python benchmarks/symbolic-input/generate_ce_corpus.py --check
+```
+
+### Master attributes (`translate_corpus.py`)
+
+Master-based commits only understand `allow-sets`. `translate_corpus.py`
+rewrites set-valued `allowed-types` to `allow-sets="true"`, drops
+`allowed-types="expression"`, relabels each case on both master-based commits,
+and writes `.cache/symbolic-input-benchmark/corpus-allow-sets.jsonl` with a
+manifest beside it.
+
+```sh
+uv run python benchmarks/symbolic-input/translate_corpus.py
+```
+
 ## Paired overnight comparison
 
 Use `compare` for the primary baseline/candidate measurement. It runs commits
