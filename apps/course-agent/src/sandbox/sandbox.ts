@@ -111,7 +111,14 @@ export class CourseSandbox extends DurableObject<Env> {
     checkpoint: DirectoryBackupRecord | null,
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
-    this.container.start({ image: this.container.images.courseAgent, enableInternet: false });
+    this.container.start({
+      image: this.container.images.courseAgent,
+      enableInternet: false,
+      // `basic` is 1/4 vCPU, 1 GiB memory, and 4 GB disk. The default `lite` (256 MiB) is too
+      // small for Codex and course tooling, and running out of memory restarts the instance,
+      // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
+      instance: 'basic',
+    });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
