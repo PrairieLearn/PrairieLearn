@@ -17,3 +17,21 @@ SELECT
   ) AS question
 FROM
   unnest($file_paths::text[]) AS files (file_path);
+
+-- BLOCK question_identity_exists
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      questions
+    WHERE
+      course_id = $course_id
+      AND (
+        uuid = $uuid
+        OR (
+          qid = $qid
+          AND deleted_at IS NULL
+        )
+      )
+  );
