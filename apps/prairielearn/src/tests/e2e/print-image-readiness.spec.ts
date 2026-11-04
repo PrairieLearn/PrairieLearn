@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net';
 import {
   waitForExcalidrawCanvases,
   waitForPrintImages,
-} from '../../lib/client/print-image-layout.js';
+} from '../../lib/client/printing/print-image-layout.js';
 
 import { expect, test } from './fixtures.js';
 

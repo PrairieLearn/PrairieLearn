@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-app_path = Path(__file__).resolve().parents[3]
+app_path = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(app_path / "python"))
 question_phases = importlib.import_module("prairielearn.internal.question_phases")
 

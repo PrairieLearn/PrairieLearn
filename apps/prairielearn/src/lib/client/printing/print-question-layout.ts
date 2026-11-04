@@ -1,4 +1,4 @@
-import type { QuestionBlockSize } from '../printing/question-block-size.js';
+import type { QuestionBlockSize } from '../../printing/question-block-size.js';
 
 export interface MeasuredPrintQuestion {
   id: string;

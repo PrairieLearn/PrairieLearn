@@ -2,13 +2,13 @@ import {
   fitPrintChoiceImages,
   waitForExcalidrawCanvases,
   waitForPrintImages,
-} from '../../src/lib/client/print-image-layout.js';
-import { planPrintQuestionPages } from '../../src/lib/client/print-question-layout.js';
+} from '../../src/lib/client/printing/print-image-layout.js';
+import { planPrintQuestionPages } from '../../src/lib/client/printing/print-question-layout.js';
 import {
   normalizeAnswerPresentation,
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
-} from '../../src/lib/client/print-response-controls.js';
+} from '../../src/lib/client/printing/print-response-controls.js';
 import { parseQuestionBlockSize } from '../../src/lib/printing/question-block-size.js';
 
 interface PagedFlow {

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { getPythonPath } from '../code-caller/python-path.js';
+import { getPythonPath } from '../../code-caller/python-path.js';
 
 import {
   normalizeAnswerPresentation,

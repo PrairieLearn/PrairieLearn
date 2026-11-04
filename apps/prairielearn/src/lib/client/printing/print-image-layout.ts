@@ -1,4 +1,4 @@
-import { parseQuestionBlockSize } from '../printing/question-block-size.js';
+import { parseQuestionBlockSize } from '../../printing/question-block-size.js';
 
 import { getPrintBlockHeight } from './print-question-layout.js';
 
