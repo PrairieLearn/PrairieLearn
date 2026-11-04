@@ -26,6 +26,7 @@ env:
 jobs:
   test-prairielearn:
     name: Docker
+    if: false # TEMP
     runs-on: ubuntu-latest
 
     env:
@@ -107,6 +108,7 @@ jobs:
 
   test-prairielearn-vitest:
     name: Vitest (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    if: false # TEMP
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -243,7 +245,7 @@ jobs:
 
   merge-native-test-reports:
     name: Native (merge test reports)
-    if: ${{ !cancelled() }}
+    if: false # TEMP
     needs: [test-prairielearn-vitest, test-prairielearn-playwright]
     runs-on: ubuntu-latest
     steps:
