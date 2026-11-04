@@ -27,7 +27,7 @@ import { getOrCreateUser } from '../utils/auth.js';
 
 import { createTest, expect } from './fixtures.js';
 
-const test = createTest({ isEnterprise: true, features: { 'ai-grading': true } });
+const test = createTest({ features: { 'ai-grading': true } });
 const sql = loadSqlEquiv(import.meta.url);
 const baseUrl = 'https://provider.example/v1';
 const fakeKey = 'ui-test-key-not-a-real-secret';

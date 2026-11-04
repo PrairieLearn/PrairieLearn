@@ -17,9 +17,56 @@ import { setupWorkerServer } from './utils/server.js';
 
 export { expect } from '@playwright/test';
 
+/**
+ * The config keys that tests may override with `createTest()`.
+ *
+ * Why this list exists: every Playwright worker boots a single PrairieLearn
+ * server (see `utils/server.ts`) and shares it across every spec file that
+ * worker runs. Config overrides are not baked into that server at startup.
+ * Instead, the `applyConfigOverrides` fixture below POSTs them to the
+ * `/__test__/config` route before each test, which mutates the server's live
+ * `config` object, and resets them after the test.
+ *
+ * We used to give each distinct set of overrides its own Playwright worker,
+ * which meant its own server process and its own database. Booting a server
+ * takes roughly 5-6 seconds, almost all of it Node loading ~10k modules, and
+ * workers also need a fresh database and browser. With a dozen or so override
+ * groups per CI shard, that churn dominated e2e runtime. Sharing one server per
+ * worker cut the slowest shard roughly in half.
+ *
+ * The catch is that a runtime override only has an effect if the server reads
+ * that key from `config` *while handling a request*. Many keys are only read
+ * once at startup: for example, `isEnterprise` decides which routes get
+ * registered, and `newsFeedUrl` decides whether a cron job is scheduled.
+ * Overriding such a key at runtime silently does nothing, so a test could pass
+ * without exercising what it claims to, or fail in a confusing way.
+ *
+ * So `createTest()` only accepts the keys below, each of which has been
+ * checked to be read per request. Before adding a key, confirm that every
+ * place that reads it does so at request time rather than at module load or
+ * during server startup (including anything that caches the value). If a test
+ * truly needs a startup-only value, set it for every worker in
+ * `utils/server.ts` instead (as is done for `isEnterprise`), provided that
+ * doesn't break other tests.
+ *
+ * This is enforced only by types: `/__test__/config` itself accepts any key.
+ */
+type RuntimeConfigKey =
+  | 'authUid'
+  | 'authName'
+  | 'authUin'
+  | 'authEmail'
+  | 'features'
+  | 'githubClientToken'
+  | 'newsFeedUrl'
+  | 'supportSlackUrl'
+  | 'supportOfficeHoursUrl';
+
+type RuntimeConfigOverrides = Partial<Pick<Config, RuntimeConfigKey>>;
+
 interface TestFixtures {
   /** Config overrides applied to the worker's server for the duration of each test. */
-  configOverrides: Partial<Config>;
+  configOverrides: RuntimeConfigOverrides;
   /** Applies `configOverrides` before each test and resets them afterwards. */
   applyConfigOverrides: undefined;
   /** Override baseURL to be the worker-specific URL */
@@ -110,7 +157,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
   applyConfigOverrides: [
     async ({ configOverrides, workerPort }, use) => {
-      const setOverrides = async (overrides: Partial<Config>) => {
+      const setOverrides = async (overrides: RuntimeConfigOverrides) => {
         const res = await fetch(`http://localhost:${workerPort}/__test__/config`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -135,8 +182,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 /**
  * Creates a Playwright test instance whose tests run with the given config
  * overrides. Tests still share worker servers with all other tests, since the
- * overrides are applied at runtime rather than when the server starts.
+ * overrides are applied at runtime rather than when the server starts. Only
+ * keys that are read per request can be overridden; see `RuntimeConfigKey`.
  */
-export function createTest(configOverrides: Partial<Config>) {
+export function createTest(configOverrides: RuntimeConfigOverrides) {
   return test.extend({ configOverrides });
 }

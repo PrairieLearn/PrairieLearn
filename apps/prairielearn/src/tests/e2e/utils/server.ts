@@ -51,7 +51,8 @@ export async function setupWorkerServer(
         // The worker database is cloned from an already-migrated template.
         runMigrations: false,
         // Enterprise-only routes are registered at startup, so they can't be
-        // enabled per test with config overrides.
+        // enabled per test with config overrides (see `RuntimeConfigKey` in
+        // `fixtures.ts`). Every e2e server runs as enterprise instead.
         isEnterprise: true,
         ...(options.courseDirs && { courseDirs: options.courseDirs }),
       };

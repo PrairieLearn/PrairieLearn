@@ -10,7 +10,6 @@ import { createTest, expect } from './fixtures.js';
 
 const test = createTest({
   githubClientToken: 'test-token',
-  isEnterprise: true,
   authUid: 'github-owner@example.com',
   authName: 'Course Owner',
   authUin: '222222222',
