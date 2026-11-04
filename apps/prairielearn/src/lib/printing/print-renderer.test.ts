@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/unbound-method -- The browser harness methods are Vitest spies passed to expect. */
+/* oxlint-disable typescript/unbound-method -- The browser harness methods are Vitest spies passed to expect. */
 import {
   type Browser,
   type BrowserContext,
