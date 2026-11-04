@@ -113,3 +113,12 @@ Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env pr
 Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
 
 Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local reporting is disabled while the DSN is empty.
+
+### Rotating the service token
+
+PrairieLearn sends the first token listed in `courseAgentServiceToken`. The Worker accepts `PL_SERVICE_TOKEN` and the optional `PL_SERVICE_TOKEN_PREVIOUS` secret. Rotate without downtime in this order:
+
+1. Set PrairieLearn's `courseAgentServiceToken` to `["OLD_TOKEN", "NEW_TOKEN"]` and deploy PrairieLearn.
+2. Run `wrangler secret put PL_SERVICE_TOKEN_PREVIOUS` with the old token, then `wrangler secret put PL_SERVICE_TOKEN` with the new token. Each command deploys immediately, so keep this order to avoid rejecting PrairieLearn's old token.
+3. Set PrairieLearn's `courseAgentServiceToken` to `["NEW_TOKEN"]` and deploy PrairieLearn.
+4. Delete the old token with `wrangler secret delete PL_SERVICE_TOKEN_PREVIOUS`.
