@@ -75,6 +75,27 @@ manifest beside it.
 uv run python benchmarks/symbolic-input/translate_corpus.py
 ```
 
+## Behavior and browser cost
+
+`behavior.py` runs every case once on each side of the three #14839
+comparisons and writes `.cache/symbolic-input-benchmark/mathjson-14839/behavior/`:
+accept/reject confusion matrices, whether stored answers are identical or only
+symbolically equivalent, changed rejection messages, and intended-rejected
+cases that are accepted. It also compares the candidate's stored answers for
+Compute Engine payloads with those for the server serializer's payloads.
+
+`browser_bench.py` measures the element in headless Chromium at 1× and 4× CPU
+throttling (`browser_bench.mjs`): the `input` and `blur` handlers per case,
+first-field initialization and script evaluation on fresh pages, and script
+sizes. Pages carry only the scripts each commit's `info.json` lists.
+
+```sh
+uv run python benchmarks/symbolic-input/behavior.py
+caffeinate -i uv run python benchmarks/symbolic-input/browser_bench.py
+```
+
+Run the browser benchmark alone: other load on the host shifts its timings.
+
 ## Paired overnight comparison
 
 Use `compare` for the primary baseline/candidate measurement. It runs commits
