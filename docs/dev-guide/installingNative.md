@@ -7,7 +7,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
 - Install the prerequisites:
   - [Git](https://git-scm.com)
   - [Node.js 24](https://nodejs.org)
-  - [pnpm](https://pnpm.io)
+  - [pnpm 12.17 or newer in the 12.x series](https://pnpm.io)
   - [uv](https://docs.astral.sh/uv/) (Python version manager and package installer)
   - [PostgreSQL 17](https://www.postgresql.org)
   - [Redis 7](https://redis.io) or [Valkey](https://valkey.io)
@@ -61,7 +61,7 @@ Most of these prerequisites can be installed using the package manager of your O
     Install pnpm:
 
     ```sh
-    npm install -g pnpm@11.19.0
+    npm install -g 'pnpm@^12.17.0'
     ```
 
     d2 can be installed through the install script:
@@ -103,7 +103,7 @@ Most of these prerequisites can be installed using the package manager of your O
     Install pnpm:
 
     ```sh
-    npm install -g pnpm@11.19.0
+    npm install -g 'pnpm@^12.17.0'
     ```
 
 - Clone the latest code:

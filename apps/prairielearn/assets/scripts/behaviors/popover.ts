@@ -46,6 +46,11 @@ onDocumentReady(() => {
     add(el) {
       new window.bootstrap.Popover(el, { sanitize: false });
 
+      if (getPopoverTriggerModes(el).includes('click')) {
+        el.setAttribute('aria-haspopup', 'dialog');
+        el.setAttribute('aria-expanded', 'false');
+      }
+
       // Bootstrap will by default copy the `title` attribute to `aria-label`,
       // but it won't do that for `data-bs-title`. We do that here in the interest
       // of making things maximally accessible by default. If an `aria-label`
@@ -105,6 +110,39 @@ onDocumentReady(() => {
     const target = event.target as HTMLElement;
     const container = getPopoverContainerForTrigger(target);
 
+    if (container && getPopoverTriggerModes(target).includes('click')) {
+      const header = container.querySelector<HTMLElement>('.popover-header');
+      const title = header?.textContent.trim();
+      const headerContainer = document.createElement('div');
+      headerContainer.className = 'popover-header d-flex align-items-center gap-2';
+
+      if (header && title) {
+        const heading = document.createElement('h3');
+        heading.className = 'h6 mb-0 flex-grow-1';
+        heading.id = `${container.id}-title`;
+        heading.append(...header.childNodes);
+        headerContainer.append(heading);
+        header.replaceWith(headerContainer);
+        container.setAttribute('aria-labelledby', heading.id);
+      } else {
+        header?.replaceWith(headerContainer);
+        if (!header) container.querySelector('.popover-body')?.before(headerContainer);
+        container.setAttribute(
+          'aria-label',
+          target.getAttribute('aria-label') || target.textContent.trim() || 'Popover',
+        );
+      }
+
+      container.setAttribute('role', 'dialog');
+
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'btn-close ms-auto flex-shrink-0';
+      closeButton.setAttribute('aria-label', 'Close');
+      closeButton.setAttribute('data-bs-dismiss', 'popover');
+      headerContainer.append(closeButton);
+    }
+
     // If MathJax is loaded on this page, attempt to typeset any math
     // that may be in the popover.
     if (container && window.MathJax !== undefined) {
@@ -114,6 +152,10 @@ onDocumentReady(() => {
 
   on('shown.bs.popover', 'body', (event) => {
     const target = event.target as HTMLElement;
+
+    if (target.getAttribute('aria-haspopup') === 'dialog') {
+      target.setAttribute('aria-expanded', 'true');
+    }
 
     const popover = window.bootstrap.Popover.getInstance(target);
     if (popover) openPopovers.add(popover);
@@ -137,11 +179,19 @@ onDocumentReady(() => {
       // Attempt to place focus on the correct item inside the popover.
       const popoverBody = container.querySelector<HTMLElement>('.popover-body')!;
       focusFirstFocusableChild(popoverBody);
+      if (!container.contains(document.activeElement)) {
+        container.querySelector<HTMLButtonElement>('.btn-close')?.focus();
+      }
     }
   });
 
   on('hide.bs.popover', 'body', (event) => {
-    const popover = window.bootstrap.Popover.getInstance(event.target as HTMLElement);
+    const target = event.target as HTMLElement;
+    if (target.getAttribute('aria-haspopup') === 'dialog') {
+      target.setAttribute('aria-expanded', 'false');
+    }
+
+    const popover = window.bootstrap.Popover.getInstance(target);
     if (popover) openPopovers.delete(popover);
   });
 });

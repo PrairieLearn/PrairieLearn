@@ -336,6 +336,9 @@
      * previews of files as appropriate.
      */
     renderFileList() {
+      // Existing-file downloads can finish after the question panel is replaced.
+      if (!this.element[0].isConnected) return;
+
       const $fileList = this.element.find('.file-upload-status .card ul.list-group');
 
       // Save which cards are currently expanded
@@ -474,14 +477,11 @@
             if (isPdf) {
               const $objectPreview = $(
                 `<div class="mt-2 ratio ratio-4x3">
-                   <iframe src="${url}">
-                     PDF file cannot be displayed.
-                   </iframe>
+                   <object class="js-file-preview-pdf" type="application/pdf" data="${url}" aria-label="PDF file preview">
+                     This PDF cannot be displayed. Use the Download button to open it.
+                   </object>
                  </div>`,
               );
-              $objectPreview.find('iframe').on('load', () => {
-                URL.revokeObjectURL(url);
-              });
               $preview.append($objectPreview);
               this.expandPreviewForFile($file, $preview);
             } else {

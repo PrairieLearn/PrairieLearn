@@ -37,6 +37,7 @@ interface AssessmentQuestionManualGradingProps {
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
   trpcCsrfToken: string;
+  courseInstanceTrpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -72,6 +73,7 @@ function AssessmentQuestionManualGradingInner({
   courseInstance,
   urlPrefix,
   csrfToken,
+  courseInstanceTrpcCsrfToken,
   assessment,
   assessmentQuestion,
   questionQid,
@@ -174,6 +176,7 @@ function AssessmentQuestionManualGradingInner({
         course={course}
         courseInstance={courseInstance}
         csrfToken={csrfToken}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         instanceQuestionsInfo={instanceQuestionsInfo}
         urlPrefix={urlPrefix}
         assessment={assessment}

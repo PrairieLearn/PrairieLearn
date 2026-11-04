@@ -1,5 +1,17 @@
 # @prairielearn/public-fetch
 
+## 1.2.1
+
+### Patch Changes
+
+- e07a676: Update Undici to ^8.12.3 to include the October 2026 security fixes.
+
+## 1.2.0
+
+### Minor Changes
+
+- 866c7ce: Add `readResponseWithLimit` and `ResponseTooLargeError` for reading untrusted response bodies with a byte limit.
+
 ## 1.1.2
 
 ### Patch Changes

@@ -11,4 +11,5 @@ foreign-key constraints
     pt_exams_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pt_courses(id)
 
 referenced by
+    pt_center_exams: FOREIGN KEY (exam_id) REFERENCES pt_exams(id) ON UPDATE CASCADE ON DELETE CASCADE
     pt_reservations: FOREIGN KEY (exam_id) REFERENCES pt_exams(id)

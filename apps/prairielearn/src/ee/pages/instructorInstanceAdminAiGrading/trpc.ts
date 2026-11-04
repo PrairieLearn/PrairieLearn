@@ -77,7 +77,7 @@ const addCredentialMutation = t.procedure
   .concat(aiGradingFeatureProcedure)
   .input(
     z.object({
-      provider: EnumAiGradingProviderSchema,
+      provider: EnumAiGradingProviderSchema.exclude(['openai-compatible']),
       secret_key: z.string().trim().min(1),
     }),
   )
@@ -179,8 +179,8 @@ const createCheckoutMutation = t.procedure
       cancel_url: `${urlBase}?checkout=cancelled`,
       metadata,
       payment_intent_data: {
+        description: 'AI grading credits',
         metadata,
-        receipt_email: authn_user.email ?? undefined,
       },
     });
 

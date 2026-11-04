@@ -383,7 +383,7 @@ Note that all criteria are still considered when determining achievable points, 
 
 ## Accessibility
 
-Due to the highly graphical nature of this element, there are currently no viable keyboard controls or reasonable screen reader interaction available. To meet some accessibility needs, alternative versions of sketching questions will be necessary, for example to allow students to give textual descriptions rather than drawing.
+`pl-sketch` currently has no viable keyboard controls or screen reader interaction. See [alternatives to drawing input](../question/accessibility.md#alternatives-to-drawing-input) for other ways students can answer.
 
 ## Example implementations
 

@@ -80,6 +80,21 @@ function extractTransaction(req: any) {
   return name;
 }
 
+function redactCredentials(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactCredentials);
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        /secret|password|token|api[_-]?key|authorization/i.test(key)
+          ? '[REDACTED]'
+          : redactCredentials(entry),
+      ]),
+    );
+  }
+  return value;
+}
+
 /**
  * Applications load Express before their asynchronously loaded configuration
  * provides the Sentry DSN. Isolate requests explicitly instead of relying on
@@ -95,7 +110,10 @@ export function requestHandler() {
         // swallow any errors.
         try {
           event.transaction = extractTransaction(req);
-          event.request = httpRequestToRequestData(req);
+          const request = httpRequestToRequestData(req);
+          // Only attach request data after redaction succeeds, so failures cannot expose credentials.
+          request.data = redactCredentials(request.data);
+          event.request = request;
           return event;
         } catch {
           return event;

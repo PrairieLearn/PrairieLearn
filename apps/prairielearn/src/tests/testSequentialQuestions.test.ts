@@ -149,7 +149,9 @@ describe(
 
     test('Question 2 "next question" link contains the correct advanceScorePerc', async function () {
       const response = await submitQuestion(50, context.firstUnlockedQuestion);
-      assert.include(response.$('#question-nav-next').attr('data-bs-content'), '60%');
+      assert.lengthOf(response.$('#question-nav-next-container'), 1);
+      assert.isTrue(response.$('#question-nav-next').is(':disabled'));
+      assert.include(response.$('#question-nav-next-reason').text(), '60%');
     });
 
     async function submitQuestion(score: number, question: { id: number; url: string }) {

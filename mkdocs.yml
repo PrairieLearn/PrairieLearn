@@ -47,9 +47,10 @@ theme:
     - navigation.sections
     - navigation.indexes
     - navigation.path
+    # Leave navigation.instant.progress disabled: its unnamed progressbar remains
+    # exposed to assistive technology even while idle.
     - navigation.instant
     - navigation.instant.prefetch
-    - navigation.instant.progress
     - navigation.tracking
     - navigation.footer
     - navigation.indexes
@@ -270,6 +271,7 @@ nav:
           - '<span class="muted">pl-</span>template': 'elements/pl-template.md'
           - '<span class="muted">pl-</span>units-input': 'elements/pl-units-input.md'
           - '<span class="muted">pl-</span>variable-output': 'elements/pl-variable-output.md'
+          - '<span class="muted">pl-</span>workspace': 'elements/pl-workspace.md'
           - '<span class="muted">pl-</span>xss-safe': 'elements/pl-xss-safe.md'
 
       - 'clientFiles and serverFiles': 'clientServerFiles.md'

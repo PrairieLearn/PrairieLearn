@@ -5,12 +5,10 @@ import * as http from 'node:http';
 import * as net from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { pipeline } from 'node:stream/promises';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import { ZipArchive } from 'archiver';
 import * as async from 'async';
 import { Mutex } from 'async-mutex';
 import bodyParser from 'body-parser';
@@ -1198,15 +1196,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
 
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
-  const archive = new ZipArchive();
-  const archiveCompleted = pipeline(archive, res);
-
-  for (const file of gradedFiles) {
-    archive.append(file.createReadStream(), { name: file.path });
-    debug(`Sending ${file.path}`);
-  }
-
-  await Promise.all([archive.finalize(), archiveCompleted]);
+  await workspaceUtils.writeWorkspaceGradedFilesArchive(gradedFiles, res);
 }
 
 async function sendLogs(workspaceId: string | number, res: Response) {

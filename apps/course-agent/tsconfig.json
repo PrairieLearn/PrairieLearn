@@ -1,0 +1,10 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2024"],
+    "target": "ES2024",
+    "types": ["@cloudflare/workers-types", "node"]
+  },
+  "include": ["src/**/*"]
+}

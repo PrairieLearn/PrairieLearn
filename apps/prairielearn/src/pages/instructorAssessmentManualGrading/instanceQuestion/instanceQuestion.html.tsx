@@ -416,6 +416,12 @@ export function InstanceQuestion({
                         instanceQuestionAiGradeProps.availableAiGradingProviders
                       }
                       aiGradingRelativeCosts={instanceQuestionAiGradeProps.aiGradingRelativeCosts}
+                      courseInstanceTrpcCsrfToken={
+                        instanceQuestionAiGradeProps.courseInstanceTrpcCsrfToken
+                      }
+                      aiGradingLastSelectedCredentialId={
+                        instanceQuestionAiGradeProps.aiGradingLastSelectedCredentialId
+                      }
                       aiGradingLastSelectedModel={
                         instanceQuestionAiGradeProps.aiGradingLastSelectedModel
                       }

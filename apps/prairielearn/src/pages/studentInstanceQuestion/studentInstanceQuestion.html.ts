@@ -229,6 +229,7 @@ export function StudentInstanceQuestion({
           })}
           ${QuestionNavSideGroup({
             urlPrefix: resLocals.urlPrefix,
+            assessmentInstanceId: resLocals.assessment_instance.id,
             prevInstanceQuestionId: resLocals.instance_question_info.prev_instance_question.id,
             nextInstanceQuestionId: resLocals.instance_question_info.next_instance_question.id,
             nextQuestionAccessMode:

@@ -401,6 +401,7 @@ export function EditQuestionPointsScoreButton({
   return (
     <OverlayTrigger
       popover={{
+        header: `Change question ${findLabel(field)}`,
         body: (
           <EditQuestionPointsScoreForm
             assessmentQuestion={assessmentQuestion}

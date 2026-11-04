@@ -1,5 +1,4 @@
 import { chunk, shuffle } from 'es-toolkit';
-import * as streamifier from 'streamifier';
 
 import * as namedLocks from '@prairielearn/named-locks';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
@@ -77,10 +76,7 @@ export async function uploadInstanceGroups({
         job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
         job.verbose('----------------------------------------');
         job.verbose('Processing group updates...');
-        const csvStream = streamifier.createReadStream(csvFile.buffer, {
-          encoding: 'utf8',
-        });
-        const csvParser = createCsvParser(csvStream);
+        const csvParser = createCsvParser(csvFile.buffer);
         let successCount = 0,
           totalCount = 0;
         await runInTransactionAsync(async () => {

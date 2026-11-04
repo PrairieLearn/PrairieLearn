@@ -128,9 +128,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params[score_type] = score_value
 
         if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                raw_submitted_answer
-            )
+            html_params["raw_submitted_answer"] = raw_submitted_answer
         with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 

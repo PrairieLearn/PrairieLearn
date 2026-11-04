@@ -13,9 +13,9 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
-  StudentAccessRulesPopover,
-  StudentAccessTimelinePopover,
-} from '../../components/StudentAccessPopovers.js';
+  StudentAccessRulesSchedule,
+  StudentAccessTimelineSchedule,
+} from '../../components/StudentAccessSchedules.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import type { AssessmentInstanceAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -485,11 +485,11 @@ function AssessmentStatus({
       Available credit: ${authz_result.credit_date_string}
       ${
         assessment.modern_access_control
-          ? StudentAccessTimelinePopover({
+          ? StudentAccessTimelineSchedule({
               accessTimeline: authz_result.access_timeline,
               displayTimezone,
             })
-          : StudentAccessRulesPopover({
+          : StudentAccessRulesSchedule({
               accessRules: authz_result.access_rules,
             })
       }

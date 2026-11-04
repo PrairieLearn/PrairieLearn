@@ -9,6 +9,7 @@ import {
   CanvasMatchingPanel,
   type CanvasMatchingState,
 } from '../../../components/CanvasMatchingPanel.js';
+import { CANVAS_CSV_FIXED_HEADERS } from '../../../lib/canvas-csv.js';
 import {
   type Student,
   buildCanvasLookup,
@@ -65,7 +66,9 @@ export function CanvasDownloadModal({
         const uid = sisLoginIdx !== -1 ? row[sisLoginIdx] : null;
         const canvas = uid ? (canvasLookup?.get(uid) ?? null) : null;
 
-        const newRow = [...row];
+        const newRow = row.map((value, index) =>
+          index >= CANVAS_CSV_FIXED_HEADERS.length && value !== '' ? Number(value) : value,
+        );
         if (canvas) {
           if (studentIdx !== -1) newRow[studentIdx] = canvas.name;
           if (idIdx !== -1) newRow[idIdx] = canvas.id;

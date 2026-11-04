@@ -190,6 +190,9 @@ function SharingMessageText({ message }: { message: SharingMessage }) {
 }
 
 export const InstructorQuestionSettingsForm = ({
+  authorStaff,
+  initialAuthors,
+  currentUid,
   question,
   topic,
   courseInstance,
@@ -208,6 +211,9 @@ export const InstructorQuestionSettingsForm = ({
   sharing,
   questionTest,
 }: {
+  authorStaff: { uid: string; name: string | null }[];
+  initialAuthors: string[] | null;
+  currentUid: string;
   question: StaffQuestion;
   courseInstance?: StaffCourseInstance | null;
   assessmentsWithQuestion: SelectedAssessments[];
@@ -250,6 +256,7 @@ export const InstructorQuestionSettingsForm = ({
   );
 
   const defaultValues: QuestionSettingsFormValues = {
+    authors: initialAuthors ?? [],
     qid: question.qid ?? '',
     title: question.title ?? '',
     topic: topic.name,
@@ -300,12 +307,17 @@ export const InstructorQuestionSettingsForm = ({
     clearErrors,
     control,
     reset,
-    formState: { errors, isDirty, isSubmitting },
+    formState: { errors, isDirty, dirtyFields, isSubmitting },
   } = useForm<QuestionSettingsFormValues>({
     mode: 'onChange',
     defaultValues,
   });
 
+  const selectedAuthors = watch('authors');
+  const authorItems = selectedAuthors.map((uid) => {
+    const name = authorStaff.find((user) => user.uid === uid)?.name;
+    return { id: uid, label: name ? `${name}  ${uid}` : uid, data: { uid, name } };
+  });
   const selectedTopic = watch('topic');
   const selectedTags = watch('tags');
   const selectedGradingMethod = watch('grading_method');
@@ -522,6 +534,79 @@ export const InstructorQuestionSettingsForm = ({
               )}
             </div>
 
+            <div className="mb-3">
+              <label className="form-label" id="authors-label" htmlFor="authors">
+                Authors
+              </label>
+              {canEdit ? (
+                <>
+                  {initialAuthors !== null && dirtyFields.authors && (
+                    <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
+                  )}
+                  <TagPicker
+                    id="authors"
+                    aria-labelledby="authors-label"
+                    items={authorItems}
+                    value={selectedAuthors}
+                    placeholder="Add an author by UID"
+                    disabled={initialAuthors === null}
+                    tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
+                    renderTagContent={({ uid, name }) =>
+                      name ? (
+                        <>
+                          <span className="text-body">{name}</span>
+                          <span className="text-secondary fw-normal">{uid}</span>
+                        </>
+                      ) : (
+                        <span className="text-body">{uid}</span>
+                      )
+                    }
+                    onChange={(uids) => setValue('authors', uids, { shouldDirty: true })}
+                    onCreate={(uid) =>
+                      setValue('authors', [...selectedAuthors, uid], { shouldDirty: true })
+                    }
+                  />
+                </>
+              ) : (
+                <div>
+                  {authorItems.map((author) => (
+                    <span key={author.id} className="me-1">
+                      <span className="badge color-gray1 fw-normal text-wrap text-break">
+                        {author.label}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <small className="form-text text-muted">
+                Credit the people who wrote this question by their UID. Names are shown for current
+                course staff.{' '}
+                {canEdit &&
+                  initialAuthors !== null &&
+                  !selectedAuthors.includes(currentUid.trim()) && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm p-0 border-0 align-baseline"
+                        onClick={() => {
+                          setValue('authors', [...selectedAuthors, currentUid.trim()], {
+                            shouldDirty: true,
+                          });
+                        }}
+                      >
+                        Add myself
+                      </button>
+                      .
+                    </>
+                  )}
+              </small>
+              {canEdit && initialAuthors === null && (
+                <div className="form-text text-danger">
+                  Authors could not be loaded from info.json. Fix the file before editing authors.
+                </div>
+              )}
+            </div>
+
             {courseInstance && (
               <div className="mb-0">
                 <p className="form-label mb-1">Assessments</p>
@@ -608,7 +693,9 @@ export const InstructorQuestionSettingsForm = ({
               <div className="small text-muted">
                 If enabled, the question will award partial points for fractional scores. For
                 example, if only some elements on the page are correct, the student receives a
-                proportional score. When disabled, the question awards only 0% or 100%.
+                proportional score. When disabled, the question awards only 0% or 100%. Only
+                auto-graded points are affected by this setting; manual grading and AI grading are
+                not affected.
               </div>
             </div>
           </div>

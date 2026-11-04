@@ -533,19 +533,21 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         throw new Error('Question container not found. Could not obtain the variant token.');
       }
 
-      socket.emit(
-        'joinExternalImageCapture',
-        {
-          variant_id: this.variant_id,
-          variant_token: questionContainer.dataset.variantToken,
-          file_name: this.file_name,
-        },
-        (msg) => {
-          if (!msg) {
-            throw new Error('Failed to join external image capture room');
-          }
-        },
-      );
+      socket.on('connect', () => {
+        socket.emit(
+          'joinExternalImageCapture',
+          {
+            variant_id: this.variant_id,
+            variant_token: questionContainer.dataset.variantToken,
+            file_name: this.file_name,
+          },
+          (msg) => {
+            if (!msg) {
+              throw new Error('Failed to join external image capture room');
+            }
+          },
+        );
+      });
 
       socket.on('externalImageCapture', (msg) => {
         if (this.selectedContainerName === 'crop-rotate') {

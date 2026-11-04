@@ -28,6 +28,8 @@ interface InstanceQuestionAiGradeInnerProps {
   availableAiGradingProviders: EnumAiGradingProvider[];
   aiGradingRelativeCosts: Record<string, string>;
   aiGradingLastSelectedModel: string | null;
+  aiGradingLastSelectedCredentialId: string | null;
+  courseInstanceTrpcCsrfToken: string;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   hasCourseInstancePermissionEdit: boolean;
 }
@@ -47,6 +49,8 @@ function InstanceQuestionAiGradeInner({
   availableAiGradingProviders,
   aiGradingRelativeCosts,
   aiGradingLastSelectedModel,
+  aiGradingLastSelectedCredentialId,
+  courseInstanceTrpcCsrfToken,
   initialOngoingJobSequenceTokens,
   hasCourseInstancePermissionEdit,
 }: InstanceQuestionAiGradeInnerProps) {
@@ -54,6 +58,9 @@ function InstanceQuestionAiGradeInner({
   const modelSelectionModalState = useModalState<AiGradingModelSelectionModalState>();
   const [lastSelectedModel, setLastSelectedModel] = useState<string | null>(
     aiGradingLastSelectedModel,
+  );
+  const [lastSelectedCredentialId, setLastSelectedCredentialId] = useState(
+    aiGradingLastSelectedCredentialId,
   );
   const [showReloadError, setShowReloadError] = useState(false);
 
@@ -148,11 +155,14 @@ function InstanceQuestionAiGradeInner({
         </div>
       </Alert>
       <AiGradingModelSelectionModal
-        key={lastSelectedModel ?? 'default'}
+        key={`${lastSelectedCredentialId ?? 'official'}:${lastSelectedModel ?? 'default'}`}
+        courseInstanceId={courseInstanceId}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         show={modelSelectionModalState.show}
         data={modelSelectionModalState.data}
         availableProviders={availableAiGradingProviders}
         aiGradingLastSelectedModel={lastSelectedModel}
+        aiGradingLastSelectedCredentialId={lastSelectedCredentialId}
         relativeCosts={aiGradingRelativeCosts}
         useCustomApiKeys={useCustomApiKeys}
         aiGradingSettingsUrl={aiGradingSettingsUrl}
@@ -160,13 +170,16 @@ function InstanceQuestionAiGradeInner({
         totalSubmissionCount={1}
         onHide={modelSelectionModalState.onHide}
         onExited={modelSelectionModalState.onExited}
-        onSuccess={(data, modelId) => {
+        onSuccess={(data, selection) => {
           serverJobProgress.handleAddOngoingJobSequence(
             data.job_sequence_id,
             data.job_sequence_token,
           );
           expectReloadRef.current = true;
-          setLastSelectedModel(modelId);
+          setLastSelectedModel(selection.model_id);
+          setLastSelectedCredentialId(
+            selection.provider === 'openai-compatible' ? selection.credential_id : null,
+          );
         }}
       />
     </>

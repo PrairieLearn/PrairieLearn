@@ -1,9 +1,25 @@
+# Temporary workaround as we wait for code-server to be patched:
+# https://github.com/coder/code-server/pull/8066
+# https://github.com/PrairieLearn/PrairieLearn/pull/16131
+FROM node:24.22.1-bookworm-slim AS node
+
+RUN npm install --prefix /opt/undici --ignore-scripts --no-audit --no-fund 'undici@^7.30.1'
+
 # noble is the codename for Ubuntu 24.04 LTS
 FROM codercom/code-server:4.135.0-noble
 ARG CACHEBUST=2026-09-15-14-09-16
+
+# Update the bundled runtime independently of code-server releases.
+COPY --from=node /usr/local/bin/node /usr/lib/code-server/lib/node
+
 LABEL com.prairielearn.workspace.home="/home/coder/workspace" 
 LABEL com.prairielearn.workspace.port="8080"
 LABEL com.prairielearn.workspace.rewrite-url="true"
+
+USER root
+# VS Code also imports its own Undici package, separate from Node's bundled copy.
+RUN rm -rf /usr/lib/code-server/lib/vscode/node_modules/undici
+COPY --from=node /opt/undici/node_modules/undici /usr/lib/code-server/lib/vscode/node_modules/undici
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.
@@ -11,7 +27,6 @@ LABEL com.prairielearn.workspace.rewrite-url="true"
 # With Ubuntu-derived base images, this may be a no-op, because recent Ubuntu
 # images have a default "ubuntu" user 1000:1000, and in that case, the
 # "coder" user may already be configured as 1001:1001.
-USER root
 RUN OLD_UID="$(id -u coder)" && \
   OLD_GID="$(id -g coder)" && \
   NEW_UID=1001 && \

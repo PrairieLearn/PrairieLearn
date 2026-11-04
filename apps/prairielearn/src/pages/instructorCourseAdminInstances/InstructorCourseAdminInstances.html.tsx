@@ -146,7 +146,7 @@ function InstructorCourseAdminInstancesInner({
                         {isLegacyStartDate ? (
                           <OverlayTrigger
                             placement="bottom"
-                            trigger="focus"
+                            trigger="click"
                             popover={{
                               props: {
                                 id: `popover-start-date-${row.id}`,
@@ -154,6 +154,7 @@ function InstructorCourseAdminInstancesInner({
                               header: 'Earliest access date',
                               body: popoverStartDateBody,
                             }}
+                            rootClose
                           >
                             <Button
                               variant="ghost"
@@ -170,7 +171,7 @@ function InstructorCourseAdminInstancesInner({
                         {isLegacyEndDate ? (
                           <OverlayTrigger
                             placement="bottom"
-                            trigger="focus"
+                            trigger="click"
                             popover={{
                               props: {
                                 id: `popover-end-date-${row.id}`,
@@ -178,6 +179,7 @@ function InstructorCourseAdminInstancesInner({
                               header: 'Latest access date',
                               body: popoverEndDateBody,
                             }}
+                            rootClose
                           >
                             <Button
                               variant="ghost"

@@ -13,7 +13,12 @@ import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
-export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
+export const EnumAiGradingProviderSchema = z.enum([
+  'openai',
+  'google',
+  'anthropic',
+  'openai-compatible',
+]);
 export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
 export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
@@ -328,9 +333,10 @@ export const AiGradingCreditPoolChangeSchema = z.object({
 export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
 
 export const AiGradingJobSchema = z.object({
+  base_url: z.string().nullable(),
   completion: z.any(),
   completion_tokens: z.number(),
-  cost: z.number(),
+  cost: z.number().nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema,
   grading_job_id: IdSchema,
@@ -339,6 +345,7 @@ export const AiGradingJobSchema = z.object({
   model: z.string(),
   prompt: z.unknown(),
   prompt_tokens: z.number(),
+  provider: EnumAiGradingProviderSchema.nullable(),
   rotation_correction_degrees: z.record(z.string(), z.number()).nullable(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
@@ -523,6 +530,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_last_selected_credential_id: IdSchema.nullable(),
   ai_grading_last_selected_model: z.string().nullable(),
   ai_grading_mode: z.boolean(),
   allow_real_time_grading: z.boolean(),
@@ -703,6 +711,16 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+export const CourseAgentConversationSchema = z.object({
+  agent_conversation_id: z.string(),
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  title: z.string(),
+  user_id: IdSchema,
+});
+export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
+
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -731,6 +749,7 @@ export const CourseSchema = z.object({
   sync_warnings: z.string().nullable(),
   template_course: z.boolean(),
   title: z.string().nullable(),
+  uuid: z.string(),
   yearly_enrollment_limit: z.number().nullable(),
 });
 export type Course = z.infer<typeof CourseSchema>;
@@ -777,6 +796,7 @@ export const CourseInstanceAccessRuleSchema = z.object({
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
 export const CourseInstanceAiGradingCredentialSchema = z.object({
+  base_url: z.string().nullable(),
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   created_by: IdSchema,
@@ -1408,7 +1428,10 @@ export const QuestionGenerationContextEmbeddingSchema = z.object({
 });
 
 export const QuestionSchema = z.object({
+  authors: z.array(z.string()).nullable(),
   client_files: z.array(z.string()).nullable(),
+  copied_from: z.string().nullable(),
+  copied_from_question_id: IdSchema.nullable(),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   dependencies: z.any(),
@@ -1801,6 +1824,7 @@ export const TableNames = [
   'batched_migrations',
   'chunks',
   'client_fingerprints',
+  'course_agent_conversations',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',
