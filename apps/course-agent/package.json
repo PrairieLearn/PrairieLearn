@@ -12,7 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cloudflare/ai-chat": "0.12.1",
+    "@cloudflare/ai-chat": "0.12.2",
     "@cloudflare/sandbox": "1.0.2",
     "@prairielearn/course-agent-types": "workspace:^",
     "@sentry/cloudflare": "^11.9.0",
