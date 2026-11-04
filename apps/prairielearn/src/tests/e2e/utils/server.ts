@@ -10,13 +10,6 @@ import { APP_ROOT_PATH } from '../../../lib/paths.js';
 
 const BASE_PORT = 3014;
 
-/**
- * In CI, the server and assets have already been built by `make build`, so we
- * run the compiled server and serve prebuilt assets instead of transpiling and
- * bundling on the fly in every worker.
- */
-const USE_BUILD = !!process.env.CI;
-
 interface WorkerServerOptions {
   /** Additional course directories to include beyond the defaults */
   courseDirs?: string[];
@@ -47,7 +40,9 @@ export async function setupWorkerServer(
         postgresqlDatabase: setupResults.database,
         postgresqlHost: setupResults.host,
         devMode: true,
-        compiledAssetsDevMode: !USE_BUILD,
+        // Global setup has already built the assets, so serve them instead of
+        // having every worker bundle them again on the fly.
+        compiledAssetsDevMode: false,
         // The worker database is cloned from an already-migrated template.
         runMigrations: false,
         // Enterprise-only routes are registered at startup, so they can't be
@@ -82,24 +77,15 @@ export async function setupWorkerServer(
 async function startServerSubprocess(
   configPath: string,
 ): Promise<{ serverProcess: ChildProcess; kill: () => Promise<void> }> {
-  // We do this instead of importing the server.ts file directly because Playwright
-  // doesn't respect tsconfig.json files.
-
-  // See https://github.com/microsoft/playwright/issues/26936
-  // and https://github.com/PrairieLearn/PrairieLearn/pull/13493
-  // > For tsx transformations that add inject semantics (email, pdf),
-  // > I would still recommend compiling the code with the production bundler that applies these
-  // > semantics and only then test it with the test runner, Playwright or different.
-
-  // We don't want to require building the production bundle for tests to make iteration speed faster.
-
-  const serverDir = path.resolve(import.meta.dirname, '..', '..', '..');
-
-  const [command, args] = USE_BUILD
-    ? ['node', [path.join(APP_ROOT_PATH, 'dist', 'server.js')]]
-    : ['pnpm', ['dev:no-watch']];
-  const serverProcess = spawn(command, args, {
-    cwd: serverDir,
+  // We run the server built by global setup (see `global-setup.ts`) rather than
+  // the TypeScript sources, both locally and in CI. Tests then exercise the same
+  // build that runs in production, and every worker shares one asset build
+  // instead of bundling assets on the fly.
+  const serverProcess = spawn('node', [path.join(APP_ROOT_PATH, 'dist', 'server.js')], {
+    // The server writes `server.log` to its working directory. It must not land
+    // in `src/`, since that would change the build's inputs on every run and
+    // force global setup to rebuild.
+    cwd: APP_ROOT_PATH,
     env: {
       ...process.env,
       PL_CONFIG_PATH: configPath,
