@@ -76,7 +76,9 @@ export function classifyPrintAssetPath(
     return {
       type: 'assessment',
       kind: assessmentMatch[1] as
-        'clientFilesAssessment' | 'clientFilesCourse' | 'clientFilesCourseInstance',
+        | 'clientFilesAssessment'
+        | 'clientFilesCourse'
+        | 'clientFilesCourseInstance',
     };
   }
   const courseMatch = /^(clientFilesCourse|clientFilesCourseInstance)\/.+$/.exec(relativePath);
@@ -101,7 +103,9 @@ export function classifyPrintAssetPath(
       type: 'question',
       instanceQuestionId: questionMatch[1],
       kind: questionMatch[2] as
-        'clientFilesCourse' | 'clientFilesQuestion' | 'generatedFilesQuestion',
+        | 'clientFilesCourse'
+        | 'clientFilesQuestion'
+        | 'generatedFilesQuestion',
     };
   }
   if (
