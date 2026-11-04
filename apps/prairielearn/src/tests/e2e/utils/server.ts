@@ -97,7 +97,6 @@ async function startServerSubprocess(
   const [command, args] = USE_BUILD
     ? ['node', [path.join(APP_ROOT_PATH, 'dist', 'server.js')]]
     : ['pnpm', ['dev:no-watch']];
-  const startTime = performance.now();
   const serverProcess = spawn(command, args, {
     cwd: serverDir,
     env: {
@@ -125,7 +124,6 @@ async function startServerSubprocess(
       const output = data.toString();
       if (output.includes(readyMessage)) {
         clearTimeout(timeout);
-        console.log(`[e2e] server ready in ${Math.round(performance.now() - startTime)}ms`);
         resolve();
       } else {
         process.stdout.write(output);
