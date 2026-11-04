@@ -212,6 +212,7 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
   }
 }
 
+/** Convert details to regular blocks so closed content prints and long content can span pages. */
 function materializePrintableDetails(source: HTMLElement): void {
   const detailsBlocks = [
     ...source.querySelectorAll<HTMLDetailsElement>('.printing-question details'),
