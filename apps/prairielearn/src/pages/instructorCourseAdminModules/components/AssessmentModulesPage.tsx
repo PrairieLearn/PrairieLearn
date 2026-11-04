@@ -57,6 +57,10 @@ function toFormRow(module: StaffAssessmentModuleWithAssessments): AssessmentModu
   return { ...module, trackingId: module.id };
 }
 
+function isImplicitDefaultModule(module: AssessmentModuleFormRow) {
+  return module.implicit && module.name === DEFAULT_ASSESSMENT_MODULE_NAME;
+}
+
 function AssessmentModuleRow({
   module,
   allowEdit,
@@ -70,7 +74,8 @@ function AssessmentModuleRow({
   onDelete: () => void;
   onShowUsage: () => void;
 }) {
-  const { ref, style, dragHandleProps } = useReorderableRow(module.trackingId);
+  const dragDisabled = isImplicitDefaultModule(module);
+  const { ref, style, dragHandleProps } = useReorderableRow(module.trackingId, dragDisabled);
 
   return (
     <tr ref={ref} style={style}>
@@ -78,6 +83,7 @@ function AssessmentModuleRow({
         <ReorderableRowActionsCell
           trackingId={module.trackingId}
           dragHandleProps={dragHandleProps}
+          dragDisabled={dragDisabled}
           editLabel={`Edit module ${module.name}`}
           deleteLabel={`Delete module ${module.name}`}
           deleteDisabledReason={
@@ -124,8 +130,16 @@ function AssessmentModulesTable({
   handleCreate: () => void;
   handleShowUsage: (module: AssessmentModuleFormRow) => void;
 }) {
+  const implicitDefaultModule = rows.find(isImplicitDefaultModule);
+  const reorderableRows = rows.filter((module) => !isImplicitDefaultModule(module));
+
   return (
-    <ReorderableRowsContext rows={rows} onReorder={onReorder}>
+    <ReorderableRowsContext
+      rows={reorderableRows}
+      onReorder={(reorderedRows) =>
+        onReorder(implicitDefaultModule ? [...reorderedRows, implicitDefaultModule] : reorderedRows)
+      }
+    >
       <table className="table table-sm table-hover table-striped" aria-label="Assessment modules">
         <thead>
           <tr>
@@ -140,7 +154,7 @@ function AssessmentModulesTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((module) => (
+          {reorderableRows.map((module) => (
             <AssessmentModuleRow
               key={module.trackingId}
               module={module}
@@ -158,6 +172,16 @@ function AssessmentModulesTable({
                 </button>
               </td>
             </tr>
+          )}
+          {implicitDefaultModule && (
+            <AssessmentModuleRow
+              key={implicitDefaultModule.trackingId}
+              module={implicitDefaultModule}
+              allowEdit={allowEdit}
+              onEdit={() => handleEdit(implicitDefaultModule.trackingId)}
+              onDelete={() => handleDelete(implicitDefaultModule)}
+              onShowUsage={() => handleShowUsage(implicitDefaultModule)}
+            />
           )}
         </tbody>
       </table>
@@ -236,7 +260,14 @@ function AssessmentModulesCard({
 
   const handleSave = (assessmentModule: AssessmentModuleFormRow) => {
     if (editModal.data?.mode === 'create') {
-      setModulesState([...modulesState, assessmentModule]);
+      const defaultIndex = modulesState.findIndex(isImplicitDefaultModule);
+      const updatedModules = [...modulesState];
+      updatedModules.splice(
+        defaultIndex === -1 ? updatedModules.length : defaultIndex,
+        0,
+        assessmentModule,
+      );
+      setModulesState(updatedModules);
     } else {
       setModulesState(
         modulesState.map((m) =>

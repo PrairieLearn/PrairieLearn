@@ -15,6 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import clsx from 'clsx';
 import { type ReactNode, useMemo } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -60,9 +61,10 @@ export function ReorderableRowsContext<T extends { trackingId: string }>({
 }
 
 /** Drag-reorder behavior and styling for a `<tr>` inside `ReorderableRowsContext`. */
-export function useReorderableRow(trackingId: string) {
+export function useReorderableRow(trackingId: string, disabled = false) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: trackingId,
+    disabled,
   });
 
   return {
@@ -89,6 +91,7 @@ type ReorderableRowHandle = ReturnType<typeof useReorderableRow>;
 export function ReorderableRowActionsCell({
   trackingId,
   dragHandleProps,
+  dragDisabled = false,
   editLabel,
   deleteLabel,
   deleteDisabledReason,
@@ -97,6 +100,7 @@ export function ReorderableRowActionsCell({
 }: {
   trackingId: string;
   dragHandleProps: ReorderableRowHandle['dragHandleProps'];
+  dragDisabled?: boolean;
   editLabel: string;
   deleteLabel: string;
   deleteDisabledReason?: string | null;
@@ -108,10 +112,11 @@ export function ReorderableRowActionsCell({
       <div className="d-flex align-items-center">
         <button
           type="button"
-          className="btn btn-sm btn-ghost"
+          className={clsx('btn btn-sm btn-ghost', dragDisabled && 'invisible')}
           style={{ cursor: 'grab', touchAction: 'none' }}
           aria-label="Drag row"
           {...dragHandleProps}
+          disabled={dragDisabled}
           // Native buttons already have the role supplied by dnd-kit.
           role={undefined}
         >
