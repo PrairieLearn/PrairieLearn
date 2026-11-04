@@ -76,6 +76,17 @@ body:has(.course-agent-panel-animate) .app-main {
 
 /* On narrow screens the panel is a full-screen modal. */
 @media (max-width: 767.98px) {
+  /* The controls on either side have different widths. */
+  .app-top-nav .navbar-brand {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-right: 0;
+    max-width: calc(100% - 14rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .course-agent-launcher {
     height: 2.5rem;
   }
