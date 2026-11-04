@@ -8,7 +8,7 @@ import type { Override } from '../middlewares/authzCourseOrInstance.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
 import { Modal } from './Modal.js';
-import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
+import type { NavPage, NavbarType } from './Navbar.types.js';
 import { SupportModal } from './SupportModal.js';
 
 export function Navbar({
@@ -21,7 +21,6 @@ export function Navbar({
 }: {
   resLocals: UntypedResLocals;
   navPage?: NavPage;
-  navSubPage?: NavSubPage;
   navbarType?: NavbarType;
   /**
    * Indicates if the side nav is enabled for the current page.
