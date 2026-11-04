@@ -37,6 +37,22 @@ import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+const ChunkPublicationStateSchema = CourseSchema.pick({
+  chunks_history_started_at: true,
+  chunks_published_at: true,
+});
+
+export class ChunkHistoryUnavailableError extends Error {
+  constructor(availableFrom: Date | null) {
+    super(
+      availableFrom
+        ? `Chunk history is only available from ${availableFrom.toISOString()}.`
+        : 'Complete chunk history is not yet available for this course.',
+    );
+    this.name = 'ChunkHistoryUnavailableError';
+  }
+}
+
 interface ElementsChunkMetadata {
   type: 'elements';
 }
@@ -468,10 +484,20 @@ async function getAllChunksForCourse(courseId: string) {
 
 /**
  * Selects live chunk revisions at a sync cutoff, or the current state when omitted.
- * Unknown legacy dates aren't inferred: those rows are only available in the
- * current state until a baseline is recorded. Execution metadata is separate.
+ * Historical reads require a complete course baseline. Earlier cutoffs fail
+ * rather than returning only the chunks that happen to have dates.
  */
 export async function selectChunksForCourse(courseId: string, atDate: Date | null = null) {
+  if (atDate !== null) {
+    const { chunks_history_started_at: availableFrom } = await sqldb.queryRow(
+      sql.select_chunk_publication_state,
+      { course_id: courseId },
+      ChunkPublicationStateSchema,
+    );
+    if (availableFrom === null || atDate < availableFrom) {
+      throw new ChunkHistoryUnavailableError(availableFrom);
+    }
+  }
   return await sqldb.queryRows(
     sql.select_course_chunks,
     { course_id: courseId, at_date: atDate },
@@ -903,6 +929,11 @@ export async function updateChunksForCourse({
     return [];
   });
 
+  const { chunks_published_at: expectedPublication } = await sqldb.queryRow(
+    sql.select_chunk_publication_state,
+    { course_id: courseId },
+    ChunkPublicationStateSchema,
+  );
   const { updatedChunks, deletedChunks } = await diffChunks({
     coursePath,
     courseId,
@@ -913,14 +944,17 @@ export async function updateChunksForCourse({
   const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
   const generatedChunks = await createAndUploadChunks(coursePath, updatedChunks);
 
-  // Publish only after every upload succeeds. Serialize by course so each sync
-  // has one increasing cutoff, including when two generators use different paths.
+  // Upload without holding a transaction open. Once locked, reject a diff if
+  // another generator published since its initial read, even from another path.
   await sqldb.runInTransactionAsync(async () => {
-    await sqldb.queryScalar(
+    const currentPublication = await sqldb.queryScalar(
       sql.lock_course_for_chunk_publication,
       { course_id: courseId },
-      IdSchema,
+      CourseSchema.shape.chunks_published_at,
     );
+    if (currentPublication?.getTime() !== expectedPublication?.getTime()) {
+      throw new Error('Course chunks changed during generation. Please retry the sync.');
+    }
     await sqldb.execute(sql.lock_chunks_for_publication);
     const historyEnabled = await sqldb.queryScalar(sql.select_chunk_history_enabled, z.boolean());
     const createdAt = await sqldb.queryScalar(
@@ -940,6 +974,11 @@ export async function updateChunksForCourse({
       deleted_chunk_ids: deletedChunks.map((chunk) => chunk.id),
       created_at: createdAt,
       commit_hash: commitHash,
+      history_enabled: historyEnabled,
+    });
+    await sqldb.execute(sql.record_chunk_publication, {
+      course_id: courseId,
+      created_at: createdAt,
       history_enabled: historyEnabled,
     });
   });
