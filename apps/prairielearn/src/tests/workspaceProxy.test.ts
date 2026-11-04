@@ -1,5 +1,5 @@
 import { once } from 'node:events';
-import { createServer, request } from 'node:http';
+import { type IncomingMessage, createServer, request } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import * as cheerio from 'cheerio';
@@ -12,14 +12,37 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../lib/config.js';
 
 import * as helperServer from './helperServer.js';
+import { getOrCreateUser, withUser } from './utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
+const otherUser = { uid: 'other@example.com', uin: '000000099', name: 'Other User' };
+
+async function upgradeWorkspace(workspaceId: string, cookie = '') {
+  const handshake = request(`${siteUrl}/pl/workspace/${workspaceId}/container/`, {
+    headers: { Connection: 'Upgrade', Upgrade: 'websocket', Cookie: cookie },
+  });
+  const upgraded = withResolvers<number | undefined>();
+  handshake.once('error', upgraded.reject);
+  handshake.once('response', (res) => {
+    res.resume();
+    upgraded.resolve(res.statusCode);
+  });
+  handshake.once('upgrade', (res, socket) => {
+    socket.destroy();
+    upgraded.resolve(res.statusCode);
+  });
+  handshake.end();
+  return await upgraded.promise;
+}
+
 describe('Workspace proxy', { timeout: 20_000 }, () => {
+  let forwardedUpgrade: IncomingMessage | undefined;
   const workspaceServer = createServer((req, res) => {
     if (req.headers.upgrade === 'websocket') {
+      forwardedUpgrade = req;
       res.writeHead(101, { Upgrade: 'websocket', Connection: 'Upgrade' });
     }
     res.end();
@@ -31,6 +54,7 @@ describe('Workspace proxy', { timeout: 20_000 }, () => {
     await helperServer.before()();
     workspaceServer.listen(0, '127.0.0.1');
     await once(workspaceServer, 'listening');
+    await getOrCreateUser(otherUser);
 
     const questionId = await sqldb.queryScalar(sql.select_workspace_question_id, IdSchema);
     const response = await fetch(
@@ -55,26 +79,17 @@ describe('Workspace proxy', { timeout: 20_000 }, () => {
     config.workspaceEnable = true;
   });
 
-  test('proxies WebSocket upgrades to the workspace container', async () => {
-    const containerUrl = `${siteUrl}/pl/workspace/${workspaceId}/container/`;
-    // http-proxy-middleware only subscribes to server upgrades after its first HTTP request.
-    const response = await fetch(containerUrl);
-    assert.equal(response.status, 200);
+  // This runs first so that no HTTP request has been proxied yet.
+  test('proxies WebSocket upgrades before any HTTP request', async () => {
+    const cookie = `pl2_authz_workspace_${workspaceId}=secret; connect.sid=secret; keep=1`;
+    assert.equal(await upgradeWorkspace(workspaceId, cookie), 101);
+    assert.equal(forwardedUpgrade?.url, '/');
+    assert.equal(forwardedUpgrade?.headers.cookie, 'keep=1');
+  });
 
-    const handshake = request(containerUrl, {
-      headers: { Connection: 'Upgrade', Upgrade: 'websocket' },
+  test('rejects WebSocket upgrades from users without workspace access', async () => {
+    await withUser(otherUser, async () => {
+      assert.equal(await upgradeWorkspace(workspaceId), 403);
     });
-    const upgraded = withResolvers<number | undefined>();
-    handshake.once('error', upgraded.reject);
-    handshake.once('response', (res) => {
-      res.resume();
-      upgraded.resolve(res.statusCode);
-    });
-    handshake.once('upgrade', (res, socket) => {
-      socket.destroy();
-      upgraded.resolve(res.statusCode);
-    });
-    handshake.end();
-    assert.equal(await upgraded.promise, 101);
   });
 });
