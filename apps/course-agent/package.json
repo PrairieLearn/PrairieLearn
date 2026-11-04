@@ -12,26 +12,26 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cloudflare/ai-chat": "0.12.1",
-    "@cloudflare/sandbox": "1.0.2",
+    "@cloudflare/ai-chat": "0.12.2",
+    "@cloudflare/sandbox": "1.0.3",
     "@prairielearn/course-agent-types": "workspace:^",
-    "@sentry/cloudflare": "^11.9.0",
-    "agents": "0.28.0",
-    "ai": "^7.0.116",
-    "hono": "^4.13.13",
+    "@sentry/cloudflare": "^11.10.0",
+    "agents": "0.32.0",
+    "ai": "^7.0.159",
+    "hono": "^4.13.14",
     "vscode-jsonrpc": "^9.0.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20260917.1",
-    "@openai/codex": "0.163.0",
+    "@cloudflare/workers-types": "5.20261031.1",
+    "@openai/codex": "0.166.0",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.19.0",
+    "@types/node": "^24.19.2",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "execa": "^10.0.1",
-    "prettier": "^3.9.9",
+    "execa": "^10.2.1",
+    "prettier": "^3.9.10",
     "ts-morph": "^28.0.0",
-    "vitest": "^5.0.2",
-    "wrangler": "^4.134.0"
+    "vitest": "^5.0.5",
+    "wrangler": "^4.156.0"
   }
 }

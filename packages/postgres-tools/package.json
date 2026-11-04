@@ -25,7 +25,7 @@
     "chalk": "^6.0.0",
     "commander": "^15.0.0",
     "diff": "^9.0.0",
-    "es-toolkit": "^1.52.0",
+    "es-toolkit": "^1.53.1",
     "fs-extra": "^11.4.1",
     "postgres-array": "^3.0.4"
   },
@@ -33,7 +33,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/async": "^3.2.26",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.19.0",
+    "@types/node": "^24.19.2",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript-cp": "^0.1.11"
   }

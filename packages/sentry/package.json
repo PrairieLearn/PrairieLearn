@@ -17,16 +17,16 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@sentry/core": "^11.9.0",
-    "@sentry/node": "^11.9.0",
-    "execa": "^10.0.1"
+    "@sentry/core": "^11.10.0",
+    "@sentry/node": "^11.10.0",
+    "execa": "^10.2.1"
   },
   "devDependencies": {
     "@prairielearn/opentelemetry": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.19.0",
+    "@types/node": "^24.19.2",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.2",
-    "vitest": "^5.0.2"
+    "@vitest/coverage-v8": "^5.0.5",
+    "vitest": "^5.0.5"
   }
 }

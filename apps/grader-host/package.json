@@ -14,12 +14,12 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.1141.0",
-    "@aws-sdk/client-ecr": "^3.1141.0",
-    "@aws-sdk/client-s3": "^3.1141.0",
-    "@aws-sdk/client-sqs": "^3.1141.0",
-    "@aws-sdk/credential-providers": "^3.1141.0",
-    "@aws-sdk/lib-storage": "^3.1141.0",
+    "@aws-sdk/client-auto-scaling": "^3.1161.0",
+    "@aws-sdk/client-ecr": "^3.1161.0",
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/client-sqs": "^3.1161.0",
+    "@aws-sdk/credential-providers": "^3.1161.0",
+    "@aws-sdk/lib-storage": "^3.1161.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/aws-imds": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -33,7 +33,7 @@
     "async": "^3.2.6",
     "byline": "^5.0.0",
     "dockerode": "^5.0.1",
-    "execa": "^10.0.1",
+    "execa": "^10.2.1",
     "fs-extra": "^11.4.1",
     "logform": "^2.7.0",
     "shlex": "^3.0.0",
@@ -46,13 +46,13 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/async": "^3.2.26",
     "@types/byline": "^4.2.36",
-    "@types/dockerode": "^4.0.1",
+    "@types/dockerode": "^4.0.2",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.19.0",
+    "@types/node": "^24.19.2",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "tsx": "^4.23.15",
     "typescript-cp": "^0.1.11",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.5"
   }
 }
