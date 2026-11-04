@@ -19,7 +19,6 @@ import {
   type ReviewDecision,
   type ReviewOutcome,
   type ReviewSnapshot,
-  SavedJobOutcomeSchema,
 } from '@prairielearn/course-agent-types';
 
 import { reportError } from '../monitoring.js';
@@ -445,7 +444,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
               },
               status: 'pending',
               jobSequenceId: null,
-              error: null,
               decision: null,
             },
           });
@@ -565,63 +563,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Explicit Resume repairs the sandbox; it never repeats an interrupted prompt. */
   async resume(): Promise<boolean> {
-    const review = this.record.review;
-    if (review?.decision && !this.savedOutcome()) {
-      if (this.recovering || this.reviewOperation?.delivery) return false;
-      this.recovering = true;
-      try {
-        if (review.decision.decision === 'denied') {
-          return await this.recordReviewOutcome({
-            callId: review.callId,
-            result: {
-              decision: 'denied',
-              publication: { status: 'not_attempted' },
-              sync: { status: 'not_attempted' },
-            },
-          });
-        }
-        const url = new URL(
-          `pl/api/course-agent/conversations/${this.name}/jobs/${review.jobSequenceId}/outcome`,
-          this.env.PL_SERVICE_URL.endsWith('/')
-            ? this.env.PL_SERVICE_URL
-            : `${this.env.PL_SERVICE_URL}/`,
-        );
-        const response = await fetch(url, {
-          headers: { Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}` },
-          signal: AbortSignal.timeout(10_000),
-        });
-        if (!response.ok) {
-          if (response.status === 404) {
-            this.setRecord({
-              ...this.record,
-              review: {
-                ...review,
-                status: 'blocked',
-                error: 'The save job could not be verified. Inspect it before retrying.',
-              },
-            });
-          }
-          throw new Error('Could not retrieve the save outcome.');
-        }
-        const saved = SavedJobOutcomeSchema.parse(await response.json());
-        if (saved.jobSequenceId !== review.jobSequenceId) {
-          throw new Error('Save job does not match the pending review.');
-        }
-        if (saved.status === 'running') return false;
-        if (saved.status === 'blocked' || !saved.result) {
-          this.setRecord({
-            ...this.record,
-            review: { ...review, status: 'blocked', error: saved.error },
-          });
-          throw new Error(
-            saved.error ?? 'Saving was interrupted. Inspect the job before retrying.',
-          );
-        }
-        return await this.recordReviewOutcome({ callId: review.callId, result: saved.result });
-      } finally {
-        this.recovering = false;
-      }
-    }
+    // PrairieLearn delivers a decided review's result before asking to repair the sandbox.
+    if (this.record.review?.decision && !this.savedOutcome()) return false;
     // Another Resume or an unfinished turn must not modify this sandbox concurrently.
     if (this.record.lifecycle.status !== 'blocked' || this.active || this.recovering) return false;
     const reason = this.record.lifecycle.reason;
@@ -734,7 +677,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       request_changes_tool_part: review.request_changes_tool_part,
       status: review.status,
       jobSequenceId: review.jobSequenceId,
-      error: review.error,
       snapshot: {
         ...review.snapshot,
         additions: review.snapshot.additions.map((file, index) => ({

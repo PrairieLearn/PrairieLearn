@@ -138,9 +138,9 @@ export const PendingReviewSchema = z.strictObject({
   // Identifies the request_changes tool part in chat history so its result can be updated.
   request_changes_tool_part: z.strictObject({ messageId: z.string(), partId: z.string() }),
   snapshot: ReviewSnapshotSchema,
-  status: z.enum(['pending', 'running', 'blocked']),
+  // Running means a decision was recorded but its result has not reached the agent.
+  status: z.enum(['pending', 'running']),
   jobSequenceId: IdSchema.nullable(),
-  error: z.string().nullable(),
 });
 
 export type PendingReview = z.infer<typeof PendingReviewSchema>;
@@ -162,10 +162,3 @@ export const ReviewOutcomeSchema = z.strictObject({
 });
 
 export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
-
-export const SavedJobOutcomeSchema = z.strictObject({
-  jobSequenceId: IdSchema,
-  status: z.enum(['running', 'completed', 'blocked']),
-  result: RequestChangesResultSchema.nullable(),
-  error: z.string().nullable(),
-});

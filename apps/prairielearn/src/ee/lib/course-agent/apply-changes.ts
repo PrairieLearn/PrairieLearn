@@ -5,11 +5,10 @@
 import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
 
-import {
-  type PendingReview,
-  type RequestChangesResult,
-  type ReviewSnapshot,
-  SavedJobOutcomeSchema,
+import type {
+  PendingReview,
+  RequestChangesResult,
+  ReviewSnapshot,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -26,6 +25,7 @@ import {
   deliverCourseAgentReviewOutcome,
   getCourseAgentPendingReview,
   recordCourseAgentReviewDecision,
+  resumeCourseAgentConversation,
 } from './client.js';
 import { ReviewConflictSchema, checkReviewConflicts } from './review-conflicts.js';
 import { createReviewDiff } from './review-diff.js';
@@ -33,6 +33,12 @@ import { createReviewDiff } from './review-diff.js';
 const jobDescriptions = {
   local: 'Save and sync reviewed local course edits',
   github: 'Publish and sync reviewed course edits',
+};
+
+const DENIED: RequestChangesResult = {
+  decision: 'denied',
+  publication: { status: 'not_attempted' },
+  sync: { status: 'not_attempted' },
 };
 
 function verifyReviewBinding(
@@ -86,7 +92,6 @@ export async function getPendingReview(
     request_changes_tool_part: review.request_changes_tool_part,
     status: review.status,
     jobSequenceId: review.jobSequenceId,
-    error: review.error,
     diff,
   };
 }
@@ -128,11 +133,7 @@ export async function postReviewDecision({
     });
     await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
       callId: review.callId,
-      result: {
-        decision,
-        publication: { status: 'not_attempted' },
-        sync: { status: 'not_attempted' },
-      },
+      result: DENIED,
     });
     return { decision, jobSequenceId: null };
   }
@@ -192,17 +193,14 @@ async function applyChanges(
     } catch {
       // The editor has already persisted the failure and save/sync flags in its job.
     }
-    const sequence = await getReviewJob(conversation, serverJob.jobSequenceId);
-    const outcome = getReviewJobOutcome(sequence);
-    if (outcome.result) {
-      await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
-        callId: review.callId,
-        result: outcome.result,
-      });
-    }
+    const sequence = await getJobSequence(serverJob.jobSequenceId, conversation.course_id);
+    await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
+      callId: review.callId,
+      result: getReviewJobResult(sequence, snapshot.type),
+    });
   } catch (error) {
     logger.error(
-      'Course agent outcome delivery failed; Resume can retrieve the saved job outcome.',
+      'Course agent outcome delivery failed; Resume can deliver the saved job outcome.',
       error,
     );
   }
@@ -210,64 +208,73 @@ async function applyChanges(
 
 export async function getReviewJob(conversation: CourseAgentConversation, jobSequenceId: string) {
   const sequence = await getJobSequence(jobSequenceId, conversation.course_id);
-  if (
-    sequence.type !== 'sync' ||
-    !Object.values(jobDescriptions).includes(sequence.description ?? '') ||
-    sequence.authn_user_id !== conversation.user_id
-  ) {
+  if (sequence.authn_user_id !== conversation.user_id) {
     throw new HttpStatusError(404, 'Job not found.');
   }
   return sequence;
 }
 
-/** Reconstruct the same outcome for callback delivery and Resume from the finished editor job. */
-export function getReviewJobOutcome(sequence: JobSequenceWithTokens) {
+/**
+ * Map a finished editor job to the result the agent receives. The pending review, not the job,
+ * identifies which job belongs to it and whether it saved locally or published.
+ */
+export function getReviewJobResult(
+  sequence: JobSequenceWithTokens,
+  mode: ReviewSnapshot['type'],
+): RequestChangesResult {
   const job = sequence.jobs[0];
   const data: Record<string, unknown> = job.data;
-  const running = job.status === 'Running';
   const diagnostics = stripVTControlCharacters(job.output ?? '');
-  const conflict = data.courseAgentConflict
-    ? ReviewConflictSchema.parse(data.courseAgentConflict)
-    : null;
-  let result: RequestChangesResult | null = null;
-  if (job.status === 'Success' || job.status === 'Error') {
-    let publication: RequestChangesResult['publication'];
-    let sync: RequestChangesResult['sync'];
-    if (conflict) {
-      publication = { status: 'conflict', paths: conflict.paths };
-      sync = { status: 'not_attempted' };
-    } else if (!data.saveSucceeded) {
-      publication = { status: 'failed', error: diagnostics };
-      sync = { status: 'not_attempted' };
-    } else {
-      // The description retains the selected mode for Resume, even if configuration changes.
-      if (sequence.description === jobDescriptions.github) {
-        publication = { status: 'published' };
-      } else {
-        publication = { status: 'saved_locally' };
-      }
-      if (data.syncSucceeded) {
-        sync = { status: 'succeeded' };
-      } else {
-        sync = { status: 'failed', error: diagnostics };
-      }
-    }
-    result = { decision: 'approved', publication, sync };
+  if (job.status === 'Running') {
+    throw new HttpStatusError(409, 'The changes are still being saved. Try again shortly.');
   }
-  let status: 'running' | 'completed' | 'blocked';
-  let error: string | null = null;
-  if (running) {
-    status = 'running';
-  } else if (result) {
-    status = 'completed';
-  } else {
-    status = 'blocked';
-    error = diagnostics || 'Saving was interrupted. Inspect the job before retrying.';
+  if (job.status !== 'Success' && job.status !== 'Error') {
+    throw new HttpStatusError(
+      409,
+      diagnostics || 'Saving was interrupted. Inspect the job before retrying.',
+    );
   }
-  return SavedJobOutcomeSchema.parse({
-    jobSequenceId: sequence.id,
-    status,
-    result,
-    error,
-  });
+  if (data.courseAgentConflict) {
+    const { paths } = ReviewConflictSchema.parse(data.courseAgentConflict);
+    return {
+      decision: 'approved',
+      publication: { status: 'conflict', paths },
+      sync: { status: 'not_attempted' },
+    };
+  }
+  if (!data.saveSucceeded) {
+    return {
+      decision: 'approved',
+      publication: { status: 'failed', error: diagnostics },
+      sync: { status: 'not_attempted' },
+    };
+  }
+  return {
+    decision: 'approved',
+    publication: { status: mode === 'github' ? 'published' : 'saved_locally' },
+    sync: data.syncSucceeded ? { status: 'succeeded' } : { status: 'failed', error: diagnostics },
+  };
+}
+
+/**
+ * Resume first delivers a decided review whose result never reached the agent, rebuilding an
+ * approval's result from its job. Otherwise it asks the agent to repair its sandbox.
+ */
+export async function resumeConversation(conversation: CourseAgentConversation) {
+  const review = await getCourseAgentPendingReview(conversation.agent_conversation_id);
+  if (review?.status === 'running') {
+    const result =
+      review.jobSequenceId === null
+        ? DENIED
+        : getReviewJobResult(
+            await getJobSequence(review.jobSequenceId, conversation.course_id),
+            review.snapshot.type,
+          );
+    await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
+      callId: review.callId,
+      result,
+    });
+    return { recovered: true as const };
+  }
+  return resumeCourseAgentConversation(conversation.agent_conversation_id);
 }

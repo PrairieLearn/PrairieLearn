@@ -10,11 +10,17 @@ import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
 import { selectCourseById } from '../../../models/course.js';
 import { withConfig } from '../../../tests/utils/config.js';
 
-import { getPendingReview, getReviewJobOutcome, postReviewDecision } from './apply-changes.js';
+import {
+  getPendingReview,
+  getReviewJobResult,
+  postReviewDecision,
+  resumeConversation,
+} from './apply-changes.js';
 import {
   deliverCourseAgentReviewOutcome,
   getCourseAgentPendingReview,
   recordCourseAgentReviewDecision,
+  resumeCourseAgentConversation,
 } from './client.js';
 import { createReviewDiff } from './review-diff.js';
 
@@ -41,6 +47,7 @@ vi.mock('./client.js', () => ({
   getCourseAgentPendingReview: vi.fn(),
   recordCourseAgentReviewDecision: vi.fn(),
   deliverCourseAgentReviewOutcome: vi.fn(),
+  resumeCourseAgentConversation: vi.fn(),
 }));
 vi.mock('./review-diff.js', () => ({ createReviewDiff: vi.fn(async () => 'reviewed diff') }));
 
@@ -67,7 +74,6 @@ beforeEach(() => {
   sequence = {
     id: '1',
     type: 'sync',
-    description: 'Publish and sync reviewed course edits',
     authn_user_id: '2',
     jobs: [{ data: {}, status: 'Success', output: '' }],
   } as JobSequenceWithTokens;
@@ -76,7 +82,6 @@ beforeEach(() => {
     request_changes_tool_part: { messageId: 'assistant-1', partId: 'review-1' },
     status: 'pending',
     jobSequenceId: null,
-    error: null,
     snapshot: {
       type: 'github',
       repository: 'PrairieLearn/course',
@@ -131,7 +136,6 @@ const modes = [
 ] as const;
 
 function setLocalSnapshot() {
-  sequence.description = 'Save and sync reviewed local course edits';
   review.snapshot = {
     type: 'local',
     additions: review.snapshot.additions,
@@ -164,12 +168,7 @@ it.each(modes)(
         publication,
         sync: { status: 'succeeded' },
       };
-      expect(getReviewJobOutcome(sequence)).toEqual({
-        jobSequenceId: sequence.id,
-        status: 'completed',
-        result,
-        error: null,
-      });
+      expect(getReviewJobResult(sequence, type)).toEqual(result);
       expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledWith('agent-1', {
         callId: review.callId,
         result,
@@ -239,4 +238,19 @@ it('rejects a decision for an older pending call before starting a job', async (
   await expect(decide('approved', 'previous-review')).rejects.toThrow('This review has changed');
   expect(prepareJob).not.toHaveBeenCalled();
   expect(recordCourseAgentReviewDecision).not.toHaveBeenCalled();
+});
+
+it('delivers a missed approval result from its job on Resume instead of repairing the sandbox', async () => {
+  review = { ...review, status: 'running', jobSequenceId: sequence.id };
+  sequence.jobs[0].data = { saveSucceeded: true, syncSucceeded: true };
+  await expect(resumeConversation(conversation)).resolves.toEqual({ recovered: true });
+  expect(deliverCourseAgentReviewOutcome).toHaveBeenCalledExactlyOnceWith('agent-1', {
+    callId: review.callId,
+    result: {
+      decision: 'approved',
+      publication: { status: 'published' },
+      sync: { status: 'succeeded' },
+    },
+  });
+  expect(resumeCourseAgentConversation).not.toHaveBeenCalled();
 });

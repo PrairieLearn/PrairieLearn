@@ -93,14 +93,9 @@ export function RequestChangesCard({
               }
             }}
           />
-          {current?.status === 'running' && jobSequenceId !== null && (
+          {job.data?.jobSequence.status === 'Running' && (
             <p className="small text-muted mt-2 mb-0" role="status">
               Saving and syncing…
-            </p>
-          )}
-          {current?.error && (
-            <p className="text-danger mt-2 mb-0" role="alert">
-              {current.error}
             </p>
           )}
           {((job.data && job.data.jobSequence.status !== 'Running') ||

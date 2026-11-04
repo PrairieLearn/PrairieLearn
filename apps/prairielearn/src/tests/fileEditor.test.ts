@@ -13,7 +13,7 @@ import type { ReviewSnapshot } from '@prairielearn/course-agent-types';
 import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getReviewJobOutcome } from '../ee/lib/course-agent/apply-changes.js';
+import { getReviewJobResult } from '../ee/lib/course-agent/apply-changes.js';
 import { checkReviewConflicts } from '../ee/lib/course-agent/review-conflicts.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
@@ -310,8 +310,7 @@ describe('test file editor', { timeout: 20_000 }, function () {
           assert.deepEqual(await fs.readFile(path.join(course.path, questionHtmlPath)), concurrent);
           assert.isFalse(await fs.pathExists(path.join(course.path, addition)));
           const sequence = await getJobSequence(job.jobSequenceId, course.id);
-          const outcome = getReviewJobOutcome(sequence);
-          assert.deepEqual(outcome.result?.publication, {
+          assert.deepEqual(getReviewJobResult(sequence, 'github').publication, {
             status: 'conflict',
             paths: [questionHtmlPath],
           });

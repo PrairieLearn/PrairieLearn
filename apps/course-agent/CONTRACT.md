@@ -83,9 +83,9 @@ Approved files are passed to `MultiEditor`, which combines the upload and delete
 
 ### Saved outcomes and Resume
 
-The editor job records whether saving and syncing succeeded, along with its logs. Its description identifies whether it used local or Git editing, allowing recovery even if configuration has changed. Ordinary editor jobs do not record a commit SHA, so that field is optional in the result. For conflicts, job data retains the conflicting paths.
+The editor job records whether saving and syncing succeeded, along with its logs. The pending review records which job belongs to it and whether its snapshot is local or GitHub-backed, so recovery does not depend on the job's description or on configuration at recovery time. Ordinary editor jobs do not record a commit SHA, so that field is optional in the result. For conflicts, job data retains the conflicting paths.
 
-After the job finishes, PrairieLearn sends its outcome to the DO. If this callback is missed, Resume calls the service-authenticated `GET /pl/api/course-agent/conversations/{uuid}/jobs/{jobSequenceId}/outcome`. It returns `{ jobSequenceId, status, result, error }`, with status `running`, `completed`, or `blocked`. Both paths build the result from the same job data. The job does not store the native call ID: the DO matches the returned job sequence ID to its pending review. A running job stays pending. An interrupted job stays blocked for inspection; Resume does not start another save. A saved denial can also be delivered through Resume.
+After the job finishes, PrairieLearn sends its outcome to the DO. If this callback is missed, PrairieLearn's Resume reads the pending review, rebuilds the result from its job, and sends it the same way; the Worker never calls PrairieLearn. A running job reports that saving is still in progress. An interrupted job is reported for inspection; Resume does not start another save. A denial whose delivery failed is delivered the same way.
 
 The DO saves and broadcasts the result in the chat tool part, then answers the callback and continues the agent in the background, since its follow-up turn can outlast an HTTP timeout. Duplicate callbacks share one in-flight delivery promise. Continuation depends on whether the native call is still live:
 

@@ -11,11 +11,11 @@ import {
   getPendingReview,
   getReviewJob,
   postReviewDecision,
+  resumeConversation,
 } from '../../ee/lib/course-agent/apply-changes.js';
 import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
-  resumeCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
 import {
   insertCourseAgentConversation,
@@ -105,7 +105,7 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      return resumeCourseAgentConversation(conversation.agent_conversation_id);
+      return resumeConversation(conversation);
     }),
 
   // Record only conversations whose Cloudflare startup succeeded.
