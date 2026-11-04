@@ -1,9 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "prairielearn-course-agent",
+  "account_id": "354586f64c63c93d0361575f6dcf42c2",
   "main": "src/worker.ts",
   "compatibility_date": "2026-09-17",
   "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],
+  "workers_dev": true,
+  "preview_urls": false,
   "vars": {
     "OPENAI_MODEL": "gpt-6-luna",
     "AGENT_TURN_SECONDS": "21600",
@@ -83,6 +86,18 @@
           }
         ]
       },
+      "containers": [
+        {
+          "name": "course-agent",
+          "scheduling_policy": "durable_object",
+          "images": {
+            "courseAgent": {
+              "dockerfile": "container/Dockerfile",
+              "build_context": "."
+            }
+          }
+        }
+      ],
       "r2_buckets": [
         {
           "binding": "CHECKPOINTS",
@@ -117,6 +132,18 @@
           }
         ]
       },
+      "containers": [
+        {
+          "name": "course-agent",
+          "scheduling_policy": "durable_object",
+          "images": {
+            "courseAgent": {
+              "dockerfile": "container/Dockerfile",
+              "build_context": "."
+            }
+          }
+        }
+      ],
       "r2_buckets": [
         {
           "binding": "CHECKPOINTS",
