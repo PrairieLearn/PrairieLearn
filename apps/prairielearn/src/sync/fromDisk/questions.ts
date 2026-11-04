@@ -73,7 +73,8 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
 
 export async function sync(
   courseId: string,
-  courseData: CourseData,
+  courseData: Pick<CourseData, 'questions'>,
+  insertOnly = false,
 ): Promise<Record<string, string>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
@@ -87,7 +88,7 @@ export async function sync(
 
   const result = await sqldb.callScalar(
     'sync_questions',
-    [questionParams, courseId],
+    [questionParams, courseId, insertOnly],
     z.record(z.string(), IdSchema),
   );
 
@@ -97,7 +98,7 @@ export async function sync(
 
 async function syncQuestionCopyProvenance(
   courseId: string,
-  courseData: CourseData,
+  courseData: Pick<CourseData, 'questions'>,
   questionIds: Record<string, string>,
 ): Promise<void> {
   const validQuestions = Object.entries(courseData.questions).flatMap(([qid, question]) => {
