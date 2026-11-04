@@ -1754,6 +1754,18 @@ function validateCourseInstance({
   return { warnings, errors };
 }
 
+export async function loadNewQuestionInfo(coursePath: string, qid: string) {
+  const info = await loadAndValidateJson({
+    coursePath,
+    filePath: path.join('questions', qid, 'info.json'),
+    schema: schemas.infoQuestion,
+    zodSchema: schemas.QuestionJsonSchema,
+    validate: (question) => validateQuestion({ question, sharingEnabled: false }),
+  });
+  if (info) await checkAuthorOriginCourses({ [qid]: info });
+  return info;
+}
+
 /**
  * Loads all questions in a course directory.
  */

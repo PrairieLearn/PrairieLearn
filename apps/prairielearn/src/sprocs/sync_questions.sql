@@ -2,6 +2,7 @@ CREATE FUNCTION
     sync_questions(
         IN disk_questions_data jsonb[],
         IN syncing_course_id bigint,
+        IN insert_only boolean,
         OUT name_to_id_map jsonb
     )
 AS $$
@@ -45,6 +46,15 @@ BEGIN
     -- inserts new rows in questions. No data is synced yet. Only the
     -- (id, course_id, uuid, qid, deleted_at) columns are used.
 
+    IF insert_only AND EXISTS (
+        SELECT 1
+        FROM disk_questions AS src
+        JOIN questions AS dest ON dest.course_id = syncing_course_id
+            AND (dest.uuid = src.uuid OR (dest.qid = src.qid AND dest.deleted_at IS NULL))
+    ) THEN
+        RAISE EXCEPTION 'Cannot insert a question with an existing identity';
+    END IF;
+
     WITH
     matched_rows AS (
         -- DISTINCT ON is necessary to ensure that we only try to update one
@@ -54,7 +64,8 @@ BEGIN
             src.uuid AS src_uuid,
             dest.id AS dest_id
         FROM disk_questions AS src LEFT JOIN questions AS dest ON (
-            dest.course_id = syncing_course_id
+            NOT insert_only
+            AND dest.course_id = syncing_course_id
             AND (
                 src.uuid = dest.uuid
                 OR (
@@ -80,7 +91,7 @@ BEGIN
     deactivate_unmatched_dest_rows AS (
         UPDATE questions AS dest
         SET deleted_at = now()
-        WHERE dest.id NOT IN (
+        WHERE NOT insert_only AND dest.id NOT IN (
             SELECT dest_id FROM matched_rows WHERE dest_id IS NOT NULL
         ) AND dest.deleted_at IS NULL AND dest.course_id = syncing_course_id
     ),
@@ -116,7 +127,7 @@ BEGIN
     SELECT string_agg(dest.qid, ', ')
     INTO missing_src_qids
     FROM questions AS dest
-    WHERE dest.course_id = syncing_course_id AND dest.deleted_at IS NULL AND dest.qid NOT IN (SELECT src.qid FROM disk_questions AS src);
+    WHERE NOT insert_only AND dest.course_id = syncing_course_id AND dest.deleted_at IS NULL AND dest.qid NOT IN (SELECT src.qid FROM disk_questions AS src);
     IF (missing_src_qids IS NOT NULL) THEN
         RAISE EXCEPTION 'Assertion failure: QIDs in DB but not on disk: %', missing_src_qids;
     END IF;
