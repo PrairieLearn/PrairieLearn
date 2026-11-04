@@ -42,7 +42,7 @@
 # https://github.com/PrairieLearn/PrairieLearn/pull/16132
 FROM node:24.22.1-bookworm-slim AS node
 
-FROM rocker/rstudio:4.6.1
+FROM rocker/rstudio:4.6.2
 ARG CACHEBUST=2026-09-15-14-09-16
 
 # Update the bundled runtime independently of RStudio releases.
