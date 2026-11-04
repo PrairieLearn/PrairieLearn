@@ -1,15 +1,12 @@
 {
   "name": "@prairielearn/opentelemetry",
   "version": "5.0.0",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/opentelemetry"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -44,5 +41,8 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.2",
     "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

@@ -78,7 +78,7 @@ export class CourseSandbox extends DurableObject<Env> {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    ctx.blockConcurrencyWhile(async () => {
+    void ctx.blockConcurrencyWhile(async () => {
       if (ctx.container?.running) await ctx.container.setInactivityTimeout(lifetimeMs(env));
     });
   }

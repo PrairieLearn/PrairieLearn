@@ -5,6 +5,7 @@ import type { AbsolutePathBuf } from '../AbsolutePathBuf.js';
 import type { Personality } from '../Personality.js';
 import type { ResponseItem } from '../ResponseItem.js';
 import type { JsonValue } from '../serde_json/JsonValue.js';
+
 import type { ApprovalsReviewer } from './ApprovalsReviewer.js';
 import type { AskForApproval } from './AskForApproval.js';
 import type { SandboxMode } from './SandboxMode.js';

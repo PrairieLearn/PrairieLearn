@@ -1,11 +1,8 @@
 {
   "name": "@prairielearn/prairielearn",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
-  "engines": {
-    "node": ">=24.15.0"
-  },
+  "type": "module",
   "scripts": {
     "build": "tsc --build --incremental --checkers 2 && tscp -b && compiled-assets build ./assets ./public/build",
     "dev": "tsx watch --clear-screen=false --tsconfig src/tsconfig.json --include \"**/*.sql\" --include \"**/*.py\" --include \"**/*.json\" --include \"$HOME/.config/prairielearn/config.json\" --include \"../../config.json\" --exclude \"assets/*\" --exclude \"elements/*\" --exclude \"dist/*\" --exclude \"public/*\" src/server.ts",
@@ -325,5 +322,8 @@
     "tsx": "^4.23.15",
     "typescript-cp": "^0.1.11",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=24.15.0"
   }
 }

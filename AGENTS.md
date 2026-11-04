@@ -57,13 +57,14 @@ Typechecking:
 
 Linting:
 
-- Individual files: `pnpm eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
+- Individual files: `pnpm oxlint --fix path/to/file.ts`. oxlint runs nearly all JS/TS rules; shared rules are in `packages/oxlint-config` and PrairieLearn-specific overrides are in `oxlint.config.mts`. ESLint only runs `@prairielearn/safe-db-types` on `.tsx` files in `apps/prairielearn` and lints HTML/mustache files; for those, also run `pnpm eslint --fix path/to/file.tsx`.
 - All files: `make lint-js`
+- Suppress oxlint rules with `oxlint-disable` comments and ESLint rules with `eslint-disable` comments. Each tool ignores the other's directives, so use the prefix of the tool that reports the error.
 - Check for dead code with `make lint-dependencies`.
 
 Formatting:
 
-- Individual files: `pnpm prettier --write path/to/file.ts`
+- Individual files: `pnpm oxfmt path/to/file.ts`
 - All files: `make fix-js`
 
 ### Python
@@ -85,7 +86,7 @@ Formatting:
 
 ### Other tools / languages (e.g. SQL, Markdown, Shell)
 
-SQL, shell, markdown, and JSON files should also be formatted with `pnpm prettier --write path/to/file.{sql,sh,md,json}`. Reference the Makefile for commands to format/lint/typecheck other tools / languages.
+Markdown, JSON, YAML, TOML, CSS, and HTML files should also be formatted with `pnpm oxfmt path/to/file.{md,json,yml,toml,css,html}`. SQL and shell files should be formatted with `pnpm prettier --write path/to/file.{sql,sh}`, since oxfmt doesn't support them. Reference the Makefile for commands to format/lint/typecheck other tools / languages.
 
 ## Database and schema changes
 

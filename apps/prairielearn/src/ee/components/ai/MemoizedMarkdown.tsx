@@ -26,7 +26,7 @@ export const MemoizedMarkdown = memo(({ content }: { content: string }) => {
   const blocks = useMemo(() => parseMarkdownIntoBlocks(content), [content]);
 
   return blocks.map((block, index) => (
-    // eslint-disable-next-line @eslint-react/no-array-index-key
+    // oxlint-disable-next-line react/no-array-index-key
     <MemoizedMarkdownBlock key={`block_${index}`} content={block} />
   ));
 });

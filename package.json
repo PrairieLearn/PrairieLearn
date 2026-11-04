@@ -5,21 +5,6 @@
     "apps/*",
     "packages/*"
   ],
-  "engines": {
-    "node": ">=24.15.0",
-    "pnpm": "^12.17.0"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^12.17.0",
-      "onFail": "warn"
-    },
-    "runtime": {
-      "name": "node",
-      "version": ">=24.15.0"
-    }
-  },
   "scripts": {
     "capture-access-control-screenshots": "CAPTURE_SCREENSHOTS=1 pnpm --filter @prairielearn/prairielearn test:e2e src/tests/e2e/captureAccessControlScreenshots.spec.ts",
     "capture-onboarding-screenshots": "CAPTURE_SCREENSHOTS=1 pnpm --filter @prairielearn/prairielearn test:e2e captureOnboardingScreenshots",
@@ -47,35 +32,52 @@
     "@html-eslint/parser": "^0.66.1",
     "@playwright/test": "^1.63.0",
     "@postgres-language-server/cli": "^0.25.7",
-    "@prairielearn/eslint-config": "workspace:^",
+    "@prairielearn/eslint-plugin": "workspace:^",
+    "@prairielearn/oxlint-config": "workspace:^",
     "@prairielearn/pin-github-actions": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tree-sitter-htmlmustache": "^1.4.3",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
+    "@typescript-eslint/parser": "^8.70.1",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.5",
     "dependency-cruiser": "^18.4.0",
     "eslint": "^10.11.0",
     "fast-glob": "^3.3.3",
     "fs-extra": "^11.4.1",
-    "globals": "^17.12.0",
     "globby": "^16.2.4",
     "htmlhint": "^1.9.2",
     "ignore": "^7.0.10",
     "knip": "^6.38.0",
     "linkinator": "^8.1.0",
     "markdownlint-cli2": "^0.23.3",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005",
     "prettier": "^3.9.9",
-    "prettier-plugin-pkg": "^0.22.1",
     "prettier-plugin-sh": "^0.20.2",
     "prettier-plugin-sql": "^0.20.0",
-    "prettier-plugin-toml": "^3.0.2",
     "pyright": "^1.1.414",
     "s3rver": "^3.7.1",
     "turbo": "^2.11.5",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.5",
     "zod": "^4.6.5"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^12.17.0",
+      "onFail": "warn"
+    },
+    "runtime": {
+      "name": "node",
+      "version": ">=24.15.0"
+    }
+  },
+  "engines": {
+    "node": ">=24.15.0",
+    "pnpm": "^12.17.0"
   }
 }

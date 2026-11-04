@@ -940,6 +940,8 @@ function StaffTableInner({
     useColumnFilters(filterRegistry);
 
   const { activeCourseInstanceIds, upcomingCourseInstanceIds } = useMemo(() => {
+    // Reading the clock once per memoized computation is intentional.
+    // oxlint-disable-next-line react/purity
     const now = new Date();
     const activeIds = new Set<string>();
     const upcomingIds = new Set<string>();
