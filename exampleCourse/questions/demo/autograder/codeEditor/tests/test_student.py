@@ -24,6 +24,9 @@ def test_random_values(sandbox: StudentFixture, feedback: FeedbackFixture) -> No
 
     for n in test_values:
         response = sandbox.query_function_raw("fib", n)
+        if response["status"] == "timeout":
+            failures.append(f"fib({n}): timed out")
+            break
         expected = _fib(n)
         if response["status"] == "success" and response["value"] == expected:
             num_correct += 1
