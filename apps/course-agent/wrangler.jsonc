@@ -21,6 +21,9 @@
     "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
   },
   "durable_objects": {
+    // Let active conversations finish on the old code: 7 h covers AGENT_TURN_SECONDS
+    // (6 h) plus USER_IDLE_SECONDS (10 min), with margin.
+    "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
     "bindings": [
       {
         "name": "Conversation",
@@ -75,6 +78,7 @@
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
       },
       "durable_objects": {
+        "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
         "bindings": [
           {
             "name": "Conversation",
@@ -121,6 +125,7 @@
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
       },
       "durable_objects": {
+        "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
         "bindings": [
           {
             "name": "Conversation",
