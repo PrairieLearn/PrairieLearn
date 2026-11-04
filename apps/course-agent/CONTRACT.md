@@ -85,7 +85,7 @@ Approved files are passed to `MultiEditor`, which combines the upload and delete
 
 The editor job records whether saving and syncing succeeded, along with its logs. The pending review records which job belongs to it and whether its snapshot is local or GitHub-backed, so recovery does not depend on the job's description or on configuration at recovery time. Ordinary editor jobs do not record a commit SHA, so that field is optional in the result. For conflicts, job data retains the conflicting paths.
 
-After the job finishes, PrairieLearn sends its outcome to the DO. If this callback is missed, PrairieLearn's Resume reads the pending review, rebuilds the result from its job, and sends it the same way; the Worker never calls PrairieLearn. A running job reports that saving is still in progress. An interrupted job is reported for inspection; Resume does not start another save. A denial whose delivery failed is delivered the same way.
+After the job finishes, PrairieLearn sends its outcome to the DO. If this callback is missed, PrairieLearn's Resume reads the pending review, rebuilds the result from its job, and sends it the same way; the Worker never calls PrairieLearn. A running or stopping job reports that saving is still in progress. A stopped job is mapped from the flags it recorded, like a failed one, so the agent learns how far saving got; Resume never starts another save. A denial whose delivery failed is delivered the same way.
 
 The DO saves and broadcasts the result in the chat tool part, then answers the callback and continues the agent in the background, since its follow-up turn can outlast an HTTP timeout. Duplicate callbacks share one in-flight delivery promise. Continuation depends on whether the native call is still live:
 

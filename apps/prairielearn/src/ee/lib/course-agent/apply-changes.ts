@@ -225,15 +225,10 @@ export function getReviewJobResult(
   const job = sequence.jobs[0];
   const data: Record<string, unknown> = job.data;
   const diagnostics = stripVTControlCharacters(job.output ?? '');
-  if (job.status === 'Running') {
+  if (job.status === 'Running' || job.status === 'Stopping') {
     throw new HttpStatusError(409, 'The changes are still being saved. Try again shortly.');
   }
-  if (job.status !== 'Success' && job.status !== 'Error') {
-    throw new HttpStatusError(
-      409,
-      diagnostics || 'Saving was interrupted. Inspect the job before retrying.',
-    );
-  }
+  // A stopped job still records how far it got, like a failed one, so the agent can continue.
   if (data.courseAgentConflict) {
     const { paths } = ReviewConflictSchema.parse(data.courseAgentConflict);
     return {

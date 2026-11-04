@@ -254,3 +254,12 @@ it('delivers a missed approval result from its job on Resume instead of repairin
   });
   expect(resumeCourseAgentConversation).not.toHaveBeenCalled();
 });
+
+it('settles a review whose save job was stopped before writing', () => {
+  sequence.jobs[0] = { ...sequence.jobs[0], status: 'Stopped', output: 'Stopped by user' };
+  expect(getReviewJobResult(sequence, 'github')).toEqual({
+    decision: 'approved',
+    publication: { status: 'failed', error: 'Stopped by user' },
+    sync: { status: 'not_attempted' },
+  });
+});
