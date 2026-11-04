@@ -23,9 +23,6 @@ import { TreeQuestionBlockNode } from './TreeQuestionBlockNode.js';
 import { WarningIndicator } from './WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
-const LOCKPOINT_GUIDANCE =
-  'Students must cross this lockpoint before entering this zone. Crossing it makes earlier zones read-only.';
-
 /**
  * Renders a zone node in the assessment tree — a sticky header with zone
  * metadata badges (question count, points, lockpoint, etc.) followed by the
@@ -72,7 +69,9 @@ export function TreeZoneNode({
     );
   }
   if (zone.lockpoint) {
-    zoneGuidance.push(LOCKPOINT_GUIDANCE);
+    zoneGuidance.push(
+      'Students must cross this lockpoint before entering this zone. Crossing it makes earlier zones read-only.',
+    );
   }
   const isSelected =
     selectedItem?.type === 'zone' && selectedItem.zoneTrackingId === zone.trackingId;
@@ -200,17 +199,7 @@ export function TreeZoneNode({
               );
             })}
             {zone.numberChoose != null && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-choose` },
-                  body: `${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across pools as evenly as possible.`,
-                }}
-              >
-                <button type="button" className="btn btn-badge color-blue3">
-                  Choose {zone.numberChoose}
-                </button>
-              </OverlayTrigger>
+              <span className="badge color-blue3">Choose {zone.numberChoose}</span>
             )}
             <ZonePointsBadge
               zone={zone}
@@ -218,44 +207,16 @@ export function TreeZoneNode({
               tooltipId={`${badgeTooltipId}-points`}
             />
             {zone.maxPoints != null && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-max` },
-                  body: 'Maximum total points from this zone that count toward the assessment',
-                }}
-              >
-                <button type="button" className="btn btn-badge color-blue3">
-                  Max {zone.maxPoints} pts
-                </button>
-              </OverlayTrigger>
+              <span className="badge color-blue3">Max {zone.maxPoints} pts</span>
             )}
             {zone.bestQuestions != null && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-best` },
-                  body: 'Only the highest-scoring questions in this zone count toward the total',
-                }}
-              >
-                <button type="button" className="btn btn-badge color-blue3">
-                  Best {zone.bestQuestions}
-                </button>
-              </OverlayTrigger>
+              <span className="badge color-blue3">Best {zone.bestQuestions}</span>
             )}
             {zone.lockpoint && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `${badgeTooltipId}-lock` },
-                  body: LOCKPOINT_GUIDANCE,
-                }}
-              >
-                <button type="button" className="btn btn-badge color-blue3">
-                  <i className="bi bi-lock-fill me-1" aria-hidden="true" />
-                  Lockpoint
-                </button>
-              </OverlayTrigger>
+              <span className="badge color-blue3">
+                <i className="bi bi-lock-fill me-1" aria-hidden="true" />
+                Lockpoint
+              </span>
             )}
           </span>
           <span className="flex-grow-1" />
