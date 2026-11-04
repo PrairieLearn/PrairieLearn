@@ -76,6 +76,11 @@ body:has(.course-agent-panel-animate) .app-main {
 
 /* On narrow screens the panel is a full-screen modal. */
 @media (max-width: 767.98px) {
+  .course-agent-launcher {
+    height: 2.5rem;
+    min-width: 2.5rem;
+  }
+
   .course-agent-panel,
   .course-agent-panel[data-open='true'] {
     width: 100vw;

@@ -117,18 +117,21 @@ export function Navbar({
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
           </span>
         </a>
-        <button
-          id="course-nav-toggler"
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#course-nav"
-          data-bs-animation="false"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
-        </button>
+        <div class="d-flex d-md-none align-items-center gap-2">
+          ${courseAgentPanel ? html`<div id="course-agent-mobile-launcher" class="d-flex"></div>` : ''}
+          <button
+            id="course-nav-toggler"
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#course-nav"
+            data-bs-animation="false"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
+          </button>
+        </div>
         <div id="course-nav" class="collapse navbar-collapse mobile-collapsed">
           <ul class="nav navbar-nav me-auto" id="main-nav">
             ${NavbarByType({
@@ -172,7 +175,7 @@ export function Navbar({
             }
             ${
               courseAgentPanel
-                ? html`<div class="d-flex flex-shrink-0 me-md-2 mb-2 mb-md-0">
+                ? html`<div class="d-none d-md-flex flex-shrink-0 me-md-2">
                     ${courseAgentPanel}
                   </div>`
                 : ''

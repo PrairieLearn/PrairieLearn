@@ -86,6 +86,11 @@ export function CourseAgentPanel({
   showConversationStats: boolean;
 }) {
   const [hydrated, setHydrated] = useState(false);
+  const [mobileLauncher] = useState(() =>
+    typeof document === 'undefined'
+      ? null
+      : document.getElementById('course-agent-mobile-launcher'),
+  );
   // Keep server markup during hydration, then reveal the lazy chat without delaying its ready state.
   useEffect(() => {
     startTransition(() => setHydrated(true));
@@ -184,31 +189,35 @@ export function CourseAgentPanel({
     </Offcanvas>
   );
 
+  const launcher = (
+    <OverlayTrigger
+      placement="bottom"
+      tooltip={{
+        body: open ? 'Close course agent' : 'Open course agent',
+        props: { id: 'course-agent-launcher-tooltip' },
+      }}
+    >
+      <Button
+        ref={toggleRef}
+        className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
+        variant="outline-light"
+        active={open}
+        size="sm"
+        aria-label={open ? 'Close course agent' : 'Open course agent'}
+        aria-expanded={open}
+        aria-controls="course-agent-panel"
+        onPointerEnter={preloadChat}
+        onFocus={preloadChat}
+        onClick={() => changeOpen(!open)}
+      >
+        <i className="bi bi-stars" aria-hidden="true" />
+      </Button>
+    </OverlayTrigger>
+  );
+
   return (
     <>
-      <OverlayTrigger
-        placement="bottom"
-        tooltip={{
-          body: open ? 'Close course agent' : 'Open course agent',
-          props: { id: 'course-agent-launcher-tooltip' },
-        }}
-      >
-        <Button
-          ref={toggleRef}
-          className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
-          variant="outline-light"
-          active={open}
-          size="sm"
-          aria-label={open ? 'Close course agent' : 'Open course agent'}
-          aria-expanded={open}
-          aria-controls="course-agent-panel"
-          onPointerEnter={preloadChat}
-          onFocus={preloadChat}
-          onClick={() => changeOpen(!open)}
-        >
-          <i className="bi bi-stars" aria-hidden="true" />
-        </Button>
-      </OverlayTrigger>
+      {hydrated && mobile && mobileLauncher ? createPortal(launcher, mobileLauncher) : launcher}
       {/* Keep the panel outside the navbar's navigation landmark and stacking context. */}
       {hydrated ? createPortal(panel, document.body) : panel}
     </>
