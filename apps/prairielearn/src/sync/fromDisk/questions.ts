@@ -74,7 +74,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
 export async function sync(
   courseId: string,
   courseData: Pick<CourseData, 'questions'>,
-  mode: 'full' | 'metadata' = 'full',
+  mode: 'full' | 'metadata' | 'insert' = 'full',
 ): Promise<Record<string, string>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
