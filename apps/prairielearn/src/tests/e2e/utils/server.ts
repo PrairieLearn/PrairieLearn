@@ -6,8 +6,16 @@ import type { WorkerInfo } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
 import type { Config } from '../../../lib/config.js';
+import { APP_ROOT_PATH } from '../../../lib/paths.js';
 
 const BASE_PORT = 3014;
+
+/**
+ * In CI, the server and assets have already been built by `make build`, so we
+ * run the compiled server and serve prebuilt assets instead of transpiling and
+ * bundling on the fly in every worker.
+ */
+const USE_BUILD = !!process.env.CI;
 
 interface WorkerServerOptions {
   /** Additional course directories to include beyond the defaults */
@@ -40,7 +48,10 @@ export async function setupWorkerServer(
         postgresqlUser: setupResults.user,
         postgresqlDatabase: setupResults.database,
         postgresqlHost: setupResults.host,
-        devMode: true, // We need this to start up the asset server.
+        devMode: true,
+        compiledAssetsDevMode: !USE_BUILD,
+        // The worker database is cloned from an already-migrated template.
+        runMigrations: false,
         ...(options.courseDirs && { courseDirs: options.courseDirs }),
         ...options.configOverrides,
       };
@@ -83,7 +94,11 @@ async function startServerSubprocess(
 
   const serverDir = path.resolve(import.meta.dirname, '..', '..', '..');
 
-  const serverProcess = spawn('pnpm', ['dev:no-watch'], {
+  const [command, args] = USE_BUILD
+    ? ['node', [path.join(APP_ROOT_PATH, 'dist', 'server.js')]]
+    : ['pnpm', ['dev:no-watch']];
+  const startTime = performance.now();
+  const serverProcess = spawn(command, args, {
     cwd: serverDir,
     env: {
       ...process.env,
@@ -109,6 +124,7 @@ async function startServerSubprocess(
       const output = data.toString();
       if (output.includes(readyMessage)) {
         clearTimeout(timeout);
+        console.log(`[e2e] server ready in ${Math.round(performance.now() - startTime)}ms`);
         resolve();
       } else {
         process.stdout.write(output);
