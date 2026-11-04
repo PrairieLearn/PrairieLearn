@@ -35,6 +35,8 @@ const jobDescriptions = {
   github: 'Publish and sync reviewed course edits',
 };
 
+const MAX_DIAGNOSTICS_LENGTH = 16_000;
+
 const DENIED: RequestChangesResult = {
   decision: 'denied',
   publication: { status: 'not_attempted' },
@@ -224,7 +226,8 @@ export function getReviewJobResult(
 ): RequestChangesResult {
   const job = sequence.jobs[0];
   const data: Record<string, unknown> = job.data;
-  const diagnostics = stripVTControlCharacters(job.output ?? '');
+  // The agent receives these logs as its tool result; a large course's sync log ends with the errors.
+  const diagnostics = stripVTControlCharacters(job.output ?? '').slice(-MAX_DIAGNOSTICS_LENGTH);
   if (job.status === 'Running' || job.status === 'Stopping') {
     throw new HttpStatusError(409, 'The changes are still being saved. Try again shortly.');
   }
