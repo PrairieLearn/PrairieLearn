@@ -658,8 +658,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/signed-token
       '@prairielearn/sketchresponse':
-        specifier: ^0.2.1
-        version: 0.2.1(stylelint@16.26.1(supports-color@10.2.2))
+        specifier: ^0.3.1
+        version: 0.3.1(stylelint@16.26.1(supports-color@10.2.2))
       '@prairielearn/tree-sitter-htmlmustache':
         specifier: ^1.4.3
         version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.9.9)
@@ -5143,8 +5143,8 @@ packages:
   '@prairielearn/excalidraw-builds@1.0.0':
     resolution: {integrity: sha512-/4KoKjF0Fbmvy2VsDXdoagP+IFViHHQXfSbRejGdIVIlby3dHJTDetXATMygOqa6IdNo6bFvaX8C6mmsN4X3Xg==}
 
-  '@prairielearn/sketchresponse@0.2.1':
-    resolution: {integrity: sha512-3ZX0Gx6LXkNJQcG7vwF86JNMFJweQVF5Az1Fr3b6sCgV+n9wyCrVZ8hpNJxIk2vqxnFcSeCwnGf2wkEF6w5BlQ==}
+  '@prairielearn/sketchresponse@0.3.1':
+    resolution: {integrity: sha512-4nD/8AxvAJA+LEm9EnfHOvB3MdZRRvxMOrW3gfzRWVwl2rJIdRXvVnZrynecpY8yRj0SDahyoe3ZdhwmHuvDTA==}
 
   '@prairielearn/tree-sitter-htmlmustache@1.4.3':
     resolution: {integrity: sha512-McCgDJUHy+V74YHRlKx4/WuI0SB+vafqYmssYKunzFEXPTnIwQGg9mZ8o7Xumlh0fqJOZiVxr5ia2C0vvpZaew==}
@@ -8898,6 +8898,10 @@ packages:
 
   katex@0.16.47:
     resolution: {integrity: sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==}
+    hasBin: true
+
+  katex@0.18.10:
+    resolution: {integrity: sha512-/B6p9eY9DX7aHBfpkHdpirDTZ5QH9xTwL9y837PWuzuv41O5jFdqNQwVQEQsimY0/iVNkwBY4+4hMfhQ7d4Dbw==}
     hasBin: true
 
   kebab-case@1.0.2:
@@ -13837,13 +13841,13 @@ snapshots:
 
   '@prairielearn/excalidraw-builds@1.0.0': {}
 
-  '@prairielearn/sketchresponse@0.2.1(stylelint@16.26.1(supports-color@10.2.2))':
+  '@prairielearn/sketchresponse@0.3.1(stylelint@16.26.1(supports-color@10.2.2))':
     dependencies:
       buffer: 6.0.3
       deep-extend: 0.6.0
       fastclick: 1.0.6
       jsondiffpatch: 0.7.6
-      katex: 0.16.47
+      katex: 0.18.10
       normalize.css: 8.0.1
       pepjs: 0.5.3
       sass: 1.105.0
@@ -17693,6 +17697,10 @@ snapshots:
   katex@0.16.47:
     dependencies:
       commander: 8.3.0
+
+  katex@0.18.10:
+    dependencies:
+      commander: 15.0.0
 
   kebab-case@1.0.2: {}
 

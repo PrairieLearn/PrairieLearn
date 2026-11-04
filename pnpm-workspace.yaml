@@ -70,7 +70,8 @@ supportedArchitectures:
 minimumReleaseAgeExclude:
   # Includes the October 2026 Undici security fixes.
   - 'undici@8.12.3'
-  - '@prairielearn/sketchresponse@0.2.1'
+  # Includes the KaTeX security fix in the sketchresponse browser bundle.
+  - '@prairielearn/sketchresponse@0.3.1'
   - 'typescript-cp@0.1.11'
   - express@4.22.3
   - prettier@3.9.7
