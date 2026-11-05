@@ -11,6 +11,7 @@ import {
   createLocalCourseAgentConversation,
   resumeCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
+import { generateCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
@@ -56,40 +57,43 @@ export const courseAgentRouter = t.router({
       return resumeCourseAgentConversation(conversation.agent_conversation_id);
     }),
 
-  // Record only conversations whose Cloudflare startup succeeded.
+  // Record only conversations whose Cloudflare startup succeeded. The title is
+  // generated concurrently so it adds no latency beyond the startup itself.
   create: courseAgentProcedure
     .input(z.object({ text: z.string().trim().min(1).max(20_000) }))
     .mutation(async ({ ctx, input }) => {
-      const agentConversationId = await run(async () => {
-        if (config.devMode && !config.fileEditorUseGit) {
-          return createLocalCourseAgentConversation(ctx.course.path);
-        } else {
-          const repository = parseGithubRepository(ctx.course.repository ?? '');
-          if (!repository || !ctx.course.branch) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'Configure a GitHub repository and branch before starting a conversation.',
+      const [agentConversationId, title] = await Promise.all([
+        run(async () => {
+          if (config.devMode && !config.fileEditorUseGit) {
+            return createLocalCourseAgentConversation(ctx.course.path);
+          } else {
+            const repository = parseGithubRepository(ctx.course.repository ?? '');
+            if (!repository || !ctx.course.branch) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Configure a GitHub repository and branch before starting a conversation.',
+              });
+            }
+            const binding = CreateConversationInput.safeParse({
+              repository: `${repository.owner}/${repository.repo}`,
+              branch: ctx.course.branch,
             });
+            if (!binding.success) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'The course repository or branch is invalid.',
+              });
+            }
+            return createCourseAgentConversation(binding.data);
           }
-          const binding = CreateConversationInput.safeParse({
-            repository: `${repository.owner}/${repository.repo}`,
-            branch: ctx.course.branch,
-          });
-          if (!binding.success) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'The course repository or branch is invalid.',
-            });
-          }
-          return createCourseAgentConversation(binding.data);
-        }
-      });
-      const title = input.text.replaceAll(/\s+/g, ' ');
+        }),
+        generateCourseAgentConversationTitle({ prompt: input.text, courseId: ctx.course.id }),
+      ]);
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,
         user_id: ctx.locals.authn_user.id,
         agent_conversation_id: agentConversationId,
-        title: title.length > 80 ? `${title.slice(0, 77)}...` : title,
+        title,
       });
       return StaffCourseAgentConversationSchema.parse(conversation);
     }),
