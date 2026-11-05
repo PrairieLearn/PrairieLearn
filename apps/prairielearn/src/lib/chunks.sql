@@ -1,30 +1,4 @@
--- BLOCK select_course_chunks
-WITH
-  latest_chunks AS (
-    SELECT DISTINCT
-      ON (
-        type,
-        coalesce(question_id, -1),
-        coalesce(course_instance_id, -1),
-        coalesce(assessment_id, -1)
-      ) *
-    FROM
-      chunks
-    WHERE
-      course_id = $course_id
-      -- Undated rows predate history and remain current until a newer revision.
-      AND (
-        $at_date::timestamptz IS NULL
-        OR created_at IS NULL
-        OR created_at <= $at_date
-      )
-    ORDER BY
-      type ASC,
-      coalesce(question_id, -1) ASC,
-      coalesce(course_instance_id, -1) ASC,
-      coalesce(assessment_id, -1) ASC,
-      id DESC
-  )
+-- BLOCK select_current_course_chunks
 SELECT
   chunks.*,
   q.uuid AS question_uuid,
@@ -34,7 +8,7 @@ SELECT
   ci.uuid AS course_instance_uuid,
   ci.short_name AS course_instance_name
 FROM
-  latest_chunks AS chunks
+  chunks
   LEFT JOIN assessments AS a ON (a.id = chunks.assessment_id)
   LEFT JOIN course_instances AS ci ON (
     ci.id = chunks.course_instance_id
@@ -42,11 +16,27 @@ FROM
   )
   LEFT JOIN questions AS q ON (q.id = chunks.question_id)
 WHERE
-  NOT chunks.deleted;
+  chunks.course_id = $course_id
+  AND chunks.superseded_at IS NULL;
+
+-- BLOCK select_course_chunks_at_date
+SELECT
+  chunks.*
+FROM
+  chunks
+WHERE
+  chunks.course_id = $course_id
+  -- Undated rows predate history and were live from the start.
+  AND (
+    chunks.created_at IS NULL
+    OR chunks.created_at <= $at_date
+  )
+  AND (
+    chunks.superseded_at IS NULL
+    OR chunks.superseded_at > $at_date
+  );
 
 -- BLOCK select_metadata_for_chunks
--- A lateral lookup stops at the newest indexed revision for each request.
--- noqa: disable=ST05
 SELECT
   chunks.*,
   (chunks_arr ->> 'type')::enum_chunk_type AS type,
@@ -56,22 +46,14 @@ SELECT
 FROM
   JSONB_ARRAY_ELEMENTS($chunks_arr::jsonb) AS chunks_arr
   -- Preserve missing/deleted requests so consumers can remove their runtime paths.
-  LEFT JOIN LATERAL (
-    SELECT
-      *
-    FROM
-      chunks
-    WHERE
-      course_id = $course_id
-      AND type = (chunks_arr ->> 'type')::enum_chunk_type
-      AND coalesce(question_id, -1) = coalesce((chunks_arr ->> 'questionId')::bigint, -1)
-      AND coalesce(course_instance_id, -1) = coalesce((chunks_arr ->> 'courseInstanceId')::bigint, -1)
-      AND coalesce(assessment_id, -1) = coalesce((chunks_arr ->> 'assessmentId')::bigint, -1)
-    ORDER BY
-      id DESC
-    LIMIT
-      1
-  ) AS chunks ON NOT chunks.deleted
+  LEFT JOIN chunks ON (
+    chunks.course_id = $course_id
+    AND chunks.superseded_at IS NULL
+    AND chunks.type = (chunks_arr ->> 'type')::enum_chunk_type
+    AND coalesce(chunks.question_id, -1) = coalesce((chunks_arr ->> 'questionId')::bigint, -1)
+    AND coalesce(chunks.course_instance_id, -1) = coalesce((chunks_arr ->> 'courseInstanceId')::bigint, -1)
+    AND coalesce(chunks.assessment_id, -1) = coalesce((chunks_arr ->> 'assessmentId')::bigint, -1)
+  )
   LEFT JOIN assessments AS a ON (a.id = (chunks_arr ->> 'assessmentId')::bigint)
   LEFT JOIN course_instances AS ci ON (
     ci.id = (chunks_arr ->> 'courseInstanceId')::bigint
@@ -79,7 +61,6 @@ FROM
   )
   LEFT JOIN questions AS q ON (q.id = (chunks_arr ->> 'questionId')::bigint);
 
--- noqa: enable=ST05
 -- BLOCK select_course_dir
 SELECT
   c.path
@@ -138,42 +119,22 @@ FROM
   courses
 WHERE
   id = $course_id
-FOR UPDATE;
+FOR NO KEY UPDATE;
 
 -- BLOCK select_chunk_publication_date
 SELECT
   clock_timestamp();
 
+-- BLOCK supersede_chunks
+UPDATE chunks
+SET
+  superseded_at = $superseded_at
+WHERE
+  course_id = $course_id
+  AND id = ANY ($chunk_ids::bigint[])
+  AND superseded_at IS NULL;
+
 -- BLOCK insert_chunks
-WITH
-  new_chunks AS (
-    SELECT
-      (chunk ->> 'type')::enum_chunk_type AS type,
-      $course_id::bigint AS course_id,
-      q.id AS question_id,
-      ci.id AS course_instance_id,
-      a.id AS assessment_id,
-      (chunk ->> 'uuid')::uuid AS uuid,
-      (chunk ->> 'sizeCompressed')::bigint AS size_compressed,
-      (chunk ->> 'sizeUncompressed')::bigint AS size_uncompressed
-    FROM
-      JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
-      LEFT JOIN questions AS q ON (
-        q.qid = (chunk ->> 'questionName')
-        AND q.deleted_at IS NULL
-        AND q.course_id = $course_id
-      )
-      LEFT JOIN course_instances AS ci ON (
-        ci.short_name = (chunk ->> 'courseInstanceName')
-        AND ci.deleted_at IS NULL
-        AND ci.course_id = $course_id
-      )
-      LEFT JOIN assessments AS a ON (
-        a.tid = (chunk ->> 'assessmentName')
-        AND a.deleted_at IS NULL
-        AND a.course_instance_id = ci.id
-      )
-  )
 INSERT INTO
   chunks (
     type,
@@ -184,54 +145,36 @@ INSERT INTO
     uuid,
     created_at,
     commit_hash,
-    deleted,
     size_compressed,
     size_uncompressed
   )
 SELECT
-  type,
-  course_id,
-  question_id,
-  course_instance_id,
-  assessment_id,
-  uuid,
+  (chunk ->> 'type')::enum_chunk_type,
+  $course_id,
+  q.id AS question_id,
+  ci.id AS course_instance_id,
+  a.id AS assessment_id,
+  (chunk ->> 'uuid')::uuid,
   $created_at::timestamptz,
   $commit_hash,
-  FALSE,
-  size_compressed,
-  size_uncompressed
+  (chunk ->> 'sizeCompressed')::bigint,
+  (chunk ->> 'sizeUncompressed')::bigint
 FROM
-  new_chunks
-UNION ALL
-SELECT
-  old.type,
-  old.course_id,
-  old.question_id,
-  old.course_instance_id,
-  old.assessment_id,
-  NULL::uuid,
-  $created_at::timestamptz,
-  $commit_hash,
-  TRUE,
-  NULL::bigint,
-  NULL::bigint
-FROM
-  chunks AS old
-WHERE
-  old.course_id = $course_id
-  AND old.id = ANY ($replaced_chunk_ids::bigint[])
-  -- A regenerated path can belong to a new entity ID. Mark the old identity
-  -- deleted as well, while ordinary updates only append the new live revision.
-  AND NOT EXISTS (
-    SELECT
-      1
-    FROM
-      new_chunks AS new
-    WHERE
-      new.type = old.type
-      AND coalesce(new.question_id, -1) = coalesce(old.question_id, -1)
-      AND coalesce(new.course_instance_id, -1) = coalesce(old.course_instance_id, -1)
-      AND coalesce(new.assessment_id, -1) = coalesce(old.assessment_id, -1)
+  JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
+  LEFT JOIN questions AS q ON (
+    q.qid = (chunk ->> 'questionName')
+    AND q.deleted_at IS NULL
+    AND q.course_id = $course_id
+  )
+  LEFT JOIN course_instances AS ci ON (
+    ci.short_name = (chunk ->> 'courseInstanceName')
+    AND ci.deleted_at IS NULL
+    AND ci.course_id = $course_id
+  )
+  LEFT JOIN assessments AS a ON (
+    a.tid = (chunk ->> 'assessmentName')
+    AND a.deleted_at IS NULL
+    AND a.course_instance_id = ci.id
   );
 
 -- BLOCK select_active_assessment_ids_by_tid
