@@ -15,12 +15,16 @@ import {
   type ConversationState,
 } from '@prairielearn/course-agent-types';
 
-import { reportError } from '../monitoring.js';
+import { logEvent, reportError } from '../monitoring.js';
 import { CodexAppServerClient } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import { buildInstructions } from './instructions.js';
+
+// PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
+// without traffic, including idle chats and long silent turns.
+const KEEPALIVE_SECONDS = 25;
 
 const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
@@ -191,6 +195,21 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         messages: await this.sessions.session().getHistory(),
       }),
     );
+    // Idempotent: every connection shares one interval schedule.
+    await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
+  }
+
+  /** Clients ignore this message type; sending it only keeps proxied sockets from idling out. */
+  async sendKeepalive() {
+    const connections = [...this.getConnections()];
+    if (connections.length === 0) {
+      const schedule = await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
+      await this.cancelSchedule(schedule.id);
+      return;
+    }
+    for (const connection of connections) {
+      connection.send(JSON.stringify({ type: 'course_agent_keepalive' }));
+    }
   }
 
   override validateStateChange(_state: ConversationState, source: Connection | 'server') {
@@ -204,6 +223,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   private block(reason: BlockedReason) {
+    // Callers report the underlying error separately.
+    logEvent('conversation_blocked', {
+      conversationId: this.name,
+      from: this.record.lifecycle.status,
+      reason,
+    });
     this.setRecord({
       ...this.record,
       lifecycle: { status: 'blocked', reason },

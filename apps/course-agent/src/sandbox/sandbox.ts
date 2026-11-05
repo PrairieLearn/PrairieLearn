@@ -1,6 +1,8 @@
 import { DirectoryBackup, type DirectoryBackupRecord, Files } from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
+import { logEvent, redactSecrets } from '../monitoring.js';
+
 const SESSION = '/workspace/session';
 const NATIVE_PORT = 4500;
 export type CourseSource =
@@ -9,6 +11,32 @@ export type CourseSource =
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
+
+// Codex output can contain sensitive content, so stderr is forwarded only when DEBUG_RUNNER_OUTPUT
+// is "true" (staging only), capped in case a runner repeats an error.
+const RUNNER_LOG_LINES = 200;
+const RUNNER_LOG_CHARS = 2000;
+
+/** Forward runner stderr to Worker logs and keep a short tail for startup errors. */
+function forwardRunnerStderr(stream: ReadableStream) {
+  let lines = 0;
+  let tail = '';
+  const done = (async () => {
+    try {
+      for await (const chunk of stream.pipeThrough(new TextDecoderStream())) {
+        tail = (tail + chunk).slice(-RUNNER_LOG_CHARS);
+        for (const line of chunk.split('\n')) {
+          if (line && ++lines <= RUNNER_LOG_LINES) {
+            console.warn(`[codex stderr] ${redactSecrets(line.slice(0, RUNNER_LOG_CHARS))}`);
+          }
+        }
+      }
+    } catch {
+      // The stream errors when the container stops; the runner's exit is handled by the caller.
+    }
+  })();
+  return { done, tail: () => redactSecrets(tail.trim()) };
+}
 
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
 export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
@@ -111,8 +139,22 @@ export class CourseSandbox extends DurableObject<Env> {
     checkpoint: DirectoryBackupRecord | null,
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
-    this.container.start({ image: this.container.images.courseAgent, enableInternet: false });
+    const started = Date.now();
+    this.container.start({
+      image: this.container.images.courseAgent,
+      enableInternet: false,
+      // `basic` is 1/4 vCPU, 1 GiB memory, and 4 GB disk. The default `lite` (256 MiB) is too
+      // small for Codex and course tooling, and running out of memory restarts the instance,
+      // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
+      instance: 'basic',
+    });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
+    // Confirms the instance type actually applied: basic has 1 GiB, lite 256 MiB.
+    const [memTotal, cpus] = new TextDecoder()
+      .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
+      .trim()
+      .split('\n');
+    logEvent('sandbox_started', { sandboxId: this.ctx.id.name, memTotal, cpus });
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
@@ -181,6 +223,11 @@ export class CourseSandbox extends DurableObject<Env> {
         );
       }
     }
+    logEvent('sandbox_files_ready', {
+      sandboxId: this.ctx.id.name,
+      elapsedMs: Date.now() - started,
+      source: checkpoint ? 'checkpoint' : config.type,
+    });
     // Configuration contains no credentials. It is reapplied after restoration.
     const files = new Files(this.container);
     await files.writeFile(
@@ -207,6 +254,10 @@ export class CourseSandbox extends DurableObject<Env> {
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
+    // Temporary: forwards Codex output to diagnose staging sandbox startup. Remove this flag and
+    // the forwarding once that is resolved; production must never set it.
+    const debugOutput = this.env.DEBUG_RUNNER_OUTPUT === 'true';
+    const started = Date.now();
     this.process = await this.container.exec(
       [
         'codex',
@@ -223,23 +274,45 @@ export class CourseSandbox extends DurableObject<Env> {
         cwd: `${SESSION}/course`,
         env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
         stdout: 'ignore',
-        stderr: 'ignore',
+        stderr: debugOutput ? 'pipe' : 'ignore',
       },
     );
+    const stderr = this.process.stderr ? forwardRunnerStderr(this.process.stderr) : null;
+    let exitCode: number | null = null;
+    void this.process.exitCode.then((code) => {
+      exitCode = code;
+    });
     const port = this.container.getTcpPort(NATIVE_PORT);
     const forwarded = new Request('http://container/', request);
     forwarded.headers.delete('host');
     forwarded.headers.set('Authorization', `Bearer ${this.nativeToken}`);
-    const deadline = Date.now() + 30_000;
+    const deadline = started + 30_000;
+    let failures = 0;
     // Use the upgrade for readiness: an empty health response can break the next pooled request.
     // https://github.com/cloudflare/workerd/issues/7597
     // Only connection establishment is retried; protocol commands have not been sent yet.
     for (;;) {
       try {
-        return await port.fetch(forwarded);
+        const response = await port.fetch(forwarded);
+        const elapsedMs = Date.now() - started;
+        logEvent('runner_ready', { sandboxId: this.ctx.id.name, elapsedMs, failures });
+        return response;
       } catch (error) {
-        if (Date.now() >= deadline) throw error;
-        await scheduler.wait(100);
+        failures++;
+        if (exitCode === null && Date.now() < deadline) {
+          await scheduler.wait(100);
+          continue;
+        }
+        // A runner that is still alive never closes stderr, so only briefly wait for its tail.
+        if (stderr) await Promise.race([stderr.done, scheduler.wait(1000)]);
+        const facts = JSON.stringify({
+          elapsedMs: Date.now() - started,
+          failures,
+          exitCode,
+          containerRunning: this.container.running,
+        });
+        const tail = stderr ? `: ${stderr.tail() || '(no stderr)'}` : '';
+        throw new Error(`Codex runner did not listen: ${facts}${tail}`, { cause: error });
       }
     }
   }

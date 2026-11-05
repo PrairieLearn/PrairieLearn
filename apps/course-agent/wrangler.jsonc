@@ -10,11 +10,18 @@
     "OPENAI_MODEL": "gpt-6-luna",
     "AGENT_TURN_SECONDS": "18000",
     "USER_IDLE_SECONDS": "600",
-    "SENTRY_DSN": "",
-    "SENTRY_ENVIRONMENT": "development"
+    "SENTRY_ENVIRONMENT": "development",
+    "DEBUG_RUNNER_OUTPUT": "false"
   },
   "version_metadata": {
     "binding": "VERSION_METADATA"
+  },
+  // Inherited by every environment. Invocation logs are off because Cloudflare does not document
+  // whether they redact request headers, and PrairieLearn sends the service token in Authorization.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": { "enabled": true, "invocation_logs": false }
   },
   "secrets": {
     "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
@@ -49,6 +56,7 @@
     {
       "name": "course-agent",
       "scheduling_policy": "durable_object",
+      "observability": { "logs": { "enabled": true } },
       "images": {
         "courseAgent": {
           "dockerfile": "container/Dockerfile",
@@ -70,8 +78,10 @@
         "OPENAI_MODEL": "gpt-6-luna",
         "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
-        "SENTRY_DSN": "",
-        "SENTRY_ENVIRONMENT": "staging"
+        "SENTRY_ENVIRONMENT": "staging",
+        // Temporary: forwards Codex runner output to diagnose staging sandbox startup. Codex output
+        // can be sensitive; remove once startup is fixed and never enable it in production.
+        "DEBUG_RUNNER_OUTPUT": "true"
       },
       "secrets": {
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
@@ -93,6 +103,7 @@
         {
           "name": "course-agent",
           "scheduling_policy": "durable_object",
+          "observability": { "logs": { "enabled": true } },
           "images": {
             "courseAgent": {
               "dockerfile": "container/Dockerfile",
@@ -117,8 +128,8 @@
         "OPENAI_MODEL": "gpt-6-luna",
         "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
-        "SENTRY_DSN": "",
-        "SENTRY_ENVIRONMENT": "production"
+        "SENTRY_ENVIRONMENT": "production",
+        "DEBUG_RUNNER_OUTPUT": "false"
       },
       "secrets": {
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
@@ -140,6 +151,7 @@
         {
           "name": "course-agent",
           "scheduling_policy": "durable_object",
+          "observability": { "logs": { "enabled": true } },
           "images": {
             "courseAgent": {
               "dockerfile": "container/Dockerfile",
