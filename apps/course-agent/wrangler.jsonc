@@ -4,6 +4,8 @@
   "main": "src/worker.ts",
   "compatibility_date": "2026-09-17",
   "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],
+  "workers_dev": true,
+  "preview_urls": false,
   "vars": {
     "OPENAI_MODEL": "gpt-6-luna",
     "AGENT_TURN_SECONDS": "21600",
@@ -18,6 +20,9 @@
     "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
   },
   "durable_objects": {
+    // Let turns running at deploy time finish on the old code: 7 h covers AGENT_TURN_SECONDS
+    // (6 h) plus USER_IDLE_SECONDS (10 min), with margin. Later turns can still be reset.
+    "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
     "bindings": [
       {
         "name": "Conversation",
@@ -72,6 +77,7 @@
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
       },
       "durable_objects": {
+        "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
         "bindings": [
           {
             "name": "Conversation",
@@ -83,6 +89,18 @@
           }
         ]
       },
+      "containers": [
+        {
+          "name": "course-agent",
+          "scheduling_policy": "durable_object",
+          "images": {
+            "courseAgent": {
+              "dockerfile": "container/Dockerfile",
+              "build_context": "."
+            }
+          }
+        }
+      ],
       "r2_buckets": [
         {
           "binding": "CHECKPOINTS",
@@ -106,6 +124,7 @@
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
       },
       "durable_objects": {
+        "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
         "bindings": [
           {
             "name": "Conversation",
@@ -117,6 +136,18 @@
           }
         ]
       },
+      "containers": [
+        {
+          "name": "course-agent",
+          "scheduling_policy": "durable_object",
+          "images": {
+            "courseAgent": {
+              "dockerfile": "container/Dockerfile",
+              "build_context": "."
+            }
+          }
+        }
+      ],
       "r2_buckets": [
         {
           "binding": "CHECKPOINTS",
