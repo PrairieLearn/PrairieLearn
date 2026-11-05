@@ -699,7 +699,7 @@ export const ChunkSchema = z.object({
   size_compressed: z.coerce.number().nullable(),
   size_uncompressed: z.coerce.number().nullable(),
   type: EnumChunkTypeSchema,
-  uuid: z.string().nullable(), // TODO: should this be a UUID?
+  uuid: z.string(), // TODO: should this be a UUID?
 });
 export type Chunk = z.infer<typeof ChunkSchema>;
 
@@ -729,8 +729,6 @@ export const CourseSchema = z.object({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
   branch: z.string(),
-  chunks_history_started_at: DateFromISOString.nullable(),
-  chunks_published_at: DateFromISOString.nullable(),
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),
   created_at: DateFromISOString,
