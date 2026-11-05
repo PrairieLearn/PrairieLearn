@@ -39,6 +39,7 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'd3',
   'he',
   'marked',
+  'pagedjs',
   'qrcode-svg',
   'socket.io-client',
   'ace-builds',

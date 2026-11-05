@@ -9,10 +9,21 @@ describe('htmlToTextBlocks', () => {
         '<h2>Academic integrity pledge</h2>\n<p>I, <strong>____</strong>, pledge that\n the work is my own.</p><ol><li>First</li><li>Second <em>item</em></li></ol><ul><li>Bullet</li></ul>',
       ),
     ).toEqual([
-      { type: 'heading', text: 'Academic integrity pledge' },
-      { type: 'paragraph', text: 'I, ____, pledge that the work is my own.' },
-      { type: 'list', ordered: true, items: ['First', 'Second item'] },
-      { type: 'list', ordered: false, items: ['Bullet'] },
+      { type: 'heading', runs: [{ text: 'Academic integrity pledge' }] },
+      {
+        type: 'paragraph',
+        runs: [
+          { text: 'I, ' },
+          { text: '____', bold: true },
+          { text: ', pledge that the work is my own.' },
+        ],
+      },
+      {
+        type: 'list',
+        ordered: true,
+        items: [[{ text: 'First' }], [{ text: 'Second ' }, { text: 'item', italic: true }]],
+      },
+      { type: 'list', ordered: false, items: [[{ text: 'Bullet' }]] },
     ]);
   });
 
@@ -20,8 +31,8 @@ describe('htmlToTextBlocks', () => {
     expect(
       htmlToTextBlocks('Plain text<ul><li>Outer <ul><li>Inner</li></ul></li><li>  </li></ul>'),
     ).toEqual([
-      { type: 'paragraph', text: 'Plain text' },
-      { type: 'list', ordered: false, items: ['Outer Inner'] },
+      { type: 'paragraph', runs: [{ text: 'Plain text' }] },
+      { type: 'list', ordered: false, items: [[{ text: 'Outer Inner' }]] },
     ]);
   });
 
@@ -31,8 +42,8 @@ describe('htmlToTextBlocks', () => {
         '<div><p>Bring a pen<br>Show your work.</p><p>Answer every question.</p><script>ignored()</script></div>',
       ),
     ).toEqual([
-      { type: 'paragraph', text: 'Bring a pen Show your work.' },
-      { type: 'paragraph', text: 'Answer every question.' },
+      { type: 'paragraph', runs: [{ text: 'Bring a pen Show your work.' }] },
+      { type: 'paragraph', runs: [{ text: 'Answer every question.' }] },
     ]);
   });
 
@@ -49,9 +60,9 @@ describe('htmlToTextBlocks', () => {
         <ul><li>Keep this <span style="visibility: hidden">private</span></li></ul>
       `),
     ).toEqual([
-      { type: 'paragraph', text: 'Visible instructions' },
-      { type: 'heading', text: 'Title' },
-      { type: 'list', ordered: false, items: ['Keep this'] },
+      { type: 'paragraph', runs: [{ text: 'Visible instructions' }] },
+      { type: 'heading', runs: [{ text: 'Title' }] },
+      { type: 'list', ordered: false, items: [[{ text: 'Keep this' }]] },
     ]);
   });
 
@@ -61,9 +72,9 @@ describe('htmlToTextBlocks', () => {
         '<p>Read <img src="/diagram.png" alt="Diagram"> carefully.</p><svg><title>Graph</title></svg><h2>Rules <svg><title>Chart</title></svg></h2><ul><li>Show <img src="/icon.png"> your work.</li></ul>',
       ),
     ).toEqual([
-      { type: 'paragraph', text: 'Read carefully.' },
-      { type: 'heading', text: 'Rules' },
-      { type: 'list', ordered: false, items: ['Show your work.'] },
+      { type: 'paragraph', runs: [{ text: 'Read carefully.' }] },
+      { type: 'heading', runs: [{ text: 'Rules' }] },
+      { type: 'list', ordered: false, items: [[{ text: 'Show your work.' }]] },
     ]);
   });
 });
