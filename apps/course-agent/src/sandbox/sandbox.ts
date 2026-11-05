@@ -6,8 +6,9 @@ const NATIVE_PORT = 4500;
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
-const lifetimeMs = (env: Env) =>
-  (Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS) + 3600) * 1000;
+// Cloudflare's maximum time a container can stay disconnected from its Durable Object.
+// AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
+const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
 
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
 export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
@@ -79,7 +80,9 @@ export class CourseSandbox extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     void ctx.blockConcurrencyWhile(async () => {
-      if (ctx.container?.running) await ctx.container.setInactivityTimeout(lifetimeMs(env));
+      if (ctx.container?.running) {
+        await ctx.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
+      }
     });
   }
 
@@ -109,7 +112,7 @@ export class CourseSandbox extends DurableObject<Env> {
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
     this.container.start({ image: this.container.images.courseAgent, enableInternet: false });
-    await this.container.setInactivityTimeout(lifetimeMs(this.env));
+    await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
