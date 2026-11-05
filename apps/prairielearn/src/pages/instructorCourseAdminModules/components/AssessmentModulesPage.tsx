@@ -213,6 +213,7 @@ function AssessmentModulesCard({
   const editModal = useModalState<EditAssessmentModuleModalData>();
   const usageModal = useModalState<AssessmentModuleFormRow>();
   const deleteModal = useModalState<DeleteAssessmentModuleModalData>();
+  const [requiresReload, setRequiresReload] = useState(false);
 
   const { data, refetch } = useQuery({
     ...trpc.assessmentModules.list.queryOptions(),
@@ -221,7 +222,7 @@ function AssessmentModulesCard({
   });
   const origHash = data.origHash;
 
-  const canEdit = allowEdit && origHash !== null;
+  const canEdit = allowEdit && origHash !== null && !requiresReload;
   const form = useForm({ defaultValues: { modules: orderModules(initialModules.map(toFormRow)) } });
   const modulesState = form.watch('modules');
   const setModulesState = (modules: AssessmentModuleFormRow[]) => {
@@ -236,9 +237,13 @@ function AssessmentModulesCard({
       queryClient.setQueryData(trpc.assessmentModules.list.queryKey(), (old) =>
         old ? { ...old, origHash: result.origHash } : old,
       );
-      const refreshed = await refetch({ throwOnError: true });
-      if (refreshed.data) {
+      const refreshed = await refetch();
+      if (refreshed.isSuccess) {
         form.reset({ modules: orderModules(refreshed.data.modules.map(toFormRow)) });
+      } else {
+        // New modules need their saved IDs before subsequent renames or deletions.
+        form.reset(form.getValues());
+        setRequiresReload(true);
       }
     },
   });
@@ -316,6 +321,20 @@ function AssessmentModulesCard({
             <div className="card-header bg-primary text-white d-flex align-items-center">
               <h1>Modules</h1>
             </div>
+
+            {requiresReload && (
+              <Alert variant="warning" className="m-3">
+                Your changes were saved, but the updated modules could not be loaded. Reload the
+                page before making further changes.{' '}
+                <button
+                  type="button"
+                  className="btn btn-link alert-link p-0 align-baseline"
+                  onClick={() => window.location.reload()}
+                >
+                  Reload page
+                </button>
+              </Alert>
+            )}
 
             {saveError && (
               <AppErrorAlert
