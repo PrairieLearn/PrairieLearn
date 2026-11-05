@@ -132,11 +132,14 @@ describe('content-only question save', () => {
     await establishBaseline();
   });
 
-  async function establishBaseline() {
+  async function establishBaseline(
+    version = CURRENT_SYNC_VERSION,
+    chunksGenerated = config.chunksGenerator,
+  ) {
     await recordSuccessfulCourseSync(courseId, {
       commitHash: currentHash,
-      version: CURRENT_SYNC_VERSION,
-      chunksGenerated: config.chunksGenerator,
+      version,
+      chunksGenerated,
     });
   }
 
@@ -237,15 +240,20 @@ describe('content-only question save', () => {
     assert.equal((await selectCourseById(courseId)).last_successful_sync?.commitHash, currentHash);
   });
 
-  it.each(['unexpected change', 'symlink'])('uses full sync for %s', async (reason) => {
-    if (reason === 'unexpected change') changedPaths += 'M\0infoCourse.json\0';
-    if (reason === 'symlink') trackedFiles = '120000 abc 0\tquestions/link\0';
-    const load = vi.spyOn(courseDB, 'loadFullCourse');
-    const operation = await save();
-    await operation.run();
-    assert.isAbove(load.mock.calls.length, 0);
-    assert.equal(classifyEditOutcome(operation.job.data), 'success');
-  });
+  it.each(['old version', 'unexpected change', 'symlink', 'chunk mode changed'])(
+    'uses full sync for %s',
+    async (reason) => {
+      if (reason === 'old version') await establishBaseline(CURRENT_SYNC_VERSION - 1);
+      if (reason === 'chunk mode changed') await establishBaseline(CURRENT_SYNC_VERSION, true);
+      if (reason === 'unexpected change') changedPaths += 'M\0infoCourse.json\0';
+      if (reason === 'symlink') trackedFiles = '120000 abc 0\tquestions/link\0';
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      const operation = await save();
+      await operation.run();
+      assert.isAbove(load.mock.calls.length, 0);
+      assert.equal(classifyEditOutcome(operation.job.data), 'success');
+    },
+  );
 
   it.each(['settings', 'rename'] as const)(
     'syncs a title-only %s edit without loading the course',

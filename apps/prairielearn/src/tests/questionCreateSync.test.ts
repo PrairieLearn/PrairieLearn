@@ -40,11 +40,6 @@ afterAll(async () => {
 
 it('creates and copies questions without loading the course and matches full sync', async () => {
   const course = await selectCourseById('1');
-  await recordSuccessfulCourseSync(course.id, {
-    commitHash: await updateCourseCommitHash(course),
-    version: CURRENT_SYNC_VERSION,
-    chunksGenerated: true,
-  });
   const user = await selectUserById('1');
   const locals = {
     course: await selectCourseById(course.id),
@@ -65,19 +60,26 @@ it('creates and copies questions without loading the course and matches full syn
   const load = vi.spyOn(courseDB, 'loadFullCourse');
   try {
     for (const editor of editors) {
+      await recordSuccessfulCourseSync(course.id, {
+        commitHash: await updateCourseCommitHash(course),
+        version: CURRENT_SYNC_VERSION,
+        chunksGenerated: true,
+      });
+
       await editor.executeWithServerJob(await editor.prepareServerJob());
       const question = await selectQuestionByUuid({ course_id: course.id, uuid: editor.uuid });
       assert.isNotNull(question.number);
       assert.isNotNull(question.topic_id);
+      assert.equal(load.mock.calls.length, 0);
+      const targeted = await captureDatabaseSnapshot();
+      await syncCourseData(course.path);
+      const full = await captureDatabaseSnapshot();
+      for (const table of Object.keys(full) as (keyof typeof full)[]) {
+        assert.sameDeepMembers<unknown>(full[table], targeted[table]);
+      }
+      load.mockClear();
     }
-    assert.equal(load.mock.calls.length, 0);
   } finally {
     load.mockRestore();
-  }
-  const targeted = await captureDatabaseSnapshot();
-  await syncCourseData(course.path);
-  const full = await captureDatabaseSnapshot();
-  for (const table of Object.keys(full) as (keyof typeof full)[]) {
-    assert.sameDeepMembers<unknown>(full[table], targeted[table]);
   }
 });
