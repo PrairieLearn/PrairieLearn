@@ -88,6 +88,7 @@ it('uses the saved local contents as the base for the next review', async () => 
     );
     const source = { type: 'local' as const, archiveKey: 'source', directory: 'course' };
     const snapshot = await sandbox.captureReview(source);
+    if ('unsupported' in snapshot) throw new Error(snapshot.unsupported);
     expect(snapshot).toEqual({
       type: 'local',
       additions: [{ path: 'question.html', contents: base64('B') }],

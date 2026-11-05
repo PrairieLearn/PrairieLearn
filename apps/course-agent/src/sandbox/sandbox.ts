@@ -21,6 +21,10 @@ const NODE_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
 // Local reviews diff against this ref, which tracks the contents PrairieLearn has saved.
 const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
+
+/** Changes the agent can fix itself, as opposed to sandbox faults that need reporting. */
+class UnsupportedReviewError extends Error {}
+
 const GIT_IDENTITY = [
   '-c',
   'user.name=PrairieLearn',
@@ -226,8 +230,21 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.exec(['chown', 'root:root', SESSION]);
   }
 
-  /** Capture changed-file contents; Conversation persists the returned snapshot. */
-  async captureReview(source: CourseSource) {
+  /**
+   * Capture changed-file contents; Conversation persists the returned snapshot. Changes outside
+   * the review limits are returned rather than thrown, because error classes don't survive RPC
+   * and only those should go back to the agent unreported.
+   */
+  async captureReview(source: CourseSource): Promise<ReviewSnapshot | { unsupported: string }> {
+    try {
+      return await this.snapshotChanges(source);
+    } catch (error) {
+      if (error instanceof UnsupportedReviewError) return { unsupported: error.message };
+      throw error;
+    }
+  }
+
+  private async snapshotChanges(source: CourseSource) {
     const course = `${SESSION}/course`;
     const files = new Files(this.container);
     const options = { cwd: course, user: NODE_UID_GID };
@@ -236,7 +253,11 @@ export class CourseSandbox extends DurableObject<Env> {
         ['git', '--literal-pathspecs', '-c', 'safe.directory=*', '-C', course, ...args],
         'node',
       );
-      return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
+      try {
+        return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
+      } catch {
+        throw new UnsupportedReviewError('Changed file names must be valid UTF-8.');
+      }
     };
     if (source.type === 'github') await git('check-ref-format', `refs/heads/${source.branch}`);
     const baseRef =
@@ -261,9 +282,11 @@ export class CourseSandbox extends DurableObject<Env> {
       const entry = await git('ls-tree', '-l', baseCommit, '--', path);
       let original: string | null = null;
       if (entry) {
-        if (!entry.startsWith('100644 blob ')) throw new Error(`Unsupported course file: ${path}`);
+        if (!entry.startsWith('100644 blob ')) {
+          throw new UnsupportedReviewError(`Unsupported course file: ${path}`);
+        }
         if (Number(entry.split('\t')[0].trim().split(/\s+/)[3]) > MAX_REVIEW_FILE_BYTES) {
-          throw new Error(`Review file is too large: ${path}`);
+          throw new UnsupportedReviewError(`Review file is too large: ${path}`);
         }
         const blob = await this.exec(
           ['git', '-C', course, 'cat-file', 'blob', `${baseCommit}:./${path}`],
@@ -280,10 +303,12 @@ export class CourseSandbox extends DurableObject<Env> {
       let contents: string | null = null;
       if (info) {
         if (info.type !== 'file' || (info.mode & 0o100) !== 0) {
-          throw new Error(`Only non-executable regular files are supported: ${path}`);
+          throw new UnsupportedReviewError(
+            `Only non-executable regular files are supported: ${path}`,
+          );
         }
         if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
-          throw new Error(`Review file is too large: ${path}`);
+          throw new UnsupportedReviewError(`Review file is too large: ${path}`);
         }
         // Capture bytes now: later edits must not change what the instructor approves.
         const response = await files.readFile(path, options);
@@ -294,12 +319,15 @@ export class CourseSandbox extends DurableObject<Env> {
       else additions.push({ path, contents });
       // Count originals, including deletions: PL must be able to display the diff.
       total += (original?.length ?? 0) + (contents?.length ?? 0);
-      if (total > MAX_REVIEW_BYTES) throw new Error('Reviewed changes are too large');
+      if (total > MAX_REVIEW_BYTES) {
+        throw new UnsupportedReviewError('Reviewed changes are too large');
+      }
       if (additions.length + deletions.length > 100) {
-        throw new Error('A review may change at most 100 files');
+        throw new UnsupportedReviewError('A review may change at most 100 files');
       }
     }
-    return ReviewSnapshotSchema.parse(
+    // The other limits are checked above; what remains is the agent's choice of file names.
+    const snapshot = ReviewSnapshotSchema.safeParse(
       source.type === 'github'
         ? {
             type: 'github',
@@ -311,6 +339,12 @@ export class CourseSandbox extends DurableObject<Env> {
           }
         : { type: 'local', additions, deletions },
     );
+    if (!snapshot.success) {
+      throw new UnsupportedReviewError(
+        'Changed file paths must use forward slashes and must not contain .git or control characters.',
+      );
+    }
+    return snapshot.data;
   }
 
   /**

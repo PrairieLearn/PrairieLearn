@@ -17,6 +17,7 @@ import {
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
 import { config } from '../../../lib/config.js';
 import type {
@@ -112,7 +113,10 @@ export async function getReview(
     diff = { patch: await createReviewDiff(course, review.snapshot), error: null };
   } catch (error) {
     // A broken diff must not hide the pending review or prevent its owner from denying it.
-    if (!(error instanceof HttpStatusError)) logger.error('Course agent review diff failed', error);
+    if (!(error instanceof HttpStatusError)) {
+      logger.error('Course agent review diff failed', error);
+      Sentry.captureException(error);
+    }
     diff = {
       patch: null,
       error: error instanceof Error ? error.message : 'Could not load the reviewed changes.',
@@ -222,8 +226,16 @@ async function applyChanges(
     const sequence = await getJobSequence(serverJob.jobSequenceId, conversation.course_id);
     await recordAndDeliverResult(conversation, row, getReviewJobResult(sequence, snapshot.type));
   } catch (error) {
-    logger.error('Course agent review result was not delivered; it will be retried.', error);
+    logger.error('Course agent review result was not recorded; it will be retried.', error);
+    Sentry.captureException(error);
   }
+}
+
+// A Worker restart or deploy delays delivery briefly; only a result that stays stuck is a fault.
+const STUCK_DELIVERY_MS = 60 * 60 * 1000;
+
+function reportStuckDelivery(row: CourseAgentReview, error: unknown) {
+  if (Date.now() - row.created_at.getTime() > STUCK_DELIVERY_MS) Sentry.captureException(error);
 }
 
 /** Record a result once; whichever caller records it first decides what the agent receives. */
@@ -253,10 +265,12 @@ async function deliverResult(
     if (error instanceof HttpStatusError && error.status === 409) {
       // Retrying cannot change the service's answer, so stop sending this result.
       logger.error('Course agent service refused the review result.', error);
+      Sentry.captureException(error);
       await updateCourseAgentReviewDelivered(row.id);
       return;
     }
     logger.error('Course agent review result was not delivered; it will be retried.', error);
+    reportStuckDelivery(row, error);
   }
 }
 
@@ -329,6 +343,7 @@ export async function deliverUndeliveredReviewResults(conversationId: string | n
       );
     } catch (error) {
       logger.error('Course agent review result delivery failed; it will be retried.', error);
+      reportStuckDelivery(row, error);
     }
   }
 }

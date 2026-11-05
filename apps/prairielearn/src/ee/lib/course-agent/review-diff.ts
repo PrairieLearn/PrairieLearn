@@ -60,6 +60,10 @@ export async function readReviewBaseFiles(
       ...options,
       timeout: 30_000,
     });
+    // A force-push can remove the reviewed commit from the branch.
+    if (!(await hasCommit(course.path, snapshot.baseCommit))) {
+      throw new HttpStatusError(409, 'The reviewed version is no longer in the course repository.');
+    }
   }
   const paths = [...snapshot.additions, ...snapshot.deletions].map((file) => file.path);
   const entries = new Map<string, { mode: string; type: string; sha: string; size: number }>();
@@ -122,7 +126,16 @@ export async function createReviewDiff(
   const locked = snapshot.type === 'local' || !(await hasCommit(course.path, snapshot.baseCommit));
   const run = <T>(fn: () => Promise<T>) =>
     locked
-      ? namedLocks.doWithLock(getLockNameForCoursePath(course.path), { timeout: 5000 }, fn)
+      ? namedLocks.doWithLock(
+          getLockNameForCoursePath(course.path),
+          {
+            timeout: 5000,
+            onNotAcquired: () => {
+              throw new HttpStatusError(409, 'The course is being updated. Try again shortly.');
+            },
+          },
+          fn,
+        )
       : fn();
   return run(async () => {
     const baseFiles = await readReviewBaseFiles(course, snapshot);

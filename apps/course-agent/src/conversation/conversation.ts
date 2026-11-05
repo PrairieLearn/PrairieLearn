@@ -581,8 +581,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const turn = this.active;
     let snapshot: ReviewSnapshot;
     try {
-      snapshot = await this.sandbox.captureReview(source);
+      const capture = await this.sandbox.captureReview(source);
+      if ('unsupported' in capture) {
+        return { success: false, text: `Could not submit the review: ${capture.unsupported}` };
+      }
+      snapshot = capture;
     } catch (error) {
+      this.reportError(error);
       return {
         success: false,
         text: `Could not submit the review: ${error instanceof Error ? error.message : String(error)}`,

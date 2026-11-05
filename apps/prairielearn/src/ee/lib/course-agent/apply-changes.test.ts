@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 
 import type { Review } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
@@ -18,6 +18,7 @@ import { insertCourseAgentConversation } from '../../models/course-agent-convers
 import {
   insertCourseAgentReview,
   selectOptionalCourseAgentReview,
+  selectUndeliveredCourseAgentReviews,
 } from '../../models/course-agent-review.js';
 
 import {
@@ -133,6 +134,17 @@ beforeEach(() => {
     execute: vi.fn(),
     executeUnsafe: vi.fn(),
     executeInBackground: vi.fn(),
+  });
+});
+
+// Approvals save in the background. Let each settle before the next test resets the mocks, and
+// before the database is torn down.
+afterEach(async () => {
+  await vi.waitFor(async () => {
+    const rows = await selectUndeliveredCourseAgentReviews({
+      course_agent_conversation_id: conversation.id,
+    });
+    if (rows.length > 0) throw new Error('A background save has not settled');
   });
 });
 
