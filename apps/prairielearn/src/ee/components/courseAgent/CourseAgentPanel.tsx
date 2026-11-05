@@ -208,7 +208,6 @@ export function CourseAgentPanel({
   ) : (
     // Use the global Bootstrap tooltip; importing `@prairielearn/ui` here would add its shared
     // chunk to this eagerly loaded bundle. Hover-only avoids showing it when focus returns.
-    // Bootstrap fixes `data-bs-title` at creation but rereads `data-bs-original-title` on each show.
     <Button
       className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
       variant="outline-light"
@@ -217,7 +216,7 @@ export function CourseAgentPanel({
       data-bs-toggle="tooltip"
       data-bs-trigger="hover"
       data-bs-placement="bottom"
-      data-bs-original-title={launcherLabel}
+      data-bs-title={launcherLabel}
       {...launcherButtonProps}
     >
       <i className="bi bi-stars" aria-hidden="true" />
