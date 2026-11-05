@@ -174,8 +174,13 @@ async function assertVariantAccess({
   // Containers are always served from the non-public URL, since the container's
   // base URL is fixed at launch. These workspaces were never launched, so an
   // authorized request reaches the proxy and gets a 404.
-  const containerRes = await fetch(`${siteUrl}/pl/workspace/${workspaceId}/container/`);
+  const containerRes = await fetch(`${siteUrl}/pl/workspace/${workspaceId}/container/`, {
+    redirect: 'manual',
+  });
   assert.equal(containerRes.status, expectedAccess ? 404 : 403);
+  if (expectedAccess) {
+    assert.include(await containerRes.text(), 'Workspace is not running');
+  }
 }
 
 describe('Variant access', { concurrent: false }, () => {
