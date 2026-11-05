@@ -187,6 +187,15 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
   }
 
+  /** Saves a course data query result outside the course repository; returns its path. */
+  async writeQueryResult(contents: string) {
+    const path = `${SESSION}/query-results/${crypto.randomUUID()}.jsonl`;
+    await this.exec(['mkdir', '-p', `${SESSION}/query-results`], 'node');
+    await new Files(this.container).writeFile(path, contents);
+    await this.exec(['chown', '1000:1000', path]);
+    return path;
+  }
+
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */
   override async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
@@ -264,7 +273,8 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.stopProcesses();
     return this.backups.backup({
       dir: SESSION,
-      exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json'],
+      // Query results contain student data; the agent can rerun a query after restore.
+      exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json', 'query-results'],
     });
   }
 

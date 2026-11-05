@@ -31,3 +31,11 @@ WHERE
   id = $id
   AND course_id = $course_id
   AND user_id = $user_id;
+
+-- BLOCK select_course_agent_conversation_by_agent_conversation_id
+SELECT
+  *
+FROM
+  course_agent_conversations
+WHERE
+  agent_conversation_id = $agent_conversation_id;

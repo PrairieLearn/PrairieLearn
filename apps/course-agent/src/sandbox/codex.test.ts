@@ -6,7 +6,7 @@ import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
 function runner({ loseAcceptance = false } = {}) {
-  const commands: { id: number; method: string; params: unknown }[] = [];
+  const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
   let closed = false;
@@ -40,8 +40,12 @@ function runner({ loseAcceptance = false } = {}) {
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox);
-  return { sandbox, native, commands, emit, disconnect: () => socket.close() };
+  const queryCourseData = vi.fn(async (sql: string) => {
+    if (sql.includes('missing')) throw new Error('relation "missing" does not exist');
+    return '/workspace/session/query-results/result.jsonl';
+  });
+  const native = new CodexAppServerClient(sandbox, queryCourseData);
+  return { sandbox, native, commands, emit, queryCourseData, disconnect: () => socket.close() };
 }
 
 const thread = { model: 'test', instructions: 'Edit course', threadId: null };
@@ -103,6 +107,52 @@ describe('course agent turns', () => {
     await turn.stop();
     expect(sandbox.stopProcesses).toHaveBeenCalledTimes(1);
     expect(await turn.finished).toEqual({ phase: 'execution', stopped: true });
+  });
+
+  it('offers the query tool to new threads and answers its calls', async () => {
+    const { native, commands, emit, queryCourseData } = runner();
+    await native.connect();
+    await native.thread(thread);
+    expect(commands.find((command) => command.method === 'thread/start')?.params).toMatchObject({
+      dynamicTools: [{ name: 'query_course_data' }],
+    });
+    const call = (id: number, sql: string) =>
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: `call-${id}`,
+          namespace: null,
+          tool: 'query_course_data',
+          arguments: { sql },
+        },
+      });
+    call(10, 'SELECT 1');
+    call(11, 'SELECT * FROM missing');
+    await vi.waitFor(() =>
+      expect(commands.filter((command) => 'result' in command)).toHaveLength(2),
+    );
+    expect(queryCourseData).toHaveBeenCalledWith('SELECT 1');
+    expect(commands.filter((command) => 'result' in command)).toEqual([
+      {
+        id: 10,
+        result: {
+          success: true,
+          contentItems: [
+            { type: 'inputText', text: '/workspace/session/query-results/result.jsonl' },
+          ],
+        },
+      },
+      {
+        id: 11,
+        result: {
+          success: false,
+          contentItems: [{ type: 'inputText', text: 'relation "missing" does not exist' }],
+        },
+      },
+    ]);
   });
 
   it('never resubmits a prompt whose acceptance response was lost', async () => {

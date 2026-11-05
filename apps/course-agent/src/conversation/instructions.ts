@@ -9,6 +9,7 @@ export function buildInstructions(
     course,
     'Answer questions about PrairieLearn and course design clearly and concisely.',
     'Read and edit course files in the current checkout. Explain the edits and any verification you performed.',
+    'To answer questions about course data such as assessments, questions, student scores, and submissions, use the query_course_data tool.',
     'Edits are private to this conversation. Publishing, pushing to GitHub, and approvals are unavailable; do not claim changes are live.',
   ].join(' ');
 }

@@ -211,6 +211,23 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
   }
 
+  /** PL resolves the user and course from this conversation, then runs the query as them. */
+  private async queryCourseData(sql: string) {
+    const response = await fetch(new URL('/pl/webhooks/course_agent/query', this.env.PL_URL), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ conversation_id: this.name, query: sql }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    const body = await response.text();
+    if (response.status === 422) throw new Error(body);
+    if (!response.ok) throw new Error(`Course data is unavailable (HTTP ${response.status}).`);
+    return await this.sandbox.writeQueryResult(body);
+  }
+
   /**
    * Save a turn or idle deadline for the current workspace and schedule onDeadline().
    * Use the supplied expiry when restoring an idle deadline; otherwise start the configured budget now.
@@ -286,7 +303,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
     });
-    this.native ??= new CodexAppServerClient(this.sandbox);
+    this.native ??= new CodexAppServerClient(this.sandbox, (sql) => this.queryCourseData(sql));
     const execution = new SandboxTurn(this.sandbox, this.native, {
       messageId: crypto.randomUUID(),
       text,
