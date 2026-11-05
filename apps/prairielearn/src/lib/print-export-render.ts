@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { config } from './config.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
 import { type PrintDocument, getPrintRenderer, validatePrintDocument } from './printing/index.js';
-import { type PaperSize, createPdfOutput } from './printing/pdf-output.js';
+import { createPdfOutput } from './printing/pdf-output.js';
 import type { PrintAssetScope } from './printing/print-asset-access.js';
 
 export interface PrintExportWork {
@@ -14,7 +14,6 @@ export interface PrintExportWork {
   filename: string;
   snapshots: {
     formLabel: string;
-    paperSize: PaperSize;
     printDocument: PrintDocument;
     localPreviewUrl: string;
     html: string;
@@ -58,13 +57,11 @@ export async function renderPrintExport(
           const identity = await page.evaluate(() => ({
             document: document.documentElement.dataset.printDocument,
             formLabel: document.documentElement.dataset.printFormLabel,
-            paperSize: document.documentElement.dataset.printPaperSize,
           }));
           shutdownSignal?.throwIfAborted();
           if (
             identity.document !== snapshot.printDocument ||
-            identity.formLabel !== snapshot.formLabel ||
-            identity.paperSize !== snapshot.paperSize
+            identity.formLabel !== snapshot.formLabel
           ) {
             throw new HttpStatusError(400, 'The printable pages do not match the selected form.');
           }

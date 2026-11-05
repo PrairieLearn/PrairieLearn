@@ -337,6 +337,53 @@ describe('PrintRenderer', () => {
     });
   });
 
+  it('sends a job credential only to selected print assets', async () => {
+    const harness = createBrowserHarness();
+    const assetScope = {
+      courseInstanceId: '10',
+      assessmentId: '20',
+      assessmentInstanceId: '30',
+      instanceQuestionIds: ['40'],
+      authnUserId: '50',
+      userId: '50',
+    };
+    await renderPdf(new PrintRenderer(), {
+      url: 'http://localhost:3000/print',
+      assetScope,
+    });
+    const routeHandler = harness.getRouteHandler()!;
+    const response = { status: () => 200 };
+    const fetch = vi.fn(async () => response);
+    const fulfill = vi.fn(async () => undefined);
+    const abort = vi.fn(async () => undefined);
+    const request = async (pathname: string) =>
+      await routeHandler({
+        request: () => ({ method: () => 'GET', url: () => `http://localhost:3000${pathname}` }),
+        fetch,
+        fulfill,
+        abort,
+      } as unknown as Route);
+
+    for (const pathname of [
+      '/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
+      '/pl/static/elements/pl-drawing/pl-drawing.css',
+    ]) {
+      await request(pathname);
+      expect(fetch).toHaveBeenLastCalledWith({
+        maxRedirects: 0,
+        headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
+      });
+    }
+    await request('/assets/image.png');
+    expect(fetch).toHaveBeenLastCalledWith({ maxRedirects: 0 });
+    await request('/pl/course_instance/10/instructor/assessment/20/questions');
+    await request(
+      '/pl/course_instance/10/instructor/instance_question/41/clientFilesQuestion/image.png',
+    );
+    expect(abort).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
   it('aborts requests when fetching their response fails', async () => {
     const harness = createBrowserHarness();
     await renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print' });
@@ -417,81 +464,44 @@ describe('PrintRenderer', () => {
     expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
   });
 
-  it('loads public assets directly in production and proxies protected assets', async () => {
+  it('loads public assets directly from the browser origin in production', async () => {
     config.devMode = false;
-    const fetch = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new globalThis.Response('protected', { headers: { 'content-type': 'image/svg+xml' } }),
-      );
+    const fetchAsset = vi.spyOn(globalThis, 'fetch');
     const harness = createBrowserHarness();
-    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
-
-    await renderPdf(renderer, {
-      url: 'http://localhost:3000/print',
-      browserOrigin: 'https://us.prairielearn.com',
-      assetScope: {
-        courseInstanceId: '10',
-        assessmentId: '20',
-        assessmentInstanceId: '30',
-        instanceQuestionIds: ['40'],
-        authnUserId: '50',
-        userId: '50',
+    await renderPdf(
+      new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } }),
+      {
+        url: 'http://localhost:3000/print',
+        browserOrigin: 'https://us.prairielearn.com',
       },
-    });
+    );
 
-    const routeHandler = harness.getRouteHandler()!;
     const continueRequest = vi.fn(async () => undefined);
-    const fulfill = vi.fn(async () => undefined);
-    await routeHandler({
+    await harness.getRouteHandler()!({
       request: () => ({
         method: () => 'GET',
         url: () => `https://us.prairielearn.com${config.assetsPrefix}/public/hash/figure.svg`,
       }),
       continue: continueRequest,
-      fulfill,
     } as unknown as Route);
 
     expect(continueRequest).toHaveBeenCalledOnce();
-    expect(fulfill).not.toHaveBeenCalled();
-    expect(fetch).not.toHaveBeenCalled();
-
-    await routeHandler({
-      request: () => ({
-        method: () => 'GET',
-        url: () =>
-          'https://us.prairielearn.com/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/figure.svg',
-      }),
-      continue: continueRequest,
-      fulfill,
-    } as unknown as Route);
-
-    expect(continueRequest).toHaveBeenCalledOnce();
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(fetch.mock.calls[0][0].toString()).toBe(
-      'http://localhost:3000/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/figure.svg',
-    );
-    expect(fetch.mock.calls[0][1]).toMatchObject({
-      headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
-      redirect: 'manual',
-    });
-    expect(fulfill).toHaveBeenCalledWith({
-      status: 200,
-      contentType: 'image/svg+xml',
-      body: Buffer.from('protected'),
-    });
+    expect(fetchAsset).not.toHaveBeenCalled();
   });
 
-  it('proxies public assets when Cloudflare renders in development', async () => {
+  it('proxies public assets from the local server in development', async () => {
     config.devMode = true;
-    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new globalThis.Response('asset'));
+    const fetchAsset = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new globalThis.Response('asset'));
     const harness = createBrowserHarness();
-    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
-
-    await renderPdf(renderer, {
-      url: 'http://localhost:3000/print',
-      browserOrigin: 'https://example.com',
-    });
+    await renderPdf(
+      new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } }),
+      {
+        url: 'http://localhost:3000/print',
+        browserOrigin: 'https://example.com',
+      },
+    );
 
     const continueRequest = vi.fn(async () => undefined);
     await harness.getRouteHandler()!({
@@ -504,31 +514,28 @@ describe('PrintRenderer', () => {
     } as unknown as Route);
 
     expect(continueRequest).not.toHaveBeenCalled();
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(fetch.mock.calls[0][0].toString()).toBe(
+    expect(fetchAsset.mock.calls[0][0].toString()).toBe(
       `http://localhost:3000${config.assetsPrefix}/public/hash/figure.svg`,
     );
   });
 
   it('keeps Cloudflare navigation on its intended host and rejects other paths', async () => {
-    const fetch = vi
+    const fetchAsset = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new globalThis.Response('asset', { headers: { 'content-type': 'image/png' } }),
-      );
+      .mockResolvedValue(new globalThis.Response('asset'));
     const harness = createBrowserHarness();
-    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
-
-    await renderPdf(renderer, {
-      url: 'http://localhost:3000//attacker.com/preview',
-      browserOrigin: 'https://example.com',
-    });
+    await renderPdf(
+      new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } }),
+      {
+        url: 'http://localhost:3000//attacker.com/preview',
+        browserOrigin: 'https://example.com',
+      },
+    );
 
     expect(harness.pages[0].goto).toHaveBeenCalledWith(
       'https://example.com//attacker.com/preview',
       { waitUntil: 'load', timeout: expect.any(Number) },
     );
-
     const abort = vi.fn(async () => undefined);
     await harness.getRouteHandler()!({
       request: () => ({
@@ -537,9 +544,58 @@ describe('PrintRenderer', () => {
       }),
       abort,
     } as unknown as Route);
-
     expect(abort).toHaveBeenCalledWith('blockedbyclient');
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchAsset).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    '/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
+    '/pl/static/elements/pl-drawing/pl-drawing.css',
+  ])('proxies %s for Cloudflare without giving the browser a session', async (pathname) => {
+    const harness = createBrowserHarness();
+    const fetchAsset = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new globalThis.Response('image', {
+        status: 200,
+        headers: { 'content-type': 'image/png' },
+      }),
+    );
+    const renderer = new PrintRenderer({ cloudflare: { accountId: 'account', apiToken: 'token' } });
+    await renderPdf(renderer, {
+      url: 'http://localhost:3000/print',
+      browserOrigin: 'https://example.com',
+      assetScope: {
+        courseInstanceId: '10',
+        assessmentId: '20',
+        assessmentInstanceId: '30',
+        instanceQuestionIds: ['40'],
+        authnUserId: '50',
+        userId: '50',
+      },
+    });
+    expect(harness.browser.newContext).toHaveBeenCalledWith({
+      ignoreHTTPSErrors: true,
+      serviceWorkers: 'block',
+      javaScriptEnabled: false,
+    });
+    const fulfill = vi.fn(async () => undefined);
+    await harness.getRouteHandler()!({
+      request: () => ({
+        method: () => 'GET',
+        url: () => `https://example.com${pathname}`,
+      }),
+      fulfill,
+    } as unknown as Route);
+    expect(fetchAsset).toHaveBeenCalledWith(new URL(`http://localhost:3000${pathname}`), {
+      headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
+      redirect: 'manual',
+      signal: expect.any(AbortSignal),
+    });
+    expect(fulfill).toHaveBeenCalledWith({
+      status: 200,
+      contentType: 'image/png',
+      body: Buffer.from('image'),
+    });
+    await renderer.close();
   });
 
   it('runs four Cloudflare renders concurrently and queues the next one', async () => {

@@ -374,7 +374,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
         snapshots: [
           {
             formLabel: 'A',
-            paperSize: 'Letter',
             printDocument: 'assessment',
             localPreviewUrl: 'http://localhost/',
             html: '',

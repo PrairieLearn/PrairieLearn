@@ -8,7 +8,7 @@ import {
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
 import { getDefaultHonorCodePledge } from '../../lib/honor-code.js';
-import type { PaperSize } from '../../lib/printing/pdf-output.js';
+import { PAPER_DIMENSIONS, type PaperSize } from '../../lib/printing/paper-size.js';
 import {
   BLANK_NAME_PLACEHOLDER,
   DEFAULT_ASSESSMENT_INSTRUCTIONS,
@@ -18,11 +18,6 @@ import {
   getPrintFooterLabel,
 } from '../../lib/printing/print-cover.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
-const PAPER_DIMENSIONS = {
-  Letter: { width: '8.5in', height: '11in' },
-  A4: { width: '210mm', height: '297mm' },
-} satisfies Record<PaperSize, { width: string; height: string }>;
 
 export function InstructorAssessmentInstancePrint({
   resLocals,
@@ -71,7 +66,6 @@ export function InstructorAssessmentInstancePrint({
       lang="en"
       data-print-document="${document}"
       data-print-form-label="${formLabel ?? ''}"
-      data-print-paper-size="${paperSize}"
       data-print-include-cover="${includeCoverPage}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
@@ -117,7 +111,7 @@ export function InstructorAssessmentInstancePrint({
         <style data-pagedjs-ignore>
           @media print {
             @page {
-              size: ${paperSize};
+              size: ${paperWidth} ${paperHeight};
               margin: 0;
             }
           }

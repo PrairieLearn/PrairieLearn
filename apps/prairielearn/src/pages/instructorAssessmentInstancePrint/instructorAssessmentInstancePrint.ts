@@ -32,7 +32,7 @@ import {
   validatePrintDocument,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
-import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import {
   BLANK_NAME_PLACEHOLDER,
@@ -518,17 +518,12 @@ router.post(
             const identity = await page.evaluate(() => ({
               document: globalThis.document.documentElement.dataset.printDocument,
               formLabel: globalThis.document.documentElement.dataset.printFormLabel,
-              paperSize: globalThis.document.documentElement.dataset.printPaperSize,
             }));
             signal.throwIfAborted();
-            if (
-              identity.document !== document ||
-              identity.formLabel !== (layout.formLabel ?? '') ||
-              identity.paperSize !== layout.paperSize
-            ) {
+            if (identity.document !== document || identity.formLabel !== (layout.formLabel ?? '')) {
               throw new HttpStatusError(
                 400,
-                'The preview does not match the requested document type, form label, or paper size. Generate a new preview before exporting.',
+                'The preview does not match the requested document type or form label. Generate a new preview before exporting.',
               );
             }
             await validatePrintDocument(page);

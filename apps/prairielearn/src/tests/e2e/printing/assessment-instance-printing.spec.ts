@@ -9,9 +9,9 @@ import { createTest, expect } from '../fixtures.js';
 
 import { createPrintableAssessmentInstance, waitForPrintablePage } from './utils.js';
 
-const sql = loadSqlEquiv(import.meta.url);
-
 const test = createTest({ features: { 'printable-assessments': true } });
+
+const sql = loadSqlEquiv(import.meta.url);
 
 // Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
 test.describe.configure({ timeout: 180_000 });

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { PaperSize } from '../printing/pdf-output.js';
+import type { PaperSize } from '../printing/paper-size.js';
 import type { QuestionBlockSize } from '../printing/question-block-size.js';
 
 import { PrintIdentityFieldsSchema } from './print-cover.js';

@@ -240,7 +240,6 @@ export const printableAssessmentExportRouter = t.router({
             }
             snapshots.push({
               formLabel: instance.formLabel,
-              paperSize: instance.settings.paperSize,
               printDocument,
               localPreviewUrl: localPreviewUrl.href,
               html,
