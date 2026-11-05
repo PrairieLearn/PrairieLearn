@@ -459,8 +459,8 @@ export function identifyChunksFromChangedFiles(
  */
 async function getAllChunksForCourse(courseId: string) {
   const result = await sqldb.queryRows(
-    sql.select_course_chunks,
-    { course_id: courseId, at_date: null },
+    sql.select_current_course_chunks,
+    { course_id: courseId },
     RawCourseChunkSchema,
   );
   return result;
@@ -472,8 +472,15 @@ async function getAllChunksForCourse(courseId: string) {
  * until replaced, so cutoffs must not predate activation.
  */
 export async function selectChunksForCourse(courseId: string, atDate: Date | null = null) {
+  if (atDate == null) {
+    return await sqldb.queryRows(
+      sql.select_current_course_chunks,
+      { course_id: courseId },
+      ChunkSchema,
+    );
+  }
   return await sqldb.queryRows(
-    sql.select_course_chunks,
+    sql.select_course_chunks_at_date,
     { course_id: courseId, at_date: atDate },
     ChunkSchema,
   );
@@ -919,14 +926,22 @@ export async function updateChunksForCourse({
   // Uploads finish before the transaction, so it only holds row locks briefly.
   await sqldb.runInTransactionAsync(async () => {
     await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
-    const createdAt = await sqldb.queryScalar(sql.select_chunk_publication_date, DateFromISOString);
+    // Read after the lock so each publication is later than the one before it.
+    const publishedAt = await sqldb.queryScalar(
+      sql.select_chunk_publication_date,
+      DateFromISOString,
+    );
+    await sqldb.execute(sql.supersede_chunks, {
+      course_id: courseId,
+      chunk_ids: replacedChunkIds,
+      superseded_at: publishedAt,
+    });
     await sqldb.execute(sql.insert_chunks, {
       course_id: courseId,
       // Force this to a string; otherwise, our code in `sql-db.js` will try to
       // convert it into a Postgres `ARRAY[...]` type, which we don't want.
       chunks: JSON.stringify(generatedChunks),
-      replaced_chunk_ids: replacedChunkIds,
-      created_at: createdAt,
+      created_at: publishedAt,
       commit_hash: commitHash,
     });
   });
