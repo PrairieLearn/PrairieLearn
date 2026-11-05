@@ -1,4 +1,3 @@
-import * as os from 'node:os';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import debugfn from 'debug';
@@ -31,13 +30,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 // Pick a unique port based on the Vitest worker ID.
 config.serverPort = (3007 + Number.parseInt(process.env.VITEST_POOL_ID ?? '0')).toString();
-
-/**
- * The number of Python workers for test files that run many questions
- * concurrently. Vitest runs other test files at the same time, so we leave half
- * the CPUs for them. Using every CPU made those other files much slower in CI.
- */
-export const QUESTION_TESTS_WORKERS_COUNT = Math.max(1, Math.floor(os.cpus().length / 2));
 
 export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
