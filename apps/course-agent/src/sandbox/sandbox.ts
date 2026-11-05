@@ -45,13 +45,17 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
   }
 }
 
+// Codex's `web.run` tool calls the search endpoint. OpenAI performs the searches and page reads,
+// so the container itself still has no internet access.
+const MODEL_PATHS = new Set(['/v1/responses', '/v1/alpha/search']);
+
 /** Only the conversation's pinned model is available; its API key stays outside the container. */
 export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: string }> {
   override async fetch(request: Request) {
     const url = new URL(request.url);
     if (
       url.hostname !== 'model.internal' ||
-      url.pathname !== '/v1/responses' ||
+      !MODEL_PATHS.has(url.pathname) ||
       url.search ||
       request.method !== 'POST'
     ) {
@@ -59,7 +63,7 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: str
     }
     const body = (await request.json()) as { model?: string };
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
-    return fetch('https://api.openai.com/v1/responses', {
+    return fetch(`https://api.openai.com${url.pathname}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
@@ -179,10 +183,12 @@ export class CourseSandbox extends DurableObject<Env> {
       }
     }
     // Configuration contains no credentials. It is reapplied after restoration.
+    // Custom providers only expose Codex's read-only `web.run` browsing tool when they declare
+    // standalone web search support; "live" lets it read current pages instead of a cached index.
     const files = new Files(this.container);
     await files.writeFile(
       `${SESSION}/home/.codex/config.toml`,
-      'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
+      'model_provider = "prairielearn"\nweb_search = "live"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\nsupports_standalone_web_search = true\n',
     );
     await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
   }

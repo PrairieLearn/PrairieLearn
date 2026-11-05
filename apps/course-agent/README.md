@@ -4,7 +4,7 @@ A Cloudflare Worker hosts private course-editing conversations behind PrairieLea
 
 ## Configuration
 
-Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). GitHub-backed conversations additionally require `GITHUB_READ_TOKEN` with read access to the course repository. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; it can only call the configured model endpoint, clone and fetch the configured course repository, and use the SDK’s temporary backup grant. Git publication is unavailable.
+Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev.vars.example` to `.dev.vars` locally). GitHub-backed conversations additionally require `GITHUB_READ_TOKEN` with read access to the course repository. Secrets are injected by outbound Worker handlers and never enter the container or its checkpoints. The container has no general internet access; it can only call the configured model endpoint, clone and fetch the configured course repository, and use the SDK’s temporary backup grant. The agent can browse the web read-only (search, open pages, follow links, find text) through Codex's `web.run` tool, e.g. to look up academic calendars. Codex sends those commands to OpenAI's search endpoint through the same model outbound handler, and OpenAI fetches the pages; the container never connects to other sites. Git publication is unavailable.
 
 Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings.
 
