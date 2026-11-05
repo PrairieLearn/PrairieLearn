@@ -5,9 +5,10 @@ from pytest_prairielearn_grader.fixture import (
     FeedbackFixture,
     StudentFixture,
 )
+from pytest_prairielearn_grader.utils import FunctionStatusCode, GradingOutputLevel
 
 
-@pytest.mark.output(level="friendly")
+@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="Test expected inputs", points=4)
 def test_input(
     sandbox: StudentFixture, data_json: DataFixture, feedback: FeedbackFixture
@@ -21,7 +22,10 @@ def test_input(
         func_input = pair["input"]
         expected_output = pair["output"]
         response = sandbox.query_function_raw(function_name, func_input)
-        if response["status"] == "success" and response["value"] == expected_output:
+        if (
+            response["status"] == FunctionStatusCode.SUCCESS
+            and response["value"] == expected_output
+        ):
             num_correct += 1
         else:
             failures.append(
@@ -33,11 +37,9 @@ def test_input(
     feedback.set_score_final(num_correct / len(params["pairs"]))
 
 
-@pytest.mark.output(level="friendly")
+@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="Test default output", points=1)
-def test_default_output(
-    sandbox: StudentFixture, data_json: DataFixture
-) -> None:
+def test_default_output(sandbox: StudentFixture, data_json: DataFixture) -> None:
     params = data_json["params"]
     function_name = params["function_name"]
     func_input = params["invalid_input"]
@@ -56,7 +58,7 @@ def _format_failure(
     function_name: str, func_input: str, expected: str, response: dict
 ) -> str:
     description = f'{function_name}("{func_input}")'
-    if response["status"] == "success":
+    if response["status"] == FunctionStatusCode.SUCCESS:
         return f"{description}: expected {expected}, got {response['value']}"
     return (
         f"{description}: raised {response['exception_name']}: "
