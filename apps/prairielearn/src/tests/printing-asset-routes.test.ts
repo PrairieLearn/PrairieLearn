@@ -1,6 +1,7 @@
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import {
   PRINT_ASSET_TOKEN_HEADER,
   beginPrintAssetAccess,
@@ -12,7 +13,10 @@ import { fetchCheerio, parseAssessmentInstanceId } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 describe('Print asset routes', () => {
-  beforeAll(helperServer.before());
+  beforeAll(async () => {
+    await helperServer.before()();
+    await features.enable('printable-assessments');
+  });
   afterAll(helperServer.after);
 
   it('serves scoped assets without a session and refuses unrelated instructor paths', async () => {
