@@ -68,7 +68,8 @@ export async function selectEnrollmentsForUsersInCourse({
 }
 
 type CourseInstanceContext =
-  CourseInstance | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
+  | CourseInstance
+  | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
 
 function assertEnrollmentStatus(
   enrollment: Enrollment,

@@ -75,6 +75,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
 
+      - name: Check course agent protocol generation
+        run: |
+          pnpm --filter @prairielearn/course-agent generate-protocol
+          test -z "$(git status --porcelain -- apps/course-agent/generated)"
+
       - name: Build all code
         run: make build
 
@@ -104,7 +109,6 @@ jobs:
               'pnpm-lock.yaml',
               'Makefile',
               'eslint.config.mjs',
-              'packages/eslint-config/**',
               'packages/eslint-plugin-prairielearn/**',
               '.prettierrc.json',
               '.prettierignore'
@@ -112,8 +116,9 @@ jobs:
 
       - name: Run the JavaScript linter
         env:
-          # Type-aware ESLint loads the full apps/prairielearn TS program (~4 GB
-          # peak), which exceeds Node's default heap limit.
+          # Type-aware ESLint (for `@prairielearn/safe-db-types`) loads the full
+          # apps/prairielearn TS program (~4 GB peak), which exceeds Node's default
+          # heap limit.
           NODE_OPTIONS: --max-old-space-size=8192
         run: make lint-js-cached
       - name: Run the Mustache linter
@@ -130,6 +135,8 @@ jobs:
         run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
+      - name: Check that course agent generated types are up-to-date
+        run: pnpm --filter @prairielearn/course-agent check-types
       - name: Check that element schemas are up-to-date
         run: make check-element-schemas
       - name: Check that all packages exist on npm
