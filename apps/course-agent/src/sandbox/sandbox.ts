@@ -1,6 +1,8 @@
 import { DirectoryBackup, type DirectoryBackupRecord, Files } from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
+import { redactSecrets } from '../monitoring.js';
+
 const SESSION = '/workspace/session';
 const NATIVE_PORT = 4500;
 export type CourseSource =
@@ -9,6 +11,44 @@ export type CourseSource =
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
+
+// Codex runs at its default log level, so do not set RUST_LOG here: verbose levels can log
+// request contents. Bound what reaches Worker logs in case a runner repeats an error.
+const RUNNER_LOG_LINE_CHARS = 2000;
+const RUNNER_LOG_LINES = 200;
+const RUNNER_ERROR_TAIL_CHARS = 2000;
+
+/** Forward runner output to Worker logs and keep a short stderr tail for startup errors. */
+function forwardRunnerOutput(process: ExecProcess) {
+  let logged = 0;
+  let tail = '';
+  const forward = async (stream: ReadableStream | null, name: string) => {
+    if (!stream) return;
+    let partial = '';
+    const log = (line: string) => {
+      if (name === 'stderr') tail = (tail + line + '\n').slice(-RUNNER_ERROR_TAIL_CHARS);
+      if (!line || logged > RUNNER_LOG_LINES) return;
+      logged++;
+      console.warn(
+        logged > RUNNER_LOG_LINES
+          ? '[codex] further runner output suppressed'
+          : `[codex ${name}] ${redactSecrets(line.slice(0, RUNNER_LOG_LINE_CHARS))}`,
+      );
+    };
+    try {
+      for await (const chunk of stream.pipeThrough(new TextDecoderStream())) {
+        const lines = (partial + chunk).split('\n');
+        partial = lines.pop() ?? '';
+        lines.forEach(log);
+      }
+    } catch {
+      // The stream ends with an error when the container stops; the process exit is handled elsewhere.
+    }
+    log(partial);
+  };
+  const done = Promise.all([forward(process.stdout, 'stdout'), forward(process.stderr, 'stderr')]);
+  return { done, tail: () => redactSecrets(tail.trim()) };
+}
 
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
 export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
@@ -229,10 +269,15 @@ export class CourseSandbox extends DurableObject<Env> {
         user: 'node',
         cwd: `${SESSION}/course`,
         env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
-        stdout: 'ignore',
-        stderr: 'ignore',
+        stdout: 'pipe',
+        stderr: 'pipe',
       },
     );
+    const output = forwardRunnerOutput(this.process);
+    let exitCode: number | null = null;
+    void this.process.exitCode.then((code) => {
+      exitCode = code;
+    });
     const port = this.container.getTcpPort(NATIVE_PORT);
     const forwarded = new Request('http://container/', request);
     forwarded.headers.delete('host');
@@ -245,6 +290,13 @@ export class CourseSandbox extends DurableObject<Env> {
       try {
         return await port.fetch(forwarded);
       } catch (error) {
+        if (exitCode !== null) {
+          await output.done;
+          throw new Error(
+            `Codex runner exited with code ${exitCode} before listening: ${output.tail() || '(no stderr)'}`,
+            { cause: error },
+          );
+        }
         if (Date.now() >= deadline) throw error;
         await scheduler.wait(100);
       }

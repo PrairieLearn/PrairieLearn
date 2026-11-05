@@ -16,6 +16,13 @@
   "version_metadata": {
     "binding": "VERSION_METADATA"
   },
+  // Inherited by every environment. Invocation logs are off because Cloudflare does not document
+  // whether they redact request headers, and PrairieLearn sends the service token in Authorization.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": { "enabled": true, "invocation_logs": false }
+  },
   "secrets": {
     "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
   },
@@ -49,6 +56,7 @@
     {
       "name": "course-agent",
       "scheduling_policy": "durable_object",
+      "observability": { "logs": { "enabled": true } },
       "images": {
         "courseAgent": {
           "dockerfile": "container/Dockerfile",
@@ -93,6 +101,7 @@
         {
           "name": "course-agent",
           "scheduling_policy": "durable_object",
+          "observability": { "logs": { "enabled": true } },
           "images": {
             "courseAgent": {
               "dockerfile": "container/Dockerfile",
@@ -140,6 +149,7 @@
         {
           "name": "course-agent",
           "scheduling_policy": "durable_object",
+          "observability": { "logs": { "enabled": true } },
           "images": {
             "courseAgent": {
               "dockerfile": "container/Dockerfile",
