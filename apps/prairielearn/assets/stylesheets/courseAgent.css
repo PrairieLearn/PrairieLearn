@@ -51,9 +51,9 @@ body:has(.course-agent-panel) .app-main {
     margin-right: var(--course-agent-width);
   }
 
-  /* Keep navbar dropdowns above the desktop chat panel. */
-  body:has(.course-agent-panel) .app-top-nav {
-    position: relative;
+  /* Keep navbar dropdowns above the desktop chat panel. Raising the whole
+     navbar would trap its modals (e.g. "Get help") below the modal backdrop. */
+  body:has(.course-agent-panel) .app-top-nav .dropdown-menu {
     z-index: 1031;
   }
 
