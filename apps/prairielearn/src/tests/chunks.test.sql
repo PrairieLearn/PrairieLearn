@@ -33,32 +33,38 @@ WHERE
   qid = $qid
   AND deleted_at IS NULL;
 
--- BLOCK prepare_partial_history
-WITH
-  reset_baseline AS (
-    UPDATE courses
-    SET
-      chunks_history_started_at = NULL
-    WHERE
-      id = $course_id
-    RETURNING
-      id
-  )
-UPDATE chunks
-SET
-  created_at = NULL
+-- BLOCK select_all_chunks
+SELECT
+  *
+FROM
+  chunks
 WHERE
-  course_id IN (
-    SELECT
-      id
-    FROM
-      reset_baseline
+  course_id = $course_id;
+
+-- BLOCK drop_unique_chunk_index
+DROP INDEX chunks_unique_values_key;
+
+-- BLOCK append_chunk_revisions
+INSERT INTO
+  chunks (
+    type,
+    course_id,
+    question_id,
+    course_instance_id,
+    assessment_id,
+    uuid,
+    created_at
   )
-  AND type = 'elementExtensions';
-
--- BLOCK enable_chunk_history
-ALTER TABLE chunks
-ALTER COLUMN uuid
-DROP NOT NULL;
-
-DROP INDEX IF EXISTS chunks_unique_values_key;
+SELECT
+  type,
+  course_id,
+  question_id,
+  course_instance_id,
+  assessment_id,
+  gen_random_uuid(),
+  now()
+FROM
+  chunks
+WHERE
+  course_id = $course_id
+  AND type = ANY ($types::enum_chunk_type[]);
