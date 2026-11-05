@@ -5,7 +5,7 @@ import {
   imageRegistryRestrictionsText,
 } from '@prairielearn/docker-utils/registry';
 
-import { QuestionAuthorUidSchema } from '../lib/question-authors.js';
+import { QuestionAuthorSchema } from '../lib/question-authors.js';
 
 import { CommentJsonSchema } from './comment.js';
 
@@ -102,7 +102,7 @@ const LegacyQuestionAuthorJsonSchema = z
   })
   .strict()
   .describe(
-    'Deprecated structured author metadata. Replace with a UID string; legacy email values are treated as UIDs during the transition.',
+    'Deprecated structured author metadata. Replace with UID or ORCID URL strings; legacy email and ORCID values are preserved during the transition.',
   )
   .meta({ deprecated: true });
 
@@ -258,8 +258,8 @@ export const QuestionJsonSchema = z
     authors: z
       .array(
         z.union([
-          QuestionAuthorUidSchema.describe(
-            'A user UID, which need not identify an existing account or be a routable email.',
+          QuestionAuthorSchema.describe(
+            'An author UID or full ORCID URL. UIDs need not identify an existing account or be a routable email. ORCID URLs must contain a valid identifier and checksum.',
           ),
           LegacyQuestionAuthorJsonSchema,
         ]),

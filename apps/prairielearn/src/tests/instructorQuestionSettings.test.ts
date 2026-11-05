@@ -57,7 +57,7 @@ describe('Editing question settings', { concurrent: false }, () => {
     assert.equal(questionInfo.title, 'Test question');
   });
 
-  test('converts legacy authors on save and resolves names only for course staff', async () => {
+  test('preserves legacy identifiers on save, links ORCIDs, and resolves names only for course staff', async () => {
     const staff = await getOrCreateUser({
       uid: 'author-staff',
       name: 'Visible Staff Name',
@@ -77,7 +77,14 @@ describe('Editing question settings', { concurrent: false }, () => {
       authn_user_id: '1',
     });
     const info = await fs.readJSON(questionLiveInfoPath);
-    info.authors = [{ name: 'Old name', email: staff.uid }, 'author-nonstaff', 'author-unknown'];
+    const orcidUrl = 'https://orcid.org/0000-0002-1825-0097';
+    const orcidOnlyUrl = 'https://orcid.org/0000-0002-1694-233X';
+    info.authors = [
+      { name: 'Old name', email: staff.uid, orcid: '0000-0002-1825-0097' },
+      { orcid: '0000-0002-1694-233X' },
+      'author-nonstaff',
+      'author-unknown',
+    ];
     await fs.writeJSON(
       path.join(courseRepo.courseOriginDir, 'questions/test/question/info.json'),
       info,
@@ -89,7 +96,14 @@ describe('Editing question settings', { concurrent: false }, () => {
     assert.include(settings.$('body').text(), staff.name!);
     assert.notInclude(settings.$('body').text(), 'Private Nonstaff Name');
     assert.lengthOf(settings.$('input[name=authors]'), 0);
-    const authors = ['author-staff', 'author-nonstaff', 'author-unknown'];
+    const authors = ['author-staff', orcidUrl, orcidOnlyUrl, 'author-nonstaff', 'author-unknown'];
+    assert.lengthOf(settings.$(`a[href="${orcidUrl}"]`), 1);
+    await withUser(staff, async () => {
+      const readOnly = await fetchCheerio(url);
+      assert.equal(readOnly.status, 200);
+      assert.lengthOf(readOnly.$('#authors'), 0);
+      assert.lengthOf(readOnly.$(`a[href="${orcidOnlyUrl}"]`), 1);
+    });
     for (const uid of authors) {
       assert.include(settings.$('#authors-label').parent().text(), uid);
     }

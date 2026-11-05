@@ -24,6 +24,11 @@ import type {
   StaffTopic,
 } from '../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import {
+  QuestionAuthorSchema,
+  QuestionAuthorsSchema,
+  getOrcidUrl,
+} from '../../lib/question-authors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import type { QuestionSharingSetRow } from '../../models/sharing-set.js';
 import { coerceToNumber } from '../instructorAssessmentQuestions/utils/formHelpers.js';
@@ -37,6 +42,32 @@ import type {
   QuestionSettingsFormValues,
   SelectedAssessments,
 } from './instructorQuestionSettings.types.js';
+
+function AuthorLabel({ identifier, name }: { identifier: string; name?: string | null }) {
+  const orcidUrl = getOrcidUrl(identifier);
+  if (orcidUrl) {
+    return (
+      <a href={orcidUrl} target="_blank" rel="noopener noreferrer">
+        <img
+          src="/images/orcid-unauthenticated.webp"
+          alt="ORCID iD"
+          width="16"
+          height="16"
+          className="me-1"
+        />
+        {orcidUrl} (unauthenticated)
+      </a>
+    );
+  }
+  return name ? (
+    <>
+      <span className="text-body">{name}</span>{' '}
+      <span className="text-secondary fw-normal">{identifier}</span>
+    </>
+  ) : (
+    <span className="text-body">{identifier}</span>
+  );
+}
 
 function ImageRegistryHelp({ id }: { id: string }) {
   return (
@@ -313,6 +344,16 @@ export const InstructorQuestionSettingsForm = ({
     defaultValues,
   });
 
+  const { fieldState: authorsFieldState } = useController({
+    control,
+    name: 'authors',
+    rules: {
+      validate: (value) => {
+        const result = QuestionAuthorsSchema.safeParse(value);
+        return result.success || result.error.issues[0].message;
+      },
+    },
+  });
   const selectedAuthors = watch('authors');
   const authorItems = selectedAuthors.map((uid) => {
     const name = authorStaff.find((user) => user.uid === uid)?.name;
@@ -548,23 +589,24 @@ export const InstructorQuestionSettingsForm = ({
                     aria-labelledby="authors-label"
                     items={authorItems}
                     value={selectedAuthors}
-                    placeholder="Add an author by UID"
+                    placeholder="Add an author by UID or ORCID URL"
+                    errorMessage={authorsFieldState.error?.message}
                     disabled={initialAuthors === null}
                     tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
-                    renderTagContent={({ uid, name }) =>
-                      name ? (
-                        <>
-                          <span className="text-body">{name}</span>
-                          <span className="text-secondary fw-normal">{uid}</span>
-                        </>
-                      ) : (
-                        <span className="text-body">{uid}</span>
-                      )
+                    renderTagContent={({ uid, name }) => (
+                      <AuthorLabel identifier={uid} name={name} />
+                    )}
+                    onChange={(authors) =>
+                      setValue('authors', authors, { shouldDirty: true, shouldValidate: true })
                     }
-                    onChange={(uids) => setValue('authors', uids, { shouldDirty: true })}
-                    onCreate={(uid) =>
-                      setValue('authors', [...selectedAuthors, uid], { shouldDirty: true })
-                    }
+                    onCreate={(author) => {
+                      const parsed = QuestionAuthorSchema.safeParse(author);
+                      const identifier = parsed.success ? parsed.data : author;
+                      setValue('authors', [...new Set([...selectedAuthors, identifier])], {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                    }}
                   />
                 </>
               ) : (
@@ -572,15 +614,15 @@ export const InstructorQuestionSettingsForm = ({
                   {authorItems.map((author) => (
                     <span key={author.id} className="me-1">
                       <span className="badge color-gray1 fw-normal text-wrap text-break">
-                        {author.label}
+                        <AuthorLabel identifier={author.data.uid} name={author.data.name} />
                       </span>
                     </span>
                   ))}
                 </div>
               )}
               <small className="form-text text-muted">
-                Credit the people who wrote this question by their UID. Names are shown for current
-                course staff.{' '}
+                Credit the people who wrote this question by their UID or ORCID URL. Names are shown
+                for current course staff. Use one identifier per person.{' '}
                 {canEdit &&
                   initialAuthors !== null &&
                   !selectedAuthors.includes(currentUid.trim()) && (

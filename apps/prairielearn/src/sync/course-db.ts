@@ -1057,7 +1057,7 @@ function validateQuestion({
   }
 
   const authors = normalizeQuestionAuthors(question.authors);
-  question.authors = authors.uids;
+  question.authors = authors.identifiers;
   warnings.push(...authors.warnings.map((warning) => `Question "${qid}": ${warning}`));
 
   return { warnings, errors };

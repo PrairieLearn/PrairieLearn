@@ -316,18 +316,24 @@ describe('Question syncing', () => {
     assert.ok(syncedQuestionTag);
   });
 
-  describe('UID authors', () => {
-    it('stores UID order and preserves authors on unchanged re-sync', async () => {
+  describe('question authors', () => {
+    it('stores UID and canonical ORCID order and preserves authors on unchanged re-sync', async () => {
       const data = util.getCourseData();
-      data.questions[util.QUESTION_ID].authors = ['second-author', 'first-author'];
+      data.questions[util.QUESTION_ID].authors = [
+        'second-author',
+        'http://orcid.org/0000-0002-1825-0097/',
+        'first-author',
+      ];
       const { courseDir } = await util.writeAndSyncCourseData(data);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
         'second-author',
+        'https://orcid.org/0000-0002-1825-0097',
         'first-author',
       ]);
       await util.syncCourseData(courseDir);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
         'second-author',
+        'https://orcid.org/0000-0002-1825-0097',
         'first-author',
       ]);
     });
@@ -335,13 +341,13 @@ describe('Question syncing', () => {
     it('persists converted legacy authors and their warning without changing source files', async () => {
       const data = util.getCourseData();
       data.questions[util.QUESTION_ID].authors = [
-        { name: 'Legacy name', email: 'not-an-email' },
+        { name: 'Legacy name', email: 'not-an-email', orcid: '0000-0002-1825-0097' },
         { name: 'Name only' },
       ];
       const { courseDir } = await util.writeAndSyncCourseData(data);
       const question = await findSyncedQuestion(util.QUESTION_ID);
       assert.isNull(question.sync_errors);
-      assert.deepEqual(question.authors, ['not-an-email']);
+      assert.deepEqual(question.authors, ['not-an-email', 'https://orcid.org/0000-0002-1825-0097']);
       assert.include(question.sync_warnings, 'Name only');
       const info = await fs.readJSON(
         path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'),

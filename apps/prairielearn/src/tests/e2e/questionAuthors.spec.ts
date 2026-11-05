@@ -47,6 +47,19 @@ test('edits authors with keyboard entry, cancellation, and persistence', async (
     }
     await input.fill('saved-author');
     await input.press('Enter');
+    const invalidOrcid = 'https://orcid.org/0000-0002-1825-0098';
+    await input.fill(invalidOrcid);
+    await input.press('Enter');
+    await expect(input).toHaveAttribute('aria-invalid', 'true');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText('Check the ORCID URL', { exact: false })).toBeVisible();
+    expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).toEqual(original.authors);
+    await page.getByRole('button', { name: `Remove ${invalidOrcid}`, exact: true }).click();
+    await input.fill(' http://orcid.org/0000-0002-1825-0097/ ');
+    await input.press('Enter');
+    const orcidLink = page.getByRole('link', { name: /0000-0002-1825-0097/ });
+    await expect(orcidLink).toHaveAttribute('href', 'https://orcid.org/0000-0002-1825-0097');
+    await expect(input).not.toHaveAttribute('aria-invalid', 'true');
     const myself = page.getByRole('button', { name: 'Add myself', exact: true });
     await myself.click();
     await expect(myself).toHaveCount(0);
@@ -55,8 +68,10 @@ test('edits authors with keyboard entry, cancellation, and persistence', async (
     await expect(
       page.getByRole('button', { name: 'Remove saved-author', exact: true }),
     ).toBeVisible();
+    await expect(orcidLink).toBeVisible();
     expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).toEqual([
       'saved-author',
+      'https://orcid.org/0000-0002-1825-0097',
       'dev@example.com',
     ]);
   } finally {

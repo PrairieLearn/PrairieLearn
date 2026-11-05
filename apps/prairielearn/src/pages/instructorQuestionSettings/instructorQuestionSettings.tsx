@@ -50,7 +50,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { QuestionAuthorUidsSchema, normalizeQuestionAuthors } from '../../lib/question-authors.js';
+import { QuestionAuthorsSchema, normalizeQuestionAuthors } from '../../lib/question-authors.js';
 import { selectQuestionsBlockingDeletion } from '../../lib/question-deletion-validation.js';
 import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
@@ -81,7 +81,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const AuthorsBodySchema = JsonFromStringSchema.pipe(QuestionAuthorUidsSchema).optional();
+const AuthorsBodySchema = JsonFromStringSchema.pipe(QuestionAuthorsSchema).optional();
 const AuthorsFileSchema = JsonFromStringSchema.pipe(
   z.object({ authors: QuestionJsonSchema.shape.authors }),
 );
@@ -739,8 +739,8 @@ router.get(
     const initialAuthors = run(() => {
       const info = AuthorsFileSchema.safeParse(infoContents);
       if (!info.success) return null;
-      const { uids, warnings } = normalizeQuestionAuthors(info.data.authors);
-      return warnings.length === 0 ? uids : null;
+      const { identifiers, warnings } = normalizeQuestionAuthors(info.data.authors);
+      return warnings.length === 0 ? identifiers : null;
     });
     const authorStaff = await sqldb.queryRows(
       sql.select_authors,
