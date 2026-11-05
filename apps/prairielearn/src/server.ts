@@ -162,6 +162,9 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
+  // Print assets carry a short-lived job credential instead of an instructor session.
+  (await import('./lib/printing/print-asset-routes.js')).applyPrintAssetRoutes(app);
+
   const sessionMiddleware = createSessionMiddleware({
     secret: config.secretKey,
     store: new PostgresSessionStore(),
