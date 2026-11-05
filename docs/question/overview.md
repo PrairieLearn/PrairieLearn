@@ -82,31 +82,31 @@ The `info.json` file for each question defines properties of the question. For e
   "title": "Newton's third law",
   "topic": "Forces",
   "tags": ["secret", "Fa18"],
-  "authors": [{ "name": "John Doe", "email": "doe@example.org", "orcid": "0000-0000-0000-0001" }],
+  "authors": ["doe@example.org"],
   "type": "v3",
   "comment": "You can add comments to JSON files using this property."
 }
 ```
 
-| Property                 | Type    | Description                                                                                                                                                                                                                                                                                                        |
-| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `uuid`                   | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                                                                                                                                                                                            |
-| `type`                   | enum    | Type of the question. Must be `"v3"` for new-style questions. (Required; no default)                                                                                                                                                                                                                               |
-| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                                                                                                                                                                                                         |
-| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                                                                                                                                                                   |
-| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                                                                                                                                                                     |
-| `authors`                | array   | Authors of the question. Each author entry can have a `name`, and must contain at least one of the following attributes: `email`, `orcid` ([ORCID identifier](https://orcid.org)), or `originCourse` (course sharing name; see [Question Sharing](#question-sharing) for details). (Optional; default: no authors) |
-| `gradingMethod`          | enum    | The grading method used for auto-grading this question. Valid values: `Internal`, `External`, or `Manual` (for manual-only questions). (Optional; default: `Internal`)                                                                                                                                             |
-| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                                                                                                                                                                                                           |
-| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                                                                                                                                                                                                                  |
-| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                                                                                                                                                                   |
-| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                                                                                                                                                                         |
-| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                                                                                                                                                              |
-| `preferences`            | object  | A schema defining [question preferences](preferences.md) that can be overridden per-assessment. (Optional; default: none)                                                                                                                                                                                          |
-| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                                                                                                              |
-| `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                                                                                                        |
-| `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                                                                                                         |
-| `copiedFrom`             | string  | Identifies the source of a copied question. See [Question-copy provenance](../contentSharing.md#question-copy-provenance). (Optional; default: none)                                                                                                                                                               |
+| Property                 | Type    | Description                                                                                                                                                                                                                     |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `uuid`                   | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                                                                                                         |
+| `type`                   | enum    | Type of the question. Must be `"v3"` for new-style questions. (Required; no default)                                                                                                                                            |
+| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                                                                                                                      |
+| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                                                                                |
+| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                                                                                  |
+| `authors`                | array   | UIDs of the question authors, as an array of nonblank strings. UIDs need not match existing accounts or routable email addresses. Surrounding whitespace is trimmed and duplicates are ignored. (Optional; default: no authors) |
+| `gradingMethod`          | enum    | The grading method used for auto-grading this question. Valid values: `Internal`, `External`, or `Manual` (for manual-only questions). (Optional; default: `Internal`)                                                          |
+| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                                                                                                                        |
+| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                                                                                                                               |
+| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                                                                                |
+| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                                                                                      |
+| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                                                                           |
+| `preferences`            | object  | A schema defining [question preferences](preferences.md) that can be overridden per-assessment. (Optional; default: none)                                                                                                       |
+| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                           |
+| `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                     |
+| `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                      |
+| `copiedFrom`             | string  | Identifies the source of a copied question. See [Question-copy provenance](../contentSharing.md#question-copy-provenance). (Optional; default: none)                                                                            |
 
 !!! note "Local development note"
 
@@ -124,7 +124,19 @@ Any question that is marked with `"shareSourcePublicly": true` will be considere
 
 ### Question Authorship
 
-Future versions of PrairieLearn may provide the ability to track the usage of shared questions. To ensure that questions remain associated with their original author(s) and course, we recommend including `authors` information in the `info.json` file. The `orcid` attribute in particular allows authors to be uniquely identified, even after changing their affiliation or email address. The `originCourse` attribute can be used to associate questions with courses by providing their [sharing name](../contentSharing.md#sharing-names). This allows a wider number of course staff to be credited with contributing to a question, and might allow them to track question usage in a future version of PrairieLearn.
+List the UIDs of the people who contributed to this question in `authors`:
+
+```json
+{
+  "authors": ["mwest@illinois.edu", "nathan@prairielearn.com"]
+}
+```
+
+UIDs are identifiers, not display names or necessarily email addresses. Any UID may be credited, even if the person has no PrairieLearn account or is no longer on course staff. UIDs are stored as declared and are not automatically changed when an account's UID changes. Update the question's `info.json` if an author's UID changes.
+
+Authors can also be added and removed on the question's **Settings** page, including using **Add myself**. Names are shown only for current course staff; other authors are displayed by UID. Saving settings writes the UID array to `info.json` through the normal course file editor.
+
+The old object format (`name`, `email`, `orcid`, and `originCourse`) is deprecated but remains accepted during the transition. Legacy `email` values are treated as UIDs; replace each object with that UID string. Entries without a usable email produce a sync warning and must be assigned a UID manually. Sync does not modify the source file or delete the legacy database records. Saving from the settings page replaces legacy entries with the displayed UID array, so review any warnings first.
 
 ### Question Dependencies
 

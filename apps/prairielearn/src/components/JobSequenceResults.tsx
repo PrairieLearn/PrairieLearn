@@ -119,7 +119,7 @@ function JobSequenceResultsJobItem({
           id={`output-${job.id}`}
           className="text-white rounded p-3 mb-0 mt-3"
           style={outputStyle}
-          // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+          // oxlint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: job.outputHtml }}
         />
       </div>

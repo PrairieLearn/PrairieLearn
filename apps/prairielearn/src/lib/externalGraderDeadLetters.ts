@@ -97,7 +97,7 @@ async function pollQueue(
         );
         messages = data.Messages;
       } catch (err) {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted from another context
+        // oxlint-disable-next-line typescript/no-unnecessary-condition -- aborted from another context
         if (abortController.signal.aborted) return;
         logger.error(`Error receiving messages from dead letter queue ${queueName}`, err);
         Sentry.captureException(err);
