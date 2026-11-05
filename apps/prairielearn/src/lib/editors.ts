@@ -39,10 +39,10 @@ import {
   type QuestionSyncScope,
   getQuestionSyncScope,
   getVerifiedQuestionChange,
-  hasQuestionSyncBaseline,
   syncNewQuestion,
   syncQuestionMetadata,
 } from '../sync/questionSync.js';
+import { hasQuestionSyncBaseline } from '../sync/questionSyncEligibility.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { CURRENT_SYNC_VERSION } from '../sync/version.js';
 
