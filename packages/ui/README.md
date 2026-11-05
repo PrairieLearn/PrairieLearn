@@ -143,8 +143,9 @@ import { NuqsAdapter } from '@prairielearn/ui';
 Import the parsers and `useQueryState` at module scope:
 
 ```tsx
-import { parseAsColumnPinningState, parseAsSortingState } from '@prairielearn/ui';
 import { useQueryState } from 'nuqs';
+
+import { parseAsColumnPinningState, parseAsSortingState } from '@prairielearn/ui';
 ```
 
 Then, inside `StudentsTable`, replace the original `useTanstackTable` call with URL-backed state and the corresponding change callbacks:
@@ -180,8 +181,9 @@ The available parsers are:
 `ComboBox` and `TagPicker` are accessible single- and multi-selection inputs built on [React Aria](https://react-spectrum.adobe.com/react-aria/).
 
 ```tsx
-import { ComboBox, TagPicker, type ComboBoxItem } from '@prairielearn/ui';
 import { useState } from 'react';
+
+import { ComboBox, TagPicker, type ComboBoxItem } from '@prairielearn/ui';
 
 const items: ComboBoxItem[] = [
   { id: '1', label: 'Apple' },
@@ -213,8 +215,9 @@ Items can include `searchableText` for filtering on text different from the labe
 `FilterDropdown` is an accessible multi-select dropdown for a set of filter values.
 
 ```tsx
-import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 import { useState } from 'react';
+
+import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
 const items: FilterItem[] = [
   { id: '1', name: 'JavaScript', color: 'blue1' },

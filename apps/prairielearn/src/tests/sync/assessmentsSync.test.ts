@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -2958,8 +2957,8 @@ describe('Assessment syncing', () => {
       await util.writeAndSyncCourseData(courseData);
       const syncedAssessment = await findSyncedAssessment('fail');
       assert.isNotNull(syncedAssessment.sync_warnings);
-      expect(syncedAssessment.sync_warnings).to.contain(`examUuid "${invalidExamUuid}" not found.`);
-      expect(syncedAssessment.sync_warnings).to.not.contain(validExamUuid);
+      assert.include(syncedAssessment.sync_warnings, `examUuid "${invalidExamUuid}" not found.`);
+      assert.notInclude(syncedAssessment.sync_warnings, validExamUuid);
     });
 
     it('does not validate exam UUIDs for assessments in an inaccessible course instance', async () => {

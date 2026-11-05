@@ -9,6 +9,7 @@ import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
+import { FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION } from '../../../../ee/lib/ai-grading-free-credit-constants.js';
 import {
   AI_GRADING_MODELS,
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
@@ -16,7 +17,6 @@ import {
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingSelection } from '../../../../ee/lib/ai-grading/ai-grading-selection.shared.js';
-import { FREE_AI_GRADING_CREDIT_MILLI_DOLLARS_PER_REDEMPTION } from '../../../../ee/lib/ai-grading-free-credit-constants.js';
 import { formatMilliDollars } from '../../../../lib/ai-grading-credits.js';
 import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import { useTRPC } from '../../../../trpc/assessmentQuestion/context.js';

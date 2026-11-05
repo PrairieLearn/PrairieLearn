@@ -11,12 +11,12 @@ test('renders allowed resources and blocks redirects before requesting their des
   const requests: string[] = [];
   const server = createServer((request, response) => {
     requests.push(request.url!);
-    if (request.url === '/redirect') {
+    if (request.url === '/assets/redirect') {
       response.writeHead(302, {
         Location: `http://127.0.0.1:${(server.address() as AddressInfo).port}/destination`,
       });
       response.end();
-    } else if (request.url === '/figure.svg') {
+    } else if (request.url === '/assets/figure.svg') {
       response.setHeader('Content-Type', 'image/svg+xml');
       response.end('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>');
     } else {
@@ -30,17 +30,18 @@ test('renders allowed resources and blocks redirects before requesting their des
   try {
     const pdf = await renderer.renderPdf({
       url: `${origin}/print`,
-      html: '<!doctype html><html data-print-status="ready"><body><img src="/figure.svg"></body></html>',
+      html: '<!doctype html><html data-print-status="ready"><body><img src="/assets/figure.svg"><img src="/private"></body></html>',
     });
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(requests).toContain('/figure.svg');
+    expect(requests).toContain('/assets/figure.svg');
+    expect(requests).not.toContain('/private');
 
     const pdfWithBlockedImage = await renderer.renderPdf({
       url: `${origin}/print`,
-      html: '<!doctype html><html data-print-status="ready"><body><img src="/redirect"></body></html>',
+      html: '<!doctype html><html data-print-status="ready"><body><img src="/assets/redirect"></body></html>',
     });
     expect(pdfWithBlockedImage.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(requests).toContain('/redirect');
+    expect(requests).toContain('/assets/redirect');
     expect(requests).not.toContain('/destination');
   } finally {
     await renderer.close();
@@ -57,7 +58,7 @@ test('closes a failed render with an in-flight asset request and renders the nex
     resolveAssetRequest = resolve;
   });
   const server = createServer((request, response) => {
-    if (request.url === '/slow') {
+    if (request.url === '/assets/slow') {
       resolveAssetRequest();
       return;
     }
@@ -75,7 +76,7 @@ test('closes a failed render with an in-flight asset request and renders the nex
 
     const failedRender = renderer.renderPdf({
       url: `${origin}/failed`,
-      html: '<!doctype html><html data-print-status="ready"><body><img src="/slow"></body></html>',
+      html: '<!doctype html><html data-print-status="ready"><body><img src="/assets/slow"></body></html>',
       timeoutMs: 5_000,
     });
     const failure = expect(failedRender).rejects.toThrow(

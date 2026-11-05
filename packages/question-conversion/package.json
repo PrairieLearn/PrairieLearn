@@ -1,19 +1,16 @@
 {
   "name": "@prairielearn/question-conversion",
   "version": "0.1.0",
-  "type": "module",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/question-conversion"
   },
-  "private": true,
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "bin": {
     "question-convert": "./dist/bin/convert.js"
   },
+  "type": "module",
   "main": "dist/index.js",
   "exports": {
     ".": "./dist/index.js",
@@ -48,5 +45,8 @@
     "undici": "^8.12.3",
     "vitest": "^5.0.2",
     "zod": "^4.6.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

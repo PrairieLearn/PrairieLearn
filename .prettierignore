@@ -1,3 +1,4 @@
+# Read by both oxfmt and Prettier (oxfmt uses `.gitignore` and `.prettierignore` by default).
 node_modules
 .claude/worktrees
 .context

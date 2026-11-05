@@ -121,7 +121,7 @@ export function confirmOnUnload(form: HTMLFormElement): () => void {
       // Safari on iOS does not support confirmation on beforeunload at all.
       // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#compatibility_notes
       event.preventDefault();
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#usage_notes
+      // oxlint-disable-next-line typescript/no-deprecated -- https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#usage_notes
       event.returnValue = 'prompt';
     }
   };
