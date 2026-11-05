@@ -210,9 +210,9 @@
     "brotli": 286557
   },
   "../src/ee/components/courseAgent/CourseAgentChat.tsx": {
-    "raw": 1725753,
-    "gzip": 482454,
-    "brotli": 414563
+    "raw": 1726459,
+    "gzip": 482727,
+    "brotli": 414967
   },
   "../../../node_modules/.pnpm/@zip.js+zip.js@2.18.2/node_modules/@zip.js/zip.js/lib/core/zip-reader.js": {
     "raw": 64596,
@@ -340,9 +340,9 @@
     "brotli": 335153
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
-    "raw": 425184,
-    "gzip": 132185,
-    "brotli": 115061
+    "raw": 425890,
+    "gzip": 132457,
+    "brotli": 115430
   },
   "scripts/esm-bundles/hydrated-components/DeleteCourseInstanceModal.ts": {
     "raw": 286296,
@@ -412,7 +412,7 @@
   "scripts/esm-bundles/hydrated-components/CourseAgentPanel.ts": {
     "raw": 385525,
     "gzip": 126672,
-    "brotli": 110517
+    "brotli": 110521
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
     "raw": 1681877,
@@ -425,14 +425,14 @@
     "brotli": 630492
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourseRequests.ts": {
-    "raw": 1789815,
-    "gzip": 502975,
-    "brotli": 431196
+    "raw": 1790521,
+    "gzip": 503249,
+    "brotli": 431561
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourses.ts": {
-    "raw": 1226215,
-    "gzip": 379779,
-    "brotli": 328256
+    "raw": 1226921,
+    "gzip": 380050,
+    "brotli": 328619
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionSsoForm.ts": {
     "raw": 285356,
@@ -440,14 +440,14 @@
     "brotli": 77544
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionsTable.ts": {
-    "raw": 1675823,
-    "gzip": 473981,
-    "brotli": 406184
+    "raw": 1676529,
+    "gzip": 474254,
+    "brotli": 406555
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
-    "raw": 2857126,
-    "gzip": 820503,
-    "brotli": 699683
+    "raw": 2857832,
+    "gzip": 820776,
+    "brotli": 700124
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
     "raw": 1759073,
