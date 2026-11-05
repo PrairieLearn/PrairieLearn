@@ -163,7 +163,9 @@ export async function withCodeCaller<T>(
     throw new Error('CodeCaller pool not initialized');
   }
 
-  if (pool.available === 0 && !config.workerUseQueue) {
+  // Workers that are restarting will be back in the pool momentarily, so a call
+  // can wait for one of them instead of being rejected.
+  if (pool.available + restartingWorkers === 0 && !config.workerUseQueue) {
     debug('getPythonCaller(): no workers available, waiting to error');
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -218,7 +220,10 @@ export async function withCodeCaller<T>(
   return fnResult;
 }
 
+let restartingWorkers = 0;
+
 async function restartAndRelease(codeCallerPool: Pool<CodeCaller>, codeCaller: CodeCaller) {
+  restartingWorkers++;
   let needsFullRestart = false;
   try {
     const restartSuccess = await codeCaller.restart();
@@ -232,6 +237,7 @@ async function restartAndRelease(codeCallerPool: Pool<CodeCaller>, codeCaller: C
     logger.error('Error restarting pythonCaller', err);
     needsFullRestart = true;
   }
+  restartingWorkers--;
 
   load.startJob('python_worker_idle', codeCaller.uuid);
 
