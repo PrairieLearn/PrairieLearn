@@ -162,10 +162,13 @@ describe('question QID sync with real Git', () => {
     },
   );
 
-  it('excludes reserved QIDs from the fast path', async () => {
-    const course = await selectCourseById('1');
-    assert.isNull(await getQuestionRenameScope(course, qid, '@renamed'));
-  });
+  it.each(['@renamed', '__proto__'])(
+    'excludes reserved QID %s from the fast path',
+    async (newQid) => {
+      const course = await selectCourseById('1');
+      assert.isNull(await getQuestionRenameScope(course, qid, newQid));
+    },
+  );
 
   it('rejects a copy that keeps the original question directory', async () => {
     const directory = path.join(fixture.baseDir, 'copy-check');
@@ -196,10 +199,41 @@ describe('question QID sync with real Git', () => {
           kind: 'rename',
           qid,
           newQid: 'copied',
+          uuid: (await selectQuestionByQid({ course_id: '1', qid })).uuid!,
           relativeFilePath: path.join('questions', qid, 'info.json'),
           assessmentPaths: [],
         },
       }),
     );
+  });
+  it('uses full sync to refresh duplicate UUID warnings when renaming', async () => {
+    const course = await selectCourseById('1');
+    const oldQid = qid;
+    const duplicatePath = path.join(course.path, 'questions/duplicate-uuid');
+    await fs.copy(path.join(course.path, 'questions', qid), duplicatePath);
+    await execa('git', ['add', '.'], { cwd: course.path });
+    await execa(
+      'git',
+      [
+        '-c',
+        'user.name=Test',
+        '-c',
+        'user.email=test@example.com',
+        'commit',
+        '-m',
+        'Duplicate UUID fixture',
+      ],
+      { cwd: course.path },
+    );
+    await execa('git', ['push'], { cwd: course.path });
+    const baseline = await syncCourseData(course.path);
+    assert.equal(baseline.status, 'complete');
+    const original = await selectQuestionByQid({ course_id: course.id, qid });
+    assert.isNull(original.uuid);
+    const { load } = await rename('title');
+    assert.isAbove(load.mock.calls.length, 0);
+    const duplicate = await selectQuestionByQid({ course_id: course.id, qid: 'duplicate-uuid' });
+    assert.include(duplicate.sync_warnings!, qid);
+    assert.notInclude(duplicate.sync_warnings!, oldQid);
   });
 });
