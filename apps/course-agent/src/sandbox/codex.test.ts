@@ -1,12 +1,11 @@
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ReviewOutcome } from '@prairielearn/course-agent-types';
-
 import { CodexAppServerClient } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
+/** `history` lists thread items newest first, as thread/items/list returns them. */
 function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
   const commands: { id: number; method: string; params: unknown }[] = [];
   const emit = (frame: unknown) =>
@@ -26,8 +25,14 @@ function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
       if (frame.method === 'thread/start' || frame.method === 'thread/resume') {
         emit({ id: frame.id, result: { thread: { id: 'thread' } } });
       }
-      if (frame.method === 'thread/read') {
-        emit({ id: frame.id, result: { thread: { id: 'thread', turns: [{ items: history }] } } });
+      if (frame.method === 'thread/items/list') {
+        emit({
+          id: frame.id,
+          result: {
+            data: history.map((item) => ({ turnId: 'earlier', item })),
+            nextCursor: null,
+          },
+        });
       }
       if (frame.method === 'turn/start' && !loseAcceptance) {
         emit({ id: frame.id, result: { turn: { id: 'turn' } } });
@@ -54,7 +59,7 @@ const thread = { model: 'test', instructions: 'Edit course', threadId: null };
 function options(onAccepted: () => void, threadId: string | null = null) {
   return {
     messageId: crypto.randomUUID(),
-    text: 'Edit my question',
+    input: { tag: 'message:prompt', text: 'Edit my question' },
     startup: false,
     prepare: async () => {},
     thread: { ...thread, threadId },
@@ -65,77 +70,107 @@ function options(onAccepted: () => void, threadId: string | null = null) {
 }
 
 describe('course agent turns', () => {
-  it.each(['live', 'continuation'])(
-    'does not redeliver a result already consumed through a %s tool call',
-    async (kind) => {
-      const outcome: ReviewOutcome = {
-        callId: 'review',
-        result: {
-          decision: 'denied',
-          publication: { status: 'not_attempted' },
-          sync: { status: 'not_attempted' },
-        },
-      };
-      const item =
-        kind === 'live'
-          ? {
-              type: 'dynamicToolCall',
-              id: outcome.callId,
-              tool: 'request_changes',
-              status: 'failed',
-              contentItems: [{ type: 'inputText', text: JSON.stringify(outcome) }],
-            }
-          : {
-              type: 'functionCallOutput',
-              name: 'request_changes',
-              output: JSON.stringify(outcome),
-            };
-      const { native, commands, disconnect } = runner({ history: [item] });
-      native.beginTurn('assistant');
-      await native.connect();
-      await native.thread({ ...thread, threadId: 'thread' });
-      await native.run(outcome, () => {});
-      await native.finished;
-      expect(commands.filter((command) => command.method === 'turn/start')).toHaveLength(0);
-      // Identical decisions for another call must still reach the agent.
-      native.closeStream();
-      native.beginTurn('next-assistant');
-      await native.run({ ...outcome, callId: 'another-review' }, () => {});
-      expect(commands.filter((command) => command.method === 'turn/start')).toHaveLength(1);
-      native.closeStream();
-      disconnect();
-    },
-  );
-  it('continues an offline review with its saved decision and empty user input', async () => {
-    const outcome: ReviewOutcome = {
-      callId: 'pending-review',
-      result: {
-        decision: 'denied',
-        publication: { status: 'not_attempted' },
-        sync: { status: 'not_attempted' },
-      },
-    };
-    const { native, commands, disconnect } = runner();
-    native.beginTurn('assistant');
-    await native.connect();
-    await native.thread({ ...thread, threadId: 'thread' });
-    await native.run(outcome, () => {});
-    expect(commands.filter((command) => command.method === 'turn/start')).toEqual([
+  it('submits a tagged result once, even if an earlier acknowledgment was lost', async () => {
+    const delivery = { tag: 'review:1', once: true, text: 'The review finished.' };
+    const delivered = runner({
+      history: [
+        { type: 'agentMessage', id: 'reply', text: 'Thanks.' },
+        { type: 'userMessage', id: 'result', clientId: 'review:1', content: [] },
+      ],
+    });
+    delivered.native.beginTurn('assistant');
+    await delivered.native.connect();
+    await delivered.native.thread({ ...thread, threadId: 'thread' });
+    const accepted = vi.fn();
+    await delivered.native.run(delivery, accepted);
+    await delivered.native.finished;
+    expect(accepted).toHaveBeenCalledWith(null);
+    expect(delivered.commands.filter((command) => command.method === 'turn/start')).toEqual([]);
+    delivered.native.closeStream();
+    delivered.disconnect();
+
+    // The same text with an earlier result on the thread is a new delivery.
+    const pending = runner({
+      history: [{ type: 'userMessage', id: 'prompt', clientId: 'review:0', content: [] }],
+    });
+    pending.native.beginTurn('assistant');
+    await pending.native.connect();
+    await pending.native.thread({ ...thread, threadId: 'thread' });
+    await pending.native.run(delivery, () => {});
+    expect(pending.commands.filter((command) => command.method === 'turn/start')).toEqual([
       {
         id: expect.any(Number),
         method: 'turn/start',
         params: {
           threadId: 'thread',
-          input: [],
-          toolOutput: {
-            name: 'request_changes',
-            namespace: null,
-            output: JSON.stringify(outcome),
-            retain: true,
-          },
+          clientUserMessageId: 'review:1',
+          input: [{ type: 'text', text: 'The review finished.', text_elements: [] }],
         },
       },
     ]);
+    pending.native.closeStream();
+    pending.disconnect();
+
+    // Codex rejects history reads on a thread without user messages, which a new one never has.
+    const fresh = runner({ history: [{ type: 'userMessage', id: 'x', clientId: 'review:1' }] });
+    fresh.native.beginTurn('assistant');
+    await fresh.native.connect();
+    await fresh.native.thread(thread);
+    await fresh.native.run(delivery, () => {});
+    expect(fresh.commands.map((command) => command.method)).not.toContain('thread/items/list');
+    expect(fresh.commands.map((command) => command.method)).toContain('turn/start');
+    fresh.native.closeStream();
+    fresh.disconnect();
+  });
+
+  it('resubmits a regenerated prompt and adds catch-up text to the same input', async () => {
+    const { native, commands, disconnect } = runner({
+      history: [{ type: 'userMessage', id: 'prompt', clientId: 'message:1', content: [] }],
+    });
+    native.beginTurn('assistant');
+    await native.connect();
+    await native.thread({ ...thread, threadId: 'thread' });
+    const catchUp = vi.fn(() => 'Earlier conversation');
+    await native.run({ tag: 'message:1', text: 'Edit again', catchUp }, () => {});
+    expect(catchUp).toHaveBeenCalledWith('message:1');
+    expect(commands.find((command) => command.method === 'turn/start')?.params).toMatchObject({
+      clientUserMessageId: 'message:1',
+      input: [
+        { type: 'text', text: 'Earlier conversation' },
+        { type: 'text', text: 'Edit again' },
+      ],
+    });
+    native.closeStream();
+    disconnect();
+  });
+
+  it('answers request_changes immediately instead of waiting for a decision', async () => {
+    const { native, emit, commands, disconnect } = runner();
+    const onReview = vi.fn(async () => ({ success: true, text: 'Submitted review 1.' }));
+    native.beginTurn('assistant', onReview);
+    await native.connect();
+    await native.thread(thread);
+    emit({
+      id: 'call',
+      method: 'item/tool/call',
+      params: {
+        threadId: 'thread',
+        turnId: 'turn',
+        callId: 'call-1',
+        namespace: null,
+        tool: 'request_changes',
+        arguments: {},
+      },
+    });
+    await vi.waitFor(() =>
+      expect(commands).toContainEqual({
+        id: 'call',
+        result: {
+          success: true,
+          contentItems: [{ type: 'inputText', text: 'Submitted review 1.' }],
+        },
+      }),
+    );
     native.closeStream();
     disconnect();
   });
@@ -190,7 +225,7 @@ describe('course agent turns', () => {
     native.beginTurn('assistant');
     await native.connect();
     await native.thread(thread);
-    const submission = native.run('Edit', () => {});
+    const submission = native.run({ tag: 'message:edit', text: 'Edit' }, () => {});
     await new Promise<void>((resolve) => setImmediate(resolve));
     disconnect();
     await expect(submission).rejects.toThrow();

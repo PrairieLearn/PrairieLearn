@@ -1,10 +1,8 @@
 import type { UIMessageChunk } from 'ai';
 
-import type { RequestChangesResult, ReviewOutcome } from '@prairielearn/course-agent-types';
-
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
 
-import type { CodexAppServerClient } from './codex.js';
+import type { CodexAppServerClient, ToolReply, TurnInput } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 
 interface TurnResult {
@@ -19,7 +17,6 @@ export class SandboxTurn {
   private interruptible = false;
   private stopping: Promise<void> | null = null;
   readonly finished: Promise<TurnResult>;
-  readonly messageId: string;
   readonly stream: ReadableStream<UIMessageChunk>;
 
   constructor(
@@ -27,23 +24,19 @@ export class SandboxTurn {
     private native: CodexAppServerClient,
     options: {
       messageId: string;
-      text: string | ReviewOutcome;
-      onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<RequestChangesResult>;
+      input: TurnInput;
+      onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
       startup: boolean;
       prepare: () => Promise<void>;
       thread: { model: string; instructions: string; threadId: string | null };
       onThread: (id: string) => void;
       onReady: () => void;
-      onAccepted: (id: string) => void;
+      /** Receives the native turn ID, or null when an earlier attempt already submitted it. */
+      onAccepted: (id: string | null) => void;
     },
   ) {
-    this.messageId = options.messageId;
     this.stream = native.beginTurn(options.messageId, options.onReview);
     this.finished = this.execute(options);
-  }
-
-  openStream() {
-    return this.native.openStream(this.messageId);
   }
 
   private get stopped() {
@@ -95,7 +88,7 @@ export class SandboxTurn {
       this.abort.signal.throwIfAborted();
       this.interruptible = true;
       result.phase = 'execution';
-      await this.native.run(options.text, options.onAccepted);
+      await this.native.run(options.input, options.onAccepted);
       await this.native.finished;
     } catch (error) {
       if (!this.stopped) result.error = error;

@@ -1,30 +1,46 @@
 /**
+ * PrairieLearn owns each review's decision, editor job, and result in `course_agent_reviews`; the
+ * agent service owns the snapshot and delivering the result to the agent. A result is recorded
+ * before it is sent, so a failed send is retried by the sweeper or by Resume, never lost.
+ *
  * Local editing writes the approved files and syncs from disk. Git editing writes,
  * commits, and pushes the approved files, then syncs from disk. Both use the editor's job.
  */
 import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
 
-import type {
-  PendingReview,
-  RequestChangesResult,
-  ReviewSnapshot,
+import {
+  type RequestChangesResult,
+  RequestChangesResultSchema,
+  type Review,
+  type ReviewSnapshot,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
 import { config } from '../../../lib/config.js';
-import type { Course, CourseAgentConversation, User } from '../../../lib/db-types.js';
+import type {
+  Course,
+  CourseAgentConversation,
+  CourseAgentReview,
+  User,
+} from '../../../lib/db-types.js';
 import { FileDeleteEditor, FileUploadEditor, MultiEditor } from '../../../lib/editors.js';
 import { parseGithubRepository } from '../../../lib/github-utils.js';
 import { type ServerJobExecutor, getJobSequence } from '../../../lib/server-jobs.js';
 import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
 import { selectCourseById } from '../../../models/course.js';
+import {
+  insertCourseAgentReview,
+  selectOptionalCourseAgentReview,
+  selectUndeliveredCourseAgentReviews,
+  updateCourseAgentReviewDelivered,
+  updateCourseAgentReviewResult,
+} from '../../models/course-agent-review.js';
 
 import {
-  deliverCourseAgentReviewOutcome,
-  getCourseAgentPendingReview,
-  recordCourseAgentReviewDecision,
+  deliverCourseAgentReviewResult,
+  getCourseAgentReview,
   resumeCourseAgentConversation,
 } from './client.js';
 import { ReviewConflictSchema, checkReviewConflicts } from './review-conflicts.js';
@@ -69,14 +85,27 @@ function verifyReviewBinding(
   }
 }
 
-/** Generate the review from immutable local Git objects and saved bytes. */
-export async function getPendingReview(
+/**
+ * A pending review shows its diff, generated from immutable local Git objects and saved bytes.
+ * A decided review shows its job and, once finished, its result.
+ */
+export async function getReview(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   conversation: CourseAgentConversation,
-  callId: string,
+  reviewId: string,
 ) {
-  const review = await getCourseAgentPendingReview(conversation.agent_conversation_id);
-  if (review?.callId !== callId) return null;
+  const decided = await selectOptionalCourseAgentReview({
+    course_agent_conversation_id: conversation.id,
+    agent_review_id: reviewId,
+  });
+  if (decided) {
+    return {
+      status: 'decided' as const,
+      result: decided.result === null ? null : RequestChangesResultSchema.parse(decided.result),
+    };
+  }
+  const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
+  if (!review) return { status: 'unavailable' as const };
   let diff: { patch: string | null; error: string | null };
   try {
     verifyReviewBinding(course, review.snapshot);
@@ -89,13 +118,15 @@ export async function getPendingReview(
       error: error instanceof Error ? error.message : 'Could not load the reviewed changes.',
     };
   }
-  return {
-    callId: review.callId,
-    request_changes_tool_part: review.request_changes_tool_part,
-    status: review.status,
-    jobSequenceId: review.jobSequenceId,
-    diff,
-  };
+  return { status: 'pending' as const, diff };
+}
+
+/** Repeated decisions must agree with the first; the unique review row makes the first win. */
+function matchDecision(review: CourseAgentReview, decision: 'approved' | 'denied') {
+  if (review.decision !== decision) {
+    throw new HttpStatusError(409, 'This review already has a different decision.');
+  }
+  return { decision };
 }
 
 export async function postReviewDecision({
@@ -103,42 +134,33 @@ export async function postReviewDecision({
   conversation,
   user,
   authzData,
-  callId,
+  reviewId,
   decision,
 }: {
   course: Pick<Course, 'id'>;
   conversation: CourseAgentConversation;
   user: User;
   authzData: { has_course_permission_edit: boolean; authn_user: Pick<User, 'id'> };
-  callId: string;
+  reviewId: string;
   decision: 'approved' | 'denied';
 }) {
-  const course = await selectCourseById(courseContext.id);
-  const review = await getCourseAgentPendingReview(conversation.agent_conversation_id);
-  if (review?.callId !== callId) {
-    throw new HttpStatusError(409, 'This review has changed. Reload it before deciding.');
-  }
-  if (review.status !== 'pending') {
-    // Approval starts a job; denial has no job. Repeated decisions must agree.
-    const previousDecision = review.jobSequenceId === null ? 'denied' : 'approved';
-    if (decision !== previousDecision) {
-      throw new HttpStatusError(409, 'This review already has a different decision.');
-    }
-    return { decision, jobSequenceId: review.jobSequenceId };
-  }
-  // Claim the decision before doing external work. This binds approval to one job
-  // (or records denial) while the separate outcome reports what actually happened.
+  const key = { course_agent_conversation_id: conversation.id, agent_review_id: reviewId };
+  const existing = await selectOptionalCourseAgentReview(key);
+  if (existing) return matchDecision(existing, decision);
+  const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
+  if (!review) throw new HttpStatusError(409, 'This review is no longer pending.');
   if (decision === 'denied') {
-    await recordCourseAgentReviewDecision(conversation.agent_conversation_id, {
-      callId: review.callId,
+    const row = await insertCourseAgentReview({
+      ...key,
       decision,
-    });
-    await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
-      callId: review.callId,
+      job_sequence_id: null,
       result: DENIED,
     });
-    return { decision, jobSequenceId: null };
+    if (!row) return matchDecision((await selectOptionalCourseAgentReview(key))!, decision);
+    await deliverResult(conversation, row, DENIED);
+    return { decision };
   }
+  const course = await selectCourseById(courseContext.id);
   verifyReviewBinding(course, review.snapshot);
   const locals = { course, user, authz_data: authzData };
   const container = { rootPath: course.path, invalidRootPaths: [path.join(course.path, '.git')] };
@@ -159,20 +181,21 @@ export async function postReviewDecision({
     ),
   ]);
   const serverJob = await editor.prepareServerJob();
-  try {
-    await recordCourseAgentReviewDecision(conversation.agent_conversation_id, {
-      callId: review.callId,
-      decision,
-      jobSequenceId: serverJob.jobSequenceId,
-    });
-  } catch (error) {
+  const row = await insertCourseAgentReview({
+    ...key,
+    decision,
+    job_sequence_id: serverJob.jobSequenceId,
+    result: null,
+  });
+  if (!row) {
+    // A concurrent decision won; this job must never run.
     await serverJob.executeUnsafe(async (job) => {
-      job.stop('Saving was not started. Inspect the review before continuing.');
+      job.stop('Another decision for this review was recorded first.');
     });
-    throw error;
+    return matchDecision((await selectOptionalCourseAgentReview(key))!, decision);
   }
-  void applyChanges(editor, serverJob, course, conversation, review);
-  return { decision, jobSequenceId: serverJob.jobSequenceId };
+  void applyChanges(editor, serverJob, course, conversation, row, review);
+  return { decision };
 }
 
 async function applyChanges(
@@ -180,7 +203,8 @@ async function applyChanges(
   serverJob: ServerJobExecutor,
   course: Course,
   conversation: CourseAgentConversation,
-  review: PendingReview,
+  row: CourseAgentReview,
+  review: Review,
 ) {
   const snapshot = review.snapshot;
   try {
@@ -196,30 +220,47 @@ async function applyChanges(
       // The editor has already persisted the failure and save/sync flags in its job.
     }
     const sequence = await getJobSequence(serverJob.jobSequenceId, conversation.course_id);
-    await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
-      callId: review.callId,
-      result: getReviewJobResult(sequence, snapshot.type),
-    });
+    await recordAndDeliverResult(conversation, row, getReviewJobResult(sequence, snapshot.type));
   } catch (error) {
-    logger.error(
-      'Course agent outcome delivery failed; Resume can deliver the saved job outcome.',
-      error,
+    logger.error('Course agent review result was not delivered; it will be retried.', error);
+  }
+}
+
+/** Record a result once; whichever caller records it first decides what the agent receives. */
+async function recordAndDeliverResult(
+  conversation: CourseAgentConversation,
+  row: CourseAgentReview,
+  result: RequestChangesResult,
+) {
+  const recorded = await updateCourseAgentReviewResult({ id: row.id, result });
+  if (recorded) await deliverResult(conversation, recorded, result);
+}
+
+/** A failed send leaves the result undelivered for the sweeper or Resume to retry. */
+async function deliverResult(
+  conversation: CourseAgentConversation,
+  row: CourseAgentReview,
+  result: RequestChangesResult,
+) {
+  try {
+    await deliverCourseAgentReviewResult(
+      conversation.agent_conversation_id,
+      row.agent_review_id,
+      result,
     );
+    await updateCourseAgentReviewDelivered(row.id);
+  } catch (error) {
+    if (error instanceof HttpStatusError && error.status === 409) {
+      // Retrying cannot change the service's answer, so stop sending this result.
+      logger.error('Course agent service refused the review result.', error);
+      await updateCourseAgentReviewDelivered(row.id);
+      return;
+    }
+    logger.error('Course agent review result was not delivered; it will be retried.', error);
   }
 }
 
-export async function getReviewJob(conversation: CourseAgentConversation, jobSequenceId: string) {
-  const sequence = await getJobSequence(jobSequenceId, conversation.course_id);
-  if (sequence.authn_user_id !== conversation.user_id) {
-    throw new HttpStatusError(404, 'Job not found.');
-  }
-  return sequence;
-}
-
-/**
- * Map a finished editor job to the result the agent receives. The pending review, not the job,
- * identifies which job belongs to it and whether it saved locally or published.
- */
+/** Map a finished editor job to the result the agent receives. */
 export function getReviewJobResult(
   sequence: JobSequenceWithTokens,
   mode: ReviewSnapshot['type'],
@@ -255,24 +296,45 @@ export function getReviewJobResult(
 }
 
 /**
- * Resume first delivers a decided review whose result never reached the agent, rebuilding an
- * approval's result from its job. Otherwise it asks the agent to repair its sandbox.
+ * Send every result the service has not acknowledged. A result missing because PrairieLearn
+ * stopped while saving is rebuilt from the finished job; a job still running is left for later.
  */
-export async function resumeConversation(conversation: CourseAgentConversation) {
-  const review = await getCourseAgentPendingReview(conversation.agent_conversation_id);
-  if (review?.status === 'running') {
-    const result =
-      review.jobSequenceId === null
-        ? DENIED
-        : getReviewJobResult(
-            await getJobSequence(review.jobSequenceId, conversation.course_id),
-            review.snapshot.type,
-          );
-    await deliverCourseAgentReviewOutcome(conversation.agent_conversation_id, {
-      callId: review.callId,
-      result,
-    });
-    return { recovered: true as const };
+export async function deliverUndeliveredReviewResults(conversationId: string | null = null) {
+  if (!config.courseAgentServiceUrl) return;
+  const rows = await selectUndeliveredCourseAgentReviews({
+    course_agent_conversation_id: conversationId,
+  });
+  for (const { review: row, conversation } of rows) {
+    try {
+      if (row.result !== null) {
+        await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result));
+        continue;
+      }
+      // Only approvals wait for a result, and the schema requires each to have a job.
+      if (row.job_sequence_id === null) throw new Error('Approved review has no job');
+      const sequence = await getJobSequence(row.job_sequence_id, conversation.course_id);
+      if (sequence.jobs[0].status === 'Running' || sequence.jobs[0].status === 'Stopping') {
+        continue;
+      }
+      // The snapshot is retained until its result is delivered, so its mode is still available.
+      const review = await getCourseAgentReview(
+        conversation.agent_conversation_id,
+        row.agent_review_id,
+      );
+      if (!review) continue;
+      await recordAndDeliverResult(
+        conversation,
+        row,
+        getReviewJobResult(sequence, review.snapshot.type),
+      );
+    } catch (error) {
+      logger.error('Course agent review result delivery failed; it will be retried.', error);
+    }
   }
+}
+
+/** Resume first sends any unacknowledged results, then asks the agent to repair and continue. */
+export async function resumeConversation(conversation: CourseAgentConversation) {
+  await deliverUndeliveredReviewResults(conversation.id);
   return resumeCourseAgentConversation(conversation.agent_conversation_id);
 }

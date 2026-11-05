@@ -2,10 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
-import {
-  type RequestChangesResult,
-  RequestChangesResultSchema,
-} from '@prairielearn/course-agent-types';
+import type { RequestChangesResult } from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
@@ -14,135 +11,101 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 
 export function RequestChangesCard({
   conversationId,
-  messageId,
-  partId,
-  output,
-  canReview,
+  reviewId,
+  canResume,
 }: {
   conversationId: string;
-  messageId: string;
-  partId: string;
-  output: unknown;
-  canReview: boolean;
+  reviewId: string;
+  /** The agent is idle but has not received this review's result, for example after Stop. */
+  canResume: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [showChanges, setShowChanges] = useState(false);
-  const [startedJob, setStartedJob] = useState<string | null>(null);
-  const reviewInput = { conversationId, callId: partId };
+  const reviewInput = { conversationId, reviewId };
   const review = useQuery({
-    ...trpc.courseAgent.getPendingReview.queryOptions(reviewInput),
-    enabled: canReview && output === undefined,
+    ...trpc.courseAgent.getReview.queryOptions(reviewInput),
     retry: false,
+    // Saving runs in the background; poll until it records a result.
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data?.status === 'decided' && !data.result ? 2000 : false;
+    },
   });
-  const current =
-    review.data?.request_changes_tool_part.messageId === messageId &&
-    review.data.request_changes_tool_part.partId === partId
-      ? review.data
-      : null;
-  const jobSequenceId = startedJob ?? current?.jobSequenceId ?? null;
-  const job = useQuery({
-    ...trpc.courseAgent.reviewJob.queryOptions({
-      conversationId,
-      jobSequenceId: jobSequenceId ?? '',
-    }),
-    enabled: jobSequenceId !== null && output === undefined,
-    retry: false,
-    refetchInterval: (query) => (query.state.data?.jobSequence.status === 'Running' ? 2000 : false),
-  });
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: trpc.courseAgent.getReview.queryKey(reviewInput) });
   const decision = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
-    onSuccess: async (result) => {
-      setStartedJob(result.jobSequenceId);
-      await queryClient.invalidateQueries({
-        queryKey: trpc.courseAgent.getPendingReview.queryKey(reviewInput),
-      });
-    },
+    onSuccess: invalidate,
   });
   const resume = useMutation({
     ...trpc.courseAgent.resume.mutationOptions(),
     retry: false,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: trpc.courseAgent.getPendingReview.queryKey(reviewInput),
-      });
-    },
+    onSuccess: invalidate,
   });
-  const result = output === undefined ? null : RequestChangesResultSchema.parse(output);
-  const failure = result
-    ? null
-    : (getAppError<CourseAgentError['GetPendingReview']>(review.error) ??
-      getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
-      getAppError<CourseAgentError['ReviewJob']>(job.error) ??
-      getAppError<CourseAgentError['Resume']>(resume.error));
-  const disabled = current?.status !== 'pending' || decision.isPending || jobSequenceId !== null;
+  const data = review.data;
+  const failure =
+    getAppError<CourseAgentError['GetReview']>(review.error) ??
+    getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
+    getAppError<CourseAgentError['Resume']>(resume.error);
+  const pending = data?.status === 'pending' ? data : null;
   return (
     <div className="border rounded p-2">
-      {result ? (
-        <ReviewResult result={result} />
+      {data?.status === 'decided' && data.result ? (
+        <ReviewResult result={data.result} />
       ) : (
-        <>
-          <ReviewActions
-            disabled={disabled}
-            canApprove={typeof current?.diff.patch === 'string'}
-            onViewChanges={() => setShowChanges(true)}
-            onDecision={(value) => {
-              if (current) {
-                decision.mutate({ conversationId, callId: current.callId, decision: value });
-              }
-            }}
-          />
-          {job.data?.jobSequence.status === 'Running' && (
-            <p className="small text-muted mt-2 mb-0" role="status">
-              Saving and syncing…
-            </p>
-          )}
-          {((job.data && job.data.jobSequence.status !== 'Running') ||
-            (current?.status === 'running' && jobSequenceId === null)) && (
-            <Button
-              className="mt-2"
-              variant="outline-secondary"
-              size="sm"
-              disabled={resume.isPending}
-              onClick={() => resume.mutate({ conversationId })}
-            >
-              Resume
-            </Button>
-          )}
-          {review.isError && (
-            <Button
-              className="mt-2"
-              size="sm"
-              variant="outline-secondary"
-              onClick={() => void review.refetch()}
-            >
-              Reload review
-            </Button>
-          )}
-          {current?.diff.error && (
-            <Alert variant="danger" className="mt-2 mb-0">
-              {current.diff.error}
-            </Alert>
-          )}
-          <ReviewChangesModal
-            id={partId}
-            show={showChanges}
-            loading={review.isLoading}
-            patch={current?.diff.patch ?? null}
-            error={
-              current?.diff.error ? (
-                <Alert variant="danger">{current.diff.error}</Alert>
-              ) : (
-                failure && (
-                  <AppErrorAlert error={failure} render={{ UNKNOWN: ({ message }) => message }} />
-                )
-              )
-            }
-            onHide={() => setShowChanges(false)}
-          />
-        </>
+        <ReviewActions
+          disabled={!pending || decision.isPending}
+          canApprove={typeof pending?.diff.patch === 'string'}
+          onViewChanges={() => setShowChanges(true)}
+          onDecision={(value) => decision.mutate({ conversationId, reviewId, decision: value })}
+        />
       )}
+      {data?.status === 'decided' && !data.result && (
+        <p className="small text-muted mt-2 mb-0" role="status">
+          Saving and syncing…
+        </p>
+      )}
+      {data?.status === 'unavailable' && (
+        <p className="small text-muted mt-2 mb-0">This review is no longer available.</p>
+      )}
+      {canResume && data?.status === 'decided' && data.result && (
+        <div className="d-flex align-items-center gap-2 mt-2">
+          <span className="small text-muted">The course agent has not received this result.</span>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            disabled={resume.isPending}
+            onClick={() => resume.mutate({ conversationId })}
+          >
+            Resume
+          </Button>
+        </div>
+      )}
+      {review.isError && (
+        <Button
+          className="mt-2"
+          size="sm"
+          variant="outline-secondary"
+          onClick={() => void review.refetch()}
+        >
+          Reload review
+        </Button>
+      )}
+      {pending?.diff.error && (
+        <Alert variant="danger" className="mt-2 mb-0">
+          {pending.diff.error}
+        </Alert>
+      )}
+      <ReviewChangesModal
+        id={reviewId}
+        show={showChanges}
+        loading={review.isLoading}
+        patch={pending?.diff.patch ?? null}
+        error={pending?.diff.error ? <Alert variant="danger">{pending.diff.error}</Alert> : null}
+        onHide={() => setShowChanges(false)}
+      />
       {failure && (
         <AppErrorAlert
           className="mt-2"
@@ -223,7 +186,7 @@ function ReviewChangesModal({
             style={{ maxHeight: '60vh' }}
             aria-label="Reviewed course changes"
           >
-            {patch || 'No file changes'}
+            {patch}
           </pre>
         )}
         {patch === null && !loading && !error && (
@@ -247,17 +210,15 @@ function ReviewResult({ result }: { result: RequestChangesResult }) {
   } else if (result.publication.status === 'conflict') {
     message = 'Course files changed since this proposal. No proposed changes were saved.';
   } else if (result.publication.status === 'saved_locally') {
-    if (result.sync.status === 'succeeded') {
-      message = 'Changes saved locally and course synced.';
-    } else {
-      message = 'Changes saved locally. Course Sync failed.';
-    }
+    message =
+      result.sync.status === 'succeeded'
+        ? 'Changes saved locally and course synced.'
+        : 'Changes saved locally, but the course sync failed.';
   } else if (result.publication.status === 'published') {
-    if (result.sync.status === 'succeeded') {
-      message = 'Changes published and course synced.';
-    } else {
-      message = 'Changes published. Course Sync failed.';
-    }
+    message =
+      result.sync.status === 'succeeded'
+        ? 'Changes saved and course synced.'
+        : 'Changes saved, but the course sync failed.';
   }
   return (
     <div role="status">

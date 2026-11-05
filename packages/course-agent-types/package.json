@@ -9,7 +9,6 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@prairielearn/zod": "workspace:^",
     "zod": "^4.6.5"
   },
   "devDependencies": {

@@ -2,13 +2,11 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import { type RequestChangesResult, type ReviewOutcome } from '@prairielearn/course-agent-types';
-
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
 import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
 import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
-import type { ThreadReadParams } from '../../generated/types/v2/ThreadReadParams.js';
+import type { ThreadItemsListParams } from '../../generated/types/v2/ThreadItemsListParams.js';
 import type { ThreadResumeParams } from '../../generated/types/v2/ThreadResumeParams.js';
 import type { ThreadStartParams } from '../../generated/types/v2/ThreadStartParams.js';
 import type { TurnInterruptParams } from '../../generated/types/v2/TurnInterruptParams.js';
@@ -48,24 +46,27 @@ const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
   tool: z.literal('request_changes'),
   arguments: z.strictObject({}),
 });
-const ThreadHistory = z.object({ thread: z.unknown() });
+const ItemsPage = z.object({
+  data: z.array(z.object({ item: z.object({ type: z.string(), clientId: z.string().nullish() }) })),
+  nextCursor: z.string().nullable(),
+});
 
 /**
- * Both delivery forms (a live tool reply and a cold tool output) carry this text, and Codex
- * retains it verbatim. Including the call ID distinguishes separate reviews with equal results.
+ * Input for one turn. Codex saves the tag on the turn's user message. A `once` input is never
+ * submitted twice: an earlier attempt whose acknowledgment was lost already delivered it.
  */
-function deliveredText(outcome: ReviewOutcome) {
-  return JSON.stringify(outcome);
+export interface TurnInput {
+  text: string;
+  tag: string;
+  once?: boolean;
+  /** Text to prepend given the thread's latest tag (undefined for a thread started this turn). */
+  catchUp?: (latestTag: string | null | undefined) => string | null;
 }
 
-/** Search any part of a saved thread for exact text, independent of Codex's item formats. */
-function containsText(value: unknown, text: string): boolean {
-  if (typeof value === 'string') return value === text;
-  if (Array.isArray(value)) return value.some((item) => containsText(item, text));
-  if (value && typeof value === 'object') {
-    return Object.values(value).some((item) => containsText(item, text));
-  }
-  return false;
+/** The model receives the reply as the tool result; it does not wait for an instructor. */
+export interface ToolReply {
+  success: boolean;
+  text: string;
 }
 
 /** A sandbox's app-server connection, reused across turns until Stop or sandbox cleanup. */
@@ -75,31 +76,21 @@ export class CodexAppServerClient {
   private terminal = Promise.withResolvers<undefined>();
   private turnId: string | null = null;
   private threadId: string | null = null;
+  /** Codex cannot list a new thread's history until its first user message. */
+  private newThread = false;
   private parts = new Map<string, 'text' | 'reasoning'>();
   private failure: Error | null = null;
-  private incorporatedReview: string | null = null;
-  private onReview?: (
-    call: DynamicToolCallParams,
-    ready: () => void,
-  ) => Promise<RequestChangesResult>;
+  private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
 
   constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
 
-  beginTurn(
-    messageId: string,
-    onReview?: (call: DynamicToolCallParams, ready: () => void) => Promise<RequestChangesResult>,
-  ) {
+  beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
+    if (this.controller) throw new Error('An SDK response is already open');
     this.terminal = Promise.withResolvers<undefined>();
     this.turnId = null;
     this.parts.clear();
     this.onReview = onReview;
     void this.terminal.promise.catch(() => {});
-    return this.openStream(messageId);
-  }
-
-  /** A review ends one SDK response while retaining the live native connection. */
-  openStream(messageId: string) {
-    if (this.controller) throw new Error('An SDK response is already open');
     return new ReadableStream<UIMessageChunk>({
       start: (controller) => {
         this.controller = controller;
@@ -140,26 +131,11 @@ export class CodexAppServerClient {
     rpc.onRequest('item/tool/call', async (value: unknown) => {
       const call = this.parseReviewCall(value);
       if (!this.onReview) throw new Error('Review handling is not configured');
-      const result = await this.onReview(call, () => {
-        // The frontend uses this tool part to load the saved review from PL.
-        // File contents stay in DO storage instead of entering chat history.
-        this.emit({
-          type: 'tool-input-available',
-          toolCallId: call.callId,
-          toolName: 'request_changes',
-          input: {},
-        });
-        this.finishResponse();
-      });
-      const response = {
-        success:
-          ['published', 'saved_locally'].includes(result.publication.status) &&
-          result.sync.status === 'succeeded',
-        contentItems: [
-          { type: 'inputText' as const, text: deliveredText({ callId: call.callId, result }) },
-        ],
+      const reply = await this.onReview(call);
+      return {
+        success: reply.success,
+        contentItems: [{ type: 'inputText', text: reply.text }],
       } satisfies DynamicToolCallResponse;
-      return response;
     });
     rpc.listen();
     onNotification('item/agentMessage/delta', TextDelta, (params) => this.delta('text', params));
@@ -168,7 +144,6 @@ export class CodexAppServerClient {
     );
     onNotification('item/completed', ItemCompleted, ({ threadId, item }) => {
       if (threadId !== this.threadId) return;
-      if (item.type === 'dynamicToolCall') this.incorporatedReview = item.id;
       const type =
         item.type === 'agentMessage' ? 'text' : item.type === 'reasoning' ? 'reasoning' : null;
       if (!type) return;
@@ -271,51 +246,56 @@ export class CodexAppServerClient {
           ThreadResult,
         );
     this.threadId = result.thread.id;
+    this.newThread = !config.threadId;
     return result.thread.id;
   }
 
-  async run(text: string | ReviewOutcome, accepted: (turnId: string) => void) {
-    if (typeof text !== 'string') {
-      const saved = await this.request(
-        'thread/read',
-        {
-          threadId: this.threadId!,
-          includeTurns: true,
-        } satisfies ThreadReadParams,
-        ThreadHistory,
-      );
-      const incorporated = containsText(saved.thread, deliveredText(text));
-      if (incorporated) {
-        this.incorporatedReview = text.callId;
-        this.terminal.resolve(undefined);
-        return;
-      }
+  /** Submit one turn, with any catch-up text in the same input so both are accepted together. */
+  async run(input: TurnInput, accepted: (turnId: string | null) => void) {
+    // A thread started for this turn has no history, and Codex cannot list it yet.
+    const latestTag =
+      this.newThread || (!input.once && !input.catchUp) ? undefined : await this.latestClientId();
+    if (input.once && !this.newThread && latestTag === input.tag) {
+      accepted(null);
+      this.terminal.resolve(undefined);
+      return;
     }
+    const context = input.catchUp?.(latestTag) ?? null;
     const result = await this.request(
       'turn/start',
       {
         threadId: this.threadId!,
-        input: typeof text === 'string' ? [{ type: 'text', text, text_elements: [] }] : [],
-        ...(typeof text !== 'string'
-          ? {
-              toolOutput: {
-                name: 'request_changes',
-                namespace: null,
-                output: deliveredText(text),
-                retain: true,
-              },
-            }
-          : {}),
+        clientUserMessageId: input.tag,
+        input: [
+          ...(context ? [{ type: 'text' as const, text: context, text_elements: [] }] : []),
+          { type: 'text', text: input.text, text_elements: [] },
+        ],
       } satisfies TurnStartParams,
       TurnResult,
     );
     this.turnId = result.turn.id;
-    if (typeof text !== 'string') this.incorporatedReview = text.callId;
     accepted(this.turnId);
   }
 
-  hasIncorporatedReview(callId: string) {
-    return this.incorporatedReview === callId;
+  /** The client ID of the thread's most recent user message, read newest first. */
+  private async latestClientId() {
+    let cursor: string | null = null;
+    do {
+      const page: z.infer<typeof ItemsPage> = await this.request(
+        'thread/items/list',
+        {
+          threadId: this.threadId!,
+          sortDirection: 'desc',
+          limit: 50,
+          cursor,
+        } satisfies ThreadItemsListParams,
+        ItemsPage,
+      );
+      const message = page.data.find((entry) => entry.item.type === 'userMessage');
+      if (message) return message.item.clientId ?? null;
+      cursor = page.nextCursor;
+    } while (cursor);
+    return null;
   }
 
   async interrupt() {
@@ -363,16 +343,17 @@ export class CodexAppServerClient {
     });
   }
 
+  /** Whether chunks still reach the turn's SDK response. */
+  get streaming() {
+    return this.controller !== null;
+  }
+
   emit(chunk: UIMessageChunk) {
     this.controller?.enqueue(chunk);
   }
 
   closeStream(error?: unknown) {
     if (error) this.terminal.reject(error);
-    this.finishResponse(error);
-  }
-
-  private finishResponse(error?: unknown) {
     if (!this.controller) return;
     for (const [id, type] of this.parts) {
       this.controller.enqueue({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
@@ -401,6 +382,6 @@ const requestChangesTool: DynamicToolSpec = {
   type: 'function',
   name: 'request_changes',
   description:
-    'Request instructor approval to save the current course edits and run Course Sync. PrairieLearn pushes to Git only when configured. Wait for the result; do not push yourself.',
+    'Submit the current course edits for instructor review. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 };

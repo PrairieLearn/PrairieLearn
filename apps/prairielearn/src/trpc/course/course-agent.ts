@@ -5,11 +5,9 @@ import { CreateConversationInput } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
 import {
-  getPendingReview,
-  getReviewJob,
+  getReview,
   postReviewDecision,
   resumeConversation,
 } from '../../ee/lib/course-agent/apply-changes.js';
@@ -41,8 +39,8 @@ const requireCourseAgent = t.middleware(async (opts) => {
 const courseAgentProcedure = t.procedure.use(requireCoursePermissionOwn).use(requireCourseAgent);
 
 export const courseAgentRouter = t.router({
-  getPendingReview: courseAgentProcedure
-    .input(z.object({ conversationId: IdSchema, callId: z.string() }))
+  getReview: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, reviewId: z.uuid() }))
     .query(async ({ ctx, input }) => {
       const conversation = await selectOptionalCourseAgentConversation({
         id: input.conversationId,
@@ -50,13 +48,13 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      return getPendingReview(ctx.course, conversation, input.callId);
+      return getReview(ctx.course, conversation, input.reviewId);
     }),
   postReviewDecision: courseAgentProcedure
     .input(
       z.object({
         conversationId: IdSchema,
-        callId: z.string(),
+        reviewId: z.uuid(),
         decision: z.enum(['approved', 'denied']),
       }),
     )
@@ -74,18 +72,6 @@ export const courseAgentRouter = t.router({
         user: ctx.locals.user,
         authzData: ctx.authz_data,
       });
-    }),
-  reviewJob: courseAgentProcedure
-    .input(z.object({ conversationId: IdSchema, jobSequenceId: IdSchema }))
-    .query(async ({ ctx, input }) => {
-      const conversation = await selectOptionalCourseAgentConversation({
-        id: input.conversationId,
-        course_id: ctx.course.id,
-        user_id: ctx.locals.authn_user.id,
-      });
-      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      const jobSequence = await getReviewJob(conversation, input.jobSequenceId);
-      return getJobSequenceResultsProps({ course: ctx.locals.course, jobSequence });
     }),
   list: courseAgentProcedure.query(async ({ ctx }) => {
     const conversations = await selectCourseAgentConversationsForUser({
@@ -151,7 +137,6 @@ export interface CourseAgentError {
   List: never;
   Create: never;
   Resume: never;
-  GetPendingReview: never;
+  GetReview: never;
   PostReviewDecision: never;
-  ReviewJob: never;
 }

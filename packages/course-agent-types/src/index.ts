@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-import { IdSchema } from '@prairielearn/zod';
-
 export type ConversationLifecycle =
   // No live container. The next message initializes a sandbox or restores the committed checkpoint.
   | { status: 'offline' }
@@ -29,6 +27,8 @@ export type ConversationState = ConversationLifecycle & {
   deadlineAt: string | null;
   /** The container stopped unexpectedly; the sandbox was restored from its last checkpoint. */
   sandboxLost: boolean;
+  /** A review whose outcome the agent has not yet received. New messages wait for it. */
+  reviewId: string | null;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
@@ -74,13 +74,7 @@ export const RequestChangesResultSchema = z
         status: z.literal('conflict'),
         paths: z.array(ReviewPathSchema).min(1).max(100),
       }),
-      z.strictObject({
-        status: z.literal('published'),
-        commitSha: z
-          .string()
-          .regex(/^[0-9a-f]{40}$/)
-          .optional(),
-      }),
+      z.strictObject({ status: z.literal('published') }),
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
     ]),
     sync: z.discriminatedUnion('status', [
@@ -136,33 +130,15 @@ export const ReviewSnapshotSchema = z
 
 export type ReviewSnapshot = z.infer<typeof ReviewSnapshotSchema>;
 
-/** Public review state returned to PrairieLearn for display and approval. */
-export const PendingReviewSchema = z.strictObject({
-  callId: z.string(),
-  // Identifies the request_changes tool part in chat history so its result can be updated.
-  request_changes_tool_part: z.strictObject({ messageId: z.string(), partId: z.string() }),
+/**
+ * A review the agent requested and whose outcome it has not yet received. PrairieLearn owns the
+ * decision and outcome; the agent service owns the snapshot and delivery to the agent.
+ */
+export const ReviewSchema = z.strictObject({
+  id: z.uuid(),
   snapshot: ReviewSnapshotSchema,
-  // Running means a decision was recorded but its result has not reached the agent.
-  status: z.enum(['pending', 'running']),
-  jobSequenceId: IdSchema.nullable(),
 });
 
-export type PendingReview = z.infer<typeof PendingReviewSchema>;
+export type Review = z.infer<typeof ReviewSchema>;
 
-export const ReviewDecisionSchema = z.discriminatedUnion('decision', [
-  z.strictObject({
-    callId: z.string(),
-    decision: z.literal('approved'),
-    jobSequenceId: IdSchema,
-  }),
-  z.strictObject({ callId: z.string(), decision: z.literal('denied') }),
-]);
-
-export type ReviewDecision = z.infer<typeof ReviewDecisionSchema>;
-
-export const ReviewOutcomeSchema = z.strictObject({
-  callId: z.string(),
-  result: RequestChangesResultSchema,
-});
-
-export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
+export const ReviewOutcomeSchema = z.strictObject({ result: RequestChangesResultSchema });

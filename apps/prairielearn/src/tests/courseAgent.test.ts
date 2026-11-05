@@ -79,15 +79,7 @@ describe('Course agent access and conversation privacy', () => {
     response.setHeader('Content-Type', 'application/json');
     const creating = request.url === '/conversations' || request.url === '/conversations/local';
     response.statusCode = creating ? 201 : 200;
-    response.end(
-      JSON.stringify(
-        creating
-          ? { id: serviceConversationId }
-          : request.url!.endsWith('/pending-review')
-            ? null
-            : { recovered: true },
-      ),
-    );
+    response.end(JSON.stringify(creating ? { id: serviceConversationId } : { recovered: true }));
   });
   let owner: User;
   let otherOwner: User;
@@ -194,7 +186,6 @@ describe('Course agent access and conversation privacy', () => {
       });
     });
     expect(serviceRequests.map((request) => request.path)).toEqual([
-      `/conversations/${own.agent_conversation_id}/pending-review`,
       `/conversations/${own.agent_conversation_id}/resume`,
     ]);
   });
