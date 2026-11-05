@@ -67,7 +67,12 @@ body:has(.course-agent-panel) .app-main {
 .course-agent-panel-animate {
   transition:
     transform 300ms,
-    visibility 300ms;
+    visibility 0s 300ms;
+}
+
+/* Become visible immediately when opening so focus can move into the panel. */
+.course-agent-panel-animate[data-open='true'] {
+  transition-delay: 0s;
 }
 
 body:has(.course-agent-panel-animate) .app-main {
@@ -106,7 +111,7 @@ body:has(.course-agent-panel-animate) .app-main {
   .course-agent-panel-animate {
     transition:
       opacity 300ms,
-      visibility 300ms;
+      visibility 0s 300ms;
   }
 }
 

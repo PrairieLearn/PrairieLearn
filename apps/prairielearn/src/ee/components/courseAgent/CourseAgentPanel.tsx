@@ -94,6 +94,7 @@ export function CourseAgentPanel({
     startTransition(() => setHydrated(true));
   }, []);
   const [open, setOpen] = useState(initialOpen);
+  const launcherLabel = open ? 'Hide course agent' : 'Show course agent';
   // Keep the picker and its draft mounted after the first open.
   const [hasEverOpened, setHasEverOpened] = useState(initialOpen);
   // Animate only after the user toggles, so a panel restored open on page load doesn't slide in.
@@ -130,7 +131,11 @@ export function CourseAgentPanel({
         startTransition(() => setHasEverOpened(true));
       }
       saveOpenState(nextOpen);
-      if (!nextOpen && !mobile) requestAnimationFrame(() => toggleRef.current?.focus());
+      requestAnimationFrame(() => {
+        // The panel is rendered at the end of the page, far from the navbar launcher in tab order.
+        if (nextOpen) document.getElementById('course-agent-panel')?.focus();
+        else if (!mobile) toggleRef.current?.focus();
+      });
     },
     [mobile],
   );
@@ -189,7 +194,6 @@ export function CourseAgentPanel({
 
   const launcherButtonProps = {
     ref: toggleRef,
-    'aria-label': open ? 'Close course agent' : 'Open course agent',
     'aria-expanded': open,
     'aria-controls': 'course-agent-panel',
     onPointerEnter: preloadChat,
@@ -199,10 +203,12 @@ export function CourseAgentPanel({
   const launcher = mobile ? (
     <button type="button" className="course-agent-launcher navbar-toggler" {...launcherButtonProps}>
       <i className="bi bi-stars" aria-hidden="true" />
+      <span className="visually-hidden">{launcherLabel}</span>
     </button>
   ) : (
     // Use the global Bootstrap tooltip; importing `@prairielearn/ui` here would add its shared
     // chunk to this eagerly loaded bundle. Hover-only avoids showing it when focus returns.
+    // Bootstrap fixes `data-bs-title` at creation but rereads `data-bs-original-title` on each show.
     <Button
       className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
       variant="outline-light"
@@ -211,10 +217,12 @@ export function CourseAgentPanel({
       data-bs-toggle="tooltip"
       data-bs-trigger="hover"
       data-bs-placement="bottom"
-      data-bs-title="Course agent"
+      data-bs-original-title={launcherLabel}
       {...launcherButtonProps}
     >
       <i className="bi bi-stars" aria-hidden="true" />
+      {/* Visible-to-AT text, not `aria-label`, so the global tooltip doesn't repeat the name. */}
+      <span className="visually-hidden">{launcherLabel}</span>
     </Button>
   );
 

@@ -147,7 +147,7 @@ export function Navbar({
                 ? html`
                     <a
                       id="navbar-load-from-disk"
-                      class="btn btn-success btn-sm"
+                      class="btn btn-success btn-sm mb-2 mb-md-0"
                       href="/pl/loadFromDisk"
                     >
                       Load from disk
