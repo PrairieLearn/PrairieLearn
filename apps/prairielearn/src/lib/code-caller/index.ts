@@ -163,9 +163,10 @@ export async function withCodeCaller<T>(
     throw new Error('CodeCaller pool not initialized');
   }
 
-  // Workers that are restarting will be back in the pool momentarily, so a call
-  // can wait for one of them instead of being rejected.
-  if (pool.available + restartingWorkers === 0 && !config.workerUseQueue) {
+  // Without the queue, a call may only wait for a worker that is free or about
+  // to be. Workers that are restarting will be back in the pool momentarily,
+  // so they count, but only as many calls as there are such workers can wait.
+  if (pool.pending >= pool.available + restartingWorkers && !config.workerUseQueue) {
     debug('getPythonCaller(): no workers available, waiting to error');
     return new Promise((resolve, reject) => {
       setTimeout(() => {
