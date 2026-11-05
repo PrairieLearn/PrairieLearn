@@ -22,6 +22,10 @@ def test_input(
         func_input = pair["input"]
         expected_output = pair["output"]
         response = sandbox.query_function_raw(function_name, func_input)
+        if response["status"] == FunctionStatusCode.TIMEOUT:
+            # A late reply would otherwise be read as the answer to the next input.
+            failures.append(f'{function_name}("{func_input}"): timed out')
+            break
         if (
             response["status"] == FunctionStatusCode.SUCCESS
             and response["value"] == expected_output
