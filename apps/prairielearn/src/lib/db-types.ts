@@ -1,6 +1,4 @@
-/* eslint perfectionist/sort-objects: error */
-/* eslint perfectionist/sort-sets: error */
-
+// `oxlint.config.mts` keeps the objects and sets in this file sorted; update it if this file moves.
 import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
@@ -716,13 +714,21 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+export const CourseAgentConversationSchema = z.object({
+  agent_conversation_id: z.string(),
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  title: z.string(),
+  user_id: IdSchema,
+});
+export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
+
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
   branch: z.string(),
-  chunks_history_started_at: DateFromISOString.nullable(),
-  chunks_published_at: DateFromISOString.nullable(),
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),
   created_at: DateFromISOString,
@@ -1008,7 +1014,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
-/* eslint-disable @typescript-eslint/no-deprecated */
+/* oxlint-disable typescript/no-deprecated */
 /** @deprecated */
 export const TeamSchema = z.object({
   course_instance_id: IdSchema,
@@ -1094,7 +1100,7 @@ export type GroupUser = TeamUser;
 export const GroupUserRoleSchema = TeamUserRoleSchema;
 export type GroupUserRole = TeamUserRole;
 export const GroupLogSchema = TeamLogSchema;
-/* eslint-enable @typescript-eslint/no-deprecated */
+/* oxlint-enable typescript/no-deprecated */
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
@@ -1821,6 +1827,7 @@ export const TableNames = [
   'batched_migrations',
   'chunks',
   'client_fingerprints',
+  'course_agent_conversations',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',

@@ -12,8 +12,10 @@ WITH
       chunks
     WHERE
       course_id = $course_id
+      -- Undated rows predate history and remain current until a newer revision.
       AND (
         $at_date::timestamptz IS NULL
+        OR created_at IS NULL
         OR created_at <= $at_date
       )
     ORDER BY
@@ -21,7 +23,6 @@ WITH
       coalesce(question_id, -1) ASC,
       coalesce(course_instance_id, -1) ASC,
       coalesce(assessment_id, -1) ASC,
-      created_at DESC NULLS LAST,
       id DESC
   )
 SELECT
@@ -67,7 +68,6 @@ FROM
       AND coalesce(course_instance_id, -1) = coalesce((chunks_arr ->> 'courseInstanceId')::bigint, -1)
       AND coalesce(assessment_id, -1) = coalesce((chunks_arr ->> 'assessmentId')::bigint, -1)
     ORDER BY
-      created_at DESC NULLS LAST,
       id DESC
     LIMIT
       1
@@ -131,19 +131,9 @@ FROM
 LIMIT
   100;
 
--- LIMIT prevents infinite recursion on circular templates
--- BLOCK select_chunk_publication_state
-SELECT
-  chunks_published_at,
-  chunks_history_started_at
-FROM
-  courses
-WHERE
-  id = $course_id;
-
 -- BLOCK lock_course_for_chunk_publication
 SELECT
-  chunks_published_at
+  id
 FROM
   courses
 WHERE
@@ -152,41 +142,9 @@ FOR UPDATE;
 
 -- BLOCK select_chunk_publication_date
 SELECT
-  GREATEST(
-    date_trunc('milliseconds', clock_timestamp()),
-    chunks_published_at + INTERVAL '1 millisecond',
-    (
-      SELECT
-        MAX(created_at) + INTERVAL '1 millisecond'
-      FROM
-        chunks
-      WHERE
-        course_id = $course_id
-    )
-  )
-FROM
-  courses
-WHERE
-  id = $course_id;
+  clock_timestamp();
 
--- BLOCK record_chunk_publication
-UPDATE courses
-SET
-  chunks_published_at = $created_at,
-  chunks_history_started_at = coalesce(chunks_history_started_at, $created_at)
-WHERE
-  id = $course_id;
-
--- BLOCK establish_chunk_baseline
--- Unknown pre-history dates become a baseline at this publication, not earlier.
-UPDATE chunks
-SET
-  created_at = $created_at
-WHERE
-  course_id = $course_id
-  AND created_at IS NULL;
-
--- BLOCK publish_chunks
+-- BLOCK insert_chunks
 WITH
   new_chunks AS (
     SELECT
@@ -196,7 +154,6 @@ WITH
       ci.id AS course_instance_id,
       a.id AS assessment_id,
       (chunk ->> 'uuid')::uuid AS uuid,
-      FALSE AS deleted,
       (chunk ->> 'sizeCompressed')::bigint AS size_compressed,
       (chunk ->> 'sizeUncompressed')::bigint AS size_uncompressed
     FROM
@@ -216,22 +173,6 @@ WITH
         AND a.deleted_at IS NULL
         AND a.course_instance_id = ci.id
       )
-    UNION ALL
-    SELECT
-      type,
-      course_id,
-      question_id,
-      course_instance_id,
-      assessment_id,
-      NULL::uuid,
-      TRUE,
-      NULL::bigint,
-      NULL::bigint
-    FROM
-      chunks
-    WHERE
-      id = ANY ($deleted_chunk_ids::bigint[])
-      AND course_id = $course_id
   )
 INSERT INTO
   chunks (
@@ -248,19 +189,50 @@ INSERT INTO
     size_uncompressed
   )
 SELECT
-  source.type,
-  source.course_id,
-  source.question_id,
-  source.course_instance_id,
-  source.assessment_id,
-  source.uuid,
-  $created_at,
+  type,
+  course_id,
+  question_id,
+  course_instance_id,
+  assessment_id,
+  uuid,
+  $created_at::timestamptz,
   $commit_hash,
-  source.deleted,
-  source.size_compressed,
-  source.size_uncompressed
+  FALSE,
+  size_compressed,
+  size_uncompressed
 FROM
-  new_chunks AS source;
+  new_chunks
+UNION ALL
+SELECT
+  old.type,
+  old.course_id,
+  old.question_id,
+  old.course_instance_id,
+  old.assessment_id,
+  NULL::uuid,
+  $created_at::timestamptz,
+  $commit_hash,
+  TRUE,
+  NULL::bigint,
+  NULL::bigint
+FROM
+  chunks AS old
+WHERE
+  old.course_id = $course_id
+  AND old.id = ANY ($replaced_chunk_ids::bigint[])
+  -- A regenerated path can belong to a new entity ID. Mark the old identity
+  -- deleted as well, while ordinary updates only append the new live revision.
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      new_chunks AS new
+    WHERE
+      new.type = old.type
+      AND coalesce(new.question_id, -1) = coalesce(old.question_id, -1)
+      AND coalesce(new.course_instance_id, -1) = coalesce(old.course_instance_id, -1)
+      AND coalesce(new.assessment_id, -1) = coalesce(old.assessment_id, -1)
+  );
 
 -- BLOCK select_active_assessment_ids_by_tid
 SELECT

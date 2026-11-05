@@ -55,10 +55,6 @@ function ResizeHandle<RowDataModel extends RowData>({
       className="py-1 h-100"
       style={{ position: 'absolute', insetInlineEnd: 0, top: 0, width: '4px' }}
     >
-      {/* separator role is focusable, so these jsx-a11y-x rules are false positives.
-        https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/separator_role#focusable_separator
-      */}
-      {/* eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions */}
       <div
         role="separator"
         aria-label={`Resize '${columnName}' column`}
@@ -67,7 +63,6 @@ function ResizeHandle<RowDataModel extends RowData>({
         aria-valuemin={minSize}
         aria-valuemax={maxSize}
         aria-valuenow={header.getSize()}
-        // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
         tabIndex={0}
         className="h-100"
         style={{
@@ -146,6 +141,8 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
       className={clsx(isPinned === 'start' && 'bg-light')}
       style={style}
       aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
+      // The table uses CSS grid layout, which drops implicit table semantics, so the role is required.
+      // oxlint-disable-next-line jsx-a11y/no-redundant-roles
       role="columnheader"
     >
       <div

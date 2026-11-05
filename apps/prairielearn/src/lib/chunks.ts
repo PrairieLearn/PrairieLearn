@@ -37,22 +37,6 @@ import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const ChunkPublicationStateSchema = CourseSchema.pick({
-  chunks_history_started_at: true,
-  chunks_published_at: true,
-});
-
-export class ChunkHistoryUnavailableError extends Error {
-  constructor(availableFrom: Date | null) {
-    super(
-      availableFrom
-        ? `Chunk history is only available from ${availableFrom.toISOString()}.`
-        : 'Complete chunk history is not yet available for this course.',
-    );
-    this.name = 'ChunkHistoryUnavailableError';
-  }
-}
-
 interface ElementsChunkMetadata {
   type: 'elements';
 }
@@ -483,21 +467,11 @@ async function getAllChunksForCourse(courseId: string) {
 }
 
 /**
- * Selects live chunk revisions at a sync cutoff, or the current state when omitted.
- * Historical reads require a complete course baseline. Earlier cutoffs fail
- * rather than returning only the chunks that happen to have dates.
+ * Selects live chunk revisions at a cutoff, or the current state when omitted.
+ * Rows written before history was activated are undated and treated as current
+ * until replaced, so cutoffs must not predate activation.
  */
 export async function selectChunksForCourse(courseId: string, atDate: Date | null = null) {
-  if (atDate !== null) {
-    const { chunks_history_started_at: availableFrom } = await sqldb.queryRow(
-      sql.select_chunk_publication_state,
-      { course_id: courseId },
-      ChunkPublicationStateSchema,
-    );
-    if (availableFrom === null || atDate < availableFrom) {
-      throw new ChunkHistoryUnavailableError(availableFrom);
-    }
-  }
   return await sqldb.queryRows(
     sql.select_course_chunks,
     { course_id: courseId, at_date: atDate },
@@ -514,7 +488,9 @@ interface DiffChunksOptions {
 
 interface ChunksDiff {
   updatedChunks: ChunkMetadata[];
-  deletedChunks: (ChunkMetadata & { id: string })[];
+  deletedChunks: ChunkMetadata[];
+  /** IDs of current rows whose chunk identities are being replaced or deleted. */
+  replacedChunkIds: string[];
 }
 
 /**
@@ -774,14 +750,15 @@ async function diffChunks({
     }),
   );
 
-  const deletedPaths = new Set(deletedChunks.map(pathForChunk));
-  return {
-    updatedChunks,
-    deletedChunks: rawCourseChunks.flatMap((chunk) => {
-      const metadata = chunkMetadataFromDatabaseChunk(DatabaseChunkSchema.parse(chunk));
-      return deletedPaths.has(pathForChunk(metadata)) ? [{ ...metadata, id: chunk.id }] : [];
-    }),
-  };
+  const replacedPaths = new Set([...updatedChunks, ...deletedChunks].map(pathForChunk));
+  const replacedChunkIds = rawCourseChunks
+    .filter((chunk) =>
+      replacedPaths.has(
+        pathForChunk(chunkMetadataFromDatabaseChunk(DatabaseChunkSchema.parse(chunk))),
+      ),
+    )
+    .map((chunk) => chunk.id);
+  return { updatedChunks, deletedChunks, replacedChunkIds };
 }
 
 async function createAndUploadChunks(coursePath: string, chunksToGenerate: ChunkMetadata[]) {
@@ -929,12 +906,7 @@ export async function updateChunksForCourse({
     return [];
   });
 
-  const { chunks_published_at: expectedPublication } = await sqldb.queryRow(
-    sql.select_chunk_publication_state,
-    { course_id: courseId },
-    ChunkPublicationStateSchema,
-  );
-  const { updatedChunks, deletedChunks } = await diffChunks({
+  const { updatedChunks, deletedChunks, replacedChunkIds } = await diffChunks({
     coursePath,
     courseId,
     courseData,
@@ -944,40 +916,22 @@ export async function updateChunksForCourse({
   const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
   const generatedChunks = await createAndUploadChunks(coursePath, updatedChunks);
 
-  // Upload without holding a transaction open. Once locked, reject a diff if
-  // another generator published since its initial read, even from another path.
+  // Uploads finish before the transaction, so it only holds row locks briefly.
   await sqldb.runInTransactionAsync(async () => {
-    const currentPublication = await sqldb.queryScalar(
-      sql.lock_course_for_chunk_publication,
-      { course_id: courseId },
-      CourseSchema.shape.chunks_published_at,
-    );
-    if (currentPublication?.getTime() !== expectedPublication?.getTime()) {
-      throw new Error('Course chunks changed during generation. Please retry the sync.');
-    }
-    const createdAt = await sqldb.queryScalar(
-      sql.select_chunk_publication_date,
-      { course_id: courseId },
-      DateFromISOString,
-    );
-    await sqldb.execute(sql.establish_chunk_baseline, {
+    await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
+    const createdAt = await sqldb.queryScalar(sql.select_chunk_publication_date, DateFromISOString);
+    await sqldb.execute(sql.insert_chunks, {
       course_id: courseId,
-      created_at: createdAt,
-    });
-    await sqldb.execute(sql.publish_chunks, {
-      course_id: courseId,
+      // Force this to a string; otherwise, our code in `sql-db.js` will try to
+      // convert it into a Postgres `ARRAY[...]` type, which we don't want.
       chunks: JSON.stringify(generatedChunks),
-      deleted_chunk_ids: deletedChunks.map((chunk) => chunk.id),
+      replaced_chunk_ids: replacedChunkIds,
       created_at: createdAt,
       commit_hash: commitHash,
     });
-    await sqldb.execute(sql.record_chunk_publication, {
-      course_id: courseId,
-      created_at: createdAt,
-    });
   });
 
-  return { updatedChunks, deletedChunks };
+  return { updatedChunks, deletedChunks, replacedChunkIds };
 }
 
 /**

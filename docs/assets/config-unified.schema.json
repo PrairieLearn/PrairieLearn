@@ -1522,6 +1522,32 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "courseAgentServiceUrl": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "courseAgentServiceToken": {
+      "default": null,
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "newsFeedUrl": {
       "default": null,
       "type": ["string", "null"]

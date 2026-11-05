@@ -25,8 +25,6 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
-import prettier from 'prettier';
-
 import type { Config, CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 import type {
@@ -40,6 +38,8 @@ import {
   cliRuleExcludes,
   nonPlCustomTags,
 } from '../apps/prairielearn/src/lib/htmlMustacheConfig.cli.js';
+
+import { formatWithOxfmt } from './format-with-oxfmt.mjs';
 
 const check = process.argv[2] === 'check';
 
@@ -208,11 +208,6 @@ function buildElementManifest(element: ElementSchemaModule): Record<string, unkn
   return manifest;
 }
 
-async function format(filePath: string, contents: string): Promise<string> {
-  const config = await prettier.resolveConfig(filePath);
-  return prettier.format(contents, { ...config, filepath: filePath });
-}
-
 function buildRegistry(elements: DiscoveredElement[]): string {
   const imports = elements
     .map((e) => `import { element as ${toCamelCase(e.tag)} } from './elements/${e.tag}.js';`)
@@ -294,7 +289,7 @@ async function buildHtmlMustacheConfig(elements: DiscoveredElement[]): Promise<s
       ...nonPlCustomTags,
     ],
   };
-  return await format(
+  return formatWithOxfmt(
     HTMLMUSTACHE_CONFIG_PATH,
     `${GENERATED_CONFIG_HEADER}\n${JSON.stringify(config, null, 2)}\n`,
   );
@@ -330,16 +325,16 @@ const schemaPaths = new Set<string>();
 for (const { tag, element } of elements) {
   for (const [schemaTag, schema] of collectElementSchemas(element)) {
     const filePath = path.resolve(REPO_ROOT, schemaRelPath(tag, schemaTag));
-    baseFiles[filePath] = await format(filePath, `${JSON.stringify(schema, null, 2)}\n`);
+    baseFiles[filePath] = formatWithOxfmt(filePath, `${JSON.stringify(schema, null, 2)}\n`);
     schemaPaths.add(filePath);
   }
   const manifestPath = path.resolve(REPO_ROOT, manifestRelPath(tag));
-  baseFiles[manifestPath] = await format(
+  baseFiles[manifestPath] = formatWithOxfmt(
     manifestPath,
     `${JSON.stringify(buildElementManifest(element), null, 2)}\n`,
   );
 }
-baseFiles[REGISTRY_PATH] = await format(REGISTRY_PATH, buildRegistry(elements));
+baseFiles[REGISTRY_PATH] = formatWithOxfmt(REGISTRY_PATH, buildRegistry(elements));
 
 // Schema JSON files that exist on disk but are no longer produced — left behind
 // by a renamed or removed element/child tag.

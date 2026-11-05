@@ -1,17 +1,16 @@
 import * as path from 'path';
 
-import { Upload } from '@aws-sdk/lib-storage';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { type Course, CourseSchema } from '../lib/db-types.js';
+import { ChunkSchema, type Course, CourseSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -331,96 +330,56 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = originalChunksConsumerDirectory;
     });
 
-    it('rejects historical cutoffs before the complete course baseline', async () => {
-      const options = {
-        coursePath: tempTestCourseDir.path,
-        courseId: course.id,
-        courseData: await courseDB.loadFullCourse(course.id, tempTestCourseDir.path),
-      };
-      await chunksLib.updateChunksForCourse(options);
-      const preparationDate = (await selectCourseById(course.id)).chunks_published_at;
-      assert.isNotNull(preparationDate);
-
-      // Simulate rollout: some chunks have dates, but another is still undated.
-      await sqldb.execute(sql.prepare_partial_history, { course_id: course.id });
-      await expect(chunksLib.selectChunksForCourse(course.id, preparationDate)).rejects.toThrow(
-        chunksLib.ChunkHistoryUnavailableError,
-      );
-
-      await sqldb.execute(sql.enable_chunk_history);
-      await chunksLib.updateChunksForCourse(options);
-      const baseline = (await selectCourseById(course.id)).chunks_history_started_at;
-      assert.isNotNull(baseline);
-      await expect(chunksLib.selectChunksForCourse(course.id, preparationDate)).rejects.toThrow(
-        chunksLib.ChunkHistoryUnavailableError,
-      );
-      const atBaseline = await chunksLib.selectChunksForCourse(course.id, baseline);
-      expect(new Set(atBaseline.map((chunk) => chunk.uuid))).toEqual(
-        new Set((await chunksLib.selectChunksForCourse(course.id)).map((chunk) => chunk.uuid)),
-      );
-      assert.isOk(atBaseline.find((chunk) => chunk.type === 'elementExtensions'));
-    });
-
-    it('rejects a stale diff from a generator using a different directory', async () => {
+    it('preserves earlier revisions when chunks are changed or deleted', async () => {
       const courseDir = tempTestCourseDir.path;
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
       });
-      const otherDirectory = await tmp.dir({ unsafeCleanup: true });
-      await fs.copy(courseDir, otherDirectory.path);
-      const options = {
-        coursePath: otherDirectory.path,
-        courseId: course.id,
-        courseData: await courseDB.loadFullCourse(course.id, otherDirectory.path),
-        changedFiles: ['serverFilesCourse/changed.py'],
-      };
-      let signalUploadStarted!: () => void;
-      const uploadStarted = new Promise<void>((resolve) => {
-        signalUploadStarted = resolve;
+      const baselineDate = new Date('2000-01-01T00:00:00.000Z');
+      await sqldb.execute(sql.prepare_history_baseline, {
+        course_id: course.id,
+        created_at: baselineDate,
       });
-      let resumeUpload!: () => void;
-      const uploadResumed = new Promise<void>((resolve) => {
-        resumeUpload = resolve;
-      });
-      const upload = vi.spyOn(Upload.prototype, 'done').mockImplementationOnce(async function (
-        this: Upload,
-      ) {
-        upload.mockRestore();
-        signalUploadStarted();
-        await uploadResumed;
-        return await this.done();
-      });
-      try {
-        const staleSync = chunksLib.updateChunksForCourse(options).then(
-          () => null,
-          (error: unknown) => error,
-        );
-        await uploadStarted;
-        await fs.remove(path.join(courseDir, 'elements'));
-        await chunksLib.updateChunksForCourse({
-          coursePath: courseDir,
-          courseId: course.id,
-          courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        });
-        resumeUpload();
-        const error = await staleSync;
-        assert.instanceOf(error, Error);
-        assert.include(error.message, 'Please retry the sync.');
+      const baselineChunks = await chunksLib.selectChunksForCourse(course.id);
 
-        // A retry must notice that its source still contains the removed chunk.
-        await chunksLib.updateChunksForCourse(options);
-        assert.isOk(
-          (await chunksLib.selectChunksForCourse(course.id)).find(
-            (chunk) => chunk.type === 'elements',
-          ),
-        );
-      } finally {
-        resumeUpload();
-        upload.mockRestore();
-        await otherDirectory.cleanup();
-      }
+      await fs.remove(path.join(courseDir, 'elements'));
+      await fs.writeFile(path.join(courseDir, 'serverFilesCourse', 'changed.py'), '');
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        changedFiles: ['serverFilesCourse/changed.py'],
+      });
+
+      const rows = await sqldb.queryRows(
+        sql.select_all_chunks,
+        { course_id: course.id },
+        ChunkSchema,
+      );
+      assert.lengthOf(
+        rows.filter((chunk) => chunk.type === 'elements'),
+        2,
+      );
+      assert.lengthOf(
+        rows.filter((chunk) => chunk.type === 'serverFilesCourse'),
+        2,
+      );
+      const deletion = rows.find((chunk) => chunk.type === 'elements' && chunk.deleted);
+      assert.isDefined(deletion);
+      assert.isNull(deletion.uuid);
+
+      const current = await chunksLib.selectChunksForCourse(course.id);
+      assert.isUndefined(current.find((chunk) => chunk.type === 'elements'));
+      const changed = current.find((chunk) => chunk.type === 'serverFilesCourse');
+      assert.isDefined(changed);
+      assert.isNotNull(changed.created_at);
+      assert.deepEqual(changed.created_at, deletion.created_at);
+      const atBaseline = await chunksLib.selectChunksForCourse(course.id, baselineDate);
+      expect(new Set(atBaseline.map((chunk) => chunk.uuid))).toEqual(
+        new Set(baselineChunks.map((chunk) => chunk.uuid)),
+      );
     });
 
     it('handles question nesting after a rename', async () => {
@@ -868,6 +827,13 @@ describe('chunks', () => {
       // Re-read chunks from DB
       databaseChunks = await chunksLib.selectChunksForCourse(course.id);
 
+      assert.isUndefined(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === courseInstanceId,
+        ),
+      );
       // A chunk should exist for the new course instance id.
       assert.isOk(
         databaseChunks.find(
@@ -1061,6 +1027,11 @@ describe('chunks', () => {
       // Re-read chunks from DB
       databaseChunks = await chunksLib.selectChunksForCourse(course.id);
 
+      assert.isUndefined(
+        databaseChunks.find(
+          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId,
+        ),
+      );
       // After the fix: a chunk should exist for the new assessment id.
       // Today (pre-fix): this assertion will fail because we don't regenerate the chunk.
       assert.isOk(

@@ -44,7 +44,7 @@ interface WorkerFixtures {
 export function createTest(configOverrides?: Partial<Config>) {
   return base.extend<TestFixtures, WorkerFixtures>({
     testCoursePath: [
-      // eslint-disable-next-line no-empty-pattern
+      // oxlint-disable-next-line no-empty-pattern
       async ({}, use) => {
         const tempDir = await tmp.dir({ unsafeCleanup: true });
         const tempTestCoursePath = path.join(tempDir.path, 'testCourse');
@@ -89,7 +89,7 @@ export function createTest(configOverrides?: Partial<Config>) {
       { scope: 'worker' },
     ],
 
-    // eslint-disable-next-line no-empty-pattern
+    // oxlint-disable-next-line no-empty-pattern
     enableFeatureFlag: async ({}, use) => {
       const flagsToDisable: FeatureName[] = [];
 

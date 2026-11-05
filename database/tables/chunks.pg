@@ -15,8 +15,7 @@ columns
 indexes
     chunks_pkey: PRIMARY KEY (id) USING btree (id)
     chunks_uuid_key: UNIQUE (uuid) USING btree (uuid)
-    chunks_course_created_at_idx: USING btree (course_id, created_at DESC NULLS LAST)
-    chunks_latest_revision_idx: USING btree (course_id, type, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint), created_at DESC NULLS LAST, id DESC)
+    chunks_latest_revision_idx: USING btree (course_id, type, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint), id DESC)
 
 check constraints
     chunks_uuid_deleted_check: CHECK (deleted = (uuid IS NULL))

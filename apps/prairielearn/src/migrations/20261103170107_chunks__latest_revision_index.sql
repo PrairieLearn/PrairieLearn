@@ -7,6 +7,5 @@ CREATE INDEX CONCURRENTLY chunks_latest_revision_idx ON chunks (
   coalesce(question_id, -1),
   coalesce(course_instance_id, -1),
   coalesce(assessment_id, -1),
-  created_at DESC NULLS LAST,
   id DESC
 );
