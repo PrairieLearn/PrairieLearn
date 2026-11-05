@@ -86,7 +86,10 @@ import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
-import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import {
+  handleWorkspaceUpgrade,
+  makeWorkspaceProxyMiddleware,
+} from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -2171,7 +2174,9 @@ export async function startServer(app: express.Express) {
     : null;
   server.on('upgrade', (req, socket, head) => {
     if (req.url?.startsWith('/socket.io/')) return;
-    if (!handleCourseAgentUpgrade?.(app, req, head)) socket.destroy();
+    if (handleWorkspaceUpgrade(app, req, head)) return;
+    if (handleCourseAgentUpgrade?.(app, req, head)) return;
+    socket.destroy();
   });
 
   // Capture metrics about the server, including the number of active connections
