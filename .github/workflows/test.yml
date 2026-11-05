@@ -105,14 +105,41 @@ jobs:
         # ensure that the tests fail more quickly so that people can fix them.
         timeout-minutes: 30
 
+  # Vitest shards are balanced using per-file durations from a previous run (see
+  # `vitest.durations.ts`). Every shard must use the same durations, or files
+  # could be skipped or run twice, so we pick them once here instead of having
+  # each shard restore the latest ones from the cache itself.
+  vitest-durations:
+    name: Vitest (pick shard durations)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore Vitest durations
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .vitest/durations.json
+          key: vitest-durations-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: vitest-durations-
+      - name: Fall back to no durations
+        run: |
+          mkdir -p .vitest
+          [ -f .vitest/durations.json ] || echo '{}' > .vitest/durations.json
+      - name: Upload Vitest durations
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vitest-durations
+          path: .vitest/durations.json
+          include-hidden-files: true
+          retention-days: 1
+
   test-prairielearn-vitest:
     name: Vitest (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    needs: [vitest-durations]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6]
-        shardTotal: [6]
+        shardIndex: [1, 2, 3, 4, 5]
+        shardTotal: [5]
 
     services:
       postgres:
@@ -157,6 +184,25 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - uses: ./.github/actions/native-test-setup
+        with:
+          build-assets: 'false'
+
+      # Tests don't need crash safety, and without it the many commits,
+      # truncations and database creations they do are much faster. Service
+      # containers can't take server options, so we change them at runtime.
+      - name: Turn off Postgres durability
+        run: >-
+          psql -U postgres
+          -c "ALTER SYSTEM SET fsync = off"
+          -c "ALTER SYSTEM SET synchronous_commit = off"
+          -c "ALTER SYSTEM SET full_page_writes = off"
+          -c "SELECT pg_reload_conf()"
+
+      - name: Download Vitest durations
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: vitest-durations
+          path: .vitest
 
       - name: Vitest suite
         run: |
@@ -272,6 +318,17 @@ jobs:
 
       - name: Merge Vitest reports
         run: pnpm vitest --watch=false --merge-reports --coverage
+        env:
+          VITEST_DURATIONS_OUTPUT: .vitest/durations.json
+      # Save this run's durations so that later runs can balance their shards.
+      # Runs on other branches can restore caches saved from master, and runs
+      # on a PR branch prefer the PR's own latest durations.
+      - name: Save Vitest durations
+        if: ${{ needs.test-prairielearn-vitest.result == 'success' }}
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .vitest/durations.json
+          key: vitest-durations-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Download Playwright blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:

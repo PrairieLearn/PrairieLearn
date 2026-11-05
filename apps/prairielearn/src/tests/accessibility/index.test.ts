@@ -3,7 +3,7 @@ import axe, { type RuleObject } from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, type RuleConfig, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, inject, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
@@ -22,6 +22,12 @@ import * as helperServer from '../helperServer.js';
 import Bootstrap4ConstructPlugin from './bootstrap4-construct-plugin.js';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
+
+declare module 'vitest' {
+  export interface ProvidedContext {
+    accessibilitySlice?: { index: number; count: number };
+  }
+}
 
 /**
  * Loads the given URL into a JSDOM object.
@@ -443,6 +449,14 @@ describe('accessibility', () => {
     const app = await server.initExpress();
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
+
+    // When run from the root config, each of several projects checks only its
+    // own slice of the pages so that they can run in parallel (see
+    // `vitest.config.ts` at the repository root). Otherwise, check every page.
+    const slice = inject('accessibilitySlice');
+    if (slice) {
+      endpoints = endpoints.filter((_, i) => i % slice.count === slice.index);
+    }
 
     const assessment_id = await sqldb.queryScalar(
       'SELECT id FROM assessments WHERE tid = $tid',
