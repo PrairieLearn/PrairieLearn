@@ -142,7 +142,7 @@ describe('Instructor file downloads', () => {
       const replacement = `${filename}.replacement`;
       await fs.writeFile(filename, contents);
       await fs.symlink(target, replacement);
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- Bound to the response below.
+      // oxlint-disable-next-line typescript/unbound-method -- Bound to the response below.
       const originalSendFile = express.response.sendFile;
       using sendFile = vi.spyOn(express.response, 'sendFile').mockImplementation(function (
         this: express.Response,
