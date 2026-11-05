@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
+import { omit } from 'es-toolkit';
 import { type ReactNode, useMemo } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -115,10 +116,9 @@ export function ReorderableRowActionsCell({
           className={clsx('btn btn-sm btn-ghost', dragDisabled && 'invisible')}
           style={{ cursor: 'grab', touchAction: 'none' }}
           aria-label="Drag row"
-          {...dragHandleProps}
-          disabled={dragDisabled}
           // Native buttons already have the role supplied by dnd-kit.
-          role={undefined}
+          {...omit(dragHandleProps, ['role'])}
+          disabled={dragDisabled}
         >
           <i className="fa fa-grip-vertical" aria-hidden="true" />
         </button>
