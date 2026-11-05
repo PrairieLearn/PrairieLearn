@@ -60,15 +60,16 @@ it('creates and copies questions without loading the course and matches full syn
       const question = await selectQuestionByUuid({ course_id: course.id, uuid: editor.uuid });
       assert.isNotNull(question.number);
       assert.isNotNull(question.topic_id);
+      assert.equal(load.mock.calls.length, 0);
+      const targeted = await captureDatabaseSnapshot();
+      await syncCourseData(course.path);
+      const full = await captureDatabaseSnapshot();
+      for (const table of Object.keys(full) as (keyof typeof full)[]) {
+        assert.sameDeepMembers<unknown>(full[table], targeted[table]);
+      }
+      load.mockClear();
     }
-    assert.equal(load.mock.calls.length, 0);
   } finally {
     load.mockRestore();
-  }
-  const targeted = await captureDatabaseSnapshot();
-  await syncCourseData(course.path);
-  const full = await captureDatabaseSnapshot();
-  for (const table of Object.keys(full) as (keyof typeof full)[]) {
-    assert.sameDeepMembers<unknown>(full[table], targeted[table]);
   }
 });
