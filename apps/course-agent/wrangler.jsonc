@@ -8,7 +8,7 @@
   "preview_urls": false,
   "vars": {
     "OPENAI_MODEL": "gpt-6-luna",
-    "AGENT_TURN_SECONDS": "21600",
+    "AGENT_TURN_SECONDS": "18000",
     "USER_IDLE_SECONDS": "600",
     "SENTRY_DSN": "",
     "SENTRY_ENVIRONMENT": "development"
@@ -21,7 +21,7 @@
   },
   "durable_objects": {
     // Let turns running at deploy time finish on the old code: 7 h covers AGENT_TURN_SECONDS
-    // (6 h) plus USER_IDLE_SECONDS (10 min), with margin. Later turns can still be reset.
+    // (5 h) plus USER_IDLE_SECONDS (10 min), with margin. Later turns can still be reset.
     "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
     "bindings": [
       {
@@ -68,7 +68,7 @@
       "name": "prairielearn-course-agent-staging",
       "vars": {
         "OPENAI_MODEL": "gpt-6-luna",
-        "AGENT_TURN_SECONDS": "21600",
+        "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
         "SENTRY_DSN": "",
         "SENTRY_ENVIRONMENT": "staging"
@@ -115,7 +115,7 @@
       "name": "prairielearn-course-agent-production",
       "vars": {
         "OPENAI_MODEL": "gpt-6-luna",
-        "AGENT_TURN_SECONDS": "21600",
+        "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
         "SENTRY_DSN": "",
         "SENTRY_ENVIRONMENT": "production"

@@ -6,8 +6,17 @@ const NATIVE_PORT = 4500;
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
-const lifetimeMs = (env: Env) =>
-  (Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS) + 3600) * 1000;
+// Cloudflare's maximum time a container can stay disconnected from its Durable Object.
+const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
+const lifetimeMs = (env: Env) => {
+  const budget = Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS);
+  if (budget > MAX_CONTAINER_INACTIVITY_SECONDS) {
+    throw new Error(
+      `AGENT_TURN_SECONDS + USER_IDLE_SECONDS (${budget}) exceeds the ${MAX_CONTAINER_INACTIVITY_SECONDS}-second container inactivity limit`,
+    );
+  }
+  return MAX_CONTAINER_INACTIVITY_SECONDS * 1000;
+};
 
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
 export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
