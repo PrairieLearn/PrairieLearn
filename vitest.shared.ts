@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,37 +6,7 @@ import ignore from 'ignore';
 import { defineConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
-// Vitest will try to intelligently sequence the test suite based on which ones
-// are slowest. However, this depends on cached data from previous runs, which
-// isn't available in CI. So, we manually specify the slowest tests here and
-// use a custom sequencer to always run them first.
-// Recent per-test timings (from master CI) were used to balance these shards.
-// Each of the first five shards is anchored around one of the longest-running
-// tests, so that no single shard is dramatically longer than the others.
-const SLOW_TESTS_SHARDS: Record<number, string[]> = {
-  1: ['src/tests/exampleCourseQuestionsComplete.test.ts'],
-  2: ['src/tests/exampleCourseQuestions.test.ts'],
-  3: ['src/tests/accessibility/index.test.ts'],
-  4: ['src/tests/homework.test.ts', 'src/tests/cron.test.ts'],
-  5: ['src/tests/fileEditor.test.ts', 'src/tests/exam.test.ts'],
-  6: [],
-};
-
-// Each shard gets a contiguous range of the tests outside of SLOW_TESTS, sized
-// inversely to how much slow-test work the shard already has.
-const NUM_SLICES = 13;
-const SHARD_SLICES: Record<number, { start: number; end: number }> = {
-  1: { start: 0, end: 0 },
-  2: { start: 0, end: 0 },
-  3: { start: 0, end: 1 },
-  4: { start: 1, end: 4 },
-  5: { start: 4, end: 8 },
-  6: { start: 8, end: NUM_SLICES },
-};
-
-const SHARD_COUNT = Object.keys(SLOW_TESTS_SHARDS).length;
-
-const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
+import { DurationsReporter, loadDurations, specDurationKey } from './vitest.durations';
 
 // Save repository root, for running in any directory
 const repoRoot = dirname(fileURLToPath(import.meta.url));
@@ -51,80 +20,69 @@ if (existsSync(gitignorePath)) {
   gitignore.add(readFileSync(gitignorePath, 'utf8'));
 }
 
+// Files with no recorded duration (new files, or no durations file at all)
+// are assumed to take this long.
+const DEFAULT_DURATION_MS = 1000;
+
+/**
+ * Splits test files across CI shards using durations recorded from a previous
+ * run (see `vitest.durations.ts`), so that each shard gets about the same amount
+ * of work. Shards can't coordinate with each other while they run, but every
+ * shard sees the same files and the same durations, so they all compute the
+ * same assignment independently.
+ */
 class CustomSequencer extends BaseSequencer {
+  private durations = loadDurations();
+
+  private duration(spec: TestSpecification) {
+    return this.durations?.get(specDurationKey(spec)) ?? DEFAULT_DURATION_MS;
+  }
+
+  private sortByDuration(files: TestSpecification[]) {
+    return files
+      .map((spec) => ({ spec, key: specDurationKey(spec), duration: this.duration(spec) }))
+      .sort((a, b) => b.duration - a.duration || a.key.localeCompare(b.key))
+      .map(({ spec }) => spec);
+  }
+
   async sort(files: TestSpecification[]) {
-    const sortedFiles = await super.sort(files);
+    // Without recorded durations, fall back to Vitest's own ordering, which
+    // uses durations cached from previous local runs.
+    if (!this.durations) return super.sort(files);
 
-    // Put all the slow tests at the beginning.
-    const slowTests = sortedFiles.filter((file) => {
-      return (
-        file.project.config.root.includes('apps/prairielearn') &&
-        SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
-      );
-    });
-    const otherTests = sortedFiles.filter((file) => {
-      return (
-        !file.project.config.root.includes('apps/prairielearn') ||
-        !SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
-      );
-    });
-
-    return [...slowTests, ...otherTests];
+    // Start the longest files first so that they don't end up running alone
+    // at the end of the run.
+    return this.sortByDuration(files);
   }
 
   async shard(files: TestSpecification[]) {
-    const { config } = this.ctx;
+    const { index, count } = this.ctx.config.shard!;
 
-    const { index, count } = config.shard!;
-    if (count !== SHARD_COUNT) {
-      throw new Error(`Expected ${SHARD_COUNT} shards`);
+    // Greedily assign each file, longest first, to the shard with the least
+    // work so far.
+    const loads = Array.from({ length: count }, () => 0);
+    const assigned: TestSpecification[][] = Array.from({ length: count }, () => []);
+    for (const spec of this.sortByDuration(files)) {
+      const shard = loads.indexOf(Math.min(...loads));
+      loads[shard] += this.duration(spec);
+      assigned[shard].push(spec);
     }
 
-    // Some shards run slower tests, so other shards should take more 'slices'
-    // so that the runtimes of each shard are approximately balanced.
-    const sliceSize = Math.ceil(files.length / NUM_SLICES);
-    const { start, end }: { start: number; end: number } = SHARD_SLICES[index];
-    const shardStart = sliceSize * start;
-    const shardEnd = sliceSize * end;
-
-    // Implementation: https://github.com/vitest-dev/vitest/blob/cecc4e/packages/vitest/src/node/sequencers/BaseSequencer.ts#L16-L33
-    const originalShardTests = files
-      .filter((file) => {
-        // Filter out the slow tests, as they are handled separately
-        return !(
-          file.project.config.root.includes('apps/prairielearn') &&
-          SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
-        );
-      })
-      .map((spec) => {
-        const fullPath = resolve(
-          config.root.replaceAll('\\', '/'),
-          spec.moduleId.replaceAll('\\', '/'),
-        );
-        const specPath = fullPath?.slice(config.root.length);
-        return {
-          spec,
-          hash: crypto.hash('sha1', specPath, 'hex'),
-        };
-      })
-      .sort((a, b) => a.hash.localeCompare(b.hash))
-      .slice(shardStart, shardEnd)
-      .map(({ spec }) => spec);
-
-    // Manually assign the slow tests to different shards to avoid multiple
-    // slow tests being placed on the same shard
-    const slowShardFiles = SLOW_TESTS_SHARDS[index];
-    const slowShardTests = files.filter((file) => {
-      return (
-        file.project.config.root.includes('apps/prairielearn') &&
-        slowShardFiles.some((slowTest) => file.moduleId.includes(slowTest))
-      );
-    });
-
-    const shardTests = [...originalShardTests, ...slowShardTests];
-    return shardTests;
+    return assigned[index - 1];
   }
 }
+
+const githubActionsReporter: ['github-actions', { onWritePath(path: string): string }] = [
+  'github-actions',
+  {
+    onWritePath(path: string) {
+      // GitHub expects that when formatting an error message, the filename is relative to the project root.
+      // Since we run in a Docker container for CI, we need to ensure that the filename matches what GitHub expects.
+      // https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message
+      return path.replace(/^\/PrairieLearn\//, '');
+    },
+  },
+];
 
 export const sharedConfig = defineConfig({
   test: {
@@ -132,23 +90,14 @@ export const sharedConfig = defineConfig({
     sequence: {
       sequencer: CustomSequencer,
     },
-    reporters: process.env.GITHUB_ACTIONS
-      ? [
-          'default',
-          ...(process.env.SHARDED_TESTS ? ['blob'] : []),
-          [
-            'github-actions',
-            {
-              onWritePath(path: string) {
-                // GitHub expects that when formatting an error message, the filename is relative to the project root.
-                // Since we run in a Docker container for CI, we need to ensure that the filename matches what GitHub expects.
-                // https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message
-                return path.replace(/^\/PrairieLearn\//, '');
-              },
-            },
-          ],
-        ]
-      : ['default'],
+    reporters: [
+      ...(process.env.VITEST_DURATIONS_OUTPUT
+        ? [new DurationsReporter(process.env.VITEST_DURATIONS_OUTPUT)]
+        : []),
+      ...(process.env.GITHUB_ACTIONS
+        ? ['default', ...(process.env.SHARDED_TESTS ? ['blob'] : []), githubActionsReporter]
+        : ['default']),
+    ],
   },
   server: {
     watch: {

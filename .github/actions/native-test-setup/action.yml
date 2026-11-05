@@ -6,6 +6,10 @@ inputs:
     description: Whether to install Playwright browsers (chromium).
     required: false
     default: 'false'
+  build-assets:
+    description: Whether to build the app's frontend assets. Vitest serves assets in dev mode, so it doesn't need them.
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -73,8 +77,17 @@ runs:
         restore-keys: |
           ${{ runner.os }}-turbo-
     - name: Build all code
+      if: inputs.build-assets == 'true'
       shell: bash
       run: make build
+    - name: Build all code except frontend assets
+      if: inputs.build-assets != 'true'
+      shell: bash
+      run: |
+        pnpm turbo run build --filter='!@prairielearn/prairielearn' --output-logs=errors-only
+        cd apps/prairielearn
+        pnpm exec tsc --build --incremental --checkers 2
+        pnpm exec tscp -b
 
     - name: Configure git
       shell: bash
