@@ -170,6 +170,12 @@ async function assertVariantAccess({
   // Test access to the variant's workspace.
   const workspaceRes = await fetchCheerio(siteUrl + workspaceBaseUrl + '/' + workspaceId);
   assert.equal(workspaceRes.status, expectedAccess ? 200 : 403);
+
+  // Containers are always served from the non-public URL, since the container's
+  // base URL is fixed at launch. These workspaces were never launched, so an
+  // authorized request reaches the proxy and gets a 404.
+  const containerRes = await fetch(`${siteUrl}/pl/workspace/${workspaceId}/container/`);
+  assert.equal(containerRes.status, expectedAccess ? 404 : 403);
 }
 
 describe('Variant access', { concurrent: false }, () => {
