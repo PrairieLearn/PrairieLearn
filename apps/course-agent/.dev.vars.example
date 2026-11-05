@@ -3,5 +3,3 @@ PL_SERVICE_TOKEN=replace-with-a-random-token-of-at-least-32-characters
 OPENAI_API_KEY=replace-with-your-openai-api-key
 # Only needed for GitHub-backed conversations.
 GITHUB_READ_TOKEN=
-# Optional. Error reporting stays off without it.
-SENTRY_DSN=
