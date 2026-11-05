@@ -28,7 +28,8 @@ function formatError(error: unknown): string {
 }
 
 /** Error reports describe failures, without collecting chat, course files, or request credentials. */
-export function sentryOptions(bindings: Env): Sentry.CloudflareOptions {
+// SENTRY_DSN is an optional per-environment secret, kept out of the public repository.
+export function sentryOptions(bindings: Env & { SENTRY_DSN?: string }): Sentry.CloudflareOptions {
   return {
     dsn: bindings.SENTRY_DSN,
     enabled: !!bindings.SENTRY_DSN,
