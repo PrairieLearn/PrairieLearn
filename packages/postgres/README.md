@@ -138,6 +138,7 @@ For increased safety and confidence, you can describe the shape of data you expe
 
 ```ts
 import { z } from 'zod';
+
 import { loadSqlEquiv, queryRows, queryRow, queryOptionalRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -173,6 +174,7 @@ For queries that return a single column, you can use the scalar variants. These 
 
 ```ts
 import { z } from 'zod';
+
 import {
   queryScalar,
   queryScalars,
@@ -219,6 +221,7 @@ For very large queries that don't need to fit in memory all at once, it's possib
 
 ```ts
 import { z } from 'zod';
+
 import { queryCursor } from '@prairielearn/postgres';
 
 const UserSchema = z.object({

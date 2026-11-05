@@ -287,12 +287,12 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       const fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
       const fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
       fontSelect.empty();
-      for (const entries in fontSizeList) {
+      for (const fontSize of fontSizeList) {
         fontSelect.append(
           $('<option>', {
-            value: fontSizeList[entries],
-            text: fontSizeList[entries],
-            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
+            value: fontSize,
+            text: fontSize,
+            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSize,
           }),
         );
       }
@@ -300,13 +300,13 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       const keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
       const keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
       keyboardHandlerSelect.empty();
-      for (const index in keyboardHandlerList) {
-        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
+      for (const keyboardHandlerName of keyboardHandlerList) {
+        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerName.toLowerCase();
 
         keyboardHandlerSelect.append(
           $('<option>', {
             value: keyboardHandler,
-            text: keyboardHandlerList[index],
+            text: keyboardHandlerName,
             selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
           }),
         );

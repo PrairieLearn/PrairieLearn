@@ -1,7 +1,10 @@
 import { type HtmlValue, html } from '@prairielearn/html';
 
 type QuestionAccessMode =
-  'default' | 'blocked_sequence' | 'blocked_lockpoint' | 'read_only_lockpoint';
+  | 'default'
+  | 'blocked_sequence'
+  | 'blocked_lockpoint'
+  | 'read_only_lockpoint';
 
 export function QuestionNavSideGroup({
   urlPrefix,

@@ -1,5 +1,4 @@
-/* eslint perfectionist/sort-objects: error */
-
+// `oxlint.config.mts` keeps the objects in this file sorted; update it if this file moves.
 /**
  * These schemas are used on any client page that needs to display data from the database. They are a more
  * strict version of the db-types.ts schemas.
@@ -29,6 +28,7 @@ import {
   AssessmentSetSchema as RawAssessmentSetSchema,
   AuditEventSchema as RawAuditEventSchema,
   AuthnProviderSchema as RawAuthnProviderSchema,
+  CourseAgentConversationSchema as RawCourseAgentConversationSchema,
   CourseInstanceAiGradingCredentialSchema as RawCourseInstanceAiGradingCredentialSchema,
   CourseInstancePublishingExtensionSchema as RawCourseInstancePublishingExtensionSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
@@ -242,6 +242,17 @@ export const RawStaffAuthnProviderSchema = RawAuthnProviderSchema.pick({
 });
 export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'StaffAuthnProvider'>();
 export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
+
+/** Course Agent Conversations */
+// Omits `agent_conversation_id`: only the server addresses the agent service.
+export const RawStaffCourseAgentConversationSchema = RawCourseAgentConversationSchema.pick({
+  created_at: true,
+  id: true,
+  title: true,
+});
+export const StaffCourseAgentConversationSchema =
+  RawStaffCourseAgentConversationSchema.brand<'StaffCourseAgentConversation'>();
+export type StaffCourseAgentConversation = z.infer<typeof StaffCourseAgentConversationSchema>;
 
 /** Courses */
 export const RawAdminCourseSchema = RawCourseSchema;

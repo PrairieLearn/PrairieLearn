@@ -66,7 +66,8 @@ type RuleValidationFieldPath =
   | 'scoreVisibility.visibleFromDate';
 
 type DateControlValidationPath =
-  `defaultRule.${RuleValidationFieldPath}` | `overrides.${number}.${RuleValidationFieldPath}`;
+  | `defaultRule.${RuleValidationFieldPath}`
+  | `overrides.${number}.${RuleValidationFieldPath}`;
 
 type RuleFormFields = Pick<AccessControlFormData['defaultRule'], OverridableFieldName>;
 
@@ -114,7 +115,7 @@ function mapIssueToFormFieldPath(
             ? rulePath(prefix, `lateDeadlines.${issue.path[2]}.credit`)
             : rulePath(prefix, `lateDeadlines.${issue.path[2]}.date`);
         case 'afterLastDeadline':
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          // oxlint-disable-next-line typescript/no-unnecessary-condition
           return issue.path[2] === 'credit' ? rulePath(prefix, 'afterLastDeadline.credit') : null;
         default:
           return null;
@@ -133,11 +134,11 @@ function mapIssueToFormFieldPath(
             return null;
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (issue.path[1] === 'score') {
         if (issue.path.length === 2) return rulePath(prefix, 'scoreVisibility');
         switch (issue.path[2]) {
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          // oxlint-disable-next-line typescript/no-unnecessary-condition
           case 'visibleFromDate':
             return rulePath(prefix, 'scoreVisibility.visibleFromDate');
           default:

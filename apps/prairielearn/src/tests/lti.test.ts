@@ -1,4 +1,3 @@
-import oauthSignature from 'oauth-signature';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
@@ -6,6 +5,7 @@ import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { UserSchema } from '../lib/db-types.js';
+import { generateOAuth1Signature } from '../lib/oauth1.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
@@ -38,8 +38,11 @@ describe('LTI', { timeout: 20_000 }, function () {
     lis_person_name_full: 'Test User',
   };
   const secret = 'sFDpR@RzLdDW';
-  const genSignature = oauthSignature.generate('POST', locals.ltiUrl, body, secret, undefined, {
-    encodeSignature: false,
+  const genSignature = generateOAuth1Signature({
+    method: 'POST',
+    url: locals.ltiUrl,
+    parameters: body,
+    consumerSecret: secret,
   });
 
   describe('test LTI callback', function () {

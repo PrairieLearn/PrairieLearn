@@ -133,7 +133,7 @@ async.series(
             last_query: err?.data?.lastQuery ?? undefined,
           },
         });
-        Sentry.close().finally(() => process.exit(1));
+        void Sentry.close().finally(() => process.exit(1));
       }
 
       globalLogger.info(
