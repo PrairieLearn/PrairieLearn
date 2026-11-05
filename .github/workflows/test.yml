@@ -207,7 +207,7 @@ jobs:
       - name: Vitest suite
         run: |
           make start-support
-          pnpm test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --maxWorkers=4
+          pnpm test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SHARDED_TESTS: true
 
