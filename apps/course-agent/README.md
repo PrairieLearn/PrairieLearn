@@ -8,7 +8,7 @@ Set `PL_SERVICE_TOKEN` and `OPENAI_API_KEY` with Wrangler secrets (or copy `.dev
 
 Create the private `prairielearn-course-agent-checkpoints` R2 bucket before deployment. `wrangler.jsonc` configures the container image and Durable Object bindings.
 
-`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (five hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after turn completion and chat persistence. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout is Cloudflare's six-hour maximum and is reapplied on Sandbox DO wake. The turn and idle budgets together must fit within it, or sandbox startup fails.
+`OPENAI_MODEL` is pinned when a conversation is created. `AGENT_TURN_SECONDS` (five hours) includes setup and execution. `USER_IDLE_SECONDS` (ten minutes) starts after turn completion and chat persistence. Connections, history reads and streamed progress do not extend deadlines. In PrairieLearn development mode, the chat’s Stats button shows lifecycle state and a live countdown derived from the public `deadlineAt` timestamp. The container inactivity timeout is Cloudflare's six-hour maximum and is reapplied on Sandbox DO wake. A test checks that the turn and idle budgets together fit within it.
 
 ## Local development
 
