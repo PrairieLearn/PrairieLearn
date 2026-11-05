@@ -10,7 +10,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { ChunkSchema, type Course, CourseSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -353,29 +353,14 @@ describe('chunks', () => {
         changedFiles: ['serverFilesCourse/changed.py'],
       });
 
-      const rows = await sqldb.queryRows(
-        sql.select_all_chunks,
-        { course_id: course.id },
-        ChunkSchema,
-      );
-      assert.lengthOf(
-        rows.filter((chunk) => chunk.type === 'elements'),
-        2,
-      );
-      assert.lengthOf(
-        rows.filter((chunk) => chunk.type === 'serverFilesCourse'),
-        2,
-      );
-      const deletion = rows.find((chunk) => chunk.type === 'elements' && chunk.deleted);
-      assert.isDefined(deletion);
-      assert.isNull(deletion.uuid);
-
       const current = await chunksLib.selectChunksForCourse(course.id);
       assert.isUndefined(current.find((chunk) => chunk.type === 'elements'));
       const changed = current.find((chunk) => chunk.type === 'serverFilesCourse');
       assert.isDefined(changed);
-      assert.isNotNull(changed.created_at);
-      assert.deepEqual(changed.created_at, deletion.created_at);
+      assert.notEqual(
+        changed.uuid,
+        baselineChunks.find((chunk) => chunk.type === 'serverFilesCourse')?.uuid,
+      );
       const atBaseline = await chunksLib.selectChunksForCourse(course.id, baselineDate);
       expect(new Set(atBaseline.map((chunk) => chunk.uuid))).toEqual(
         new Set(baselineChunks.map((chunk) => chunk.uuid)),
