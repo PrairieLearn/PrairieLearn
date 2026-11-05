@@ -69,12 +69,21 @@ runs:
         UV_LOCKED: 1
       run: make python-deps-core
 
+    # A PR's commit changes whenever master moves, so keying only on the commit
+    # often restores a cache built from older package sources, and every
+    # package gets rebuilt. Prefer caches built from the same package sources,
+    # whether on master or this branch.
+    - name: Hash package sources for the Turborepo cache
+      id: turbo-cache
+      shell: bash
+      run: echo "packages-hash=$(git ls-files -s packages pnpm-lock.yaml turbo.jsonc | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
     - name: Set up Turborepo cache
       uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
       with:
         path: .turbo/cache
-        key: ${{ runner.os }}-turbo-${{ github.sha }}
+        key: ${{ runner.os }}-turbo-${{ steps.turbo-cache.outputs.packages-hash }}-${{ github.sha }}
         restore-keys: |
+          ${{ runner.os }}-turbo-${{ steps.turbo-cache.outputs.packages-hash }}-
           ${{ runner.os }}-turbo-
     - name: Build all code
       if: inputs.build-assets == 'true'
