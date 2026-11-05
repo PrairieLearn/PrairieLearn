@@ -13,6 +13,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { config } from '../lib/config.js';
 import { type Course, QuestionSchema } from '../lib/db-types.js';
 import { selectQuestionByQid, syncQuestionTitle, syncQuestionTopic } from '../models/question.js';
 import { selectTagNamesForOtherQuestions } from '../models/tags.js';
@@ -27,10 +28,8 @@ import * as questions from './fromDisk/questions.js';
 import { syncQuestionTags } from './fromDisk/tags.js';
 import { syncTopics } from './fromDisk/topics.js';
 import { type QuestionRenameScope, verifyQuestionRename } from './questionRenameSync.js';
-import {
-  hasQuestionSyncBaseline,
-  isQuestionQidEligibleForSync,
-} from './questionSyncEligibility.js';
+import { isQuestionQidEligibleForSync } from './questionSyncEligibility.js';
+import { CURRENT_SYNC_VERSION } from './version.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -67,6 +66,16 @@ export type QuestionSyncChange =
             courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
           }
       ));
+
+export function hasQuestionSyncBaseline(course: Course, currentHash: string): boolean {
+  const previous = course.last_successful_sync;
+  return (
+    previous?.commitHash === currentHash &&
+    previous.commitHash === course.commit_hash &&
+    previous.version === CURRENT_SYNC_VERSION &&
+    previous.chunksGenerated === config.chunksGenerator
+  );
+}
 
 /** Called under the course lock, before invalidating the previous sync state. */
 export async function getQuestionSyncScope(
