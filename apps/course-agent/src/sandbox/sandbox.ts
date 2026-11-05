@@ -7,8 +7,8 @@ export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
-// wrangler-config.test.ts checks that the turn and idle budgets fit within it.
-export const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
+// AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
+const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
 
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
 export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
@@ -80,8 +80,9 @@ export class CourseSandbox extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     void ctx.blockConcurrencyWhile(async () => {
-      if (ctx.container?.running)
+      if (ctx.container?.running) {
         await ctx.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
+      }
     });
   }
 
