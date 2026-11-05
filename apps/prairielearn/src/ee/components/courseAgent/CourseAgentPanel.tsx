@@ -13,8 +13,6 @@ import {
 import { Alert, Button, Offcanvas, Spinner } from 'react-bootstrap';
 import { createPortal } from 'react-dom';
 
-import { OverlayTrigger } from '@prairielearn/ui';
-
 const MOBILE_QUERY = '(max-width: 767.98px)';
 
 function loadChat() {
@@ -203,24 +201,21 @@ export function CourseAgentPanel({
       <i className="bi bi-stars" aria-hidden="true" />
     </button>
   ) : (
-    <OverlayTrigger
-      trigger="hover"
-      placement="bottom"
-      tooltip={{
-        body: open ? 'Close course agent' : 'Open course agent',
-        props: { id: 'course-agent-launcher-tooltip' },
-      }}
+    // Use the global Bootstrap tooltip; importing `@prairielearn/ui` here would add its shared
+    // chunk to this eagerly loaded bundle. Hover-only avoids showing it when focus returns.
+    <Button
+      className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
+      variant="outline-light"
+      active={open}
+      size="sm"
+      data-bs-toggle="tooltip"
+      data-bs-trigger="hover"
+      data-bs-placement="bottom"
+      data-bs-title="Course agent"
+      {...launcherButtonProps}
     >
-      <Button
-        className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
-        variant="outline-light"
-        active={open}
-        size="sm"
-        {...launcherButtonProps}
-      >
-        <i className="bi bi-stars" aria-hidden="true" />
-      </Button>
-    </OverlayTrigger>
+      <i className="bi bi-stars" aria-hidden="true" />
+    </Button>
   );
 
   return (
