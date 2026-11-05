@@ -316,24 +316,18 @@ describe('Question syncing', () => {
     assert.ok(syncedQuestionTag);
   });
 
-  describe('question authors', () => {
-    it('stores UID and canonical ORCID order and preserves authors on unchanged re-sync', async () => {
+  describe('UID authors', () => {
+    it('stores UID order and preserves authors on unchanged re-sync', async () => {
       const data = util.getCourseData();
-      data.questions[util.QUESTION_ID].authors = [
-        'second-author',
-        'http://orcid.org/0000-0002-1825-0097/',
-        'first-author',
-      ];
+      data.questions[util.QUESTION_ID].authors = ['second-author', 'first-author'];
       const { courseDir } = await util.writeAndSyncCourseData(data);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
         'second-author',
-        'https://orcid.org/0000-0002-1825-0097',
         'first-author',
       ]);
       await util.syncCourseData(courseDir);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
         'second-author',
-        'https://orcid.org/0000-0002-1825-0097',
         'first-author',
       ]);
     });
@@ -342,12 +336,17 @@ describe('Question syncing', () => {
       const data = util.getCourseData();
       data.questions[util.QUESTION_ID].authors = [
         { name: 'Legacy name', email: 'not-an-email', orcid: '0000-0002-1825-0097' },
+        { orcid: '0000-0002-1694-233X' },
         { name: 'Name only' },
       ];
       const { courseDir } = await util.writeAndSyncCourseData(data);
       const question = await findSyncedQuestion(util.QUESTION_ID);
       assert.isNull(question.sync_errors);
-      assert.deepEqual(question.authors, ['not-an-email', 'https://orcid.org/0000-0002-1825-0097']);
+      assert.deepEqual(question.authors, [
+        'not-an-email',
+        'https://orcid.org/0000-0002-1825-0097',
+        'https://orcid.org/0000-0002-1694-233X',
+      ]);
       assert.include(question.sync_warnings, 'Name only');
       const info = await fs.readJSON(
         path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'),
