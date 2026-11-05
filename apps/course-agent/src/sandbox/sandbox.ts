@@ -303,7 +303,8 @@ export class CourseSandbox extends DurableObject<Env> {
           await scheduler.wait(100);
           continue;
         }
-        await stderr?.done;
+        // A runner that is still alive never closes stderr, so only briefly wait for its tail.
+        if (stderr) await Promise.race([stderr.done, scheduler.wait(1000)]);
         const facts = JSON.stringify({
           elapsedMs: Date.now() - started,
           failures,
