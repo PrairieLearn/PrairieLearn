@@ -1,9 +1,7 @@
 import { execSync } from 'node:child_process';
 
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
-import { createTemplate, databaseExists } from '../helperDb.js';
-
-const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
+import { createTemplate, dropTemplate } from '../helperDb.js';
 
 export default async function globalSetup() {
   // Every worker runs the built server (see `utils/server.ts`), so build it and
@@ -18,9 +16,12 @@ export default async function globalSetup() {
     },
   );
 
-  // We setup the template once, so that each worker does not try to create it.
-  const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
-  if (!templateExists) {
-    await createTemplate();
-  }
+  // Recreate the template that every worker clones its database from, as
+  // Vitest does. Reusing an existing one would leave out migrations added since
+  // it was created (workers don't run migrations), and it only takes a few
+  // seconds to rebuild.
+  await createTemplate();
+
+  // Playwright runs a function returned from global setup as global teardown.
+  return dropTemplate;
 }
