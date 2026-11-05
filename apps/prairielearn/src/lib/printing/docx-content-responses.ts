@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
+/* oxlint-disable typescript/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
 import { HeightRule, Table, TableCell, TableRow, WidthType } from 'docx';
 
 import {

@@ -181,7 +181,7 @@ router.get(
               assessmentToolDefaults={assessmentToolDefaults}
               assessmentCalculatorType={
                 CalculatorSettingsSchema.parse(
-                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                  // oxlint-disable-next-line typescript/no-unnecessary-condition
                   assessmentToolDefaultRows.find((row) => row.tool === 'calculator')?.settings ??
                     {},
                 ).type

@@ -37,6 +37,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   return {
     type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,
+    authors: q.authors,
     partial_credit: partialCredit,
     template_directory: q.template,
     options: q.options,

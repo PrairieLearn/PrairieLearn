@@ -124,7 +124,7 @@ describe('createDocxDocument', () => {
       footerLabel: 'Form A',
     });
     const { documentXml } = await readDocx(docx);
-    const word = load(documentXml, { xmlMode: true });
+    const word = load(documentXml, { xml: true });
     const labels = word('w\\:t')
       .map((_, element) => word(element).text())
       .get();
@@ -138,13 +138,13 @@ describe('createDocxDocument', () => {
       footerLabel: 'Form ID 13',
     });
     const { files, documentXml, footerXml, stylesXml } = await readDocx(docx);
-    const word = load(documentXml, { xmlMode: true });
+    const word = load(documentXml, { xml: true });
     const instruction = word('w\\:r').filter(
       (_, run) => word(run).find('w\\:t').text() === 'No calculators.',
     );
     expect(instruction.find('w\\:b')).toHaveLength(1);
     expect(instruction.find('w\\:i')).toHaveLength(1);
-    const styles = load(stylesXml, { xmlMode: true });
+    const styles = load(stylesXml, { xml: true });
     const defaultParagraphStyle = styles('w\\:style[w\\:type="paragraph"][w\\:default="1"]');
     expect(defaultParagraphStyle).toHaveLength(1);
     expect(defaultParagraphStyle.attr('w:styleId')).toBe('Normal');

@@ -13,7 +13,7 @@ import {
   TableCell,
   TableRow,
   TextRun,
-  VerticalAlign,
+  VerticalAlignTable,
   WidthType,
 } from 'docx';
 
@@ -171,7 +171,7 @@ function buildFieldLines(fields: PrintableCoverField[], widthDxa: number): (Tabl
                     right: NO_BORDER,
                     bottom: RULE_BORDER,
                   },
-                  verticalAlign: VerticalAlign.BOTTOM,
+                  verticalAlign: VerticalAlignTable.BOTTOM,
                   children: [
                     new Paragraph({
                       spacing: { before: 0, after: 0 },

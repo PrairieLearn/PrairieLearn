@@ -14,7 +14,7 @@ it('keeps centered and right-aligned authored text in Word', async () => {
   const zip = await JSZip.loadAsync(
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   const paragraphs = word('w\\:p').toArray();
   const heading = paragraphs.find(
     (node) => word(node).find('w\\:t').text() === 'Centered heading',
@@ -36,7 +36,7 @@ it('preserves mathematical symbols and XML punctuation in native Office Math', a
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
   const xml = await zip.file('word/document.xml')!.async('string');
-  const word = load(xml, { xmlMode: true });
+  const word = load(xml, { xml: true });
   expect(word('m\\:t').text()).toBe('x<2∧y>0&α');
   expect(word('m\\:oMath')).toHaveLength(1);
   expect(xml).not.toContain('&#x');
@@ -52,7 +52,7 @@ it('preserves response areas and matrix tables nested inside input groups', asyn
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
   const xml = await zip.file('word/document.xml')!.async('string');
-  const word = load(xml, { xmlMode: true });
+  const word = load(xml, { xml: true });
   expect(word('w\\:tbl')).toHaveLength(2);
   expect(word('w\\:tbl').last().find('w\\:tr')).toHaveLength(2);
   expect(word('w\\:tbl').first().find('w\\:tr')).toHaveLength(4);
@@ -68,7 +68,7 @@ it('skips empty table rows and preserves text when a matrix has no usable cells'
   const zip = await JSZip.loadAsync(
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   expect(word('w\\:tbl')).toHaveLength(1);
   expect(word('w\\:tbl w\\:tr')).toHaveLength(1);
   expect(word('w\\:t').text()).toContain('Usable cell');
@@ -90,7 +90,7 @@ it.each([
   const zip = await JSZip.loadAsync(
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   expect(word('w\\:tbl')).toHaveLength(0);
   expect(word('w\\:t').text()).toContain('First');
   expect(word('w\\:t').text()).toContain('Second');
@@ -104,7 +104,7 @@ it('keeps valid column spans as a Word table', async () => {
   const zip = await JSZip.loadAsync(
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   expect(word('w\\:tbl')).toHaveLength(1);
   expect(word('w\\:gridCol')).toHaveLength(3);
   expect(word('w\\:gridSpan').attr('w:val')).toBe('2');
@@ -125,7 +125,7 @@ it('keeps writing space inside a numbered list item', async () => {
       }),
     ),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   expect(word('w\\:numPr')).toHaveLength(1);
   expect(word('w\\:tbl').first().find('w\\:tr')).toHaveLength(4);
   expect(word('w\\:t').text()).toContain('Explain your answer:');
@@ -140,7 +140,7 @@ it('places Word response guidance below the answer line at the same left edge', 
   const zip = await JSZip.loadAsync(
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   const cells = word('w\\:tbl').first().find('w\\:tr').first().find('w\\:tc');
   expect(cells).toHaveLength(3);
   expect(cells.eq(0).find('w\\:t').text()).toBe('Area =');
@@ -162,7 +162,7 @@ it('preserves plain-text labels and units around a guided response field', async
   const zip = await JSZip.loadAsync(
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   const cells = word('w\\:tbl').first().find('w\\:tr').first().find('w\\:tc');
   expect(cells).toHaveLength(3);
   expect(cells.eq(0).find('w\\:t').text()).toBe('Area = ');
@@ -187,12 +187,12 @@ it('keeps selection options separate and preserves lettered answer references', 
       }),
     ),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   expect(word('w\\:tbl')).toHaveLength(2);
   expect(word('w\\:tbl').first().find('w\\:t').text()).toBe('☐(a)First choice');
   expect(word('w\\:tbl').last().find('w\\:t').text()).toBe('○(b)Second choice');
   expect(word('w\\:cantSplit')).toHaveLength(2);
-  const numbering = load(await zip.file('word/numbering.xml')!.async('string'), { xmlMode: true });
+  const numbering = load(await zip.file('word/numbering.xml')!.async('string'), { xml: true });
   expect(numbering('w\\:numFmt[w\\:val="upperLetter"]')).toHaveLength(1);
 });
 
@@ -207,7 +207,7 @@ it('separates answer key labels from inline prompts and keeps labels with their 
   const zip = await JSZip.loadAsync(
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   const paragraphs = word('w\\:p').toArray();
   const label = paragraphs.find((node) => word(node).find('w\\:t').text() === 'Correct answer')!;
   expect(word(label).find('w\\:keepNext')).toHaveLength(1);
@@ -231,7 +231,7 @@ it('keeps dropdown option banks as separate lettered paragraphs inside inline wr
       }),
     ),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   const options = word('w\\:p')
     .toArray()
     .filter((node) => word(node).find('w\\:numPr').length > 0);
@@ -239,7 +239,7 @@ it('keeps dropdown option banks as separate lettered paragraphs inside inline wr
     'Positive association',
     'Negative association',
   ]);
-  const numbering = load(await zip.file('word/numbering.xml')!.async('string'), { xmlMode: true });
+  const numbering = load(await zip.file('word/numbering.xml')!.async('string'), { xml: true });
   expect(numbering('w\\:numFmt[w\\:val="upperLetter"]')).toHaveLength(1);
 });
 
@@ -252,7 +252,7 @@ it('preserves ordering solution indentation without adding list bullets', async 
   const zip = await JSZip.loadAsync(
     await Packer.toBuffer(new Document({ sections: [{ children: content.children }] })),
   );
-  const word = load(await zip.file('word/document.xml')!.async('string'), { xmlMode: true });
+  const word = load(await zip.file('word/document.xml')!.async('string'), { xml: true });
   const paragraphs = word('w\\:p').toArray();
   const definition = paragraphs.find(
     (node) => word(node).find('w\\:t').text() === 'def sum(a, b):',

@@ -416,7 +416,7 @@ function CodeViewer({ content, filename }: { content: string; filename: string }
       }}
     >
       {highlighted ? (
-        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml -- Rendering highlight.js output
+        // oxlint-disable-next-line react/no-danger -- Rendering highlight.js output
         <code dangerouslySetInnerHTML={{ __html: highlighted }} />
       ) : (
         <code>{content}</code>

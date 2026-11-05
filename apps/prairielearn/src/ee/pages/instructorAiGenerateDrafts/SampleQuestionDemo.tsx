@@ -179,7 +179,7 @@ export function SampleQuestionDemo({
         {/* Index keys are needed to disambiguate duplicate math expressions (e.g. two "$ c $")
             while content in the key forces DOM recreation when values change between variants. */}
         {
-          /* eslint-disable @eslint-react/no-array-index-key */
+          /* oxlint-disable react/no-array-index-key */
           variant.question
             .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
             .filter(Boolean)
@@ -202,7 +202,7 @@ export function SampleQuestionDemo({
               // Regular text
               return <span key={`text-${index}`}>{part}</span>;
             })
-          /* eslint-enable @eslint-react/no-array-index-key */
+          /* oxlint-enable react/no-array-index-key */
         }
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput

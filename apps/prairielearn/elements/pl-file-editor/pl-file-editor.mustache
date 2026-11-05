@@ -5,7 +5,6 @@ $(function () {
 
     new window.PLFileEditor(UUID, {
         originalContents: "{{original_file_contents}}",
-        currentContents: "{{current_file_contents}}",
         readOnly: {{#editable}}false{{/editable}}{{^editable}}true{{/editable}},
         aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}},
         aceModePath: {{#ace_mode_path}}"{{ace_mode_path}}"{{/ace_mode_path}}{{^ace_mode_path}}undefined{{/ace_mode_path}},

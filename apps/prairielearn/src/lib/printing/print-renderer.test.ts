@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/unbound-method -- The browser harness methods are Vitest spies passed to expect. */
+/* oxlint-disable typescript/unbound-method -- The browser harness methods are Vitest spies passed to expect. */
 import {
   type Browser,
   type BrowserContext,
@@ -257,9 +257,19 @@ describe('PrintRenderer', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('allows same-origin GET requests and blocks everything else', async () => {
+  it('sends a credential for protected assets and blocks other requests', async () => {
     const harness = createBrowserHarness();
-    await renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print?paper_size=A4' });
+    await renderPdf(new PrintRenderer(), {
+      url: 'http://localhost:3000/print?paper_size=A4',
+      assetScope: {
+        courseInstanceId: '10',
+        assessmentId: '20',
+        assessmentInstanceId: '30',
+        instanceQuestionIds: ['40'],
+        authnUserId: '50',
+        userId: '50',
+      },
+    });
     const routeHandler = harness.getRouteHandler();
     expect(routeHandler).toBeDefined();
 
@@ -276,10 +286,34 @@ describe('PrintRenderer', () => {
       fulfill,
     } as unknown as Route);
     expect(fulfill).toHaveBeenCalledExactlyOnceWith({ response });
+    expect(fetch).toHaveBeenLastCalledWith({ maxRedirects: 0 });
+
+    for (const pathname of [
+      '/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
+      '/pl/static/elements/pl-drawing/pl-drawing.css',
+    ]) {
+      await routeHandler!({
+        request: () => ({ method: () => 'GET', url: () => `http://localhost:3000${pathname}` }),
+        fetch,
+        fulfill,
+      } as unknown as Route);
+      expect(fetch).toHaveBeenLastCalledWith({
+        maxRedirects: 0,
+        headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
+      });
+    }
 
     for (const request of [
       { method: 'POST', url: 'http://localhost:3000/pl/mutate' },
       { method: 'GET', url: 'https://example.com/exfiltrate' },
+      {
+        method: 'GET',
+        url: 'http://localhost:3000/pl/course_instance/10/instructor/assessment/20/questions',
+      },
+      {
+        method: 'GET',
+        url: 'http://localhost:3000/pl/course_instance/10/instructor/instance_question/41/clientFilesQuestion/image.png',
+      },
       // socket.io polling would otherwise hold HTTP connections open for the whole render.
       { method: 'GET', url: 'http://localhost:3000/socket.io/?EIO=4&transport=polling' },
     ]) {
@@ -291,7 +325,7 @@ describe('PrintRenderer', () => {
       } as unknown as Route);
       expect(abort).toHaveBeenCalledExactlyOnceWith('blockedbyclient');
     }
-    expect(fetch).toHaveBeenCalledExactlyOnceWith({ maxRedirects: 0 });
+    expect(fetch).toHaveBeenCalledTimes(3);
 
     const webSocketHandler = harness.getWebSocketHandler();
     expect(webSocketHandler).toBeDefined();

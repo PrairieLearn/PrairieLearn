@@ -4,13 +4,13 @@ import type { AddressInfo } from 'node:net';
 import {
   waitForExcalidrawCanvases,
   waitForPrintImages,
-} from '../../../lib/client/print-image-layout.js';
+} from '../../../lib/client/printing/print-image-layout.js';
 import { expect, test } from '../fixtures.js';
 
 // These browser-only tests do not need the application server.
 test.use({ baseURL: '' });
 
-test('waits for images in the question and its shadow roots', async ({ page }) => {
+test('waits for regular, lazy, and shadow-root images', async ({ page }) => {
   const responses = new Map<string, ServerResponse>();
   const server = createServer((request, response) => {
     responses.set(request.url!, response);
@@ -25,7 +25,7 @@ test('waits for images in the question and its shadow roots', async ({ page }) =
   };
   try {
     await page.setContent(
-      `<div id="source"><img src="${origin}/light.svg"><img srcset="${origin}/srcset.svg"><div id="host"></div></div>`,
+      `<div id="source"><img src="${origin}/light.svg"><img srcset="${origin}/srcset.svg"><div id="host"></div><div style="height: 10000px"></div><img loading="lazy" src="${origin}/lazy.svg"></div>`,
       { waitUntil: 'domcontentloaded' },
     );
     await page.locator('#host').evaluate((host, origin) => {
@@ -34,6 +34,7 @@ test('waits for images in the question and its shadow roots', async ({ page }) =
       host.attachShadow({ mode: 'open' }).append(image);
     }, origin);
     await expect.poll(() => responses.size).toBe(3);
+    expect(responses.has('/lazy.svg')).toBe(false);
 
     let complete = false;
     const waiting = page
@@ -42,6 +43,7 @@ test('waits for images in the question and its shadow roots', async ({ page }) =
       .then(() => {
         complete = true;
       });
+    await expect.poll(() => responses.has('/lazy.svg')).toBe(true);
     sendImage(responses.get('/light.svg')!);
     await page.waitForFunction(() => document.querySelector('img')!.complete);
     expect(complete).toBe(false);
@@ -53,6 +55,12 @@ test('waits for images in the question and its shadow roots', async ({ page }) =
     expect(complete).toBe(false);
 
     sendImage(responses.get('/srcset.svg')!);
+    await page.waitForFunction(
+      () => document.querySelector<HTMLImageElement>('img[srcset]')!.complete,
+    );
+    expect(complete).toBe(false);
+
+    sendImage(responses.get('/lazy.svg')!);
     await waiting;
     expect(complete).toBe(true);
   } finally {

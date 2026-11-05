@@ -33,10 +33,11 @@ test('renders allowed resources and blocks redirects before requesting their des
   try {
     const pdf = await renderer.renderPdf({
       url: `${origin}/print`,
-      html: `<!doctype html><html data-print-status="ready"><body><img src="${figurePath}"></body></html>`,
+      html: `<!doctype html><html data-print-status="ready"><body><img src="${figurePath}"><img src="/private"></body></html>`,
     });
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(requests).toContain(figurePath);
+    expect(requests).not.toContain('/private');
 
     const pdfWithBlockedImage = await renderer.renderPdf({
       url: `${origin}/print`,

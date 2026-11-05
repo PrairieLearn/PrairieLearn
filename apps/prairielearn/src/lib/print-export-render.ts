@@ -43,7 +43,7 @@ export async function renderPrintExport(
   const pdfOutput = createPdfOutput();
   for (const snapshot of work.snapshots) {
     if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
-    const rendered = await renderer.render(
+    const rendered = await renderer.render<{ pdf: Buffer; coverPageCount: number }>(
       {
         url: snapshot.localPreviewUrl,
         browserOrigin: config.serverCanonicalHost ?? undefined,

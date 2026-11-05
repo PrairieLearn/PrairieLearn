@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
+/* oxlint-disable typescript/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
 import { load } from 'cheerio';
 import {
   AlignmentType,
@@ -52,7 +52,7 @@ export const NO_BORDERS = {
 class EditableMath extends WordMath {
   constructor(mathml: string) {
     super({ children: [] });
-    const $ = load(mml2omml(mathml, { disableDecode: true }), { xmlMode: true });
+    const $ = load(mml2omml(mathml, { disableDecode: true }), { xml: true });
     const convert = (node: HtmlNode): ImportedXmlComponent | string => {
       if (node.type === 'text') return node.data;
       if (!('attribs' in node)) throw new Error('Unexpected node in Office Math');
