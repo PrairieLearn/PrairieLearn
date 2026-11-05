@@ -179,19 +179,22 @@ export async function withCodeCaller<T>(
   load.startJob('python_callback_waiting', jobUuid);
 
   const currentPool = pool;
-  const codeCaller = await currentPool.acquire();
-
+  let codeCaller: CodeCaller;
   try {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    await codeCaller.prepareForCourse({
-      coursePath,
-      forbiddenModules: [],
-    });
-  } catch (err) {
-    // If we fail to prepare for a course, assume that the code caller is
-    // broken and dispose of it.
-    await currentPool.destroy(codeCaller);
-    throw err;
+    codeCaller = await currentPool.acquire();
+
+    try {
+      const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+      await codeCaller.prepareForCourse({
+        coursePath,
+        forbiddenModules: [],
+      });
+    } catch (err) {
+      // If we fail to prepare for a course, assume that the code caller is
+      // broken and dispose of it.
+      await currentPool.destroy(codeCaller);
+      throw err;
+    }
   } finally {
     load.endJob('python_callback_waiting', jobUuid);
   }
