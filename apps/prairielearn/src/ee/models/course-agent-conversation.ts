@@ -55,3 +55,14 @@ export async function selectOptionalCourseAgentConversation({
     CourseAgentConversationSchema,
   );
 }
+
+/** Looks up a conversation by the ID the course agent service assigned to it. */
+export async function selectOptionalCourseAgentConversationByAgentConversationId(
+  agent_conversation_id: string,
+) {
+  return await queryOptionalRow(
+    sql.select_course_agent_conversation_by_agent_conversation_id,
+    { agent_conversation_id },
+    CourseAgentConversationSchema,
+  );
+}

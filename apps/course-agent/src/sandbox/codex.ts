@@ -3,6 +3,8 @@ import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/brow
 import { z } from 'zod';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
+import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
 import type { ThreadResumeParams } from '../../generated/types/v2/ThreadResumeParams.js';
 import type { ThreadStartParams } from '../../generated/types/v2/ThreadStartParams.js';
 import type { TurnInterruptParams } from '../../generated/types/v2/TurnInterruptParams.js';
@@ -21,6 +23,12 @@ const TextDelta = z.object({
   itemId: z.string(),
   delta: z.string(),
 });
+const ToolCall = z.object({
+  threadId: z.string(),
+  tool: z.string(),
+  arguments: z.unknown(),
+});
+const QueryArguments = z.object({ sql: z.string() });
 const TurnCompleted = z.object({
   threadId: z.string(),
   turn: z.object({
@@ -29,6 +37,22 @@ const TurnCompleted = z.object({
     error: z.object({ message: z.string() }).nullable(),
   }),
 });
+
+const QUERY_TOOL = {
+  type: 'function',
+  name: 'query_course_data',
+  description:
+    "Run one read-only PostgreSQL SELECT against this course's PrairieLearn data. Rows are limited to this course. Only granted columns are readable, so list them first with: SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' ORDER BY table_name, ordinal_position. Returns the path of a JSONL file with one object per row; inspect it with shell tools. Results are limited to 10,000 rows and 10 MB.",
+  inputSchema: {
+    type: 'object',
+    properties: { sql: { type: 'string', description: 'A single SELECT statement.' } },
+    required: ['sql'],
+    additionalProperties: false,
+  },
+} satisfies DynamicToolSpec;
+
+/** Runs the query tool; a thrown error's message is returned to the model. */
+export type QueryCourseData = (sql: string) => Promise<string>;
 
 /** A workspace's app-server connection, reused across turns until Stop or workspace cleanup. */
 export class CodexAppServerClient {
@@ -40,7 +64,10 @@ export class CodexAppServerClient {
   private parts = new Map<string, 'text' | 'reasoning'>();
   private failure: Error | null = null;
 
-  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
+  constructor(
+    private sandbox: DurableObjectStub<CourseSandbox>,
+    private queryCourseData: QueryCourseData,
+  ) {}
 
   beginTurn(messageId: string) {
     this.terminal = Promise.withResolvers<undefined>();
@@ -91,6 +118,18 @@ export class CodexAppServerClient {
     onNotification('item/reasoning/summaryTextDelta', TextDelta, (params) =>
       this.delta('reasoning', params),
     );
+    rpc.onRequest('item/tool/call', async (value: unknown) => {
+      const call = ToolCall.parse(value);
+      const args = QueryArguments.safeParse(call.arguments);
+      if (call.threadId !== this.threadId || call.tool !== QUERY_TOOL.name || !args.success) {
+        return toolResult(false, `Unsupported tool call: ${call.tool}`);
+      }
+      try {
+        return toolResult(true, await this.queryCourseData(args.data.sql));
+      } catch (error) {
+        return toolResult(false, error instanceof Error ? error.message : String(error));
+      }
+    });
     onNotification('turn/completed', TurnCompleted, (params) => {
       if (params.threadId !== this.threadId || (this.turnId && params.turn.id !== this.turnId)) {
         return;
@@ -168,7 +207,12 @@ export class CodexAppServerClient {
           } satisfies ThreadResumeParams,
           ThreadResult,
         )
-      : await this.request('thread/start', settings, ThreadResult);
+      : await this.request(
+          'thread/start',
+          // Codex keeps a thread's dynamic tools, so resume does not accept them.
+          { ...settings, dynamicTools: [QUERY_TOOL] } satisfies ThreadStartParams,
+          ThreadResult,
+        );
     this.threadId = result.thread.id;
     return result.thread.id;
   }
@@ -255,4 +299,8 @@ export class CodexAppServerClient {
     this.rpc?.dispose();
     this.rpc = null;
   }
+}
+
+function toolResult(success: boolean, text: string): DynamicToolCallResponse {
+  return { success, contentItems: [{ type: 'inputText', text }] };
 }

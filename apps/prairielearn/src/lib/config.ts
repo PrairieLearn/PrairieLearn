@@ -686,6 +686,13 @@ export const ConfigSchema = z.object({
    * the service.
    */
   courseAgentServiceToken: KeyRingSchema.nullable().prefault(null),
+  /**
+   * Postgres login role for course agent SQL queries. It must be a member of
+   * `course_agent_reader` and must not be a member of `postgresqlUser`. The
+   * query tool is unavailable unless this is set.
+   */
+  courseAgentQueryPostgresqlUser: z.string().nullable().default(null),
+  courseAgentQueryPostgresqlPassword: z.string().nullable().default(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
   /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */

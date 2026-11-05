@@ -537,6 +537,11 @@ export async function initExpress(): Promise<Express> {
     '/pl/webhooks/stripe',
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
   );
+  // Called by the course agent service with its bearer token, not a user session.
+  app.use(
+    '/pl/webhooks/course_agent/query',
+    await enterpriseOnly(async () => (await import('./ee/routers/courseAgentQuery.js')).default),
+  );
 
   // Set and check `res.locals.__csrf_token`. We exclude API routes as those
   // don't require CSRF protection (and in fact can't have it at all).
@@ -2470,6 +2475,15 @@ if (esMain(import.meta)) {
     await namedLocks.init(pgConfig, idleErrorHandler, {
       renewIntervalMs: config.namedLocksRenewIntervalMs,
     });
+
+    if (isEnterprise() && config.courseAgentQueryPostgresqlUser) {
+      const { initCourseAgentQueryPool } = await import('./ee/lib/course-agent/query.js');
+      initCourseAgentQueryPool({
+        ...pgConfig,
+        user: config.courseAgentQueryPostgresqlUser,
+        password: config.courseAgentQueryPostgresqlPassword ?? undefined,
+      });
+    }
 
     logger.verbose('Successfully connected to database');
 

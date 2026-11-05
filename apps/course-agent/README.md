@@ -74,6 +74,18 @@ curl --fail-with-body -H "Authorization: Bearer $PL_SERVICE_TOKEN" \
 
 These requests do not start a sandbox or add the conversation to PrairieLearn's catalog. Send messages through PrairieLearn to use the sandbox.
 
+### Course data queries
+
+The agent's `query_course_data` tool runs read-only SQL against the conversation's course. The Worker posts the SQL to PL at `PL_URL` with the service token; PL resolves the user and course from its conversation record. PL runs the query on a separate pool that logs in as a member of `course_agent_reader`, a role that can only read allowlisted columns. Row-level security limits each table to the course in HMAC-signed claims, and only while the user is still an Owner. The full result is written to `/workspace/session/query-results/<id>.jsonl`, which is excluded from checkpoints, and the tool returns that path.
+
+Create the login role once per Postgres cluster after PL has run its migrations:
+
+```sh
+psql -c "CREATE ROLE pl_course_agent LOGIN IN ROLE course_agent_reader"
+```
+
+Then add `"courseAgentQueryPostgresqlUser": "pl_course_agent"` to `apps/prairielearn/config.json` and restart PL. The login role must not be a member of PL's own database role, or a query could switch back to it with `RESET ROLE`. Only conversations created after this change get the tool, because Codex accepts dynamic tools only when a thread starts. In deployed environments, set `PL_URL` to the PL origin the Worker can reach.
+
 ## Lifecycle and recovery
 
 The + button opens a local draft. First send creates the conversation and its title without starting a container. In dev mode it snapshots local course files; otherwise it binds a GitHub repository and branch. Execution unpacks the local snapshot or clones that branch; later turns reuse the running Codex connection and native thread. Only the newest input is submitted. Ordinary turn completion leaves Codex and background tools running until the next message or workspace cleanup. Stop interrupts the turn and terminates all agent/tool processes before another turn is admitted; the container and edited files remain available. Turn deadline expiry also backs up and shuts down the workspace. Closing or switching the panel leaves execution running. The selected conversation is retained per tab in session storage.
