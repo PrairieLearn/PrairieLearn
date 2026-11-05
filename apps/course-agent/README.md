@@ -114,7 +114,7 @@ Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_
 
 Set that environment's `SENTRY_DSN` to enable error reporting. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local reporting is disabled while the DSN is empty.
 
-Deploys defer Durable Object code updates for up to seven hours, so turns that are running at deploy time finish on the old code. A conversation that keeps starting new turns on the old code is still reset at seven hours, which interrupts any turn in progress. For an urgent fix, deploy with `--durable-objects-code-update-mode immediate`, which interrupts active turns.
+Deploys defer Durable Object code updates for up to seven hours, so turns that are running at deploy time normally continue on the old code. Deferral is best effort: Cloudflare runtime updates and other platform restarts can still interrupt a turn earlier. A conversation that keeps starting new turns on the old code is still reset at seven hours, which interrupts any turn in progress. For an urgent fix, deploy with `--durable-objects-code-update-mode immediate`, which interrupts active turns.
 
 ### Rotating the service token
 
