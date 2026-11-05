@@ -148,7 +148,7 @@ test('deletion supersedes a pending conversion', async ({ page }) => {
   });
   // Wait for the stale upload's FileReader callback, not just the converter download.
   await page.evaluate(() => {
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- Called with the original receiver below.
+    // oxlint-disable-next-line typescript/unbound-method -- Called with the original receiver below.
     const read = FileReader.prototype.readAsDataURL;
     FileReader.prototype.readAsDataURL = function (blob) {
       this.addEventListener('loadend', () => {
@@ -188,7 +188,7 @@ test('deletion supersedes an upload waiting for image decoding', async ({ page }
   await input.setInputFiles({ name: 'image.png', mimeType: 'image/png', buffer });
   await expect(hiddenInput).toHaveValue(/^data:image\/png;/);
   await page.evaluate(() => {
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- Called with the original receiver below.
+    // oxlint-disable-next-line typescript/unbound-method -- Called with the original receiver below.
     const decode = HTMLImageElement.prototype.decode;
     HTMLImageElement.prototype.decode = async function () {
       await decode.call(this);
@@ -421,7 +421,7 @@ for (const stage of ['render', 'decode'] as const) {
           });
       } else {
         await page.evaluate(() => {
-          // eslint-disable-next-line @typescript-eslint/unbound-method -- Called with the original receiver below.
+          // oxlint-disable-next-line typescript/unbound-method -- Called with the original receiver below.
           const decode = HTMLImageElement.prototype.decode;
           HTMLImageElement.prototype.decode = async function () {
             HTMLImageElement.prototype.decode = decode;

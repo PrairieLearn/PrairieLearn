@@ -315,6 +315,9 @@ test('passes custom identity from the single-submission grading modal', async ({
   courseInstance,
   testCoursePath,
 }) => {
+  // Rendering the student question and grading page can exceed 30 seconds on CI.
+  test.setTimeout(60_000);
+
   const assessmentPath = path.join(
     testCoursePath,
     'courseInstances/Sp15/assessments/hw10-aiGrading/infoAssessment.json',

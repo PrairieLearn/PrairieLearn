@@ -1,18 +1,15 @@
 {
   "name": "@prairielearn/pin-github-actions",
   "version": "1.0.3",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/pin-github-actions"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "bin": {
     "pin-github-actions": "bin/cli.js"
   },
+  "type": "module",
   "main": "dist/cli.js",
   "scripts": {
     "build": "tsc"
@@ -21,5 +18,8 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

@@ -36,7 +36,8 @@ interface HistoryItem {
 }
 
 type CalculatorDefinition =
-  { name: string; value: string } | { name: string; function: MathJsonExpression };
+  | { name: string; value: string }
+  | { name: string; function: MathJsonExpression };
 
 interface CalculatorLocalData {
   variable: CalculatorDefinition[];
@@ -946,7 +947,7 @@ export function initCalculator(
       }
     });
 
-    historyPanel.insertBefore(clone, historyPanel.firstChild);
+    historyPanel.prepend(clone);
     if (insertableOutput === undefined) {
       const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
       insertableOutput = restrictedMode

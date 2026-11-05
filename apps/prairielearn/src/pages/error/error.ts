@@ -76,4 +76,4 @@ export default (function (err, req, res, next) {
       resLocals: res.locals,
     }),
   );
-} satisfies ErrorRequestHandler);
+}) satisfies ErrorRequestHandler;

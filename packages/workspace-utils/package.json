@@ -1,16 +1,13 @@
 {
   "name": "@prairielearn/workspace-utils",
   "version": "1.0.23",
-  "type": "module",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/workspace-utils"
   },
-  "private": true,
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc && tscp",
@@ -36,5 +33,8 @@
     "@vitest/coverage-v8": "^5.0.2",
     "typescript-cp": "^0.1.11",
     "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }
