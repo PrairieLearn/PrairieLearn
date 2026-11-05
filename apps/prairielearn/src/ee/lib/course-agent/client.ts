@@ -16,6 +16,7 @@ import {
 import * as error from '@prairielearn/error';
 
 import { config } from '../../../lib/config.js';
+import { getActiveKey } from '../../../lib/key-ring.js';
 
 export function buildCourseAgentServiceRequest(path: string) {
   const { courseAgentServiceUrl, courseAgentServiceToken } = config;
@@ -27,7 +28,7 @@ export function buildCourseAgentServiceRequest(path: string) {
       path,
       courseAgentServiceUrl.endsWith('/') ? courseAgentServiceUrl : `${courseAgentServiceUrl}/`,
     ),
-    headers: { Authorization: `Bearer ${courseAgentServiceToken}` },
+    headers: { Authorization: `Bearer ${getActiveKey(courseAgentServiceToken)}` },
   };
 }
 

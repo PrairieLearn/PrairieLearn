@@ -1,7 +1,9 @@
 import * as Sentry from '@sentry/cloudflare';
 
 /** Error reports describe failures, without collecting chat, course files, or request credentials. */
-export function sentryOptions(env: Env & { GITHUB_READ_TOKEN?: string }): Sentry.CloudflareOptions {
+export function sentryOptions(
+  env: Env & { GITHUB_READ_TOKEN?: string; PL_SERVICE_TOKEN_PREVIOUS?: string },
+): Sentry.CloudflareOptions {
   return {
     dsn: env.SENTRY_DSN,
     enabled: !!env.SENTRY_DSN,
@@ -18,7 +20,12 @@ export function sentryOptions(env: Env & { GITHUB_READ_TOKEN?: string }): Sentry
     },
     beforeSend(event) {
       for (const exception of event.exception?.values ?? []) {
-        for (const secret of [env.PL_SERVICE_TOKEN, env.OPENAI_API_KEY, env.GITHUB_READ_TOKEN]) {
+        for (const secret of [
+          env.PL_SERVICE_TOKEN,
+          env.PL_SERVICE_TOKEN_PREVIOUS,
+          env.OPENAI_API_KEY,
+          env.GITHUB_READ_TOKEN,
+        ]) {
           if (secret && exception.value) {
             exception.value = exception.value.replaceAll(secret, '[redacted]');
           }

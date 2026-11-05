@@ -389,7 +389,6 @@ export function PageLayout({
                   ${Navbar({
                     resLocals,
                     navPage: navContext.page,
-                    navSubPage: navContext.subPage,
                     navbarType: navContext.type,
                     sideNavEnabled,
                     hideSessionControls: resolvedOptions.hideNavbarSessionControls,

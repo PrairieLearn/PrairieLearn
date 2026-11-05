@@ -5,6 +5,7 @@ import type { AbsolutePathBuf } from '../AbsolutePathBuf.js';
 import type { MultiAgentMode } from '../MultiAgentMode.js';
 import type { Personality } from '../Personality.js';
 import type { JsonValue } from '../serde_json/JsonValue.js';
+
 import type { ApprovalsReviewer } from './ApprovalsReviewer.js';
 import type { AskForApproval } from './AskForApproval.js';
 import type { DynamicToolSpec } from './DynamicToolSpec.js';

@@ -107,7 +107,7 @@ describe('Course agent access and conversation privacy', () => {
     Object.assign(config, {
       isEnterprise: true,
       courseAgentServiceUrl: `http://127.0.0.1:${address.port}`,
-      courseAgentServiceToken: 'test-token',
+      courseAgentServiceToken: ['test-token', 'next-token'],
       features: { ...config.features, 'course-agent': true },
     });
     await helperServer.before()();

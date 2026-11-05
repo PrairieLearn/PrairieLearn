@@ -145,6 +145,8 @@ function AssessmentQuestionManualGradingInner({
               <input
                 className="form-check-input"
                 type="checkbox"
+                // False positive: https://github.com/oxc-project/oxc/issues/24838
+                // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
