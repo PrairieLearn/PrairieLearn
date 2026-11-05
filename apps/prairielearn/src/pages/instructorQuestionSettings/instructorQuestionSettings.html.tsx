@@ -49,7 +49,7 @@ function AuthorLabel({ uid, name }: { uid: string; name?: string | null }) {
           height="16"
           className="me-1"
         />
-        {uid} (unauthenticated)
+        {uid}
       </a>
     );
   }
