@@ -1,4 +1,3 @@
-import * as os from 'node:os';
 import { join } from 'path';
 
 import { A11yError, A11yResults } from '@sa11y/format';
@@ -289,7 +288,7 @@ const accessibilitySkip = new Set([
 
 describe('Internally graded question lifecycle tests', { timeout: 60_000 }, function () {
   beforeAll(async function () {
-    await withConfig({ workersCount: os.cpus().length }, async () => {
+    await withConfig({ workersCount: helperServer.QUESTION_TESTS_WORKERS_COUNT }, async () => {
       await helperServer.before()();
     });
   });
