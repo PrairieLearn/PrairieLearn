@@ -22,10 +22,10 @@ export function PageFooter() {
               />
             </a>
           </div>
-          <div className="col-6 d-flex justify-content-end">
+          <div className="col-6 d-flex flex-wrap justify-content-end gap-3">
             <a
               href="https://prairielearn.com"
-              className="text-decoration-none me-3 page-footer-text d-none d-md-inline"
+              className="text-decoration-none page-footer-text d-none d-md-inline"
               target="_blank"
               rel="noreferrer"
             >
@@ -33,11 +33,33 @@ export function PageFooter() {
             </a>
             <a
               href="https://github.com/PrairieLearn/PrairieLearn"
-              className="text-decoration-none page-footer-text"
+              className="text-decoration-none text-nowrap page-footer-text"
+              aria-label="GitHub"
               target="_blank"
               rel="noreferrer"
             >
-              <i className="fab fa-github" /> <span>GitHub</span>
+              <i className="fab fa-github" aria-hidden="true" />{' '}
+              <span className="d-none d-sm-inline">GitHub</span>
+            </a>
+            <a
+              href="https://www.linkedin.com/company/prairielearn/"
+              className="text-decoration-none text-nowrap page-footer-text"
+              aria-label="LinkedIn"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <i className="fab fa-linkedin" aria-hidden="true" />{' '}
+              <span className="d-none d-sm-inline">LinkedIn</span>
+            </a>
+            <a
+              href="https://www.instagram.com/prairielearn/"
+              className="text-decoration-none text-nowrap page-footer-text"
+              aria-label="Instagram"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <i className="fab fa-instagram" aria-hidden="true" />{' '}
+              <span className="d-none d-sm-inline">Instagram</span>
             </a>
           </div>
         </div>
