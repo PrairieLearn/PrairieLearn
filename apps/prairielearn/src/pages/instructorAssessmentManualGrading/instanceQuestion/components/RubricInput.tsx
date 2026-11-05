@@ -149,19 +149,19 @@ export function RubricInput({
                 className="d-inline-block"
                 data-testid="rubric-item-description"
                 // The rendered fields come from the server's Markdown renderer.
-                // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+                // oxlint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: item.descriptionRendered }}
               />
               <div
                 className="small text-muted"
                 data-testid="rubric-item-explanation"
-                // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+                // oxlint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: item.explanationRendered }}
               />
               <div
                 className="small text-muted"
                 data-testid="rubric-item-grader-note"
-                // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+                // oxlint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: item.graderNoteRendered }}
               />
             </label>

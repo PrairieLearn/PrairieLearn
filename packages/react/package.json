@@ -1,15 +1,12 @@
 {
   "name": "@prairielearn/react",
   "version": "2.1.6",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/react"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "exports": {
     ".": "./dist/index.js",
     "./server": "./dist/server.js",
@@ -37,5 +34,8 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

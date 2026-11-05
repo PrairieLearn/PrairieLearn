@@ -222,7 +222,7 @@ export function TanstackTableDownloadButton<RowDataModel extends RowData>({
           </li>
         )}
         {additionalMenuItems?.map((item, index) => (
-          // eslint-disable-next-line @eslint-react/no-array-index-key
+          // oxlint-disable-next-line react/no-array-index-key
           <li key={index} role="presentation">
             {item}
           </li>

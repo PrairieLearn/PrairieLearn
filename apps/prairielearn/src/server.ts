@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
-// dependencies like `pg` and `express`.
+// dependencies like `pg` and `express`. The comment below keeps import sorting
+// (`partitionByComment` in `.oxfmtrc.json`) from moving these imports.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
-/* eslint-enable import-x/order */
+// End of instrumentation imports.
 
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -86,7 +86,10 @@ import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
-import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import {
+  handleWorkspaceUpgrade,
+  makeWorkspaceProxyMiddleware,
+} from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -114,7 +117,7 @@ if ('h' in argv || 'help' in argv) {
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -884,6 +887,9 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
       res.locals.lti11_enabled = await features.enabledFromLocals('lti11', res.locals);
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -1314,9 +1320,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -2168,7 +2171,9 @@ export async function startServer(app: express.Express) {
     : null;
   server.on('upgrade', (req, socket, head) => {
     if (req.url?.startsWith('/socket.io/')) return;
-    if (!handleCourseAgentUpgrade?.(app, req, head)) socket.destroy();
+    if (handleWorkspaceUpgrade(app, req, head)) return;
+    if (handleCourseAgentUpgrade?.(app, req, head)) return;
+    socket.destroy();
   });
 
   // Capture metrics about the server, including the number of active connections
@@ -2180,23 +2185,18 @@ export async function startServer(app: express.Express) {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
-  // https://github.com/oven-sh/bun/issues/4459
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (server.getConnections) {
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'http.connections.active',
-      {
-        valueType: opentelemetry.ValueType.INT,
-        interval: 1000,
-      },
-      // @ts-expect-error TODO: type correctly
-      () => {
-        return util.promisify(server!.getConnections.bind(server))();
-      },
-    );
-  }
+  opentelemetry.createObservableValueGauges(
+    meter,
+    'http.connections.active',
+    {
+      valueType: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    // @ts-expect-error TODO: type correctly
+    () => {
+      return util.promisify(server!.getConnections.bind(server))();
+    },
+  );
 
   const serverSocketActivity = new SocketActivityMetrics(meter, 'http');
   server.on('connection', (socket) => serverSocketActivity.addSocket(socket));

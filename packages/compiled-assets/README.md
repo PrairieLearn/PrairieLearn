@@ -70,12 +70,12 @@ To include a bundle on your page, you can use the `compiledScriptTag` or `compil
 If your file is located in the `esm-bundles` folder (and processed with ESM + code splitting), you can use the `compiledScriptModuleTag` function. Use `compiledScriptPreloadPaths` to get the URLs for `<link rel="modulepreload">` hints. `@prairielearn/react` emits these hints automatically for hydrated components.
 
 ```ts
-import { html } from '@prairielearn/html';
 import {
   compiledScriptTag,
   compiledScriptPath,
   compiledScriptModuleTag,
 } from '@prairielearn/compiled-assets';
+import { html } from '@prairielearn/html';
 
 router.get(() => {
   return html`

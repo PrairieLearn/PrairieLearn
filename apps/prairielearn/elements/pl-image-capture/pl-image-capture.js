@@ -1061,7 +1061,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           localCameraErrorMessage.textContent =
             'An error occurred while trying to access your camera.';
         }
-        throw new Error('Could not start local camera: ' + err.message, err.name);
+        throw new Error('Could not start local camera: ' + err.message, { cause: err });
       }
     }
 

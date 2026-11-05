@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
+import { MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE } from '../../ee/lib/ai-grading-free-credit-constants.js';
 import { AiGradingSelectionSchema } from '../../ee/lib/ai-grading/ai-grading-selection.shared.js';
 import {
   fillInstanceQuestionColumnEntries,
@@ -20,7 +21,6 @@ import {
   getActiveAiGradingJobCountForCourseInstance,
 } from '../../ee/lib/ai-grading/ai-grading.js';
 import { AiGradingExportTextSchema } from '../../ee/lib/ai-grading/types.js';
-import { MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE } from '../../ee/lib/ai-grading-free-credit-constants.js';
 import { deleteAiInstanceQuestionGroups } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import {
