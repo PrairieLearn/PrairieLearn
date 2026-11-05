@@ -1037,6 +1037,10 @@
       "default": true,
       "type": "boolean"
     },
+    "compiledAssetsDevMode": {
+      "default": null,
+      "type": ["boolean", "null"]
+    },
     "azureClientID": {
       "default": "<your_client_id>",
       "type": "string"
@@ -1335,7 +1339,25 @@
     },
     "courseAgentServiceToken": {
       "default": null,
-      "type": ["string", "null"]
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "newsFeedUrl": {
       "default": null,

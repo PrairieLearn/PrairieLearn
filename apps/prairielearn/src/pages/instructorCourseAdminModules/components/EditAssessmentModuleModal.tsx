@@ -142,7 +142,7 @@ export function EditAssessmentModuleModal({
             Cancel
           </button>
           <button className="btn btn-primary" type="submit">
-            Save
+            {data?.mode === 'create' ? 'Add' : 'Ok'}
           </button>
         </Modal.Footer>
       </form>

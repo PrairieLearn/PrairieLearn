@@ -7,12 +7,17 @@ import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
 
-const app = new Hono<{ Bindings: Env }>();
+// Set only while rotating PL_SERVICE_TOKEN, so it isn't a required secret in wrangler.jsonc.
+const app = new Hono<{ Bindings: Env & { PL_SERVICE_TOKEN_PREVIOUS?: string } }>();
 
 // PL's catalog is the existence/ownership authority for every conversation route.
 // Only its authenticated server may create conversations or forward SDK traffic here.
 app.use('*', async (c, next) => {
-  if (!isAuthorized(c.req.header('Authorization') ?? null, c.env.PL_SERVICE_TOKEN)) {
+  const header = c.req.header('Authorization') ?? null;
+  if (
+    !isAuthorized(header, c.env.PL_SERVICE_TOKEN) &&
+    !isAuthorized(header, c.env.PL_SERVICE_TOKEN_PREVIOUS)
+  ) {
     return c.text('Unauthorized', 401);
   }
   await next();
