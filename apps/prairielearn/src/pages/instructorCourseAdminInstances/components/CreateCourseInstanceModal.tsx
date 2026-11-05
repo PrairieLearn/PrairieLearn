@@ -100,7 +100,7 @@ export function CreateCourseInstanceModal({
   });
 
   const onFormSubmit = async (data: CreateFormValues) => {
-    void createMutation.mutate(data);
+    createMutation.mutate(data);
   };
 
   return (
