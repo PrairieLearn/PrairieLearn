@@ -1,7 +1,7 @@
-import type http from 'http';
+import http from 'http';
 import type { Socket } from 'net';
 
-import { type Request, type Response } from 'express';
+import { type Express, type NextFunction, type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import z from 'zod';
 
@@ -15,6 +15,28 @@ import { WorkspaceSchema } from '../lib/db-types.js';
 import { LocalCache } from '../lib/local-cache.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const WORKSPACE_UPGRADE_PATH = /^\/pl\/(public\/)?workspace\/\d+\/container\//;
+
+/** Saves the bytes Node received after each upgrade request until the proxy takes over. */
+const upgradeHeads = new WeakMap<http.IncomingMessage, Buffer>();
+
+/**
+ * Sends workspace WebSocket upgrades through the same Express authn/authz chain
+ * as HTTP requests. The proxy middleware completes authorized upgrades.
+ */
+export function handleWorkspaceUpgrade(app: Express, req: http.IncomingMessage, head: Buffer) {
+  if (!WORKSPACE_UPGRADE_PATH.test(req.url ?? '')) return false;
+  upgradeHeads.set(req, head);
+  const res = new http.ServerResponse(req);
+  res.assignSocket(req.socket);
+  // If Express responds instead of upgrading (e.g. authz fails), close the
+  // socket once that response is written.
+  res.shouldKeepAlive = false;
+  res.once('finish', () => req.socket.end());
+  app(req, res);
+  return true;
+}
 
 /**
  * Removes "sensitive" cookies from the request to avoid exposing them to
@@ -76,18 +98,33 @@ function getStatusCode(err: any): number {
 }
 
 function getRequestPath(req: Request): string {
-  // `req.originalUrl` won't be defined for websocket requests, but for
-  // non-websocket requests, `req.url` won't contain the full path. So we
-  // need to handle both.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return req.originalUrl ?? req.url;
+  // `req.url` won't contain the full path because the proxy is mounted on a
+  // sub-path, so we use `req.originalUrl` instead.
+  return req.originalUrl;
 }
 
 export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
+  const proxy = makeProxy(containerPathRegex);
+  return (req: Request, res: Response, next: NextFunction) => {
+    const head = upgradeHeads.get(req);
+    if (!head) return proxy(req, res, next);
+
+    // Transfer ownership of the socket from Express to the proxy.
+    res.detachSocket(req.socket);
+    // Status code 101 means Switching Protocols.
+    res.statusCode = 101;
+    res.emit('close');
+    proxy.upgrade(req, req.socket, head);
+  };
+}
+
+function makeProxy(containerPathRegex: RegExp) {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   return createProxyMiddleware<Request, Response>({
     target: 'invalid',
-    ws: true,
+    // Upgrades are forwarded explicitly by `makeWorkspaceProxyMiddleware`
+    // after the Express authorization chain.
+    ws: false,
     pathFilter: (_path, req) => {
       // The path provided to this function doesn't include the full path with
       // the `/pl/workspace/<workspace_id>/container/` prefix, so we need to

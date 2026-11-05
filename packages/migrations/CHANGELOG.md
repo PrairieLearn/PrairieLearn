@@ -1,5 +1,11 @@
 # @prairielearn/migrations
 
+## 5.2.7
+
+### Patch Changes
+
+- 0998223: Minor cleanups for oxlint; no behavior changes.
+
 ## 5.2.6
 
 ### Patch Changes

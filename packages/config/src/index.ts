@@ -69,7 +69,7 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
       // configs between clients in this case. We only want to share configs
       // to avoid spamming the IMDS API when creating lots of clients, but
       // this client will only be used once, typically at application startup.
-      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      // oxlint-disable-next-line @prairielearn/aws-client-shared-config
       const ec2Client = new EC2Client({ region: identity.region });
       const tags = await ec2Client.send(
         new DescribeTagsCommand({
@@ -81,7 +81,7 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
       if (!secretId) return {};
 
       // As above, we don't care about sharing configs between clients.
-      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      // oxlint-disable-next-line @prairielearn/aws-client-shared-config
       const secretsManagerClient = new SecretsManagerClient({ region: identity.region });
       const secretValue = await secretsManagerClient.send(
         new GetSecretValueCommand({ SecretId: secretId }),

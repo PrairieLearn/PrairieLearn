@@ -349,7 +349,7 @@ function decodeAiGradingTextFile(fileName: string, fileData: string): string | n
   }
 
   // Binary files can contain valid Unicode but still include non-text control characters.
-  // eslint-disable-next-line no-control-regex
+  // oxlint-disable-next-line no-control-regex
   if (/[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/u.test(text)) {
     return null;
   }
