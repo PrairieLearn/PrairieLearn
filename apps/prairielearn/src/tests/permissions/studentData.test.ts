@@ -275,7 +275,11 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
           authnUserId: String(context.userIdInstructor),
         }),
       },
-      body: JSON.stringify({ html: '<html></html>', source: { html: '', figures: [] } }),
+      body: JSON.stringify({
+        id: 'unused',
+        html: '<html></html>',
+        source: { html: '', figures: [] },
+      }),
     };
     const docxResponse = await helperClient.fetchCheerio(docxUrl, docxRequest);
     assert.equal(docxResponse.status, 400);

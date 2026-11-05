@@ -10,8 +10,13 @@ FROM
   LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
   ai.assessment_id = $assessment_id
-  AND ai.number = 1
+  AND NOT ai.for_printing
   AND (
     (gu.user_id = $user_id)
     OR (ai.user_id = $user_id)
-  );
+  )
+ORDER BY
+  ai.number,
+  ai.id
+LIMIT
+  1;

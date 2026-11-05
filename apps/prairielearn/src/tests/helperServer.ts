@@ -17,6 +17,7 @@ import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { beginPrintExportShutdown, waitForPrintExportWorkers } from '../lib/print-export-jobs.js';
 import { closePrintRenderer } from '../lib/printing/index.js';
 import { stopPrintRequests } from '../lib/printing/print-request.js';
 import * as serverJobs from '../lib/server-jobs.js';
@@ -103,6 +104,7 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
 
 export async function after(): Promise<void> {
   debug('after()');
+  beginPrintExportShutdown();
   // Drain background work before closing the resources it may still use.
   try {
     debug('after(): stop server');
@@ -114,6 +116,7 @@ export async function after(): Promise<void> {
     debug('after(): close server jobs');
     await serverJobs.stop();
 
+    await waitForPrintExportWorkers();
     await closePrintRenderer();
     await assets.close();
 

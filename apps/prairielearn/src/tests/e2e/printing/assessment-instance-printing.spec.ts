@@ -1,13 +1,15 @@
 import type { Page } from '@playwright/test';
 import axe from 'axe-core';
 
-import { makeAssessmentInstance } from '../../../lib/assessment.js';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+
 import type { CourseInstance } from '../../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../../models/assessment.js';
-import { getConfiguredUser } from '../../utils/auth.js';
+import { selectVariantsByInstanceQuestion } from '../../../models/variant.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { waitForPrintablePage } from './utils.js';
+import { createPrintableAssessmentInstance, waitForPrintablePage } from './utils.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
@@ -24,26 +26,6 @@ interface AnswerKeyQuestionPresentation {
   gradingBlockCount: number;
   questionNumber: string | undefined;
   visibleStudentResponseCount: number;
-}
-
-async function makePrintableAssessmentInstance(
-  courseInstance: CourseInstance,
-  tid: string,
-): Promise<string> {
-  const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid,
-  });
-  return await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
 }
 
 function printUrl(courseInstance: CourseInstance, assessmentInstanceId: string): string {
@@ -99,13 +81,43 @@ async function expectAccessiblePreview(page: Page) {
   expect(violations).toEqual([]);
 }
 
+test('reuses closed homework variants for student copies and answer keys', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessmentInstanceId = await createPrintableAssessmentInstance(
+    courseInstance.id,
+    'hw20-afterCompleteVisibility',
+  );
+  const url = printUrl(courseInstance, assessmentInstanceId);
+  await page.goto(url);
+  await readPaginatedQuestionLayout(page);
+  await expect(page.locator(':root')).toHaveAttribute('data-print-warnings', '[]');
+  const variants = await selectVariantsByInstanceQuestion({
+    assessment_instance_id: assessmentInstanceId,
+  });
+  expect(variants).toHaveLength(1);
+  await execute(sql.close_variants, { assessment_instance_id: assessmentInstanceId });
+
+  for (const document of ['assessment', 'answer_key']) {
+    await page.goto(`${url}&document=${document}`);
+    const layout = await readPaginatedQuestionLayout(page);
+    expect(Object.keys(layout.questionPages)).toHaveLength(1);
+    await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
+    await expect(page.locator(':root')).toHaveAttribute('data-print-omitted-question-count', '0');
+    expect(
+      await selectVariantsByInstanceQuestion({ assessment_instance_id: assessmentInstanceId }),
+    ).toEqual(variants.map((variant) => ({ ...variant, open: false })));
+  }
+});
+
 test('renders accessible previews and readable answer keys for every student question', async ({
   page,
   courseInstance,
 }) => {
   await page.context().addInitScript({ content: axe.source });
-  const assessmentInstanceId = await makePrintableAssessmentInstance(
-    courseInstance,
+  const assessmentInstanceId = await createPrintableAssessmentInstance(
+    courseInstance.id,
     'exam20-assessmentTools',
   );
   const endpoint = `${printUrl(courseInstance, assessmentInstanceId)}&identity_field=Section&identity_field=Student%20ID`;

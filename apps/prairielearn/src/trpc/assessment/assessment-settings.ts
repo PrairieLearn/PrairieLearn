@@ -9,6 +9,7 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 import { throwAppError } from '@prairielearn/trpc/server';
 
+import { deletePrintableAssessmentInstancesForAssessment } from '../../lib/assessment.js';
 import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
 import { type EnumAssessmentType, EnumAssessmentTypeSchema } from '../../lib/db-types.js';
 import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
@@ -752,6 +753,7 @@ const changeAssessmentType = t.procedure
         jobSequenceId: saveResult.jobSequenceId,
       });
     }
+    await deletePrintableAssessmentInstancesForAssessment(assessment.id, ctx.authn_user.id);
 
     const [refreshedAssessment, zonePointsRange] = await Promise.all([
       selectAssessmentById(assessment.id),
