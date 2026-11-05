@@ -154,6 +154,14 @@ export async function initExpress(): Promise<Express> {
     res.send('.');
   });
 
+  if (process.env.DANGEROUSLY_ENABLE_TEST_ROUTES && process.env.NODE_ENV === 'test') {
+    app.post(
+      '/__test__/config',
+      express.json(),
+      (await import('./middlewares/testConfigOverrides.js')).default,
+    );
+  }
+
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
   // any point.
