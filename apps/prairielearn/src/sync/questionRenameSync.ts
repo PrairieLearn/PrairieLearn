@@ -6,19 +6,20 @@ import { execa } from 'execa';
 import type { Course } from '../lib/db-types.js';
 import { isDraftQid } from '../lib/draft-question.js';
 import { renameQidInAssessment } from '../lib/infoAssessment-edits.js';
-import { validateShortName } from '../lib/short-name.js';
 import { selectAssessmentsReferencingQuestions } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
 
 import { loadInfoFile } from './course-db.js';
+import { isQuestionQidEligibleForSync } from './questionSyncEligibility.js';
 import { selectSharedQuestions } from './sharing.js';
 
 export interface QuestionRenameScope {
   kind: 'rename';
   qid: string;
   newQid: string;
+  uuid: string;
   relativeFilePath: string;
   assessmentPaths: string[];
 }
@@ -28,13 +29,17 @@ export async function getQuestionRenameScope(
   qid: string,
   newQid: string,
 ): Promise<QuestionRenameScope | null> {
-  if (isDraftQid(qid) || isDraftQid(newQid)) return null;
-  if (!validateShortName(newQid).valid) return null;
+  if (isDraftQid(qid) || !isQuestionQidEligibleForSync(newQid)) return null;
   if ((await selectSharedQuestions(course.id)).some((question) => question.qid === qid)) {
     return null;
   }
   const question = await selectQuestionByQid({ course_id: course.id, qid });
-  if (question.share_source_publicly) return null;
+  if (question.share_source_publicly || !question.uuid) return null;
+  const info = await loadInfoFile({
+    coursePath: course.path,
+    filePath: path.join('questions', qid, 'info.json'),
+  });
+  if (info?.uuid?.toLowerCase() !== question.uuid.toLowerCase()) return null;
   const assessments = await selectAssessmentsReferencingQuestions({
     course_id: course.id,
     question_ids: [question.id],
@@ -43,6 +48,7 @@ export async function getQuestionRenameScope(
     kind: 'rename',
     qid,
     newQid,
+    uuid: question.uuid,
     relativeFilePath: path.join('questions', qid, 'info.json'),
     assessmentPaths: assessments.map((assessment) =>
       path.join(
@@ -122,7 +128,7 @@ export async function verifyQuestionRename({
   });
   if (!loaded?.data || loaded.errors.length > 0) return null;
   const parsed = QuestionJsonSchema.safeParse(loaded.data);
-  if (!parsed.success) return null;
+  if (!parsed.success || parsed.data.uuid.toLowerCase() !== scope.uuid.toLowerCase()) return null;
   const previousPaths = [`${oldRoot}info.json`, ...scope.assessmentPaths];
   const { stdout: previousFiles } = await execa(
     'git',
