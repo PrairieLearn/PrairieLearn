@@ -15,6 +15,12 @@ export function redactSecrets(text: string) {
   return text;
 }
 
+/** One structured line per startup milestone for diagnosing sandbox startup in Workers Logs. */
+export function logEvent(event: string, fields: Record<string, unknown>) {
+  // oxlint-disable-next-line no-console
+  console.log(redactSecrets(JSON.stringify({ event, ...fields })));
+}
+
 function formatError(error: unknown): string {
   if (!(error instanceof Error)) return String(error);
   const text = error.stack ?? `${error.name}: ${error.message}`;

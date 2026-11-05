@@ -1,7 +1,7 @@
 import { DirectoryBackup, type DirectoryBackupRecord, Files } from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
-import { redactSecrets } from '../monitoring.js';
+import { logEvent, redactSecrets } from '../monitoring.js';
 
 const SESSION = '/workspace/session';
 const NATIVE_PORT = 4500;
@@ -12,8 +12,8 @@ export type CourseSource =
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
 
-// Codex runs at its default log level, so do not set RUST_LOG here: verbose levels can log
-// request contents. Bound what reaches Worker logs in case a runner repeats an error.
+// Codex output can contain sensitive content, so it is forwarded only when DEBUG_RUNNER_OUTPUT is
+// "true" (staging only). Bound what reaches Worker logs in case a runner repeats an error.
 const RUNNER_LOG_LINE_CHARS = 2000;
 const RUNNER_LOG_LINES = 200;
 const RUNNER_ERROR_TAIL_CHARS = 2000;
@@ -151,6 +151,9 @@ export class CourseSandbox extends DurableObject<Env> {
     checkpoint: DirectoryBackupRecord | null,
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
+    const started = Date.now();
+    const log = (event: string, fields: Record<string, unknown> = {}) =>
+      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     this.container.start({
       image: this.container.images.courseAgent,
       enableInternet: false,
@@ -159,7 +162,14 @@ export class CourseSandbox extends DurableObject<Env> {
       // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
       instance: 'basic',
     });
+    log('sandbox_container_start_requested', { instance: 'basic' });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
+    // Confirms which instance type actually applied: basic has 1 GiB and lite 256 MiB.
+    const resources = new TextDecoder()
+      .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
+      .trim()
+      .split('\n');
+    log('sandbox_container_resources', { memTotal: resources[0], cpus: resources[1] });
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
@@ -170,7 +180,14 @@ export class CourseSandbox extends DurableObject<Env> {
       'model.internal:80',
       this.ctx.exports.CourseAgentModelOutbound({ props: { model: config.model } }),
     );
+    log('sandbox_outbound_configured');
     await this.exec(['mkdir', '-p', '/workspace']);
+    const source = checkpoint
+      ? { source: 'checkpoint' }
+      : config.type === 'local'
+        ? { source: 'local' }
+        : { source: 'github', repository: config.repository, branch: config.branch };
+    log('sandbox_files_started', source);
     if (checkpoint) {
       await this.backups.restore(checkpoint);
     } else {
@@ -228,6 +245,7 @@ export class CourseSandbox extends DurableObject<Env> {
         );
       }
     }
+    log('sandbox_files_finished', source);
     // Configuration contains no credentials. It is reapplied after restoration.
     const files = new Files(this.container);
     await files.writeFile(
@@ -235,6 +253,7 @@ export class CourseSandbox extends DurableObject<Env> {
       'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
     );
     await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
+    log('sandbox_codex_config_written');
   }
 
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */
@@ -254,6 +273,12 @@ export class CourseSandbox extends DurableObject<Env> {
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
+    // Temporary: forwards Codex output to diagnose staging sandbox startup. Remove this flag and
+    // the forwarding once that is resolved; production must never set it.
+    const debugOutput = this.env.DEBUG_RUNNER_OUTPUT === 'true';
+    const started = Date.now();
+    const log = (event: string, fields: Record<string, unknown> = {}) =>
+      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     this.process = await this.container.exec(
       [
         'codex',
@@ -269,11 +294,12 @@ export class CourseSandbox extends DurableObject<Env> {
         user: 'node',
         cwd: `${SESSION}/course`,
         env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
-        stdout: 'pipe',
-        stderr: 'pipe',
+        stdout: debugOutput ? 'pipe' : 'ignore',
+        stderr: debugOutput ? 'pipe' : 'ignore',
       },
     );
-    const output = forwardRunnerOutput(this.process);
+    log('runner_started', { pid: this.process.pid, debugOutput });
+    const output = debugOutput ? forwardRunnerOutput(this.process) : null;
     let exitCode: number | null = null;
     void this.process.exitCode.then((code) => {
       exitCode = code;
@@ -282,23 +308,39 @@ export class CourseSandbox extends DurableObject<Env> {
     const forwarded = new Request('http://container/', request);
     forwarded.headers.delete('host');
     forwarded.headers.set('Authorization', `Bearer ${this.nativeToken}`);
-    const deadline = Date.now() + 30_000;
+    const deadline = started + 30_000;
+    let failures = 0;
     // Use the upgrade for readiness: an empty health response can break the next pooled request.
     // https://github.com/cloudflare/workerd/issues/7597
     // Only connection establishment is retried; protocol commands have not been sent yet.
     for (;;) {
       try {
-        return await port.fetch(forwarded);
+        const response = await port.fetch(forwarded);
+        log('runner_ready', { failedAttempts: failures, status: response.status });
+        return response;
       } catch (error) {
-        if (exitCode !== null) {
-          await output.done;
-          throw new Error(
-            `Codex runner exited with code ${exitCode} before listening: ${output.tail() || '(no stderr)'}`,
-            { cause: error },
-          );
+        failures++;
+        if (failures === 1) {
+          log('runner_not_listening', {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
-        if (Date.now() >= deadline) throw error;
-        await scheduler.wait(100);
+        if (exitCode === null && Date.now() < deadline) {
+          await scheduler.wait(100);
+          continue;
+        }
+        await output?.done;
+        const facts = {
+          elapsedMs: Date.now() - started,
+          failedAttempts: failures,
+          exitCode,
+          containerRunning: this.container.running,
+        };
+        log('runner_gave_up', facts);
+        const tail = output ? `: ${output.tail() || '(no stderr)'}` : '';
+        throw new Error(`Codex runner did not listen: ${JSON.stringify(facts)}${tail}`, {
+          cause: error,
+        });
       }
     }
   }

@@ -15,7 +15,7 @@ import {
   type ConversationState,
 } from '@prairielearn/course-agent-types';
 
-import { reportError } from '../monitoring.js';
+import { logEvent, reportError } from '../monitoring.js';
 import { CodexAppServerClient } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
@@ -222,7 +222,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return { continue: false };
   }
 
-  private block(reason: BlockedReason) {
+  private block(reason: BlockedReason, error?: unknown) {
+    logEvent('conversation_blocked', {
+      conversationId: this.name,
+      sandboxId: this.record.sandboxId,
+      from: this.record.lifecycle.status,
+      reason,
+      ...(error !== undefined && { error: error instanceof Error ? error.message : String(error) }),
+    });
     this.setRecord({
       ...this.record,
       lifecycle: { status: 'blocked', reason },
@@ -305,6 +312,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
     });
+    if (startup) {
+      logEvent('conversation_starting', {
+        conversationId: this.name,
+        sandboxId: this.record.sandboxId,
+        source: this.record.config.type,
+      });
+    }
     this.native ??= new CodexAppServerClient(this.sandbox);
     const execution = new SandboxTurn(this.sandbox, this.native, {
       messageId: crypto.randomUUID(),
@@ -320,7 +334,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         threadId: this.record.nativeThreadId,
       },
       onThread: (nativeThreadId) => this.setRecord({ ...this.record, nativeThreadId }),
-      onReady: () => this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' } }),
+      onReady: () => {
+        if (startup) {
+          logEvent('conversation_ready', {
+            conversationId: this.name,
+            sandboxId: this.record.sandboxId,
+          });
+        }
+        this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' } });
+      },
       onAccepted: (nativeTurnId) => this.stash({ nativeTurnId }),
     });
     const active: ActiveTurn = {
@@ -334,7 +356,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const abort = () => {
       void this.stopLive().catch((error: unknown) => {
         this.reportError(error);
-        this.block('runtime_failed');
+        this.block('runtime_failed', error);
       });
     };
     options.abortSignal?.addEventListener('abort', abort, { once: true });
@@ -347,7 +369,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           this.record.lifecycle.status !== 'blocked' &&
           this.record.lifecycle.status !== 'offline'
         ) {
-          this.block('runtime_failed');
+          this.block('runtime_failed', error);
         }
       })
       .finally(() => options.abortSignal?.removeEventListener('abort', abort));
@@ -365,7 +387,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (result.stopped || result.error) this.native = null;
     if (result.error) {
       this.reportError(result.error);
-      this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
+      this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed', result.error);
     }
     await active.sdkFinished.promise;
     if (this.active !== active) return;
@@ -422,7 +444,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         lifecycle: { status: 'offline' },
       });
     } catch (error) {
-      this.block('startup_failed');
+      this.block('startup_failed', error);
       throw error;
     }
   }
