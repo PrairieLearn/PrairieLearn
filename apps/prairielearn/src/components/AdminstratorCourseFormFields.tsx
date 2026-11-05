@@ -213,7 +213,7 @@ export function AdministratorCourseFormFields({
         {institutionAutoFilled && <AutoFilledHint source="requesting user's account" />}
         <div aria-live="polite" aria-atomic="true">
           {isDefaultInstitution && (
-            <div className="form-text text-warning">
+            <div className="form-text text-warning-emphasis">
               <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
               institution is typically not intended for new courses.
             </div>
@@ -296,7 +296,7 @@ export function AdministratorCourseFormFields({
         )}
         <div aria-live="polite" aria-atomic="true">
           {shortName && !/^[A-Z]+ [A-Z0-9]+$/.test(shortName) && (
-            <div className="form-text text-warning">
+            <div className="form-text text-warning-emphasis">
               <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The course rubric and
               number should be a series of upper case letters, followed by a space, followed by a
               series of numbers and/or letters.
@@ -359,14 +359,14 @@ export function AdministratorCourseFormFields({
         {repoAutoFilled && <AutoFilledHint source="selected institution" />}
         <div aria-live="polite" aria-atomic="true">
           {!repoFormatValid && (
-            <div className="form-text text-warning">
+            <div className="form-text text-warning-emphasis">
               <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Repository name should
               follow the format <code>pl-&#123;institution&#125;-&#123;course&#125;</code> (e.g.{' '}
               <code>pl-uiuc-cs101</code>).
             </div>
           )}
           {!repoMatchesShortName && (
-            <div className="form-text text-warning">
+            <div className="form-text text-warning-emphasis">
               <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Repository name is out
               of sync with the short name. Expected <code>{expectedRepoShortName}</code>.
             </div>
@@ -402,7 +402,7 @@ export function AdministratorCourseFormFields({
         {pathAutoFilled && <AutoFilledHint source="selected institution" />}
         <div aria-live="polite" aria-atomic="true">
           {showPathMismatchWarning && (
-            <div className="form-text text-warning">
+            <div className="form-text text-warning-emphasis">
               <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Path and repository
               name are out of sync. Expected path to be{' '}
               <code>

@@ -196,7 +196,7 @@ function QuestionReviewPanelImpl({
           )}
           {warnings.length > 0 && (
             <i
-              className="bi bi-exclamation-triangle-fill text-warning flex-grow-1"
+              className="bi bi-exclamation-triangle-fill text-warning-emphasis flex-grow-1"
               aria-label={`${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`}
               title={`${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`}
             />
@@ -211,7 +211,7 @@ function QuestionReviewPanelImpl({
       </Card.Header>
       {qo?.collides && included && (
         <div className="px-3 py-2 bg-light border-bottom d-flex align-items-center gap-2 small">
-          <i className="bi bi-exclamation-circle text-warning" aria-hidden="true" />
+          <i className="bi bi-exclamation-circle text-warning-emphasis" aria-hidden="true" />
           <span>
             Conflicts with existing question <code>{qo.originalDirName}</code>
           </span>
@@ -241,7 +241,7 @@ function QuestionReviewPanelImpl({
             {warnings.length > 0 && (
               <div className="px-3 py-2 border-bottom bg-light d-flex align-items-start gap-2 small">
                 <i
-                  className="bi bi-exclamation-triangle-fill text-warning mt-1"
+                  className="bi bi-exclamation-triangle-fill text-warning-emphasis mt-1"
                   aria-hidden="true"
                 />
                 <div>
