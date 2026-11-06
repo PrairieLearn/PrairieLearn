@@ -7,9 +7,13 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
 import {
+  getReview,
+  postReviewDecision,
+  resumeConversation,
+} from '../../ee/lib/course-agent/apply-changes.js';
+import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
-  resumeCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
 import {
   insertCourseAgentConversation,
@@ -35,6 +39,40 @@ const requireCourseAgent = t.middleware(async (opts) => {
 const courseAgentProcedure = t.procedure.use(requireCoursePermissionOwn).use(requireCourseAgent);
 
 export const courseAgentRouter = t.router({
+  getReview: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, reviewId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      return getReview(ctx.course, conversation, input.reviewId);
+    }),
+  postReviewDecision: courseAgentProcedure
+    .input(
+      z.object({
+        conversationId: IdSchema,
+        reviewId: z.uuid(),
+        decision: z.enum(['approved', 'denied']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      return postReviewDecision({
+        ...input,
+        course: ctx.course,
+        conversation,
+        user: ctx.locals.user,
+        authzData: ctx.authz_data,
+      });
+    }),
   list: courseAgentProcedure.query(async ({ ctx }) => {
     const conversations = await selectCourseAgentConversationsForUser({
       course_id: ctx.course.id,
@@ -53,7 +91,7 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      return resumeCourseAgentConversation(conversation.agent_conversation_id);
+      return resumeConversation(conversation);
     }),
 
   // Record only conversations whose Cloudflare startup succeeded.
@@ -99,4 +137,6 @@ export interface CourseAgentError {
   List: never;
   Create: never;
   Resume: never;
+  GetReview: never;
+  PostReviewDecision: never;
 }
