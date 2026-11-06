@@ -23,7 +23,6 @@ ensure_group() {
     fi
 }
 
-echo "Setting up devuser ($uid)"
 if id devuser > /dev/null 2>&1; then
     actual_uid=$(id -u devuser)
     [[ $actual_uid == "$uid" ]] || fail "devuser has UID $actual_uid, but PL_USER requests $uid."
@@ -32,6 +31,7 @@ else
         fail "UID $uid is already assigned to another user. Choose a different PL_USER."
     fi
     ensure_group "$uid" devuser
+    echo "Setting up devuser ($uid)"
     useradd -u "$uid" -g "$uid" -m devuser
 fi
 
