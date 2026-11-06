@@ -4,6 +4,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from 'vite
 
 import type { Review } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
+import { execute } from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
 import type { Course, CourseAgentConversation, User } from '../../../lib/db-types.js';
 import { FileDeleteEditor, FileUploadEditor, type MultiEditor } from '../../../lib/editors.js';
@@ -112,7 +114,7 @@ beforeEach(() => {
     id: jobSequenceId,
     type: 'sync',
     authn_user_id: user.id,
-    jobs: [{ data: {}, status: 'Success', output: '' }],
+    jobs: [{ data: {}, status: 'Success', output: '', error_message: null }],
   } as JobSequenceWithTokens;
   // Each test uses a fresh review ID, so recorded decisions never collide.
   review = {
@@ -268,6 +270,34 @@ it('retries a result the agent service did not acknowledge', async () => {
   expect((await storedReview())?.result_delivered_at).toBeTruthy();
 });
 
+it('reports a stuck result once and stops resending it after the cutoff', async () => {
+  const captured = vi.spyOn(Sentry, 'captureException');
+  vi.mocked(deliverCourseAgentReviewResult).mockRejectedValue(new Error('Service unavailable'));
+  const age = (interval: string) =>
+    execute(
+      'UPDATE course_agent_reviews SET created_at = now() - $interval::interval WHERE agent_review_id = $agent_review_id',
+      { interval, agent_review_id: review.id },
+    );
+  await decide('denied');
+  await withService(deliverUndeliveredReviewResults);
+  expect(captured).not.toHaveBeenCalled();
+  await age('2 hours');
+  await withService(deliverUndeliveredReviewResults);
+  await withService(deliverUndeliveredReviewResults);
+  expect(captured).toHaveBeenCalledOnce();
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledTimes(4);
+  await age('8 days');
+  await withService(deliverUndeliveredReviewResults);
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledTimes(4);
+  expect((await storedReview())?.delivery_expired_at).toBeTruthy();
+  // Resume still sends an expired result, so a conversation can be unstuck by hand.
+  vi.mocked(deliverCourseAgentReviewResult).mockResolvedValue(undefined);
+  vi.mocked(resumeCourseAgentConversation).mockResolvedValue({ recovered: true });
+  await withService(() => resumeConversation(conversation));
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledTimes(5);
+  expect((await storedReview())?.result_delivered_at).toBeTruthy();
+});
+
 it('rebuilds a result from a finished job when the saving process stopped', async () => {
   // An approval whose PrairieLearn process stopped after the job finished but before recording.
   await insertCourseAgentReview({
@@ -313,5 +343,20 @@ it('settles a review whose save job was stopped before writing', () => {
     decision: 'approved',
     publication: { status: 'failed', error: 'Stopped by user' },
     sync: { status: 'not_attempted' },
+  });
+});
+
+it('reports an unknown outcome for a save job the abandoned-job sweeper ended', () => {
+  // errorAbandonedJobs records an error message and leaves the flags the job held in memory unsaved.
+  sequence.jobs[0] = {
+    ...sequence.jobs[0],
+    status: 'Error',
+    output: null,
+    error_message: 'Job abandoned by server',
+  };
+  expect(getReviewJobResult(sequence, 'github')).toEqual({
+    decision: 'approved',
+    publication: { status: 'unknown' },
+    sync: { status: 'unknown' },
   });
 });

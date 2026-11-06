@@ -45,6 +45,24 @@ SET
 WHERE
   id = $id;
 
+-- BLOCK update_course_agent_review_stuck_reported
+UPDATE course_agent_reviews
+SET
+  stuck_delivery_reported_at = now()
+WHERE
+  id = $id;
+
+-- BLOCK expire_undelivered_course_agent_reviews
+UPDATE course_agent_reviews
+SET
+  delivery_expired_at = now()
+WHERE
+  result_delivered_at IS NULL
+  AND delivery_expired_at IS NULL
+  AND created_at < now() - $cutoff::interval
+RETURNING
+  id;
+
 -- BLOCK select_undelivered_course_agent_reviews
 SELECT
   to_jsonb(r.*) AS review,
@@ -54,10 +72,10 @@ FROM
   JOIN course_agent_conversations AS c ON (c.id = r.course_agent_conversation_id)
 WHERE
   r.result_delivered_at IS NULL
-  -- A result still undelivered after a week will not succeed by retrying; Resume can still send it.
+  -- The sweep leaves expired results alone; Resume still sends them.
   AND (
     $course_agent_conversation_id::bigint IS NOT NULL
-    OR r.created_at > now() - interval '7 days'
+    OR r.delivery_expired_at IS NULL
   )
   AND (
     $course_agent_conversation_id::bigint IS NULL
