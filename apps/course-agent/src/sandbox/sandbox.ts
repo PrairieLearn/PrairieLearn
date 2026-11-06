@@ -18,6 +18,8 @@ import {
 
 import { logEvent, redactSecrets } from '../monitoring.js';
 
+import { CloneProgress } from './clone-progress.js';
+
 const SESSION = '/workspace/session';
 // The node user and group in the base container image both have ID 1000.
 const NODE_UID_GID = '1000:1000';
@@ -281,6 +283,15 @@ export class CourseSandbox extends DurableObject<Env> {
     }
     this.freshContainer = true;
     log('sandbox_codex_config_written');
+    // Returned as well as logged: this Durable Object's logs can arrive late or not at all while
+    // its container keeps it busy, so the caller logs the timings too.
+    return {
+      instance: typeof instance === 'string' ? instance : JSON.stringify(instance),
+      cpus: Number(first.cpus),
+      memTotalKb: Number(first.memTotalKb),
+      containerStartMs: first.execMs - Number(first.setupMs),
+      setupMs: Number(first.setupMs),
+    };
   }
 
   /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
@@ -291,6 +302,7 @@ export class CourseSandbox extends DurableObject<Env> {
   /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
   async addCourseFiles(config: CourseSource) {
     const started = Date.now();
+    let clonePhases: string[] = [];
     const log = (event: string, fields: Record<string, unknown> = {}) =>
       logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     if (config.type === 'local') {
@@ -333,12 +345,15 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
     } else {
       log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
+      const progress = new CloneProgress(Date.now());
       // Reviews only need the branch tip, and later fetches still work from a shallow clone.
       // Full history made large course repositories take most of startup to clone.
-      await this.exec(
+      // Progress is read only to time each phase; it never contains course file contents.
+      const clone = await this.container.exec(
         [
           'git',
           'clone',
+          '--progress',
           '--depth',
           '1',
           '--single-branch',
@@ -348,12 +363,30 @@ export class CourseSandbox extends DurableObject<Env> {
           `http://repository.internal/${config.repository}.git`,
           `${SESSION}/course`,
         ],
-        'node',
+        { user: 'node', stdout: 'ignore', stderr: 'pipe' },
       );
+      const [exitCode] = await Promise.all([
+        clone.exitCode,
+        (async () => {
+          for await (const chunk of clone.stderr!.pipeThrough(new TextDecoderStream())) {
+            progress.push(chunk, Date.now());
+          }
+        })(),
+      ]);
+      if (exitCode !== 0) {
+        throw new SandboxCommandError(`Sandbox command failed: ${progress.errorOutput}`, exitCode);
+      }
+      clonePhases = progress
+        .phases(Date.now())
+        .map(
+          ({ phase, durationMs, progress: line }) =>
+            `${phase}=${durationMs}ms${line ? ` (${line.replace(/^.*?:\s*/, '')})` : ''}`,
+        );
       log('sandbox_clone_finished');
     }
     await this.lockSession();
     log('sandbox_files_ready', { source: config.type });
+    return { totalMs: Date.now() - started, clonePhases };
   }
 
   /**

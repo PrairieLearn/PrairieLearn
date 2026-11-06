@@ -463,8 +463,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         await this.scheduleDeadline('turn');
         if (startup) {
           log('turn_sandbox_prepare_requested');
-          await this.sandbox.prepare(this.record.config, this.record.checkpoint);
-          log('turn_sandbox_prepare_finished');
+          const started = await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+          log('turn_sandbox_prepare_finished', started);
         }
         if (continuation && review) await this.advanceLocalBaseline(review);
       },
@@ -472,8 +472,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         startup && !this.record.checkpoint
           ? async () => {
               log('turn_course_files_started');
-              await this.sandbox.addCourseFiles(this.record.config);
-              log('turn_course_files_ready');
+              const files = await this.sandbox.addCourseFiles(this.record.config);
+              log('turn_course_files_ready', { sandboxMs: files.totalMs });
+              for (const phase of files.clonePhases) log('turn_clone_phase', { phase });
             }
           : undefined,
       thread: {
