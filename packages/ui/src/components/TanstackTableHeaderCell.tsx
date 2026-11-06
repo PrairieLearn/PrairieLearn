@@ -53,7 +53,7 @@ function ResizeHandle<RowDataModel extends RowData>({
   return (
     <div
       className="py-1 h-100"
-      style={{ position: 'absolute', insetInlineEnd: 0, top: 0, width: '4px' }}
+      style={{ position: 'absolute', insetInlineEnd: 0, top: 0, width: '16px' }}
     >
       <div
         role="separator"
@@ -64,12 +64,8 @@ function ResizeHandle<RowDataModel extends RowData>({
         aria-valuemax={maxSize}
         aria-valuenow={header.getSize()}
         tabIndex={0}
-        className="h-100"
-        style={{
-          background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
-          cursor: 'col-resize',
-          transition: 'background-color 0.2s',
-        }}
+        className="h-100 pl-ui-tanstack-table-resize-handle"
+        data-resizing={header.column.getIsResizing() || undefined}
         onMouseDown={header.getResizeHandler()}
         onMouseUp={onResizeEnd}
         onTouchStart={header.getResizeHandler()}
@@ -126,6 +122,7 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
     minWidth: 0,
     maxWidth: headerSize,
     flexShrink: 0,
+    paddingInlineEnd: header.column.getCanResize() ? '16px' : undefined,
     position: isPinned === 'start' ? 'sticky' : 'relative',
     top: 0,
     zIndex: isPinned === 'start' ? 2 : 1,
