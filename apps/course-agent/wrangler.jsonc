@@ -24,7 +24,7 @@
     "logs": { "enabled": true, "invocation_logs": false }
   },
   "secrets": {
-    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
+    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
   },
   "durable_objects": {
     // Let turns running at deploy time finish on the old code: 7 h covers AGENT_TURN_SECONDS
@@ -60,7 +60,7 @@
       "images": {
         "courseAgent": {
           "dockerfile": "container/Dockerfile",
-          "build_context": "."
+          "build_context": "container"
         }
       }
     }
@@ -84,7 +84,7 @@
         "DEBUG_RUNNER_OUTPUT": "true"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
@@ -107,7 +107,7 @@
           "images": {
             "courseAgent": {
               "dockerfile": "container/Dockerfile",
-              "build_context": "."
+              "build_context": "container"
             }
           }
         }
@@ -132,7 +132,7 @@
         "DEBUG_RUNNER_OUTPUT": "false"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
@@ -155,7 +155,7 @@
           "images": {
             "courseAgent": {
               "dockerfile": "container/Dockerfile",
-              "build_context": "."
+              "build_context": "container"
             }
           }
         }

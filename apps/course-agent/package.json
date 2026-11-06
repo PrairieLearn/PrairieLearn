@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit && wrangler deploy --dry-run --outdir dist",
+    "build": "tsc --noEmit && wrangler deploy --dry-run --env=\"\" --containers-rollout=none --outdir dist",
     "check-types": "wrangler types src/env.d.ts --include-runtime=false --strict-vars=false --check",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --port 8790 --persist-to .wrangler/local",
@@ -12,11 +12,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cloudflare/ai-chat": "0.12.1",
+    "@cloudflare/ai-chat": "0.12.2",
     "@cloudflare/sandbox": "1.0.2",
     "@prairielearn/course-agent-types": "workspace:^",
     "@sentry/cloudflare": "^11.9.0",
-    "agents": "0.28.1",
+    "agents": "0.33.0",
     "ai": "^7.0.116",
     "hono": "^4.13.13",
     "vscode-jsonrpc": "^9.0.3",

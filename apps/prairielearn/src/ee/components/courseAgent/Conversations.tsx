@@ -2,7 +2,7 @@ import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
-import type { UIMessage } from 'ai';
+import { type UIMessage } from 'ai';
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -13,8 +13,9 @@ import {
 } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
+import { z } from 'zod';
 
-import type { ConversationState } from '@prairielearn/course-agent-types';
+import { type ConversationState } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
@@ -26,14 +27,19 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
+import { RequestChangesCard } from './RequestChangesCard.js';
+
+/** The agent service shows a review in chat history by its ID only. */
+const ReviewPartSchema = z.object({ reviewId: z.string() });
 
 const BLOCKED_MESSAGES = {
   startup_failed:
-    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
+    'The course agent could not start. Resume to clear the incomplete setup, then send a new message.',
   runtime_failed:
-    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
-  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
-  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
+    "The course agent was interrupted. It may have made some changes, and its reply may be incomplete. Resume to continue; your previous message won't run again.",
+  checkpoint_failed:
+    "The course agent couldn't pause. Resume to try again; its changes are still there.",
+  cleanup_failed: 'The course agent paused, but cleanup did not finish. Resume to finish cleanup.',
 } satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
 
 const NEW_CONVERSATION = 'new';
@@ -278,7 +284,9 @@ function Chat({
   });
   const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
   const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
-  const readyToSend = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
+  const pendingReview = lifecycle?.reviewId != null;
+  const readyToSend =
+    !pendingReview && (lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user');
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
   const [draft, setDraft] = useState('');
   // Wait for initial history before allowing messages to be sent.
@@ -309,6 +317,10 @@ function Chat({
       return false;
     });
   });
+  const awaitingReviewId =
+    !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
+      ? (lifecycle.reviewId ?? null)
+      : null;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
@@ -330,8 +342,24 @@ function Chat({
             </p>
           )}
           {messages.map((message) => (
-            <Message key={message.id} message={message} />
+            <Message
+              key={message.id}
+              message={message}
+              conversationId={conversationId}
+              awaitingReviewId={awaitingReviewId}
+            />
           ))}
+          {/* Stop can end the stream before history records the review, which would otherwise
+              leave the conversation waiting on a review with no card to decide it. */}
+          {historyReady &&
+            lifecycle?.reviewId &&
+            !reviewInHistory(messages, lifecycle.reviewId) && (
+              <RequestChangesCard
+                conversationId={conversationId}
+                reviewId={lifecycle.reviewId}
+                canResume={awaitingReviewId === lifecycle.reviewId}
+              />
+            )}
           {showThinking && (
             <div className="text-muted small">
               <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
@@ -351,11 +379,17 @@ function Chat({
               </Button>
             </Alert>
           )}
+          {lifecycle?.sandboxLost && (
+            <Alert variant="warning">
+              The course agent stopped unexpectedly and lost the changes it made since it last
+              paused. Reviews you already decided are not affected; each shows what was saved.
+            </Alert>
+          )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
             <p className="text-muted" role="status">
               {lifecycle.status === 'stopping'
                 ? 'Stopping the course agent…'
-                : 'Saving your workspace…'}
+                : 'Pausing the course agent…'}
             </p>
           )}
           {resume.isError && (
@@ -441,7 +475,26 @@ function Composer({
   );
 }
 
-function Message({ message }: { message: UIMessage }) {
+function reviewInHistory(messages: UIMessage[], reviewId: string) {
+  return messages.some((message) =>
+    message.parts.some(
+      (part) =>
+        part.type === 'data-review' &&
+        ReviewPartSchema.safeParse(part.data).data?.reviewId === reviewId,
+    ),
+  );
+}
+
+function Message({
+  message,
+  conversationId,
+  awaitingReviewId,
+}: {
+  message: UIMessage;
+  conversationId: string;
+  /** An idle conversation's review whose result the agent has not received. */
+  awaitingReviewId: string | null;
+}) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     return (
@@ -456,6 +509,17 @@ function Message({ message }: { message: UIMessage }) {
         const key = `part-${index}`;
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+        if (part.type === 'data-review') {
+          const { reviewId } = ReviewPartSchema.parse(part.data);
+          return (
+            <RequestChangesCard
+              key={key}
+              conversationId={conversationId}
+              reviewId={reviewId}
+              canResume={awaitingReviewId === reviewId}
+            />
+          );
+        }
         return null;
       })}
     </div>
