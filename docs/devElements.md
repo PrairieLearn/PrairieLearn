@@ -54,27 +54,26 @@ And an `info.json` with the following contents:
 
 ## Element functions
 
-Element functions have the following signatures. Type annotations are optional; these examples use `import prairielearn as pl` for the question data types.
+Element functions have the following signatures. Type annotations are optional. See the [`data` dictionary](#data-dictionary) for the available fields and the function table below for which fields each function can modify.
 
 ```python
-import prairielearn as pl
-
-
-def prepare(element_html: str, data: pl.QuestionData) -> None: ...
-def render(element_html: str, data: pl.QuestionData) -> str: ...
-def parse(element_html: str, data: pl.QuestionData) -> None: ...
-def grade(element_html: str, data: pl.QuestionData) -> None: ...
-def test(element_html: str, data: pl.ElementTestData) -> None: ...
+def prepare(element_html: bytes, data: dict) -> None: ...
+def render(element_html: bytes, data: dict) -> str: ...
+def parse(element_html: bytes, data: dict) -> None: ...
+def grade(element_html: bytes, data: dict) -> None: ...
+def test(element_html: bytes, data: dict) -> None: ...
 ```
 
-`pl.ElementTestData` extends `pl.QuestionData` with the `test_type` key. Functions with a `None` return type modify `data` in place and do not need a `return` statement. The `render()` function returns HTML as a string.
+Functions with a `None` return type modify `data` in place and do not need a `return` statement. The `render()` function returns HTML as a string.
 
 All element functions take `element_html` first and `data` second. This differs from the [question-level `render()` function](question/server.md#serverpy-functions), which takes `data` first and the rendered HTML second. The arguments are:
 
-| Argument       | Type   | Description                                                     |
-| -------------- | ------ | --------------------------------------------------------------- |
-| `element_html` | string | The template HTML for the element.                              |
-| `data`         | dict   | Data for the question; permitted keys can be modified in place. |
+| Argument       | Type  | Description                                                     |
+| -------------- | ----- | --------------------------------------------------------------- |
+| `element_html` | bytes | The template HTML for the element, serialized as bytes.         |
+| `data`         | dict  | Data for the question; permitted keys can be modified in place. |
+
+### `data` dictionary
 
 The `data` dictionary has the following possible keys (not all keys will be present in all element functions):
 
@@ -110,6 +109,8 @@ data["submitted_answers"]["y"] = 12
 ```
 
 This structure, where dictionaries have variables as keys, is used for all dictionaries in `data`.
+
+### Function behavior
 
 The element functions are:
 
