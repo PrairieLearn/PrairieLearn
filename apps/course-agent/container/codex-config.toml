@@ -16,7 +16,6 @@ browser_annotation_api = false
 browser_use = false
 browser_use_external = false
 browser_use_full_cdp_access = false
-code_mode_host = false
 computer_use = false
 daemon_auto_start = false
 goals = false
