@@ -2,6 +2,8 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
+import type { ToolCall } from '@prairielearn/course-agent-types';
+
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
 import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
@@ -14,6 +16,7 @@ import type { TurnStartParams } from '../../generated/types/v2/TurnStartParams.j
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
+import { COURSE_DIR, MESSAGE_TOOL_CHARS, toolCallFromItem } from './tool-calls.js';
 
 // Validate only fields consumed by this adapter; Codex may return additional data.
 const EmptyResult = z.object({});
@@ -34,9 +37,16 @@ const TurnCompleted = z.object({
   }),
 });
 
-const ItemCompleted = z.object({
+const ItemEvent = z.object({
   threadId: z.string(),
-  item: z.object({ id: z.string(), type: z.string() }),
+  turnId: z.string(),
+  item: z.looseObject({ id: z.string(), type: z.string() }),
+});
+/** `request_changes` shows as a review card; only a failed call needs its own entry. */
+const ReviewToolItem = z.object({
+  type: z.literal('dynamicToolCall'),
+  tool: z.literal('request_changes'),
+  success: z.boolean().nullable(),
 });
 const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
   threadId: z.string(),
@@ -79,6 +89,10 @@ export class CodexAppServerClient {
   /** Codex cannot list a new thread's history until its first user message. */
   private newThread = false;
   private parts = new Map<string, 'text' | 'reasoning'>();
+  /** Calls Codex has started but not finished, by history part ID. */
+  private runningTools = new Map<string, ToolCall>();
+  /** Tool call characters in the open message, which continuation turns append to. */
+  private toolChars = { messageId: '', used: 0 };
   private failure: Error | null = null;
   private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
 
@@ -89,6 +103,8 @@ export class CodexAppServerClient {
     this.terminal = Promise.withResolvers<undefined>();
     this.turnId = null;
     this.parts.clear();
+    this.runningTools.clear();
+    if (this.toolChars.messageId !== messageId) this.toolChars = { messageId, used: 0 };
     this.onReview = onReview;
     void this.terminal.promise.catch(() => {});
     return new ReadableStream<UIMessageChunk>({
@@ -142,7 +158,10 @@ export class CodexAppServerClient {
     onNotification('item/reasoning/summaryTextDelta', TextDelta, (params) =>
       this.delta('reasoning', params),
     );
-    onNotification('item/completed', ItemCompleted, ({ threadId, item }) => {
+    onNotification('item/started', ItemEvent, (params) => this.toolCall('started', params));
+    onNotification('item/completed', ItemEvent, (params) => {
+      this.toolCall('completed', params);
+      const { threadId, item } = params;
       if (threadId !== this.threadId) return;
       const type =
         item.type === 'agentMessage' ? 'text' : item.type === 'reasoning' ? 'reasoning' : null;
@@ -222,7 +241,7 @@ export class CodexAppServerClient {
   async thread(config: { model: string; instructions: string; threadId: string | null }) {
     const settings = {
       model: config.model,
-      cwd: '/workspace/session/course',
+      cwd: COURSE_DIR,
       approvalPolicy: 'never' as const,
       sandbox: 'danger-full-access' as const,
       developerInstructions: config.instructions,
@@ -343,6 +362,32 @@ export class CodexAppServerClient {
     });
   }
 
+  /** A tool call's history part, replaced in place when the call completes. */
+  private toolCall(phase: 'started' | 'completed', params: z.infer<typeof ItemEvent>) {
+    if (params.threadId !== this.threadId || (this.turnId && params.turnId !== this.turnId)) {
+      return;
+    }
+    const review = ReviewToolItem.safeParse(params.item);
+    if (review.success && (phase === 'started' || review.data.success !== false)) return;
+    const call = toolCallFromItem(phase, params.item);
+    if (!call) return;
+    const id = `tool:${params.item.id}`;
+    if (phase === 'started') {
+      this.runningTools.set(id, call);
+      this.emit({ type: 'data-tool', id, data: call });
+    } else {
+      this.runningTools.delete(id);
+      const overBudget = this.toolChars.used + JSON.stringify(call).length > MESSAGE_TOOL_CHARS;
+      this.emitFinal(id, overBudget ? toolCallFromItem(phase, params.item, false)! : call);
+    }
+  }
+
+  /** History keeps a call's final form, so the message's budget counts only these. */
+  private emitFinal(id: string, call: ToolCall) {
+    this.toolChars.used += JSON.stringify(call).length;
+    this.emit({ type: 'data-tool', id, data: call });
+  }
+
   /** Whether chunks still reach the turn's SDK response. */
   get streaming() {
     return this.controller !== null;
@@ -358,6 +403,11 @@ export class CodexAppServerClient {
     for (const [id, type] of this.parts) {
       this.controller.enqueue({ type: type === 'text' ? 'text-end' : 'reasoning-end', id });
     }
+    // A call still running here never reports an outcome to this message.
+    for (const [id, call] of this.runningTools) {
+      this.emitFinal(id, { ...call, status: 'interrupted' });
+    }
+    this.runningTools.clear();
     if (error) {
       this.controller.enqueue({
         type: 'error',

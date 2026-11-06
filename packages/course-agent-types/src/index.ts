@@ -151,3 +151,73 @@ export const ReviewSchema = z.strictObject({
 });
 
 export type Review = z.infer<typeof ReviewSchema>;
+
+/** Text clipped to a size limit; `omitted` counts the characters not kept. */
+const ClipSchema = z.object({ text: z.string(), omitted: z.number().int().nonnegative() });
+
+export type Clip = z.infer<typeof ClipSchema>;
+
+/**
+ * One Codex tool call as chat history shows it, in a `data-tool` part keyed by the Codex item
+ * ID. Fields come from Codex's own item, and the browser derives labels from them, so labels
+ * can change without rewriting history. Bump `v` for a change old parts cannot be read as.
+ */
+export const ToolCallSchema = z
+  .object({
+    v: z.literal(1),
+    /** `interrupted`: the turn ended before Codex reported the call's outcome. */
+    status: z.enum(['running', 'completed', 'failed', 'interrupted']),
+  })
+  .and(
+    z.discriminatedUnion('kind', [
+      z.object({
+        kind: z.literal('command'),
+        command: z.string(),
+        /** Codex's parse of the command; `unknown` when it is not a read, list, or search. */
+        actions: z.array(
+          z.discriminatedUnion('type', [
+            z.object({ type: z.literal('read'), path: z.string() }),
+            z.object({ type: z.literal('listFiles'), path: z.string().nullable() }),
+            z.object({
+              type: z.literal('search'),
+              query: z.string().nullable(),
+              path: z.string().nullable(),
+            }),
+            z.object({ type: z.literal('unknown') }),
+          ]),
+        ),
+        exitCode: z.number().nullable(),
+        output: ClipSchema.nullable(),
+      }),
+      z.object({
+        kind: z.literal('fileChange'),
+        changes: z.array(
+          z.object({
+            path: z.string(),
+            change: z.enum(['add', 'delete', 'update']),
+            movePath: z.string().nullable(),
+            added: z.number(),
+            removed: z.number(),
+            diff: ClipSchema,
+          }),
+        ),
+        /** Files beyond the ones listed. */
+        omittedChanges: z.number(),
+      }),
+      z.object({
+        /**
+         * Any other call: an MCP or dynamic tool, a web search (server `web`), or a Codex item
+         * this version does not know (`tool` is the item type, with no server).
+         */
+        kind: z.literal('tool'),
+        server: z.string().nullable(),
+        tool: z.string(),
+        /** JSON arguments, or plain text such as a search query or a path. */
+        arguments: ClipSchema,
+        output: ClipSchema.nullable(),
+        error: z.string().nullable(),
+      }),
+    ]),
+  );
+
+export type ToolCall = z.infer<typeof ToolCallSchema>;
