@@ -7,16 +7,18 @@
 }
 
 :root {
-  --exam-print-margin-top: 0.55in;
-  --exam-print-margin-right: 0.55in;
-  --exam-print-margin-bottom: 0.55in;
-  --exam-print-margin-left: 0.55in;
-  --exam-print-question-spacing: 0.18in;
-  --exam-print-content-width: calc(
-    var(--exam-print-page-width) - var(--exam-print-margin-left) - var(--exam-print-margin-right)
+  --assessment-print-margin-top: 0.55in;
+  --assessment-print-margin-right: 0.55in;
+  --assessment-print-margin-bottom: 0.55in;
+  --assessment-print-margin-left: 0.55in;
+  --assessment-print-question-spacing: 0.18in;
+  --assessment-print-content-width: calc(
+    var(--assessment-print-page-width) - var(--assessment-print-margin-left) -
+      var(--assessment-print-margin-right)
   );
-  --exam-print-content-height: calc(
-    var(--exam-print-page-height) - var(--exam-print-margin-top) - var(--exam-print-margin-bottom)
+  --assessment-print-content-height: calc(
+    var(--assessment-print-page-height) - var(--assessment-print-margin-top) -
+      var(--assessment-print-margin-bottom)
   );
   color-scheme: light;
 }
@@ -28,14 +30,14 @@ body {
   line-height: 1.35;
 }
 
-.exam-print-document {
+.assessment-print-document {
   box-sizing: border-box;
-  inline-size: var(--exam-print-content-width);
+  inline-size: var(--assessment-print-content-width);
 }
 
-.exam-print-page-measure {
-  block-size: var(--exam-print-content-height);
-  inline-size: var(--exam-print-content-width);
+.assessment-print-page-measure {
+  block-size: var(--assessment-print-content-height);
+  inline-size: var(--assessment-print-content-width);
   pointer-events: none;
   position: absolute;
   visibility: hidden;
@@ -43,40 +45,40 @@ body {
 
 /* Avoid comma-containing :is() selectors on break-before/after rules; Paged.js splits them.
    Related upstream issue: https://github.com/pagedjs/pagedjs/issues/317 */
-.exam-cover {
+.assessment-cover {
   break-after: page;
   display: flex;
   flex-direction: column;
-  min-height: var(--exam-print-content-height);
-  page: exam-cover;
+  min-height: var(--assessment-print-content-height);
+  page: assessment-cover;
 }
 
-.exam-cover-header {
+.assessment-cover-header {
   border-bottom: 1.5pt solid #111;
   margin-bottom: 0.2in;
   padding-bottom: 0.15in;
   text-align: center;
 }
 
-.exam-cover-course {
+.assessment-cover-course {
   font-size: 14pt;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
-.exam-cover-course-title {
+.assessment-cover-course-title {
   color: #444;
   font-size: 9.5pt;
   margin-top: 0.04in;
 }
 
-.exam-cover h1 {
+.assessment-cover h1 {
   font-size: 24pt;
   font-weight: 700;
   margin: 0.12in 0 0;
 }
 
-.exam-cover-document-label {
+.assessment-cover-document-label {
   color: #444;
   font-size: 10pt;
   font-weight: 700;
@@ -85,30 +87,30 @@ body {
   text-transform: uppercase;
 }
 
-.exam-cover-title {
+.assessment-cover-title {
   font-size: 12.5pt;
   margin-top: 0.05in;
 }
 
-.exam-cover-fields {
+.assessment-cover-fields {
   display: grid;
   gap: 0.12in;
   grid-template-columns: repeat(auto-fit, minmax(1.45in, 1fr));
   margin-bottom: 0.15in;
 }
 
-.exam-cover-field-wide {
+.assessment-cover-field-wide {
   grid-column: 1 / -1;
 }
 
-.exam-cover-field {
+.assessment-cover-field {
   border-bottom: 1pt solid #111;
   height: 0.3in;
   position: relative;
 }
 
-.exam-cover-field span,
-.exam-cover-signature span {
+.assessment-cover-field span,
+.assessment-cover-signature span {
   background: #fff;
   bottom: -0.07in;
   color: #333;
@@ -119,24 +121,24 @@ body {
   text-transform: uppercase;
 }
 
-.exam-cover-summary {
+.assessment-cover-summary {
   border: 1pt solid #777;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin: 0 0 0.18in;
 }
 
-.exam-cover-summary > div {
+.assessment-cover-summary > div {
   border-right: 0.5pt solid #aaa;
   padding: 0.07in 0.1in;
   text-align: center;
 }
 
-.exam-cover-summary > div:last-child {
+.assessment-cover-summary > div:last-child {
   border-right: 0;
 }
 
-.exam-cover-summary dt {
+.assessment-cover-summary dt {
   color: #555;
   font-size: 7.5pt;
   font-weight: 600;
@@ -144,14 +146,14 @@ body {
   text-transform: uppercase;
 }
 
-.exam-cover-summary dd {
+.assessment-cover-summary dd {
   font-size: 11pt;
   font-weight: 700;
   margin: 0.03in 0 0;
 }
 
-.exam-cover-instructions,
-.exam-cover-honor-code {
+.assessment-cover-instructions,
+.assessment-cover-honor-code {
   border: 0.6pt solid #aaa;
   font-size: 9.5pt;
   line-height: 1.25;
@@ -159,19 +161,19 @@ body {
   padding: 0.1in 0.14in;
 }
 
-.exam-cover h2 {
+.assessment-cover h2 {
   font-size: 11pt;
   font-weight: 700;
   margin: 0 0 0.06in;
 }
 
-.exam-cover ol,
-.exam-cover-custom-instructions > :last-child,
-.exam-cover-honor-code > :last-child {
+.assessment-cover ol,
+.assessment-cover-custom-instructions > :last-child,
+.assessment-cover-honor-code > :last-child {
   margin-bottom: 0;
 }
 
-.exam-cover-custom-instructions {
+.assessment-cover-custom-instructions {
   border-top: 0.5pt solid #bbb;
   font-size: 8.5pt;
   line-height: 1.2;
@@ -179,14 +181,14 @@ body {
   padding-top: 0.08in;
 }
 
-.exam-cover-signature {
+.assessment-cover-signature {
   border-bottom: 1pt solid #111;
   height: 0.25in;
   margin-top: 0.08in;
   position: relative;
 }
 
-.exam-cover footer {
+.assessment-cover footer {
   border-top: 0.5pt solid #aaa;
   color: #555;
   display: flex;
@@ -222,7 +224,7 @@ body {
   break-inside: avoid;
   display: flow-root;
   min-height: 1in;
-  padding-block-end: var(--exam-print-question-spacing);
+  padding-block-end: var(--assessment-print-question-spacing);
 }
 
 .printing-question[data-print-block-size='third'][data-print-can-span-pages='false'],

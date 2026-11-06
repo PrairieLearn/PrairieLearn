@@ -22,7 +22,12 @@ import { assertNever } from '@prairielearn/utils';
 import type { DocxSource } from './docx-browser.js';
 import type { DocxFigure } from './docx-content-context.js';
 import { buildDocxContent } from './docx-content.js';
-import type { PrintableCover, PrintableCoverField, PrintableTextBlock } from './printable-cover.js';
+import type {
+  PrintableCover,
+  PrintableCoverField,
+  PrintableTextBlock,
+  PrintableTextRun,
+} from './printable-cover.js';
 
 /** Sheet and margin geometry measured from the first paginated page, in CSS pixels. */
 export interface PrintedPageGeometry {
@@ -52,15 +57,27 @@ function toDxa(px: number): number {
 
 function text(
   value: string,
-  options: { bold?: boolean; size?: number; color?: string } = {},
+  options: Omit<PrintableTextRun, 'text'> & { size?: number; color?: string } = {},
 ): TextRun {
   return new TextRun({
     text: value,
     bold: options.bold,
+    italics: options.italic,
+    underline: options.underline ? {} : undefined,
+    strike: options.strike,
+    subScript: options.script === 'subscript' ? true : undefined,
+    superScript: options.script === 'superscript' ? true : undefined,
     size: options.size ?? BODY_FONT_SIZE,
     color: options.color,
-    font: FONT,
+    font: options.code ? 'Courier New' : FONT,
   });
+}
+
+function formattedText(
+  runs: PrintableTextRun[],
+  options: Parameters<typeof text>[1] = {},
+): TextRun[] {
+  return runs.map(({ text: value, ...format }) => text(value, { ...format, ...options }));
 }
 
 class ListNumbering {
@@ -84,11 +101,11 @@ function buildTextBlocks(blocks: PrintableTextBlock[], numbering: ListNumbering)
         return [
           new Paragraph({
             spacing: { before: 120, after: 60 },
-            children: [text(block.text, { bold: true, size: BODY_FONT_SIZE + 1 })],
+            children: formattedText(block.runs, { bold: true, size: BODY_FONT_SIZE + 1 }),
           }),
         ];
       case 'paragraph':
-        return [new Paragraph({ spacing: { after: 80 }, children: [text(block.text)] })];
+        return [new Paragraph({ spacing: { after: 80 }, children: formattedText(block.runs) })];
       case 'list': {
         const listNumbering = numbering.next(block.ordered);
         return block.items.map(
@@ -96,7 +113,7 @@ function buildTextBlocks(blocks: PrintableTextBlock[], numbering: ListNumbering)
             new Paragraph({
               numbering: listNumbering,
               spacing: { after: 60 },
-              children: [text(item)],
+              children: formattedText(item),
             }),
         );
       }
