@@ -1,9 +1,8 @@
 #!/bin/sh
 # Prepares the workspace in one container exec. Usage: course-agent-setup fresh|restore|configure
-#   fresh      new workspace: create directories and write the Codex config
+#   fresh      new workspace: create directories and install the Codex config
 #   restore    before restoring a checkpoint: report resources only
-#   configure  after restoring a checkpoint: rewrite the Codex config
-# CODEX_CONFIG holds the config.toml contents, which contain no credentials or repository data.
+#   configure  after restoring a checkpoint: reinstall the Codex config, which may have changed
 set -eu
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 start=$(date +%s%3N)
@@ -22,8 +21,7 @@ case "$1" in
 esac
 
 if [ "$1" != restore ]; then
-    printf '%s' "$CODEX_CONFIG" > "$session/home/.codex/config.toml"
-    chown -R 1000:1000 "$session/home"
+    install -o 1000 -g 1000 -m 644 /etc/course-agent/codex-config.toml "$session/home/.codex/config.toml"
 fi
 
 echo "memTotalKb=$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)"

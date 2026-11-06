@@ -9,58 +9,15 @@ const NATIVE_PORT = 4500;
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
-// Named Cloudflare instance types, or a custom size (Enterprise plans).
 // https://developers.cloudflare.com/containers/platform-details/limits/
-const InstanceTypeSchema = z.union([
-  z.enum(['lite', 'basic', 'standard-1', 'standard-2', 'standard-3', 'standard-4']),
-  z.object({
-    vcpu: z.number().positive(),
-    memoryMib: z.number().int().positive(),
-    diskMb: z.number().int().positive(),
-  }),
+const InstanceTypeSchema = z.enum([
+  'lite',
+  'basic',
+  'standard-1',
+  'standard-2',
+  'standard-3',
+  'standard-4',
 ]);
-
-// The config contains no credentials or repository data. Features the course agent doesn't use are
-// off, using Codex 0.163.0's flag names, so the runner doesn't start or advertise them.
-const CODEX_CONFIG = `model_provider = "prairielearn"
-[model_providers.prairielearn]
-name = "PrairieLearn"
-base_url = "http://model.internal/v1"
-wire_api = "responses"
-supports_websockets = false
-requires_openai_auth = false
-[features]
-${[
-  'apps',
-  'browser_annotation_api',
-  'browser_use',
-  'browser_use_external',
-  'browser_use_full_cdp_access',
-  'code_mode_host',
-  'computer_use',
-  'daemon_auto_start',
-  'goals',
-  'guardian_approval',
-  'hooks',
-  'image_generation',
-  'in_app_browser',
-  'in_app_chat',
-  'in_app_dictation',
-  'in_app_local_automation',
-  'in_app_updates',
-  'in_app_voice',
-  'multi_agent',
-  'plugin_sharing',
-  'plugins',
-  'realtime_conversation',
-  'remote_plugin',
-  'shell_snapshot',
-  'skill_mcp_dependency_install',
-  'tool_suggest',
-  'worktrees',
-]
-  .map((feature) => `${feature} = false\n`)
-  .join('')}`;
 
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
@@ -197,8 +154,8 @@ export class CourseSandbox extends DurableObject<Env> {
     });
   }
 
-  private async exec(args: string[], user = 'root', env?: Record<string, string>) {
-    const result = await (await this.container.exec(args, { user, env })).output();
+  private async exec(args: string[], user = 'root') {
+    const result = await (await this.container.exec(args, { user })).output();
     if (result.exitCode !== 0) {
       throw new Error(`Sandbox command failed: ${new TextDecoder().decode(result.stderr)}`);
     }
@@ -217,11 +174,7 @@ export class CourseSandbox extends DurableObject<Env> {
     const started = Date.now();
     const log = (event: string, fields: Record<string, unknown> = {}) =>
       logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
-    const instance = InstanceTypeSchema.parse(
-      this.env.SANDBOX_INSTANCE_TYPE.startsWith('{')
-        ? JSON.parse(this.env.SANDBOX_INSTANCE_TYPE)
-        : this.env.SANDBOX_INSTANCE_TYPE,
-    );
+    const instance = InstanceTypeSchema.parse(this.env.SANDBOX_INSTANCE_TYPE);
     // The default `lite` (256 MiB) is too small for Codex and course tooling, and running out of
     // memory restarts the instance, losing unsaved edits.
     this.container.start({
@@ -234,9 +187,7 @@ export class CourseSandbox extends DurableObject<Env> {
     // minus the script's own time approximates how long the container took to start.
     const setup = async (mode: 'fresh' | 'restore' | 'configure') => {
       const execStarted = Date.now();
-      const { stdout } = await this.exec(['/usr/local/bin/course-agent-setup', mode], 'root', {
-        CODEX_CONFIG,
-      });
+      const { stdout } = await this.exec(['/usr/local/bin/course-agent-setup', mode]);
       const report = Object.fromEntries(
         new TextDecoder()
           .decode(stdout)
@@ -249,7 +200,7 @@ export class CourseSandbox extends DurableObject<Env> {
     const first = await setup(checkpoint ? 'restore' : 'fresh');
     // Memory and CPU count confirm which instance type actually applied.
     log('sandbox_started', {
-      instance: typeof instance === 'string' ? instance : JSON.stringify(instance),
+      instance,
       memTotalKb: Number(first.memTotalKb),
       cpus: Number(first.cpus),
       containerStartMs: first.execMs - Number(first.setupMs),

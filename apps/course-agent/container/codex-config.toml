@@ -1,0 +1,40 @@
+# Contains no credentials or repository data. Model requests go to the Worker's outbound handler.
+model_provider = "prairielearn"
+
+[model_providers.prairielearn]
+name = "PrairieLearn"
+base_url = "http://model.internal/v1"
+wire_api = "responses"
+supports_websockets = false
+requires_openai_auth = false
+
+# Features the course agent doesn't use, so the runner doesn't start or advertise them. These are
+# Codex 0.163.0's flag names; check `codex features list` when upgrading.
+[features]
+apps = false
+browser_annotation_api = false
+browser_use = false
+browser_use_external = false
+browser_use_full_cdp_access = false
+code_mode_host = false
+computer_use = false
+daemon_auto_start = false
+goals = false
+guardian_approval = false
+hooks = false
+image_generation = false
+in_app_browser = false
+in_app_chat = false
+in_app_dictation = false
+in_app_local_automation = false
+in_app_updates = false
+in_app_voice = false
+multi_agent = false
+plugin_sharing = false
+plugins = false
+realtime_conversation = false
+remote_plugin = false
+shell_snapshot = false
+skill_mcp_dependency_install = false
+tool_suggest = false
+worktrees = false

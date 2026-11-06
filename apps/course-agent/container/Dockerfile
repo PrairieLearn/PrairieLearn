@@ -1,33 +1,29 @@
 FROM docker.io/cloudflare/sandbox:1.0.2 AS sandbox
 
-# Only Codex's native binary and its helpers are needed; the npm package is a Node launcher.
-FROM node:24-bookworm-slim AS codex
-ARG TARGETARCH
-RUN case "$TARGETARCH" in \
-      amd64) package=linux-x64 triple=x86_64-unknown-linux-musl ;; \
-      arm64) package=linux-arm64 triple=aarch64-unknown-linux-musl ;; \
-      *) echo "Unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
-    esac \
-  && cd /tmp \
-  && npm pack --silent "@openai/codex@0.163.0-$package" \
-  && tar -xzf openai-codex-*.tgz \
-  && mv "package/vendor/$triple" /opt/codex \
-  # Voice support is unused and is the largest helper.
+# Cloudflare Containers run linux/amd64. Only Codex's native binary and helpers are needed; the
+# @openai/codex npm package is a Node launcher for them.
+FROM debian:bookworm-slim AS codex
+ADD --checksum=sha256:30efc97738b975940d78b59a9bea115fa34040b732807d54ec35ae6b7528de94 \
+  https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-linux-x64.tgz /tmp/codex.tgz
+# Voice support is unused and is the largest helper.
+RUN tar -xzf /tmp/codex.tgz -C /tmp \
+  && mv /tmp/package/vendor/x86_64-unknown-linux-musl /opt/codex \
   && rm -rf /opt/codex/codex-resources/voice
 
 FROM debian:bookworm-slim
+# Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
+# offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
 RUN apt-get update \
   && apt-get install -y --no-install-recommends git ca-certificates procps zstd tini \
   && rm -rf /var/lib/apt/lists/* \
-  && groupadd --gid 1000 node \
-  && useradd --uid 1000 --gid node --create-home --shell /bin/bash node \
+  && git config --system user.name "PrairieLearn" \
+  && git config --system user.email "course-agent@prairielearn.com" \
+  && useradd --uid 1000 --user-group --shell /bin/bash node \
   && mkdir -p /workspace \
   && chown node:node /workspace
-# Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
-# offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
-RUN git config --system user.name "PrairieLearn" && git config --system user.email "course-agent@prairielearn.com"
 COPY --from=codex /opt/codex /opt/codex
 RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex
 COPY --from=sandbox /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
 COPY container/setup.sh /usr/local/bin/course-agent-setup
+COPY container/codex-config.toml /etc/course-agent/codex-config.toml
 CMD ["/usr/bin/tini", "--", "sleep", "infinity"]
