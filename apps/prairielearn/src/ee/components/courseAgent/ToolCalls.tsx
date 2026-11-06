@@ -6,7 +6,7 @@ import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
 import { Disclosure } from '../ai/ChatParts.js';
 
-type Verb = 'read' | 'list' | 'search' | 'run' | 'edit' | 'create' | 'delete' | 'move' | 'call';
+type Verb = 'read' | 'list' | 'search' | 'run' | 'edit' | 'create' | 'delete' | 'call';
 
 const VERBS: Record<Verb, [running: string, done: string]> = {
   read: ['Reading', 'Read'],
@@ -16,14 +16,7 @@ const VERBS: Record<Verb, [running: string, done: string]> = {
   edit: ['Editing', 'Edited'],
   create: ['Creating', 'Created'],
   delete: ['Deleting', 'Deleted'],
-  move: ['Moving', 'Moved'],
   call: ['Calling', 'Called'],
-};
-
-const ICONS: Record<ToolCall['kind'], string> = {
-  command: 'bi-terminal',
-  fileChange: 'bi-file-earmark-diff',
-  tool: 'bi-plug',
 };
 
 /** Codex runs commands through a login shell; the inner script is what the agent wrote. */
@@ -59,25 +52,34 @@ const toolName = (call: Extract<ToolCall, { kind: 'tool' }>) =>
  * What a call does, for grouping consecutive calls of one kind into a row like "Read 3 files".
  * Groups count calls, so a command that reads two files counts once.
  */
-function category(call: ToolCall): { key: string; group: (count: number) => string } {
+function category(call: ToolCall): {
+  key: string;
+  /** A Bootstrap icon for the action, so reads, edits, and runs differ at a glance. */
+  icon: string;
+  group: (count: number) => string;
+} {
   switch (call.kind) {
     case 'command': {
       const types = new Set(call.actions.map((action) => action.type));
       if (types.size === 1 && types.has('read')) {
-        return { key: 'read', group: (n) => `Read ${n} files` };
+        return { key: 'read', icon: 'bi-file-earmark-text', group: (n) => `Read ${n} files` };
       }
       if (call.actions.length === 1 && types.has('listFiles')) {
-        return { key: 'list', group: (n) => `Listed ${n} folders` };
+        return { key: 'list', icon: 'bi-folder2-open', group: (n) => `Listed ${n} folders` };
       }
       if (call.actions.length === 1 && types.has('search')) {
-        return { key: 'search', group: (n) => `Searched ${n} times` };
+        return { key: 'search', icon: 'bi-search', group: (n) => `Searched ${n} times` };
       }
-      return { key: 'run', group: (n) => `Ran ${n} commands` };
+      return { key: 'run', icon: 'bi-terminal', group: (n) => `Ran ${n} commands` };
     }
     case 'fileChange':
-      return { key: 'edit', group: (n) => `Made ${n} edits` };
+      return { key: 'edit', icon: 'bi-pencil-square', group: (n) => `Made ${n} edits` };
     case 'tool':
-      return { key: `call:${toolName(call)}`, group: (n) => `Called ${toolName(call)} ${n} times` };
+      return {
+        key: `call:${toolName(call)}`,
+        icon: call.server === 'web' ? 'bi-globe' : 'bi-plug',
+        group: (n) => `Called ${toolName(call)} ${n} times`,
+      };
   }
 }
 
@@ -126,17 +128,6 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
       const count = call.changes.length + call.omittedChanges;
       if (count !== 1) return { verb: 'edit', subject: `${count} files`, meta };
       const [change] = call.changes;
-      if (change.movePath) {
-        return {
-          verb: 'move',
-          subject: (
-            <>
-              <FileName path={change.path} /> to <FileName path={change.movePath} />
-            </>
-          ),
-          meta,
-        };
-      }
       const verb =
         change.change === 'add' ? 'create' : change.change === 'delete' ? 'delete' : 'edit';
       return { verb, subject: <FileName path={change.path} />, meta };
@@ -168,7 +159,6 @@ function statusOf(call: ToolCall, live: boolean): ToolCall['status'] {
 function statusNote(call: ToolCall, live: boolean) {
   const status = statusOf(call, live);
   if (status === 'interrupted') return { text: 'Interrupted', failed: false };
-  if (status === 'declined') return { text: 'Declined', failed: true };
   if (call.kind === 'command' && call.exitCode !== null && call.exitCode !== 0) {
     return { text: `Exit ${call.exitCode}`, failed: true };
   }
@@ -191,14 +181,21 @@ function Summary({
 }) {
   return (
     <span className="d-flex align-items-center gap-2 small overflow-hidden flex-grow-1">
-      {running ? (
-        <Spinner animation="border" size="sm" className="flex-shrink-0" aria-hidden="true" />
-      ) : (
-        <i
-          className={clsx('bi flex-shrink-0', icon, note?.failed && 'text-danger')}
-          aria-hidden="true"
-        />
-      )}
+      {/* One fixed-width slot, sized to the icon, keeps the spinner and icons in a column. */}
+      <span
+        className="d-inline-flex justify-content-center flex-shrink-0"
+        style={{ width: '1.25em' }}
+        aria-hidden="true"
+      >
+        {running ? (
+          <Spinner
+            animation="border"
+            style={{ width: '1em', height: '1em', borderWidth: '0.15em' }}
+          />
+        ) : (
+          <i className={clsx('bi', icon, note?.failed && 'text-danger')} />
+        )}
+      </span>
       <span className="text-truncate">{label}</span>
       {/* The spaces separate words in the button's accessible name; flex layout drops them. */}
       {meta && <span className="flex-shrink-0"> {meta}</span>}
@@ -252,7 +249,7 @@ function ToolCallRow({
     <Row
       summary={
         <Summary
-          icon={ICONS[call.kind]}
+          icon={category(call).icon}
           running={running}
           label={
             <>
@@ -304,7 +301,7 @@ export function ToolCalls({
             key={i}
             summary={
               <Summary
-                icon={ICONS[group[0].kind]}
+                icon={category(group[0]).icon}
                 running={group.some((call) => statusOf(call, live) === 'running')}
                 label={category(group[0]).group(group.length)}
                 meta={group[0].kind === 'fileChange' ? changeMeta(group) : undefined}
@@ -385,30 +382,24 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
   }
 }
 
-/** File headers (`--- a/x`, `+++ b/x`) come before the first hunk; later lines are content. */
 function DiffLines({ diff }: { diff: string }) {
-  let inHunk = false;
   return diff
     .replace(/\n$/, '')
     .split('\n')
-    .map((line, i) => {
-      if (line.startsWith('@@')) inHunk = true;
-      const header = !inHunk && (line.startsWith('+++ ') || line.startsWith('--- '));
-      return (
-        <div
-          // Diff lines have no identity beyond their position.
-          // oxlint-disable-next-line react/no-array-index-key
-          key={i}
-          className={clsx({
-            'bg-success-subtle': !header && line.startsWith('+'),
-            'bg-danger-subtle': !header && line.startsWith('-'),
-            'text-body-secondary': header || line.startsWith('@@'),
-          })}
-        >
-          {line || ' '}
-        </div>
-      );
-    });
+    .map((line, i) => (
+      <div
+        // Diff lines have no identity beyond their position.
+        // oxlint-disable-next-line react/no-array-index-key
+        key={i}
+        className={clsx({
+          'bg-success-subtle': line.startsWith('+'),
+          'bg-danger-subtle': line.startsWith('-'),
+          'text-body-secondary': line.startsWith('@@'),
+        })}
+      >
+        {line || ' '}
+      </div>
+    ));
 }
 
 /** A scrollable, keyboard-focusable block of text, noting what history did not keep. */

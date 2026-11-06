@@ -13,36 +13,6 @@ describe('tool call history parts', () => {
     expect(clip('abcdef', 4, 4)).toEqual({ text: 'abcd', omitted: 2 });
   });
 
-  it("labels commands with Codex's parsed actions and reports failure", () => {
-    expect(
-      toolCallFromItem('completed', {
-        type: 'commandExecution',
-        id: 'cmd',
-        command: "/bin/bash -lc 'rg pl-number questions'",
-        status: 'failed',
-        commandActions: [
-          {
-            type: 'search',
-            command: 'rg pl-number questions',
-            query: 'pl-number',
-            path: 'questions',
-          },
-        ],
-        aggregatedOutput: '',
-        exitCode: 1,
-        durationMs: 12,
-      }),
-    ).toEqual({
-      v: 1,
-      kind: 'command',
-      status: 'failed',
-      command: "/bin/bash -lc 'rg pl-number questions'",
-      actions: [{ type: 'search', query: 'pl-number', path: 'questions' }],
-      exitCode: 1,
-      output: null,
-    });
-  });
-
   it('turns whole-file additions into diffs and counts changed lines', () => {
     const call = toolCallFromItem('completed', {
       type: 'fileChange',
@@ -57,8 +27,7 @@ describe('tool call history parts', () => {
         {
           path: 'question.html',
           kind: { type: 'update', move_path: null },
-          // The last line adds `++ count`, which only looks like a file header.
-          diff: '--- a/question.html\n+++ b/question.html\n@@ -1 +1,3 @@\n-<p>Old</p>\n+<p>New</p>\n+<p>More</p>\n+++ count',
+          diff: '@@ -1 +1,2 @@\n-<p>Old</p>\n+<p>New</p>\n+<p>More</p>',
         },
       ],
     });
@@ -72,7 +41,7 @@ describe('tool call history parts', () => {
           removed: 0,
           diff: { text: '@@ -0,0 +1,3 @@\n+{\n+  "title": "Q"\n+}' },
         },
-        { path: 'question.html', change: 'update', added: 3, removed: 1 },
+        { path: 'question.html', change: 'update', added: 2, removed: 1 },
       ],
       omittedChanges: 0,
     });

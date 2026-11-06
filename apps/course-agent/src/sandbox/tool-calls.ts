@@ -38,7 +38,6 @@ const CommandItem = z.object({
   commandActions: z.array(
     z.object({
       type: z.string(),
-      name: z.string().nullish(),
       path: z.string().nullish(),
       query: z.string().nullish(),
     }),
@@ -116,10 +115,10 @@ function coursePath(path: string) {
   return path.startsWith(`${COURSE_DIR}/`) ? path.slice(COURSE_DIR.length + 1) : path;
 }
 
+/** Codex declines a call only to ask for approval, which these threads never do. */
 function status(phase: 'started' | 'completed', codexStatus: string | undefined) {
   if (phase === 'started') return 'running';
-  if (codexStatus === 'failed' || codexStatus === 'declined') return codexStatus;
-  return 'completed';
+  return codexStatus === 'failed' || codexStatus === 'declined' ? 'failed' : 'completed';
 }
 
 function json(value: unknown) {
@@ -138,18 +137,9 @@ function diffOf(kind: 'add' | 'delete' | 'update', diff: string) {
   return [hunk, ...lines.map((line) => marker + line)].join('\n');
 }
 
-/** File headers (`--- a/x`, `+++ b/x`) come before the first hunk; later lines are content. */
+/** Codex's diffs start at their first hunk, with no file headers. */
 function countLines(diff: string, marker: '+' | '-') {
-  let inHunk = false;
-  let count = 0;
-  for (const line of diff.split('\n')) {
-    if (line.startsWith('@@')) {
-      inHunk = true;
-    } else if (line.startsWith(marker) && (inHunk || !line.startsWith(`${marker.repeat(3)} `))) {
-      count++;
-    }
-  }
-  return count;
+  return diff.split('\n').filter((line) => line.startsWith(marker)).length;
 }
 
 /** The chat history form of a Codex item, or null if it is not a tool call. */
@@ -187,11 +177,7 @@ export function toolCallFromItem(
         command: clip(item.command, COMMAND_CHARS, COMMAND_CHARS).text,
         actions: item.commandActions.map((action) => {
           if (action.type === 'read' && action.path) {
-            return {
-              type: 'read',
-              name: action.name ?? action.path,
-              path: coursePath(action.path),
-            };
+            return { type: 'read', path: coursePath(action.path) };
           }
           if (action.type === 'listFiles') {
             return { type: 'listFiles', path: action.path ? coursePath(action.path) : null };

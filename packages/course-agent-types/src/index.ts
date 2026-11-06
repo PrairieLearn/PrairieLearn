@@ -152,7 +152,7 @@ export const ReviewSchema = z.strictObject({
 
 export type Review = z.infer<typeof ReviewSchema>;
 
-/** Text clipped to a size limit; `omitted` counts the characters removed from its middle. */
+/** Text clipped to a size limit; `omitted` counts the characters not kept. */
 const ClipSchema = z.object({ text: z.string(), omitted: z.number().int().nonnegative() });
 
 export type Clip = z.infer<typeof ClipSchema>;
@@ -166,7 +166,7 @@ export const ToolCallSchema = z
   .object({
     v: z.literal(1),
     /** `interrupted`: the turn ended before Codex reported the call's outcome. */
-    status: z.enum(['running', 'completed', 'failed', 'declined', 'interrupted']),
+    status: z.enum(['running', 'completed', 'failed', 'interrupted']),
   })
   .and(
     z.discriminatedUnion('kind', [
@@ -176,7 +176,7 @@ export const ToolCallSchema = z
         /** Codex's parse of the command; `unknown` when it is not a read, list, or search. */
         actions: z.array(
           z.discriminatedUnion('type', [
-            z.object({ type: z.literal('read'), name: z.string(), path: z.string() }),
+            z.object({ type: z.literal('read'), path: z.string() }),
             z.object({ type: z.literal('listFiles'), path: z.string().nullable() }),
             z.object({
               type: z.literal('search'),
