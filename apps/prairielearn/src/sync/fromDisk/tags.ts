@@ -37,6 +37,37 @@ export async function sync(
     }
   });
 
+  return await syncQuestionTags({
+    courseId,
+    courseTags: courseData.course.data?.tags ?? [],
+    questionTags: Object.entries(courseData.questions)
+      .filter(([, question]) => !infofile.hasErrors(question))
+      .map(([qid, question]) => ({
+        questionId: questionIds[qid],
+        tags: question.data?.tags ?? [],
+      })),
+    knownNames: knownQuestionTagsNames,
+    isInfoCourseValid,
+    deleteUnused,
+  });
+}
+
+/** Reconciles the course catalog using all live names, but updates only the supplied associations. */
+export async function syncQuestionTags({
+  courseId,
+  courseTags,
+  questionTags,
+  knownNames,
+  isInfoCourseValid,
+  deleteUnused,
+}: {
+  courseId: string;
+  courseTags: DesiredTag[];
+  questionTags: { questionId: string; tags: string[] }[];
+  knownNames: Set<string>;
+  isInfoCourseValid: boolean;
+  deleteUnused: boolean;
+}) {
   const existingTags = await queryRows(sql.select_tags, { course_id: courseId }, TagSchema);
 
   // Based on the set of desired tags, determine which ones must be
@@ -46,9 +77,9 @@ export async function sync(
     entitiesToUpdate: tagsToUpdate,
     entitiesToDelete: tagsToDelete,
   } = determineOperationsForEntities<DesiredTag>({
-    courseEntities: courseData.course.data?.tags ?? [],
+    courseEntities: courseTags,
     existingEntities: existingTags,
-    knownNames: knownQuestionTagsNames,
+    knownNames,
     makeImplicitEntity: (name) => ({
       name,
       color: 'gray1',
@@ -110,21 +141,19 @@ export async function sync(
     tagIdsByName.set(tag.name, tag);
   }
 
-  const new_question_tags = Object.entries(courseData.questions)
-    .filter(([_qid, question]) => !infofile.hasErrors(question))
-    .map(([qid, question]) => {
-      const dedupedQuestionTagNames = new Set<string>(question.data?.tags);
-      const questionTagIds = Array.from(dedupedQuestionTagNames, (t) => {
-        const tag = tagIdsByName.get(t);
+  const new_question_tags = questionTags.map(({ questionId, tags }) => {
+    const dedupedQuestionTagNames = new Set(tags);
+    const questionTagIds = Array.from(dedupedQuestionTagNames, (t) => {
+      const tag = tagIdsByName.get(t);
 
-        // This should never happen in practice, but this keeps the type checker
-        // happy, and if it does happen, we want it to fail obviously and loudly.
-        if (!tag) throw new Error(`Tag ${t} not found`);
+      // This should never happen in practice, but this keeps the type checker
+      // happy, and if it does happen, we want it to fail obviously and loudly.
+      if (!tag) throw new Error(`Tag ${t} not found`);
 
-        return tag.id;
-      });
-      return JSON.stringify([questionIds[qid], questionTagIds]);
+      return tag.id;
     });
+    return JSON.stringify([questionId, questionTagIds]);
+  });
 
   await execute(sql.sync_question_tags, { new_question_tags });
 }

@@ -603,7 +603,7 @@ async function loadCourseInfo({
   // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
   // file. This ensures that default tags are added if a question uses them, and
   // removed if not.
-  const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
+  const defaultTagsInUse = getDefaultTagsInUse(tagsInUse);
 
   const tags = getFieldWithoutDuplicates('tags', defaultTagsInUse);
   const topics = getFieldWithoutDuplicates('topics');
@@ -1942,4 +1942,8 @@ function checkInvalidSharingSetAdditions(courseData: CourseData): void {
       );
     }
   }
+}
+
+export function getDefaultTagsInUse(tagsInUse: Set<string>): TagJson[] {
+  return DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
 }

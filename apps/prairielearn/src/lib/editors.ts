@@ -34,6 +34,7 @@ import {
   type QuestionSyncScope,
   getQuestionSyncScope,
   getVerifiedQuestionChange,
+  syncQuestionMetadata,
 } from '../sync/questionSync.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { CURRENT_SYNC_VERSION } from '../sync/version.js';
@@ -491,6 +492,9 @@ export abstract class Editor {
                 qid: questionChange.qid,
                 title: questionChange.title,
               });
+            }
+            if (questionChange.kind === 'metadata') {
+              await syncQuestionMetadata(this.course, questionChange);
             }
             if (config.chunksGenerator) {
               const changes = await updateQuestionContentChunk({

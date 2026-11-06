@@ -16,6 +16,8 @@ import { FileModifyEditor, MultiEditor, QuestionRenameEditor } from '../lib/edit
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 import { invalidateCourseSync, selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
+import { selectTagsByQuestionId } from '../models/tags.js';
+import { selectTopicsByCourseId } from '../models/topics.js';
 import { selectUserById } from '../models/user.js';
 
 import { createCourseRepoFixture } from './helperCourse.js';
@@ -24,7 +26,11 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const outputPath = process.env.PL_SAVE_BENCHMARK_OUTPUT;
 const realGit = process.env.PL_SAVE_BENCHMARK_REAL_GIT === '1';
-const titleEdit = process.env.PL_SAVE_BENCHMARK_ACTION === 'title';
+const action = z
+  .enum(['content', 'title', 'tags', 'topic'])
+  .parse(process.env.PL_SAVE_BENCHMARK_ACTION ?? 'content');
+const metadataEdit = action !== 'content';
+const baselineOnly = process.env.PL_SAVE_BENCHMARK_BASELINE === '1';
 const questionCount = 500;
 const assessmentCount = 25;
 const warmupCount = 3;
@@ -146,26 +152,32 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
     const filePath = path.join(
       coursePath,
       'questions/test/question',
-      titleEdit ? 'info.json' : 'question.html',
+      metadataEdit ? 'info.json' : 'question.html',
     );
     const originalContent = await fs.readFile(filePath, 'utf8');
     const samples: Sample[] = [];
 
     const schedule = Array.from({ length: warmupCount + sampleCount }, (_, pair) =>
       realGit
-        ? pair % 2 === 0
-          ? (['full', 'targeted'] as const)
-          : (['targeted', 'full'] as const)
+        ? baselineOnly
+          ? (['full'] as const)
+          : pair % 2 === 0
+            ? (['full', 'targeted'] as const)
+            : (['targeted', 'full'] as const)
         : (['local'] as const),
     ).flat();
     for (const [iteration, mode] of schedule.entries()) {
       if (mode === 'full') await invalidateCourseSync('1');
       const course = await selectCourseById('1');
       const previousContent = b64EncodeUnicode(await fs.readFile(filePath, 'utf8'));
-      const nextContent = titleEdit
+      const nextContent = metadataEdit
         ? JSON.stringify({
             ...JSON.parse(originalContent),
-            title: `Benchmark title ${iteration % 2}`,
+            ...(action === 'title'
+              ? { title: `Benchmark title ${iteration % 2}` }
+              : action === 'tags'
+                ? { tags: ['tbretl', `benchmark-tag-${iteration % 2}`] }
+                : { topic: `Benchmark topic ${iteration % 2}` }),
           })
         : `${originalContent}\n<!-- save benchmark ${iteration % 2} -->\n`;
       const fileEditor = new FileModifyEditor({
@@ -180,7 +192,7 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
         origHash: computeEncodedFileContentHash(previousContent),
       });
       const question = await selectQuestionByQid({ course_id: course.id, qid: 'test/question' });
-      const editor = titleEdit
+      const editor = metadataEdit
         ? new MultiEditor(
             {
               locals: {
@@ -215,9 +227,23 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       const durationMs = performance.now() - start;
       if (error === null) {
         assert.equal(await fs.readFile(filePath, 'utf8'), nextContent);
-        if (titleEdit) {
+        if (metadataEdit) {
           const updated = await selectQuestionByQid({ course_id: course.id, qid: 'test/question' });
-          assert.equal(updated.title, `Benchmark title ${iteration % 2}`);
+          if (action === 'title') assert.equal(updated.title, `Benchmark title ${iteration % 2}`);
+          if (action === 'tags') {
+            const tags = await selectTagsByQuestionId(updated.id);
+            assert.sameMembers(
+              tags.map((tag) => tag.name),
+              ['tbretl', `benchmark-tag-${iteration % 2}`],
+            );
+          }
+          if (action === 'topic') {
+            const topics = await selectTopicsByCourseId(course.id);
+            assert.equal(
+              topics.find((topic) => topic.id === updated.topic_id)!.name,
+              `Benchmark topic ${iteration % 2}`,
+            );
+          }
         }
       }
       const jobOutput = await sqldb.queryRows(
@@ -227,8 +253,8 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       );
       if (realGit && error === null) {
         assert.equal(
-          jobOutput.some((row) =>
-            row.output?.includes(`Syncing question ${titleEdit ? 'title' : 'content'} only:`),
+          jobOutput.some(
+            (row) => row.output?.includes('Syncing question ') && row.output.includes(' only:'),
           ),
           mode === 'targeted',
         );
@@ -236,7 +262,7 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       samples.push({
         mode,
         iteration,
-        warmup: iteration < warmupCount * (realGit ? 2 : 1),
+        warmup: iteration < warmupCount * (realGit && !baselineOnly ? 2 : 1),
         durationMs,
         error,
         jobOutput: jobOutput.map((row) => row.output ?? ''),
@@ -245,7 +271,8 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
         outputPath,
         {
           recordedAt: new Date().toISOString(),
-          action: titleEdit ? 'question-title' : 'question-content',
+          action: `question-${action}`,
+          baselineOnly,
           revision,
           node: process.version,
           platform: `${os.platform()} ${os.release()} ${os.arch()}`,

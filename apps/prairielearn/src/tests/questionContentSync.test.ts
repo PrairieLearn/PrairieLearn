@@ -17,7 +17,13 @@ import {
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { QuestionSchema, type User } from '../lib/db-types.js';
+import {
+  QuestionSchema,
+  QuestionTagSchema,
+  TagSchema,
+  TopicSchema,
+  type User,
+} from '../lib/db-types.js';
 import { computeEncodedFileContentHash } from '../lib/editorUtil.js';
 import {
   FileModifyEditor,
@@ -33,6 +39,7 @@ import {
   updateCourseColumn,
   updateCourseCommitHash,
 } from '../models/course.js';
+import * as questionModel from '../models/question.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 import * as courseDB from '../sync/course-db.js';
@@ -111,6 +118,8 @@ describe('content-only question save', () => {
                   : currentHash,
     }));
     const data = util.getCourseData();
+    data.questions[util.QUESTION_ID].tags = ['test', 'shared-implicit'];
+    data.questions[util.QUESTION_ID].topic = 'Shared implicit';
     data.questions['nested/question'] = { ...data.questions[util.QUESTION_ID], uuid: randomUUID() };
     const fixture = await util.writeAndSyncCourseData(data);
     courseDir = fixture.courseDir;
@@ -187,6 +196,7 @@ describe('content-only question save', () => {
         if (args[0] === 'push') {
           if (pushFailures-- > 0) throw new Error('Remote changed');
           originHash = currentHash;
+          originInfo = await fs.readFile(path.join(path.dirname(filePath), 'info.json'), 'utf8');
           originContents = await fs.readFile(filePath, 'utf8');
         }
         return { data: {} };
@@ -277,10 +287,72 @@ describe('content-only question save', () => {
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const operation = await save(
       jsonPath,
-      JSON.stringify({ ...info, title: 'Changed title', topic: 'Changed topic' }),
+      JSON.stringify({ ...info, title: 'Changed title', gradingMethod: 'Manual' }),
     );
     await operation.run();
     assert.isAbove(load.mock.calls.length, 0);
+  });
+
+  async function metadataSnapshot() {
+    return await Promise.all([
+      util.dumpTableWithSchema('tags', TagSchema),
+      util.dumpTableWithSchema('topics', TopicSchema),
+      util.dumpTableWithSchema('question_tags', QuestionTagSchema),
+      util.dumpTableWithSchema('questions', QuestionSchema),
+    ]);
+  }
+
+  it.each(['tags', 'topic'] as const)(
+    'matches full sync through the %s lifecycle',
+    async (field) => {
+      changedPaths = 'M\0questions/nested/question/info.json\0';
+      const infoPath = path.join(path.dirname(filePath), 'info.json');
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      const values =
+        field === 'tags'
+          ? [['test', 'numeric', 'zz-new', 'zz-new'], []]
+          : ['zz-new-topic', '', 'Another test'];
+      for (const value of values) {
+        const info = await fs.readJson(infoPath);
+        const operation = await save(
+          infoPath,
+          JSON.stringify({ ...info, title: 'Updated alongside metadata', [field]: value }),
+          'settings',
+        );
+        await operation.run();
+        assert.equal(load.mock.calls.length, 0);
+        assert.equal(classifyEditOutcome(operation.job.data), 'success');
+        const targeted = await metadataSnapshot();
+        await util.syncCourseData(courseDir);
+        const full = await metadataSnapshot();
+        targeted.forEach((rows, index) => assert.sameDeepMembers<unknown>(rows, full[index]));
+        await establishBaseline();
+        load.mockClear();
+      }
+    },
+  );
+
+  it('rolls back catalogs and associations when a metadata update fails', async () => {
+    changedPaths = 'M\0questions/nested/question/info.json\0';
+    const before = await metadataSnapshot();
+    vi.spyOn(questionModel, 'syncQuestionTopic').mockRejectedValue(
+      new Error('Topic update failed'),
+    );
+    const operation = await save(
+      path.join(path.dirname(filePath), 'info.json'),
+      JSON.stringify({
+        ...JSON.parse(originInfo),
+        tags: ['new-tag'],
+        topic: 'New topic',
+        title: 'New title',
+      }),
+      'settings',
+    );
+    await expect(operation.run()).rejects.toThrow('Topic update failed');
+    const after = await metadataSnapshot();
+    before.forEach((rows, index) => assert.sameDeepMembers<unknown>(rows, after[index]));
+    assert.isNull((await selectCourseById(courseId)).last_successful_sync);
+    assert.equal(classifyEditOutcome(operation.job.data), 'sync_failed');
   });
 
   it('refreshes eligibility after acquiring the lock instead of trusting the request snapshot', async () => {

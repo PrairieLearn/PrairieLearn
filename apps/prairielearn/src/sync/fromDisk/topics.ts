@@ -37,6 +37,28 @@ export async function sync(courseId: string, courseData: CourseData) {
     }
   });
 
+  return await syncTopics({
+    courseId,
+    courseTopics: courseData.course.data?.topics ?? [],
+    knownNames: knownQuestionTopicNames,
+    isInfoCourseValid,
+    deleteUnused,
+  });
+}
+
+export async function syncTopics({
+  courseId,
+  courseTopics,
+  knownNames,
+  isInfoCourseValid,
+  deleteUnused,
+}: {
+  courseId: string;
+  courseTopics: DesiredTopic[];
+  knownNames: Set<string>;
+  isInfoCourseValid: boolean;
+  deleteUnused: boolean;
+}) {
   const existingTopics = await queryRows(sql.select_topics, { course_id: courseId }, TopicSchema);
 
   // Based on the set of desired topics, determine which ones must be
@@ -46,9 +68,9 @@ export async function sync(courseId: string, courseData: CourseData) {
     entitiesToUpdate: topicsToUpdate,
     entitiesToDelete: topicsToDelete,
   } = determineOperationsForEntities<DesiredTopic>({
-    courseEntities: courseData.course.data?.topics ?? [],
+    courseEntities: courseTopics,
     existingEntities: existingTopics,
-    knownNames: knownQuestionTopicNames,
+    knownNames,
     makeImplicitEntity: (name) => ({
       name,
       color: 'gray1',
