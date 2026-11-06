@@ -63,8 +63,14 @@ body:has(div.app-main-container) {
   overflow-y: auto;
 }
 
-/* Let full-height content shrink below its intrinsic height so inner scroll regions can scroll. */
+.app-main-container-full-height {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .app-content-full-height {
+  flex: 1 1 auto;
   min-height: 0;
 }
 
@@ -447,6 +453,5 @@ body:has(div.app-main-container) {
 }
 
 .page-footer-text {
-  /* https://github.com/PrairieLearn/marketing/blob/6dc08c6028c8a45e71fce846b308326469958a16/src/components/Header.module.scss#L4-L6 */
-  color: #052c65;
+  color: #17468b;
 }
