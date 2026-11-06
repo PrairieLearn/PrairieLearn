@@ -23,6 +23,9 @@ RUN apt-get update \
   && useradd --uid 1000 --gid node --create-home --shell /bin/bash node \
   && mkdir -p /workspace \
   && chown node:node /workspace
+# Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
+# offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
+RUN git config --system user.name "PrairieLearn" && git config --system user.email "course-agent@prairielearn.com"
 COPY --from=codex /opt/codex /opt/codex
 RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex
 COPY --from=sandbox /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
