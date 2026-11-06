@@ -27,6 +27,16 @@ const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
 /** Changes the agent can fix itself, as opposed to sandbox faults that need reporting. */
 class UnsupportedReviewError extends Error {}
 
+/** A container command that exited unsuccessfully, keeping its exit code for callers to inspect. */
+class SandboxCommandError extends Error {
+  constructor(
+    message: string,
+    readonly exitCode: number,
+  ) {
+    super(message);
+  }
+}
+
 /**
  * The agent may fetch the branch without merging it. Diffing against the fetched tip would
  * propose reverting the newer upstream files, so diff against what the checkout is based on.
@@ -34,9 +44,10 @@ class UnsupportedReviewError extends Error {}
 async function githubReviewBase(git: (...args: string[]) => Promise<string>, branch: string) {
   try {
     return (await git('merge-base', 'HEAD', `refs/remotes/origin/${branch}`)).trim();
-  } catch {
-    // No common ancestor is visible: the shallow clone's fetch depth hid it, or the branch's
-    // history was rewritten. Any other base would misattribute upstream files to the agent.
+  } catch (error) {
+    // Exit status 1 means no common ancestor is visible: the shallow clone's fetch depth hid it,
+    // or the branch's history was rewritten. Other failures are faults, not the agent's to fix.
+    if (!(error instanceof SandboxCommandError) || error.exitCode !== 1) throw error;
     throw new UnsupportedReviewError(
       `Your checkout shares no visible history with origin/${branch}. Run git fetch --unshallow origin ${branch}; if that does not help, the branch was rewritten, so rebase your commits onto origin/${branch}. Then submit again.`,
     );
@@ -178,7 +189,10 @@ export class CourseSandbox extends DurableObject<Env> {
   private async exec(args: string[], user = 'root') {
     const result = await (await this.container.exec(args, { user })).output();
     if (result.exitCode !== 0) {
-      throw new Error(`Sandbox command failed: ${new TextDecoder().decode(result.stderr)}`);
+      throw new SandboxCommandError(
+        `Sandbox command failed: ${new TextDecoder().decode(result.stderr)}`,
+        result.exitCode,
+      );
     }
     return result;
   }

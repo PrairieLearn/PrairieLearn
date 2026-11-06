@@ -194,6 +194,10 @@ it('finds the base in a shallow clone after a fetch, and explains when history w
     await inCourse('fetch', '--force', 'origin', 'main:refs/remotes/origin/main');
     const unsupported = await sandbox.captureReview(source);
     expect(unsupported).toEqual({ unsupported: expect.stringContaining('git fetch --unshallow') });
+    // Other merge-base failures, such as a missing remote ref, are faults to report, not advice.
+    await expect(sandbox.captureReview({ ...source, branch: 'missing' })).rejects.toThrow(
+      'Sandbox command failed',
+    );
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
