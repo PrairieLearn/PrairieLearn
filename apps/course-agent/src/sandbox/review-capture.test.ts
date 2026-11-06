@@ -149,3 +149,45 @@ it('diffs a GitHub checkout against its base when the agent fetched without merg
     await rm(course, { recursive: true, force: true });
   }
 });
+
+it('finds the base in a shallow clone after a fetch, and explains when history was rewritten', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'pl-shallow-review-'));
+  const upstream = path.join(directory, 'upstream');
+  const course = path.join(directory, 'course');
+  const inUpstream = async (...args: string[]) =>
+    (await execa('git', args, { cwd: upstream })).stdout;
+  const inCourse = async (...args: string[]) => (await execa('git', args, { cwd: course })).stdout;
+  const source = { type: 'github' as const, repository: 'PrairieLearn/course', branch: 'main' };
+  try {
+    await mkdir(upstream);
+    await inUpstream('init', '--initial-branch=main');
+    await writeFile(path.join(upstream, 'question.html'), 'A');
+    await inUpstream('add', '--all');
+    await inUpstream(...commitArgs, '-m', 'First');
+    await writeFile(path.join(upstream, 'other.html'), 'old');
+    await inUpstream('add', '--all');
+    await inUpstream(...commitArgs, '-m', 'Second');
+    await execa('git', ['clone', '--depth', '1', `file://${upstream}`, course]);
+    const base = await inCourse('rev-parse', 'HEAD');
+    await writeFile(path.join(course, 'question.html'), 'B');
+    // A normal fetch in a shallow clone still connects the new commits to the cloned tip.
+    await writeFile(path.join(upstream, 'other.html'), 'new');
+    await inUpstream(...commitArgs, '--all', '-m', 'Upstream');
+    await inCourse('fetch', 'origin');
+    const sandbox = createSandbox(course);
+    expect(await sandbox.captureReview(source)).toMatchObject({
+      baseCommit: base,
+      additions: [{ path: 'question.html', contents: Buffer.from('B').toString('base64') }],
+      deletions: [],
+    });
+    // Rewriting the branch leaves no common ancestor with the checkout.
+    await inUpstream('checkout', '--orphan', 'rewritten');
+    await inUpstream(...commitArgs, '--all', '-m', 'Rewritten');
+    await inUpstream('branch', '-M', 'rewritten', 'main');
+    await inCourse('fetch', '--force', 'origin', 'main:refs/remotes/origin/main');
+    const unsupported = await sandbox.captureReview(source);
+    expect(unsupported).toEqual({ unsupported: expect.stringContaining('git fetch --unshallow') });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

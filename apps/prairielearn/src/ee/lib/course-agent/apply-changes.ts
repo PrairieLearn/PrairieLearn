@@ -324,38 +324,46 @@ export async function deliverUndeliveredReviewResults(conversationId: string | n
     course_agent_conversation_id: conversationId,
   });
   for (const { review: row, conversation } of rows) {
-    try {
-      if (row.result !== null) {
-        // An unreachable service would fail every later delivery too; the next sweep retries.
-        if (
-          !(await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result)))
-        ) {
-          return;
-        }
-        continue;
-      }
-      // Only approvals wait for a result, and the schema requires each to have a job.
-      if (row.job_sequence_id === null) throw new Error('Approved review has no job');
-      const sequence = await getJobSequence(row.job_sequence_id, conversation.course_id);
-      if (sequence.jobs[0].status === 'Running' || sequence.jobs[0].status === 'Stopping') {
-        continue;
-      }
-      // The snapshot is retained until its result is delivered, so its mode is still available.
-      const review = await getCourseAgentReview(
-        conversation.agent_conversation_id,
-        row.agent_review_id,
-      );
-      if (!review) continue;
-      const delivered = await recordAndDeliverResult(
-        conversation,
-        row,
-        getReviewJobResult(sequence, review.snapshot.type),
-      );
-      if (!delivered) return;
-    } catch (error) {
-      logger.error('Course agent review result delivery failed; it will be retried.', error);
-      reportStuckDelivery(row, error);
+    // An unreachable service would fail every later row too, so the sweep stops and the next
+    // one retries. Other failures only skip their own row.
+    if (!(await deliverUndeliveredReviewResult(conversation, row))) return;
+  }
+}
+
+/** Returns false when the course agent service did not answer. */
+async function deliverUndeliveredReviewResult(
+  conversation: CourseAgentConversation,
+  row: CourseAgentReview,
+) {
+  try {
+    if (row.result !== null) {
+      return await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result));
     }
+    // Only approvals wait for a result, and the schema requires each to have a job.
+    if (row.job_sequence_id === null) throw new Error('Approved review has no job');
+    const sequence = await getJobSequence(row.job_sequence_id, conversation.course_id);
+    if (sequence.jobs[0].status === 'Running' || sequence.jobs[0].status === 'Stopping') {
+      return true;
+    }
+    let review: Review | null;
+    try {
+      // The snapshot is retained until its result is delivered, so its mode is still available.
+      review = await getCourseAgentReview(conversation.agent_conversation_id, row.agent_review_id);
+    } catch (error) {
+      logger.error('Course agent review could not be loaded; it will be retried.', error);
+      reportStuckDelivery(row, error);
+      return false;
+    }
+    if (!review) return true;
+    return await recordAndDeliverResult(
+      conversation,
+      row,
+      getReviewJobResult(sequence, review.snapshot.type),
+    );
+  } catch (error) {
+    logger.error('Course agent review result delivery failed; it will be retried.', error);
+    reportStuckDelivery(row, error);
+    return true;
   }
 }
 

@@ -27,6 +27,22 @@ const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
 /** Changes the agent can fix itself, as opposed to sandbox faults that need reporting. */
 class UnsupportedReviewError extends Error {}
 
+/**
+ * The agent may fetch the branch without merging it. Diffing against the fetched tip would
+ * propose reverting the newer upstream files, so diff against what the checkout is based on.
+ */
+async function githubReviewBase(git: (...args: string[]) => Promise<string>, branch: string) {
+  try {
+    return (await git('merge-base', 'HEAD', `refs/remotes/origin/${branch}`)).trim();
+  } catch {
+    // No common ancestor is visible: the shallow clone's fetch depth hid it, or the branch's
+    // history was rewritten. Any other base would misattribute upstream files to the agent.
+    throw new UnsupportedReviewError(
+      `Your checkout shares no visible history with origin/${branch}. Run git fetch --unshallow origin ${branch}; if that does not help, the branch was rewritten, so rebase your commits onto origin/${branch}. Then submit again.`,
+    );
+  }
+}
+
 const GIT_IDENTITY = [
   '-c',
   'user.name=PrairieLearn',
@@ -345,13 +361,10 @@ export class CourseSandbox extends DurableObject<Env> {
       }
     };
     if (source.type === 'github') await git('check-ref-format', `refs/heads/${source.branch}`);
-    // The agent may fetch the branch without merging it. Diffing against the fetched tip would
-    // propose reverting the newer upstream files, so diff against what the checkout is based on.
-    const baseCommit = (
+    const baseCommit =
       source.type === 'local'
-        ? await git('rev-parse', '--verify', `${LOCAL_SAVED_REF}^{commit}`)
-        : await git('merge-base', 'HEAD', `refs/remotes/origin/${source.branch}`)
-    ).trim();
+        ? (await git('rev-parse', '--verify', `${LOCAL_SAVED_REF}^{commit}`)).trim()
+        : await githubReviewBase(git, source.branch);
     // Include local commits, working files, and untracked files.
     const tracked = await git(
       'diff',
@@ -396,12 +409,17 @@ export class CourseSandbox extends DurableObject<Env> {
             `Only non-executable regular files are supported: ${path}`,
           );
         }
+        // Checking first avoids reading a huge file; the bytes read are checked again below.
         if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
           throw new UnsupportedReviewError(`Review file is too large: ${path}`);
         }
         // Capture bytes now: later edits must not change what the instructor approves.
-        const response = await files.readFile(path, options);
-        contents = Buffer.from(await response.arrayBuffer()).toString('base64');
+        const bytes = Buffer.from(await (await files.readFile(path, options)).arrayBuffer());
+        // The agent's tools can still be writing, so the file may have grown since lstat.
+        if (bytes.length > MAX_REVIEW_FILE_BYTES) {
+          throw new UnsupportedReviewError(`Review file is too large: ${path}`);
+        }
+        contents = bytes.toString('base64');
       }
       if (contents === original) continue;
       if (contents === null) deletions.push({ path });

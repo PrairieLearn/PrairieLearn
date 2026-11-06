@@ -24,7 +24,14 @@ import { CodexAppServerClient, type TurnInput } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
-import { buildCatchUp, messageTag, missedTurns, reviewTag, turnMarker } from './catch-up.js';
+import {
+  buildCatchUp,
+  messageTag,
+  missedTurns,
+  nextUserMessage,
+  reviewTag,
+  turnMarker,
+} from './catch-up.js';
 import { buildInstructions } from './instructions.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
@@ -76,6 +83,8 @@ interface RecordData {
    */
   threadMayBeBehind: boolean;
   review: ReviewRecord | null;
+  /** The last user message submitted to Codex; absent in records saved before it was added. */
+  submittedMessageId?: string | null;
 }
 
 // Destruction is a private phase because the replacement checkpoint is committed
@@ -232,6 +241,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       deadline: null,
       sandboxLost: false,
       threadMayBeBehind: false,
+      submittedMessageId: null,
     });
   }
 
@@ -372,8 +382,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!options) throw new Error('Missing SDK chat options');
     const continuation = options.continuation === true;
     // Capture input before any await lets another connection append to history.
-    const message = this.messages.at(-1);
-    const earlier = continuation ? this.messages : this.messages.slice(0, -1);
+    const message = continuation
+      ? null
+      : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
+    const earlier = this.messages.filter((entry) => entry !== message);
     const checkedSandboxId = this.record.sandboxId;
     const lost =
       checkedSandboxId !== null &&
@@ -387,7 +399,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!admitted || this.active || this.recovering || this.sandboxShutdown) {
       throw new Error('The course agent sandbox is not ready.');
     }
-    if (!continuation && message?.role !== 'user') throw new Error('Expected a new user message');
+    if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
     const startup = this.record.sandboxId === null;
@@ -423,6 +435,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
+      // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
+      submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
     });
     log('turn_started', { startup });
     this.native ??= new CodexAppServerClient(this.sandbox);
