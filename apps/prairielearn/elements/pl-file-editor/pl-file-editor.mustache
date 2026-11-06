@@ -28,7 +28,15 @@ $(function() {
                  <i class="fas fa-cog"></i>
              </button>
          </div>
-        <div class="editor"></div>
+        <div class="editor" data-label="{{file_name}}"></div>
+        {{#editable}}
+        <div class="editor-keyboard-hint small text-body-secondary bg-body border-top px-2 py-1">
+            <span id="file-editor-{{uuid}}-keyboard-entry-hint" class="keyboard-entry-hint">
+                Press <kbd>Enter</kbd> to edit.
+            </span>
+            <span id="file-editor-{{uuid}}-keyboard-exit-hint" class="keyboard-exit-hint"></span>
+        </div>
+        {{/editable}}
         <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true" aria-labelledby="modal-{{uuid}}">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">

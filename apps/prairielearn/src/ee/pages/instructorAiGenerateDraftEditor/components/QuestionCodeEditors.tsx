@@ -100,6 +100,7 @@ function QuestionCodeEditorsInner({
       >
         <div className="py-2 px-3 font-monospace bg-light">question.html</div>
         <AceFileEditor
+          label="question.html"
           value={htmlValue}
           mode="ace/mode/html"
           readOnly={isGenerating}
@@ -114,6 +115,7 @@ function QuestionCodeEditorsInner({
       >
         <div className="py-2 px-3 font-monospace bg-light">server.py</div>
         <AceFileEditor
+          label="server.py"
           value={pythonValue}
           mode="ace/mode/python"
           readOnly={isGenerating}
