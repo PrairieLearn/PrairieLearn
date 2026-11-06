@@ -1,5 +1,6 @@
 import { DirectoryBackup, type DirectoryBackupRecord, Files } from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
+import { z } from 'zod';
 
 import { logEvent, redactSecrets } from '../monitoring.js';
 
@@ -8,6 +9,59 @@ const NATIVE_PORT = 4500;
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
+// Named Cloudflare instance types, or a custom size (Enterprise plans).
+// https://developers.cloudflare.com/containers/platform-details/limits/
+const InstanceTypeSchema = z.union([
+  z.enum(['lite', 'basic', 'standard-1', 'standard-2', 'standard-3', 'standard-4']),
+  z.object({
+    vcpu: z.number().positive(),
+    memoryMib: z.number().int().positive(),
+    diskMb: z.number().int().positive(),
+  }),
+]);
+
+// The config contains no credentials or repository data. Features the course agent doesn't use are
+// off, using Codex 0.163.0's flag names, so the runner doesn't start or advertise them.
+const CODEX_CONFIG = `model_provider = "prairielearn"
+[model_providers.prairielearn]
+name = "PrairieLearn"
+base_url = "http://model.internal/v1"
+wire_api = "responses"
+supports_websockets = false
+requires_openai_auth = false
+[features]
+${[
+  'apps',
+  'browser_annotation_api',
+  'browser_use',
+  'browser_use_external',
+  'browser_use_full_cdp_access',
+  'code_mode_host',
+  'computer_use',
+  'daemon_auto_start',
+  'goals',
+  'guardian_approval',
+  'hooks',
+  'image_generation',
+  'in_app_browser',
+  'in_app_chat',
+  'in_app_dictation',
+  'in_app_local_automation',
+  'in_app_updates',
+  'in_app_voice',
+  'multi_agent',
+  'plugin_sharing',
+  'plugins',
+  'realtime_conversation',
+  'remote_plugin',
+  'shell_snapshot',
+  'skill_mcp_dependency_install',
+  'tool_suggest',
+  'worktrees',
+]
+  .map((feature) => `${feature} = false\n`)
+  .join('')}`;
+
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
@@ -143,8 +197,8 @@ export class CourseSandbox extends DurableObject<Env> {
     });
   }
 
-  private async exec(args: string[], user = 'root') {
-    const result = await (await this.container.exec(args, { user })).output();
+  private async exec(args: string[], user = 'root', env?: Record<string, string>) {
+    const result = await (await this.container.exec(args, { user, env })).output();
     if (result.exitCode !== 0) {
       throw new Error(`Sandbox command failed: ${new TextDecoder().decode(result.stderr)}`);
     }
@@ -163,21 +217,44 @@ export class CourseSandbox extends DurableObject<Env> {
     const started = Date.now();
     const log = (event: string, fields: Record<string, unknown> = {}) =>
       logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
+    const instance = InstanceTypeSchema.parse(
+      this.env.SANDBOX_INSTANCE_TYPE.startsWith('{')
+        ? JSON.parse(this.env.SANDBOX_INSTANCE_TYPE)
+        : this.env.SANDBOX_INSTANCE_TYPE,
+    );
+    // The default `lite` (256 MiB) is too small for Codex and course tooling, and running out of
+    // memory restarts the instance, losing unsaved edits.
     this.container.start({
       image: this.container.images.courseAgent,
       enableInternet: false,
-      // `basic` is 1/4 vCPU, 1 GiB memory, and 4 GB disk. The default `lite` (256 MiB) is too
-      // small for Codex and course tooling, and running out of memory restarts the instance,
-      // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
-      instance: 'basic',
+      instance,
     });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
-    // Confirms the instance type actually applied: basic has 1 GiB, lite 256 MiB.
-    const [memTotal, cpus] = new TextDecoder()
-      .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
-      .trim()
-      .split('\n');
-    log('sandbox_started', { memTotal, cpus });
+    // One exec runs the image's setup script. It is the container's first exec, so its round trip
+    // minus the script's own time approximates how long the container took to start.
+    const setup = async (mode: 'fresh' | 'restore' | 'configure') => {
+      const execStarted = Date.now();
+      const { stdout } = await this.exec(['/usr/local/bin/course-agent-setup', mode], 'root', {
+        CODEX_CONFIG,
+      });
+      const report = Object.fromEntries(
+        new TextDecoder()
+          .decode(stdout)
+          .trim()
+          .split('\n')
+          .map((line) => line.split('=')),
+      ) as Record<'memTotalKb' | 'cpus' | 'setupMs', string>;
+      return { ...report, execMs: Date.now() - execStarted };
+    };
+    const first = await setup(checkpoint ? 'restore' : 'fresh');
+    // Memory and CPU count confirm which instance type actually applied.
+    log('sandbox_started', {
+      instance: typeof instance === 'string' ? instance : JSON.stringify(instance),
+      memTotalKb: Number(first.memTotalKb),
+      cpus: Number(first.cpus),
+      containerStartMs: first.execMs - Number(first.setupMs),
+      setupMs: Number(first.setupMs),
+    });
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
@@ -190,22 +267,13 @@ export class CourseSandbox extends DurableObject<Env> {
         props: { model: config.model, sandboxId: this.ctx.id.name },
       }),
     );
-    await this.exec(['mkdir', '-p', '/workspace']);
     if (checkpoint) {
       log('sandbox_restore_started');
       await this.backups.restore(checkpoint);
       log('sandbox_restore_finished');
-    } else {
-      await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
-      await this.exec(['chown', '-R', '1000:1000', SESSION]);
+      // The Codex config is reapplied after restoration.
+      await setup('configure');
     }
-    // Configuration contains no credentials or repository data. It is reapplied after restoration.
-    const files = new Files(this.container);
-    await files.writeFile(
-      `${SESSION}/home/.codex/config.toml`,
-      'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
-    );
-    await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
     this.freshContainer = true;
     log('sandbox_codex_config_written');
   }
