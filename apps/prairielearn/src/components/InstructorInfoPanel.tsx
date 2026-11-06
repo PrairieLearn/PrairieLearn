@@ -185,6 +185,12 @@ function QuestionInfo({
       ? question.qid
       : `@${course.sharing_name}/${question.qid}`;
 
+  // "Shared As" is only shown for questions that can be imported (shared
+  // publicly or via a sharing set), and importing always needs the sharing name.
+  const sharedAsQid = course.example_course
+    ? question.qid
+    : `@${course.sharing_name}/${question.qid}`;
+
   return html`
     <h3 class="card-title h5">Question</h3>
 
@@ -215,10 +221,10 @@ function QuestionInfo({
                 question.share_publicly || question.share_source_publicly
                   ? html`
                       <div>
-                        <a href="${publicPreviewUrl}">${sharingQid}</a>
+                        <a href="${publicPreviewUrl}">${sharedAsQid}</a>
                       </div>
                     `
-                  : html`<div>${sharingQid}</div>`
+                  : html`<div>${sharedAsQid}</div>`
               }
             </div>
           `
