@@ -92,13 +92,17 @@ beforeAll(async () => {
     agent_conversation_id: crypto.randomUUID(),
     title: 'Update question',
   });
-  ({ jobSequenceId } = await createServerJob({
+  const serverJob = await createServerJob({
     type: 'sync',
     description: 'Save reviewed course edits',
     courseId: '1',
     userId: user.id,
     authnUserId: user.id,
-  }));
+  });
+  // A created job stays registered until it runs, and later test servers sharing this worker
+  // wait for every registered job when they shut down.
+  await serverJob.execute(async () => {});
+  jobSequenceId = serverJob.jobSequenceId;
 });
 afterAll(helperDb.after);
 
