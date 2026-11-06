@@ -119,6 +119,9 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
 export class CourseSandbox extends DurableObject<Env> {
   private process: ExecProcess | null = null;
   private nativeToken: string | null = null;
+  // Set by prepare(): a container this instance just started has no orphaned processes, and the
+  // first runner start must not kill a course clone that is running alongside it.
+  private freshContainer = false;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -148,7 +151,10 @@ export class CourseSandbox extends DurableObject<Env> {
     return result;
   }
 
-  /** Start an isolated workspace, restore or clone its files, and configure Codex. */
+  /**
+   * Start an isolated workspace and configure Codex. A checkpoint is restored here; otherwise the
+   * caller adds course files with `addCourseFiles()`, which can run while the Codex runner starts.
+   */
   async prepare(
     config: CourseSource & { model: string },
     checkpoint: DirectoryBackupRecord | null,
@@ -192,74 +198,78 @@ export class CourseSandbox extends DurableObject<Env> {
     } else {
       await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
       await this.exec(['chown', '-R', '1000:1000', SESSION]);
-      if (config.type === 'local') {
-        const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
-        if (!archive) throw new Error('The local course snapshot is missing');
-        const files = new Files(this.container);
-        await files.writeFile('/tmp/course-source.tar.gz', archive.body);
-        await this.exec(['mkdir', '-p', `${SESSION}/repository`], 'node');
-        await this.exec(
-          ['tar', '-xzf', '/tmp/course-source.tar.gz', '-C', `${SESSION}/repository`],
-          'node',
-        );
-        await this.exec(['rm', '/tmp/course-source.tar.gz']);
-        await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
-        await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
-        await this.exec(
-          [
-            'git',
-            '-C',
-            `${SESSION}/repository`,
-            '-c',
-            'user.name=PrairieLearn',
-            '-c',
-            'user.email=course-agent@prairielearn.com',
-            '-c',
-            'commit.gpgsign=false',
-            'commit',
-            '--allow-empty',
-            '-m',
-            'Initial local course snapshot',
-          ],
-          'node',
-        );
-        // Preserve the original Git paths while keeping the native runner's course path stable.
-        await this.exec(
-          ['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`],
-          'node',
-        );
-      } else {
-        log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
-        const cloneStarted = Date.now();
-        // Only the tip is needed: reviews diff against the cloned branch tip, and nothing fetches
-        // later. Full history made large course repositories take most of startup to clone.
-        await this.exec(
-          [
-            'git',
-            'clone',
-            '--depth',
-            '1',
-            '--single-branch',
-            '--branch',
-            config.branch,
-            '--',
-            `http://repository.internal/${config.repository}.git`,
-            `${SESSION}/course`,
-          ],
-          'node',
-        );
-        log('sandbox_clone_finished', { cloneMs: Date.now() - cloneStarted });
-      }
     }
-    log('sandbox_files_ready', { source: checkpoint ? 'checkpoint' : config.type });
-    // Configuration contains no credentials. It is reapplied after restoration.
+    // Configuration contains no credentials or repository data. It is reapplied after restoration.
     const files = new Files(this.container);
     await files.writeFile(
       `${SESSION}/home/.codex/config.toml`,
       'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
     );
     await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
+    this.freshContainer = true;
     log('sandbox_codex_config_written');
+  }
+
+  /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
+  async addCourseFiles(config: CourseSource) {
+    const started = Date.now();
+    const log = (event: string, fields: Record<string, unknown> = {}) =>
+      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
+    if (config.type === 'local') {
+      const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
+      if (!archive) throw new Error('The local course snapshot is missing');
+      const files = new Files(this.container);
+      await files.writeFile('/tmp/course-source.tar.gz', archive.body);
+      await this.exec(['mkdir', '-p', `${SESSION}/repository`], 'node');
+      await this.exec(
+        ['tar', '-xzf', '/tmp/course-source.tar.gz', '-C', `${SESSION}/repository`],
+        'node',
+      );
+      await this.exec(['rm', '/tmp/course-source.tar.gz']);
+      await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
+      await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
+      await this.exec(
+        [
+          'git',
+          '-C',
+          `${SESSION}/repository`,
+          '-c',
+          'user.name=PrairieLearn',
+          '-c',
+          'user.email=course-agent@prairielearn.com',
+          '-c',
+          'commit.gpgsign=false',
+          'commit',
+          '--allow-empty',
+          '-m',
+          'Initial local course snapshot',
+        ],
+        'node',
+      );
+      // Preserve the original Git paths while keeping the native runner's course path stable.
+      await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
+    } else {
+      log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
+      // Only the tip is needed: reviews diff against the cloned branch tip, and nothing fetches
+      // later. Full history made large course repositories take most of startup to clone.
+      await this.exec(
+        [
+          'git',
+          'clone',
+          '--depth',
+          '1',
+          '--single-branch',
+          '--branch',
+          config.branch,
+          '--',
+          `http://repository.internal/${config.repository}.git`,
+          `${SESSION}/course`,
+        ],
+        'node',
+      );
+      log('sandbox_clone_finished');
+    }
+    log('sandbox_files_ready', { source: config.type });
   }
 
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */
@@ -270,7 +280,8 @@ export class CourseSandbox extends DurableObject<Env> {
     if (!this.container.running) throw new Error('Native runner has no live workspace');
     // A fresh connection follows workspace startup or Conversation DO recovery. Replace any
     // orphaned runner before reconnecting; ordinary turns reuse the existing connection.
-    await this.stopProcesses();
+    if (this.freshContainer) this.freshContainer = false;
+    else await this.stopProcesses();
     this.nativeToken = crypto.randomUUID();
     const digest = await crypto.subtle.digest(
       'SHA-256',
@@ -296,7 +307,9 @@ export class CourseSandbox extends DurableObject<Env> {
       ],
       {
         user: 'node',
-        cwd: `${SESSION}/course`,
+        // Threads set their own cwd to the course. Home exists before course files are added, so
+        // the runner can start while the repository is still being cloned.
+        cwd: `${SESSION}/home`,
         env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
         stdout: 'ignore',
         stderr: debugOutput ? 'pipe' : 'ignore',

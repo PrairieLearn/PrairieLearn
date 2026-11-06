@@ -334,6 +334,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           log('turn_sandbox_prepare_finished');
         }
       },
+      addCourseFiles:
+        startup && !this.record.checkpoint
+          ? async () => {
+              log('turn_course_files_started');
+              await this.sandbox.addCourseFiles(this.record.config);
+              log('turn_course_files_ready');
+            }
+          : undefined,
       thread: {
         model: this.record.config.model,
         instructions: buildInstructions(this.record.courseContext ?? undefined),
