@@ -59,6 +59,38 @@
   </div>
 </pl-card>
 
+<pl-card header="Symbolic input">
+  <div class="vstack gap-3">
+    <div>
+      <p>
+        The text field is prefilled with <code>x</code> followed by an invisible
+        <code>U+200B</code>. It looks like an ordinary <code>x</code> until the submitted value is
+        rendered.
+      </p>
+      <pl-symbolic-input
+        answers-name="symbolic_value"
+        aria-label="Symbolic value"
+        label="Text input containing U+200B:"
+        variables="x"
+        initial-value="x&#8203;"
+        correct-answer="x"
+        display="block"
+      ></pl-symbolic-input>
+    </div>
+
+    <pl-symbolic-input
+      answers-name="symbolic_formula_value"
+      aria-label="Symbolic formula value"
+      label="Formula editor:"
+      variables="x"
+      formula-editor="true"
+      initial-value="x"
+      correct-answer="x"
+      display="block"
+    ></pl-symbolic-input>
+  </div>
+</pl-card>
+
 <pl-card header="Matrix inputs">
   <pl-matrix-input
     answers-name="matrix_value"
