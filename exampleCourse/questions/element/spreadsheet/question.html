@@ -1,0 +1,86 @@
+<pl-question-panel>
+  <p>
+    Complete the budget model. Enter a quantity of <strong>3</strong>, a unit price of
+    <strong>4</strong>, and the formula <code>=B2*C2</code> for the line total.
+  </p>
+  <p>
+    The headings and summary sheet are locked. The summary demonstrates a locked
+    cross-sheet formula. You can use the formula bar, paste values, or use the Fill
+    down and Fill right controls.
+  </p>
+  <p>
+    The CSV and TSV examples below are already correct. They demonstrate how a
+    source file can provide the visible worksheet and private grading formulas
+    without placing those formulas in <code>data["params"]</code>.
+  </p>
+</pl-question-panel>
+
+<section aria-labelledby="python-workbook-heading" class="mb-5">
+  <h2 id="python-workbook-heading" class="h4">Python-defined workbook</h2>
+  <pl-spreadsheet
+    answers-name="model"
+    params-name="workbook"
+    aria-label="Budget model"
+    height="420px"
+  ></pl-spreadsheet>
+</section>
+
+<section aria-labelledby="csv-workbook-heading" class="mb-5">
+  <h2 id="csv-workbook-heading" class="h4">CSV-backed workbook</h2>
+  <p>
+    The student sees only A2:D3 of <code>inventory.csv</code>, presented as A1:D2 in
+    the editor. The private row and grading check in E3 remain on the server.
+  </p>
+  <pl-spreadsheet answers-name="inventory" aria-label="CSV inventory model" height="300px">
+    <pl-spreadsheet-data
+      source-file="inventory.csv"
+      sheet-name="Inventory"
+      student-range="A2:D3"
+      editable-ranges="B3:C3"
+    ></pl-spreadsheet-data>
+    <pl-spreadsheet-output
+      name="is_correct"
+      sheet-name="Inventory"
+      cell="E3"
+      required="true"
+    ></pl-spreadsheet-output>
+  </pl-spreadsheet>
+</section>
+
+<section aria-labelledby="tsv-workbook-heading" class="mb-5">
+  <h2 id="tsv-workbook-heading" class="h4">TSV-backed workbook</h2>
+  <p>
+    This uses the same authoring pattern with tab-separated data in
+    <code>labor.tsv</code>. Its offset source range also appears to students from A1.
+  </p>
+  <pl-spreadsheet answers-name="labor" aria-label="TSV labor model" height="300px">
+    <pl-spreadsheet-data
+      source-file="labor.tsv"
+      sheet-name="Labor"
+      student-range="A2:D3"
+      editable-ranges="B3:C3"
+    ></pl-spreadsheet-data>
+    <pl-spreadsheet-output
+      name="is_correct"
+      sheet-name="Labor"
+      cell="E3"
+      required="true"
+    ></pl-spreadsheet-output>
+  </pl-spreadsheet>
+</section>
+
+<section aria-labelledby="reference-workbook-heading" class="mb-5">
+  <h2 id="reference-workbook-heading" class="h4">Reference-graded workbook</h2>
+  <p>
+    Fill in each line total with a formula. Typing the numbers produces the right
+    values here, but the grader also recalculates the workbook with hidden quantities
+    and prices and compares every line total with a private reference solution.
+  </p>
+  <pl-spreadsheet
+    answers-name="order"
+    params-name="order"
+    aria-label="Order totals"
+    height="260px"
+  ></pl-spreadsheet>
+</section>
+

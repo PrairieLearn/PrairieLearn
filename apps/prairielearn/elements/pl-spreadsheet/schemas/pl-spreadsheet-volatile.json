@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "choices": {
+      "type": "string"
+    },
+    "max": {
+      "type": "string",
+      "format": "number"
+    },
+    "min": {
+      "type": "string",
+      "format": "number"
+    },
+    "range": {
+      "type": "string"
+    },
+    "sheet-name": {
+      "type": "string"
+    },
+    "step": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "required": ["range", "sheet-name"],
+  "additionalProperties": false
+}

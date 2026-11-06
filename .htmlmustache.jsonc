@@ -218,6 +218,32 @@
       ]
     },
     {
+      "name": "pl-spreadsheet",
+      "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet.json",
+      "children": [
+        {
+          "name": "pl-spreadsheet-data",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-data.json"
+        },
+        {
+          "name": "pl-spreadsheet-output",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-output.json"
+        },
+        {
+          "name": "pl-spreadsheet-parameter",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-parameter.json"
+        },
+        {
+          "name": "pl-spreadsheet-reference",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-reference.json"
+        },
+        {
+          "name": "pl-spreadsheet-volatile",
+          "schema": "./apps/prairielearn/elements/pl-spreadsheet/schemas/pl-spreadsheet-volatile.json"
+        }
+      ]
+    },
+    {
       "name": "pl-string-input",
       "schema": "./apps/prairielearn/elements/pl-string-input/schemas/pl-string-input.json"
     },

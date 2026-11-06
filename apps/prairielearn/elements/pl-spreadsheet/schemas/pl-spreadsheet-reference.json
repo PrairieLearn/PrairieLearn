@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "atol": {
+      "type": "string",
+      "format": "number"
+    },
+    "cell": {
+      "type": "string"
+    },
+    "formula": {
+      "type": "string"
+    },
+    "rtol": {
+      "type": "string",
+      "format": "number"
+    },
+    "sheet-name": {
+      "type": "string"
+    }
+  },
+  "required": ["cell", "formula", "sheet-name"],
+  "additionalProperties": false
+}

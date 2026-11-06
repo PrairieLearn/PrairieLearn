@@ -84,6 +84,24 @@ describe('Static assets', () => {
     }
   });
 
+  it('serves all core element compiled scripts', async () => {
+    const elementsInfo = await getOrLoadElementsInfo();
+    const compiledScripts = new Set<string>();
+    for (const elementInfo of Object.values(elementsInfo)) {
+      for (const script of elementInfo.dependencies?.compiledScripts ?? []) {
+        compiledScripts.add(script);
+      }
+    }
+
+    for (const script of compiledScripts) {
+      const scriptUrl = `${SITE_URL}${assets.compiledScriptPath(script)}`;
+      const res = await fetch(scriptUrl, { method: 'HEAD' });
+      if (!res.ok) {
+        assert.fail(`Failed to fetch ${scriptUrl}: ${res.status} ${res.statusText}`);
+      }
+    }
+  });
+
   it('serves all element assets', async () => {
     const elementsInfo = await getOrLoadElementsInfo();
 

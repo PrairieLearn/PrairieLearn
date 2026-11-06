@@ -1,0 +1,26 @@
+{
+  "tag": "pl-spreadsheet",
+  "schema": "./schemas/pl-spreadsheet.json",
+  "children": [
+    {
+      "tag": "pl-spreadsheet-data",
+      "schema": "./schemas/pl-spreadsheet-data.json"
+    },
+    {
+      "tag": "pl-spreadsheet-output",
+      "schema": "./schemas/pl-spreadsheet-output.json"
+    },
+    {
+      "tag": "pl-spreadsheet-parameter",
+      "schema": "./schemas/pl-spreadsheet-parameter.json"
+    },
+    {
+      "tag": "pl-spreadsheet-reference",
+      "schema": "./schemas/pl-spreadsheet-reference.json"
+    },
+    {
+      "tag": "pl-spreadsheet-volatile",
+      "schema": "./schemas/pl-spreadsheet-volatile.json"
+    }
+  ]
+}

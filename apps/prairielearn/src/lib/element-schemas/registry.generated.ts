@@ -6,6 +6,7 @@ import { element as plIntegerInput } from './elements/pl-integer-input.js';
 import { element as plMultipleChoice } from './elements/pl-multiple-choice.js';
 import { element as plNumberInput } from './elements/pl-number-input.js';
 import { element as plOrderBlocks } from './elements/pl-order-blocks.js';
+import { element as plSpreadsheet } from './elements/pl-spreadsheet.js';
 import { element as plStringInput } from './elements/pl-string-input.js';
 import { element as plSymbolicInput } from './elements/pl-symbolic-input.js';
 import type { ElementSchemaModule } from './types.js';
@@ -16,6 +17,7 @@ export const elementModules: ElementSchemaModule[] = [
   plMultipleChoice,
   plNumberInput,
   plOrderBlocks,
+  plSpreadsheet,
   plStringInput,
   plSymbolicInput,
 ];

@@ -1,0 +1,1105 @@
+import type { Locator } from '@playwright/test';
+import axe from 'axe-core';
+
+import { selectQuestionByQid } from '../../models/question.js';
+
+import { expect, test } from './fixtures.js';
+
+test.setTimeout(120_000);
+
+// Grading recalculates every spreadsheet element on the page, which can take tens of
+// seconds when several Playwright workers share one machine.
+const GRADING_TIMEOUT = 60_000;
+
+function formulaBarFor(grid: Locator, address: string) {
+  return grid
+    .locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]')
+    .getByRole('combobox', { name: `Formula for ${address}` });
+}
+
+async function editCell(grid: Locator, address: string, value: string) {
+  const cell = grid.getByRole('gridcell', {
+    name: new RegExp(`^${address}, editable`),
+  });
+  await cell.dblclick();
+  const formulaBar = formulaBarFor(grid, address);
+  await expect(formulaBar).toBeFocused();
+  await formulaBar.fill(value);
+  await formulaBar.press('Enter');
+}
+
+test('edits cells in the formula bar', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+  const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
+  const b2FormulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
+  const formulaView = parameterDemo.locator('.pl-spreadsheet-formula-view');
+
+  await b2.click();
+  await expect(b2).toBeFocused();
+  await b2.click();
+  await expect(b2).toBeFocused();
+  await expect(grid.getByRole('textbox')).toHaveCount(0);
+
+  await page.keyboard.type('987');
+  await expect(b2FormulaBar).toBeFocused();
+  await expect(b2FormulaBar).toHaveValue('987');
+  // Moving editing into the bar flashes it.
+  expect(await formulaView.evaluate((view) => view.getAnimations().length)).toBeGreaterThan(0);
+  await expect(b2).toContainText('987');
+  await expect(rawAnswer).toHaveValue(/"B2":987/);
+  await b2FormulaBar.press('Escape');
+  await expect(b2).toBeFocused();
+  await expect(b2).toContainText('1');
+  await expect(b2FormulaBar).toHaveValue('1');
+  await expect(rawAnswer).not.toHaveValue(/"B2"/);
+
+  await page.keyboard.type('987');
+  await b2FormulaBar.press('Enter');
+  await expect(b2).toContainText('987');
+  await expect(grid.getByRole('gridcell', { name: /^B3, editable/ })).toBeFocused();
+
+  await b2.dblclick();
+  await expect(b2FormulaBar).toBeFocused();
+  await expect(b2FormulaBar).toHaveValue('987');
+  await b2FormulaBar.press('Escape');
+  await b2.press('F2');
+  await expect(b2FormulaBar).toBeFocused();
+  await b2FormulaBar.press('End');
+  await b2FormulaBar.press('0');
+  await b2FormulaBar.press('Tab');
+  await expect(b2).toContainText('9870');
+  await expect(grid.getByRole('gridcell', { name: /^C2, editable/ })).toBeFocused();
+  await expect(grid.getByRole('textbox')).toHaveCount(0);
+
+  await page.keyboard.press('Delete');
+  await expect(grid.getByRole('gridcell', { name: /^C2, editable, blank/ })).toBeVisible();
+
+  await b2.click();
+  await page.keyboard.type('=1/0');
+  await expect(parameterDemo.locator('.pl-spreadsheet-value-error')).toHaveText(
+    '#DIV/0! Division by zero.',
+  );
+  await b2FormulaBar.press('Backspace');
+  await b2FormulaBar.press('Backspace');
+  await expect(parameterDemo.locator('.pl-spreadsheet-value-error')).toHaveText('');
+});
+
+test('draws formulas as tiles in the formula bar', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const formulaBar = parameterDemo.getByLabel('Formula for B2');
+  const view = parameterDemo.locator('.pl-spreadsheet-formula-view');
+
+  await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
+  // Without tile editing, the formula is drawn as text with color-coded references.
+  await formulaBar.fill('=SUM($B$3:B4)+B3');
+  await expect(view).toHaveText(/^B2\s*=SUM\(\$B\$3:B4\)\+B3$/);
+  await expect(view.locator('.pl-spreadsheet-piece')).toHaveCount(0);
+  await expect(view.locator('.pl-spreadsheet-reference')).toHaveText(['$B$3:B4', 'B3']);
+  await expect(view.locator('.pl-spreadsheet-reference').last()).toHaveClass(
+    /pl-spreadsheet-ref-fill-1/,
+  );
+
+  await parameterDemo.getByRole('switch', { name: 'Tile editing' }).check();
+  await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
+  await formulaBar.fill('plain text');
+  // The address chip comes first, then the formula.
+  await expect(view).toHaveText(/^B2\s*plain text$/);
+  await expect(view.locator('.pl-spreadsheet-tile')).toHaveCount(0);
+
+  await formulaBar.fill('=SUM($B$3:B4)+B3+"x"');
+  await expect(view).toHaveAttribute('aria-hidden', 'true');
+  await expect(view.locator('.pl-spreadsheet-tile')).toHaveText([
+    '=',
+    'SUM(',
+    '$B$3:B4',
+    ')',
+    '+',
+    'B3',
+    '+',
+    '"x"',
+  ]);
+  await expect(view.locator('.pl-spreadsheet-tile-shard').first()).toHaveClass(
+    /pl-spreadsheet-left-convex.*pl-spreadsheet-right-concave/,
+  );
+  await expect(view.locator('.pl-spreadsheet-tile-reference').first()).toHaveClass(
+    /pl-spreadsheet-ref-fill-0/,
+  );
+  await expect(view.locator('.pl-spreadsheet-tile-reference').last()).toHaveClass(
+    /pl-spreadsheet-ref-fill-1/,
+  );
+  await expect(view.locator('.pl-spreadsheet-tile-string')).toHaveText('"x"');
+
+  // Clicking a tile places the caret in the hidden input at the matching offset.
+  const b3Tile = view.locator('.pl-spreadsheet-tile-reference').last();
+  const b3Box = await b3Tile.boundingBox();
+  if (!b3Box) throw new Error('Expected the B3 tile to have a bounding box');
+  await page.mouse.click(b3Box.x + 2, b3Box.y + b3Box.height / 2);
+  await expect(formulaBar).toBeFocused();
+  expect(await formulaBar.evaluate((input: HTMLInputElement) => input.selectionStart)).toBe(14);
+  await page.mouse.click(b3Box.x + b3Box.width - 2, b3Box.y + b3Box.height / 2);
+  expect(await formulaBar.evaluate((input: HTMLInputElement) => input.selectionStart)).toBe(16);
+
+  await formulaBar.fill('=(A2)');
+  await expect(view.locator('.pl-spreadsheet-hole-name')).toHaveClass(/is-optional/);
+});
+
+test('shows live values while editing in the formula bar', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const cell = (address: string) =>
+    grid.getByRole('gridcell', { name: new RegExp(`^${address}, `) });
+  const formulaBar = parameterDemo.getByLabel('Formula for B2');
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await cell('B2').click();
+  await formulaBar.fill('=1+2');
+  await expect(cell('B2')).toHaveText('3');
+  // D2 is =B2*C2, so dependent cells update too.
+  await expect(cell('D2')).toHaveText('6');
+  await formulaBar.press('Escape');
+  await expect(cell('B2')).toHaveText('1');
+  await expect(cell('D2')).toHaveText('2');
+  await expect(rawAnswer).not.toHaveValue(/"B2"/);
+});
+
+test('inserts references by pointing at cells', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const cell = (address: string) =>
+    grid.getByRole('gridcell', { name: new RegExp(`^${address}, `) });
+  const formulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await cell('B2').click();
+  await formulaBar.fill('=SUM(');
+  await grid.scrollIntoViewIfNeeded();
+  const c2Box = await cell('C2').boundingBox();
+  const d3Box = await cell('D3').boundingBox();
+  if (!c2Box || !d3Box) throw new Error('Expected spreadsheet cells to have bounding boxes');
+  await page.mouse.move(c2Box.x + c2Box.width / 2, c2Box.y + c2Box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(d3Box.x + d3Box.width / 2, d3Box.y + d3Box.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(formulaBar).toHaveValue('=SUM(C2:D3');
+  await expect(formulaBar).toBeFocused();
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(4);
+
+  await cell('A2').click();
+  await expect(formulaBar).toHaveValue('=SUM(A2');
+
+  // After typing, the arrow keys move the caret even where a reference could go.
+  await formulaBar.pressSequentially(')+');
+  await formulaBar.press('ArrowLeft');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+');
+  expect(await formulaBar.evaluate((input: HTMLInputElement) => input.selectionStart)).toBe(8);
+  await formulaBar.press('ArrowRight');
+
+  // Right after pointing, they move and resize the reference instead.
+  await cell('C3').click();
+  await formulaBar.press('Shift+ArrowDown');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+C3:C4');
+  await formulaBar.press('ArrowRight');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+D4');
+  await formulaBar.press('Shift+ArrowLeft');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+C4:D4');
+
+  await formulaBar.pressSequentially('*2');
+  await formulaBar.press('ArrowLeft');
+  await expect(formulaBar).toHaveValue('=SUM(A2)+C4:D4*2');
+
+  await formulaBar.press('Enter');
+  await expect(cell('B2')).toBeFocused();
+  await expect(rawAnswer).toHaveValue(/"B2":"=SUM\(A2\)\+C4:D4\*2"/);
+
+  // The active cell's references stay highlighted outside of editing.
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(3);
+  await page.keyboard.press('ArrowLeft');
+  await expect(cell('A2')).toBeFocused();
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(0);
+  await page.keyboard.press('ArrowRight');
+  await expect(grid.locator('.pl-spreadsheet-ref-cell')).toHaveCount(3);
+});
+
+test('shows the missing parts of a formula as holes', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const formulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
+  const highlight = parameterDemo.locator('.pl-spreadsheet-formula-view');
+  const status = parameterDemo.getByRole('status');
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await parameterDemo.getByRole('switch', { name: 'Tile editing' }).check();
+  await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
+  await formulaBar.fill('=SUMIF(');
+  await expect(
+    highlight.locator('.pl-spreadsheet-hole-argument.pl-spreadsheet-hole-range'),
+  ).toHaveClass(/is-current/);
+  await expect(highlight.locator('.pl-spreadsheet-hole-delimiter')).toHaveCount(1);
+
+  await formulaBar.fill('=A2+B2');
+  await formulaBar.press('ArrowLeft');
+  await formulaBar.press('ArrowLeft');
+  await formulaBar.press('Backspace');
+  await expect(formulaBar).toHaveValue('=A2B2');
+  await expect(highlight.locator('.pl-spreadsheet-hole-operator')).toHaveClass(/is-current/);
+  await expect(parameterDemo.getByText('An operator is missing between two values.')).toBeVisible();
+  await formulaBar.press('*');
+  await expect(formulaBar).toHaveValue('=A2*B2');
+  await expect(highlight.locator('.pl-spreadsheet-hole')).toHaveCount(0);
+
+  await formulaBar.fill('=IF(A2>0,,1)+');
+  await formulaBar.press('Home');
+  await formulaBar.press('Tab');
+  await expect(status).toHaveText('IF is missing value_if_true.');
+  await expect(formulaBar).toBeFocused();
+  await formulaBar.press('Tab');
+  await expect(status).toHaveText('A value is missing.');
+  await formulaBar.press('Shift+Tab');
+  await formulaBar.pressSequentially('A3');
+  await expect(formulaBar).toHaveValue('=IF(A2>0,A3,1)+');
+
+  await formulaBar.fill('=ROUND(SUM(A2:B2');
+  await formulaBar.press('Enter');
+  await expect(rawAnswer).toHaveValue(/"B2":"=ROUND\(SUM\(A2:B2\)\)"/);
+  await expect(status).toHaveText('B2: ROUND is missing digits.');
+});
+
+test('suggests functions in the formula bar', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const formulaBar = parameterDemo.getByRole('combobox', { name: 'Formula for B2' });
+  const suggestions = parameterDemo.getByRole('listbox', { name: 'Function suggestions' });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await grid.getByRole('gridcell', { name: /^B2, editable/ }).click();
+  await formulaBar.fill('');
+  await formulaBar.pressSequentially('=1+su');
+  await expect(suggestions.getByRole('option')).toHaveText([
+    /^SUM /,
+    /^SUMIF /,
+    /^SUMIFS /,
+    /^SUMPRODUCT /,
+  ]);
+  await formulaBar.press('ArrowDown');
+  await expect(suggestions.getByRole('option', { selected: true })).toHaveText(/^SUMIF /);
+  await formulaBar.press('Enter');
+  await expect(formulaBar).toHaveValue('=1+SUMIF(');
+  await expect(suggestions).toHaveCount(0);
+  await expect(parameterDemo.getByText('SUMIF(range, criteria, [sum_range])')).toBeVisible();
+  await expect(parameterDemo.getByRole('status')).toHaveText('SUMIF, argument range');
+
+  await formulaBar.pressSequentially('A3:B3, ">0")+ma');
+  await formulaBar.press('Escape');
+  await expect(suggestions).toHaveCount(0);
+  await expect(formulaBar).toHaveValue('=1+SUMIF(A3:B3, ">0")+ma');
+  await formulaBar.pressSequentially('x');
+  await suggestions.getByRole('option', { name: /^MAX / }).click();
+  await expect(formulaBar).toBeFocused();
+  await expect(formulaBar).toHaveValue('=1+SUMIF(A3:B3, ">0")+MAX(');
+
+  await formulaBar.pressSequentially('C2)');
+  await formulaBar.press('Enter');
+  await expect(rawAnswer).toHaveValue(/"B2":"=1\+SUMIF\(A3:B3, \\">0\\"\)\+MAX\(C2\)"/);
+});
+
+test('fills a rectangular range by dragging the fill handle', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+  const undo = parameterDemo.getByRole('button', { name: 'Undo' });
+  const cell = (address: string) =>
+    grid.getByRole('gridcell', { name: new RegExp(`^${address}, editable`) });
+
+  async function dragFill(from: string, to: string) {
+    await cell(from).click();
+    await grid.locator('.rdg-cell-drag-handle').dragTo(cell(to));
+  }
+
+  await dragFill('D2', 'C4');
+  await expect(rawAnswer).toHaveValue(/"C2":"=A2\*B2"/);
+  await expect(rawAnswer).toHaveValue(/"C3":"=A3\*B3"/);
+  await expect(rawAnswer).toHaveValue(/"C4":"=A4\*B4"/);
+  await expect(rawAnswer).toHaveValue(/"D3":"=B3\*C3"/);
+  await expect(rawAnswer).toHaveValue(/"D4":"=B4\*C4"/);
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(6);
+  // One drag is one undoable change.
+  await undo.click();
+  await expect(rawAnswer).not.toHaveValue(/"[CD][234]"/);
+
+  await editCell(grid, 'D4', '=B4+C4');
+  await cell('D4').click();
+  const d1 = grid.getByRole('gridcell', { name: /^D1, read-only/ });
+  const editor = grid.locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]');
+  const d1Box = await d1.boundingBox();
+  const editorBox = await editor.boundingBox();
+  if (!d1Box || !editorBox) throw new Error('Expected the spreadsheet to have a bounding box');
+  await grid.locator('.rdg-cell-drag-handle').hover();
+  await page.mouse.down();
+  await d1.hover();
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(4);
+  // Losing pointer capture outside the editor must still commit the highlighted fill.
+  await grid
+    .locator('.rdg-cell-drag-handle')
+    .evaluate((fillHandle) => fillHandle.releasePointerCapture(1));
+  await page.mouse.move(d1Box.x + d1Box.width / 2, editorBox.y - 5);
+  await page.mouse.up();
+  await expect(rawAnswer).toHaveValue(/"D3":"=B3\+C3"/);
+  await expect(rawAnswer).toHaveValue(/"D2":"=B2\+C2"/);
+  await undo.click();
+  await expect(rawAnswer).not.toHaveValue(/"D3"/);
+
+  await editCell(grid, 'B3', '=B2+1');
+  await dragFill('B3', 'D3');
+  await expect(rawAnswer).toHaveValue(/"C3":"=C2\+1"/);
+  await expect(rawAnswer).toHaveValue(/"D3":"=D2\+1"/);
+  await undo.click();
+  await expect(rawAnswer).not.toHaveValue(/"[CD]3"/);
+
+  await editCell(grid, 'D3', '=D2*10');
+  await dragFill('D3', 'B3');
+  await expect(rawAnswer).toHaveValue(/"C3":"=C2\*10"/);
+  await expect(rawAnswer).toHaveValue(/"B3":"=B2\*10"/);
+  await undo.click();
+
+  // A drag that returns to where it started fills nothing.
+  await cell('D2').click();
+  const beforeDrag = await rawAnswer.inputValue();
+  await grid.locator('.rdg-cell-drag-handle').hover();
+  await page.mouse.down();
+  await cell('D4').hover();
+  await cell('D2').hover();
+  await page.mouse.up();
+  await expect(rawAnswer).toHaveValue(beforeDrag);
+  await cell('B4').click();
+  await expect(cell('B4')).toBeFocused();
+});
+
+test('pops a spreadsheet out to fill the window', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+  const openButton = parameterDemo.getByRole('button', { name: 'Open spreadsheet full screen' });
+  const popup = page.getByRole('dialog', { name: 'Spreadsheet test' });
+  const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
+
+  await openButton.click();
+  await expect(popup).toBeVisible();
+  const viewport = page.viewportSize();
+  const box = await popup.boundingBox();
+  expect(box?.x).toBeGreaterThan(0);
+  expect(box?.width).toBeGreaterThan((viewport?.width ?? 0) - 64);
+  expect(box?.height).toBeGreaterThan((viewport?.height ?? 0) - 64);
+
+  // Edits made in the popup are kept when it closes.
+  await editCell(grid, 'B2', '42');
+  await popup.getByRole('button', { name: 'Close full-screen spreadsheet' }).click();
+  await expect(popup).toBeHidden();
+  await expect(openButton).toBeFocused();
+  await expect(b2).toContainText('42');
+  await expect(rawAnswer).toHaveValue(/"B2":42/);
+
+  await openButton.click();
+  await page.mouse.click(4, 4);
+  await expect(popup).toBeHidden();
+
+  // Escape leaves an edit in progress before it closes the popup.
+  await openButton.click();
+  await b2.click();
+  await page.keyboard.type('7');
+  await page.keyboard.press('Escape');
+  await expect(popup).toBeVisible();
+  await expect(b2).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(popup).toBeHidden();
+  await expect(b2).toContainText('42');
+});
+
+test('supports accessible local editing and trusted submission', async ({
+  page,
+  context,
+  courseInstance,
+}) => {
+  const thirdPartyRequests: string[] = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (
+      ['http:', 'https:'].includes(url.protocol) &&
+      !['localhost', '127.0.0.1'].includes(url.hostname)
+    ) {
+      thirdPartyRequests.push(request.url());
+    }
+  });
+
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const csvDemo = page.getByRole('region', {
+    name: 'CSV source with a hidden output',
+  });
+  const tsvDemo = page.getByRole('region', {
+    name: 'TSV sources combined as a sheetbook',
+  });
+  const xlsxDemo = page.getByRole('region', {
+    name: 'XLSX workbook with a private worksheet',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+  await expect(grid).toBeVisible();
+  await expect(parameterDemo.getByRole('tab', { name: 'Inputs' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+
+  const csvGrid = csvDemo.getByRole('grid', {
+    name: 'CSV budget workbook, sheet CsvBudget',
+  });
+  await expect(csvGrid.getByRole('columnheader', { name: 'A', exact: true })).toBeVisible();
+  await expect(csvGrid.getByRole('columnheader', { name: 'C', exact: true })).toBeVisible();
+  await expect(csvGrid.getByRole('columnheader', { name: 'D', exact: true })).toHaveCount(0);
+  const csvOptions = await csvDemo
+    .locator('.pl-spreadsheet-root')
+    .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
+  expect(csvOptions).not.toContain('SERVER_ONLY_CSV');
+  expect(csvOptions).not.toContain('=D2=12');
+
+  const tsvGrid = tsvDemo.getByRole('grid', {
+    name: 'TSV rate workbook, sheet Rates',
+  });
+  await expect(tsvGrid).toBeVisible();
+  await expect(tsvDemo.getByRole('tab', { name: 'Rates', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(tsvDemo.getByRole('tab', { name: 'RateSummary' })).toBeVisible();
+  const tsvOptions = await tsvDemo
+    .locator('.pl-spreadsheet-root')
+    .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
+  expect(tsvOptions).not.toContain('SERVER_ONLY_TSV');
+  expect(tsvOptions).not.toContain('=B1=22');
+
+  const xlsxGrid = xlsxDemo.getByRole('grid', {
+    name: 'XLSX workbook, sheet XlsxInputs',
+  });
+  await expect(xlsxGrid).toBeVisible();
+  await expect(xlsxDemo.getByRole('tab', { name: 'XlsxSummary' })).toBeVisible();
+  await expect(xlsxDemo.getByRole('tab', { name: 'XlsxChecks' })).toHaveCount(0);
+  const xlsxOptions = await xlsxDemo
+    .locator('.pl-spreadsheet-root')
+    .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
+  expect(xlsxOptions).not.toContain('SERVER_ONLY_XLSX');
+  expect(xlsxOptions).not.toContain('=XlsxSummary!B1=22');
+
+  const b2 = grid.getByRole('gridcell', { name: /^B2, editable/ });
+  await b2.dblclick();
+  const b2FormulaBar = parameterDemo.getByLabel('Formula for B2');
+  await expect(b2FormulaBar).toBeFocused();
+  await b2FormulaBar.fill('30');
+  await expect(b2).toContainText('30');
+  await b2FormulaBar.press('Enter');
+  await expect(grid.getByRole('gridcell', { name: /^B3, editable/ })).toBeFocused();
+  await expect(b2).toContainText('30');
+
+  await b2.click();
+  await expect(b2FormulaBar).toHaveValue('30');
+  await b2FormulaBar.fill('31');
+  await expect(b2).toContainText('31');
+  await b2FormulaBar.press('Enter');
+  // Editing that started in the bar returns to the same cell.
+  await expect(b2).toBeFocused();
+  await expect(b2).toContainText('31');
+
+  await b2.dblclick();
+  await b2FormulaBar.fill('999');
+  await expect(rawAnswer).toHaveValue(/"B2":999/);
+  await b2FormulaBar.press('Escape');
+  await expect(b2).toContainText('31');
+  await expect(b2FormulaBar).toHaveValue('31');
+  await expect(rawAnswer).toHaveValue(/"B2":31/);
+
+  await b2.press('Enter');
+  const b3 = grid.getByRole('gridcell', { name: /^B3, editable/ });
+  await expect(b3).toBeFocused();
+  await b3.press('Shift+Enter');
+  await expect(b2).toBeFocused();
+  await b2.press('Tab');
+  const c2 = grid.getByRole('gridcell', { name: /^C2, editable/ });
+  await expect(c2).toBeFocused();
+  await c2.press('Shift+Tab');
+  await expect(b2).toBeFocused();
+
+  const d3 = grid.getByRole('gridcell', { name: /^D3, editable/ });
+  const b2Box = await b2.boundingBox();
+  const d3Box = await d3.boundingBox();
+  if (!b2Box || !d3Box) throw new Error('Expected spreadsheet cells to have bounding boxes');
+  await page.mouse.move(b2Box.x + b2Box.width / 2, b2Box.y + b2Box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(d3Box.x + d3Box.width / 2, d3Box.y + d3Box.height / 2);
+  await page.mouse.up();
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(6);
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
+
+  await editCell(grid, 'B2', '3');
+  await editCell(grid, 'C2', '4');
+  await editCell(grid, 'D2', '=1/0');
+  await expect(grid.getByRole('gridcell', { name: /^D2, editable/ })).toContainText('#DIV/0!');
+  await expect(parameterDemo.getByRole('status')).toContainText('#DIV/0!');
+  await editCell(grid, 'D2', '=B2*C2');
+
+  await expect(rawAnswer).toHaveValue(/"B2":3/);
+  await expect(rawAnswer).not.toHaveValue(/"D2"/);
+
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.evaluate(() => navigator.clipboard.writeText('7'));
+  await b3.click();
+  const formulaBar = parameterDemo.getByLabel('Formula for B3');
+  await formulaBar.fill('17');
+  await expect(rawAnswer).toHaveValue(/"B3":17/);
+  await formulaBar.press('Escape');
+  await expect(rawAnswer).not.toHaveValue(/"B3"/);
+
+  await b3.click();
+  await b3.press('ControlOrMeta+V');
+  await expect(rawAnswer).toHaveValue(/"B3":7/);
+  await parameterDemo.getByRole('button', { name: 'Undo' }).click();
+  await expect(rawAnswer).not.toHaveValue(/"B3"/);
+
+  await grid.getByRole('gridcell', { name: /^D2, editable/ }).click();
+  await parameterDemo.getByRole('button', { name: 'Fill down' }).click();
+  await expect(rawAnswer).toHaveValue(/[=]B3\*C3/);
+  await parameterDemo.getByRole('button', { name: 'Undo' }).click();
+  await expect(rawAnswer).not.toHaveValue(/[=]B3\*C3/);
+  await parameterDemo.getByRole('button', { name: 'Redo' }).click();
+  await expect(rawAnswer).toHaveValue(/[=]B3\*C3/);
+  await parameterDemo.getByRole('button', { name: 'Undo' }).click();
+
+  const inputsTab = parameterDemo.getByRole('tab', { name: 'Inputs' });
+  const summaryTab = parameterDemo.getByRole('tab', { name: 'Summary' });
+  await inputsTab.focus();
+  await inputsTab.press('ArrowRight');
+  await expect(summaryTab).toBeFocused();
+  await expect(summaryTab).toHaveAttribute('aria-selected', 'true');
+  const summaryGrid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Summary',
+  });
+  const readOnlyCell = summaryGrid.getByRole('gridcell', { name: /^A1, read-only/ });
+  await readOnlyCell.click();
+  await expect(parameterDemo.getByLabel('Formula for A1')).toBeDisabled();
+  await expect(parameterDemo.getByRole('status')).toContainText('A1, read-only');
+
+  await inputsTab.click();
+  const firstCell = grid.getByRole('gridcell', { name: /^A1, read-only/ });
+  await firstCell.click();
+  await firstCell.press('Shift+Tab');
+  expect(await grid.evaluate((element) => element.contains(document.activeElement))).toBe(false);
+
+  const lastCell = grid.getByRole('gridcell', { name: /^D4, editable/ });
+  await lastCell.click();
+  await lastCell.press('Tab');
+  expect(await grid.evaluate((element) => element.contains(document.activeElement))).toBe(false);
+
+  await page.addScriptTag({ content: axe.source });
+  const accessibilityResults = await page.evaluate(async () => {
+    return await window.axe.run('.pl-spreadsheet', {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] },
+    });
+  });
+  expect(accessibilityResults.violations).toEqual([]);
+
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(page.getByText(/100%/).first()).toBeVisible({ timeout: GRADING_TIMEOUT });
+  const submission = page.getByTestId('submission-block');
+  const submittedParameterDemo = submission.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const submissionInputsTab = submittedParameterDemo.getByRole('tab', {
+    name: 'Inputs',
+    exact: true,
+  });
+  const submissionSummaryTab = submittedParameterDemo.getByRole('tab', {
+    name: 'Summary',
+    exact: true,
+  });
+  const submissionTable = submittedParameterDemo.getByRole('table', {
+    name: 'Inputs',
+    exact: true,
+    includeHidden: true,
+  });
+  const submissionSummaryTable = submittedParameterDemo.getByRole('table', {
+    name: 'Summary',
+    exact: true,
+    includeHidden: true,
+  });
+  await expect(submissionInputsTab).toHaveAttribute('aria-selected', 'true');
+  await expect(submissionSummaryTab).toHaveAttribute('aria-selected', 'false');
+  await expect(submissionTable).toBeVisible();
+  await expect(submissionSummaryTable).toBeHidden();
+  await expect(submissionTable.getByRole('columnheader', { name: 'D' })).toBeVisible();
+  await expect(submissionTable.getByRole('rowheader', { name: '2' })).toBeVisible();
+  const submissionD2 = submissionTable.getByRole('cell', { name: 'Cell D2' });
+  const submissionD2Value = submissionD2.getByText('12', { exact: true });
+  const submissionD2Formula = submissionD2.getByText('=B2*C2', { exact: true });
+  await expect(submissionD2Value).toBeVisible();
+  await expect(submissionD2Formula).toBeHidden();
+  const formulaToggle = submittedParameterDemo.getByRole('switch', {
+    name: 'Show formulas for Spreadsheet test',
+  });
+  await expect(formulaToggle).not.toBeChecked();
+  await formulaToggle.check();
+  await expect(submissionD2Value).toBeHidden();
+  await expect(submissionD2Formula).toBeVisible();
+
+  await submissionSummaryTab.click();
+  await expect(submissionTable).toBeHidden();
+  await expect(submissionSummaryTable).toBeVisible();
+  await expect(
+    submissionSummaryTable.getByText('=SUM(Inputs!D2:D4)', { exact: true }),
+  ).toBeVisible();
+  await submissionSummaryTab.press('ArrowRight');
+  await expect(submissionInputsTab).toBeFocused();
+  await expect(submissionInputsTab).toHaveAttribute('aria-selected', 'true');
+  await submissionSummaryTab.click();
+
+  const openReadOnlyButton = submittedParameterDemo.getByRole('button', {
+    name: 'Open spreadsheet full screen',
+  });
+  await openReadOnlyButton.click();
+  const readOnlyPopup = page.getByRole('dialog', { name: 'Spreadsheet test' });
+  await expect(readOnlyPopup).toBeVisible();
+  await expect(submissionSummaryTab).toHaveAttribute('aria-selected', 'true');
+  await expect(formulaToggle).toBeChecked();
+  const viewport = page.viewportSize();
+  const popupBox = await readOnlyPopup.boundingBox();
+  expect(popupBox?.width).toBeGreaterThan((viewport?.width ?? 0) - 64);
+  expect(popupBox?.height).toBeGreaterThan((viewport?.height ?? 0) - 64);
+  await readOnlyPopup.getByRole('button', { name: 'Close full-screen spreadsheet' }).click();
+  await expect(readOnlyPopup).toBeHidden();
+  await expect(openReadOnlyButton).toBeFocused();
+
+  await openReadOnlyButton.click();
+  await page.keyboard.press('Escape');
+  await expect(readOnlyPopup).toBeHidden();
+  await expect(submissionSummaryTable).toBeVisible();
+  await formulaToggle.uncheck();
+  await expect(submissionSummaryTable.getByText('12', { exact: true })).toBeVisible();
+  await expect(
+    submissionSummaryTable.getByText('=SUM(Inputs!D2:D4)', { exact: true }),
+  ).toBeHidden();
+  await page.addScriptTag({ content: axe.source });
+  const readOnlyAccessibilityResults = await page.evaluate(async () => {
+    return await window.axe.run('[data-testid="submission-block"] .pl-spreadsheet', {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] },
+    });
+  });
+  expect(readOnlyAccessibilityResults.violations).toEqual([]);
+
+  await page.reload();
+  await expect(rawAnswer).toHaveValue(/"B2":3/);
+  expect(thirdPartyRequests).toEqual([]);
+});
+
+test('persists active formula drafts and rejected formulas', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const parameterDemo = page.getByRole('region', {
+    name: 'Parameter and DataFrame workbook',
+  });
+  const grid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+
+  await grid.getByRole('gridcell', { name: /^D2, editable/ }).dblclick();
+  await formulaBarFor(grid, 'D2').fill('=1/0');
+  await expect(rawAnswer).toHaveValue(/[=]1\/0/);
+  const formDataAnswer = await rawAnswer.evaluate((input: HTMLInputElement) => {
+    input.value = 'stale';
+    return new FormData(input.form!).get(input.name);
+  });
+  expect(formDataAnswer).toContain('=1/0');
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+  const submissionTable = page.getByRole('table', { name: 'Inputs', exact: true }).first();
+  await expect(
+    submissionTable.getByRole('cell', { name: 'Cell D2' }).getByText('#DIV/0!', { exact: true }),
+  ).toBeVisible({ timeout: GRADING_TIMEOUT });
+  await expect(rawAnswer).toHaveValue(/[=]1\/0/);
+
+  const currentGrid = parameterDemo.getByRole('grid', {
+    name: 'Spreadsheet test, sheet Inputs',
+  });
+  await currentGrid.getByRole('gridcell', { name: /^D2, editable/ }).dblclick();
+  await formulaBarFor(currentGrid, 'D2').fill('=RAND()');
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+  await expect(page.getByText('Function RAND is not supported.').first()).toBeVisible({
+    timeout: GRADING_TIMEOUT,
+  });
+  await expect(
+    parameterDemo.getByRole('gridcell', { name: /^D2, editable, #ERROR!/ }),
+  ).toContainText('#ERROR!');
+  await expect(rawAnswer).toHaveValue(/[=]RAND\(\)/);
+
+  await page.reload();
+  await expect(rawAnswer).toHaveValue(/[=]RAND\(\)/);
+  await parameterDemo.getByRole('gridcell', { name: /^D2, editable, #ERROR!/ }).dblclick();
+  await expect(parameterDemo.getByLabel('Formula for D2')).toHaveValue('=RAND()');
+});
+
+test('keeps file-backed grading cells outside the student range private', async ({
+  page,
+  courseInstance,
+}) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetFileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', {
+    name: 'File-backed spreadsheet test, sheet Inputs',
+  });
+  await expect(grid.getByRole('columnheader', { name: 'A', exact: true })).toBeVisible();
+  await expect(grid.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
+  await expect(grid.getByRole('columnheader', { name: 'C', exact: true })).toHaveCount(0);
+
+  const decodedOptions = await page
+    .locator('.pl-spreadsheet-root')
+    .evaluate((element) => atob((element as HTMLElement).dataset.options ?? ''));
+  expect(decodedOptions).not.toContain('HIDDEN_SENTINEL');
+  expect(decodedOptions).not.toContain('=C2=6');
+  const elementHtml = await page
+    .locator('.pl-spreadsheet')
+    .evaluate((element) => element.outerHTML);
+  expect(elementHtml).not.toContain('HIDDEN_SENTINEL');
+  expect(elementHtml).not.toContain('=C2=6');
+
+  await editCell(grid, 'A1', '3');
+  await editCell(grid, 'A2', '=A1+1');
+  const rawAnswer = page.locator('input.js-pl-spreadsheet-input[name="model"]');
+  await expect(rawAnswer).toHaveValue(/"A1":3/);
+  await expect(rawAnswer).not.toHaveValue(/D2|HIDDEN_SENTINEL/);
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(page.getByText(/100%/).first()).toBeVisible({ timeout: GRADING_TIMEOUT });
+
+  const submissionTable = page
+    .getByTestId('submission-block')
+    .getByRole('table', { name: 'Inputs' });
+  await expect(submissionTable.getByRole('columnheader', { name: 'A', exact: true })).toBeVisible();
+  await expect(submissionTable.getByRole('columnheader', { name: 'B', exact: true })).toBeVisible();
+  await expect(submissionTable.getByRole('columnheader', { name: 'C', exact: true })).toHaveCount(
+    0,
+  );
+  await expect(submissionTable).not.toContainText('HIDDEN_SENTINEL');
+});
+
+test('shows submitted workbooks like the editor', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetFileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', {
+    name: 'File-backed spreadsheet test, sheet Inputs',
+  });
+  const longFormula = `=$A$1+2${'+0'.repeat(80)}`;
+  await editCell(grid, 'A1', '3');
+  await editCell(grid, 'A2', longFormula);
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+  const submission = page.getByTestId('submission-block');
+  const table = submission.getByRole('table', { name: 'Inputs' });
+  await expect(table.getByRole('cell', { name: 'Cell A2, incorrect' })).toHaveClass(
+    'table-danger',
+    {
+      timeout: GRADING_TIMEOUT,
+    },
+  );
+  await expect(table.getByRole('cell', { name: 'Cell A1', exact: true })).not.toHaveClass(
+    'table-danger',
+  );
+  await expect(table.getByRole('cell', { name: 'Cell B1', exact: true })).toHaveClass(
+    'pl-spreadsheet-cell-readonly',
+  );
+
+  const columnWidths = () =>
+    table
+      .getByRole('columnheader')
+      .evaluateAll((headers) => headers.map((header) => header.getBoundingClientRect().width));
+  const valueWidths = await columnWidths();
+  expect(valueWidths[0]).toBeCloseTo(56, 0);
+  expect(valueWidths[1]).toBeCloseTo(valueWidths[2], 4);
+  expect(valueWidths[1]).toBeGreaterThanOrEqual(96);
+  const tableBox = await table.boundingBox();
+  const tableContainerBox = await table.locator('xpath=..').boundingBox();
+  expect(tableBox?.width).toBeCloseTo(tableContainerBox?.width ?? 0, 0);
+  await submission.getByRole('switch', { name: /Show formulas/ }).check();
+  const formula = table.getByRole('cell', { name: 'Cell A2, incorrect' }).getByText(longFormula);
+  await expect(formula).toBeVisible();
+  expect(
+    await formula.evaluate((element) => element.scrollWidth > element.clientWidth),
+  ).toBeTruthy();
+  await expect(table.getByRole('cell', { name: 'Cell A2, incorrect' })).toHaveAttribute(
+    'title',
+    longFormula,
+  );
+  // The $ signs in absolute references must not start MathJax typesetting.
+  await expect(submission.locator('mjx-container')).toHaveCount(0);
+  expect(await columnWidths()).toEqual(valueWidths);
+});
+
+test('rejects file-backed formulas that reach hidden cells', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetFileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', {
+    name: 'File-backed spreadsheet test, sheet Inputs',
+  });
+  for (const formula of [
+    '=C1',
+    '=VLOOKUP(2,A1:C2,3,FALSE)',
+    '=INDEX(A:A,1)',
+    '=IFERROR(MATCH(0,Inputs!A1:Hidden!A9,0),0)',
+  ]) {
+    await editCell(grid, 'A1', formula);
+    await expect(page.getByRole('status')).toContainText('outside declared student ranges');
+  }
+
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(
+    page.getByText('cannot reference cells outside declared student ranges').first(),
+  ).toBeVisible({ timeout: GRADING_TIMEOUT });
+  // The instructor preview's debug panels show the private grading data, so only
+  // check the question and submission content that students also see.
+  await expect(page.locator('.question-container')).not.toContainText('HIDDEN_SENTINEL');
+});
+
+declare global {
+  interface Window {
+    axe: typeof axe;
+  }
+}
+
+test('marks randomized cells as locked and distinct', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetVolatileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  for (const label of ['Python randomized orders', 'File randomized orders']) {
+    const grid = page.getByRole('grid', { name: `${label}, sheet Orders` });
+    const editor = grid.locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]');
+    const a2 = grid.getByRole('gridcell', { name: /^A2, randomized, read-only/ });
+    await expect(a2).toHaveClass(/pl-spreadsheet-cell-volatile/);
+    await expect(grid.getByRole('gridcell', { name: /^A1, read-only/ })).not.toHaveClass(
+      /pl-spreadsheet-cell-volatile/,
+    );
+    await expect(grid.getByRole('gridcell', { name: /^C2, editable/ })).not.toHaveClass(
+      /pl-spreadsheet-cell-volatile/,
+    );
+    await expect(
+      editor.getByText('Randomized: changes between variants and in hidden tests'),
+    ).toBeVisible();
+
+    await a2.click();
+    await expect(editor.getByText('Randomized', { exact: true })).toBeVisible();
+    await expect(editor.getByRole('combobox', { name: 'Formula for A2' })).toBeDisabled();
+
+    await editCell(grid, 'C2', '=A2*B2');
+    await editCell(grid, 'C3', '=A3*B3');
+    await expect(editor.getByText('Randomized', { exact: true })).toHaveCount(0);
+  }
+
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  const submission = page.getByTestId('submission-block');
+  await expect(submission.getByText(/100%/).first()).toBeVisible({ timeout: GRADING_TIMEOUT });
+  const table = submission.getByRole('table', { name: 'Orders' }).first();
+  await expect(table.getByRole('cell', { name: 'Cell A2, randomized' })).toHaveClass(
+    /pl-spreadsheet-cell-volatile/,
+  );
+  await expect(
+    submission.getByText(/^\s*Randomized: changes between variants/).first(),
+  ).toBeVisible();
+});
+
+test('selects whole columns and rows from their headings', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetVolatileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', { name: 'Python randomized orders, sheet Orders' });
+  const editor = grid.locator('xpath=ancestor::div[contains(@class, "pl-spreadsheet-editor")]');
+  const indicator = editor.locator('.pl-spreadsheet-address-chip');
+  await expect(indicator).toHaveCount(0);
+
+  await grid.getByRole('button', { name: 'B', exact: true }).click();
+  await expect(indicator).toHaveText('B:B');
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(3);
+  await expect(grid.getByRole('gridcell', { name: /^B1,/ })).toBeFocused();
+
+  await grid.locator('.pl-spreadsheet-row-header', { hasText: /^3$/ }).click();
+  await expect(indicator).toHaveText('A3:3');
+  await expect(grid.locator('.pl-spreadsheet-cell-selected')).toHaveCount(3);
+
+  await grid.getByRole('gridcell', { name: /^A2,/ }).click();
+  await expect(indicator).toHaveText('A2');
+  await grid.getByRole('gridcell', { name: /^C3,/ }).click({ modifiers: ['Shift'] });
+  await expect(indicator).toHaveText('A2:C3');
+});
+
+test('clears a selected range as one undoable change', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'spreadsheetVolatileElement',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+
+  const grid = page.getByRole('grid', { name: 'Python randomized orders, sheet Orders' });
+  await editCell(grid, 'C2', '1');
+  await editCell(grid, 'C3', '=C2+1');
+  await expect(grid.getByRole('gridcell', { name: 'C3, editable, 2' })).toBeVisible();
+
+  // The column includes the read-only heading in C1, which is left alone.
+  await grid.getByRole('button', { name: 'C', exact: true }).click();
+  await page.keyboard.press('Backspace');
+  await expect(grid.getByRole('gridcell', { name: 'C2, editable, blank' })).toBeVisible();
+  await expect(grid.getByRole('gridcell', { name: 'C3, editable, blank' })).toBeVisible();
+  await expect(grid.getByRole('gridcell', { name: 'C1, read-only, Tax' })).toBeVisible();
+
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(grid.getByRole('gridcell', { name: 'C2, editable, 1' })).toBeVisible();
+  await expect(grid.getByRole('gridcell', { name: 'C3, editable, 2' })).toBeVisible();
+});

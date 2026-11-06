@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "directory": {
+      "type": "string",
+      "enum": [".", "serverFilesCourse"]
+    },
+    "editable-ranges": {
+      "type": "string"
+    },
+    "sheet-name": {
+      "type": "string"
+    },
+    "source-file": {
+      "type": "string"
+    },
+    "student-range": {
+      "type": "string"
+    }
+  },
+  "required": ["sheet-name", "source-file", "student-range"],
+  "additionalProperties": false
+}
