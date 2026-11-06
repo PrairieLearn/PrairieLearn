@@ -60,7 +60,7 @@
       "images": {
         "courseAgent": {
           "dockerfile": "container/Dockerfile",
-          "build_context": "."
+          "build_context": "container"
         }
       }
     }
@@ -107,7 +107,7 @@
           "images": {
             "courseAgent": {
               "dockerfile": "container/Dockerfile",
-              "build_context": "."
+              "build_context": "container"
             }
           }
         }
@@ -155,7 +155,7 @@
           "images": {
             "courseAgent": {
               "dockerfile": "container/Dockerfile",
-              "build_context": "."
+              "build_context": "container"
             }
           }
         }
