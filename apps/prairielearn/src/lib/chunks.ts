@@ -5,7 +5,7 @@ import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 import * as util from 'util';
 
-import { S3 } from '@aws-sdk/client-s3';
+import { S3, S3ServiceException } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
 import fs from 'fs-extra';
@@ -761,7 +761,11 @@ async function diffChunks({
   return { updatedChunks, deletedChunks, replacedChunkIds };
 }
 
-async function createAndUploadChunks(coursePath: string, chunksToGenerate: ChunkMetadata[]) {
+async function createAndUploadChunks(
+  coursePath: string,
+  courseId: string,
+  chunksToGenerate: ChunkMetadata[],
+) {
   const generatedChunks: (ChunkMetadata & {
     uuid: string;
     sizeCompressed: number;
@@ -808,7 +812,7 @@ async function createAndUploadChunks(coursePath: string, chunksToGenerate: Chunk
       client: s3,
       params: {
         Bucket: config.chunksS3Bucket,
-        Key: `${chunkUuid}.tar.gz`,
+        Key: s3KeyForChunk(courseId, chunkUuid),
         Body: body,
       },
     });
@@ -914,7 +918,7 @@ export async function updateChunksForCourse({
   });
 
   const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
-  const generatedChunks = await createAndUploadChunks(coursePath, updatedChunks);
+  const generatedChunks = await createAndUploadChunks(coursePath, courseId, updatedChunks);
 
   // Uploads finish before the transaction, so it only holds row locks briefly.
   await sqldb.runInTransactionAsync(async () => {
@@ -993,6 +997,10 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
   job.info(chalk.green(`Successfully generated chunks for course ID = ${course_id}`));
 }
 
+function s3KeyForChunk(courseId: string, chunkUuid: string) {
+  return `${courseId}/${chunkUuid}.tar.gz`;
+}
+
 const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   assert(chunk.uuid != null, 'chunk.uuid is required');
   const courseChunksDirs = getChunksDirectoriesForCourseId(courseId);
@@ -1067,7 +1075,18 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
   await fs.ensureDir(path.dirname(downloadPath));
-  await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
+  try {
+    await downloadFromS3(config.chunksS3Bucket, s3KeyForChunk(courseId, chunk.uuid), downloadPath);
+  } catch (error) {
+    // Missing keys can return 403 when bucket listing isn't permitted.
+    if (
+      !(error instanceof S3ServiceException) ||
+      (error.$metadata.httpStatusCode !== 404 && error.name !== 'AccessDenied')
+    ) {
+      throw error;
+    }
+    await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
+  }
   await fs.move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In
