@@ -49,6 +49,13 @@ function createSandbox(course: string) {
             encoding: 'buffer',
             reject: false,
             stripFinalNewline: false,
+            // The sandbox image configures this identity system-wide.
+            env: {
+              GIT_AUTHOR_NAME: 'PrairieLearn',
+              GIT_AUTHOR_EMAIL: 'course-agent@prairielearn.com',
+              GIT_COMMITTER_NAME: 'PrairieLearn',
+              GIT_COMMITTER_EMAIL: 'course-agent@prairielearn.com',
+            },
           },
         );
         return { stdout: result.stdout, stderr: result.stderr, exitCode: result.exitCode };

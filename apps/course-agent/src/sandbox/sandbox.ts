@@ -43,14 +43,6 @@ async function githubReviewBase(git: (...args: string[]) => Promise<string>, bra
   }
 }
 
-const GIT_IDENTITY = [
-  '-c',
-  'user.name=PrairieLearn',
-  '-c',
-  'user.email=course-agent@prairielearn.com',
-  '-c',
-  'commit.gpgsign=false',
-];
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
@@ -291,7 +283,8 @@ export class CourseSandbox extends DurableObject<Env> {
           'git',
           '-C',
           `${SESSION}/repository`,
-          ...GIT_IDENTITY,
+          '-c',
+          'commit.gpgsign=false',
           'commit',
           '--allow-empty',
           '-m',
@@ -497,7 +490,8 @@ export class CourseSandbox extends DurableObject<Env> {
       }
       const tree = await git('write-tree');
       const commit = await git(
-        ...GIT_IDENTITY,
+        '-c',
+        'commit.gpgsign=false',
         'commit-tree',
         tree,
         '-p',
