@@ -163,7 +163,10 @@ export async function withCodeCaller<T>(
     throw new Error('CodeCaller pool not initialized');
   }
 
-  if (pool.available === 0 && !config.workerUseQueue) {
+  // Without the queue, a call may only wait for a worker that is free or about
+  // to be. Workers that are restarting will be back in the pool momentarily,
+  // so they count, but only as many calls as there are such workers can wait.
+  if (pool.pending >= pool.available + restartingWorkers && !config.workerUseQueue) {
     debug('getPythonCaller(): no workers available, waiting to error');
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -175,19 +178,23 @@ export async function withCodeCaller<T>(
   const jobUuid = crypto.randomUUID();
   load.startJob('python_callback_waiting', jobUuid);
 
-  const codeCaller = await pool.acquire();
-
+  const currentPool = pool;
+  let codeCaller: CodeCaller;
   try {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    await codeCaller.prepareForCourse({
-      coursePath,
-      forbiddenModules: [],
-    });
-  } catch (err) {
-    // If we fail to prepare for a course, assume that the code caller is
-    // broken and dispose of it.
-    await pool.destroy(codeCaller);
-    throw err;
+    codeCaller = await currentPool.acquire();
+
+    try {
+      const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+      await codeCaller.prepareForCourse({
+        coursePath,
+        forbiddenModules: [],
+      });
+    } catch (err) {
+      // If we fail to prepare for a course, assume that the code caller is
+      // broken and dispose of it.
+      await currentPool.destroy(codeCaller);
+      throw err;
+    }
   } finally {
     load.endJob('python_callback_waiting', jobUuid);
   }
@@ -196,18 +203,32 @@ export async function withCodeCaller<T>(
   load.endJob('python_worker_idle', codeCaller.uuid);
   load.startJob('python_worker_active', codeCaller.uuid);
 
-  let fnResult, fnErr;
+  let fnResult: T;
   try {
     fnResult = await fn(codeCaller);
-  } catch (err) {
-    fnErr = err;
+  } finally {
+    debug('returnPythonCaller()');
+    load.endJob('python_worker_active', codeCaller.uuid);
+
+    // Restarting the worker means waiting for its process to exit and for the
+    // zygote to confirm that it has forked a fresh one. The caller's result
+    // doesn't depend on that, so we don't make every request wait for it. The
+    // worker only goes back into the pool once the restart has finished, so it
+    // is never reused before it is clean, and `finish()` still waits for it
+    // when it drains the pool.
+    void restartAndRelease(currentPool, codeCaller).catch((err) => {
+      logger.error('Error returning pythonCaller to the pool', err);
+    });
   }
 
-  debug('returnPythonCaller()');
-  load.endJob('python_worker_active', codeCaller.uuid);
+  return fnResult;
+}
 
+let restartingWorkers = 0;
+
+async function restartAndRelease(codeCallerPool: Pool<CodeCaller>, codeCaller: CodeCaller) {
+  restartingWorkers++;
   let needsFullRestart = false;
-  let restartErr;
   try {
     const restartSuccess = await codeCaller.restart();
     if (!restartSuccess) {
@@ -216,28 +237,18 @@ export async function withCodeCaller<T>(
       needsFullRestart = true;
     }
   } catch (err: any) {
-    restartErr = err;
     debug(`returnPythonCaller(): restart errored: ${err}`);
     logger.error('Error restarting pythonCaller', err);
     needsFullRestart = true;
   }
+  restartingWorkers--;
 
   load.startJob('python_worker_idle', codeCaller.uuid);
 
   if (needsFullRestart) {
-    await pool.destroy(codeCaller);
+    await codeCallerPool.destroy(codeCaller);
   } else {
-    await pool.release(codeCaller);
-  }
-
-  const overallErr = fnErr ?? restartErr;
-  if (overallErr) {
-    throw overallErr;
-  } else {
-    // TypeScript doesn't understand our error-handling logic above. If
-    // `overallErr` is falsy, `fnResult` will indeed have type `T`. We'll
-    // cast it to `T` to appease TypeScript.
-    return fnResult as T;
+    await codeCallerPool.release(codeCaller);
   }
 }
 

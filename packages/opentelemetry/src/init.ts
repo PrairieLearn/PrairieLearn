@@ -5,9 +5,18 @@ import {
   type ContextManager,
   type Link,
   type SpanKind,
+  context,
   metrics,
+  propagation,
+  trace,
 } from '@opentelemetry/api';
-import { hrTimeToMilliseconds } from '@opentelemetry/core';
+import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
+import {
+  CompositePropagator,
+  W3CBaggagePropagator,
+  W3CTraceContextPropagator,
+  hrTimeToMilliseconds,
+} from '@opentelemetry/core';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { OTLPTraceExporter as OTLPTraceExporterHttp } from '@opentelemetry/exporter-trace-otlp-http';
@@ -50,8 +59,8 @@ import {
   type SpanExporter,
   type SpanProcessor,
   TraceIdRatioBasedSampler,
-} from '@opentelemetry/sdk-trace-base';
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+  TracerProvider,
+} from '@opentelemetry/sdk-trace';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 
 /**
@@ -98,7 +107,7 @@ class FilterBatchSpanProcessor extends BatchSpanProcessor {
   private filter: (span: ReadableSpan) => boolean;
 
   constructor(exporter: SpanExporter, filter: (span: ReadableSpan) => boolean) {
-    super(exporter);
+    super({ exporter });
     this.filter = filter;
   }
 
@@ -181,7 +190,7 @@ instrumentations.forEach((i) => {
   i.enable();
 });
 
-let tracerProvider: NodeTracerProvider | null;
+let tracerProvider: TracerProvider | null;
 
 interface OpenTelemetryConfigEnabled {
   openTelemetryEnabled: boolean;
@@ -285,7 +294,7 @@ function getSpanProcessor(config: OpenTelemetryConfig): SpanProcessor | null {
       return new FilterBatchSpanProcessor(traceExporter, filter);
     }
     case 'simple': {
-      return new SimpleSpanProcessor(traceExporter);
+      return new SimpleSpanProcessor({ exporter: traceExporter });
     }
     default: {
       throw new Error(`Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`);
@@ -321,7 +330,7 @@ function getSampler(config: OpenTelemetryConfig): Sampler {
  * information available until we've loaded our config.
  *
  * Note that even when `openTelemetryEnabled` is `false`, we'll still configure
- * the `NodeTracerProvider` and instrumentations so the context and tracing APIs
+ * the `TracerProvider` and instrumentations so the context and tracing APIs
  * remain available. However, we won't actually set up any exporters.
  */
 export async function init(config: OpenTelemetryConfig) {
@@ -361,18 +370,24 @@ export async function init(config: OpenTelemetryConfig) {
   }
 
   // Set up tracing instrumentation.
-  const nodeTracerProvider = new NodeTracerProvider({
+  const provider = new TracerProvider({
     sampler,
     resource,
     spanProcessors: [spanProcessor].filter((p) => !!p),
   });
-  nodeTracerProvider.register({
-    contextManager: config.contextManager,
-  });
-  instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
+  trace.setGlobalTracerProvider(provider);
+  context.setGlobalContextManager(
+    (config.contextManager ?? new AsyncLocalStorageContextManager()).enable(),
+  );
+  propagation.setGlobalPropagator(
+    new CompositePropagator({
+      propagators: [new W3CTraceContextPropagator(), new W3CBaggagePropagator()],
+    }),
+  );
+  instrumentations.forEach((i) => i.setTracerProvider(provider));
 
   // Save the provider so we can shut it down later.
-  tracerProvider = nodeTracerProvider;
+  tracerProvider = provider;
 
   // Set up metrics instrumentation if it's enabled.
   if (metricExporter) {

@@ -791,7 +791,7 @@ async function _pullImage(workspace: Workspace) {
           progressDetailsInit,
           1000 * 60 * 60 * 24 * 30, // 30 days
         );
-        workspaceUtils
+        void workspaceUtils
           .updateWorkspaceMessage(workspace.id, 'Pulling image (100%)', toDatabase)
           .catch((err) => {
             logger.error('Error updating workspace message', err);

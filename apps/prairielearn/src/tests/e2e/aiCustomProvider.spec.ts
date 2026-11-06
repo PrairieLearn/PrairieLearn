@@ -27,7 +27,7 @@ import { getOrCreateUser } from '../utils/auth.js';
 
 import { createTest, expect } from './fixtures.js';
 
-const test = createTest({ isEnterprise: true, features: { 'ai-grading': true } });
+const test = createTest({ features: { 'ai-grading': true } });
 const sql = loadSqlEquiv(import.meta.url);
 const baseUrl = 'https://provider.example/v1';
 const fakeKey = 'ui-test-key-not-a-real-secret';
@@ -315,6 +315,9 @@ test('passes custom identity from the single-submission grading modal', async ({
   courseInstance,
   testCoursePath,
 }) => {
+  // Rendering the student question and grading page can exceed 30 seconds on CI.
+  test.setTimeout(60_000);
+
   const assessmentPath = path.join(
     testCoursePath,
     'courseInstances/Sp15/assessments/hw10-aiGrading/infoAssessment.json',

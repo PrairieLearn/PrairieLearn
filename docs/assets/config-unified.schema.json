@@ -318,10 +318,6 @@
       "default": 10,
       "type": "number"
     },
-    "startServer": {
-      "default": true,
-      "type": "boolean"
-    },
     "namedLocksRenewIntervalMs": {
       "default": 60000,
       "type": "number"
@@ -1234,6 +1230,10 @@
       "default": true,
       "type": "boolean"
     },
+    "compiledAssetsDevMode": {
+      "default": null,
+      "type": ["boolean", "null"]
+    },
     "azureClientID": {
       "default": "<your_client_id>",
       "type": "string"
@@ -1525,6 +1525,32 @@
     "courseFilesApiUrl": {
       "default": null,
       "type": ["string", "null"]
+    },
+    "courseAgentServiceUrl": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "courseAgentServiceToken": {
+      "default": null,
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "newsFeedUrl": {
       "default": null,

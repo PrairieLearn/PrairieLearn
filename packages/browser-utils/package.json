@@ -1,12 +1,13 @@
 {
   "name": "@prairielearn/browser-utils",
   "version": "2.7.8",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/browser-utils"
   },
+  "type": "module",
+  "sideEffects": false,
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -20,6 +21,5 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@typescript/native": "npm:typescript@^7.0.2"
-  },
-  "sideEffects": false
+  }
 }
