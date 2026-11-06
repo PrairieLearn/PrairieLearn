@@ -242,6 +242,7 @@ function ExamQuestionCells({
                       ${InstanceQuestionPoints({
                         instance_question: row.instance_question,
                         assessment_question: row.assessment_question,
+                        autoGradingPending: row.autoGradingPending,
                         component: 'auto',
                       })}
                     </td>
@@ -249,6 +250,7 @@ function ExamQuestionCells({
                       ${InstanceQuestionPoints({
                         instance_question: row.instance_question,
                         assessment_question: row.assessment_question,
+                        autoGradingPending: row.autoGradingPending,
                         component: 'manual',
                       })}
                     </td>
@@ -259,6 +261,7 @@ function ExamQuestionCells({
               ${InstanceQuestionPoints({
                 instance_question: row.instance_question,
                 assessment_question: row.assessment_question,
+                autoGradingPending: row.autoGradingPending,
                 component: 'total',
               })}
             </td>
@@ -331,6 +334,7 @@ function HomeworkQuestionCells({
               ${InstanceQuestionPoints({
                 instance_question: row.instance_question,
                 assessment_question: row.assessment_question,
+                autoGradingPending: row.autoGradingPending,
                 component: 'auto',
               })}
             </td>
@@ -338,6 +342,7 @@ function HomeworkQuestionCells({
               ${InstanceQuestionPoints({
                 instance_question: row.instance_question,
                 assessment_question: row.assessment_question,
+                autoGradingPending: row.autoGradingPending,
                 component: 'manual',
               })}
             </td>
@@ -348,6 +353,7 @@ function HomeworkQuestionCells({
       ${InstanceQuestionPoints({
         instance_question: row.instance_question,
         assessment_question: row.assessment_question,
+        autoGradingPending: row.autoGradingPending,
         component: 'total',
       })}
     </td>
