@@ -503,6 +503,7 @@ function ChangeTypeModal({
               You are about to change this assessment from <strong>{currentType}</strong> to{' '}
               <strong>{newType ?? currentType}</strong>.
             </p>
+            <p className="mb-3">Existing printable forms will be removed.</p>
 
             <Alert variant="info" className="small mb-3">
               <strong>What changes:</strong>

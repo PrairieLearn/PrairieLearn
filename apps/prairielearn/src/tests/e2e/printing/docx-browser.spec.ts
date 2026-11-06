@@ -11,6 +11,10 @@ import type { AssetsManifest } from '@prairielearn/compiled-assets';
 import { serializePrintDocument } from '../../../lib/client/print-document.js';
 import type { DocxSource } from '../../../lib/printing/docx-browser.js';
 import { createDocxDocument } from '../../../lib/printing/docx-document.js';
+import {
+  checkPrintSnapshotId,
+  createPrintSnapshotId,
+} from '../../../lib/printing/print-snapshot-id.js';
 import { expect, test } from '../fixtures.js';
 
 // These browser-only tests do not need the application server.
@@ -115,11 +119,35 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   );
   expect(source).toBeDefined();
   const html = await page.locator(':root').evaluate(serializePrintDocument);
+  const snapshot = {
+    assessmentInstanceId: '123',
+    authnUserId: '45',
+    search: new URLSearchParams('paper_size=Letter&form_label=A&document=assessment'),
+    questionListDigest: 'question-list-1',
+    html,
+    source: source!,
+  };
+  const secretKey = 'print-snapshot-browser-test-key';
+  const id = createPrintSnapshotId(snapshot, secretKey);
   await page.route('http://print.test/snapshot', (route) =>
-    route.fulfill({ contentType: 'text/html', body: html }),
+    route.fulfill({
+      contentType: 'text/html',
+      body: html.replace('<html', `<html data-print-snapshot-id="${id}"`),
+    }),
   );
   await page.goto('http://print.test/snapshot');
-  expect(await page.locator(':root').evaluate(serializePrintDocument)).toBe(html);
+  const reloadedHtml = await page.locator(':root').evaluate(serializePrintDocument);
+  expect(reloadedHtml).toBe(html);
+  expect(
+    checkPrintSnapshotId(
+      {
+        ...snapshot,
+        id: (await page.locator(':root').getAttribute('data-print-snapshot-id'))!,
+        html: reloadedHtml,
+      },
+      secretKey,
+    ),
+  ).toBe(true);
   await expect(
     page.locator('.pagedjs_page').getByText('Nested question text', { exact: true }),
   ).toBeVisible();

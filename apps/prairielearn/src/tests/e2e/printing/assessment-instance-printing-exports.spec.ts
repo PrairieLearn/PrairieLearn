@@ -4,14 +4,15 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
-import { makeAssessmentInstance } from '../../../lib/assessment.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { syncCourse } from '../../helperCourse.js';
-import { getConfiguredUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { downloadPrintableWord, waitForPrintablePage } from './utils.js';
+import {
+  createPrintableAssessmentInstance,
+  downloadPrintableWord,
+  waitForPrintablePage,
+} from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
@@ -33,20 +34,7 @@ async function readWarnings(page: Page) {
 }
 
 async function createPrintableAssessment(courseInstance: CourseInstance, tid: string) {
-  const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid,
-  });
-  const assessmentInstanceId = await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
+  const assessmentInstanceId = await createPrintableAssessmentInstance(courseInstance.id, tid);
   const printUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print`;
   return { printUrl, assessmentInstanceId };
 }
@@ -85,11 +73,11 @@ test('reports omitted questions and exports the selected Word content', async ({
   expect(incomplete.status()).toBe(400);
   expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
 
-  const brokenOnlyQuery = new URLSearchParams(query);
+  const noPrintableQuestionsQuery = new URLSearchParams(query);
   for (const number of new Set(printedQuestionNumbers)) {
-    brokenOnlyQuery.append('exclude_question', number!);
+    noPrintableQuestionsQuery.append('exclude_question', number!);
   }
-  const emptyPreview = await page.request.get(`${printUrl}/preview?${brokenOnlyQuery}`);
+  const emptyPreview = await page.request.get(`${printUrl}/preview?${noPrintableQuestionsQuery}`);
   expect(emptyPreview.status()).toBe(422);
   expect(await emptyPreview.text()).toContain('No questions could be rendered');
 
@@ -225,6 +213,32 @@ test('prints representative controls, editable Word content, and an ordered answ
   const correctBounds = await correct.boundingBox();
   const distractorBounds = await distractors.boundingBox();
   expect(distractorBounds!.y).toBeGreaterThanOrEqual(correctBounds!.y + correctBounds!.height);
+});
+
+test('preserves literal dollar patterns in Word exports', async ({
+  page,
+  courseInstance,
+  testCoursePath,
+}) => {
+  const questionPath = path.join(testCoursePath, 'questions/addNumbers/question.html');
+  const original = await fs.readFile(questionPath, 'utf8');
+  const text = "Dollar patterns: $$, $&, $`, and $'.";
+  try {
+    await fs.writeFile(questionPath, `${original}\n<pre>${text}</pre>\n`);
+    await syncCourse(testCoursePath);
+    const { printUrl } = await createPrintableAssessment(courseInstance, 'exam20-assessmentTools');
+    const query = 'paper_size=Letter';
+    await page.goto(`${printUrl}/preview?${query}`);
+    await waitForPrintablePage(page);
+    await expect(page.locator('.pagedjs_page').getByText(text, { exact: true })).toBeVisible();
+
+    const response = await downloadPrintableWord(page, printUrl, query);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain(DOCX_CONTENT_TYPE);
+  } finally {
+    await fs.writeFile(questionPath, original);
+    await syncCourse(testCoursePath);
+  }
 });
 
 test('refuses incomplete question and answer-key renders and recovers after a correction', async ({

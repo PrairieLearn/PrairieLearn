@@ -63,6 +63,7 @@ FROM
   )
 WHERE
   a.id = $assessment_id
+  AND NOT ai.for_printing
   -- Filter out group instances that don't have an undeleted group.
   AND (
     ai.team_id IS NULL
@@ -91,6 +92,7 @@ FROM
   )
 WHERE
   aq.assessment_id = $assessment_id
+  AND NOT ai.for_printing
   -- Exclude group instances whose group has been soft-deleted, matching the
   -- scope of the regrade job in regrading.sql.
   AND (

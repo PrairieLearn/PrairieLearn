@@ -13,6 +13,7 @@ FROM
   LEFT JOIN teams AS g ON (g.id = ai.team_id)
 WHERE
   a.id = $assessment_id
+  AND NOT ai.for_printing
   AND g.deleted_at IS NULL
   AND (
     $assessment_instance_ids::bigint[] IS NULL

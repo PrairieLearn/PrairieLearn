@@ -6,6 +6,7 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
+import { deletePrintableAssessmentInstancesForAssessment } from '../../lib/assessment.js';
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { saveJsonFile } from '../../lib/editors.js';
@@ -202,47 +203,51 @@ async function saveAssessmentGroupsBlock({
    */
   noInstancesMessage?: string;
 }): Promise<{ newHash: string; jsonData: AssessmentJsonInput }> {
-  if (noInstancesMessage && (await selectAssessmentHasInstances(ctx.assessment.id))) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: noInstancesMessage });
-  }
+  return await runInTransactionAsync(async () => {
+    if (noInstancesMessage && (await selectAssessmentHasInstances(ctx.assessment.id))) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: noInstancesMessage });
+    }
 
-  const assessmentDir = getAssessmentDir(ctx);
-  const assessmentPath = getAssessmentInfoJsonPath(ctx);
+    const assessmentDir = getAssessmentDir(ctx);
+    const assessmentPath = getAssessmentInfoJsonPath(ctx);
 
-  const saveResult = await saveJsonFile<AssessmentJsonInput>({
-    applyChanges,
-    jsonPath: assessmentPath,
-    conflictCheck: {
-      origHash,
-      scope: (json) => json.groups ?? {},
-    },
-    locals: {
-      authz_data: ctx.authz_data,
-      course: ctx.course,
-      user: ctx.authn_user,
-    },
-    container: {
-      rootPath: assessmentDir,
-      invalidRootPaths: [],
-    },
-  });
+    await deletePrintableAssessmentInstancesForAssessment(ctx.assessment.id, ctx.authn_user.id);
 
-  if (!saveResult.success) {
-    if (saveResult.reason === 'conflict') {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message:
-          'The group configuration has been modified since you loaded this page. Please refresh and try again.',
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+      applyChanges,
+      jsonPath: assessmentPath,
+      conflictCheck: {
+        origHash,
+        scope: (json) => json.groups ?? {},
+      },
+      locals: {
+        authz_data: ctx.authz_data,
+        course: ctx.course,
+        user: ctx.authn_user,
+      },
+      container: {
+        rootPath: assessmentDir,
+        invalidRootPaths: [],
+      },
+    });
+
+    if (!saveResult.success) {
+      if (saveResult.reason === 'conflict') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The group configuration has been modified since you loaded this page. Please refresh and try again.',
+        });
+      }
+      throwAppError<SyncJobFailedError>({
+        code: 'SYNC_JOB_FAILED',
+        message: syncFailedMessage,
+        jobSequenceId: saveResult.jobSequenceId,
       });
     }
-    throwAppError<SyncJobFailedError>({
-      code: 'SYNC_JOB_FAILED',
-      message: syncFailedMessage,
-      jobSequenceId: saveResult.jobSequenceId,
-    });
-  }
 
-  return { newHash: saveResult.newHash, jsonData: saveResult.jsonData };
+    return { newHash: saveResult.newHash, jsonData: saveResult.jsonData };
+  });
 }
 
 const enableGroupWork = t.procedure
