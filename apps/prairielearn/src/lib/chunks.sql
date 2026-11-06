@@ -138,14 +138,14 @@ FROM
   courses
 WHERE
   id = $course_id
-FOR UPDATE;
-
--- BLOCK select_chunk_publication_date
-SELECT
-  clock_timestamp();
+FOR NO KEY UPDATE;
 
 -- BLOCK insert_chunks
 WITH
+  publication AS MATERIALIZED (
+    SELECT
+      clock_timestamp() AS created_at
+  ),
   new_chunks AS (
     SELECT
       (chunk ->> 'type')::enum_chunk_type AS type,
@@ -195,13 +195,14 @@ SELECT
   course_instance_id,
   assessment_id,
   uuid,
-  $created_at::timestamptz,
+  publication.created_at,
   $commit_hash,
   FALSE,
   size_compressed,
   size_uncompressed
 FROM
   new_chunks
+  CROSS JOIN publication
 UNION ALL
 SELECT
   old.type,
@@ -210,13 +211,14 @@ SELECT
   old.course_instance_id,
   old.assessment_id,
   NULL::uuid,
-  $created_at::timestamptz,
+  publication.created_at,
   $commit_hash,
   TRUE,
   NULL::bigint,
   NULL::bigint
 FROM
   chunks AS old
+  CROSS JOIN publication
 WHERE
   old.course_id = $course_id
   AND old.id = ANY ($replaced_chunk_ids::bigint[])
