@@ -12,7 +12,7 @@ Copy the secrets template:
 cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
 ```
 
-Set `OPENAI_API_KEY` and `PL_SERVICE_TOKEN` in `apps/course-agent/.dev.vars`. Generate a service token with:
+Set `OPENAI_API_KEY` and `PL_SERVICE_TOKEN` in `apps/course-agent/.dev.vars`. Set `PL_SERVICE_URL` to your local PrairieLearn origin if it differs from the template’s `http://localhost:3000`. Generate a service token with:
 
 ```sh
 openssl rand -hex 32
@@ -59,11 +59,15 @@ With `fileEditorUseGit: false`, approved changes are saved locally without commi
 
 Each review supports at most 100 changed files, with a 1 MiB limit on each original or proposed file and a 20 MiB aggregate limit counting base64-encoded original and proposed contents. Binary files such as images are supported. Executable files, symlinks, and file-mode changes are unsupported and cause the review to fail.
 
+## Usage limits
+
+The Worker reports token usage to `POST /pl/api/course-agent/conversations/{id}/usage` and receives PrairieLearn's decision. A model request waits for a report only when PrairieLearn hasn't allowed one in the last 60 seconds, which in practice means once per turn; a finished request refreshes the decision in the background once it is 30 seconds old, and each turn reports its remaining usage when it ends. PrairieLearn prices the tokens with `costPerMillionTokens`, records each report once in `course_agent_usage_reports`, and denies further requests once a user's spending in the current UTC hour reaches $50. Each report carries an ID the Worker mints, so a retried report is answered again without being counted twice. If PrairieLearn is unreachable or rejects a report, a request that needs a decision fails with a 503 that Codex retries, resending the same report, and a rejection is reported to Sentry. The model outbound refuses background requests and non-default service tiers, which would bill differently from the recorded usage. A request whose final usage never arrives, because its stream dropped or the Durable Object restarted, is charged an estimate. The limit is soft: requests already allowed when a user reaches it can exceed it by about one request.
+
 ## Deployment environments and monitoring
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.
 
-Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
+Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `PL_SERVICE_URL` (the PrairieLearn origin that receives usage reports), `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
 
 Set that environment's `SENTRY_DSN` secret (`wrangler secret put SENTRY_DSN --env <environment>`) to enable error reporting; the DSN is kept out of this public repository. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local development does not report to Sentry.
 

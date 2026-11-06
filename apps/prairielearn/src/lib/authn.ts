@@ -14,6 +14,14 @@ import { isEnterprise } from './license.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+export async function selectUserAuthnData(user_id: number | string) {
+  const selectedUser = await sqldb.queryOptionalRow(sql.select_user, { user_id }, SelectUserSchema);
+  if (!selectedUser) {
+    throw new Error('user not found with user_id ' + user_id);
+  }
+  return selectedUser;
+}
+
 interface LoadUserOptions {
   /** Redirect after processing? */
   redirect?: boolean;
@@ -71,10 +79,7 @@ export async function loadUser(
     user_id = await selectOrInsertUserId(authnParams);
   }
 
-  const selectedUser = await sqldb.queryOptionalRow(sql.select_user, { user_id }, SelectUserSchema);
-  if (!selectedUser) {
-    throw new Error('user not found with user_id ' + user_id);
-  }
+  const selectedUser = await selectUserAuthnData(user_id);
 
   // Regenerate the session on any identity transition to prevent session
   // fixation. Also regenerate when elevating an existing session into a

@@ -9,8 +9,13 @@ import fs from 'fs-extra';
 import { io } from 'socket.io-client';
 import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import {
+  UsageDecisionSchema,
+  type UsageReport,
+  emptyUsage,
+} from '@prairielearn/course-agent-types';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { withResolvers } from '@prairielearn/utils';
 
@@ -18,14 +23,17 @@ import {
   insertCourseAgentConversation,
   selectOptionalCourseAgentConversation,
 } from '../ee/models/course-agent-conversation.js';
+import { selectCourseAgentConversationUsage } from '../ee/models/course-agent-usage-report.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
   insertCoursePermissionsByUserUid,
+  selectCoursePermissionForUser,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
 import { updateCourseColumn } from '../models/course.js';
+import { selectUserById } from '../models/user.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -134,6 +142,113 @@ describe('Course agent access and conversation privacy', () => {
     await once(service, 'close');
   });
   afterAll(() => Object.assign(config, originalConfig));
+
+  function report(agentId: string, body: UsageReport, token = 'test-token') {
+    return fetch(`${siteUrl}/pl/api/course-agent/conversations/${agentId}/usage`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  function usageReport(outputTokens = 0): UsageReport {
+    return {
+      reportId: crypto.randomUUID(),
+      model: 'gpt-6-luna',
+      usage: { ...emptyUsage(), outputTokens },
+    };
+  }
+
+  async function decision(response: Response) {
+    expect(response.status).toBe(200);
+    return UsageDecisionSchema.parse(await response.json());
+  }
+
+  test('allows an administrator without explicit course permissions', async () => {
+    const administrator = await selectUserById('1');
+    expect(
+      await selectCoursePermissionForUser({ course_id: '1', user_id: administrator.id }),
+    ).toBeNull();
+    await withUser(administrator, () =>
+      expect(createClient(administrator).courseAgent.list.query()).resolves.toEqual([]),
+    );
+    const conversation = await createConversation(administrator);
+    expect(await decision(await report(conversation.agent_conversation_id, usageReport()))).toEqual(
+      { status: 'allowed' },
+    );
+  });
+
+  test('records each report once and keeps final usage after access is revoked', async () => {
+    const conversation = await createConversation(owner);
+    const agentId = conversation.agent_conversation_id;
+    const first: UsageReport = {
+      reportId: crypto.randomUUID(),
+      model: 'gpt-6-luna',
+      usage: { ...emptyUsage(), inputTokens: 10_000, cachedInputTokens: 8000, outputTokens: 2000 },
+    };
+    expect((await report(agentId, first, 'wrong')).status).toBe(401);
+    // A Worker still sending the second configured token is accepted during rotation.
+    expect(await decision(await report(agentId, first, 'next-token'))).toEqual({
+      status: 'allowed',
+    });
+    // A retry after a lost reply is answered again without counting the usage twice.
+    expect(await decision(await report(agentId, first))).toEqual({ status: 'allowed' });
+    // The first recording stands even if a buggy retry resends different usage.
+    expect(await decision(await report(agentId, { ...first, usage: emptyUsage() }))).toEqual({
+      status: 'allowed',
+    });
+    expect((await report(agentId, { ...usageReport(), model: 'unpriced' })).status).toBe(400);
+    // gpt-6-luna: 2000 uncached and 8000 cached input tokens plus 2000 output tokens is $0.00128.
+    expect(await selectCourseAgentConversationUsage(conversation.id)).toEqual({
+      input_tokens: 10_000,
+      input_tokens_cache_read: 8000,
+      output_tokens: 2000,
+      output_tokens_reasoning: 0,
+      cost_milli_dollars: 2,
+    });
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: owner.id,
+      course_role: 'Editor',
+      authn_user_id: '1',
+    });
+    expect(await decision(await report(agentId, usageReport(500)))).toEqual({
+      status: 'denied',
+      reason: 'not_allowed',
+    });
+    expect(await selectCourseAgentConversationUsage(conversation.id)).toMatchObject({
+      output_tokens: 2500,
+    });
+  });
+
+  test('limits hourly spending per user across conversations', async () => {
+    const a = (await createConversation(owner)).agent_conversation_id;
+    const b = (await createConversation(owner)).agent_conversation_id;
+    // gpt-6-luna output costs $0.50 per million tokens, so 80M tokens is $40.
+    expect(await decision(await report(a, usageReport(80_000_000)))).toEqual({
+      status: 'allowed',
+    });
+    expect(await decision(await report(b, usageReport(18_000_000)))).toEqual({
+      status: 'allowed',
+    });
+    const hourStart = Math.floor(Date.now() / 3_600_000) * 3_600_000;
+    expect(await decision(await report(a, usageReport(2_000_000)))).toEqual({
+      status: 'denied',
+      reason: 'hourly_limit',
+      retryAt: new Date(hourStart + 3_600_000).toISOString(),
+    });
+    expect(await decision(await report(b, usageReport()))).toMatchObject({ status: 'denied' });
+    const other = await createConversation(otherOwner);
+    expect(await decision(await report(other.agent_conversation_id, usageReport()))).toEqual({
+      status: 'allowed',
+    });
+    const now = vi.spyOn(Date, 'now').mockReturnValue(hourStart + 3_600_000);
+    try {
+      expect(await decision(await report(a, usageReport()))).toEqual({ status: 'allowed' });
+    } finally {
+      now.mockRestore();
+    }
+  });
 
   test('rejects API and history access when the feature is disabled', async () => {
     const conversation = await createConversation(owner);

@@ -30,6 +30,7 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
@@ -37,15 +38,16 @@ import { ToolCalls } from './ToolCalls.js';
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
 
-const BLOCKED_MESSAGES = {
-  startup_failed:
-    'The course agent could not start. Resume to clear the incomplete setup, then send a new message.',
-  runtime_failed:
-    "The course agent was interrupted. It may have made some changes, and its reply may be incomplete. Resume to continue; your previous message won't run again.",
-  checkpoint_failed:
-    "The course agent couldn't pause. Resume to try again; its changes are still there.",
-  cleanup_failed: 'The course agent paused, but cleanup did not finish. Resume to finish cleanup.',
-} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
+/**
+ * Instructors decide a review while the sandbox is at rest. A credit block only pauses the agent's
+ * inference, so the decision is still saved and delivered once Resume renews credit.
+ */
+function reviewDecidable(state: ConversationState) {
+  if (state.status === 'waiting_for_user' || state.status === 'offline') return true;
+  return (
+    state.status === 'blocked' && ['budget_exhausted', 'access_revoked'].includes(state.reason)
+  );
+}
 
 const NEW_CONVERSATION = 'new';
 
@@ -307,25 +309,23 @@ function Chat({
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
-  const showThinking = run(() => {
-    if (!responseActive || connectionFailed || connectionError) {
-      return false;
-    }
+  const activity = run(() => {
+    if (connectionFailed || connectionError) return null;
+    if (lifecycle?.status === 'starting') return 'Starting the course agent…';
+    if (lifecycle?.status !== 'waiting_for_agent') return null;
+    // Once the reply shows text, reasoning or a tool call, that output shows the agent working.
     const lastMessage = messages.at(-1);
-    if (lastMessage?.role !== 'assistant') {
-      return true;
-    }
-    return !lastMessage.parts.some((part) => {
-      if (part.type === 'text' || part.type === 'reasoning') {
-        return part.text.trim().length > 0;
-      }
-      return toolCallOf(part) !== null;
-    });
+    const showsOutput =
+      lastMessage?.role === 'assistant' &&
+      lastMessage.parts.some((part) =>
+        part.type === 'text' || part.type === 'reasoning'
+          ? part.text.trim().length > 0
+          : toolCallOf(part) !== null,
+      );
+    return showsOutput ? null : 'Thinking…';
   });
   const awaitingReviewId =
-    !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
-      ? (lifecycle.reviewId ?? null)
-      : null;
+    !responseActive && lifecycle && reviewDecidable(lifecycle) ? lifecycle.reviewId : null;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
@@ -367,24 +367,18 @@ function Chat({
                 canResume={awaitingReviewId === lifecycle.reviewId}
               />
             )}
-          {showThinking && (
-            <div className="text-muted small">
+          {activity && (
+            <div className="text-muted small" role="status">
               <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
-              Thinking…
+              {activity}
             </div>
           )}
           {lifecycle?.status === 'blocked' && (
-            <Alert variant="warning">
-              <p>{BLOCKED_MESSAGES[lifecycle.reason]}</p>
-              <Button
-                variant="outline-dark"
-                size="sm"
-                disabled={!connected || resume.isPending}
-                onClick={() => resume.mutate({ conversationId })}
-              >
-                Resume
-              </Button>
-            </Alert>
+            <BlockedNotice
+              state={lifecycle}
+              disabled={!connected || resume.isPending}
+              onResume={() => resume.mutate({ conversationId })}
+            />
           )}
           {lifecycle?.sandboxLost && (
             <Alert variant="warning">
@@ -407,7 +401,7 @@ function Chat({
               Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
             </Alert>
           )}
-          {error && (
+          {error && lifecycle?.status !== 'blocked' && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
             </Alert>
@@ -422,7 +416,9 @@ function Chat({
         onSubmit={submit}
         onStop={responseActive || canStop ? () => void stop() : undefined}
       >
-        {showConversationStats && <ConversationStats state={lifecycle} />}
+        {showConversationStats && (
+          <ConversationStats state={lifecycle} conversationId={conversationId} />
+        )}
       </Composer>
     </div>
   );

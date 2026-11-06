@@ -4,6 +4,17 @@ import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/** Usage reports may arrive after a course is soft-deleted. Lock the row to serialize reports. */
+export async function selectOptionalCourseAgentConversationByAgentIdForUpdate(
+  agentConversationId: string,
+) {
+  return queryOptionalRow(
+    sql.select_course_agent_conversation_by_agent_id_for_update,
+    { agent_conversation_id: agentConversationId },
+    CourseAgentConversationSchema,
+  );
+}
+
 export async function insertCourseAgentConversation({
   course_id,
   user_id,

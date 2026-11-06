@@ -126,7 +126,7 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
 /** Only the conversation's pinned model is available; its API key stays outside the container. */
 export class CourseAgentModelOutbound extends WorkerEntrypoint<
   Env,
-  { model: string; sandboxId: string }
+  { model: string; sandboxId: string; conversationId: string; executionId: string }
 > {
   override async fetch(request: Request) {
     const url = new URL(request.url);
@@ -138,21 +138,32 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
     ) {
       return new Response('Forbidden', { status: 403 });
     }
-    const body = (await request.json()) as { model?: string; input?: { role?: string }[] };
+    const body = (await request.json()) as {
+      model?: string;
+      input?: { role?: string }[];
+      background?: unknown;
+      service_tier?: unknown;
+    };
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
+    // PrairieLearn prices each request at standard rates once its response finishes. A
+    // background request finishes after its response returns, and other service tiers bill at
+    // other rates, so either would let the agent spend more than its usage records.
+    if (
+      (body.background !== undefined && body.background !== false) ||
+      (body.service_tier !== undefined &&
+        body.service_tier !== null &&
+        body.service_tier !== 'auto' &&
+        body.service_tier !== 'default')
+    ) {
+      return new Response('Forbidden', { status: 403 });
+    }
     // Later requests in a turn end with tool output; only the role is read, never the content.
     const firstOfTurn = body.input?.at(-1)?.role === 'user';
     const started = Date.now();
     if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      redirect: 'manual',
-    });
+    const response = await this.env.Conversation.getByName(
+      this.ctx.props.conversationId,
+    ).proxyModelRequest(JSON.stringify(body), this.ctx.props.executionId);
     if (firstOfTurn) {
       logEvent('model_response_started', {
         sandboxId: this.ctx.props.sandboxId,
@@ -236,12 +247,6 @@ export class CourseSandbox extends DurableObject<Env> {
         this.ctx.exports.CourseAgentGitHubOutbound({ props: { repository: config.repository } }),
       );
     }
-    await this.container.interceptOutboundHttp(
-      'model.internal:80',
-      this.ctx.exports.CourseAgentModelOutbound({
-        props: { model: config.model, sandboxId: this.ctx.id.name },
-      }),
-    );
     await this.exec(['mkdir', '-p', '/workspace']);
     if (checkpoint) {
       log('sandbox_restore_started');
@@ -267,6 +272,19 @@ export class CourseSandbox extends DurableObject<Env> {
   /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
   private async lockSession() {
     await this.exec(['chown', 'root:root', SESSION]);
+  }
+
+  /**
+   * Route the model through the conversation for this turn. Each turn gets a new execution ID, so
+   * a request left over from an earlier turn cannot spend credit.
+   */
+  async authorizeModel(config: { model: string; conversationId: string; executionId: string }) {
+    await this.container.interceptOutboundHttp(
+      'model.internal:80',
+      this.ctx.exports.CourseAgentModelOutbound({
+        props: { ...config, sandboxId: this.ctx.id.name },
+      }),
+    );
   }
 
   /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */

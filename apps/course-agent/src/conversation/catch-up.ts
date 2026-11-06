@@ -29,6 +29,7 @@ export function historyBefore(history: UIMessage[], message: UIMessage | null) {
   return history.filter((entry, i) => i < index || (i > index && entry.role !== 'user'));
 }
 export const reviewTag = (reviewId: string) => `review:${reviewId}`;
+export const resumeTag = (resumeId: string) => `resume:${resumeId}`;
 
 /** A one-line account of a review result, used in chat history markers and catch-up text. */
 export function summarizeReview(result: RequestChangesResult) {

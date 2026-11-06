@@ -741,6 +741,21 @@ export const CourseAgentReviewSchema = z.object({
 });
 export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
 
+export const CourseAgentUsageReportSchema = z.object({
+  cost_milli_dollars: z.coerce.number(),
+  course_agent_conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  input_tokens: z.coerce.number(),
+  input_tokens_cache_read: z.coerce.number(),
+  model: z.string(),
+  output_tokens: z.coerce.number(),
+  output_tokens_reasoning: z.coerce.number(),
+  report_id: z.string(),
+  user_id: IdSchema,
+});
+export type CourseAgentUsageReport = z.infer<typeof CourseAgentUsageReportSchema>;
+
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -1846,6 +1861,7 @@ export const TableNames = [
   'client_fingerprints',
   'course_agent_conversations',
   'course_agent_reviews',
+  'course_agent_usage_reports',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',
