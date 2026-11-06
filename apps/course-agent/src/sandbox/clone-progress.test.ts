@@ -15,36 +15,41 @@ describe('CloneProgress', () => {
     progress.push('Updating files:  40% (800/2000)\r', 40_000);
 
     expect(progress.phases(45_000)).toEqual([
-      { phase: 'connecting', startMs: 0, durationMs: 2000, progress: null },
+      { phase: 'connecting', startMs: 0, durationMs: 2000, progress: null, lastProgressMs: null },
       {
         phase: 'server_enumerating',
         startMs: 2000,
         durationMs: 500,
         progress: 'remote: Enumerating objects: 2917, done.',
+        lastProgressMs: 2000,
       },
       {
         phase: 'server_counting',
         startMs: 2500,
         durationMs: 1500,
         progress: 'remote: Counting objects: 100% (2/2), done.',
+        lastProgressMs: 3000,
       },
       {
         phase: 'receiving',
         startMs: 4000,
         durationMs: 31_000,
         progress: 'Receiving objects: 100% (2917/2917), 150.20 MiB | 4.00 MiB/s, done.',
+        lastProgressMs: 29_000,
       },
       {
         phase: 'resolving_deltas',
         startMs: 35_000,
         durationMs: 4000,
         progress: 'Resolving deltas: 100% (10/10), done.',
+        lastProgressMs: 35_000,
       },
       {
         phase: 'checkout',
         startMs: 39_000,
         durationMs: 5000,
         progress: 'Updating files:  40% (800/2000)',
+        lastProgressMs: 39_000,
       },
     ]);
   });
@@ -56,12 +61,13 @@ describe('CloneProgress', () => {
 
     expect(progress.errorOutput).toBe('fatal: Remote branch missing not found in upstream origin');
     expect(progress.phases(30)).toEqual([
-      { phase: 'connecting', startMs: 0, durationMs: 10, progress: null },
+      { phase: 'connecting', startMs: 0, durationMs: 10, progress: null, lastProgressMs: null },
       {
         phase: 'receiving',
         startMs: 10,
         durationMs: 20,
         progress: 'Receiving objects:  10% (1/10)',
+        lastProgressMs: 10,
       },
     ]);
   });

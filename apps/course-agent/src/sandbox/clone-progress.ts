@@ -17,6 +17,8 @@ export interface ClonePhase {
   durationMs: number;
   /** The phase's last progress line, e.g. object counts, size, and download rate. */
   progress: string | null;
+  /** When that line arrived. Time between it and the next phase's start is Git waiting. */
+  lastProgressMs: number | null;
 }
 
 /**
@@ -26,7 +28,12 @@ export interface ClonePhase {
 export class CloneProgress {
   private partial = '';
   private messages = '';
-  private seen: { phase: ClonePhase['phase']; startMs: number; progress: string }[] = [];
+  private seen: {
+    phase: ClonePhase['phase'];
+    startMs: number;
+    progress: string;
+    lastProgressMs: number;
+  }[] = [];
 
   constructor(private started: number) {}
 
@@ -47,11 +54,12 @@ export class CloneProgress {
         startMs: 0,
         durationMs: this.seen[0]?.startMs ?? endMs,
         progress: null,
+        lastProgressMs: null,
       },
     ];
-    this.seen.forEach(({ phase, startMs, progress }, i) => {
+    this.seen.forEach(({ phase, startMs, progress, lastProgressMs }, i) => {
       const nextMs = this.seen[i + 1]?.startMs ?? endMs;
-      phases.push({ phase, startMs, durationMs: nextMs - startMs, progress });
+      phases.push({ phase, startMs, durationMs: nextMs - startMs, progress, lastProgressMs });
     });
     return phases;
   }
@@ -69,7 +77,12 @@ export class CloneProgress {
       return;
     }
     const last = this.seen.at(-1);
-    if (last?.phase === match[0]) last.progress = line;
-    else this.seen.push({ phase: match[0], startMs: now - this.started, progress: line });
+    const atMs = now - this.started;
+    if (last?.phase === match[0]) {
+      last.progress = line;
+      last.lastProgressMs = atMs;
+    } else {
+      this.seen.push({ phase: match[0], startMs: atMs, progress: line, lastProgressMs: atMs });
+    }
   }
 }

@@ -4,8 +4,11 @@ import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import { logEvent, redactSecrets } from '../monitoring.js';
 
 import { CloneProgress } from './clone-progress.js';
+import { summarizeGitTraces } from './git-trace.js';
 
 const SESSION = '/workspace/session';
+const CLONE_TRACE2 = '/tmp/course-clone-trace2.txt';
+const CLONE_TRACE_CURL = '/tmp/course-clone-curl.txt';
 const NATIVE_PORT = 4500;
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
@@ -271,7 +274,18 @@ export class CourseSandbox extends DurableObject<Env> {
           `http://repository.internal/${config.repository}.git`,
           `${SESSION}/course`,
         ],
-        { user: 'node', stdout: 'ignore', stderr: 'pipe' },
+        {
+          user: 'node',
+          stdout: 'ignore',
+          stderr: 'pipe',
+          // Git's own step timings and HTTP request/response timings (headers only, no data)
+          // show whether a slow phase is Git working or waiting on the repository proxy.
+          env: {
+            GIT_TRACE2_PERF: CLONE_TRACE2,
+            GIT_TRACE_CURL: CLONE_TRACE_CURL,
+            GIT_TRACE_CURL_NO_DATA: '1',
+          },
+        },
       );
       const [exitCode] = await Promise.all([
         clone.exitCode,
@@ -281,6 +295,21 @@ export class CourseSandbox extends DurableObject<Env> {
           }
         })(),
       ]);
+      const [perf, curl] = await Promise.all(
+        [CLONE_TRACE2, CLONE_TRACE_CURL].map(async (file) => {
+          const { stdout } = await this.exec([
+            'sh',
+            '-c',
+            'cat "$1" 2>/dev/null; rm -f "$1"',
+            'sh',
+            file,
+          ]);
+          return new TextDecoder().decode(stdout);
+        }),
+      );
+      for (const { atMs, ...line } of summarizeGitTraces(perf, curl)) {
+        logEvent('sandbox_clone_trace', { sandboxId: this.ctx.id.name, ...line, elapsedMs: atMs });
+      }
       if (exitCode !== 0) throw new Error(`Sandbox command failed: ${progress.errorOutput}`);
       for (const { startMs, ...phase } of progress.phases(Date.now())) {
         logEvent('sandbox_clone_phase', {
