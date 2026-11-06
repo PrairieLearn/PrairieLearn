@@ -133,7 +133,6 @@ FROM
 LIMIT
   100;
 
--- LIMIT prevents infinite recursion on circular templates
 -- BLOCK delete_chunk_revisions
 -- Remove every revision of each replaced identity, so this works whether or
 -- not the one-row-per-chunk index still exists.
