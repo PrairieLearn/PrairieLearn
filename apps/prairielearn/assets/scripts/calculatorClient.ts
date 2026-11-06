@@ -726,6 +726,41 @@ export function initCalculator(
   });
 
   /** Keyboard handling */
+  function insertParenthesesAfterNumber() {
+    if (
+      calculatorInputElement.mode !== 'math' ||
+      !calculatorInputElement.selectionIsCollapsed ||
+      !/^[0-9.]$/.test(
+        calculatorInputElement.getElementInfo(calculatorInputElement.position)?.latex ?? '',
+      )
+    ) {
+      return false;
+    }
+    // Make multiplication explicit, and insert the pair ourselves: MathLive's
+    // repeating-decimal heuristic disables smart fences even after the new dot.
+    calculatorInputElement.insert('\\cdot\\left(\\right?', { selectionMode: 'after' });
+    calculatorInputElement.executeCommand('moveToPreviousChar');
+    return true;
+  }
+
+  // Handle the numeric case before MathLive inserts an unpaired parenthesis.
+  calculatorInputElement.addEventListener(
+    'keydown',
+    (event) => {
+      if (
+        event.key === '(' &&
+        !event.isComposing &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        insertParenthesesAfterNumber()
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },
+    { capture: true },
+  );
+
   function handleKeyPress(ev: KeyboardEvent) {
     switch (ev.key) {
       case 'Enter':
@@ -834,7 +869,7 @@ export function initCalculator(
                 calculatorInputElement.insert('\\operatorname{ans}');
                 calculatorInputElement.insert(action);
               }
-            } else {
+            } else if (action !== '(' || !insertParenthesesAfterNumber()) {
               calculatorInputElement.insert(action);
             }
             shouldAutoInsertAns = false;
