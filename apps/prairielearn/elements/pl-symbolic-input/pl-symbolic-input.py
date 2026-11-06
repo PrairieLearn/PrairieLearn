@@ -557,7 +557,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             allow_sets=allow_sets,
         )
 
-        # Convert safely to sympy
+        # This reparses serialized text rather than simplifying the same tree. In
+        # simplified mode, the first parse already evaluated the expression, so
+        # evaluating the serialized form is idempotent and restores canonical form.
         psu.json_to_sympy(
             a_sub_json,
             allow_complex=allow_complex,
@@ -1012,6 +1014,15 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
 
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
     """Compare set components by symbolic equivalence instead of structure."""
+    if isinstance(a, sympy.Set) and isinstance(b, sympy.Set):
+        if a == b:
+            return True
+
+        # Set operations stay unevaluated for display. Evaluate nonidentical sets
+        # for comparison here, while grading is protected by SYMPY_TIMEOUT.
+        a = a.doit(deep=True)
+        b = b.doit(deep=True)
+
     comparison_cache: dict[tuple[sympy.Basic, sympy.Basic], bool] = {}
 
     def compare(left: sympy.Basic, right: sympy.Basic) -> bool:
@@ -1232,6 +1243,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             )
 
         if a_tru != "":
