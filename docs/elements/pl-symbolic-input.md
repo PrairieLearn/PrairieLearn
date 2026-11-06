@@ -34,11 +34,11 @@ def generate(data):
 | `additional-simplifications`    | string                  | -                       | Simplifications that should be applied during grading before using SymPy's built-in equality checker. Using this attribute can prevent rare cases of non-convergence during grading. See [the non-convergence section](#non-convergence-in-grading) for more details before using this attribute.                                               |
 | `allow-blank`                   | boolean                 | false                   | Whether an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                                                      |
 | `allow-complex`                 | boolean                 | false                   | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                                                                                                                                                        |
-| `allow-sets`                    | boolean                 | false                   | Whether set and interval notation are allowed. [See below for more details](#set-notation).                                                                                                                                                                                                                                                     |
+| `allowed-types`                 | string                  | `expression`            | Comma-separated types accepted from a submitted or correct answer: `expression`, `set`, `finite-set`, or `interval`. `set` accepts any set-valued answer, while `finite-set` and `interval` restrict which sets are accepted. Use `all` to accept every type. [See below for classification details and examples](#allowed-answer-types).       |
 | `allow-trig-functions`          | boolean                 | true                    | Whether trigonometric functions (`cos`, `atanh`, ...) are allowed.                                                                                                                                                                                                                                                                              |
 | `answers-name`                  | string                  | —                       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. If the correct answer is set in `server.py` as a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`. |
 | `aria-label`                    | string                  | —                       | An accessible label for the input.                                                                                                                                                                                                                                                                                                              |
-| `blank-value`                   | string                  | 0 (zero)                | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or follow the same format as an expected user input (e.g., same variables, etc.).                                                                                                                          |
+| `blank-value`                   | string                  | `0` or `{}`             | Value to use as the answer when the input is left blank. Only applied if `allow-blank` is `true`. The default is `0` when expressions are allowed and `{}` when only set types are allowed. Must be `""` (empty string) or follow the same format as an expected user input (e.g., same variables, etc.).                                       |
 | `correct-answer`                | string                  | See description         | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. A blank correct answer (`correct-answer=""`) is only valid when `allow-blank="true"` and `blank-value=""`.                                                                                                                                                     |
 | `custom-functions`              | string                  | —                       | A comma-delimited list of custom functions that can be used in the symbolic expression.                                                                                                                                                                                                                                                         |
 | `display`                       | `"block"` or `"inline"` | `"inline"`              | How to display the input field.                                                                                                                                                                                                                                                                                                                 |
@@ -69,7 +69,7 @@ See example question for details.
 
 ### Set Notation
 
-If `allow-sets="true"`, the following additional layer of syntax is enabled:
+If `allowed-types` includes `set`, `finite-set`, or `interval`, or is set to `all`, the following additional layer of syntax is enabled:
 
 - Set literals with explicitly listed members (e.g. `{1, 2, 3}`, `{0, 2pi/3, 4pi/3}`, `{ {}, { {} } }`)
 - Interval set notation, including $\infty$ (e.g `(-sin(x), +sin(x))`, `(-infty, 5]`, `[2, oo]`)
@@ -78,6 +78,35 @@ If `allow-sets="true"`, the following additional layer of syntax is enabled:
 
 Names listed in the `variables` attribute are scalar symbols, not named sets,
 even when `allow-sets="true"`; sets must be constructed with set notation.
+
+### Allowed answer types
+
+The `allowed-types` attribute restricts submitted and correct answers based on their type after SymPy simplification:
+
+| Type         | Accepted values                                                              | Examples                                       |
+| ------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
+| `expression` | Values that are not sets or intervals.                                       | `x + 1`, `sin(x)`, `2/3`                       |
+| `set`        | Any set, including finite sets, intervals, and set operations.               | `{1, 2}`, `[1, 2]`, `[1, 2] - {2}`             |
+| `finite-set` | Finite sets and set operations that simplify to a finite set.                | `{1, 2}`, `{1, 2} U {3, 4}`, `{0, 2} & [2, 4]` |
+| `interval`   | Intervals and unions or intersections whose nested values are all intervals. | `[1, 2]`, `[1, 2] U [3, 4]`, `[0, 2] & [1, 4]` |
+| `all`        | Every supported value type.                                                  | `x + 1`, `{1, 2}`, `[1, 2]`                    |
+
+The empty set (`{}`) is accepted by `set`, `finite-set`, and `interval`. Multiple types can be combined as a comma-separated list. For example, `allowed-types="finite-set, interval"` accepts finite sets, intervals, and set operations such as unions, intersections, and differences containing both.
+
+Classification happens after simplification. For example, `[0, 2] U {1}` simplifies to `[0, 2]` and is accepted by `interval`, while `[0, 2] & {1}` simplifies to `{1}` and is accepted by `finite-set`.
+
+When a symbolic set operation remains unevaluated, its nested set types must also be allowed. For example, `{[1, 2]} - {[x, y]}` requires both `finite-set` and `interval`.
+
+### Migrating from deprecated attributes
+
+The following deprecated attribute is still supported for backward compatibility:
+
+| Old syntax           | New syntax                   |
+| -------------------- | ---------------------------- |
+| `allow-sets="true"`  | `allowed-types="all"`        |
+| `allow-sets="false"` | `allowed-types="expression"` |
+
+The `allow-sets` attribute cannot be used together with `allowed-types`.
 
 ## Example implementations
 

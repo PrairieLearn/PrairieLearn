@@ -5,14 +5,19 @@ import type { ElementSchemaModule } from '../types.js';
 
 const additionalSimplificationsPattern =
   /^\s*(expand|powsimp|trigsimp|expand_log)(\s*,\s*(expand|powsimp|trigsimp|expand_log))*\s*$/;
+const allowedTypesPattern =
+  /^\s*(all|set|finite-set|interval|expression)(\s*,\s*(all|set|finite-set|interval|expression))*\s*$/;
 
 const plSymbolicInputAttributesSchema = z
   .object({
     'additional-simplifications': z.string().regex(additionalSimplificationsPattern).optional(),
     'allow-blank': booleanFormat().optional(),
     'allow-complex': booleanFormat().optional(),
-    'allow-sets': booleanFormat().optional(),
+    'allow-sets': booleanFormat()
+      .meta({ deprecated: true, description: 'Use allowed-types instead.' })
+      .optional(),
     'allow-trig-functions': booleanFormat().optional(),
+    'allowed-types': z.string().regex(allowedTypesPattern).default('expression').optional(),
     'answers-name': z.string(),
     'aria-label': z.string().optional(),
     'blank-value': z.string().optional(),
