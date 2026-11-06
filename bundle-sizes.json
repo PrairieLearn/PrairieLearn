@@ -210,9 +210,9 @@
     "brotli": 286588
   },
   "../src/ee/components/courseAgent/CourseAgentChat.tsx": {
-    "raw": 1756571,
-    "gzip": 493189,
-    "brotli": 423819
+    "raw": 1765205,
+    "gzip": 495924,
+    "brotli": 426398
   },
   "../../../node_modules/.pnpm/@zip.js+zip.js@2.18.2/node_modules/@zip.js/zip.js/lib/core/zip-reader.js": {
     "raw": 64596,
@@ -411,8 +411,8 @@
   },
   "scripts/esm-bundles/hydrated-components/CourseAgentPanel.ts": {
     "raw": 385525,
-    "gzip": 126670,
-    "brotli": 110527
+    "gzip": 126672,
+    "brotli": 110521
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
     "raw": 1682432,
@@ -445,9 +445,9 @@
     "brotli": 406555
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
-    "raw": 2857832,
-    "gzip": 821011,
-    "brotli": 700125
+    "raw": 2858063,
+    "gzip": 821093,
+    "brotli": 700217
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
     "raw": 1759169,
