@@ -33,8 +33,8 @@ export function PageFooter() {
               <img
                 src={assetPath('images/scout.png')}
                 alt=""
-                width="320"
-                height="366"
+                width="341"
+                height="387"
                 style={{ width: '20px', height: 'auto' }}
               />
             </a>
