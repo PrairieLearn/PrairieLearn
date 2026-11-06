@@ -13,13 +13,21 @@ import {
   runCourseAgentQuery,
 } from '../ee/lib/course-agent/query.js';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
+import { makeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
+import { saveSubmission } from '../lib/grading.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { ensureVariant } from '../lib/question-variant.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
+import { selectCourseById } from '../models/course.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { selectQuestionByQid } from '../models/question.js';
 
 import { getDatabaseNameForCurrentWorker } from './helperDb.js';
 import * as helperServer from './helperServer.js';
@@ -111,6 +119,60 @@ describe('Course agent SQL queries', () => {
         authn_user_id: '1',
       });
     }
+  });
+
+  // The large tables are scoped by a denormalized course_id, so a write path that
+  // doesn't set it would hide that student work from the agent.
+  test('shows student work saved through the normal write paths', async () => {
+    const course = await selectCourseById('1');
+    const courseInstance = await selectCourseInstanceById('1');
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: 'hw10-aiGrading',
+    });
+    const question = await selectQuestionByQid({ course_id: course.id, qid: 'aiGradingRubrics' });
+    const [student] = await generateAndEnrollUsers({
+      count: 1,
+      course_instance_id: courseInstance.id,
+    });
+    const assessmentInstanceId = await makeAssessmentInstance({
+      assessment,
+      user_id: student.id,
+      authn_user_id: student.id,
+      mode: 'Public',
+      time_limit_min: null,
+      date: new Date(),
+      client_fingerprint_id: null,
+    });
+    const [instanceQuestion] = await queryRows(
+      `SELECT iq.id FROM instance_questions iq JOIN assessment_questions aq ON aq.id = iq.assessment_question_id WHERE iq.assessment_instance_id = ${assessmentInstanceId} AND aq.question_id = ${question.id}`,
+    );
+    const variant = await ensureVariant({
+      question_id: question.id,
+      instance_question_id: instanceQuestion.id,
+      user_id: student.id,
+      authn_user_id: student.id,
+      course_instance: courseInstance,
+      variant_course: course,
+      question_course: course,
+      options: {},
+      require_open: false,
+      client_fingerprint_id: null,
+    });
+    const { submission_id } = await saveSubmission(
+      {
+        variant_id: variant.id,
+        user_id: student.id,
+        auth_user_id: student.id,
+        submitted_answer: { explanation: 'An answer.' },
+      },
+      variant,
+      question,
+      course,
+    );
+    expect(await queryRows(`SELECT id FROM submissions WHERE id = ${submission_id}`)).toEqual([
+      { id: submission_id },
+    ]);
   });
 
   test('rejects claims that PL did not sign', async () => {

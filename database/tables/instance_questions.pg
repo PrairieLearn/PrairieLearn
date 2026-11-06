@@ -6,6 +6,7 @@ columns
     authn_user_id: bigint
     auto_points: double precision
     average_submission_score: double precision
+    course_id: bigint
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
     current_value: double precision
     duration: interval default '00:00:00'::interval
@@ -44,6 +45,7 @@ indexes
     instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id) USING btree (assessment_question_id, assessment_instance_id)
     instance_questions_aq_id_requires_manual_grading_idx: USING btree (assessment_question_id) WHERE requires_manual_grading
     instance_questions_assessment_instance_id_idx: USING btree (assessment_instance_id)
+    instance_questions_course_id_idx: USING btree (course_id)
     instance_questions_modified_at_key: USING btree (modified_at)
 
 foreign-key constraints

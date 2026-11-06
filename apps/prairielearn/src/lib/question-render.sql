@@ -46,6 +46,7 @@ SELECT
   s.broken,
   s.client_fingerprint_id,
   s.correct,
+  s.course_id,
   s.credit,
   s.date,
   s.duration,

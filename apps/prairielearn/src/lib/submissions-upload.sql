@@ -28,14 +28,25 @@ INSERT INTO
     assessment_instance_id,
     assessment_question_id,
     requires_manual_grading,
-    status
+    status,
+    course_id
   )
 VALUES
   (
     $assessment_instance_id,
     $assessment_question_id,
     $requires_manual_grading,
-    'saved' -- Must not be the default 'unanswered' status
+    'saved', -- Must not be the default 'unanswered' status
+    (
+      SELECT
+        ci.course_id
+      FROM
+        assessment_instances AS ai
+        JOIN assessments AS a ON (a.id = ai.assessment_id)
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+      WHERE
+        ai.id = $assessment_instance_id
+    )
   )
 RETURNING
   id AS instance_question_id;
@@ -83,7 +94,8 @@ INSERT INTO
     raw_submitted_answer,
     params,
     true_answer,
-    date
+    date,
+    course_id
   )
 VALUES
   (
@@ -93,7 +105,15 @@ VALUES
     '{}'::jsonb, -- We don't have any useful value for `raw_submitted_answer` here.
     $params,
     $true_answer,
-    $submission_date
+    $submission_date,
+    (
+      SELECT
+        course_id
+      FROM
+        variants
+      WHERE
+        id = $variant_id
+    )
   )
 RETURNING
   id AS submission_id;

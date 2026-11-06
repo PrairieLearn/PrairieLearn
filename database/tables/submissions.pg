@@ -3,6 +3,7 @@ columns
     broken: boolean default false
     client_fingerprint_id: bigint
     correct: boolean
+    course_id: bigint
     credit: integer
     date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
@@ -29,6 +30,7 @@ columns
 
 indexes
     submissions_pkey: PRIMARY KEY (id) USING btree (id)
+    submissions_course_id_idx: USING btree (course_id)
     submissions_date_idx: USING btree (date)
     submissions_variant_id_idx: USING btree (variant_id)
 

@@ -242,7 +242,8 @@ WITH
         points_list,
         points_list_original,
         auto_points,
-        manual_points
+        manual_points,
+        course_id
       )
     SELECT
       $authn_user_id,
@@ -252,7 +253,17 @@ WITH
       aq.points_list,
       aq.points_list AS points_list_original,
       0,
-      0 -- These points are updated manually because their default value is set to NULL for migration purposes
+      0, -- These points are updated manually because their default value is set to NULL for migration purposes
+      (
+        SELECT
+          ci.course_id
+        FROM
+          assessment_instances AS ai
+          JOIN assessments AS a ON (a.id = ai.assessment_id)
+          JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        WHERE
+          ai.id = $assessment_instance_id
+      )
     FROM
       z_chosen_assessment_questions AS aq
     ON CONFLICT (assessment_question_id, assessment_instance_id) DO NOTHING

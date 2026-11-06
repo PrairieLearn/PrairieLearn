@@ -166,7 +166,8 @@ INSERT INTO
     feedback,
     gradable,
     broken,
-    client_fingerprint_id
+    client_fingerprint_id,
+    course_id
   )
 VALUES
   (
@@ -183,7 +184,15 @@ VALUES
     $feedback,
     $gradable,
     $broken,
-    $client_fingerprint_id
+    $client_fingerprint_id,
+    (
+      SELECT
+        course_id
+      FROM
+        variants
+      WHERE
+        id = $variant_id
+    )
   )
 RETURNING
   id;
