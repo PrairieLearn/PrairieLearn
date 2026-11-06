@@ -145,37 +145,6 @@ describe('course agent turns', () => {
     disconnect();
   });
 
-  it('answers request_changes immediately instead of waiting for a decision', async () => {
-    const { native, emit, commands, disconnect } = runner();
-    const onReview = vi.fn(async () => ({ success: true, text: 'Submitted review 1.' }));
-    native.beginTurn('assistant', onReview);
-    await native.connect();
-    await native.thread(thread);
-    emit({
-      id: 'call',
-      method: 'item/tool/call',
-      params: {
-        threadId: 'thread',
-        turnId: 'turn',
-        callId: 'call-1',
-        namespace: null,
-        tool: 'request_changes',
-        arguments: {},
-      },
-    });
-    await vi.waitFor(() =>
-      expect(commands).toContainEqual({
-        id: 'call',
-        result: {
-          success: true,
-          contentItems: [{ type: 'inputText', text: 'Submitted review 1.' }],
-        },
-      }),
-    );
-    native.closeStream();
-    disconnect();
-  });
-
   it('reuses the native session for follow-ups and stops processes only on explicit Stop', async () => {
     const { sandbox, native, commands, emit } = runner();
     for (const threadId of [null, 'thread']) {

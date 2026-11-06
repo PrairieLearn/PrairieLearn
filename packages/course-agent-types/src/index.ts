@@ -151,5 +151,3 @@ export const ReviewSchema = z.strictObject({
 });
 
 export type Review = z.infer<typeof ReviewSchema>;
-
-export const ReviewOutcomeSchema = z.strictObject({ result: RequestChangesResultSchema });

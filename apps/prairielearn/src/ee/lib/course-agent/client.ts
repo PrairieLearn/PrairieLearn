@@ -153,7 +153,7 @@ export async function deliverCourseAgentReviewResult(
   const response = await fetch(url, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ result }),
+    body: JSON.stringify(result),
     // The agent records the result and continues in the background, so this returns promptly.
     signal: AbortSignal.timeout(30_000),
   });

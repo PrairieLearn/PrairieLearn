@@ -20,28 +20,73 @@ export function nextUserMessage(history: UIMessage[], submittedId: string | null
 }
 export const reviewTag = (reviewId: string) => `review:${reviewId}`;
 
-/** A short account of a review result for catch-up text; details stay in the delivery input. */
-function summarize(result: RequestChangesResult) {
+/** A one-line account of a review result, used in chat history markers and catch-up text. */
+export function summarizeReview(result: RequestChangesResult) {
   if (result.decision === 'denied') return 'The instructor denied the submitted changes.';
+  const approved = 'The instructor approved the submitted changes';
   const sync = result.sync.status === 'failed' ? ', but the course sync failed' : '';
   switch (result.publication.status) {
     case 'published':
-      return `The instructor approved the submitted changes; they were published${sync}.`;
+      return `${approved}; they were published${sync}.`;
     case 'saved_locally':
-      return `The instructor approved the submitted changes; they were saved${sync}.`;
+      return `${approved}; they were saved${sync}.`;
     case 'conflict':
-      return `The instructor approved the submitted changes, but nothing was saved because these files changed: ${result.publication.paths.join(', ')}.`;
-    default:
-      return 'The instructor approved the submitted changes, but saving them failed.';
+      return `${approved}, but nothing was saved because these files changed: ${result.publication.paths.join(', ')}.`;
+    case 'failed':
+      return `${approved}, but saving them failed.`;
+    case 'unknown':
+      return `${approved}, but PrairieLearn could not confirm whether they were saved.`;
+    case 'not_attempted':
+      return `${approved}.`;
   }
+}
+
+/**
+ * The delivery turn's input: the summary, what the agent should do next, and any save or sync
+ * output. The agent never sees the result's structure, only this text.
+ */
+export function describeReviewResult(result: RequestChangesResult, source: 'github' | 'local') {
+  const output = (title: string, text: string) => `${title}:\n${text.trim() || '(no output)'}`;
+  const parts = [summarizeReview(result)];
+  if (result.decision === 'denied') {
+    parts.push('Nothing was saved; your edits remain private to this conversation.');
+  } else if (result.publication.status === 'published') {
+    parts.push(
+      'Fetch the configured origin branch and reconcile your checkout before editing again.',
+    );
+  } else if (result.publication.status === 'conflict') {
+    parts.push(
+      'Fetch the configured origin branch, reconcile its updates with your edits while preserving both, and request a new review.',
+    );
+  } else if (result.publication.status === 'failed') {
+    parts.push(
+      'Your edits remain private to this conversation.',
+      output('Save output', result.publication.error),
+    );
+  } else if (result.publication.status === 'unknown') {
+    parts.push(
+      source === 'github'
+        ? 'PrairieLearn lost track of the save before it finished, so the changes may or may not be in the course repository. Fetch the configured origin branch and check whether it contains them before continuing; if not, request a new review.'
+        : 'PrairieLearn lost track of the save before it finished, so the changes may or may not have been saved. Ask the instructor to check whether the course files contain them; if not, request a new review.',
+    );
+  }
+  if (result.sync.status === 'failed') {
+    parts.push(
+      result.publication.status === 'published'
+        ? 'The pushed changes stay in the repository even though the course sync failed.'
+        : 'The saved changes stay in the course even though the course sync failed.',
+      output('Course sync output', result.sync.error),
+    );
+  }
+  return parts.join('\n\n');
 }
 
 /**
  * A continuation appends to the last assistant message, so chat history marks where each
  * delivery turn begins and what it delivered. A prompt turn begins with its user message.
  */
-export function turnMarker(tag: string, result: RequestChangesResult): UIMessageChunk {
-  return { type: 'data-turn', id: tag, data: { tag, summary: summarize(result) } };
+export function turnMarker(tag: string, summary: string): UIMessageChunk {
+  return { type: 'data-turn', id: tag, data: { tag, summary } };
 }
 
 interface Turn {
