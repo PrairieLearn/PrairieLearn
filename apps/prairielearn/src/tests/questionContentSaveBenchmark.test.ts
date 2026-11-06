@@ -12,10 +12,16 @@ import * as sqldb from '@prairielearn/postgres';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { computeEncodedFileContentHash } from '../lib/editorUtil.js';
-import { FileModifyEditor, MultiEditor, QuestionRenameEditor } from '../lib/editors.js';
+import {
+  FileModifyEditor,
+  MultiEditor,
+  QuestionAddEditor,
+  QuestionCopyEditor,
+  QuestionRenameEditor,
+} from '../lib/editors.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 import { invalidateCourseSync, selectCourseById } from '../models/course.js';
-import { selectQuestionByQid } from '../models/question.js';
+import { selectQuestionByQid, selectQuestionByUuid } from '../models/question.js';
 import { selectTagsByQuestionId } from '../models/tags.js';
 import { selectTopicsByCourseId } from '../models/topics.js';
 import { selectUserById } from '../models/user.js';
@@ -27,7 +33,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const outputPath = process.env.PL_SAVE_BENCHMARK_OUTPUT;
 const realGit = process.env.PL_SAVE_BENCHMARK_REAL_GIT === '1';
 const action = z
-  .enum(['content', 'title', 'tags', 'topic', 'qid'])
+  .enum(['content', 'title', 'tags', 'topic', 'qid', 'create', 'copy'])
   .parse(process.env.PL_SAVE_BENCHMARK_ACTION ?? 'content');
 const metadataEdit = action !== 'content';
 const baselineOnly = process.env.PL_SAVE_BENCHMARK_BASELINE === '1';
@@ -196,8 +202,30 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       });
       const question = await selectQuestionByQid({ course_id: course.id, qid: currentQid });
       const nextQid = currentQid === 'test/question' ? 'renamed/question' : 'test/question';
+      const locals = {
+        course,
+        user,
+        authz_data: { has_course_permission_edit: true, authn_user: user },
+      };
+      const creationEditor =
+        action === 'create'
+          ? new QuestionAddEditor({
+              locals,
+              qid: `new-benchmark-${iteration}`,
+              title: `New benchmark ${iteration}`,
+            })
+          : action === 'copy'
+            ? new QuestionCopyEditor({
+                locals,
+                from_course: course,
+                from_qid: currentQid,
+                from_path: path.join(coursePath, 'questions', currentQid),
+                is_transfer: false,
+              })
+            : null;
       const editor =
-        action === 'qid'
+        creationEditor ??
+        (action === 'qid'
           ? new QuestionRenameEditor({
               locals: {
                 course,
@@ -230,7 +258,7 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
                   }),
                 ],
               )
-            : fileEditor;
+            : fileEditor);
       const start = performance.now();
       let error: string | null = null;
       const job = await editor.prepareServerJob();
@@ -241,7 +269,14 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       }
       const durationMs = performance.now() - start;
       if (error === null) {
-        if (action === 'qid') {
+        if (creationEditor) {
+          const created = await selectQuestionByUuid({
+            course_id: course.id,
+            uuid: creationEditor.uuid,
+          });
+          assert.isNotNull(created.number);
+          assert.isNotNull(created.topic_id);
+        } else if (action === 'qid') {
           currentQid = nextQid;
           const renamed = await selectQuestionByQid({ course_id: course.id, qid: currentQid });
           assert.equal(renamed.id, question.id);

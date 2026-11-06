@@ -39,6 +39,8 @@ import {
   type QuestionSyncScope,
   getQuestionSyncScope,
   getVerifiedQuestionChange,
+  hasQuestionSyncBaseline,
+  syncNewQuestion,
   syncQuestionMetadata,
 } from '../sync/questionSync.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -205,6 +207,7 @@ interface BaseEditorOptionsInternal extends BaseEditorOptions {
 interface WriteResult {
   pathsToAdd: string[];
   commitMessage: string;
+  newQuestion?: { qid: string; uuid: string };
 }
 
 export abstract class Editor {
@@ -377,24 +380,29 @@ export abstract class Editor {
               env: gitEnv,
             },
           );
+          return writeResult;
         };
 
         let courseData: courseDB.CourseData | undefined;
         let questionChange: QuestionSyncChange | null = null;
         try {
-          await writeAndCommitChanges();
+          const result = await writeAndCommitChanges();
+          const scope =
+            result?.newQuestion && hasQuestionSyncBaseline(this.course, startGitHash)
+              ? { kind: 'create' as const, ...result.newQuestion, courseId: this.course.id }
+              : questionScope;
 
           await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
           // Before pushing the changes, ensure that we don't allow someone
           // to put their course into an invalid state by deleting a shared
           // question or otherwise breaking the invariants we rely upon for
           // question sharing.
-          questionChange = questionScope
+          questionChange = scope
             ? await getVerifiedQuestionChange({
                 coursePath: this.course.path,
                 oldHash: startGitHash,
                 newHash: await getCourseCommitHash(this.course.path),
-                scope: questionScope,
+                scope,
               })
             : null;
           let possibleCourseData: courseDB.CourseData | undefined;
@@ -505,6 +513,9 @@ export abstract class Editor {
                 qid: questionChange.qid,
                 title: questionChange.title,
               });
+            }
+            if (questionChange.kind === 'create') {
+              await syncNewQuestion(this.course, questionChange);
             }
             if (questionChange.kind === 'metadata') {
               await syncQuestionMetadata(this.course, questionChange);
@@ -1640,6 +1651,7 @@ export class QuestionAddEditor extends Editor {
     return {
       pathsToAdd: [newQuestionPath],
       commitMessage: `add question ${qid}`,
+      newQuestion: { qid, uuid: this.uuid },
     };
   }
 }
@@ -2153,6 +2165,7 @@ export class QuestionCopyEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
+      newQuestion: { qid, uuid: this.uuid },
       commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course_label})` : ''} to ${qid}`,
     };
   }

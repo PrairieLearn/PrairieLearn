@@ -3,9 +3,15 @@ import { isDeepStrictEqual } from 'node:util';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
-import { loadSqlEquiv, queryOptionalRow, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { type Course, QuestionSchema } from '../lib/db-types.js';
@@ -13,13 +19,16 @@ import { selectQuestionByQid, syncQuestionTitle, syncQuestionTopic } from '../mo
 import { selectTagNamesForOtherQuestions } from '../models/tags.js';
 import { selectTopicNamesForOtherQuestions } from '../models/topics.js';
 import { type CourseJson, CourseJsonSchema } from '../schemas/infoCourse.js';
-import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
+import { type QuestionJson, QuestionJsonSchema } from '../schemas/infoQuestion.js';
 
-import { getDefaultTagsInUse, loadInfoFile } from './course-db.js';
+import { getDefaultTagsInUse, loadInfoFile, loadNewQuestionInfo } from './course-db.js';
 import { deduplicateByName } from './deduplicate.js';
+import * as authors from './fromDisk/authors.js';
+import * as questions from './fromDisk/questions.js';
 import { syncQuestionTags } from './fromDisk/tags.js';
 import { syncTopics } from './fromDisk/topics.js';
 import { type QuestionRenameScope, verifyQuestionRename } from './questionRenameSync.js';
+import { isQuestionQidEligibleForSync } from './questionSyncEligibility.js';
 import { CURRENT_SYNC_VERSION } from './version.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -30,9 +39,20 @@ interface QuestionFileSyncScope {
   relativeFilePath: string;
 }
 
-export type QuestionSyncScope = QuestionFileSyncScope | QuestionRenameScope;
+interface NewQuestionScope {
+  kind: 'create';
+  qid: string;
+  uuid: string;
+  courseId: string;
+}
+
+export type QuestionSyncScope = QuestionFileSyncScope | QuestionRenameScope | NewQuestionScope;
 
 export type QuestionSyncChange =
+  | (NewQuestionScope & {
+      question: QuestionJson;
+      courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
+    })
   | (QuestionRenameScope & { oldQid: string; title: string })
   | (Omit<QuestionFileSyncScope, 'kind'> &
       (
@@ -47,21 +67,23 @@ export type QuestionSyncChange =
           }
       ));
 
+export function hasQuestionSyncBaseline(course: Course, currentHash: string): boolean {
+  const previous = course.last_successful_sync;
+  return (
+    previous?.commitHash === currentHash &&
+    previous.commitHash === course.commit_hash &&
+    previous.version === CURRENT_SYNC_VERSION &&
+    previous.chunksGenerated === config.chunksGenerator
+  );
+}
+
 /** Called under the course lock, before invalidating the previous sync state. */
 export async function getQuestionSyncScope(
   course: Course,
   filePath: string,
   currentHash: string,
 ): Promise<QuestionFileSyncScope | null> {
-  const previous = course.last_successful_sync;
-  if (
-    previous?.commitHash !== currentHash ||
-    previous.commitHash !== course.commit_hash ||
-    previous.version !== CURRENT_SYNC_VERSION ||
-    previous.chunksGenerated !== config.chunksGenerator
-  ) {
-    return null;
-  }
+  if (!hasQuestionSyncBaseline(course, currentHash)) return null;
 
   const relativeFilePath = path.relative(course.path, filePath);
   const parts = relativeFilePath.split(path.sep);
@@ -114,6 +136,7 @@ export async function getVerifiedQuestionChange({
     { cwd: coursePath },
   );
   const changes = stdout.split('\0');
+  if (scope.kind === 'create') return await verifyNewQuestion(coursePath, scope, changes);
   if (changes.length !== 3 || changes[0] !== 'M' || changes[1] !== scope.relativeFilePath) {
     return null;
   }
@@ -212,5 +235,72 @@ export async function syncQuestionMetadata(
         title: change.metadata.title,
       });
     }
+  });
+}
+
+async function verifyNewQuestion(
+  coursePath: string,
+  scope: NewQuestionScope,
+  changes: string[],
+): Promise<QuestionSyncChange | null> {
+  if (!isQuestionQidEligibleForSync(scope.qid)) return null;
+  const prefix = `questions/${scope.qid}/`;
+  let addedInfo = false;
+  for (let i = 0; i < changes.length - 1; i += 2) {
+    if (changes[i] !== 'A' || !changes[i + 1].startsWith(prefix)) return null;
+    if (changes[i + 1] === `${prefix}info.json`) addedInfo = true;
+  }
+  if (!addedInfo) return null;
+  const info = await loadNewQuestionInfo(coursePath, scope.qid);
+  const question = info?.data;
+  if (
+    !question ||
+    info.errors.length > 0 ||
+    info.warnings.length > 0 ||
+    question.uuid !== scope.uuid ||
+    question.sharePublicly ||
+    question.shareSourcePublicly ||
+    question.sharingSets?.length
+  ) {
+    return null;
+  }
+  if (
+    await queryScalar(
+      sql.question_identity_exists,
+      {
+        course_id: scope.courseId,
+        uuid: scope.uuid,
+        qid: scope.qid,
+      },
+      z.boolean(),
+    )
+  ) {
+    return null;
+  }
+  const courseInfo = await loadInfoFile({ coursePath, filePath: 'infoCourse.json' });
+  const courseMetadata = CourseJsonSchema.safeParse(courseInfo?.data);
+  if (!courseMetadata.success) return null;
+  return { ...scope, question, courseMetadata: courseMetadata.data };
+}
+
+export async function syncNewQuestion(
+  course: Course,
+  change: Extract<QuestionSyncChange, { kind: 'create' }>,
+) {
+  await runInTransactionAsync(async () => {
+    const questionInfos = {
+      [change.qid]: { uuid: change.uuid, data: change.question, errors: [], warnings: [] },
+    };
+    const ids = await questions.sync(course.id, { questions: questionInfos }, true);
+    await authors.sync(questionInfos, ids);
+    await syncQuestionMetadata(course, {
+      kind: 'metadata',
+      qid: change.qid,
+      relativeFilePath: `questions/${change.qid}/info.json`,
+      metadata: change.question,
+      tagsChanged: change.question.tags.length > 0,
+      topicChanged: true,
+      courseMetadata: change.courseMetadata,
+    });
   });
 }
