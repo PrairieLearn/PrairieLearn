@@ -67,7 +67,6 @@ describe('tool calls in catch-up', () => {
               v: 1,
               kind: 'command',
               status: 'completed',
-              durationMs: null,
               command: 'cat questions/q/info.json',
               actions: [],
               exitCode: 0,
@@ -81,7 +80,6 @@ describe('tool calls in catch-up', () => {
               v: 1,
               kind: 'fileChange',
               status: 'completed',
-              durationMs: null,
               changes: [
                 { path: 'a.md', change: 'update', movePath: null, added: 1, removed: 0, diff },
                 { path: 'b.md', change: 'update', movePath: 'c.md', added: 0, removed: 0, diff },

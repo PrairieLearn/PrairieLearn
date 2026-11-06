@@ -36,7 +36,6 @@ describe('tool call history parts', () => {
       v: 1,
       kind: 'command',
       status: 'failed',
-      durationMs: 12,
       command: "/bin/bash -lc 'rg pl-number questions'",
       actions: [{ type: 'search', query: 'pl-number', path: 'questions' }],
       exitCode: 1,
@@ -82,16 +81,18 @@ describe('tool call history parts', () => {
   it('falls back to the item type for unfamiliar or changed items and skips messages', () => {
     expect(toolCallFromItem('started', { type: 'imageView', id: 'img', path: 'a.png' })).toEqual({
       v: 1,
-      kind: 'other',
-      itemType: 'imageView',
-      path: 'a.png',
+      kind: 'tool',
       status: 'running',
-      durationMs: null,
+      server: null,
+      tool: 'imageView',
+      arguments: { text: 'a.png', omitted: 0 },
+      output: null,
+      error: null,
     });
     // A known item whose shape changed in a later Codex release still renders, generically.
     expect(toolCallFromItem('completed', { type: 'mcpToolCall', id: 'x' })).toMatchObject({
-      kind: 'other',
-      itemType: 'mcpToolCall',
+      kind: 'tool',
+      tool: 'mcpToolCall',
       status: 'completed',
     });
     expect(toolCallFromItem('completed', { type: 'agentMessage' })).toBeNull();

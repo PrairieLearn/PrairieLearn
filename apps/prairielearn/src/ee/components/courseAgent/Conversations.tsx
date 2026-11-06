@@ -15,7 +15,11 @@ import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 import { z } from 'zod';
 
-import { type ConversationState, ToolCallSchema } from '@prairielearn/course-agent-types';
+import {
+  type ConversationState,
+  type ToolCall,
+  ToolCallSchema,
+} from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
@@ -28,7 +32,7 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
-import { ToolCallPart } from './ToolCallPart.js';
+import { ToolCalls } from './ToolCalls.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -518,50 +522,44 @@ function Message({
       </div>
     );
   }
-  // Consecutive tool calls sit closer together than the text around them.
-  const groups: { key: string; nodes: ReactNode[]; tools: boolean }[] = [];
-  const add = (key: string, node: ReactNode, tools = false) => {
-    const last = groups.at(-1);
-    if (tools && last?.tools) last.nodes.push(node);
-    else groups.push({ key, nodes: [node], tools });
-  };
+  // Consecutive tool calls render together so runs of the same kind can be grouped.
+  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
+  const segments: Segment[] = [];
   message.parts.forEach((part, index) => {
-    const key = `part-${index}`;
     const call = toolCallOf(part);
-    if (call) {
-      add(
-        key,
-        <ToolCallPart key={key} call={call} live={live} onExpand={onToolCallExpand} />,
-        true,
-      );
-    } else if (part.type === 'text') {
-      add(key, <TextPart key={key} part={part} />);
-    } else if (part.type === 'reasoning') {
-      add(key, <ReasoningBlock key={key} part={part} />);
-    } else if (part.type === 'data-review') {
-      const { reviewId } = ReviewPartSchema.parse(part.data);
-      add(
-        key,
-        <RequestChangesCard
-          key={key}
-          conversationId={conversationId}
-          reviewId={reviewId}
-          canResume={awaitingReviewId === reviewId}
-        />,
-      );
-    }
+    const last = segments.at(-1);
+    if (call && last && 'calls' in last) last.calls.push(call);
+    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
   });
   return (
     <div className="d-flex flex-column gap-2">
-      {groups.map((group) =>
-        group.tools ? (
-          <div key={group.key} className="d-flex flex-column gap-1">
-            {group.nodes}
-          </div>
-        ) : (
-          group.nodes
-        ),
-      )}
+      {segments.map((segment) => {
+        if ('calls' in segment) {
+          return (
+            <ToolCalls
+              key={segment.key}
+              calls={segment.calls}
+              live={live}
+              onExpand={onToolCallExpand}
+            />
+          );
+        }
+        const { key, part } = segment;
+        if (part.type === 'text') return <TextPart key={key} part={part} />;
+        if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+        if (part.type === 'data-review') {
+          const { reviewId } = ReviewPartSchema.parse(part.data);
+          return (
+            <RequestChangesCard
+              key={key}
+              conversationId={conversationId}
+              reviewId={reviewId}
+              canResume={awaitingReviewId === reviewId}
+            />
+          );
+        }
+        return null;
+      })}
     </div>
   );
 }

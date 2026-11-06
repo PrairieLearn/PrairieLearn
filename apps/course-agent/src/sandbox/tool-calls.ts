@@ -45,7 +45,6 @@ const CommandItem = z.object({
   ),
   aggregatedOutput: z.string().nullable(),
   exitCode: z.number().nullable(),
-  durationMs: z.number().nullable(),
 });
 const FileChangeItem = z.object({
   type: z.literal('fileChange'),
@@ -69,7 +68,6 @@ const McpItem = z.object({
   arguments: z.unknown(),
   result: z.object({ content: z.array(z.unknown()) }).nullable(),
   error: z.object({ message: z.string() }).nullable(),
-  durationMs: z.number().nullable(),
 });
 const DynamicItem = z.object({
   type: z.literal('dynamicToolCall'),
@@ -79,7 +77,6 @@ const DynamicItem = z.object({
   arguments: z.unknown(),
   contentItems: z.array(z.object({ type: z.string(), text: z.string().optional() })).nullable(),
   success: z.boolean().nullable(),
-  durationMs: z.number().nullable(),
 });
 const WebSearchItem = z.object({
   type: z.literal('webSearch'),
@@ -168,13 +165,16 @@ export function toolCallFromItem(
   if (!parsed.success) {
     const other = OtherItem.safeParse(value);
     if (!other.success) return null;
+    // An item this version does not know still shows, labeled by its type.
     return {
       v: 1,
-      kind: 'other',
-      itemType: other.data.type,
-      path: other.data.path ? coursePath(other.data.path) : null,
+      kind: 'tool',
       status: status(phase, other.data.status),
-      durationMs: null,
+      server: null,
+      tool: other.data.type,
+      arguments: { text: other.data.path ? coursePath(other.data.path) : '', omitted: 0 },
+      output: null,
+      error: null,
     };
   }
   const item = parsed.data;
@@ -184,7 +184,6 @@ export function toolCallFromItem(
         v: 1,
         kind: 'command',
         status: status(phase, item.status),
-        durationMs: item.durationMs,
         command: clip(item.command, COMMAND_CHARS, COMMAND_CHARS).text,
         actions: item.commandActions.map((action) => {
           if (action.type === 'read' && action.path) {
@@ -214,7 +213,6 @@ export function toolCallFromItem(
         v: 1,
         kind: 'fileChange',
         status: status(phase, item.status),
-        durationMs: null,
         changes: item.changes.slice(0, MAX_FILES).map((change) => {
           const diff = diffOf(change.kind.type, change.diff);
           return {
@@ -239,7 +237,6 @@ export function toolCallFromItem(
         v: 1,
         kind: 'tool',
         status: status(phase, item.status),
-        durationMs: item.durationMs,
         server: item.server,
         tool: item.tool,
         arguments: clip(json(item.arguments), keep(ARGUMENT_CHARS)),
@@ -256,7 +253,6 @@ export function toolCallFromItem(
         kind: 'tool',
         status:
           phase === 'completed' && item.success === false ? 'failed' : status(phase, item.status),
-        durationMs: item.durationMs,
         server: item.namespace,
         tool: item.tool,
         arguments: clip(json(item.arguments), keep(ARGUMENT_CHARS)),
@@ -265,18 +261,19 @@ export function toolCallFromItem(
       };
     }
     case 'webSearch': {
-      const action = item.action;
+      const { action } = item;
+      const target =
+        action?.type === 'openPage' || action?.type === 'findInPage' ? action.url : null;
+      const query = item.query || action?.queries?.join(', ') || action?.pattern || '';
       return {
         v: 1,
-        kind: 'webSearch',
+        kind: 'tool',
         status: status(phase, undefined),
-        durationMs: null,
-        action:
-          action?.type === 'openPage' || action?.type === 'findInPage' || action?.type === 'search'
-            ? action.type
-            : 'other',
-        query: item.query || action?.queries?.join(', ') || action?.pattern || '',
-        target: action?.url ?? null,
+        server: 'web',
+        tool: action?.type ?? 'search',
+        arguments: clip([target, query].filter(Boolean).join('\n'), keep(ARGUMENT_CHARS)),
+        output: null,
+        error: null,
       };
     }
   }

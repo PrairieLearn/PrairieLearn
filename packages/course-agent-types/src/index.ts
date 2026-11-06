@@ -167,7 +167,6 @@ export const ToolCallSchema = z
     v: z.literal(1),
     /** `interrupted`: the turn ended before Codex reported the call's outcome. */
     status: z.enum(['running', 'completed', 'failed', 'declined', 'interrupted']),
-    durationMs: z.number().nullable(),
   })
   .and(
     z.discriminatedUnion('kind', [
@@ -206,21 +205,18 @@ export const ToolCallSchema = z
         omittedChanges: z.number(),
       }),
       z.object({
+        /**
+         * Any other call: an MCP or dynamic tool, a web search (server `web`), or a Codex item
+         * this version does not know (`tool` is the item type, with no server).
+         */
         kind: z.literal('tool'),
-        /** The MCP server or dynamic tool namespace. */
         server: z.string().nullable(),
         tool: z.string(),
+        /** JSON arguments, or plain text such as a search query or a path. */
         arguments: ClipSchema,
         output: ClipSchema.nullable(),
         error: z.string().nullable(),
       }),
-      z.object({
-        kind: z.literal('webSearch'),
-        action: z.enum(['search', 'openPage', 'findInPage', 'other']),
-        query: z.string(),
-        target: z.string().nullable(),
-      }),
-      z.object({ kind: z.literal('other'), itemType: z.string(), path: z.string().nullable() }),
     ]),
   );
 
