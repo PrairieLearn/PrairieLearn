@@ -1,6 +1,6 @@
 import type { UIMessage, UIMessageChunk } from 'ai';
 
-import type { RequestChangesResult } from '@prairielearn/course-agent-types';
+import { type RequestChangesResult, ToolCallSchema } from '@prairielearn/course-agent-types';
 
 /** Keep the newest turns within a bound that leaves room for the current request. */
 const MAX_CATCH_UP_CHARS = 32_000;
@@ -104,6 +104,21 @@ interface Turn {
   entries: string[];
 }
 
+/**
+ * Tool calls stay out of catch-up, since their output would crowd out the conversation, except
+ * for a one-line record of changed files: a restored checkout may have lost those edits.
+ */
+function describeFileChange(data: unknown) {
+  const call = ToolCallSchema.safeParse(data);
+  if (!call.success || call.data.kind !== 'fileChange' || call.data.status !== 'completed') {
+    return '';
+  }
+  const { changes, omittedChanges } = call.data;
+  const paths = changes.map((change) => change.movePath ?? change.path);
+  if (omittedChanges > 0) paths.push(`${omittedChanges} more`);
+  return `[Changed files: ${paths.join(', ')}.]`;
+}
+
 /** Split chat history into the turns Codex received, each with its tag and visible text. */
 function splitTurns(history: UIMessage[]) {
   const turns: Turn[] = [];
@@ -122,7 +137,9 @@ function splitTurns(history: UIMessage[]) {
           ? part.text.trim()
           : part.type === 'data-review'
             ? '[Submitted changes for instructor review.]'
-            : '';
+            : part.type === 'data-tool'
+              ? describeFileChange(part.data)
+              : '';
       if (!text) continue;
       turns.at(-1)?.entries.push(`${message.role === 'user' ? 'Staff' : 'You'}: ${text}`);
     }

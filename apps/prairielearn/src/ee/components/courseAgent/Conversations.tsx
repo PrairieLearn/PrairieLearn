@@ -15,7 +15,7 @@ import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 import { z } from 'zod';
 
-import { type ConversationState } from '@prairielearn/course-agent-types';
+import { type ConversationState, ToolCallSchema } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
@@ -28,6 +28,7 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
+import { ToolCallPart } from './ToolCallPart.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -314,7 +315,7 @@ function Chat({
       if (part.type === 'text' || part.type === 'reasoning') {
         return part.text.trim().length > 0;
       }
-      return false;
+      return toolCallOf(part) !== null;
     });
   });
   const awaitingReviewId =
@@ -341,12 +342,14 @@ function Chat({
               Ask the course agent about your course or about PrairieLearn.
             </p>
           )}
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <Message
               key={message.id}
               message={message}
+              live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
+              onToolCallExpand={stickToBottom.stopScroll}
             />
           ))}
           {/* Stop can end the stream before history records the review, which would otherwise
@@ -485,15 +488,27 @@ function reviewInHistory(messages: UIMessage[], reviewId: string) {
   );
 }
 
+/** Parts from an older or newer agent service may not match; show only what parses. */
+function toolCallOf(part: UIMessage['parts'][number]) {
+  if (part.type !== 'data-tool') return null;
+  return ToolCallSchema.safeParse(part.data).data ?? null;
+}
+
 function Message({
   message,
+  live,
   conversationId,
   awaitingReviewId,
+  onToolCallExpand,
 }: {
   message: UIMessage;
+  /** Whether this message is still streaming. */
+  live: boolean;
   conversationId: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
+  /** Opening a tool call must not scroll it out from under the pointer. */
+  onToolCallExpand: () => void;
 }) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
@@ -503,25 +518,50 @@ function Message({
       </div>
     );
   }
+  // Consecutive tool calls sit closer together than the text around them.
+  const groups: { key: string; nodes: ReactNode[]; tools: boolean }[] = [];
+  const add = (key: string, node: ReactNode, tools = false) => {
+    const last = groups.at(-1);
+    if (tools && last?.tools) last.nodes.push(node);
+    else groups.push({ key, nodes: [node], tools });
+  };
+  message.parts.forEach((part, index) => {
+    const key = `part-${index}`;
+    const call = toolCallOf(part);
+    if (call) {
+      add(
+        key,
+        <ToolCallPart key={key} call={call} live={live} onExpand={onToolCallExpand} />,
+        true,
+      );
+    } else if (part.type === 'text') {
+      add(key, <TextPart key={key} part={part} />);
+    } else if (part.type === 'reasoning') {
+      add(key, <ReasoningBlock key={key} part={part} />);
+    } else if (part.type === 'data-review') {
+      const { reviewId } = ReviewPartSchema.parse(part.data);
+      add(
+        key,
+        <RequestChangesCard
+          key={key}
+          conversationId={conversationId}
+          reviewId={reviewId}
+          canResume={awaitingReviewId === reviewId}
+        />,
+      );
+    }
+  });
   return (
     <div className="d-flex flex-column gap-2">
-      {message.parts.map((part, index) => {
-        const key = `part-${index}`;
-        if (part.type === 'text') return <TextPart key={key} part={part} />;
-        if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-        if (part.type === 'data-review') {
-          const { reviewId } = ReviewPartSchema.parse(part.data);
-          return (
-            <RequestChangesCard
-              key={key}
-              conversationId={conversationId}
-              reviewId={reviewId}
-              canResume={awaitingReviewId === reviewId}
-            />
-          );
-        }
-        return null;
-      })}
+      {groups.map((group) =>
+        group.tools ? (
+          <div key={group.key} className="d-flex flex-column gap-1">
+            {group.nodes}
+          </div>
+        ) : (
+          group.nodes
+        ),
+      )}
     </div>
   );
 }

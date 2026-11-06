@@ -65,6 +65,12 @@ Codex output flows through the adapter into the SDK response stream, then into S
 
 A Worker/DO restart loses the native connection. SDK-recorded output remains readable, but output that never reached the SDK cannot be recovered through browser reconnect. The UI warns that edits may have completed while the reply is incomplete. Explicit Resume recovers ordinary interrupted work without replaying its prompt; reconstructing missing native output remains deferred. Review results are delivered in their own turn, described below.
 
+## Tool calls in chat history
+
+Each Codex tool call (a command, file change, MCP or dynamic tool call, web search, or other non-message item) is a `data-tool` part with ID `tool:<Codex item ID>` and data matching `ToolCallSchema` in `@prairielearn/course-agent-types`. The Worker writes it when Codex starts the item and replaces it when Codex completes it. A call still running when the stream closes is rewritten as `interrupted`. A stream can also end without that rewrite (a cancelled response or a lost Worker), so the browser treats a `running` call in any message that is no longer streaming as interrupted. The part stores Codex's fields, and the browser derives labels from them, so label changes apply to existing history.
+
+History keeps a bounded copy: command text up to 2,000 characters, output up to 4,000 (its start and end), arguments up to 1,000, each diff up to 4,000, and 50 files per change. Paths in the course checkout are stored relative to the course root. Once a message's tool calls exceed 300,000 characters, later calls in it keep their labels but no output, diffs, or arguments, so the message stays well within a Durable Object row; Codex's own thread keeps the full record. A successful `request_changes` call has no part, because its review card shows it; a failed one does, so the instructor sees why. Catch-up omits tool calls except a one-line list of the files each completed change touched.
+
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:

@@ -51,6 +51,56 @@ describe('missedTurns', () => {
   });
 });
 
+describe('tool calls in catch-up', () => {
+  it('records changed files in one line and leaves other calls out', () => {
+    const diff = { text: '', omitted: 0 };
+    const calls: UIMessage[] = [
+      { id: 'u3', role: 'user', parts: [{ type: 'text', text: 'Fix it' }] },
+      {
+        id: 'a3',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'data-tool',
+            id: 'tool:ls',
+            data: {
+              v: 1,
+              kind: 'command',
+              status: 'completed',
+              durationMs: null,
+              command: 'cat questions/q/info.json',
+              actions: [],
+              exitCode: 0,
+              output: { text: '{"title": "Q"}', omitted: 0 },
+            },
+          },
+          {
+            type: 'data-tool',
+            id: 'tool:patch',
+            data: {
+              v: 1,
+              kind: 'fileChange',
+              status: 'completed',
+              durationMs: null,
+              changes: [
+                { path: 'a.md', change: 'update', movePath: null, added: 1, removed: 0, diff },
+                { path: 'b.md', change: 'update', movePath: 'c.md', added: 0, removed: 0, diff },
+              ],
+              omittedChanges: 2,
+            },
+          },
+          { type: 'text', text: 'Done.' },
+        ],
+      },
+    ];
+    expect(missedTurns(calls, undefined)).toEqual([
+      'Staff: Fix it',
+      'You: [Changed files: a.md, c.md, 2 more.]',
+      'You: Done.',
+    ]);
+  });
+});
+
 describe('buildCatchUp', () => {
   it('frames missed turns as reference only and keeps the newest within the limit', () => {
     const text = buildCatchUp(['Staff: Thanks', 'You: You are welcome.'], 'github')!;

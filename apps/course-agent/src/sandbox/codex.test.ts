@@ -190,6 +190,120 @@ describe('course agent turns', () => {
     expect(await turn.finished).toEqual({ phase: 'execution', stopped: true });
   });
 
+  it('streams tool calls as parts replaced on completion, leaving reviews to the review card', async () => {
+    const { sandbox, native, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const command = {
+      type: 'commandExecution',
+      id: 'ls',
+      command: 'ls questions',
+      commandActions: [{ type: 'listFiles', command: 'ls questions', path: 'questions' }],
+      aggregatedOutput: null,
+      exitCode: null,
+      durationMs: null,
+    };
+    const review = {
+      type: 'dynamicToolCall',
+      id: 'review',
+      namespace: null,
+      tool: 'request_changes',
+      arguments: {},
+      contentItems: null,
+      success: null,
+      durationMs: null,
+    };
+    const item = (method: string, item: unknown) =>
+      emit({ method, params: { threadId: 'thread', turnId: 'turn', item } });
+    item('item/started', { ...command, status: 'inProgress' });
+    item('item/completed', {
+      ...command,
+      status: 'completed',
+      aggregatedOutput: 'q1\n',
+      exitCode: 0,
+    });
+    item('item/started', { ...review, status: 'inProgress' });
+    item('item/completed', { ...review, status: 'completed', success: true });
+    item('item/completed', {
+      ...review,
+      id: 'empty-review',
+      status: 'completed',
+      success: false,
+      contentItems: [{ type: 'inputText', text: 'There are no course changes to review.' }],
+    });
+    // A call the turn ends without reporting must not look like it is still running.
+    item('item/started', { ...command, id: 'stuck', status: 'inProgress' });
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type === 'data-tool')).toMatchObject([
+      { id: 'tool:ls', data: { kind: 'command', status: 'running', output: null } },
+      { id: 'tool:ls', data: { kind: 'command', status: 'completed', output: { text: 'q1\n' } } },
+      {
+        id: 'tool:empty-review',
+        data: {
+          kind: 'tool',
+          tool: 'request_changes',
+          status: 'failed',
+          output: { text: 'There are no course changes to review.' },
+        },
+      },
+      { id: 'tool:stuck', data: { status: 'running' } },
+      { id: 'tool:stuck', data: { status: 'interrupted' } },
+    ]);
+  });
+
+  it('keeps only labels for tool calls past the message budget', async () => {
+    const { sandbox, native, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    // About 4 KB of history each, so 100 calls exceed the 300,000-character budget.
+    for (let i = 0; i < 100; i++) {
+      emit({
+        method: 'item/completed',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          item: {
+            type: 'commandExecution',
+            id: `cmd${i}`,
+            command: 'seq 1 5000',
+            status: 'completed',
+            commandActions: [{ type: 'unknown', command: 'seq 1 5000' }],
+            aggregatedOutput: 'x'.repeat(10_000),
+            exitCode: 0,
+            durationMs: null,
+          },
+        },
+      });
+    }
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const outputs: unknown[] = [];
+    for await (const chunk of turn.stream) {
+      if (chunk.type === 'data-tool') outputs.push((chunk.data as { output: unknown }).output);
+    }
+    expect(outputs[0]).toMatchObject({ omitted: 6_000 });
+    expect(outputs.at(-1)).toEqual({ text: '', omitted: 10_000 });
+  });
+
   it('never resubmits a prompt whose acceptance response was lost', async () => {
     const { native, commands, disconnect } = runner({ loseAcceptance: true });
     native.beginTurn('assistant');
