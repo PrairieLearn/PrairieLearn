@@ -11,9 +11,11 @@ import {
   getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
+  recordSuccessfulCourseSync,
   updateCourseCommitHash,
 } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
+import { CURRENT_SYNC_VERSION } from '../sync/version.js';
 
 import * as chunks from './chunks.js';
 import { config } from './config.js';
@@ -194,7 +196,14 @@ export async function pullAndUpdateCourse({
           chunks.logChunkChangesToJob(chunkChanges, job);
         }
 
-        await updateCourseCommitHash({ id: course.id, path });
+        const commitHash = await updateCourseCommitHash({ id: course.id, path });
+        if (!syncResult.hadJsonErrors) {
+          await recordSuccessfulCourseSync(course.id, {
+            commitHash,
+            version: CURRENT_SYNC_VERSION,
+            chunksGenerated: config.chunksGenerator,
+          });
+        }
 
         if (syncResult.hadJsonErrors) {
           job.fail('One or more JSON files contained errors and were unable to be synced.');
