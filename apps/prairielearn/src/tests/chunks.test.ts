@@ -4,14 +4,13 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
-import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { type Course, CourseSchema } from '../lib/db-types.js';
+import { ChunkSchema, type Course, CourseSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -47,22 +46,6 @@ const COURSE: courseDB.CourseData = {
     },
   },
 };
-
-async function getAllChunksForCourse(course_id: string) {
-  return await sqldb.queryRows(
-    sql.select_all_chunks,
-    { course_id },
-    z.object({
-      id: z.string(),
-      uuid: z.string(),
-      type: z.string(),
-      course_id: z.string(),
-      course_instance_id: z.string().nullable(),
-      assessment_id: z.string().nullable(),
-      question_id: z.string().nullable(),
-    }),
-  );
-}
 
 describe('chunks', () => {
   describe('identifyChunksFromChangedFiles', () => {
@@ -347,6 +330,43 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = originalChunksConsumerDirectory;
     });
 
+    it('replaces every revision of a chunk once the one-row index is gone', async () => {
+      const courseDir = tempTestCourseDir.path;
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+      });
+
+      // Simulate a host still running this writer after activation has
+      // appended newer revisions.
+      await sqldb.execute(sql.drop_unique_chunk_index);
+      await sqldb.execute(sql.append_chunk_revisions, {
+        course_id: course.id,
+        types: ['elements', 'serverFilesCourse'],
+      });
+
+      await fs.remove(path.join(courseDir, 'elements'));
+      await fs.writeFile(path.join(courseDir, 'serverFilesCourse', 'changed.py'), '');
+      const { updatedChunks } = await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        changedFiles: ['serverFilesCourse/changed.py'],
+      });
+      assert.deepEqual(updatedChunks, [{ type: 'serverFilesCourse' }]);
+
+      const rows = await sqldb.queryRows(
+        sql.select_all_chunks,
+        { course_id: course.id },
+        ChunkSchema,
+      );
+      assert.isEmpty(rows.filter((chunk) => chunk.type === 'elements'));
+      const serverFilesRows = rows.filter((chunk) => chunk.type === 'serverFilesCourse');
+      assert.lengthOf(serverFilesRows, 1);
+      assert.isNotNull(serverFilesRows[0].created_at);
+    });
+
     it('handles question nesting after a rename', async () => {
       // Scenario: there's a question named `foo/bar` (that is,
       // `foo/bar/info.json` exists). We load the chunk for that
@@ -616,8 +636,8 @@ describe('chunks', () => {
       assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'elements')));
       assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'elementExtensions')));
 
-      // Assert that the chunks have been deleted from the database
-      let databaseChunks = await getAllChunksForCourse(course.id);
+      // Assert that the chunks are absent from the current state
+      let databaseChunks = await chunksLib.selectChunksForCourse(course.id);
       assert.isUndefined(databaseChunks.find((chunk) => chunk.type === 'elements'));
       assert.isUndefined(databaseChunks.find((chunk) => chunk.type === 'elementExtensions'));
 
@@ -715,8 +735,8 @@ describe('chunks', () => {
         ),
       );
 
-      // Assert that the remaining chunks have been deleted from the database
-      databaseChunks = await getAllChunksForCourse(course.id);
+      // Assert that the remaining chunks are absent from the current state
+      databaseChunks = await chunksLib.selectChunksForCourse(course.id);
       assert.isUndefined(databaseChunks.find((chunk) => chunk.type === 'serverFilesCourse'));
       assert.isUndefined(databaseChunks.find((chunk) => chunk.type === 'clientFilesCourse'));
       assert.isUndefined(
@@ -750,7 +770,7 @@ describe('chunks', () => {
       });
 
       // Verify that an initial chunk exists for this course instance.
-      let databaseChunks = await getAllChunksForCourse(course.id);
+      let databaseChunks = await chunksLib.selectChunksForCourse(course.id);
       assert.isOk(
         databaseChunks.find(
           (chunk) =>
@@ -790,7 +810,7 @@ describe('chunks', () => {
       });
 
       // Re-read chunks from DB
-      databaseChunks = await getAllChunksForCourse(course.id);
+      databaseChunks = await chunksLib.selectChunksForCourse(course.id);
 
       // A chunk should exist for the new course instance id.
       assert.isOk(
@@ -840,7 +860,7 @@ describe('chunks', () => {
       });
 
       // Verify that a chunk exists for this course instance.
-      const databaseChunks = await getAllChunksForCourse(course.id);
+      const databaseChunks = await chunksLib.selectChunksForCourse(course.id);
       assert.isOk(
         databaseChunks.find(
           (chunk) =>
@@ -942,7 +962,7 @@ describe('chunks', () => {
       });
 
       // Verify that an initial chunk exists for this assessment.
-      let databaseChunks = await getAllChunksForCourse(course.id);
+      let databaseChunks = await chunksLib.selectChunksForCourse(course.id);
       assert.isOk(
         databaseChunks.find(
           (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId,
@@ -983,7 +1003,7 @@ describe('chunks', () => {
       });
 
       // Re-read chunks from DB
-      databaseChunks = await getAllChunksForCourse(course.id);
+      databaseChunks = await chunksLib.selectChunksForCourse(course.id);
 
       // After the fix: a chunk should exist for the new assessment id.
       // Today (pre-fix): this assertion will fail because we don't regenerate the chunk.
@@ -1062,7 +1082,7 @@ describe('chunks', () => {
       });
 
       // Capture baseline chunk set and counts
-      const initialChunks = await getAllChunksForCourse(course.id);
+      const initialChunks = await chunksLib.selectChunksForCourse(course.id);
       const initialCount = initialChunks.length;
       const countBy = (pred: (c: any) => boolean) => initialChunks.filter(pred).length;
 
@@ -1082,7 +1102,7 @@ describe('chunks', () => {
       });
 
       // Fetch again and ensure counts are unchanged
-      const afterChunks = await getAllChunksForCourse(course.id);
+      const afterChunks = await chunksLib.selectChunksForCourse(course.id);
       const afterCount = afterChunks.length;
       assert.equal(afterCount, initialCount);
 

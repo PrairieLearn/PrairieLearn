@@ -1,4 +1,31 @@
 -- BLOCK select_course_chunks
+WITH
+  latest_chunks AS (
+    SELECT DISTINCT
+      ON (
+        type,
+        coalesce(question_id, -1),
+        coalesce(course_instance_id, -1),
+        coalesce(assessment_id, -1)
+      ) *
+    FROM
+      chunks
+    WHERE
+      course_id = $course_id
+      -- Undated rows predate history and remain current until a newer revision.
+      AND (
+        $at_date::timestamptz IS NULL
+        OR created_at IS NULL
+        OR created_at <= $at_date
+      )
+    ORDER BY
+      type ASC,
+      coalesce(question_id, -1) ASC,
+      coalesce(course_instance_id, -1) ASC,
+      coalesce(assessment_id, -1) ASC,
+      created_at DESC NULLS LAST,
+      id DESC
+  )
 SELECT
   chunks.*,
   q.uuid AS question_uuid,
@@ -8,7 +35,7 @@ SELECT
   ci.uuid AS course_instance_uuid,
   ci.short_name AS course_instance_name
 FROM
-  chunks
+  latest_chunks AS chunks
   LEFT JOIN assessments AS a ON (a.id = chunks.assessment_id)
   LEFT JOIN course_instances AS ci ON (
     ci.id = chunks.course_instance_id
@@ -16,9 +43,11 @@ FROM
   )
   LEFT JOIN questions AS q ON (q.id = chunks.question_id)
 WHERE
-  chunks.course_id = $course_id;
+  NOT chunks.deleted;
 
 -- BLOCK select_metadata_for_chunks
+-- A lateral lookup stops at the newest indexed revision for each request.
+-- noqa: disable=ST05
 SELECT
   chunks.*,
   (chunks_arr ->> 'type')::enum_chunk_type AS type,
@@ -27,33 +56,24 @@ SELECT
   ci.short_name AS course_instance_name
 FROM
   JSONB_ARRAY_ELEMENTS($chunks_arr::jsonb) AS chunks_arr
-  -- Note that we specifically use a LEFT JOIN here - this is what allows the
-  -- caller to differentiate between a chunk that exists and one that does not.
-  -- Chunks that don't exist will have a NULL id, but they'll still contain
-  -- other information like the course instance/assessment/question name so that
-  -- we can clean up unused chunks from disk.
-  LEFT JOIN chunks ON (
-    chunks.course_id = ($course_id)::bigint
-    AND chunks.type = (chunks_arr ->> 'type')::enum_chunk_type
-    AND (
-      (chunks_arr ->> 'courseInstanceId' IS NULL)
-      OR (
-        chunks.course_instance_id = (chunks_arr ->> 'courseInstanceId')::bigint
-      )
-    )
-    AND (
-      (chunks_arr ->> 'assessmentId' IS NULL)
-      OR (
-        chunks.assessment_id = (chunks_arr ->> 'assessmentId')::bigint
-      )
-    )
-    AND (
-      (chunks_arr ->> 'questionId' IS NULL)
-      OR (
-        chunks.question_id = (chunks_arr ->> 'questionId')::bigint
-      )
-    )
-  )
+  -- Preserve missing/deleted requests so consumers can remove their runtime paths.
+  LEFT JOIN LATERAL (
+    SELECT
+      *
+    FROM
+      chunks
+    WHERE
+      course_id = $course_id
+      AND type = (chunks_arr ->> 'type')::enum_chunk_type
+      AND coalesce(question_id, -1) = coalesce((chunks_arr ->> 'questionId')::bigint, -1)
+      AND coalesce(course_instance_id, -1) = coalesce((chunks_arr ->> 'courseInstanceId')::bigint, -1)
+      AND coalesce(assessment_id, -1) = coalesce((chunks_arr ->> 'assessmentId')::bigint, -1)
+    ORDER BY
+      created_at DESC NULLS LAST,
+      id DESC
+    LIMIT
+      1
+  ) AS chunks ON NOT chunks.deleted
   LEFT JOIN assessments AS a ON (a.id = (chunks_arr ->> 'assessmentId')::bigint)
   LEFT JOIN course_instances AS ci ON (
     ci.id = (chunks_arr ->> 'courseInstanceId')::bigint
@@ -61,6 +81,7 @@ FROM
   )
   LEFT JOIN questions AS q ON (q.id = (chunks_arr ->> 'questionId')::bigint);
 
+-- noqa: enable=ST05
 -- BLOCK select_course_dir
 SELECT
   c.path
@@ -112,7 +133,19 @@ FROM
 LIMIT
   100;
 
--- LIMIT prevents infinite recursion on circular templates
+-- BLOCK delete_chunk_revisions
+-- Remove every revision of each replaced identity, so this works whether or
+-- not the one-row-per-chunk index still exists.
+DELETE FROM chunks USING chunks AS replaced
+WHERE
+  replaced.id = ANY ($chunk_ids::bigint[])
+  AND replaced.course_id = $course_id
+  AND chunks.course_id = replaced.course_id
+  AND chunks.type = replaced.type
+  AND coalesce(chunks.question_id, -1) = coalesce(replaced.question_id, -1)
+  AND coalesce(chunks.course_instance_id, -1) = coalesce(replaced.course_instance_id, -1)
+  AND coalesce(chunks.assessment_id, -1) = coalesce(replaced.assessment_id, -1);
+
 -- BLOCK insert_chunks
 INSERT INTO
   chunks (
@@ -121,7 +154,11 @@ INSERT INTO
     question_id,
     course_instance_id,
     assessment_id,
-    uuid
+    uuid,
+    created_at,
+    commit_hash,
+    size_compressed,
+    size_uncompressed
   )
 SELECT
   (chunk ->> 'type')::enum_chunk_type,
@@ -129,7 +166,11 @@ SELECT
   q.id AS question_id,
   ci.id AS course_instance_id,
   a.id AS assessment_id,
-  (chunk ->> 'uuid')::uuid
+  (chunk ->> 'uuid')::uuid,
+  now(),
+  $commit_hash,
+  (chunk ->> 'sizeCompressed')::bigint,
+  (chunk ->> 'sizeUncompressed')::bigint
 FROM
   JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
   LEFT JOIN questions AS q ON (
@@ -146,114 +187,6 @@ FROM
     a.tid = (chunk ->> 'assessmentName')
     AND a.deleted_at IS NULL
     AND a.course_instance_id = ci.id
-  )
-ON CONFLICT (
-  type,
-  course_id,
-  coalesce(question_id, -1),
-  coalesce(course_instance_id, -1),
-  coalesce(assessment_id, -1)
-) DO UPDATE
-SET
-  type = EXCLUDED.type,
-  question_id = EXCLUDED.question_id,
-  course_instance_id = EXCLUDED.course_instance_id,
-  assessment_id = EXCLUDED.assessment_id,
-  uuid = EXCLUDED.uuid;
-
--- BLOCK delete_chunks
-WITH
-  chunks_metadata AS (
-    SELECT
-      (cm ->> 'type')::enum_chunk_type AS type,
-      q.id AS question_id,
-      ci.id AS course_instance_id,
-      a.id AS assessment_id,
-      (cm ->> 'uuid')::uuid AS uuid
-    FROM
-      JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS cm
-      LEFT JOIN questions AS q ON (
-        q.qid = (cm ->> 'questionName')
-        AND q.course_id = $course_id
-      )
-      LEFT JOIN course_instances AS ci ON (
-        ci.short_name = (cm ->> 'courseInstanceName')
-        AND ci.course_id = $course_id
-      )
-      LEFT JOIN assessments AS a ON (
-        a.tid = (cm ->> 'assessmentName')
-        AND a.course_instance_id = ci.id
-      )
-  ),
-  -- We use separate queries for each chunk type so that Postgres doesn't try to
-  -- compute a huge cross product of the chunks + metadata on `type` as an
-  -- intermediate step. This was O(n^2) with the number of chunks to delete.
-  chunks_to_delete AS (
-    (
-      SELECT
-        id
-      FROM
-        chunks
-        JOIN chunks_metadata AS cm ON (
-          cm.type = chunks.type
-          AND cm.question_id = chunks.question_id
-        )
-      WHERE
-        chunks.course_id = $course_id
-        AND chunks.type = 'question'
-    )
-    UNION
-    (
-      SELECT
-        id
-      FROM
-        chunks
-        JOIN chunks_metadata AS cm ON (
-          cm.type = chunks.type
-          AND cm.course_instance_id = chunks.course_instance_id
-        )
-      WHERE
-        chunks.course_id = $course_id
-        AND chunks.type = 'clientFilesCourseInstance'
-    )
-    UNION
-    (
-      SELECT
-        id
-      FROM
-        chunks
-        JOIN chunks_metadata AS cm ON (
-          cm.type = chunks.type
-          AND cm.assessment_id = chunks.assessment_id
-        )
-      WHERE
-        chunks.course_id = $course_id
-        AND chunks.type = 'clientFilesAssessment'
-    )
-    UNION
-    (
-      SELECT
-        id
-      FROM
-        chunks
-        JOIN chunks_metadata AS cm ON (cm.type = chunks.type)
-      WHERE
-        chunks.course_id = $course_id
-        AND cm.type IN (
-          'elements',
-          'elementExtensions',
-          'clientFilesCourse',
-          'serverFilesCourse'
-        )
-    )
-  )
-DELETE FROM chunks
-WHERE
-  id IN (
-    SELECT
-      id
-    FROM
-      chunks_to_delete
   );
 
 -- BLOCK select_active_assessment_ids_by_tid
