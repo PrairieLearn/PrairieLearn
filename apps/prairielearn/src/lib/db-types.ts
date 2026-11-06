@@ -692,10 +692,15 @@ export const BatchedMigrationSchema = null;
 
 export const ChunkSchema = z.object({
   assessment_id: IdSchema.nullable(),
+  commit_hash: z.string().nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
+  created_at: DateFromISOString.nullable(),
+  deleted: z.boolean(),
   id: IdSchema,
   question_id: IdSchema.nullable(),
+  size_compressed: z.coerce.number().nullable(),
+  size_uncompressed: z.coerce.number().nullable(),
   type: EnumChunkTypeSchema,
   uuid: z.string(), // TODO: should this be a UUID?
 });

@@ -66,6 +66,7 @@ function options(onAccepted: () => void, threadId: string | null = null) {
     onThread: () => {},
     onReady: () => {},
     onAccepted,
+    log: () => {},
   };
 }
 
@@ -259,6 +260,38 @@ describe('course agent turns', () => {
     cleaned.resolve(undefined);
     await stop;
     expect(await turn.finished).toEqual({ phase: 'startup', stopped: true });
+  });
+
+  it('waits for the runner before cleaning up a failed clone and never starts a thread', async () => {
+    const { sandbox, native, commands } = runner();
+    const connecting = Promise.withResolvers<undefined>();
+    const fetch = sandbox.fetch;
+    sandbox.fetch = vi.fn(async (...args: Parameters<typeof fetch>) => {
+      await connecting.promise;
+      return fetch(...args);
+    }) as typeof fetch;
+    const events: string[] = [];
+    sandbox.stopProcesses = vi.fn(async () => {
+      events.push('cleanup');
+    });
+    const turn = new SandboxTurn(sandbox, native, {
+      ...options(() => {}),
+      startup: true,
+      addCourseFiles: async () => {
+        events.push('clone failed');
+        throw new Error('Clone failed');
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    events.push('runner connected');
+    connecting.resolve(undefined);
+    expect(await turn.finished).toEqual({
+      phase: 'startup',
+      stopped: false,
+      error: new Error('Clone failed'),
+    });
+    expect(events).toEqual(['clone failed', 'runner connected', 'cleanup']);
+    expect(commands.some((command) => command.method.startsWith('thread/'))).toBe(false);
   });
 
   it('settles a failed Stop instead of waiting forever for native output', async () => {

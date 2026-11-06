@@ -15,6 +15,8 @@ import {
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
 
+import { logEvent, redactSecrets } from '../monitoring.js';
+
 const SESSION = '/workspace/session';
 // The node user and group in the base container image both have ID 1000.
 const NODE_UID_GID = '1000:1000';
@@ -36,8 +38,35 @@ const GIT_IDENTITY = [
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
-const lifetimeMs = (env: Env) =>
-  (Number(env.AGENT_TURN_SECONDS) + Number(env.USER_IDLE_SECONDS) + 3600) * 1000;
+// Cloudflare's maximum time a container can stay disconnected from its Durable Object.
+// AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
+const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
+
+// Codex output can contain sensitive content, so stderr is forwarded only when DEBUG_RUNNER_OUTPUT
+// is "true" (staging only), capped in case a runner repeats an error.
+const RUNNER_LOG_LINES = 200;
+const RUNNER_LOG_CHARS = 2000;
+
+/** Forward runner stderr to Worker logs and keep a short tail for startup errors. */
+function forwardRunnerStderr(stream: ReadableStream) {
+  let lines = 0;
+  let tail = '';
+  const done = (async () => {
+    try {
+      for await (const chunk of stream.pipeThrough(new TextDecoderStream())) {
+        tail = (tail + chunk).slice(-RUNNER_LOG_CHARS);
+        for (const line of chunk.split('\n')) {
+          if (line && ++lines <= RUNNER_LOG_LINES) {
+            console.warn(`[codex stderr] ${redactSecrets(line.slice(0, RUNNER_LOG_CHARS))}`);
+          }
+        }
+      }
+    } catch {
+      // The stream errors when the container stops; the runner's exit is handled by the caller.
+    }
+  })();
+  return { done, tail: () => redactSecrets(tail.trim()) };
+}
 
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
 export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
@@ -76,7 +105,10 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
 }
 
 /** Only the conversation's pinned model is available; its API key stays outside the container. */
-export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: string }> {
+export class CourseAgentModelOutbound extends WorkerEntrypoint<
+  Env,
+  { model: string; sandboxId: string }
+> {
   override async fetch(request: Request) {
     const url = new URL(request.url);
     if (
@@ -87,9 +119,13 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: str
     ) {
       return new Response('Forbidden', { status: 403 });
     }
-    const body = (await request.json()) as { model?: string };
+    const body = (await request.json()) as { model?: string; input?: { role?: string }[] };
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
-    return fetch('https://api.openai.com/v1/responses', {
+    // Later requests in a turn end with tool output; only the role is read, never the content.
+    const firstOfTurn = body.input?.at(-1)?.role === 'user';
+    const started = Date.now();
+    if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
@@ -98,6 +134,14 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: str
       body: JSON.stringify(body),
       redirect: 'manual',
     });
+    if (firstOfTurn) {
+      logEvent('model_response_started', {
+        sandboxId: this.ctx.props.sandboxId,
+        status: response.status,
+        elapsedMs: Date.now() - started,
+      });
+    }
+    return response;
   }
 }
 
@@ -105,11 +149,16 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: str
 export class CourseSandbox extends DurableObject<Env> {
   private process: ExecProcess | null = null;
   private nativeToken: string | null = null;
+  // Set by prepare(): a container this instance just started has no orphaned processes, and the
+  // first runner start must not kill a course clone that is running alongside it.
+  private freshContainer = false;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     void ctx.blockConcurrencyWhile(async () => {
-      if (ctx.container?.running) await ctx.container.setInactivityTimeout(lifetimeMs(env));
+      if (ctx.container?.running) {
+        await ctx.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
+      }
     });
   }
 
@@ -132,12 +181,18 @@ export class CourseSandbox extends DurableObject<Env> {
     return result;
   }
 
-  /** Start an isolated sandbox, restore or clone its files, and configure Codex. */
+  /**
+   * Start an isolated workspace and configure Codex. A checkpoint is restored here; otherwise the
+   * caller adds course files with `addCourseFiles()`, which can run while the Codex runner starts.
+   */
   async prepare(
     config: CourseSource & { model: string },
     checkpoint: DirectoryBackupRecord | null,
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
+    const started = Date.now();
+    const log = (event: string, fields: Record<string, unknown> = {}) =>
+      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     this.container.start({
       image: this.container.images.courseAgent,
       enableInternet: false,
@@ -146,7 +201,13 @@ export class CourseSandbox extends DurableObject<Env> {
       // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
       instance: 'basic',
     });
-    await this.container.setInactivityTimeout(lifetimeMs(this.env));
+    await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
+    // Confirms the instance type actually applied: basic has 1 GiB, lite 256 MiB.
+    const [memTotal, cpus] = new TextDecoder()
+      .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
+      .trim()
+      .split('\n');
+    log('sandbox_started', { memTotal, cpus });
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
@@ -155,79 +216,102 @@ export class CourseSandbox extends DurableObject<Env> {
     }
     await this.container.interceptOutboundHttp(
       'model.internal:80',
-      this.ctx.exports.CourseAgentModelOutbound({ props: { model: config.model } }),
+      this.ctx.exports.CourseAgentModelOutbound({
+        props: { model: config.model, sandboxId: this.ctx.id.name },
+      }),
     );
     await this.exec(['mkdir', '-p', '/workspace']);
     if (checkpoint) {
+      log('sandbox_restore_started');
       await this.backups.restore(checkpoint);
+      log('sandbox_restore_finished');
     } else {
       await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
       await this.exec(['chown', '-R', NODE_UID_GID, SESSION]);
-      if (config.type === 'local') {
-        const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
-        if (!archive) throw new Error('The local course snapshot is missing');
-        const files = new Files(this.container);
-        await files.writeFile('/tmp/course-source.tar.gz', archive.body);
-        await this.exec(['mkdir', '-p', `${SESSION}/repository`], 'node');
-        await this.exec(
-          ['tar', '-xzf', '/tmp/course-source.tar.gz', '-C', `${SESSION}/repository`],
-          'node',
-        );
-        await this.exec(['rm', '/tmp/course-source.tar.gz']);
-        await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
-        // Local Git must track exact bytes for both the baseline and later reviews.
-        await files.writeFile(
-          `${SESSION}/repository/.git/info/attributes`,
-          '* -text -filter -ident -working-tree-encoding\n',
-        );
-        await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
-        await this.exec(
-          [
-            'git',
-            '-C',
-            `${SESSION}/repository`,
-            ...GIT_IDENTITY,
-            'commit',
-            '--allow-empty',
-            '-m',
-            'Initial local course snapshot',
-          ],
-          'node',
-        );
-        await this.exec(
-          ['git', '-C', `${SESSION}/repository`, 'update-ref', LOCAL_SAVED_REF, 'HEAD'],
-          'node',
-        );
-        // Preserve the original Git paths while keeping the native runner's course path stable.
-        await this.exec(
-          ['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`],
-          'node',
-        );
-      } else {
-        await this.exec(
-          [
-            'git',
-            'clone',
-            '--single-branch',
-            '--branch',
-            config.branch,
-            '--',
-            `http://repository.internal/${config.repository}.git`,
-            `${SESSION}/course`,
-          ],
-          'node',
-        );
-      }
     }
-    // Configuration contains no credentials. It is reapplied after restoration.
+    // Configuration contains no credentials or repository data. It is reapplied after restoration.
     const files = new Files(this.container);
     await files.writeFile(
       `${SESSION}/home/.codex/config.toml`,
       'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
     );
     await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
-    // Keep the parent root-owned so the agent cannot rename or replace course/home directories.
+    // addCourseFiles() locks a fresh workspace once its files are in place.
+    if (checkpoint) await this.lockSession();
+    this.freshContainer = true;
+    log('sandbox_codex_config_written');
+  }
+
+  /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
+  private async lockSession() {
     await this.exec(['chown', 'root:root', SESSION]);
+  }
+
+  /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
+  async addCourseFiles(config: CourseSource) {
+    const started = Date.now();
+    const log = (event: string, fields: Record<string, unknown> = {}) =>
+      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
+    if (config.type === 'local') {
+      const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
+      if (!archive) throw new Error('The local course snapshot is missing');
+      const files = new Files(this.container);
+      await files.writeFile('/tmp/course-source.tar.gz', archive.body);
+      await this.exec(['mkdir', '-p', `${SESSION}/repository`], 'node');
+      await this.exec(
+        ['tar', '-xzf', '/tmp/course-source.tar.gz', '-C', `${SESSION}/repository`],
+        'node',
+      );
+      await this.exec(['rm', '/tmp/course-source.tar.gz']);
+      await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
+      // Local Git must track exact bytes for both the baseline and later reviews.
+      await files.writeFile(
+        `${SESSION}/repository/.git/info/attributes`,
+        '* -text -filter -ident -working-tree-encoding\n',
+      );
+      await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
+      await this.exec(
+        [
+          'git',
+          '-C',
+          `${SESSION}/repository`,
+          ...GIT_IDENTITY,
+          'commit',
+          '--allow-empty',
+          '-m',
+          'Initial local course snapshot',
+        ],
+        'node',
+      );
+      await this.exec(
+        ['git', '-C', `${SESSION}/repository`, 'update-ref', LOCAL_SAVED_REF, 'HEAD'],
+        'node',
+      );
+      // Preserve the original Git paths while keeping the native runner's course path stable.
+      await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
+    } else {
+      log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
+      // Reviews only need the branch tip, and later fetches still work from a shallow clone.
+      // Full history made large course repositories take most of startup to clone.
+      await this.exec(
+        [
+          'git',
+          'clone',
+          '--depth',
+          '1',
+          '--single-branch',
+          '--branch',
+          config.branch,
+          '--',
+          `http://repository.internal/${config.repository}.git`,
+          `${SESSION}/course`,
+        ],
+        'node',
+      );
+      log('sandbox_clone_finished');
+    }
+    await this.lockSession();
+    log('sandbox_files_ready', { source: config.type });
   }
 
   /**
@@ -409,7 +493,8 @@ export class CourseSandbox extends DurableObject<Env> {
     if (!this.container.running) throw new Error('Native runner has no live sandbox');
     // A fresh connection follows sandbox startup or Conversation DO recovery. Replace any
     // orphaned runner before reconnecting; ordinary turns reuse the existing connection.
-    await this.stopProcesses();
+    if (this.freshContainer) this.freshContainer = false;
+    else await this.stopProcesses();
     this.nativeToken = crypto.randomUUID();
     const digest = await crypto.subtle.digest(
       'SHA-256',
@@ -418,6 +503,10 @@ export class CourseSandbox extends DurableObject<Env> {
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
+    // Temporary: forwards Codex output to diagnose staging sandbox startup. Remove this flag and
+    // the forwarding once that is resolved; production must never set it.
+    const debugOutput = this.env.DEBUG_RUNNER_OUTPUT === 'true';
+    const started = Date.now();
     this.process = await this.container.exec(
       [
         'codex',
@@ -431,26 +520,55 @@ export class CourseSandbox extends DurableObject<Env> {
       ],
       {
         user: 'node',
-        cwd: `${SESSION}/course`,
+        // Threads set their own cwd to the course. Home exists before course files are added, so
+        // the runner can start while the repository is still being cloned.
+        cwd: `${SESSION}/home`,
         env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
         stdout: 'ignore',
-        stderr: 'ignore',
+        stderr: debugOutput ? 'pipe' : 'ignore',
       },
     );
+    logEvent('runner_started', {
+      sandboxId: this.ctx.id.name,
+      pid: this.process.pid,
+      elapsedMs: Date.now() - started,
+    });
+    const stderr = this.process.stderr ? forwardRunnerStderr(this.process.stderr) : null;
+    let exitCode: number | null = null;
+    void this.process.exitCode.then((code) => {
+      exitCode = code;
+    });
     const port = this.container.getTcpPort(NATIVE_PORT);
     const forwarded = new Request('http://container/', request);
     forwarded.headers.delete('host');
     forwarded.headers.set('Authorization', `Bearer ${this.nativeToken}`);
-    const deadline = Date.now() + 30_000;
+    const deadline = started + 30_000;
+    let failures = 0;
     // Use the upgrade for readiness: an empty health response can break the next pooled request.
     // https://github.com/cloudflare/workerd/issues/7597
     // Only connection establishment is retried; protocol commands have not been sent yet.
     for (;;) {
       try {
-        return await port.fetch(forwarded);
+        const response = await port.fetch(forwarded);
+        const elapsedMs = Date.now() - started;
+        logEvent('runner_ready', { sandboxId: this.ctx.id.name, elapsedMs, failures });
+        return response;
       } catch (error) {
-        if (Date.now() >= deadline) throw error;
-        await scheduler.wait(100);
+        failures++;
+        if (exitCode === null && Date.now() < deadline) {
+          await scheduler.wait(100);
+          continue;
+        }
+        // A runner that is still alive never closes stderr, so only briefly wait for its tail.
+        if (stderr) await Promise.race([stderr.done, scheduler.wait(1000)]);
+        const facts = JSON.stringify({
+          elapsedMs: Date.now() - started,
+          failures,
+          exitCode,
+          containerRunning: this.container.running,
+        });
+        const tail = stderr ? `: ${stderr.tail() || '(no stderr)'}` : '';
+        throw new Error(`Codex runner did not listen: ${facts}${tail}`, { cause: error });
       }
     }
   }

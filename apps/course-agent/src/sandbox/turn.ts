@@ -28,14 +28,28 @@ export class SandboxTurn {
       onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
       startup: boolean;
       prepare: () => Promise<void>;
+      /** Runs alongside the runner start; the thread starts only after both finish. */
+      addCourseFiles?: () => Promise<void>;
       thread: { model: string; instructions: string; threadId: string | null };
       onThread: (id: string) => void;
       onReady: () => void;
       /** Receives the native turn ID, or null when an earlier attempt already submitted it. */
       onAccepted: (id: string | null) => void;
+      log: (event: string) => void;
     },
   ) {
-    this.stream = native.beginTurn(options.messageId, options.onReview);
+    let replied = false;
+    this.stream = native.beginTurn(options.messageId, options.onReview).pipeThrough(
+      new TransformStream<UIMessageChunk, UIMessageChunk>({
+        transform(chunk, controller) {
+          if (!replied && (chunk.type === 'text-delta' || chunk.type === 'reasoning-delta')) {
+            replied = true;
+            options.log('turn_first_delta');
+          }
+          controller.enqueue(chunk);
+        },
+      }),
+    );
     this.finished = this.execute(options);
   }
 
@@ -80,7 +94,14 @@ export class SandboxTurn {
     try {
       await options.prepare();
       this.abort.signal.throwIfAborted();
-      await this.native.connect();
+      // Wait for both even if one fails, so failed startup cleanup never races a step still running.
+      const [files, runner] = await Promise.allSettled([
+        options.addCourseFiles?.(),
+        this.native.connect().then(() => options.log('turn_runner_connected')),
+      ]);
+      if (files.status === 'rejected') throw files.reason;
+      if (runner.status === 'rejected') throw runner.reason;
+      if (options.addCourseFiles) options.log('turn_workspace_ready');
       this.abort.signal.throwIfAborted();
       options.onThread(await this.native.thread(options.thread));
       this.abort.signal.throwIfAborted();

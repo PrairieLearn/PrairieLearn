@@ -19,13 +19,17 @@ import {
   type ReviewSnapshot,
 } from '@prairielearn/course-agent-types';
 
-import { reportError } from '../monitoring.js';
+import { logEvent, reportError } from '../monitoring.js';
 import { CodexAppServerClient, type TurnInput } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import { buildCatchUp, messageTag, missedTurns, reviewTag, turnMarker } from './catch-up.js';
 import { buildInstructions } from './instructions.js';
+
+// PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
+// without traffic, including idle chats and long silent turns.
+const KEEPALIVE_SECONDS = 25;
 
 const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
@@ -87,6 +91,7 @@ type ConversationRecord = RecordData &
 
 interface ActiveTurn {
   requestId: string;
+  startedAt: number;
   execution: SandboxTurn;
   sdkFinished: PromiseWithResolvers<undefined>;
   /** Resolved when finishTurn releases execution ownership. */
@@ -245,6 +250,21 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         messages: await this.sessions.session().getHistory(),
       }),
     );
+    // Idempotent: every connection shares one interval schedule.
+    await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
+  }
+
+  /** Clients ignore this message type; sending it only keeps proxied sockets from idling out. */
+  async sendKeepalive() {
+    const connections = [...this.getConnections()];
+    if (connections.length === 0) {
+      const schedule = await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
+      await this.cancelSchedule(schedule.id);
+      return;
+    }
+    for (const connection of connections) {
+      connection.send(JSON.stringify({ type: 'course_agent_keepalive' }));
+    }
   }
 
   override validateStateChange(_state: ConversationState, source: Connection | 'server') {
@@ -258,6 +278,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   private block(reason: BlockedReason) {
+    // Callers report the underlying error separately.
+    logEvent('conversation_blocked', {
+      conversationId: this.name,
+      from: this.record.lifecycle.status,
+      reason,
+    });
     this.setRecord({
       ...this.record,
       lifecycle: { status: 'blocked', reason },
@@ -382,6 +408,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         ? { catchUp: (latestTag) => buildCatchUp(missedTurns(earlier, latestTag), source.type) }
         : {}),
     };
+    const startedAt = Date.now();
+    const log = (event: string, fields: Record<string, unknown> = {}) =>
+      logEvent(event, {
+        conversationId: this.name,
+        sandboxId: this.record.sandboxId,
+        elapsedMs: Date.now() - startedAt,
+        ...fields,
+      });
     this.setRecord({
       ...this.record,
       // A user message acknowledges an earlier loss unless this message found it.
@@ -390,6 +424,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
     });
+    log('turn_started', { startup });
     this.native ??= new CodexAppServerClient(this.sandbox);
     let nativeThreadId = this.record.nativeThreadId;
     const execution = new SandboxTurn(this.sandbox, this.native, {
@@ -400,9 +435,21 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       onReview: () => this.captureReview(source),
       prepare: async () => {
         await this.scheduleDeadline('turn');
-        if (startup) await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+        if (startup) {
+          log('turn_sandbox_prepare_requested');
+          await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+          log('turn_sandbox_prepare_finished');
+        }
         if (continuation && review) await this.advanceLocalBaseline(review);
       },
+      addCourseFiles:
+        startup && !this.record.checkpoint
+          ? async () => {
+              log('turn_course_files_started');
+              await this.sandbox.addCourseFiles(this.record.config);
+              log('turn_course_files_ready');
+            }
+          : undefined,
       thread: {
         model: this.record.config.model,
         instructions: buildInstructions(this.record.courseContext ?? undefined, source.type),
@@ -420,10 +467,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         // The agent now has the result, so it may request another review in this turn.
         if (continuation && review) this.settleReview(review.id);
       },
+      log,
     });
     if (continuation && review?.result) this.native.emit(turnMarker(input.tag, review.result));
     const active: ActiveTurn = {
       requestId: options.requestId,
+      startedAt,
       execution,
       sdkFinished: Promise.withResolvers<undefined>(),
       released: Promise.withResolvers<undefined>(),
@@ -463,6 +512,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** The single completion path chooses waiting, startup cleanup, or deadline shutdown. */
   private async finishTurn(active: ActiveTurn) {
     const result = await active.execution.finished;
+    logEvent('turn_finished', {
+      conversationId: this.name,
+      phase: result.phase,
+      stopped: result.stopped,
+      failed: result.error !== undefined,
+      elapsedMs: Date.now() - active.startedAt,
+    });
     if (result.stopped || result.error) this.native = null;
     // A delivery turn that ended before the agent received its result waits for Resume.
     const review = this.record.review;
