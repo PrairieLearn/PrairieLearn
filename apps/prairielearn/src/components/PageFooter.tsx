@@ -35,7 +35,7 @@ export function PageFooter() {
                 alt=""
                 width="341"
                 height="387"
-                style={{ width: '20px', height: 'auto' }}
+                style={{ width: '18px', height: 'auto' }}
               />
             </a>
             <a
