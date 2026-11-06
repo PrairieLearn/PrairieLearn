@@ -40,6 +40,7 @@ export function QuestionContainer({
   questionContext,
   questionRenderContext,
   showFooter = true,
+  questionHostingUpdate = false,
   manualGradingPreviewUrl,
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
@@ -50,6 +51,7 @@ export function QuestionContainer({
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
+  questionHostingUpdate?: boolean;
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
@@ -81,6 +83,7 @@ export function QuestionContainer({
   return html`
     <div
       class="question-container mb-4"
+      data-question-hosting-update="${questionHostingUpdate}"
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
       data-variant-token="${variantToken}"

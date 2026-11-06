@@ -24,9 +24,9 @@ export function InstructorQuestionPreview({
   readmeHtml,
   questionCopyTargets,
   resLocals,
-  independentScrolling,
+  questionHostingUpdate,
 }: {
-  independentScrolling: boolean;
+  questionHostingUpdate: boolean;
   normalPreviewUrl: string;
   questionRenderContext: 'manual_grading' | 'ai_grading' | undefined;
   manualGradingPreviewUrl: string;
@@ -72,13 +72,13 @@ export function InstructorQuestionPreview({
       subPage: 'preview',
     },
     options: {
-      contentContainerClassName: independentScrolling ? 'question-page-layout' : '',
+      contentContainerClassName: questionHostingUpdate ? 'question-page-layout' : '',
       // Render sync messages inside the question pane to preserve the sidebar's full height.
-      showSyncErrorsAndWarnings: !independentScrolling,
+      showSyncErrorsAndWarnings: !questionHostingUpdate,
       pageNote: resLocals.question.qid,
     },
     headContent: html`
-      ${independentScrolling ? compiledStylesheetTag('questionLayout.css') : ''}
+      ${questionHostingUpdate ? compiledStylesheetTag('questionLayout.css') : ''}
       <meta
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
@@ -123,14 +123,14 @@ export function InstructorQuestionPreview({
       storageKey: `calculator-preview-${resLocals.question.id}`,
     }),
     content: html`
-      ${independentScrolling ? '' : previewAlerts}
+      ${questionHostingUpdate ? '' : previewAlerts}
       <div class="row question-page-row">
         <div
           class="col-lg-9 col-sm-12 question-page-question"
-          ${independentScrolling ? html`role="region" aria-label="Question" tabindex="0"` : ''}
+          ${questionHostingUpdate ? html`role="region" aria-label="Question" tabindex="0"` : ''}
         >
           ${
-            independentScrolling
+            questionHostingUpdate
               ? html`
                   ${renderHtml(
                     <SyncErrorsAndWarnings
@@ -183,6 +183,7 @@ export function InstructorQuestionPreview({
               : ''
           }
           ${QuestionContainer({
+            questionHostingUpdate,
             resLocals,
             showFooter: questionRenderContext != null ? false : undefined,
             questionContext: 'instructor',
@@ -198,7 +199,7 @@ export function InstructorQuestionPreview({
 
         <div
           class="col-lg-3 col-sm-12 question-page-sidebar"
-          ${independentScrolling ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
+          ${questionHostingUpdate ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
         >
           <div class="card mb-3">
             <div class="card-header bg-secondary text-white">
