@@ -11,6 +11,7 @@ RUN tar -xzf /tmp/codex.tgz -C /tmp \
   && rm -rf /opt/codex/codex-resources/voice
 
 FROM debian:bookworm-slim
+ARG CACHEBUST=2026-09-15-14-09-16
 # Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
 # offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
 RUN apt-get update \
@@ -24,6 +25,6 @@ RUN apt-get update \
 COPY --from=codex /opt/codex /opt/codex
 RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex
 COPY --from=sandbox /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
-COPY container/setup.sh /usr/local/bin/course-agent-setup
-COPY container/codex-config.toml /etc/course-agent/codex-config.toml
+COPY setup.sh /usr/local/bin/course-agent-setup
+COPY codex-config.toml /etc/course-agent/codex-config.toml
 CMD ["/usr/bin/tini", "--", "sleep", "infinity"]
