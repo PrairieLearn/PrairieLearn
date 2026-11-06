@@ -392,11 +392,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
     const review = this.record.review;
     const status = this.record.lifecycle.status;
-    // deliverReviewResult() claims the conversation before the SDK calls back for a continuation.
+    // deliverWaitingResult() claims the conversation before the SDK calls back for a continuation.
     const admitted = continuation
       ? review?.result && status === 'waiting_for_agent'
       : !review && (status === 'offline' || status === 'waiting_for_user');
     if (!admitted || this.active || this.recovering || this.sandboxShutdown) {
+      // The SDK has already saved the message. Count it as handled, or the next submit would
+      // send this refused prompt in place of the user's next one.
+      if (message) this.setRecord({ ...this.record, submittedMessageId: message.id });
       throw new Error('The course agent sandbox is not ready.');
     }
     if (!continuation && !message) throw new Error('Expected a new user message');

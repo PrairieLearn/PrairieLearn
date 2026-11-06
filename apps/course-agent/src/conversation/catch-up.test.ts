@@ -76,7 +76,7 @@ describe('buildCatchUp', () => {
 });
 
 describe('nextUserMessage', () => {
-  it('takes the first unsubmitted user message, even when a reply was appended after it', () => {
+  it('takes the first user message after the last one handled, even if a reply followed it', () => {
     // A second tab's submit is persisted while the first turn runs, before that turn's reply.
     const queued: UIMessage[] = [
       { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'First' }] },
@@ -85,6 +85,7 @@ describe('nextUserMessage', () => {
       { id: 'a1', role: 'assistant', parts: [{ type: 'text', text: 'Reply' }] },
     ];
     expect(nextUserMessage(queued, 'u1')?.id).toBe('u2');
+    // A refused message is recorded as handled too, so it is never sent in place of the next one.
     expect(nextUserMessage(queued, 'u2')?.id).toBe('u3');
     expect(nextUserMessage(queued, 'u3')).toBeNull();
     // Records saved before submissions were tracked fall back to the newest user message.
