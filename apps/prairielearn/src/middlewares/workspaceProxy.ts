@@ -17,7 +17,7 @@ import { LocalCache } from '../lib/local-cache.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const WORKSPACE_UPGRADE_PATH = /^\/pl\/(public\/)?workspace\/\d+\/container\//;
+const WORKSPACE_UPGRADE_PATH = /^\/pl\/workspace\/\d+\/container\//;
 
 /** Saves the bytes Node received after each upgrade request until the proxy takes over. */
 const upgradeHeads = new WeakMap<http.IncomingMessage, Buffer>();

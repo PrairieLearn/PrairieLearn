@@ -15,7 +15,11 @@ import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 import { z } from 'zod';
 
-import { type ConversationState } from '@prairielearn/course-agent-types';
+import {
+  type ConversationState,
+  type ToolCall,
+  ToolCallSchema,
+} from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
@@ -29,6 +33,7 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
+import { ToolCalls } from './ToolCalls.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -307,8 +312,17 @@ function Chat({
   const activity = run(() => {
     if (connectionFailed || connectionError) return null;
     if (lifecycle?.status === 'starting') return 'Starting the course agent…';
-    if (lifecycle?.status === 'waiting_for_agent') return 'Thinking…';
-    return null;
+    if (lifecycle?.status !== 'waiting_for_agent') return null;
+    // Once the reply shows text, reasoning or a tool call, that output shows the agent working.
+    const lastMessage = messages.at(-1);
+    const showsOutput =
+      lastMessage?.role === 'assistant' &&
+      lastMessage.parts.some((part) =>
+        part.type === 'text' || part.type === 'reasoning'
+          ? part.text.trim().length > 0
+          : toolCallOf(part) !== null,
+      );
+    return showsOutput ? null : 'Thinking…';
   });
   const awaitingReviewId =
     !responseActive && lifecycle && reviewDecidable(lifecycle) ? lifecycle.reviewId : null;
@@ -332,12 +346,14 @@ function Chat({
               Ask the course agent about your course or about PrairieLearn.
             </p>
           )}
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <Message
               key={message.id}
               message={message}
+              live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
+              onToolCallExpand={stickToBottom.stopScroll}
             />
           ))}
           {/* Stop can end the stream before history records the review, which would otherwise
@@ -472,15 +488,27 @@ function reviewInHistory(messages: UIMessage[], reviewId: string) {
   );
 }
 
+/** Parts from an older or newer agent service may not match; show only what parses. */
+function toolCallOf(part: UIMessage['parts'][number]) {
+  if (part.type !== 'data-tool') return null;
+  return ToolCallSchema.safeParse(part.data).data ?? null;
+}
+
 function Message({
   message,
+  live,
   conversationId,
   awaitingReviewId,
+  onToolCallExpand,
 }: {
   message: UIMessage;
+  /** Whether this message is still streaming. */
+  live: boolean;
   conversationId: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
+  /** Opening a tool call must not scroll it out from under the pointer. */
+  onToolCallExpand: () => void;
 }) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
@@ -490,10 +518,29 @@ function Message({
       </div>
     );
   }
+  // Consecutive tool calls render together so runs of the same kind can be grouped.
+  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
+  const segments: Segment[] = [];
+  message.parts.forEach((part, index) => {
+    const call = toolCallOf(part);
+    const last = segments.at(-1);
+    if (call && last && 'calls' in last) last.calls.push(call);
+    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
+  });
   return (
     <div className="d-flex flex-column gap-2">
-      {message.parts.map((part, index) => {
-        const key = `part-${index}`;
+      {segments.map((segment) => {
+        if ('calls' in segment) {
+          return (
+            <ToolCalls
+              key={segment.key}
+              calls={segment.calls}
+              live={live}
+              onExpand={onToolCallExpand}
+            />
+          );
+        }
+        const { key, part } = segment;
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
         if (part.type === 'data-review') {
