@@ -1,9 +1,11 @@
 import { io } from 'socket.io-client';
 
 import type { StatusMessage } from '../externalGradingSocket.types.js';
+import type { QuestionDialogData } from '../question-dialogs.types.js';
 import type { SubmissionPanels } from '../question-render.types.js';
 
 import type { QuestionBrowserServices } from './question-browser-services.types.js';
+import { createQuestionDialogs } from './question-dialogs.js';
 import { updateQuestionPagePanels } from './question-page-panels.js';
 
 /** Same-document adapter, constructed by the application for the active view. */
@@ -12,16 +14,19 @@ export function createLocalQuestionBrowserServices({
   variantId,
   variantToken,
   submissionRenderUrls,
+  dialogData,
   isCurrent,
 }: {
   document: Document;
   variantId: string;
   variantToken: string;
   submissionRenderUrls: ReadonlyMap<string, string>;
+  dialogData: QuestionDialogData;
   isCurrent: () => boolean;
 }): { services: QuestionBrowserServices; dispose: () => void } {
   const abortController = new AbortController();
   const subscriptions = new Set<() => void>();
+  const dialogs = createQuestionDialogs(document, dialogData);
 
   function assertCurrent() {
     abortController.signal.throwIfAborted();
@@ -29,6 +34,16 @@ export function createLocalQuestionBrowserServices({
   }
 
   const services: QuestionBrowserServices = {
+    async openCopyQuestion() {
+      assertCurrent();
+      await dialogs.openCopyQuestion();
+    },
+
+    async openSubmissionInfo(request) {
+      assertCurrent();
+      await dialogs.openSubmissionInfo(request);
+    },
+
     async renderSubmission({ submissionId, purpose }, { signal }) {
       assertCurrent();
       const renderUrl = submissionRenderUrls.get(submissionId);
@@ -46,6 +61,7 @@ export function createLocalQuestionBrowserServices({
       requestSignal.throwIfAborted();
       assertCurrent();
       updateQuestionPagePanels(document, panels);
+      if (panels.submissionInfo) dialogs.updateSubmissionInfo(panels.submissionInfo);
 
       // Only content intended for the question document crosses this boundary.
       return {
@@ -85,6 +101,7 @@ export function createLocalQuestionBrowserServices({
     services,
     dispose() {
       abortController.abort();
+      dialogs.dispose();
       subscriptions.forEach((unsubscribe) => unsubscribe());
     },
   };

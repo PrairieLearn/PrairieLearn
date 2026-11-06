@@ -3,12 +3,13 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { IdSchema } from '@prairielearn/zod';
+import { IdSchema, parseRequestQuery } from '@prairielearn/zod';
 
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
+import { SubmissionRenderQuerySchema } from '../../lib/question-render.types.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../models/question.js';
@@ -62,6 +63,7 @@ router.post(
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
   asyncHandler(async (req, res) => {
+    const query = parseRequestQuery(req, SubmissionRenderQuerySchema);
     await setLocals(req, res);
 
     const variant = await selectAndAuthzVariant({
@@ -76,6 +78,7 @@ router.get(
     });
 
     const panels = await renderPanelsForSubmission({
+      questionHostingUpdate: query.question_hosting_update,
       unsafe_submission_id: req.params.unsafe_submission_id,
       course: res.locals.course,
       question: res.locals.question,
