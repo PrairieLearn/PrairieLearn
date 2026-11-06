@@ -232,6 +232,8 @@ export function PageLayout({
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
+    /** Whether to render sync errors and warnings above the page content. */
+    showSyncErrorsAndWarnings?: boolean;
     /** Additional classes to apply to the main content container. */
     contentContainerClassName?: string;
     /** A note to display after the pageTitle, shown in parenthesis. */
@@ -272,6 +274,7 @@ export function PageLayout({
     fullWidth: false,
     fullHeight: false,
     contentPadding: true,
+    showSyncErrorsAndWarnings: true,
     contentContainerClassName: '',
     hxExt: '',
     dataAttributes: {},
@@ -496,9 +499,16 @@ export function PageLayout({
                   resolvedOptions.fullHeight && 'app-content-full-height flex-grow-1',
                 )}"
               >
-                ${renderHtml(
-                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
-                )}
+                ${
+                  resolvedOptions.showSyncErrorsAndWarnings
+                    ? renderHtml(
+                        <SyncErrorsAndWarningsForContext
+                          navContext={navContext}
+                          resLocals={resLocals}
+                        />,
+                      )
+                    : ''
+                }
                 ${contentString}
               </main>
               ${postContentString}
