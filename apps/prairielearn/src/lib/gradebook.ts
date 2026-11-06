@@ -33,6 +33,8 @@ async function applyModernAccessControl<
       date_limit: Date | null;
       points: number | null;
       score_perc: number | null;
+      score_perc_pending: number;
+      grading_pending: boolean;
     };
   },
 >(rows: T[], params: GetGradebookRowsParams): Promise<void> {
@@ -61,6 +63,8 @@ async function applyModernAccessControl<
       if (params.auth === 'student' && !authzResult.show_closed_assessment_score) {
         row.assessment_instance.points = null;
         row.assessment_instance.score_perc = null;
+        row.assessment_instance.score_perc_pending = 0;
+        row.assessment_instance.grading_pending = false;
       }
     }
   }
