@@ -5,7 +5,9 @@ import extractZip from 'extract-zip';
 import * as yauzl from 'yauzl';
 
 export type ZipArchiveValidationErrorCode =
-  'max_entries_exceeded' | 'max_extracted_bytes_exceeded' | 'symlink_entry';
+  | 'max_entries_exceeded'
+  | 'max_extracted_bytes_exceeded'
+  | 'symlink_entry';
 
 export class ZipArchiveValidationError extends Error {
   code: ZipArchiveValidationErrorCode;

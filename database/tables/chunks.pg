@@ -1,9 +1,14 @@
 columns
     assessment_id: bigint
+    commit_hash: text
     course_id: bigint not null
     course_instance_id: bigint
+    created_at: timestamp with time zone
+    deleted: boolean not null default false
     id: bigint not null default nextval('chunks_id_seq'::regclass)
     question_id: bigint
+    size_compressed: bigint
+    size_uncompressed: bigint
     type: enum_chunk_type not null
     uuid: uuid not null
 

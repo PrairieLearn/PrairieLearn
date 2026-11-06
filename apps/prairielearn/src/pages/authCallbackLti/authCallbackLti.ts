@@ -2,7 +2,6 @@ import assert from 'node:assert';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import oauthSignature from 'oauth-signature';
 
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
@@ -17,6 +16,7 @@ import {
   LtiLinkSchema,
   SprocUsersIsInstructorInCourseInstanceSchema,
 } from '../../lib/db-types.js';
+import { generateOAuth1Signature } from '../../lib/oauth1.js';
 import { ensureEnrollmentWithoutReconciliation } from '../../models/enrollment.js';
 
 const TIME_TOLERANCE_SEC = 3000;
@@ -64,15 +64,13 @@ router.post(
 
     assert(ltiResult.secret !== null);
 
-    const genSignature = oauthSignature.generate(
-      'POST',
-      ltiRedirectUrl,
+    const genSignature = generateOAuth1Signature({
+      method: 'POST',
+      url: ltiRedirectUrl,
       parameters,
       // TODO: column should be `NOT NULL`
-      ltiResult.secret,
-      undefined,
-      { encodeSignature: false },
-    );
+      consumerSecret: ltiResult.secret,
+    });
     if (genSignature !== signature) {
       throw new HttpStatusError(403, 'Invalid signature');
     }

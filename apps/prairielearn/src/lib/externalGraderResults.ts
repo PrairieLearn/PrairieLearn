@@ -61,7 +61,7 @@ export async function init() {
           );
           messages = data.Messages;
         } catch (err) {
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted from another context
+          // oxlint-disable-next-line typescript/no-unnecessary-condition -- aborted from another context
           if (abortController.signal.aborted) {
             processingFinished.resolve(null);
             return;

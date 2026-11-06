@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
-// dependencies like `pg` and `express`.
+// dependencies like `pg` and `express`. The comment below keeps import sorting
+// (`partitionByComment` in `.oxfmtrc.json`) from moving these imports.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
-/* eslint-enable import-x/order */
+// End of instrumentation imports.
 
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -50,7 +50,6 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { isMultipartRequest } from '@prairielearn/trpc/express';
@@ -62,7 +61,7 @@ import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import { getCourseAdminQtiImportUrl } from './lib/client/url.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import { runDatabaseEncryptionOperation } from './lib/database-encryption-rotation.js';
 import { UserSchema } from './lib/db-types.js';
@@ -77,7 +76,6 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
-import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -88,7 +86,10 @@ import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
-import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import {
+  handleWorkspaceUpgrade,
+  makeWorkspaceProxyMiddleware,
+} from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -116,7 +117,7 @@ if ('h' in argv || 'help' in argv) {
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -152,6 +153,14 @@ export async function initExpress(): Promise<Express> {
   app.get('/pl/webhooks/ping', function (req, res) {
     res.send('.');
   });
+
+  if (process.env.DANGEROUSLY_ENABLE_TEST_ROUTES && process.env.NODE_ENV === 'test') {
+    app.post(
+      '/__test__/config',
+      express.json(),
+      (await import('./middlewares/testConfigOverrides.js')).default,
+    );
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -609,6 +618,14 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/sideNavSettings/sideNavSettings.js')).default,
   );
 
+  if (isEnterprise()) {
+    // Handles updates to the course agent panel's open state.
+    app.use(
+      '/pl/course_agent/panel_settings',
+      (await import('./ee/pages/courseAgentPanelSettings/courseAgentPanelSettings.js')).default,
+    );
+  }
+
   app.use('/pl/workspace/:workspace_id(\\d+)', [
     (req: Request, res: Response, next: NextFunction) => {
       res.locals.workspace_id = req.params.workspace_id;
@@ -757,6 +774,20 @@ export async function initExpress(): Promise<Express> {
 
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
 
+  if (isEnterprise()) {
+    // The course agent chat proxy, and the panel that PageLayout renders on
+    // instructor pages. Both run after the instructor chains above.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent',
+      (await import('./ee/routers/courseAgentChat.js')).default,
+    );
+    const courseAgentPanel = (await import('./ee/middlewares/courseAgentPanel.js')).default;
+    app.use(
+      ['/pl/course/:course_id(\\d+)', '/pl/course_instance/:course_instance_id(\\d+)/instructor'],
+      courseAgentPanel,
+    );
+  }
+
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
@@ -864,6 +895,9 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
       res.locals.lti11_enabled = await features.enabledFromLocals('lti11', res.locals);
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -1294,9 +1328,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -2115,7 +2146,6 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 let server: http.Server | https.Server | undefined;
-let app: express.Express | undefined;
 
 export async function startServer(app: express.Express) {
   switch (config.serverType) {
@@ -2144,6 +2174,16 @@ export async function startServer(app: express.Express) {
     }
   }
 
+  const handleCourseAgentUpgrade = isEnterprise()
+    ? (await import('./ee/routers/courseAgentChat.js')).handleCourseAgentUpgrade
+    : null;
+  server.on('upgrade', (req, socket, head) => {
+    if (req.url?.startsWith('/socket.io/')) return;
+    if (handleWorkspaceUpgrade(app, req, head)) return;
+    if (handleCourseAgentUpgrade?.(app, req, head)) return;
+    socket.destroy();
+  });
+
   // Capture metrics about the server, including the number of active connections
   // and the total number of connections that have been started.
   const meter = opentelemetry.metrics.getMeter('prairielearn');
@@ -2153,23 +2193,18 @@ export async function startServer(app: express.Express) {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
-  // https://github.com/oven-sh/bun/issues/4459
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (server.getConnections) {
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'http.connections.active',
-      {
-        valueType: opentelemetry.ValueType.INT,
-        interval: 1000,
-      },
-      // @ts-expect-error TODO: type correctly
-      () => {
-        return util.promisify(server!.getConnections.bind(server))();
-      },
-    );
-  }
+  opentelemetry.createObservableValueGauges(
+    meter,
+    'http.connections.active',
+    {
+      valueType: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    // @ts-expect-error TODO: type correctly
+    () => {
+      return util.promisify(server!.getConnections.bind(server))();
+    },
+  );
 
   const serverSocketActivity = new SocketActivityMetrics(meter, 'http');
   server.on('connection', (socket) => serverSocketActivity.addSocket(socket));
@@ -2178,12 +2213,6 @@ export async function startServer(app: express.Express) {
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
-  // When using Vite in development, it is responsible for the server.
-  if (DEV_EXECUTION_MODE === 'hmr') {
-    return server;
-  }
-
-  // When Vite is not in use, start the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
@@ -2267,22 +2296,8 @@ function getPostgresConfig() {
   };
 }
 
-const isHMR = DEV_EXECUTION_MODE === 'hmr';
-
-if (isHMR && isServerPending()) {
-  throw new Error('The server was restarted, but it was not fully initialized.');
-}
-
-const shouldStartServer = run(() => {
-  if (!config.startServer) return false;
-  if (esMain(import.meta)) return true;
-  if (isHMR && !isServerInitialized()) return true;
-  return false;
-});
-
-if (shouldStartServer) {
+if (esMain(import.meta)) {
   try {
-    setServerState('pending');
     logger.verbose('PrairieLearn server start');
 
     let configPaths = [
@@ -2663,7 +2678,7 @@ if (shouldStartServer) {
     }
 
     logger.verbose('Starting server...');
-    app = await initExpress();
+    const app = await initExpress();
     const httpServer = await startServer(app);
 
     await socketServer.init(httpServer);
@@ -2700,12 +2715,7 @@ if (shouldStartServer) {
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
-    // When HMR is active, we'll defer this error logging to the Vite plugin, which can
-    // do a better job.
-    if (!isHMR) {
-      logger.error('Error initializing PrairieLearn server:', err);
-    }
-
+    logger.error('Error initializing PrairieLearn server:', err);
     throw err;
   }
 
@@ -2766,25 +2776,16 @@ if (shouldStartServer) {
     process.kill(process.pid, 'SIGTERM');
   });
 
-  setServerState('initialized');
   logger.info('PrairieLearn server ready, press Control-C to quit');
   if (config.devMode && process.env.NODE_ENV !== 'test') {
     logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
-} else if (isHMR && isServerInitialized()) {
-  // We need to re-initialize the server when we are running in HMR mode.
-  await socketServer.close();
-  app = await initExpress();
-  const httpServer = await startServer(app);
-  await socketServer.init(httpServer);
 }
 
 /**
  * Stops background work before closing its dependencies and database pools.
- * Used by the SIGTERM handler and by `@prairielearn/vite-plugin-express` for
- * full server restarts.
  */
-export async function close() {
+async function close() {
   // Disconnect clients before draining workspace startups, but keep Redis
   // adapters available for progress broadcasts from running jobs.
   socketServer.io?.engine.close();
@@ -2829,5 +2830,3 @@ async function settleShutdownTasks(tasks: Promise<unknown>[]) {
     }
   }
 }
-
-export const viteExpressApp = app;
