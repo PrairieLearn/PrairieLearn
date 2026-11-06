@@ -62,6 +62,7 @@ type ConversationRecord = RecordData &
 
 interface ActiveTurn {
   requestId: string;
+  startedAt: number;
   execution: SandboxTurn;
   sdkFinished: PromiseWithResolvers<undefined>;
   stop: Promise<void> | null;
@@ -306,11 +307,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (message?.role !== 'user') throw new Error('Expected a new user message');
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
     const startup = this.record.lifecycle.status === 'offline';
+    const startedAt = Date.now();
+    const log = (event: string, fields: Record<string, unknown> = {}) =>
+      logEvent(event, {
+        conversationId: this.name,
+        sandboxId: this.record.sandboxId,
+        elapsedMs: Date.now() - startedAt,
+        ...fields,
+      });
     this.setRecord({
       ...this.record,
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
     });
+    log('turn_started', { startup });
     this.native ??= new CodexAppServerClient(this.sandbox);
     const execution = new SandboxTurn(this.sandbox, this.native, {
       messageId: crypto.randomUUID(),
@@ -318,8 +328,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       startup,
       prepare: async () => {
         await this.scheduleDeadline('turn');
-        if (startup) await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+        if (startup) {
+          log('turn_sandbox_prepare_requested');
+          await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+          log('turn_sandbox_prepare_finished');
+        }
       },
+      addCourseFiles:
+        startup && !this.record.checkpoint
+          ? async () => {
+              log('turn_course_files_started');
+              await this.sandbox.addCourseFiles(this.record.config);
+              log('turn_course_files_ready');
+            }
+          : undefined,
       thread: {
         model: this.record.config.model,
         instructions: buildInstructions(this.record.courseContext ?? undefined),
@@ -328,9 +350,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       onThread: (nativeThreadId) => this.setRecord({ ...this.record, nativeThreadId }),
       onReady: () => this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' } }),
       onAccepted: (nativeTurnId) => this.stash({ nativeTurnId }),
+      log,
     });
     const active: ActiveTurn = {
       requestId: options.requestId,
+      startedAt,
       execution,
       sdkFinished: Promise.withResolvers<undefined>(),
       stop: null,
@@ -368,6 +392,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** The single completion path chooses waiting, startup cleanup, or deadline shutdown. */
   private async finishTurn(active: ActiveTurn) {
     const result = await active.execution.finished;
+    logEvent('turn_finished', {
+      conversationId: this.name,
+      phase: result.phase,
+      stopped: result.stopped,
+      failed: result.error !== undefined,
+      elapsedMs: Date.now() - active.startedAt,
+    });
     if (result.stopped || result.error) this.native = null;
     if (result.error) {
       this.reportError(result.error);
