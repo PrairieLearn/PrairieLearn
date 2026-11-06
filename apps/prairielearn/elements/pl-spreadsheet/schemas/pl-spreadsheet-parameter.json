@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "range": {
+      "type": "string"
+    },
+    "sheet-name": {
+      "type": "string"
+    }
+  },
+  "required": ["range", "sheet-name"],
+  "additionalProperties": false
+}

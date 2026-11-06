@@ -114,6 +114,16 @@ function getPackageVersion(packageName: string): string {
           }
         }
 
+        // ESM-only packages (namely `formualizer`) export neither their
+        // `package.json` nor an entrypoint that `require` can resolve, so we
+        // look for the package in each `node_modules` directory ourselves.
+        if (err.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
+          const pkgJsonPath = (require.resolve.paths(packageName) ?? [])
+            .map((nodeModulesPath) => path.resolve(nodeModulesPath, packageName, 'package.json'))
+            .find((candidate) => fs.existsSync(candidate));
+          if (pkgJsonPath) return pkgJsonPath;
+        }
+
         throw err;
       }
     });

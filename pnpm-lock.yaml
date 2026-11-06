@@ -953,6 +953,9 @@ importers:
       filesize:
         specifier: ^11.0.24
         version: 11.0.25
+      formualizer:
+        specifier: 0.9.3
+        version: 0.9.3
       fs-extra:
         specifier: ^11.4.1
         version: 11.4.1
@@ -1127,6 +1130,9 @@ importers:
       react-bootstrap:
         specifier: 3.0.0-beta.5
         version: 3.0.0-beta.5(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react-data-grid:
+        specifier: 7.0.0-beta.61
+        version: 7.0.0-beta.61(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
@@ -8558,6 +8564,9 @@ packages:
     resolution: {integrity: sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==}
     engines: {node: '>=12.20.0'}
 
+  formualizer@0.9.3:
+    resolution: {integrity: sha512-Qj1jWbLfbegQ9UVCUwGfkA8aRdC0enm37bdBfWAqxSlz7sC8xbjkPs9HywjXafY+Oy9ryOx+k3M8NJtU/cNRng==}
+
   forwarded-parse@2.1.2:
     resolution: {integrity: sha512-alTFZZQDKMporBH77856pXgzhEzaUVmLCDk+egLgIgHst3Tpndzz8MnKe+GzRJRfvVdn69HhpW7cmXzvtLvJAw==}
 
@@ -10488,6 +10497,12 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  react-data-grid@7.0.0-beta.61:
+    resolution: {integrity: sha512-YTfOzvj/V/3vMoz7A/kaXFp869j7C8JW5PmH4JAnAsfaa2SMzDeOHvuoGezEDBk1G3nwOFXNVyl9tC9sosEIjA==}
+    peerDependencies:
+      react: ^19.2
+      react-dom: ^19.2
 
   react-dom@19.3.0:
     resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
@@ -17337,6 +17352,8 @@ snapshots:
     dependencies:
       fetch-blob: 3.2.0
 
+  formualizer@0.9.3: {}
+
   forwarded-parse@2.1.2: {}
 
   forwarded@0.2.0: {}
@@ -19627,6 +19644,11 @@ snapshots:
       warning: 4.0.3
     optionalDependencies:
       '@types/react': 19.3.0
+
+  react-data-grid@7.0.0-beta.61(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+    dependencies:
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
   react-dom@19.3.0(react@19.3.0):
     dependencies:

@@ -1,0 +1,786 @@
+.pl-spreadsheet-root {
+  min-height: 16rem;
+}
+
+.pl-spreadsheet-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 16rem;
+}
+
+.pl-spreadsheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+/*
+ * Sheet tabs hang from the bottom edge of the grid, as in Excel and Google Sheets: the
+ * selected tab joins the grid by dropping its top border, and the rest sit on the strip.
+ */
+.pl-spreadsheet-sheet-tabs {
+  display: flex;
+  flex-shrink: 0;
+  overflow-x: auto;
+  padding: 0 0.5rem;
+  border-top: var(--bs-border-width) solid var(--bs-border-color);
+  background-color: var(--bs-tertiary-bg);
+}
+
+.pl-spreadsheet-sheet-tab {
+  margin-top: calc(-1 * var(--bs-border-width));
+  padding: 0.3rem 1rem;
+  border: var(--bs-border-width) solid transparent;
+  border-top-color: var(--bs-border-color);
+  background: none;
+  color: var(--bs-secondary-color);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.pl-spreadsheet-sheet-tab + .pl-spreadsheet-sheet-tab {
+  border-left-color: var(--bs-border-color);
+}
+
+.pl-spreadsheet-sheet-tab:hover {
+  background-color: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+}
+
+.pl-spreadsheet-sheet-tab:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 0;
+  box-shadow: inset 0 0 0 0.2rem var(--bs-focus-ring-color, rgb(13 110 253 / 25%));
+}
+
+.pl-spreadsheet-sheet-tab[aria-selected='true'] {
+  border-color: var(--bs-border-color);
+  border-top-color: var(--bs-body-bg);
+  border-radius: 0 0 var(--bs-border-radius-sm) var(--bs-border-radius-sm);
+  background-color: var(--bs-body-bg);
+  box-shadow: inset 0 -2px 0 var(--bs-primary);
+  color: var(--bs-primary-text-emphasis);
+  font-weight: 600;
+}
+
+.pl-spreadsheet-sheet-tab[aria-selected='true'] + .pl-spreadsheet-sheet-tab {
+  border-left-color: transparent;
+}
+
+.pl-spreadsheet-formula-bar {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0 0.5rem 0.5rem;
+}
+
+/* The selected cell or range, shown first in the formula bar. */
+.pl-spreadsheet-address-chip {
+  margin-inline-end: 0.5rem;
+  font-family: var(--bs-font-monospace);
+  font-weight: normal;
+  color: var(--bs-emphasis-color);
+  background-color: var(--bs-tertiary-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+}
+
+/* Clicking a column or row heading selects the whole column or row. */
+.pl-spreadsheet-column-header {
+  display: block;
+  width: calc(100% + 16px);
+  margin-inline: -8px;
+  padding: 0 8px;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.pl-spreadsheet-row-header-cell {
+  cursor: pointer;
+}
+
+.pl-spreadsheet-formula-input {
+  font-family: monospace;
+  position: relative;
+  min-width: 0;
+}
+
+/*
+ * One line above the formula bar is always reserved so the bar stays put as errors appear
+ * and disappear.
+ */
+.pl-spreadsheet-value-error {
+  overflow: hidden;
+  height: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: -0.25rem;
+  color: var(--bs-danger-text-emphasis);
+  font-size: 0.875em;
+  line-height: 1.25rem;
+}
+
+/* The real input keeps focus and handles typing, but the tile view draws it. */
+.pl-spreadsheet-formula-input > input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pl-spreadsheet-formula-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 0.2rem;
+  height: auto;
+  /* Fits one row of tiles, so the bar keeps its height whether or not the formula parses. */
+  min-height: calc(1.75em + 0.4rem + 2 * var(--bs-border-width));
+  padding-block: 0.2rem;
+  cursor: text;
+  white-space: pre;
+  user-select: none;
+}
+
+.pl-spreadsheet-formula-view.is-focused {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color, rgb(13 110 253 / 25%));
+}
+
+.pl-spreadsheet-formula-view.is-disabled {
+  --pl-spreadsheet-tile-background: var(--bs-secondary-bg);
+
+  background-color: var(--bs-secondary-bg);
+  cursor: default;
+}
+
+.pl-spreadsheet-formula-view .is-selected {
+  background-color: color-mix(in srgb, var(--bs-primary) 30%, transparent);
+}
+
+.pl-spreadsheet-caret {
+  position: relative;
+  align-self: stretch;
+  width: 0;
+}
+
+.pl-spreadsheet-caret::after {
+  position: absolute;
+  top: 0.2em;
+  bottom: 0.2em;
+  left: -1px;
+  z-index: 1;
+  width: 2px;
+  background-color: var(--bs-body-color);
+  animation: pl-spreadsheet-caret-blink 1s step-end infinite;
+  content: '';
+}
+
+@keyframes pl-spreadsheet-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Suggestions and hints open just below the formula bar, over the grid. */
+.pl-spreadsheet-formula-popup {
+  top: calc(100% + 0.125rem);
+  left: 0;
+  max-width: 100%;
+  /* Fades once typing pauses so the grid beneath shows through. Typing restarts it. */
+  animation: pl-spreadsheet-popup-fade 0.3s var(--pl-spreadsheet-popup-idle-delay) forwards;
+}
+
+.pl-spreadsheet-formula-input.is-popup-hidden .pl-spreadsheet-formula-popup {
+  visibility: hidden;
+}
+
+@keyframes pl-spreadsheet-popup-fade {
+  to {
+    opacity: var(--pl-spreadsheet-popup-idle-opacity);
+  }
+}
+
+.pl-spreadsheet-formula-popup .dropdown-item {
+  cursor: pointer;
+  white-space: normal;
+}
+
+/*
+ * Tiles and holes are polygons whose left and right edges are convex nibs, concave
+ * notches, or flat, set by the edge classes below. A stroke layer and a fill layer inset
+ * from it share the shape. Joined pieces overlap by a nib so they visibly interlock.
+ */
+.pl-spreadsheet-piece {
+  --pl-spreadsheet-nib: 0.45em;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 1.75em;
+  padding-inline: calc(var(--pl-spreadsheet-nib) + 0.15em);
+  color: var(--pl-spreadsheet-tile-text);
+  isolation: isolate;
+}
+
+.pl-spreadsheet-piece::before,
+.pl-spreadsheet-piece::after {
+  position: absolute;
+  z-index: -1;
+  clip-path: polygon(
+    var(--pl-spreadsheet-top-left),
+    var(--pl-spreadsheet-top-right),
+    var(--pl-spreadsheet-middle-right),
+    var(--pl-spreadsheet-bottom-right),
+    var(--pl-spreadsheet-bottom-left),
+    var(--pl-spreadsheet-middle-left)
+  );
+  content: '';
+}
+
+.pl-spreadsheet-piece::before {
+  inset: 0;
+  background: var(--pl-spreadsheet-tile-stroke);
+}
+
+.pl-spreadsheet-piece::after {
+  inset: 1.5px;
+  /* The fill is drawn over an opaque base so a transparent fill still hides the stroke layer. */
+  background: linear-gradient(var(--pl-spreadsheet-tile-fill), var(--pl-spreadsheet-tile-fill))
+    var(--pl-spreadsheet-tile-background);
+}
+
+.pl-spreadsheet-piece.is-joined {
+  margin-left: calc(-1 * var(--pl-spreadsheet-nib) + 0.1em);
+}
+
+.pl-spreadsheet-left-convex {
+  --pl-spreadsheet-top-left: var(--pl-spreadsheet-nib) 0;
+  --pl-spreadsheet-middle-left: 0 50%;
+  --pl-spreadsheet-bottom-left: var(--pl-spreadsheet-nib) 100%;
+}
+
+.pl-spreadsheet-left-concave {
+  --pl-spreadsheet-top-left: 0 0;
+  --pl-spreadsheet-middle-left: var(--pl-spreadsheet-nib) 50%;
+  --pl-spreadsheet-bottom-left: 0 100%;
+}
+
+.pl-spreadsheet-left-flat {
+  --pl-spreadsheet-top-left: 0 0;
+  --pl-spreadsheet-middle-left: 0 50%;
+  --pl-spreadsheet-bottom-left: 0 100%;
+
+  padding-left: 0.3em;
+}
+
+.pl-spreadsheet-right-convex {
+  --pl-spreadsheet-top-right: calc(100% - var(--pl-spreadsheet-nib)) 0;
+  --pl-spreadsheet-middle-right: 100% 50%;
+  --pl-spreadsheet-bottom-right: calc(100% - var(--pl-spreadsheet-nib)) 100%;
+}
+
+.pl-spreadsheet-right-concave {
+  --pl-spreadsheet-top-right: 100% 0;
+  --pl-spreadsheet-middle-right: calc(100% - var(--pl-spreadsheet-nib)) 50%;
+  --pl-spreadsheet-bottom-right: 100% 100%;
+}
+
+.pl-spreadsheet-right-flat {
+  --pl-spreadsheet-top-right: 100% 0;
+  --pl-spreadsheet-middle-right: 100% 50%;
+  --pl-spreadsheet-bottom-right: 100% 100%;
+
+  padding-right: 0.3em;
+}
+
+.pl-spreadsheet-tile-number {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-number-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-number-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-number-text);
+}
+
+.pl-spreadsheet-tile-string {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-string-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-string-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-string-text);
+}
+
+.pl-spreadsheet-tile-operator {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-operator-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-operator-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-operator-text);
+}
+
+.pl-spreadsheet-tile-shard {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-shard-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-shard-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-shard-text);
+}
+
+/* The leading `=` is solid, with no outline, to mark where the formula starts. */
+.pl-spreadsheet-tile-formula {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-formula-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-formula-fill);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-formula-text);
+}
+
+/* Shards and their name and `)` holes take the color of their nesting depth. */
+.pl-spreadsheet-nesting-1 {
+  --pl-spreadsheet-shard-fill: var(--pl-spreadsheet-nesting-1-fill);
+  --pl-spreadsheet-shard-stroke: var(--pl-spreadsheet-nesting-1-stroke);
+  --pl-spreadsheet-shard-text: var(--pl-spreadsheet-nesting-1-text);
+  --pl-spreadsheet-shard-active-fill: var(--pl-spreadsheet-nesting-1-active-fill);
+  --pl-spreadsheet-shard-active-stroke: var(--pl-spreadsheet-nesting-1-active-stroke);
+}
+
+.pl-spreadsheet-nesting-2 {
+  --pl-spreadsheet-shard-fill: var(--pl-spreadsheet-nesting-2-fill);
+  --pl-spreadsheet-shard-stroke: var(--pl-spreadsheet-nesting-2-stroke);
+  --pl-spreadsheet-shard-text: var(--pl-spreadsheet-nesting-2-text);
+  --pl-spreadsheet-shard-active-fill: var(--pl-spreadsheet-nesting-2-active-fill);
+  --pl-spreadsheet-shard-active-stroke: var(--pl-spreadsheet-nesting-2-active-stroke);
+}
+
+.pl-spreadsheet-tile-shard.is-active {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-shard-active-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-shard-active-stroke);
+}
+
+/* Without fills, the active call stands out by a heavier outline. */
+.pl-spreadsheet-tile-shard.is-active::after {
+  inset: 2.5px;
+}
+
+.pl-spreadsheet-tile-error {
+  --pl-spreadsheet-tile-fill: var(--pl-spreadsheet-error-fill);
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-error-stroke);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-error-text);
+}
+
+/* A reference tile matches its outline in the grid. */
+.pl-spreadsheet-tile-reference {
+  --pl-spreadsheet-tile-fill: color-mix(
+    in srgb,
+    var(--pl-spreadsheet-ref-color) var(--pl-spreadsheet-reference-fill-amount),
+    var(--pl-spreadsheet-reference-fill-base)
+  );
+  --pl-spreadsheet-tile-stroke: var(--pl-spreadsheet-ref-color);
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-ref-color);
+}
+
+/* Without tiles, a reference's text matches its outline in the grid. */
+.pl-spreadsheet-reference {
+  color: var(--pl-spreadsheet-ref-color);
+  font-weight: 600;
+}
+
+/* Holes are hollow, dashed tiles in the color of what belongs in them. */
+.pl-spreadsheet-hole {
+  --pl-spreadsheet-tile-fill: transparent;
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-operator-stroke);
+  --pl-spreadsheet-tile-stroke: repeating-linear-gradient(
+    90deg,
+    var(--pl-spreadsheet-hole-stroke) 0 0.3em,
+    transparent 0.3em 0.5em
+  );
+  --pl-spreadsheet-tile-text: var(--pl-spreadsheet-hole-stroke);
+
+  min-width: 1.6em;
+  justify-content: center;
+}
+
+.pl-spreadsheet-hole-label {
+  font-size: 0.75em;
+  font-style: italic;
+}
+
+/* An automatically inserted `)` is set apart by its dashed outline alone. */
+.pl-spreadsheet-hole-delimiter .pl-spreadsheet-hole-label {
+  font-style: normal;
+}
+
+.pl-spreadsheet-hole-range {
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-range-hole-stroke);
+}
+
+.pl-spreadsheet-hole-text {
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-string-stroke);
+}
+
+.pl-spreadsheet-hole-condition {
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-number-stroke);
+}
+
+.pl-spreadsheet-hole-delimiter,
+.pl-spreadsheet-hole-name {
+  --pl-spreadsheet-hole-stroke: var(--pl-spreadsheet-shard-stroke);
+}
+
+.pl-spreadsheet-hole.is-optional:not(.is-current) {
+  opacity: 0.55;
+}
+
+.pl-spreadsheet-hole.is-current {
+  --pl-spreadsheet-tile-fill: var(--bs-primary-bg-subtle);
+  --pl-spreadsheet-tile-stroke: var(--bs-primary);
+  --pl-spreadsheet-tile-text: var(--bs-primary-text-emphasis);
+}
+
+.pl-spreadsheet-grid {
+  flex: 1;
+  min-height: 10rem;
+  user-select: none;
+}
+
+.pl-spreadsheet-grid input {
+  user-select: text;
+}
+
+.pl-spreadsheet-cell-readonly {
+  background-color: var(--bs-secondary-bg);
+}
+
+/* Randomized cells are locked too, but their values change between variants and test cases. */
+.pl-spreadsheet-cell-volatile {
+  position: relative;
+  background-color: var(--pl-spreadsheet-volatile-bg);
+}
+
+.pl-spreadsheet-cell-volatile::after,
+.pl-spreadsheet-legend-swatch.is-volatile::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  pointer-events: none;
+  content: '';
+  background-color: var(--pl-spreadsheet-volatile-mark);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.pl-spreadsheet-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--bs-secondary-color);
+}
+
+.pl-spreadsheet-legend-item {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.pl-spreadsheet-legend-swatch {
+  position: relative;
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  background-color: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+}
+
+.pl-spreadsheet-legend-swatch.is-locked {
+  background-color: var(--bs-secondary-bg);
+}
+
+.pl-spreadsheet-legend-swatch.is-volatile {
+  background-color: var(--pl-spreadsheet-volatile-bg);
+}
+
+.pl-spreadsheet-volatile-badge {
+  display: inline-flex;
+  margin-inline-end: 0.5rem;
+  gap: 0.25rem;
+  align-items: center;
+  color: var(--bs-info-text-emphasis);
+  background-color: var(--pl-spreadsheet-volatile-bg);
+}
+
+.pl-spreadsheet-cell-selected {
+  background-color: var(--bs-primary-bg-subtle);
+}
+
+.pl-spreadsheet-editor:has(.pl-spreadsheet-formula-input.is-pointing)
+  .pl-spreadsheet-grid
+  [role='gridcell'] {
+  cursor: cell;
+}
+
+/* Outlines each range referenced by the formula being edited, in its reference color. */
+.pl-spreadsheet-ref-cell {
+  --pl-spreadsheet-ref-top: 0px;
+  --pl-spreadsheet-ref-bottom: 0px;
+  --pl-spreadsheet-ref-left: 0px;
+  --pl-spreadsheet-ref-right: 0px;
+
+  background-color: color-mix(in srgb, var(--pl-spreadsheet-ref-color) 10%, var(--bs-body-bg));
+  box-shadow:
+    inset 0 var(--pl-spreadsheet-ref-top) 0 0 var(--pl-spreadsheet-ref-color),
+    inset 0 calc(-1 * var(--pl-spreadsheet-ref-bottom)) 0 0 var(--pl-spreadsheet-ref-color),
+    inset var(--pl-spreadsheet-ref-left) 0 0 0 var(--pl-spreadsheet-ref-color),
+    inset calc(-1 * var(--pl-spreadsheet-ref-right)) 0 0 0 var(--pl-spreadsheet-ref-color);
+}
+
+.pl-spreadsheet-ref-top {
+  --pl-spreadsheet-ref-top: 2px;
+}
+
+.pl-spreadsheet-ref-bottom {
+  --pl-spreadsheet-ref-bottom: 2px;
+}
+
+.pl-spreadsheet-ref-left {
+  --pl-spreadsheet-ref-left: 2px;
+}
+
+.pl-spreadsheet-ref-right {
+  --pl-spreadsheet-ref-right: 2px;
+}
+
+.pl-spreadsheet-ref-fill-0 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-0);
+}
+
+.pl-spreadsheet-ref-fill-1 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-1);
+}
+
+.pl-spreadsheet-ref-fill-2 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-2);
+}
+
+.pl-spreadsheet-ref-fill-3 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-3);
+}
+
+.pl-spreadsheet-ref-fill-4 {
+  --pl-spreadsheet-ref-color: var(--pl-spreadsheet-ref-color-4);
+}
+
+.pl-spreadsheet-row-header {
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+}
+
+.pl-spreadsheet-cell-error {
+  color: var(--bs-danger-text-emphasis);
+  font-weight: 600;
+}
+
+.pl-spreadsheet-table caption {
+  caption-side: top;
+  color: inherit;
+  font-weight: 600;
+}
+
+/* Sized like the editor's grid, so a submitted sheet looks like the one that was edited. */
+.pl-spreadsheet-table {
+  width: 100%;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.pl-spreadsheet-table > :not(caption) > * > * {
+  height: 35px;
+  padding: 0 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.pl-spreadsheet-row-header-column {
+  width: 56px;
+}
+
+.pl-spreadsheet-table > :not(caption) > * > :first-child {
+  width: 56px;
+  max-width: 56px;
+  color: var(--bs-secondary-color);
+}
+
+.pl-spreadsheet-table .pl-spreadsheet-cell-readonly {
+  --bs-table-bg: var(--bs-secondary-bg);
+}
+
+.pl-spreadsheet-table .pl-spreadsheet-cell-volatile {
+  --bs-table-bg: var(--pl-spreadsheet-volatile-bg);
+}
+
+/* Values and formulas share one grid area so switching views does not change the layout. */
+.pl-spreadsheet-table-cell {
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pl-spreadsheet-table-cell > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pl-spreadsheet-read-only:not(.is-showing-formulas) [data-spreadsheet-view='formulas'],
+.pl-spreadsheet-read-only.is-showing-formulas [data-spreadsheet-view='values'] {
+  visibility: hidden;
+}
+
+/* With JavaScript, one read-only sheet is shown at a time and its tab supplies the visible name. */
+.pl-spreadsheet-read-only.is-tabbed .pl-spreadsheet-read-only-sheet {
+  margin-bottom: 0 !important;
+}
+
+.pl-spreadsheet-read-only.is-tabbed .pl-spreadsheet-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (forced-colors: active) {
+  .pl-spreadsheet-sheet-tab[aria-selected='true'] {
+    border-bottom: 2px solid Highlight;
+  }
+
+  .pl-spreadsheet-piece::before,
+  .pl-spreadsheet-piece::after {
+    display: none;
+  }
+
+  .pl-spreadsheet-piece {
+    border: 1px solid CanvasText;
+  }
+
+  .pl-spreadsheet-piece.is-joined {
+    margin-left: 0.1em;
+  }
+
+  .pl-spreadsheet-hole {
+    border-style: dashed;
+  }
+
+  .pl-spreadsheet-hole.is-current {
+    outline: 2px solid Highlight;
+  }
+
+  .pl-spreadsheet-caret::after {
+    background-color: CanvasText;
+  }
+
+  .pl-spreadsheet-formula-view .is-selected {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+
+  .pl-spreadsheet-ref-cell {
+    outline: 2px dashed Highlight;
+    outline-offset: -2px;
+  }
+
+  .pl-spreadsheet-cell-readonly {
+    border: 2px dashed GrayText;
+  }
+
+  .pl-spreadsheet-cell-volatile {
+    border: 2px dotted LinkText;
+  }
+
+  .pl-spreadsheet-cell-volatile::after,
+  .pl-spreadsheet-legend-swatch.is-volatile::after {
+    forced-color-adjust: none;
+    background-color: LinkText;
+  }
+
+  .pl-spreadsheet-table .table-danger {
+    outline: 2px solid Mark;
+    outline-offset: -2px;
+  }
+
+  .pl-spreadsheet-cell-error {
+    outline: 2px solid LinkText;
+  }
+
+  .pl-spreadsheet-cell-selected {
+    outline: 2px solid Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-spreadsheet * {
+    scroll-behavior: auto !important;
+  }
+
+  .pl-spreadsheet-caret::after {
+    animation: none;
+  }
+}
+
+/*
+ * The popped-out editor stays in place in the DOM, so none of its state is lost, and is
+ * fixed over the page with a small margin. The backdrop shares its stacking context.
+ */
+.pl-spreadsheet-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background-color: rgb(0 0 0 / 50%);
+}
+
+.pl-spreadsheet-full-screen-view.is-expanded {
+  position: fixed;
+  inset: 1rem;
+  z-index: 1055;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--bs-border-radius-lg);
+  background-color: var(--bs-body-bg);
+  box-shadow: var(--bs-box-shadow-lg);
+}
+
+.pl-spreadsheet-read-only.is-expanded {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.pl-spreadsheet-read-only.is-expanded .pl-spreadsheet-read-only-content {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+  overflow: auto;
+}
+
+.pl-spreadsheet-read-only.is-expanded .pl-spreadsheet-read-only-controls {
+  flex-shrink: 0;
+  padding: 0.5rem;
+  border-top: var(--bs-border-width) solid var(--bs-border-color);
+}
+
+.pl-spreadsheet-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: var(--bs-border-width) solid var(--bs-border-color);
+  font-weight: 600;
+}

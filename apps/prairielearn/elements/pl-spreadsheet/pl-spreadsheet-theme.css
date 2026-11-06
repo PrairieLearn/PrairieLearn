@@ -1,0 +1,69 @@
+/*
+ * Color scheme for the formula bar's syntax highlighting and the matching grid outlines.
+ * These are global so a theme (or a course stylesheet) can override any of them on :root.
+ */
+:root {
+  /* Referenced ranges cycle through these, both as formula tiles and as grid outlines. */
+  --pl-spreadsheet-ref-color-0: #1a5fb4;
+  --pl-spreadsheet-ref-color-1: #8e24aa;
+  --pl-spreadsheet-ref-color-2: #c2185b;
+  --pl-spreadsheet-ref-color-3: #00796b;
+  --pl-spreadsheet-ref-color-4: #3949ab;
+
+  /* Suggestions and hints fade to this opacity after this long without typing. */
+  --pl-spreadsheet-popup-idle-opacity: 0.3;
+  --pl-spreadsheet-popup-idle-delay: 1.5s;
+
+  /*
+   * Reference tiles are filled with this much of their color mixed into the base below.
+   * At 0% they are unfilled.
+   */
+  --pl-spreadsheet-reference-fill-amount: 0%;
+  --pl-spreadsheet-reference-fill-base: transparent;
+
+  /*
+   * Tile colors by sort, as in tylr: a fill, a stroke, and text of one hue. Fills are
+   * transparent so tiles stay quiet in the formula bar, showing the base color beneath them.
+   * Strokes keep at least 4.5:1 contrast against a white background.
+   */
+  --pl-spreadsheet-tile-background: var(--bs-body-bg);
+  --pl-spreadsheet-number-fill: transparent;
+  --pl-spreadsheet-number-stroke: #9a6700;
+  --pl-spreadsheet-number-text: #6b4400;
+  --pl-spreadsheet-string-fill: transparent;
+  --pl-spreadsheet-string-stroke: #2e7d32;
+  --pl-spreadsheet-string-text: #1d5a22;
+  --pl-spreadsheet-operator-fill: transparent;
+  --pl-spreadsheet-operator-stroke: #5f6b7d;
+  --pl-spreadsheet-operator-text: #2f3846;
+  --pl-spreadsheet-shard-fill: transparent;
+  --pl-spreadsheet-shard-stroke: #2f6bc0;
+  --pl-spreadsheet-shard-text: #183f78;
+  --pl-spreadsheet-shard-active-fill: transparent;
+  --pl-spreadsheet-shard-active-stroke: #174a99;
+  --pl-spreadsheet-formula-fill: var(--bs-primary);
+  --pl-spreadsheet-formula-text: white;
+
+  /*
+   * Nested calls and groups cycle through the shard colors above and these two, so that
+   * matching parentheses share a color.
+   */
+  --pl-spreadsheet-nesting-1-fill: transparent;
+  --pl-spreadsheet-nesting-1-stroke: #8a5cc4;
+  --pl-spreadsheet-nesting-1-text: #4b2385;
+  --pl-spreadsheet-nesting-1-active-fill: transparent;
+  --pl-spreadsheet-nesting-1-active-stroke: #5a2b9c;
+  --pl-spreadsheet-nesting-2-fill: transparent;
+  --pl-spreadsheet-nesting-2-stroke: #1f7a75;
+  --pl-spreadsheet-nesting-2-text: #11504c;
+  --pl-spreadsheet-nesting-2-active-fill: transparent;
+  --pl-spreadsheet-nesting-2-active-stroke: #11504c;
+  --pl-spreadsheet-error-fill: transparent;
+  --pl-spreadsheet-error-stroke: #c0392b;
+  --pl-spreadsheet-error-text: #8a1f15;
+  --pl-spreadsheet-range-hole-stroke: #6f42c1;
+
+  /* Randomized (volatile) cells: a tint in place of the locked background, and a corner mark. */
+  --pl-spreadsheet-volatile-bg: var(--bs-info-bg-subtle);
+  --pl-spreadsheet-volatile-mark: var(--bs-info);
+}

@@ -25,6 +25,12 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { loadSpreadsheetEngine } from '../lib/spreadsheet-engine-node.js';
+import {
+  addSpreadsheetReferenceAnswers,
+  getSpreadsheetLogMetadata,
+  normalizeSpreadsheetAnswers,
+} from '../lib/spreadsheet.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -901,11 +907,25 @@ export async function prepare(
         context,
       );
 
+      let trueAnswer = resultData.correct_answers;
+      if (!courseIssues.some((issue) => issue.fatal)) {
+        if (resultData.params._pl_spreadsheet_v2 != null) loadSpreadsheetEngine();
+        try {
+          trueAnswer = addSpreadsheetReferenceAnswers({
+            params: resultData.params,
+            correctAnswers: resultData.correct_answers,
+          });
+        } catch (err) {
+          if (!(err instanceof Error)) throw err;
+          courseIssues.push(new CourseIssueError(err.message, { cause: err, fatal: true }));
+        }
+      }
+
       return {
         courseIssues,
         data: {
           params: resultData.params,
-          true_answer: resultData.correct_answers,
+          true_answer: trueAnswer,
         },
       };
     });
@@ -1241,6 +1261,7 @@ export async function render({
       const dependencies = {
         coreStyles: [] as string[],
         coreScripts: [] as string[],
+        compiledScripts: [] as string[],
         nodeModulesStyles: [] as string[],
         nodeModulesScripts: [] as string[],
         coreElementStyles: [] as string[],
@@ -1455,6 +1476,9 @@ export async function render({
       dependencies.coreScripts.forEach((file) =>
         coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)),
       );
+      dependencies.compiledScripts.forEach((file) =>
+        coreScriptUrls.push(assets.compiledScriptPath(file)),
+      );
       dependencies.nodeModulesStyles.forEach((file) =>
         styleUrls.push(assets.nodeModulesAssetPath(file)),
       );
@@ -1636,11 +1660,31 @@ export async function parse(
       caller,
     });
 
+    const params = variant.params ?? {};
+    const correctAnswers = variant.true_answer ?? {};
+    let submittedAnswers: Record<string, unknown>;
+    try {
+      if (params._pl_spreadsheet_v2 != null) loadSpreadsheetEngine();
+      submittedAnswers = normalizeSpreadsheetAnswers({
+        params,
+        correctAnswers,
+        submittedAnswers: submission.submitted_answer ?? {},
+      });
+    } catch (err) {
+      logger.error('Unexpected error normalizing spreadsheet submission', {
+        variant_id: variant.id,
+        question_id: question.id,
+        error_type: err instanceof Error ? err.name : 'unknown',
+        ...getSpreadsheetLogMetadata(params, correctAnswers),
+      });
+      throw err;
+    }
+
     const data = {
       // These should never be null, but that can't be encoded in the schema.
-      params: variant.params ?? {},
-      correct_answers: variant.true_answer ?? {},
-      submitted_answers: submission.submitted_answer ?? {},
+      params,
+      correct_answers: correctAnswers,
+      submitted_answers: submittedAnswers,
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),

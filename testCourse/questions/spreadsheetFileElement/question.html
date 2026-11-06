@@ -1,0 +1,24 @@
+<pl-question-panel>
+  <p>
+    Enter 3 in A1, and enter a formula in A2 that adds 1 to A1. This student-local
+    view corresponds to B2:C3 in the source file, and the visible formula in B1
+    should calculate 6.
+  </p>
+</pl-question-panel>
+
+<pl-spreadsheet answers-name="model" aria-label="File-backed spreadsheet test">
+  <pl-spreadsheet-data
+    source-file="workbook.csv"
+    sheet-name="Inputs"
+    student-range="B2:C3"
+    editable-ranges="B2:B3"
+  ></pl-spreadsheet-data>
+  <pl-spreadsheet-output
+    name="is_correct"
+    sheet-name="Inputs"
+    cell="D2"
+    required="true"
+  ></pl-spreadsheet-output>
+  <pl-spreadsheet-parameter sheet-name="Inputs" range="B2"></pl-spreadsheet-parameter>
+  <pl-spreadsheet-reference sheet-name="Inputs" cell="B3" formula="=B2+1"></pl-spreadsheet-reference>
+</pl-spreadsheet>
