@@ -15,10 +15,22 @@ export function redactSecrets(text: string) {
   return text;
 }
 
-/** One structured line per startup milestone for diagnosing sandbox startup in Workers Logs. */
-export function logEvent(event: string, fields: Record<string, unknown>) {
+/**
+ * One structured line per startup or turn milestone for Workers Logs. `message` summarizes the
+ * event, its non-ID fields, and elapsed time so the dashboard's Message column is readable.
+ */
+export function logEvent(
+  event: string,
+  { elapsedMs, ...fields }: { elapsedMs?: number } & Record<string, unknown>,
+) {
+  const details = Object.entries(fields)
+    .filter(([key, value]) => !key.endsWith('Id') && value != null && typeof value !== 'object')
+    .map(([key, value]) => `${key}=${String(value)}`);
+  const message = [event, ...details, ...(elapsedMs === undefined ? [] : [`${elapsedMs}ms`])];
   // oxlint-disable-next-line no-console
-  console.log(redactSecrets(JSON.stringify({ event, ...fields })));
+  console.log(
+    redactSecrets(JSON.stringify({ message: message.join(' '), event, elapsedMs, ...fields })),
+  );
 }
 
 function formatError(error: unknown): string {

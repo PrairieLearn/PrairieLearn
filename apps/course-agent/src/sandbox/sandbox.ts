@@ -75,7 +75,10 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
 }
 
 /** Only the conversation's pinned model is available; its API key stays outside the container. */
-export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: string }> {
+export class CourseAgentModelOutbound extends WorkerEntrypoint<
+  Env,
+  { model: string; sandboxId: string }
+> {
   override async fetch(request: Request) {
     const url = new URL(request.url);
     if (
@@ -86,9 +89,13 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: str
     ) {
       return new Response('Forbidden', { status: 403 });
     }
-    const body = (await request.json()) as { model?: string };
+    const body = (await request.json()) as { model?: string; input?: { role?: string }[] };
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
-    return fetch('https://api.openai.com/v1/responses', {
+    // Later requests in a turn end with tool output; only the role is read, never the content.
+    const firstOfTurn = body.input?.at(-1)?.role === 'user';
+    const started = Date.now();
+    if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
@@ -97,6 +104,14 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<Env, { model: str
       body: JSON.stringify(body),
       redirect: 'manual',
     });
+    if (firstOfTurn) {
+      logEvent('model_response_started', {
+        sandboxId: this.ctx.props.sandboxId,
+        status: response.status,
+        elapsedMs: Date.now() - started,
+      });
+    }
+    return response;
   }
 }
 
@@ -140,6 +155,8 @@ export class CourseSandbox extends DurableObject<Env> {
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
     const started = Date.now();
+    const log = (event: string, fields: Record<string, unknown> = {}) =>
+      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     this.container.start({
       image: this.container.images.courseAgent,
       enableInternet: false,
@@ -154,7 +171,7 @@ export class CourseSandbox extends DurableObject<Env> {
       .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
       .trim()
       .split('\n');
-    logEvent('sandbox_started', { sandboxId: this.ctx.id.name, memTotal, cpus });
+    log('sandbox_started', { memTotal, cpus });
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
@@ -163,11 +180,15 @@ export class CourseSandbox extends DurableObject<Env> {
     }
     await this.container.interceptOutboundHttp(
       'model.internal:80',
-      this.ctx.exports.CourseAgentModelOutbound({ props: { model: config.model } }),
+      this.ctx.exports.CourseAgentModelOutbound({
+        props: { model: config.model, sandboxId: this.ctx.id.name },
+      }),
     );
     await this.exec(['mkdir', '-p', '/workspace']);
     if (checkpoint) {
+      log('sandbox_restore_started');
       await this.backups.restore(checkpoint);
+      log('sandbox_restore_finished');
     } else {
       await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
       await this.exec(['chown', '-R', '1000:1000', SESSION]);
@@ -208,10 +229,16 @@ export class CourseSandbox extends DurableObject<Env> {
           'node',
         );
       } else {
+        log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
+        const cloneStarted = Date.now();
+        // Only the tip is needed: reviews diff against the cloned branch tip, and nothing fetches
+        // later. Full history made large course repositories take most of startup to clone.
         await this.exec(
           [
             'git',
             'clone',
+            '--depth',
+            '1',
             '--single-branch',
             '--branch',
             config.branch,
@@ -221,13 +248,10 @@ export class CourseSandbox extends DurableObject<Env> {
           ],
           'node',
         );
+        log('sandbox_clone_finished', { cloneMs: Date.now() - cloneStarted });
       }
     }
-    logEvent('sandbox_files_ready', {
-      sandboxId: this.ctx.id.name,
-      elapsedMs: Date.now() - started,
-      source: checkpoint ? 'checkpoint' : config.type,
-    });
+    log('sandbox_files_ready', { source: checkpoint ? 'checkpoint' : config.type });
     // Configuration contains no credentials. It is reapplied after restoration.
     const files = new Files(this.container);
     await files.writeFile(
@@ -235,6 +259,7 @@ export class CourseSandbox extends DurableObject<Env> {
       'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
     );
     await this.exec(['chown', '-R', '1000:1000', `${SESSION}/home`]);
+    log('sandbox_codex_config_written');
   }
 
   /** Only private DO callers can upgrade to the runner; no Worker route exposes this port. */
@@ -277,6 +302,11 @@ export class CourseSandbox extends DurableObject<Env> {
         stderr: debugOutput ? 'pipe' : 'ignore',
       },
     );
+    logEvent('runner_started', {
+      sandboxId: this.ctx.id.name,
+      pid: this.process.pid,
+      elapsedMs: Date.now() - started,
+    });
     const stderr = this.process.stderr ? forwardRunnerStderr(this.process.stderr) : null;
     let exitCode: number | null = null;
     void this.process.exitCode.then((code) => {

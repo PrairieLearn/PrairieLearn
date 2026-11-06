@@ -29,9 +29,21 @@ export class SandboxTurn {
       onThread: (id: string) => void;
       onReady: () => void;
       onAccepted: (id: string) => void;
+      log: (event: string) => void;
     },
   ) {
-    this.stream = native.beginTurn(options.messageId);
+    let replied = false;
+    this.stream = native.beginTurn(options.messageId).pipeThrough(
+      new TransformStream<UIMessageChunk, UIMessageChunk>({
+        transform(chunk, controller) {
+          if (!replied && (chunk.type === 'text-delta' || chunk.type === 'reasoning-delta')) {
+            replied = true;
+            options.log('turn_first_delta');
+          }
+          controller.enqueue(chunk);
+        },
+      }),
+    );
     this.finished = this.execute(options);
   }
 
@@ -77,6 +89,7 @@ export class SandboxTurn {
       await options.prepare();
       this.abort.signal.throwIfAborted();
       await this.native.connect();
+      options.log('turn_runner_connected');
       this.abort.signal.throwIfAborted();
       options.onThread(await this.native.thread(options.thread));
       this.abort.signal.throwIfAborted();

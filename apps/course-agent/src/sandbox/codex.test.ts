@@ -56,6 +56,7 @@ function options(onAccepted: () => void, threadId: string | null = null) {
     onThread: () => {},
     onReady: () => {},
     onAccepted,
+    log: () => {},
   };
 }
 
