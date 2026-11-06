@@ -135,9 +135,9 @@
     "brotli": 214
   },
   "scripts/workspaceClient.ts": {
-    "raw": 44197,
-    "gzip": 13866,
-    "brotli": 12519
+    "raw": 44229,
+    "gzip": 13884,
+    "brotli": 12539
   },
   "stylesheets/calculator.css": {
     "raw": 7398,
