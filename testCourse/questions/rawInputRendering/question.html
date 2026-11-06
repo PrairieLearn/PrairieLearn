@@ -92,10 +92,24 @@
 </pl-card>
 
 <pl-card header="Matrix inputs">
-  <pl-matrix-input
-    answers-name="matrix_value"
-    aria-label="Matrix value"
-    label="Literal matrix:"
-    initial-value="[1,&#8203; 2]"
-  ></pl-matrix-input>
+  <div class="vstack gap-3">
+    <pl-matrix-input
+      answers-name="matrix_value"
+      aria-label="Matrix value"
+      label="Literal matrix:"
+      initial-value="[1,&#8203; 2]"
+    ></pl-matrix-input>
+
+    <div>
+      <p>
+        The grid is prefilled with <code>1&lt;U+200B&gt;</code>, <code>caf&lt;U+00E9&gt;</code>, an empty
+        string, and <code>4</code> to exercise the grid-shaped popover.
+      </p>
+      <pl-matrix-component-input
+        answers-name="matrix_grid"
+        aria-label="Matrix grid"
+        label="Component matrix:"
+      ></pl-matrix-component-input>
+    </div>
+  </div>
 </pl-card>
