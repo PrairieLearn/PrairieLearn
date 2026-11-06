@@ -18,6 +18,16 @@ export function nextUserMessage(history: UIMessage[], submittedId: string | null
   if (submitted === -1) return history.findLast(({ role }) => role === 'user') ?? null;
   return history.slice(submitted + 1).find(({ role }) => role === 'user') ?? null;
 }
+
+/**
+ * The history a turn may catch up on: everything except its own message and user messages
+ * queued after it, which later turns submit. Replies recorded after its message are kept.
+ */
+export function historyBefore(history: UIMessage[], message: UIMessage | null) {
+  const index = message ? history.indexOf(message) : -1;
+  if (index === -1) return history;
+  return history.filter((entry, i) => i < index || (i > index && entry.role !== 'user'));
+}
 export const reviewTag = (reviewId: string) => `review:${reviewId}`;
 
 /** A one-line account of a review result, used in chat history markers and catch-up text. */

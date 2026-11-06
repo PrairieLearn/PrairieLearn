@@ -27,6 +27,7 @@ import { SandboxTurn } from '../sandbox/turn.js';
 import {
   buildCatchUp,
   describeReviewResult,
+  historyBefore,
   messageTag,
   missedTurns,
   nextUserMessage,
@@ -393,7 +394,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const message = continuation
       ? null
       : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
-    const earlier = this.messages.filter((entry) => entry !== message);
+    const earlier = historyBefore(this.messages, message);
     const checkedSandboxId = this.record.sandboxId;
     const lost =
       checkedSandboxId !== null &&

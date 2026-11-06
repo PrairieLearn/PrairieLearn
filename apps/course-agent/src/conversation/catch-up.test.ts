@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
 
-import { buildCatchUp, missedTurns, nextUserMessage } from './catch-up.js';
+import { buildCatchUp, historyBefore, missedTurns, nextUserMessage } from './catch-up.js';
 
 // Deliveries are continuations, so both reviews' turns append to the same assistant message.
 const history: UIMessage[] = [
@@ -88,6 +88,8 @@ describe('nextUserMessage', () => {
     // A refused message is recorded as handled too, so it is never sent in place of the next one.
     expect(nextUserMessage(queued, 'u2')?.id).toBe('u3');
     expect(nextUserMessage(queued, 'u3')).toBeNull();
+    // Catch-up for the u2 turn keeps the reply recorded after it but not u3, which runs next.
+    expect(historyBefore(queued, queued[1]).map(({ id }) => id)).toEqual(['u1', 'a1']);
     // Records saved before submissions were tracked fall back to the newest user message.
     expect(nextUserMessage(queued, null)?.id).toBe('u3');
   });
