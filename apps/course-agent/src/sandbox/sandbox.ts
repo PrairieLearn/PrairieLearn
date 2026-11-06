@@ -338,15 +338,20 @@ export class CourseSandbox extends DurableObject<Env> {
         'node',
       );
       try {
-        return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
+        // ignoreBOM keeps a leading U+FEFF, which is part of a file name, not a byte-order mark.
+        return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(result.stdout);
       } catch {
         throw new UnsupportedReviewError('Changed file names must be valid UTF-8.');
       }
     };
     if (source.type === 'github') await git('check-ref-format', `refs/heads/${source.branch}`);
-    const baseRef =
-      source.type === 'local' ? LOCAL_SAVED_REF : `refs/remotes/origin/${source.branch}`;
-    const baseCommit = (await git('rev-parse', '--verify', `${baseRef}^{commit}`)).trim();
+    // The agent may fetch the branch without merging it. Diffing against the fetched tip would
+    // propose reverting the newer upstream files, so diff against what the checkout is based on.
+    const baseCommit = (
+      source.type === 'local'
+        ? await git('rev-parse', '--verify', `${LOCAL_SAVED_REF}^{commit}`)
+        : await git('merge-base', 'HEAD', `refs/remotes/origin/${source.branch}`)
+    ).trim();
     // Include local commits, working files, and untracked files.
     const tracked = await git(
       'diff',
@@ -458,7 +463,10 @@ export class CourseSandbox extends DurableObject<Env> {
           continue;
         }
         const blobPath = `${scratch}/${index}`;
-        await storage.writeFile(blobPath, Buffer.from(file.contents, 'base64'));
+        // The agent can create files in the scratch directory, so write as the agent's user.
+        await storage.writeFile(blobPath, Buffer.from(file.contents, 'base64'), {
+          user: NODE_UID_GID,
+        });
         const sha = await git('hash-object', '-w', '--no-filters', '--', blobPath);
         await git(
           '-C',

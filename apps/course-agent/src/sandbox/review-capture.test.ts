@@ -36,6 +36,36 @@ vi.mock('@cloudflare/sandbox', () => ({
   },
 }));
 
+function createSandbox(course: string) {
+  const container = {
+    course,
+    running: false,
+    exec: async (args: string[]) => ({
+      output: async () => {
+        const result = await execa(
+          args[0],
+          args.slice(1).map((arg) => arg.replace('/workspace/session/course', course)),
+          {
+            encoding: 'buffer',
+            reject: false,
+            stripFinalNewline: false,
+          },
+        );
+        return { stdout: result.stdout, stderr: result.stderr, exitCode: result.exitCode };
+      },
+    }),
+  };
+  return new CourseSandbox(
+    {
+      container,
+      blockConcurrencyWhile: async (fn: () => Promise<void>) => fn(),
+    } as unknown as DurableObjectState,
+    {} as Env,
+  );
+}
+
+const commitArgs = ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit'];
+
 it('uses the saved local contents as the base for the next review', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'pl-local-review-'));
   // Local sandboxes reach the course through a link into a subdirectory of the repository.
@@ -48,44 +78,12 @@ it('uses the saved local contents as the base for the next review', async () => 
     await writeFile(path.join(course, 'question.html'), 'A');
     await writeFile(path.join(course, 'old.html'), 'old');
     await git('add', '--all');
-    await git(
-      '-c',
-      'user.name=Test',
-      '-c',
-      'user.email=test@example.com',
-      'commit',
-      '-m',
-      'Source',
-    );
+    await git(...commitArgs, '-m', 'Source');
     await git('update-ref', 'refs/prairielearn/saved', 'HEAD');
     const head = await git('rev-parse', 'HEAD');
     await writeFile(path.join(course, 'question.html'), 'B');
     await rm(path.join(course, 'old.html'));
-    const container = {
-      course,
-      running: false,
-      exec: async (args: string[]) => ({
-        output: async () => {
-          const result = await execa(
-            args[0],
-            args.slice(1).map((arg) => arg.replace('/workspace/session/course', course)),
-            {
-              encoding: 'buffer',
-              reject: false,
-              stripFinalNewline: false,
-            },
-          );
-          return { stdout: result.stdout, stderr: result.stderr, exitCode: result.exitCode };
-        },
-      }),
-    };
-    const sandbox = new CourseSandbox(
-      {
-        container,
-        blockConcurrencyWhile: async (fn: () => Promise<void>) => fn(),
-      } as unknown as DurableObjectState,
-      {} as Env,
-    );
+    const sandbox = createSandbox(course);
     const source = { type: 'local' as const, archiveKey: 'source', directory: 'course' };
     const snapshot = await sandbox.captureReview(source);
     if ('unsupported' in snapshot) throw new Error(snapshot.unsupported);
@@ -114,5 +112,40 @@ it('uses the saved local contents as the base for the next review', async () => 
     expect(await git('status', '--porcelain')).toBe(' D course/old.html\n M course/question.html');
   } finally {
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+it('diffs a GitHub checkout against its base when the agent fetched without merging', async () => {
+  const course = await mkdtemp(path.join(os.tmpdir(), 'pl-github-review-'));
+  const git = async (...args: string[]) => (await execa('git', args, { cwd: course })).stdout;
+  try {
+    await git('init', '--initial-branch=main');
+    await writeFile(path.join(course, 'question.html'), 'A');
+    await writeFile(path.join(course, 'other.html'), 'old');
+    await git('add', '--all');
+    await git(...commitArgs, '-m', 'Base');
+    const base = await git('rev-parse', 'HEAD');
+    // A fetch moves the remote-tracking ref to a newer upstream commit the checkout lacks.
+    await writeFile(path.join(course, 'other.html'), 'new');
+    await git(...commitArgs, '--all', '-m', 'Upstream');
+    await git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+    await git('reset', '--hard', base);
+    await writeFile(path.join(course, 'question.html'), 'B');
+    const snapshot = await createSandbox(course).captureReview({
+      type: 'github',
+      repository: 'PrairieLearn/course',
+      branch: 'main',
+    });
+    // Diffing against the fetched tip would also propose reverting other.html to "old".
+    expect(snapshot).toEqual({
+      type: 'github',
+      repository: 'PrairieLearn/course',
+      branch: 'main',
+      baseCommit: base,
+      additions: [{ path: 'question.html', contents: Buffer.from('B').toString('base64') }],
+      deletions: [],
+    });
+  } finally {
+    await rm(course, { recursive: true, force: true });
   }
 });

@@ -371,6 +371,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   override async onChatMessage(_onFinish: unknown, options?: OnChatMessageOptions) {
     if (!options) throw new Error('Missing SDK chat options');
     const continuation = options.continuation === true;
+    // Capture input before any await lets another connection append to history.
+    const message = this.messages.at(-1);
+    const earlier = continuation ? this.messages : this.messages.slice(0, -1);
     const checkedSandboxId = this.record.sandboxId;
     const lost =
       checkedSandboxId !== null &&
@@ -384,10 +387,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!admitted || this.active || this.recovering || this.sandboxShutdown) {
       throw new Error('The course agent sandbox is not ready.');
     }
-    // Capture input before asynchronous setup allows another connection to change history.
-    const message = this.messages.at(-1);
     if (!continuation && message?.role !== 'user') throw new Error('Expected a new user message');
-    const earlier = continuation ? this.messages : this.messages.slice(0, -1);
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
     const startup = this.record.sandboxId === null;

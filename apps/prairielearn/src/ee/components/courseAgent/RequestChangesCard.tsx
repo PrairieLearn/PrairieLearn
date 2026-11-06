@@ -83,7 +83,8 @@ export function RequestChangesCard({
           </Button>
         </div>
       )}
-      {review.isError && (
+      {/* A diff can fail transiently, for example while the course is locked by another save. */}
+      {(review.isError || pending?.diff.error) && (
         <Button
           className="mt-2"
           size="sm"

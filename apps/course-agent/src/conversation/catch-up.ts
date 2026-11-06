@@ -84,6 +84,8 @@ export function buildCatchUp(entries: string[], source: 'github' | 'local') {
   let transcript = '';
   for (const entry of entries.toReversed()) {
     if (transcript.length + entry.length > MAX_CATCH_UP_CHARS) {
+      // The newest entry carries the most context, so keep its end even when it alone is too long.
+      if (!transcript) transcript = `[…] ${entry.slice(-MAX_CATCH_UP_CHARS)}\n\n`;
       transcript = `[Earlier messages omitted.]\n\n${transcript}`;
       break;
     }

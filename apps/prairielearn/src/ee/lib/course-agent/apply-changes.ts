@@ -245,10 +245,13 @@ async function recordAndDeliverResult(
   result: RequestChangesResult,
 ) {
   const recorded = await updateCourseAgentReviewResult({ id: row.id, result });
-  if (recorded) await deliverResult(conversation, recorded, result);
+  return recorded ? await deliverResult(conversation, recorded, result) : true;
 }
 
-/** A failed send leaves the result undelivered for the sweeper or Resume to retry. */
+/**
+ * A failed send leaves the result undelivered for the sweeper or Resume to retry. Returns false
+ * when the service did not answer, so the sweeper can stop instead of waiting out each timeout.
+ */
 async function deliverResult(
   conversation: CourseAgentConversation,
   row: CourseAgentReview,
@@ -261,16 +264,18 @@ async function deliverResult(
       result,
     );
     await updateCourseAgentReviewDelivered(row.id);
+    return true;
   } catch (error) {
     if (error instanceof HttpStatusError && error.status === 409) {
       // Retrying cannot change the service's answer, so stop sending this result.
       logger.error('Course agent service refused the review result.', error);
       Sentry.captureException(error);
       await updateCourseAgentReviewDelivered(row.id);
-      return;
+      return true;
     }
     logger.error('Course agent review result was not delivered; it will be retried.', error);
     reportStuckDelivery(row, error);
+    return false;
   }
 }
 
@@ -321,7 +326,12 @@ export async function deliverUndeliveredReviewResults(conversationId: string | n
   for (const { review: row, conversation } of rows) {
     try {
       if (row.result !== null) {
-        await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result));
+        // An unreachable service would fail every later delivery too; the next sweep retries.
+        if (
+          !(await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result)))
+        ) {
+          return;
+        }
         continue;
       }
       // Only approvals wait for a result, and the schema requires each to have a job.
@@ -336,11 +346,12 @@ export async function deliverUndeliveredReviewResults(conversationId: string | n
         row.agent_review_id,
       );
       if (!review) continue;
-      await recordAndDeliverResult(
+      const delivered = await recordAndDeliverResult(
         conversation,
         row,
         getReviewJobResult(sequence, review.snapshot.type),
       );
+      if (!delivered) return;
     } catch (error) {
       logger.error('Course agent review result delivery failed; it will be retried.', error);
       reportStuckDelivery(row, error);

@@ -62,5 +62,8 @@ describe('buildCatchUp', () => {
     expect(capped).toContain('[Earlier messages omitted.]');
     expect(capped).toContain('Staff: 49 ');
     expect(capped).not.toContain('Staff: 0 ');
+    const oversized = buildCatchUp([`Staff: ${'x'.repeat(40_000)} end`], 'github')!;
+    expect(oversized).toContain('[Earlier messages omitted.]');
+    expect(oversized).toContain('x end');
   });
 });
