@@ -1,10 +1,7 @@
 import pytest
-from pytest_prairielearn_grader import ConfigObject
 from pytest_prairielearn_grader.assertions import assert_approx_equal
 from pytest_prairielearn_grader.fixture import StudentFixture
 from pytest_prairielearn_grader.utils import GradingOutputLevel
-
-autograder_config = ConfigObject(names_for_user=["x"])
 
 
 @pytest.mark.output(level=GradingOutputLevel.Friendly)
