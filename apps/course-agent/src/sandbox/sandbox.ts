@@ -168,13 +168,14 @@ export class CourseSandbox extends DurableObject<Env> {
     this.container.start({
       image: this.container.images.courseAgent,
       enableInternet: false,
-      // `basic` is 1/4 vCPU, 1 GiB memory, and 4 GB disk. The default `lite` (256 MiB) is too
-      // small for Codex and course tooling, and running out of memory restarts the instance,
-      // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
-      instance: 'basic',
+      // `standard-1` is 1/2 vCPU, 4 GiB memory, and 8 GB disk. Cloning and checking out large
+      // course repositories is CPU bound on `basic` (1/4 vCPU). The default `lite` (256 MiB) is
+      // too small for Codex and course tooling, and running out of memory restarts the instance,
+      // losing unsaved edits. https://developers.cloudflare.com/containers/platform/limits/
+      instance: 'standard-1',
     });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
-    // Confirms the instance type actually applied: basic has 1 GiB, lite 256 MiB.
+    // Confirms the instance type actually applied: standard-1 has 4 GiB, basic 1 GiB.
     const [memTotal, cpus] = new TextDecoder()
       .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
       .trim()
