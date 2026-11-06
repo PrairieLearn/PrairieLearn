@@ -25,15 +25,16 @@ import {
   selectCourseById,
   updateCourseCommitHash,
 } from '../models/course.js';
-import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
+import { selectQuestionsForCourseInstanceCopy, syncQuestionTitle } from '../models/question.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import {
-  type QuestionContentScope,
-  getQuestionContentScope,
-  isQuestionContentOnlyChange,
-} from '../sync/questionContent.js';
+  type QuestionSyncChange,
+  type QuestionSyncScope,
+  getQuestionSyncScope,
+  getVerifiedQuestionChange,
+} from '../sync/questionSync.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { CURRENT_SYNC_VERSION } from '../sync/version.js';
 
@@ -221,7 +222,7 @@ export abstract class Editor {
    */
   abstract write(): Promise<WriteResult | null>;
 
-  protected async getContentSyncScope(): Promise<QuestionContentScope | null> {
+  async getQuestionSyncScope(_course: Course): Promise<QuestionSyncScope | null> {
     return null;
   }
 
@@ -269,7 +270,9 @@ export abstract class Editor {
         }
         this.course = latestCourse;
         const startGitHash = await getOrUpdateCourseCommitHash(this.course);
-        const contentScope = config.fileEditorUseGit ? await this.getContentSyncScope() : null;
+        const questionScope = config.fileEditorUseGit
+          ? await this.getQuestionSyncScope(this.course)
+          : null;
         await invalidateCourseSync(this.course.id);
 
         if (!config.fileEditorUseGit) {
@@ -371,7 +374,7 @@ export abstract class Editor {
         };
 
         let courseData: courseDB.CourseData | undefined;
-        let useContentSync = false;
+        let questionChange: QuestionSyncChange | null = null;
         try {
           await writeAndCommitChanges();
 
@@ -380,17 +383,17 @@ export abstract class Editor {
           // to put their course into an invalid state by deleting a shared
           // question or otherwise breaking the invariants we rely upon for
           // question sharing.
-          useContentSync =
-            contentScope !== null &&
-            (await isQuestionContentOnlyChange({
-              coursePath: this.course.path,
-              oldHash: startGitHash,
-              newHash: await getCourseCommitHash(this.course.path),
-              scope: contentScope,
-            }));
+          questionChange = questionScope
+            ? await getVerifiedQuestionChange({
+                coursePath: this.course.path,
+                oldHash: startGitHash,
+                newHash: await getCourseCommitHash(this.course.path),
+                scope: questionScope,
+              })
+            : null;
           let possibleCourseData: courseDB.CourseData | undefined;
-          // Content-only edits preserve sharing declarations and question identity.
-          if (!useContentSync) {
+          // Content and title-only edits preserve sharing declarations and question identity.
+          if (!questionChange) {
             possibleCourseData = await courseDB.loadFullCourse(this.course.id, this.course.path);
             const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
               this.course,
@@ -428,7 +431,7 @@ export abstract class Editor {
             // course data from disk after we do so.
             courseData = possibleCourseData;
           } catch {
-            useContentSync = false;
+            questionChange = null;
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
 
@@ -479,14 +482,21 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          if (useContentSync && contentScope && job.data.saveSucceeded) {
+          if (questionChange && job.data.saveSucceeded) {
             const contentSyncStart = performance.now();
-            job.info(`Syncing question content only: ${contentScope.qid}`);
+            job.info(`Syncing question ${questionChange.kind} only: ${questionChange.qid}`);
+            if (questionChange.kind === 'title') {
+              await syncQuestionTitle({
+                course_id: this.course.id,
+                qid: questionChange.qid,
+                title: questionChange.title,
+              });
+            }
             if (config.chunksGenerator) {
               const changes = await updateQuestionContentChunk({
                 coursePath: this.course.path,
                 courseId: this.course.id,
-                qid: contentScope.qid,
+                qid: questionChange.qid,
               });
               logChunkChangesToJob(changes, job);
             }
@@ -498,7 +508,7 @@ export abstract class Editor {
               chunksGenerated: config.chunksGenerator,
             });
             job.verbose(
-              `Synced question content in ${(performance.now() - contentSyncStart).toFixed(2)}ms`,
+              `Synced question ${questionChange.kind} in ${(performance.now() - contentSyncStart).toFixed(2)}ms`,
             );
           } else {
             job.info('Using full course sync');
@@ -1781,6 +1791,15 @@ export class QuestionRenameEditor extends Editor {
     this.question = question;
   }
 
+  override async getQuestionSyncScope(course: Course) {
+    if (!this.title_new || this.qid_new !== this.question.qid) return null;
+    return await getQuestionSyncScope(
+      course,
+      path.join(course.path, 'questions', this.qid_new, 'info.json'),
+      await getCourseCommitHash(course.path),
+    );
+  }
+
   private async moveQuestion({
     oldPath,
     newPath,
@@ -2648,12 +2667,12 @@ export class FileModifyEditor extends Editor {
     }
   }
 
-  protected override async getContentSyncScope() {
-    if (!this.course.last_successful_sync) return null;
-    return await getQuestionContentScope(
-      this.course,
+  override async getQuestionSyncScope(course: Course) {
+    if (!course.last_successful_sync) return null;
+    return await getQuestionSyncScope(
+      course,
       this.filePath,
-      await getCourseCommitHash(this.course.path),
+      await getCourseCommitHash(course.path),
     );
   }
 
@@ -2755,6 +2774,14 @@ export class MultiEditor extends Editor {
     super(params);
 
     this.editors = editors;
+  }
+
+  override async getQuestionSyncScope(course: Course) {
+    const scopes = (
+      await Promise.all(this.editors.map((editor) => editor.getQuestionSyncScope(course)))
+    ).filter((scope) => scope !== null);
+    // Actual Git changes are checked after all child editors have written their files.
+    return scopes.length === 1 ? scopes[0] : null;
   }
 
   assertCanEdit() {

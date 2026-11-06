@@ -12,9 +12,10 @@ import * as sqldb from '@prairielearn/postgres';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { computeEncodedFileContentHash } from '../lib/editorUtil.js';
-import { FileModifyEditor } from '../lib/editors.js';
+import { FileModifyEditor, MultiEditor, QuestionRenameEditor } from '../lib/editors.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 import { invalidateCourseSync, selectCourseById } from '../models/course.js';
+import { selectQuestionByQid } from '../models/question.js';
 import { selectUserById } from '../models/user.js';
 
 import { createCourseRepoFixture } from './helperCourse.js';
@@ -23,6 +24,7 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const outputPath = process.env.PL_SAVE_BENCHMARK_OUTPUT;
 const realGit = process.env.PL_SAVE_BENCHMARK_REAL_GIT === '1';
+const titleEdit = process.env.PL_SAVE_BENCHMARK_ACTION === 'title';
 const questionCount = 500;
 const assessmentCount = 25;
 const warmupCount = 3;
@@ -141,7 +143,11 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       cwd: REPOSITORY_ROOT_PATH,
     });
     const user = await selectUserById('1');
-    const filePath = path.join(coursePath, 'questions/test/question/question.html');
+    const filePath = path.join(
+      coursePath,
+      'questions/test/question',
+      titleEdit ? 'info.json' : 'question.html',
+    );
     const originalContent = await fs.readFile(filePath, 'utf8');
     const samples: Sample[] = [];
 
@@ -156,8 +162,13 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       if (mode === 'full') await invalidateCourseSync('1');
       const course = await selectCourseById('1');
       const previousContent = b64EncodeUnicode(await fs.readFile(filePath, 'utf8'));
-      const nextContent = `${originalContent}\n<!-- save benchmark ${iteration % 2} -->\n`;
-      const editor = new FileModifyEditor({
+      const nextContent = titleEdit
+        ? JSON.stringify({
+            ...JSON.parse(originalContent),
+            title: `Benchmark title ${iteration % 2}`,
+          })
+        : `${originalContent}\n<!-- save benchmark ${iteration % 2} -->\n`;
+      const fileEditor = new FileModifyEditor({
         locals: {
           course,
           user,
@@ -168,6 +179,31 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
         editContents: b64EncodeUnicode(nextContent),
         origHash: computeEncodedFileContentHash(previousContent),
       });
+      const question = await selectQuestionByQid({ course_id: course.id, qid: 'test/question' });
+      const editor = titleEdit
+        ? new MultiEditor(
+            {
+              locals: {
+                course,
+                user,
+                authz_data: { has_course_permission_edit: true, authn_user: user },
+              },
+              description: 'Update question settings',
+            },
+            [
+              fileEditor,
+              new QuestionRenameEditor({
+                locals: {
+                  course,
+                  user,
+                  question,
+                  authz_data: { has_course_permission_edit: true, authn_user: user },
+                },
+                qid_new: 'test/question',
+              }),
+            ],
+          )
+        : fileEditor;
       const start = performance.now();
       let error: string | null = null;
       const job = await editor.prepareServerJob();
@@ -177,7 +213,13 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
         error = String(err);
       }
       const durationMs = performance.now() - start;
-      if (error === null) assert.equal(await fs.readFile(filePath, 'utf8'), nextContent);
+      if (error === null) {
+        assert.equal(await fs.readFile(filePath, 'utf8'), nextContent);
+        if (titleEdit) {
+          const updated = await selectQuestionByQid({ course_id: course.id, qid: 'test/question' });
+          assert.equal(updated.title, `Benchmark title ${iteration % 2}`);
+        }
+      }
       const jobOutput = await sqldb.queryRows(
         sql.select_job_output,
         { job_sequence_id: job.jobSequenceId },
@@ -185,7 +227,9 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
       );
       if (realGit && error === null) {
         assert.equal(
-          jobOutput.some((row) => row.output?.includes('Syncing question content only:')),
+          jobOutput.some((row) =>
+            row.output?.includes(`Syncing question ${titleEdit ? 'title' : 'content'} only:`),
+          ),
           mode === 'targeted',
         );
       }
@@ -201,6 +245,7 @@ describe.skipIf(!outputPath)('question content save benchmark', () => {
         outputPath,
         {
           recordedAt: new Date().toISOString(),
+          action: titleEdit ? 'question-title' : 'question-content',
           revision,
           node: process.version,
           platform: `${os.platform()} ${os.release()} ${os.arch()}`,
