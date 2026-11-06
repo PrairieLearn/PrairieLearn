@@ -27,14 +27,22 @@ const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
 /** Changes the agent can fix itself, as opposed to sandbox faults that need reporting. */
 class UnsupportedReviewError extends Error {}
 
-const GIT_IDENTITY = [
-  '-c',
-  'user.name=PrairieLearn',
-  '-c',
-  'user.email=course-agent@prairielearn.com',
-  '-c',
-  'commit.gpgsign=false',
-];
+/**
+ * The agent may fetch the branch without merging it. Diffing against the fetched tip would
+ * propose reverting the newer upstream files, so diff against what the checkout is based on.
+ */
+async function githubReviewBase(git: (...args: string[]) => Promise<string>, branch: string) {
+  try {
+    return (await git('merge-base', 'HEAD', `refs/remotes/origin/${branch}`)).trim();
+  } catch {
+    // No common ancestor is visible: the shallow clone's fetch depth hid it, or the branch's
+    // history was rewritten. Any other base would misattribute upstream files to the agent.
+    throw new UnsupportedReviewError(
+      `Your checkout shares no visible history with origin/${branch}. Run git fetch --unshallow origin ${branch}; if that does not help, the branch was rewritten, so rebase your commits onto origin/${branch}. Then submit again.`,
+    );
+  }
+}
+
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
@@ -276,7 +284,8 @@ export class CourseSandbox extends DurableObject<Env> {
           'git',
           '-C',
           `${SESSION}/repository`,
-          ...GIT_IDENTITY,
+          '-c',
+          'commit.gpgsign=false',
           'commit',
           '--allow-empty',
           '-m',
@@ -339,15 +348,17 @@ export class CourseSandbox extends DurableObject<Env> {
         'node',
       );
       try {
-        return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(result.stdout);
+        // ignoreBOM keeps a leading U+FEFF, which is part of a file name, not a byte-order mark.
+        return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(result.stdout);
       } catch {
         throw new UnsupportedReviewError('Changed file names must be valid UTF-8.');
       }
     };
     if (source.type === 'github') await git('check-ref-format', `refs/heads/${source.branch}`);
-    const baseRef =
-      source.type === 'local' ? LOCAL_SAVED_REF : `refs/remotes/origin/${source.branch}`;
-    const baseCommit = (await git('rev-parse', '--verify', `${baseRef}^{commit}`)).trim();
+    const baseCommit =
+      source.type === 'local'
+        ? (await git('rev-parse', '--verify', `${LOCAL_SAVED_REF}^{commit}`)).trim()
+        : await githubReviewBase(git, source.branch);
     // Include local commits, working files, and untracked files.
     const tracked = await git(
       'diff',
@@ -392,12 +403,17 @@ export class CourseSandbox extends DurableObject<Env> {
             `Only non-executable regular files are supported: ${path}`,
           );
         }
+        // Checking first avoids reading a huge file; the bytes read are checked again below.
         if (info.size > BigInt(MAX_REVIEW_FILE_BYTES)) {
           throw new UnsupportedReviewError(`Review file is too large: ${path}`);
         }
         // Capture bytes now: later edits must not change what the instructor approves.
-        const response = await files.readFile(path, options);
-        contents = Buffer.from(await response.arrayBuffer()).toString('base64');
+        const bytes = Buffer.from(await (await files.readFile(path, options)).arrayBuffer());
+        // The agent's tools can still be writing, so the file may have grown since lstat.
+        if (bytes.length > MAX_REVIEW_FILE_BYTES) {
+          throw new UnsupportedReviewError(`Review file is too large: ${path}`);
+        }
+        contents = bytes.toString('base64');
       }
       if (contents === original) continue;
       if (contents === null) deletions.push({ path });
@@ -459,7 +475,10 @@ export class CourseSandbox extends DurableObject<Env> {
           continue;
         }
         const blobPath = `${scratch}/${index}`;
-        await storage.writeFile(blobPath, Buffer.from(file.contents, 'base64'));
+        // The agent can create files in the scratch directory, so write as the agent's user.
+        await storage.writeFile(blobPath, Buffer.from(file.contents, 'base64'), {
+          user: NODE_UID_GID,
+        });
         const sha = await git('hash-object', '-w', '--no-filters', '--', blobPath);
         await git(
           '-C',
@@ -472,7 +491,8 @@ export class CourseSandbox extends DurableObject<Env> {
       }
       const tree = await git('write-tree');
       const commit = await git(
-        ...GIT_IDENTITY,
+        '-c',
+        'commit.gpgsign=false',
         'commit-tree',
         tree,
         '-p',

@@ -1,7 +1,10 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
 
-import { CreateConversationInput, ReviewOutcomeSchema } from '@prairielearn/course-agent-types';
+import {
+  CreateConversationInput,
+  RequestChangesResultSchema,
+} from '@prairielearn/course-agent-types';
 
 import { reportError } from '../monitoring.js';
 
@@ -84,10 +87,10 @@ conversations.get('/:id/reviews/:reviewId', async (c) => {
 
 // PrairieLearn may send a result more than once; the review ID makes repeats harmless.
 conversations.post('/:id/reviews/:reviewId/outcome', async (c) => {
-  const outcome = ReviewOutcomeSchema.safeParse(await c.req.json().catch(() => null));
-  if (!outcome.success) return c.text('Invalid outcome', 400);
+  const result = RequestChangesResultSchema.safeParse(await c.req.json().catch(() => null));
+  if (!result.success) return c.text('Invalid result', 400);
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
-  if (!(await conversation.recordReviewResult(c.req.param('reviewId'), outcome.data.result))) {
+  if (!(await conversation.recordReviewResult(c.req.param('reviewId'), result.data))) {
     return c.text('This review already has a different result', 409);
   }
   return c.json({ outcomeRecorded: true });

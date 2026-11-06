@@ -286,13 +286,22 @@ it('saves a review result without credit and delivers it once Resume renews cred
   const { conversation } = fixture(saved);
   await conversation.onStart();
   expect(conversation.recordReviewResult('review', deniedResult)).toBe(true);
+  // Delivery runs as a scheduled callback; while credit is blocked it starts no turn.
+  await conversation.deliverWaitingResult();
   expect(SandboxTurn).not.toHaveBeenCalled();
   expect(conversation.state).toMatchObject({ status: 'blocked', reviewId: 'review' });
   expect(await conversation.resume()).toBe(false);
   vi.setSystemTime('2026-10-27T04:01:00Z');
   expect(await conversation.resume()).toBe(true);
+  expect(conversation.schedule).toHaveBeenLastCalledWith(
+    0,
+    'deliverWaitingResult',
+    undefined,
+    expect.anything(),
+  );
+  await conversation.deliverWaitingResult();
   const options = vi.mocked(SandboxTurn).mock.calls[0][2];
-  expect(options.input.text).toContain('The instructor reviewed the changes');
+  expect(options.input.text).toContain('The instructor denied the submitted changes.');
   expect(budget(saved)).toMatchObject({ balanceMilliDollars: 3000, blocked: null });
 });
 
@@ -313,8 +322,13 @@ async function runningConversation(saved?: Map<string, unknown>) {
   const state = fixture(saved);
   const { conversation, sandbox } = state;
   await conversation.onStart();
+  // Each turn submits a new message; a message already submitted is never sent again.
   await conversation.persistMessages([
-    { id: 'user', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
+    {
+      id: crypto.randomUUID(),
+      role: 'user',
+      parts: [{ type: 'text', text: 'Edit this question' }],
+    },
   ]);
   await conversation.onChatMessage(undefined, { requestId: 'initial' });
   const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];

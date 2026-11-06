@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
 
-import { buildCatchUp, missedTurns } from './catch-up.js';
+import { buildCatchUp, missedTurns, nextUserMessage } from './catch-up.js';
 
 // Deliveries are continuations, so both reviews' turns append to the same assistant message.
 const history: UIMessage[] = [
@@ -62,5 +62,33 @@ describe('buildCatchUp', () => {
     expect(capped).toContain('[Earlier messages omitted.]');
     expect(capped).toContain('Staff: 49 ');
     expect(capped).not.toContain('Staff: 0 ');
+    const oversized = buildCatchUp([`Staff: ${'x'.repeat(40_000)} end`], 'github')!;
+    expect(oversized).toContain('[Earlier messages omitted.]');
+    expect(oversized).toContain('x end');
+    // The limit includes the omission marker.
+    for (const text of [capped, oversized]) {
+      const transcript = /<earlier-conversation>\n([\s\S]*)\n<\/earlier-conversation>/.exec(
+        text,
+      )![1];
+      expect(transcript.length).toBeLessThanOrEqual(32_000);
+    }
+  });
+});
+
+describe('nextUserMessage', () => {
+  it('takes the first user message after the last one handled, even if a reply followed it', () => {
+    // A second tab's submit is persisted while the first turn runs, before that turn's reply.
+    const queued: UIMessage[] = [
+      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'First' }] },
+      { id: 'u2', role: 'user', parts: [{ type: 'text', text: 'Second' }] },
+      { id: 'u3', role: 'user', parts: [{ type: 'text', text: 'Third' }] },
+      { id: 'a1', role: 'assistant', parts: [{ type: 'text', text: 'Reply' }] },
+    ];
+    expect(nextUserMessage(queued, 'u1')?.id).toBe('u2');
+    // A refused message is recorded as handled too, so it is never sent in place of the next one.
+    expect(nextUserMessage(queued, 'u2')?.id).toBe('u3');
+    expect(nextUserMessage(queued, 'u3')).toBeNull();
+    // Records saved before submissions were tracked fall back to the newest user message.
+    expect(nextUserMessage(queued, null)?.id).toBe('u3');
   });
 });

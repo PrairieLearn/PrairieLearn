@@ -75,7 +75,11 @@ const ReviewPathSchema = z
 
 const ReviewContentsSchema = z.base64().max(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3));
 
-/** The save and sync outcomes are separate: files may be saved even if syncing fails. */
+/**
+ * The save and sync outcomes are separate: files may be saved even if syncing fails. Both are
+ * `unknown` when PrairieLearn lost the save job before it recorded how far it got, so the files
+ * may or may not have been saved.
+ */
 export const RequestChangesResultSchema = z
   .strictObject({
     decision: z.enum(['approved', 'denied']),
@@ -88,11 +92,13 @@ export const RequestChangesResultSchema = z
       }),
       z.strictObject({ status: z.literal('published') }),
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
+      z.strictObject({ status: z.literal('unknown') }),
     ]),
     sync: z.discriminatedUnion('status', [
       z.strictObject({ status: z.literal('not_attempted') }),
       z.strictObject({ status: z.literal('succeeded') }),
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
+      z.strictObject({ status: z.literal('unknown') }),
     ]),
   })
   .refine((result) => {
@@ -101,13 +107,18 @@ export const RequestChangesResultSchema = z
         result.publication.status === 'not_attempted' && result.sync.status === 'not_attempted'
       );
     }
-    if (['published', 'saved_locally'].includes(result.publication.status)) {
-      return result.sync.status !== 'not_attempted';
+    switch (result.publication.status) {
+      case 'published':
+      case 'saved_locally':
+        return result.sync.status === 'succeeded' || result.sync.status === 'failed';
+      case 'failed':
+      case 'conflict':
+        return result.sync.status === 'not_attempted';
+      case 'unknown':
+        return result.sync.status === 'unknown';
+      case 'not_attempted':
+        return false;
     }
-    return (
-      ['failed', 'conflict'].includes(result.publication.status) &&
-      result.sync.status === 'not_attempted'
-    );
   });
 
 export type RequestChangesResult = z.infer<typeof RequestChangesResultSchema>;
@@ -152,5 +163,3 @@ export const ReviewSchema = z.strictObject({
 });
 
 export type Review = z.infer<typeof ReviewSchema>;
-
-export const ReviewOutcomeSchema = z.strictObject({ result: RequestChangesResultSchema });

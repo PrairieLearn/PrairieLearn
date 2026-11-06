@@ -739,10 +739,12 @@ export const CourseAgentReviewSchema = z.object({
   course_agent_conversation_id: IdSchema,
   created_at: DateFromISOString,
   decision: EnumCourseAgentReviewDecisionSchema,
+  delivery_expired_at: DateFromISOString.nullable(),
   id: IdSchema,
   job_sequence_id: IdSchema.nullable(),
   result: z.unknown(),
   result_delivered_at: DateFromISOString.nullable(),
+  stuck_delivery_reported_at: DateFromISOString.nullable(),
 });
 export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
 

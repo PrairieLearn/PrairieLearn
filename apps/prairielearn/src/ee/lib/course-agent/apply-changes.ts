@@ -32,11 +32,13 @@ import { type ServerJobExecutor, getJobSequence } from '../../../lib/server-jobs
 import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
 import { selectCourseById } from '../../../models/course.js';
 import {
+  expireUndeliveredCourseAgentReviews,
   insertCourseAgentReview,
   selectOptionalCourseAgentReview,
   selectUndeliveredCourseAgentReviews,
   updateCourseAgentReviewDelivered,
   updateCourseAgentReviewResult,
+  updateCourseAgentReviewStuckReported,
 } from '../../models/course-agent-review.js';
 
 import {
@@ -59,6 +61,18 @@ const DENIED: RequestChangesResult = {
   publication: { status: 'not_attempted' },
   sync: { status: 'not_attempted' },
 };
+
+/** An approval whose save was lost before it recorded how far it got. */
+const UNKNOWN: RequestChangesResult = {
+  decision: 'approved',
+  publication: { status: 'unknown' },
+  sync: { status: 'unknown' },
+};
+
+// A Worker restart or deploy delays delivery briefly; only a result that stays stuck is a fault.
+const STUCK_DELIVERY_MS = 60 * 60 * 1000;
+// A result still undelivered after this long will not succeed by retrying; Resume can still send it.
+const DELIVERY_CUTOFF = '7 days';
 
 function verifyReviewBinding(
   course: Pick<Course, 'repository' | 'branch'>,
@@ -231,11 +245,13 @@ async function applyChanges(
   }
 }
 
-// A Worker restart or deploy delays delivery briefly; only a result that stays stuck is a fault.
-const STUCK_DELIVERY_MS = 60 * 60 * 1000;
-
-function reportStuckDelivery(row: CourseAgentReview, error: unknown) {
-  if (Date.now() - row.created_at.getTime() > STUCK_DELIVERY_MS) Sentry.captureException(error);
+/** Report a result once when it has gone undelivered for longer than a restart explains. */
+async function reportStuckDelivery(row: CourseAgentReview, error: unknown) {
+  if (row.stuck_delivery_reported_at || Date.now() - row.created_at.getTime() < STUCK_DELIVERY_MS) {
+    return;
+  }
+  Sentry.captureException(error);
+  await updateCourseAgentReviewStuckReported(row.id);
 }
 
 /** Record a result once; whichever caller records it first decides what the agent receives. */
@@ -245,10 +261,13 @@ async function recordAndDeliverResult(
   result: RequestChangesResult,
 ) {
   const recorded = await updateCourseAgentReviewResult({ id: row.id, result });
-  if (recorded) await deliverResult(conversation, recorded, result);
+  return recorded ? await deliverResult(conversation, recorded, result) : true;
 }
 
-/** A failed send leaves the result undelivered for the sweeper or Resume to retry. */
+/**
+ * A failed send leaves the result undelivered for the sweeper or Resume to retry. Returns false
+ * when the service did not answer, so the sweeper can stop instead of waiting out each timeout.
+ */
 async function deliverResult(
   conversation: CourseAgentConversation,
   row: CourseAgentReview,
@@ -261,16 +280,18 @@ async function deliverResult(
       result,
     );
     await updateCourseAgentReviewDelivered(row.id);
+    return true;
   } catch (error) {
     if (error instanceof HttpStatusError && error.status === 409) {
       // Retrying cannot change the service's answer, so stop sending this result.
       logger.error('Course agent service refused the review result.', error);
       Sentry.captureException(error);
       await updateCourseAgentReviewDelivered(row.id);
-      return;
+      return true;
     }
     logger.error('Course agent review result was not delivered; it will be retried.', error);
-    reportStuckDelivery(row, error);
+    await reportStuckDelivery(row, error);
+    return false;
   }
 }
 
@@ -286,6 +307,9 @@ export function getReviewJobResult(
   if (job.status === 'Running' || job.status === 'Stopping') {
     throw new HttpStatusError(409, 'The changes are still being saved. Try again shortly.');
   }
+  // Only the abandoned-job sweeper (errorAbandonedJobs) records an error message. It ends a job
+  // whose process died without persisting the flags below, so how far the save got is unknown.
+  if (job.error_message !== null) return UNKNOWN;
   // A stopped job still records how far it got, like a failed one, so the agent can continue.
   if (data.courseAgentConflict) {
     const { paths } = ReviewConflictSchema.parse(data.courseAgentConflict);
@@ -312,39 +336,62 @@ export function getReviewJobResult(
 /**
  * Send every result the service has not acknowledged. A result missing because PrairieLearn
  * stopped while saving is rebuilt from the finished job; a job still running is left for later.
+ * The sweep (no conversation) first retires results it has retried for too long.
  */
 export async function deliverUndeliveredReviewResults(conversationId: string | null = null) {
   if (!config.courseAgentServiceUrl) return;
+  if (conversationId === null) {
+    for (const id of await expireUndeliveredCourseAgentReviews({ cutoff: DELIVERY_CUTOFF })) {
+      logger.error(`Course agent review ${id} result was never delivered; no longer retrying.`);
+    }
+  }
   const rows = await selectUndeliveredCourseAgentReviews({
     course_agent_conversation_id: conversationId,
   });
   for (const { review: row, conversation } of rows) {
-    try {
-      if (row.result !== null) {
-        await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result));
-        continue;
-      }
-      // Only approvals wait for a result, and the schema requires each to have a job.
-      if (row.job_sequence_id === null) throw new Error('Approved review has no job');
-      const sequence = await getJobSequence(row.job_sequence_id, conversation.course_id);
-      if (sequence.jobs[0].status === 'Running' || sequence.jobs[0].status === 'Stopping') {
-        continue;
-      }
-      // The snapshot is retained until its result is delivered, so its mode is still available.
-      const review = await getCourseAgentReview(
-        conversation.agent_conversation_id,
-        row.agent_review_id,
-      );
-      if (!review) continue;
-      await recordAndDeliverResult(
-        conversation,
-        row,
-        getReviewJobResult(sequence, review.snapshot.type),
-      );
-    } catch (error) {
-      logger.error('Course agent review result delivery failed; it will be retried.', error);
-      reportStuckDelivery(row, error);
+    // An unreachable service would fail every later row too, so the sweep stops and the next
+    // one retries. Other failures only skip their own row.
+    if (!(await deliverUndeliveredReviewResult(conversation, row))) return;
+  }
+}
+
+/** Returns false when the course agent service did not answer. */
+async function deliverUndeliveredReviewResult(
+  conversation: CourseAgentConversation,
+  row: CourseAgentReview,
+) {
+  try {
+    if (row.result !== null) {
+      return await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result));
     }
+    // Only approvals wait for a result. Each creates a job, so a missing one was deleted before
+    // its result was recorded.
+    if (row.job_sequence_id === null) {
+      return await recordAndDeliverResult(conversation, row, UNKNOWN);
+    }
+    const sequence = await getJobSequence(row.job_sequence_id, conversation.course_id);
+    if (sequence.jobs[0].status === 'Running' || sequence.jobs[0].status === 'Stopping') {
+      return true;
+    }
+    let review: Review | null;
+    try {
+      // The snapshot is retained until its result is delivered, so its mode is still available.
+      review = await getCourseAgentReview(conversation.agent_conversation_id, row.agent_review_id);
+    } catch (error) {
+      logger.error('Course agent review could not be loaded; it will be retried.', error);
+      await reportStuckDelivery(row, error);
+      return false;
+    }
+    if (!review) return true;
+    return await recordAndDeliverResult(
+      conversation,
+      row,
+      getReviewJobResult(sequence, review.snapshot.type),
+    );
+  } catch (error) {
+    logger.error('Course agent review result delivery failed; it will be retried.', error);
+    await reportStuckDelivery(row, error);
+    return true;
   }
 }
 

@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
 import type { RequestChangesResult } from '@prairielearn/course-agent-types';
-import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRows,
+  queryScalars,
+} from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   CourseAgentConversationSchema,
@@ -65,7 +72,19 @@ export async function updateCourseAgentReviewDelivered(id: string) {
   await execute(sql.update_course_agent_review_delivered, { id });
 }
 
-/** Reviews whose result the course agent service has not acknowledged, oldest first. */
+export async function updateCourseAgentReviewStuckReported(id: string) {
+  await execute(sql.update_course_agent_review_stuck_reported, { id });
+}
+
+/** Stop the sweep from resending results undelivered for longer than the cutoff; returns their IDs. */
+export async function expireUndeliveredCourseAgentReviews({ cutoff }: { cutoff: string }) {
+  return await queryScalars(sql.expire_undelivered_course_agent_reviews, { cutoff }, IdSchema);
+}
+
+/**
+ * Reviews whose result the course agent service has not acknowledged, oldest first. The sweep
+ * (no conversation) omits expired results; Resume (a conversation) includes them.
+ */
 export async function selectUndeliveredCourseAgentReviews({
   course_agent_conversation_id = null,
 }: { course_agent_conversation_id?: string | null } = {}) {

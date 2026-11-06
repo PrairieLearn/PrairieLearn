@@ -319,6 +319,8 @@ function Chat({
     if (lifecycle?.status === 'waiting_for_agent') return 'Thinking…';
     return null;
   });
+  const awaitingReviewId =
+    !responseActive && lifecycle && reviewDecidable(lifecycle) ? lifecycle.reviewId : null;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
 
   const submit = (event?: SyntheticEvent) => {
@@ -344,13 +346,20 @@ function Chat({
               key={message.id}
               message={message}
               conversationId={conversationId}
-              awaitingReviewId={
-                !responseActive && lifecycle && reviewDecidable(lifecycle)
-                  ? lifecycle.reviewId
-                  : null
-              }
+              awaitingReviewId={awaitingReviewId}
             />
           ))}
+          {/* Stop can end the stream before history records the review, which would otherwise
+              leave the conversation waiting on a review with no card to decide it. */}
+          {historyReady &&
+            lifecycle?.reviewId &&
+            !reviewInHistory(messages, lifecycle.reviewId) && (
+              <RequestChangesCard
+                conversationId={conversationId}
+                reviewId={lifecycle.reviewId}
+                canResume={awaitingReviewId === lifecycle.reviewId}
+              />
+            )}
           {activity && (
             <div className="text-muted small" role="status">
               <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
@@ -367,7 +376,7 @@ function Chat({
           {lifecycle?.sandboxLost && (
             <Alert variant="warning">
               The course agent stopped unexpectedly and lost the changes it made since it last
-              paused. Changes you already approved are in your course and are not affected.
+              paused. Reviews you already decided are not affected; each shows what was saved.
             </Alert>
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
@@ -457,6 +466,16 @@ function Composer({
         )}
       </div>
     </Form>
+  );
+}
+
+function reviewInHistory(messages: UIMessage[], reviewId: string) {
+  return messages.some((message) =>
+    message.parts.some(
+      (part) =>
+        part.type === 'data-review' &&
+        ReviewPartSchema.safeParse(part.data).data?.reviewId === reviewId,
+    ),
   );
 }
 

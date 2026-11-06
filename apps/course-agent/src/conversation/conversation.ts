@@ -34,8 +34,10 @@ import { SandboxTurn } from '../sandbox/turn.js';
 
 import {
   buildCatchUp,
+  describeReviewResult,
   messageTag,
   missedTurns,
+  nextUserMessage,
   resumeTag,
   reviewTag,
   summarizeReview,
@@ -158,6 +160,8 @@ interface RecordData {
    */
   threadMayBeBehind: boolean;
   review: ReviewRecord | null;
+  /** The last user message submitted to Codex; absent in records saved before it was added. */
+  submittedMessageId?: string | null;
 }
 
 // Destruction is a private phase because the replacement checkpoint is committed
@@ -267,11 +271,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     };
   }
 
-  /** Save a complete private record before publishing its public projection. */
+  /**
+   * Save a complete private record before publishing its public projection. Saving a record that
+   * is idle with a result to deliver schedules the delivery, so no release point has to.
+   */
   private setRecord(next: ConversationRecord) {
     this.ctx.storage.kv.put('conversation', next);
     this._record = next;
     this.setState(this.publicState);
+    void this.scheduleDelivery().catch((error: unknown) => this.reportError(error));
   }
 
   /**
@@ -293,16 +301,18 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     switch (this.record.lifecycle.status) {
       case 'offline':
         // Offline awaits a message, or delivers a review result that arrived before the restart.
-        await this.scheduleDelivery();
+        await this.scheduleDelivery(1);
         return;
       case 'blocked':
         // Blocked awaits Resume, with automatic recovery as a fallback while a sandbox remains.
         if (this.record.sandboxId && !this.record.deadline) this.scheduleRecovery();
         return;
       case 'waiting_for_user':
-        // The sandbox is ready for input; restore its idle shutdown using the saved expiry.
+        // The sandbox is ready for input; restore its idle shutdown using the saved expiry. The
+        // delivery is scheduled first, since saving the deadline would otherwise schedule it
+        // without the wake delay.
+        await this.scheduleDelivery(1);
         await this.scheduleDeadline('idle', this.record.deadline?.at);
-        await this.scheduleDelivery();
         return;
       case 'starting':
         // Setup lost its execution handle. Resume must discard the incomplete container.
@@ -342,6 +352,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       deadline: null,
       sandboxLost: false,
       threadMayBeBehind: false,
+      submittedMessageId: null,
     });
   }
 
@@ -761,13 +772,18 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!options) throw new Error('Missing SDK chat options');
     const continuation = options.continuation === true;
     const resumeAfterCredit = continuation && options.body?.resumeAfterCredit === true;
+    // Capture input before any await lets another connection append to history.
+    const message = continuation
+      ? null
+      : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
+    const earlier = this.messages.filter((entry) => entry !== message);
     const checkedSandboxId = this.record.sandboxId;
     const lost =
       checkedSandboxId !== null &&
       !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
     const review = this.record.review;
     const status = this.record.lifecycle.status;
-    // deliverReviewResult() claims the conversation before the SDK calls back for a continuation.
+    // deliverWaitingResult() claims the conversation before the SDK calls back for a continuation.
     const admitted = continuation
       ? (resumeAfterCredit || review?.result) && status === 'waiting_for_agent'
       : !review && (status === 'offline' || status === 'waiting_for_user');
@@ -778,12 +794,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.recovering ||
       this.sandboxShutdown
     ) {
+      // The SDK has already saved the message. Count it as handled, or the next submit would
+      // send this refused prompt in place of the user's next one.
+      if (message) this.setRecord({ ...this.record, submittedMessageId: message.id });
       throw new Error('The course agent sandbox is not ready.');
     }
-    // Capture input before asynchronous setup allows another connection to change history.
-    const message = this.messages.at(-1);
-    if (!continuation && message?.role !== 'user') throw new Error('Expected a new user message');
-    const earlier = continuation ? this.messages : this.messages.slice(0, -1);
+    if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
     const startup = this.record.sandboxId === null;
@@ -794,7 +810,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         ? {
             tag: reviewTag(delivered.id),
             once: true,
-            text: `The instructor reviewed the changes you submitted with request_changes: ${JSON.stringify(delivered.result)}`,
+            text: describeReviewResult(delivered.result, source.type),
           }
         : resumeAfterCredit
           ? { tag: resumeTag(crypto.randomUUID()), text: RESUME_AFTER_CREDIT_TEXT }
@@ -824,12 +840,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
+      // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
+      submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
     });
     log('turn_started', { startup });
-    this.native ??= new CodexAppServerClient(this.sandbox);
+    const native = (this.native ??= new CodexAppServerClient(this.sandbox));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
-    const execution = new SandboxTurn(this.sandbox, this.native, {
+    const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
       messageId: crypto.randomUUID(),
       input,
@@ -871,18 +889,22 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       onAccepted: (nativeTurnId) => {
         this.setRecord({ ...this.record, nativeThreadId, threadMayBeBehind: false });
         if (nativeTurnId) this.stash({ nativeTurnId });
-        // The agent now has the result, so it may request another review in this turn.
-        if (delivered) this.settleReview(delivered.id);
+        if (delivered?.result) {
+          // The agent now has the result: mark the delivery in chat history, so an attempt that
+          // fails first leaves no marker, and drop the snapshot so new messages are admitted.
+          native.emit(turnMarker(input.tag, summarizeReview(delivered.result)));
+          this.settleReview(delivered.id);
+        } else if (resumeAfterCredit) {
+          native.emit(
+            turnMarker(
+              input.tag,
+              'Credit became available again, so you continued the paused task.',
+            ),
+          );
+        }
       },
       log,
     });
-    if (delivered?.result) {
-      this.native.emit(turnMarker(input.tag, summarizeReview(delivered.result)));
-    } else if (resumeAfterCredit) {
-      this.native.emit(
-        turnMarker(input.tag, 'Credit became available again, so you continued the paused task.'),
-      );
-    }
     const active: ActiveTurn = {
       executionId,
       requestId: options.requestId,
@@ -963,15 +985,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     } else {
       this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_user' } });
       await this.scheduleDeadline('idle');
-      // A result that arrived during this turn is delivered next.
-      this.deliverReviewResult();
     }
   }
 
   /**
    * Resume repairs a blocked sandbox, renews credit if inference was paused for it, then delivers a
-   * waiting review result or continues the paused task. It never repeats an interrupted prompt.
-   * Automatic recovery passes explicit: false: it only repairs, and its delivery is limited.
+   * waiting review result, even one that waits for Resume, or continues the paused task. It never
+   * repeats an interrupted prompt. Automatic recovery passes explicit: false so it only repairs; a
+   * result that does not wait for Resume is still delivered afterwards.
    */
   async resume({ explicit = true }: { explicit?: boolean } = {}): Promise<boolean> {
     // A waiting result is delivered when the current turn ends, or is being delivered now (for
@@ -1015,7 +1036,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         return true;
       }
     }
-    this.deliverReviewResult({ explicit });
+    // Saving the record schedules the delivery, now that credit allows it.
+    const review = this.record.review;
+    if (explicit && review?.result) {
+      this.setRecord({ ...this.record, review: { ...review, waitsForResume: false } });
+    }
     return true;
   }
 
@@ -1191,27 +1216,22 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         JSON.stringify(RequestChangesResultSchema.parse(result))
       );
     }
-    this.setRecord({
-      ...this.record,
-      review: { ...review, result },
-    });
-    this.deliverReviewResult();
+    this.setRecord({ ...this.record, review: { ...review, result } });
     return true;
   }
 
   /**
-   * Every point where the sandbox becomes free calls this. Claiming the conversation is
-   * synchronous, so concurrent callers cannot start two deliveries. The delivery turn is tagged
-   * with the review ID, so a retry after a lost acknowledgment does not submit it twice.
+   * Deliver a waiting result if the sandbox is free. The delivery turn is tagged with the review
+   * ID, so a retry after a lost acknowledgment does not submit it twice.
    */
-  private deliverReviewResult({ explicit = false }: { explicit?: boolean } = {}) {
+  async deliverWaitingResult() {
     const review = this.record.review;
     const status = this.record.lifecycle.status;
     if (!review?.result || this.active || this.recovering || this.sandboxShutdown) return;
     if (status !== 'offline' && status !== 'waiting_for_user') return;
     // Resume delivers the result once credit is renewed.
     if (this.budget.blocked) return;
-    if (!explicit && review.waitsForResume) return;
+    if (review.waitsForResume) return;
     this.setRecord({
       ...this.record,
       review: { ...review, waitsForResume: false },
@@ -1234,17 +1254,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * On wake, deliver after the SDK's own restart recovery has run, rather than from onStart,
-   * so the two cannot interleave.
+   * Delivery runs as a scheduled callback rather than inline, so it starts only after whatever
+   * released the sandbox has finished and, on wake, after the SDK's own restart recovery has run,
+   * which the one-second delay leaves room for.
    */
-  private async scheduleDelivery() {
-    if (this.record.review?.result) {
-      await this.schedule(1, 'deliverWaitingResult', undefined, { idempotent: true });
+  private async scheduleDelivery(delaySeconds = 0) {
+    const status = this.record.lifecycle.status;
+    if (!this.record.review?.result || (status !== 'offline' && status !== 'waiting_for_user')) {
+      return;
     }
-  }
-
-  async deliverWaitingResult() {
-    this.deliverReviewResult();
+    await this.schedule(delaySeconds, 'deliverWaitingResult', undefined, { idempotent: true });
   }
 
   /** Commit a replacement backup before shutdown; cleanup of the old archive is independent. */
@@ -1257,8 +1276,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       await shutdown;
     } finally {
       this.sandboxShutdown = null;
-      // A result that arrived during shutdown waited for it.
-      this.deliverReviewResult();
     }
   }
 

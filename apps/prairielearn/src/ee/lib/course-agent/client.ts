@@ -135,7 +135,8 @@ export async function getCourseAgentReview(agentConversationId: string, reviewId
   const { url, headers } = buildCourseAgentServiceRequest(
     `conversations/${encodeURIComponent(agentConversationId)}/reviews/${encodeURIComponent(reviewId)}`,
   );
-  const response = await fetch(url, { headers });
+  // The result sweep fetches reviews one at a time, so one stalled response must not hold it.
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new error.HttpStatusError(502, 'Could not load the course agent review');
   return ReviewSchema.nullable().parse(await response.json());
 }
@@ -152,7 +153,7 @@ export async function deliverCourseAgentReviewResult(
   const response = await fetch(url, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ result }),
+    body: JSON.stringify(result),
     // The agent records the result and continues in the background, so this returns promptly.
     signal: AbortSignal.timeout(30_000),
   });

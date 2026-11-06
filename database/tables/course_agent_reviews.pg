@@ -3,19 +3,21 @@ columns
     course_agent_conversation_id: bigint not null
     created_at: timestamp with time zone not null default now()
     decision: enum_course_agent_review_decision not null
+    delivery_expired_at: timestamp with time zone
     id: bigint not null default nextval('course_agent_reviews_id_seq'::regclass)
     job_sequence_id: bigint
     result: jsonb
     result_delivered_at: timestamp with time zone
+    stuck_delivery_reported_at: timestamp with time zone
 
 indexes
     course_agent_reviews_pkey: PRIMARY KEY (id) USING btree (id)
     course_agent_reviews_conversation_review_key: UNIQUE (course_agent_conversation_id, agent_review_id) USING btree (course_agent_conversation_id, agent_review_id)
-    course_agent_reviews_undelivered_idx: USING btree (id) WHERE result_delivered_at IS NULL
+    course_agent_reviews_undelivered_idx: USING btree (id) WHERE result_delivered_at IS NULL AND delivery_expired_at IS NULL
 
 check constraints
-    course_agent_reviews_approval_has_job: CHECK ((decision = 'approved'::enum_course_agent_review_decision) = (job_sequence_id IS NOT NULL))
+    course_agent_reviews_denial_has_no_job: CHECK (decision = 'approved'::enum_course_agent_review_decision OR job_sequence_id IS NULL)
 
 foreign-key constraints
     course_agent_reviews_course_agent_conversation_id_fkey: FOREIGN KEY (course_agent_conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
-    course_agent_reviews_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_reviews_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL

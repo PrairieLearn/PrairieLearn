@@ -83,7 +83,8 @@ export function RequestChangesCard({
           </Button>
         </div>
       )}
-      {review.isError && (
+      {/* A diff can fail transiently, for example while the course is locked by another save. */}
+      {(review.isError || pending?.diff.error) && (
         <Button
           className="mt-2"
           size="sm"
@@ -209,6 +210,9 @@ function ReviewResult({ result }: { result: RequestChangesResult }) {
     message = 'Changes denied.';
   } else if (result.publication.status === 'conflict') {
     message = 'Course files changed since this proposal. No proposed changes were saved.';
+  } else if (result.publication.status === 'unknown') {
+    message =
+      'Saving was interrupted before its outcome was recorded, so these changes may or may not have been saved. Check the course files or repository.';
   } else if (result.publication.status === 'saved_locally') {
     message =
       result.sync.status === 'succeeded'
