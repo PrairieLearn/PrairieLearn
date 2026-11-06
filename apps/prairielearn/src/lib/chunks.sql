@@ -23,7 +23,6 @@ WITH
       coalesce(question_id, -1) ASC,
       coalesce(course_instance_id, -1) ASC,
       coalesce(assessment_id, -1) ASC,
-      created_at DESC NULLS LAST,
       id DESC
   )
 SELECT
@@ -69,7 +68,6 @@ FROM
       AND coalesce(course_instance_id, -1) = coalesce((chunks_arr ->> 'courseInstanceId')::bigint, -1)
       AND coalesce(assessment_id, -1) = coalesce((chunks_arr ->> 'assessmentId')::bigint, -1)
     ORDER BY
-      created_at DESC NULLS LAST,
       id DESC
     LIMIT
       1
@@ -133,20 +131,49 @@ FROM
 LIMIT
   100;
 
--- BLOCK delete_chunk_revisions
--- Remove every revision of each replaced identity, so this works whether or
--- not the one-row-per-chunk index still exists.
-DELETE FROM chunks USING chunks AS replaced
+-- BLOCK lock_course_for_chunk_publication
+SELECT
+  id
+FROM
+  courses
 WHERE
-  replaced.id = ANY ($chunk_ids::bigint[])
-  AND replaced.course_id = $course_id
-  AND chunks.course_id = replaced.course_id
-  AND chunks.type = replaced.type
-  AND coalesce(chunks.question_id, -1) = coalesce(replaced.question_id, -1)
-  AND coalesce(chunks.course_instance_id, -1) = coalesce(replaced.course_instance_id, -1)
-  AND coalesce(chunks.assessment_id, -1) = coalesce(replaced.assessment_id, -1);
+  id = $course_id
+FOR NO KEY UPDATE;
 
 -- BLOCK insert_chunks
+WITH
+  publication AS MATERIALIZED (
+    SELECT
+      clock_timestamp() AS created_at
+  ),
+  new_chunks AS (
+    SELECT
+      (chunk ->> 'type')::enum_chunk_type AS type,
+      $course_id::bigint AS course_id,
+      q.id AS question_id,
+      ci.id AS course_instance_id,
+      a.id AS assessment_id,
+      (chunk ->> 'uuid')::uuid AS uuid,
+      (chunk ->> 'sizeCompressed')::bigint AS size_compressed,
+      (chunk ->> 'sizeUncompressed')::bigint AS size_uncompressed
+    FROM
+      JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
+      LEFT JOIN questions AS q ON (
+        q.qid = (chunk ->> 'questionName')
+        AND q.deleted_at IS NULL
+        AND q.course_id = $course_id
+      )
+      LEFT JOIN course_instances AS ci ON (
+        ci.short_name = (chunk ->> 'courseInstanceName')
+        AND ci.deleted_at IS NULL
+        AND ci.course_id = $course_id
+      )
+      LEFT JOIN assessments AS a ON (
+        a.tid = (chunk ->> 'assessmentName')
+        AND a.deleted_at IS NULL
+        AND a.course_instance_id = ci.id
+      )
+  )
 INSERT INTO
   chunks (
     type,
@@ -157,36 +184,56 @@ INSERT INTO
     uuid,
     created_at,
     commit_hash,
+    deleted,
     size_compressed,
     size_uncompressed
   )
 SELECT
-  (chunk ->> 'type')::enum_chunk_type,
-  $course_id,
-  q.id AS question_id,
-  ci.id AS course_instance_id,
-  a.id AS assessment_id,
-  (chunk ->> 'uuid')::uuid,
-  now(),
+  type,
+  course_id,
+  question_id,
+  course_instance_id,
+  assessment_id,
+  uuid,
+  publication.created_at,
   $commit_hash,
-  (chunk ->> 'sizeCompressed')::bigint,
-  (chunk ->> 'sizeUncompressed')::bigint
+  FALSE,
+  size_compressed,
+  size_uncompressed
 FROM
-  JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
-  LEFT JOIN questions AS q ON (
-    q.qid = (chunk ->> 'questionName')
-    AND q.deleted_at IS NULL
-    AND q.course_id = $course_id
-  )
-  LEFT JOIN course_instances AS ci ON (
-    ci.short_name = (chunk ->> 'courseInstanceName')
-    AND ci.deleted_at IS NULL
-    AND ci.course_id = $course_id
-  )
-  LEFT JOIN assessments AS a ON (
-    a.tid = (chunk ->> 'assessmentName')
-    AND a.deleted_at IS NULL
-    AND a.course_instance_id = ci.id
+  new_chunks
+  CROSS JOIN publication
+UNION ALL
+SELECT
+  old.type,
+  old.course_id,
+  old.question_id,
+  old.course_instance_id,
+  old.assessment_id,
+  NULL::uuid,
+  publication.created_at,
+  $commit_hash,
+  TRUE,
+  NULL::bigint,
+  NULL::bigint
+FROM
+  chunks AS old
+  CROSS JOIN publication
+WHERE
+  old.course_id = $course_id
+  AND old.id = ANY ($replaced_chunk_ids::bigint[])
+  -- A regenerated path can belong to a new entity ID. Mark the old identity
+  -- deleted as well, while ordinary updates only append the new live revision.
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      new_chunks AS new
+    WHERE
+      new.type = old.type
+      AND coalesce(new.question_id, -1) = coalesce(old.question_id, -1)
+      AND coalesce(new.course_instance_id, -1) = coalesce(old.course_instance_id, -1)
+      AND coalesce(new.assessment_id, -1) = coalesce(old.assessment_id, -1)
   );
 
 -- BLOCK select_active_assessment_ids_by_tid

@@ -33,38 +33,12 @@ WHERE
   qid = $qid
   AND deleted_at IS NULL;
 
--- BLOCK select_all_chunks
-SELECT
-  *
-FROM
-  chunks
+-- BLOCK prepare_history_baseline
+UPDATE chunks
+SET
+  created_at = CASE
+    WHEN type = 'clientFilesCourse' THEN NULL
+    ELSE $created_at::timestamptz
+  END
 WHERE
   course_id = $course_id;
-
--- BLOCK drop_unique_chunk_index
-DROP INDEX chunks_unique_values_key;
-
--- BLOCK append_chunk_revisions
-INSERT INTO
-  chunks (
-    type,
-    course_id,
-    question_id,
-    course_instance_id,
-    assessment_id,
-    uuid,
-    created_at
-  )
-SELECT
-  type,
-  course_id,
-  question_id,
-  course_instance_id,
-  assessment_id,
-  gen_random_uuid(),
-  now()
-FROM
-  chunks
-WHERE
-  course_id = $course_id
-  AND type = ANY ($types::enum_chunk_type[]);

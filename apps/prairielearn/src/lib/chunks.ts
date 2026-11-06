@@ -761,7 +761,11 @@ async function diffChunks({
   return { updatedChunks, deletedChunks, replacedChunkIds };
 }
 
-async function createAndUploadChunks(coursePath: string, chunksToGenerate: ChunkMetadata[]) {
+async function createAndUploadChunks(
+  coursePath: string,
+  courseId: string,
+  chunksToGenerate: ChunkMetadata[],
+) {
   const generatedChunks: (ChunkMetadata & {
     uuid: string;
     sizeCompressed: number;
@@ -808,7 +812,7 @@ async function createAndUploadChunks(coursePath: string, chunksToGenerate: Chunk
       client: s3,
       params: {
         Bucket: config.chunksS3Bucket,
-        Key: `${chunkUuid}.tar.gz`,
+        Key: s3KeyForChunk(courseId, chunkUuid),
         Body: body,
       },
     });
@@ -914,19 +918,17 @@ export async function updateChunksForCourse({
   });
 
   const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
-  const generatedChunks = await createAndUploadChunks(coursePath, updatedChunks);
+  const generatedChunks = await createAndUploadChunks(coursePath, courseId, updatedChunks);
 
   // Uploads finish before the transaction, so it only holds row locks briefly.
   await sqldb.runInTransactionAsync(async () => {
-    await sqldb.execute(sql.delete_chunk_revisions, {
-      course_id: courseId,
-      chunk_ids: replacedChunkIds,
-    });
+    await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
     await sqldb.execute(sql.insert_chunks, {
       course_id: courseId,
       // Force this to a string; otherwise, our code in `sql-db.js` will try to
       // convert it into a Postgres `ARRAY[...]` type, which we don't want.
       chunks: JSON.stringify(generatedChunks),
+      replaced_chunk_ids: replacedChunkIds,
       commit_hash: commitHash,
     });
   });
