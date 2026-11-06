@@ -140,7 +140,7 @@ function LoginPageContainer({
         <main class="login-container-wrapper">
           <div class="login-container">
             <div>
-              <h1 class="text-center bg-dark rounded p-3">
+              <h1 class="text-center">
                 <a
                   href="https://www.prairielearn.com/"
                   target="_blank"
@@ -148,7 +148,7 @@ function LoginPageContainer({
                   class="text-body"
                 >
                   <img
-                    src="${assetPath('images/prairielearn-logo-white.png')}"
+                    src="${assetPath('images/prairielearn-logo-transparent.png')}"
                     alt="PrairieLearn"
                     width="2029"
                     height="404"
