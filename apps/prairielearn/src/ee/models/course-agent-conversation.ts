@@ -1,30 +1,10 @@
-import type { BudgetRequest } from '@prairielearn/course-agent-types';
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { CourseAgentConversationSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export async function recordCourseAgentConversationUsage(id: string, request: BudgetRequest) {
-  const usage = request.usageDelta;
-  await execute(sql.add_usage, {
-    id,
-    input: usage.inputTokens,
-    cached: usage.cachedInputTokens,
-    output: usage.outputTokens,
-    reasoning: usage.reasoningTokens,
-    cost: usage.costMilliDollars,
-    usage_report_count: request.usageReportCount,
-  });
-}
-
-/** Accounting may finish after a course is soft-deleted. Lock the row to serialize reports. */
+/** Usage reports may arrive after a course is soft-deleted. Lock the row to serialize reports. */
 export async function selectOptionalCourseAgentConversationByAgentIdForUpdate(
   agentConversationId: string,
 ) {

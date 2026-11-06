@@ -138,8 +138,25 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
     ) {
       return new Response('Forbidden', { status: 403 });
     }
-    const body = (await request.json()) as { model?: string; input?: { role?: string }[] };
+    const body = (await request.json()) as {
+      model?: string;
+      input?: { role?: string }[];
+      background?: unknown;
+      service_tier?: unknown;
+    };
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
+    // PrairieLearn prices each request at standard rates once its response finishes. A
+    // background request finishes after its response returns, and other service tiers bill at
+    // other rates, so either would let the agent spend more than its usage records.
+    if (
+      (body.background !== undefined && body.background !== false) ||
+      (body.service_tier !== undefined &&
+        body.service_tier !== null &&
+        body.service_tier !== 'auto' &&
+        body.service_tier !== 'default')
+    ) {
+      return new Response('Forbidden', { status: 403 });
+    }
     // Later requests in a turn end with tool output; only the role is read, never the content.
     const firstOfTurn = body.input?.at(-1)?.role === 'user';
     const started = Date.now();

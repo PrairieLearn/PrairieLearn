@@ -3,20 +3,21 @@ import { timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { BudgetRequestSchema } from '@prairielearn/course-agent-types';
+import { UsageReportSchema } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 import { parseRequest } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { applyCourseAgentBudgetRequest } from '../lib/course-agent/budget.js';
+import { recordCourseAgentUsageReport } from '../lib/course-agent/budget.js';
 
 const router = Router();
 const PostRequestSchemas = {
   params: z.strictObject({ agentId: z.uuid() }),
   query: z.strictObject({}),
-  body: BudgetRequestSchema,
+  body: UsageReportSchema,
 };
 
 router.post(
@@ -31,19 +32,13 @@ router.post(
       });
       if (!authorized) throw new HttpStatusError(401, 'Unauthorized');
       const { params, body } = parseRequest(req, PostRequestSchemas);
-      const result = await applyCourseAgentBudgetRequest(params.agentId, body);
-      const allocation = result.body.allocation;
-      if (allocation.status === 'denied' && allocation.reason === 'hourly_limit') {
-        res.setHeader(
-          'Retry-After',
-          Math.max(0, Math.ceil((Date.parse(allocation.retryAt) - Date.now()) / 1000)),
-        );
-      }
-      res.status(result.status).json(result.body);
+      // Denials are decisions, not errors: the Worker reads them from a 200 response.
+      res.json(await recordCourseAgentUsageReport(params.agentId, body));
     } catch (error) {
       const status = error instanceof HttpStatusError ? error.status : 503;
       if (!(error instanceof HttpStatusError)) {
         logger.error('Course agent usage request failed', error);
+        Sentry.captureException(error);
       }
       res.status(status).json({
         message: error instanceof HttpStatusError ? error.message : 'Could not record AI usage.',

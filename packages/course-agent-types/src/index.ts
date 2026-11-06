@@ -24,8 +24,6 @@ export type ConversationLifecycle =
         | 'checkpoint_failed'
         | 'cleanup_failed'
         | 'budget_exhausted'
-        | 'budget_unavailable'
-        | 'usage_unavailable'
         | 'access_revoked';
       retryAt?: string;
     };
@@ -40,7 +38,6 @@ export type ConversationState = ConversationLifecycle & {
   sandboxLost: boolean;
   /** A review whose outcome the agent has not yet received. New messages wait for it. */
   reviewId: string | null;
-  budget: { balanceMilliDollars: number };
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];

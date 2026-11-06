@@ -40,10 +40,7 @@ const ReviewPartSchema = z.object({ reviewId: z.string() });
 function reviewDecidable(state: ConversationState) {
   if (state.status === 'waiting_for_user' || state.status === 'offline') return true;
   return (
-    state.status === 'blocked' &&
-    ['budget_exhausted', 'budget_unavailable', 'usage_unavailable', 'access_revoked'].includes(
-      state.reason,
-    )
+    state.status === 'blocked' && ['budget_exhausted', 'access_revoked'].includes(state.reason)
   );
 }
 
@@ -64,10 +61,7 @@ export function Conversations({
   showConversationStats: boolean;
 }) {
   const trpc = useTRPC();
-  const conversations = useQuery({
-    ...trpc.courseAgent.list.queryOptions(),
-    refetchInterval: active ? 10_000 : false,
-  });
+  const conversations = useQuery(trpc.courseAgent.list.queryOptions());
   const listError = getAppError<CourseAgentError['List']>(conversations.error);
   if (conversations.isPending) return <Loading />;
   return (
@@ -202,7 +196,6 @@ function ConversationPicker({
           key={selectedId}
           courseId={courseId}
           conversationId={selectedId}
-          usage={selectedConversation!}
           showConversationStats={showConversationStats}
           chatCsrfToken={chatCsrfToken}
           initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
@@ -248,13 +241,11 @@ function Chat({
   initialMessage,
   onInitialMessageSent,
   showConversationStats,
-  usage,
 }: {
   courseId: string;
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
-  usage: StaffCourseAgentConversation;
   initialMessage: string | undefined;
   onInitialMessageSent: () => void;
 }) {
@@ -409,7 +400,9 @@ function Chat({
         onSubmit={submit}
         onStop={responseActive || canStop ? () => void stop() : undefined}
       >
-        {showConversationStats && <ConversationStats state={lifecycle} usage={usage} />}
+        {showConversationStats && (
+          <ConversationStats state={lifecycle} conversationId={conversationId} />
+        )}
       </Composer>
     </div>
   );

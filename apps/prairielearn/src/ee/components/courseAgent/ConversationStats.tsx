@@ -1,9 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
 
 import type { ConversationState } from '@prairielearn/course-agent-types';
 
-import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
+import { useTRPC } from '../../../trpc/course/context.js';
 
 const currencyFormat = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -14,12 +15,19 @@ const currencyFormat = new Intl.NumberFormat('en-US', {
 
 export function ConversationStats({
   state,
-  usage,
+  conversationId,
 }: {
   state: ConversationState | null;
-  usage: StaffCourseAgentConversation;
+  conversationId: string;
 }) {
   const [show, setShow] = useState(false);
+  const trpc = useTRPC();
+  // Usage is recorded every 30 seconds or so while the agent works, so refresh while open.
+  const usage = useQuery({
+    ...trpc.courseAgent.usage.queryOptions({ conversationId }),
+    enabled: show,
+    refetchInterval: show ? 5_000 : false,
+  }).data;
   return (
     <Dropdown drop="up" show={show} autoClose="outside" onToggle={setShow}>
       <Dropdown.Toggle variant="outline-secondary" size="sm">
@@ -35,20 +43,16 @@ export function ConversationStats({
               <DeadlineCountdown key={state?.deadlineAt} deadlineAt={state?.deadlineAt ?? null} />
             </dd>
             <dt>Input tokens</dt>
-            <dd>{usage.usage_input_tokens.toLocaleString()}</dd>
+            <dd>{usage?.input_tokens.toLocaleString() ?? 'Loading'}</dd>
             <dt>Cached input tokens</dt>
-            <dd>{usage.usage_input_tokens_cache_read.toLocaleString()}</dd>
+            <dd>{usage?.input_tokens_cache_read.toLocaleString() ?? 'Loading'}</dd>
             <dt>Output tokens</dt>
-            <dd>{usage.usage_output_tokens.toLocaleString()}</dd>
+            <dd>{usage?.output_tokens.toLocaleString() ?? 'Loading'}</dd>
             <dt>Reasoning tokens</dt>
-            <dd>{usage.usage_output_tokens_reasoning.toLocaleString()}</dd>
+            <dd>{usage?.output_tokens_reasoning.toLocaleString() ?? 'Loading'}</dd>
             <dt>Model cost</dt>
-            <dd>{currencyFormat.format(usage.usage_cost_milli_dollars / 1000)}</dd>
-            <dt>Conversation current budget</dt>
             <dd className="mb-0">
-              {state
-                ? currencyFormat.format(state.budget.balanceMilliDollars / 1000)
-                : 'Connecting'}
+              {usage ? currencyFormat.format(usage.cost_milli_dollars / 1000) : 'Loading'}
             </dd>
           </dl>
         </Dropdown.Menu>

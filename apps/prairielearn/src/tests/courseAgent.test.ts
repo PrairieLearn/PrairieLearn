@@ -6,15 +6,14 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { Redis } from 'ioredis';
 import { io } from 'socket.io-client';
 import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
-  type BudgetRequest,
-  BudgetResponseSchema,
+  UsageDecisionSchema,
+  type UsageReport,
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -24,10 +23,10 @@ import {
   insertCourseAgentConversation,
   selectOptionalCourseAgentConversation,
 } from '../ee/models/course-agent-conversation.js';
+import { selectCourseAgentConversationUsage } from '../ee/models/course-agent-usage-report.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { RedisRateLimiter } from '../lib/redis-rate-limiter.js';
 import {
   insertCoursePermissionsByUserUid,
   selectCoursePermissionForUser,
@@ -97,7 +96,6 @@ describe('Course agent access and conversation privacy', () => {
     courseAgentServiceUrl: config.courseAgentServiceUrl,
     courseAgentServiceToken: config.courseAgentServiceToken,
     features: config.features,
-    cacheKeyPrefix: config.cacheKeyPrefix,
   };
 
   beforeAll(async () => {
@@ -130,7 +128,6 @@ describe('Course agent access and conversation privacy', () => {
   });
   beforeEach(async () => {
     serviceConversationId = crypto.randomUUID();
-    config.cacheKeyPrefix = `${originalConfig.cacheKeyPrefix}course-agent-test:${crypto.randomUUID()}:`;
     serviceRequests.length = 0;
     await updateCoursePermissionsRole({
       course_id: '1',
@@ -146,7 +143,28 @@ describe('Course agent access and conversation privacy', () => {
   });
   afterAll(() => Object.assign(config, originalConfig));
 
-  test('grants credit to an administrator without explicit course permissions', async () => {
+  function report(agentId: string, body: UsageReport, token = 'test-token') {
+    return fetch(`${siteUrl}/pl/api/course-agent/conversations/${agentId}/usage`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  function usageReport(outputTokens = 0): UsageReport {
+    return {
+      reportId: crypto.randomUUID(),
+      model: 'gpt-6-luna',
+      usage: { ...emptyUsage(), outputTokens },
+    };
+  }
+
+  async function decision(response: Response) {
+    expect(response.status).toBe(200);
+    return UsageDecisionSchema.parse(await response.json());
+  }
+
+  test('allows an administrator without explicit course permissions', async () => {
     const administrator = await selectUserById('1');
     expect(
       await selectCoursePermissionForUser({ course_id: '1', user_id: administrator.id }),
@@ -155,69 +173,38 @@ describe('Course agent access and conversation privacy', () => {
       expect(createClient(administrator).courseAgent.list.query()).resolves.toEqual([]),
     );
     const conversation = await createConversation(administrator);
-    const response = await fetch(
-      `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/usage`,
-      {
-        method: 'POST',
-        headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          usageReportCount: 1,
-          usageDelta: emptyUsage(),
-          requestCredit: true,
-        }),
-      },
+    expect(await decision(await report(conversation.agent_conversation_id, usageReport()))).toEqual(
+      { status: 'allowed' },
     );
-    expect(response.status).toBe(200);
-    expect(BudgetResponseSchema.parse(await response.json()).allocation).toMatchObject({
-      status: 'granted',
-      grantedMilliDollars: 3000,
-    });
   });
 
-  test('rejects duplicate and skipped reports and preserves final usage after access revocation', async () => {
+  test('records each report once and keeps final usage after access is revoked', async () => {
     const conversation = await createConversation(owner);
-    const url = `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/usage`;
-    const report = (body: BudgetRequest, token = 'test-token') =>
-      fetch(url, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    const request: BudgetRequest = {
-      usageReportCount: 1,
-      usageDelta: { ...emptyUsage(), inputTokens: 10000, outputTokens: 2000, costMilliDollars: 40 },
-      requestCredit: true,
+    const agentId = conversation.agent_conversation_id;
+    const first: UsageReport = {
+      reportId: crypto.randomUUID(),
+      model: 'gpt-6-luna',
+      usage: { ...emptyUsage(), inputTokens: 10_000, cachedInputTokens: 8000, outputTokens: 2000 },
     };
-    expect((await report(request, 'wrong')).status).toBe(401);
+    expect((await report(agentId, first, 'wrong')).status).toBe(401);
     // A Worker still sending the second configured token is accepted during rotation.
-    const accepted = await report(request, 'next-token');
-    expect(accepted.status).toBe(200);
-    const first = BudgetResponseSchema.parse(await accepted.json());
-    expect(first.allocation).toMatchObject({ status: 'granted', grantedMilliDollars: 3000 });
-    const skipped = await report({
-      ...request,
-      usageReportCount: 3,
-      usageDelta: { ...emptyUsage(), costMilliDollars: 50000 },
+    expect(await decision(await report(agentId, first, 'next-token'))).toEqual({
+      status: 'allowed',
     });
-    expect(skipped.status).toBe(409);
-    expect(await skipped.json()).toEqual({
-      message: 'The usage report is out of order.',
+    // A retry after a lost reply is answered again without counting the usage twice.
+    expect(await decision(await report(agentId, first))).toEqual({ status: 'allowed' });
+    // The first recording stands even if a buggy retry resends different usage.
+    expect(await decision(await report(agentId, { ...first, usage: emptyUsage() }))).toEqual({
+      status: 'allowed',
     });
-    expect((await report(request)).status).toBe(409);
-    expect(
-      (await report({ ...request, usageDelta: { ...request.usageDelta, costMilliDollars: 80 } }))
-        .status,
-    ).toBe(409);
-    let saved = await selectOptionalCourseAgentConversation({
-      id: conversation.id,
-      course_id: '1',
-      user_id: owner.id,
-    });
-    expect(saved).toMatchObject({
-      usage_input_tokens: 10000,
-      usage_output_tokens: 2000,
-      usage_cost_milli_dollars: 40,
-      usage_report_count: 1,
+    expect((await report(agentId, { ...usageReport(), model: 'unpriced' })).status).toBe(400);
+    // gpt-6-luna: 2000 uncached and 8000 cached input tokens plus 2000 output tokens is $0.00128.
+    expect(await selectCourseAgentConversationUsage(conversation.id)).toEqual({
+      input_tokens: 10_000,
+      input_tokens_cache_read: 8000,
+      output_tokens: 2000,
+      output_tokens_reasoning: 0,
+      cost_milli_dollars: 2,
     });
     await updateCoursePermissionsRole({
       course_id: '1',
@@ -225,99 +212,41 @@ describe('Course agent access and conversation privacy', () => {
       course_role: 'Editor',
       authn_user_id: '1',
     });
-    const final = {
-      usageReportCount: 2,
-      usageDelta: { ...emptyUsage(), outputTokens: 500, costMilliDollars: 10 },
-      requestCredit: true,
-    };
-    const denied = await report(final);
-    expect(denied.status).toBe(403);
-    expect(await denied.json()).toEqual({
-      usageReportCount: 2,
-      allocation: { status: 'denied', reason: 'not_allowed' },
+    expect(await decision(await report(agentId, usageReport(500)))).toEqual({
+      status: 'denied',
+      reason: 'not_allowed',
     });
-    expect(
-      (
-        await report({
-          usageReportCount: 3,
-          usageDelta: { ...emptyUsage(), costMilliDollars: 5 },
-          requestCredit: false,
-        })
-      ).status,
-    ).toBe(200);
-    saved = await selectOptionalCourseAgentConversation({
-      id: conversation.id,
-      course_id: '1',
-      user_id: owner.id,
+    expect(await selectCourseAgentConversationUsage(conversation.id)).toMatchObject({
+      output_tokens: 2500,
     });
-    expect(saved).toMatchObject({
-      usage_output_tokens: 2500,
-      usage_cost_milli_dollars: 55,
-      usage_report_count: 3,
-    });
-    expect((await report(request)).status).toBe(409);
   });
 
-  test('limits actual hourly spend per user without charging credit pulls or report retries', async () => {
-    const redis = new Redis<'legacy'>(config.nonVolatileRedisUrl!);
-    const limiter = new RedisRateLimiter({
-      redis: () => redis,
-      keyPrefix: () => config.cacheKeyPrefix + 'course-agent-usage:',
-      intervalSeconds: 3600,
+  test('limits hourly spending per user across conversations', async () => {
+    const a = (await createConversation(owner)).agent_conversation_id;
+    const b = (await createConversation(owner)).agent_conversation_id;
+    // gpt-6-luna output costs $0.50 per million tokens, so 80M tokens is $40.
+    expect(await decision(await report(a, usageReport(80_000_000)))).toEqual({
+      status: 'allowed',
     });
-    const report = (
-      agentId: string,
-      usageReportCount: number,
-      costMilliDollars: number,
-      requestCredit = true,
-    ) =>
-      fetch(`${siteUrl}/pl/api/course-agent/conversations/${agentId}/usage`, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          usageReportCount,
-          usageDelta: { ...emptyUsage(), costMilliDollars },
-          requestCredit,
-        }),
-      });
+    expect(await decision(await report(b, usageReport(18_000_000)))).toEqual({
+      status: 'allowed',
+    });
+    const hourStart = Math.floor(Date.now() / 3_600_000) * 3_600_000;
+    expect(await decision(await report(a, usageReport(2_000_000)))).toEqual({
+      status: 'denied',
+      reason: 'hourly_limit',
+      retryAt: new Date(hourStart + 3_600_000).toISOString(),
+    });
+    expect(await decision(await report(b, usageReport()))).toMatchObject({ status: 'denied' });
+    const other = await createConversation(otherOwner);
+    expect(await decision(await report(other.agent_conversation_id, usageReport()))).toEqual({
+      status: 'allowed',
+    });
+    const now = vi.spyOn(Date, 'now').mockReturnValue(hourStart + 3_600_000);
     try {
-      const a = await createConversation(owner);
-      const b = await createConversation(owner);
-      expect((await report(a.agent_conversation_id, 1, 40000, false)).status).toBe(200);
-      expect((await report(a.agent_conversation_id, 1, 40000, false)).status).toBe(409);
-      expect((await report(b.agent_conversation_id, 1, 0)).status).toBe(200);
-      expect(await limiter.getIntervalUsage(`user:${owner.id}`)).toBe(40000);
-      expect((await report(a.agent_conversation_id, 2, 9000)).status).toBe(200);
-      const denied = await report(b.agent_conversation_id, 2, 1000);
-      expect(denied.status).toBe(429);
-      expect(denied.headers.get('Retry-After')).not.toBeNull();
-      expect(BudgetResponseSchema.parse(await denied.json()).allocation).toMatchObject({
-        status: 'denied',
-        reason: 'hourly_limit',
-      });
-      expect((await report(a.agent_conversation_id, 3, 0)).status).toBe(429);
-      expect(await limiter.getIntervalUsage(`user:${owner.id}`)).toBe(50000);
-      const keys = await redis.keys(`${config.cacheKeyPrefix}course-agent-usage:*`);
-      expect(keys).toHaveLength(1);
-      expect(await redis.pttl(keys[0])).toBeGreaterThan(0);
-      const other = await createConversation(otherOwner);
-      expect((await report(other.agent_conversation_id, 1, 0)).status).toBe(200);
-      const nextHour = Math.floor(Date.now() / 3_600_000) * 3_600_000 + 3_600_000;
-      const now = vi.spyOn(Date, 'now').mockReturnValue(nextHour);
-      try {
-        const renewed = await report(a.agent_conversation_id, 4, 0);
-        expect(renewed.status).toBe(200);
-        expect(BudgetResponseSchema.parse(await renewed.json()).allocation).toEqual({
-          status: 'granted',
-          grantedMilliDollars: 3000,
-          expiresAt: new Date(nextHour + 3_600_000).toISOString(),
-        });
-        expect(await limiter.getIntervalUsage(`user:${owner.id}`)).toBe(0);
-      } finally {
-        now.mockRestore();
-      }
+      expect(await decision(await report(a, usageReport()))).toEqual({ status: 'allowed' });
     } finally {
-      await limiter.close();
+      now.mockRestore();
     }
   });
 

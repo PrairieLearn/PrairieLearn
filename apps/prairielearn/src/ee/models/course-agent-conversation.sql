@@ -11,18 +11,6 @@ VALUES
 RETURNING
   *;
 
--- BLOCK add_usage
-UPDATE course_agent_conversations
-SET
-  usage_input_tokens = usage_input_tokens + $input,
-  usage_input_tokens_cache_read = usage_input_tokens_cache_read + $cached,
-  usage_output_tokens = usage_output_tokens + $output,
-  usage_output_tokens_reasoning = usage_output_tokens_reasoning + $reasoning,
-  usage_cost_milli_dollars = usage_cost_milli_dollars + $cost,
-  usage_report_count = $usage_report_count
-WHERE
-  id = $id;
-
 -- BLOCK select_course_agent_conversations_for_user
 SELECT
   *

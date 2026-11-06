@@ -11,19 +11,17 @@ import { z } from 'zod';
 
 import {
   type BlockedReason,
-  type BudgetRequest,
-  type BudgetResponse,
-  BudgetResponseSchema,
   type ConversationLifecycle,
   type ConversationState,
   type RequestChangesResult,
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
-  type UsageDelta,
-  UsageDeltaSchema,
+  UsageDecisionSchema,
+  type UsageReport,
+  type UsageTokens,
+  UsageTokensSchema,
   addUsage,
-  budgetResponseStatus,
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
@@ -51,30 +49,35 @@ import { buildInstructions } from './instructions.js';
 const KEEPALIVE_SECONDS = 25;
 
 interface BudgetBlock {
-  reason: Extract<
-    BlockedReason,
-    'budget_exhausted' | 'budget_unavailable' | 'usage_unavailable' | 'access_revoked'
-  >;
+  reason: Extract<BlockedReason, 'budget_exhausted' | 'access_revoked'>;
   retryAt?: string;
+  /** Set when the block stopped a running turn, so Resume continues that task. */
+  interrupted?: boolean;
 }
 
-type AccountingState =
-  | { phase: 'idle'; usage: UsageDelta }
-  | { phase: 'running'; requestId: string; usage: UsageDelta }
-  | { phase: 'reporting'; request: BudgetRequest };
-
 export interface BudgetState {
-  balanceMilliDollars: number;
-  creditExpiresAt: string | null;
-  lastAcknowledgedUsageReportCount: number;
-  accounting: AccountingState;
+  /** Usage PrairieLearn has not recorded, excluding a report that is being sent. */
+  unreported: UsageTokens;
+  /** The report being sent. A retry resends it unchanged, so PrairieLearn records it once. */
+  pending: UsageReport | null;
+  /** The provider request whose usage is not yet known, and what to charge if it never is. */
+  running: { requestId: string; estimate: UsageTokens } | null;
   /** Gates new inference and turns; the sandbox lifecycle, including idle expiry, continues. */
   blocked: BudgetBlock | null;
 }
 
-// gpt-6-luna's fixed input/output prices. Cached input uses the input rate in this pilot.
-const INPUT_MILLI_DOLLARS_PER_MILLION_TOKENS = 100;
-const OUTPUT_MILLI_DOLLARS_PER_MILLION_TOKENS = 500;
+// A provider request that ends without final usage, such as a dropped stream or a restart, is
+// charged its size at about four characters per token plus a generous reply.
+const ESTIMATED_CHARACTERS_PER_TOKEN = 4;
+const ESTIMATED_OUTPUT_TOKENS = 16_000;
+
+// Model requests wait for PrairieLearn only when its last decision is older than this, which in
+// practice means once per turn. A limit reached mid-turn takes effect at the next request after
+// a background report, so spending can overshoot the limit by about one request.
+const DECISION_TTL_MS = 60_000;
+// Once the decision is this old, a finished request refreshes it in the background, so the
+// decision stays current without a report per request.
+const DECISION_REFRESH_MS = 30_000;
 
 const RESUME_AFTER_CREDIT_TEXT =
   'Credit is available again. Continue the interrupted task from the current workspace and thread. Inspect any partial edits and continue from where you left off.';
@@ -100,21 +103,26 @@ const ModelEventSchema = z.looseObject({
     .optional(),
 });
 
-function requestUsage(event: z.infer<typeof ModelEventSchema>): UsageDelta | null {
+function requestUsage(event: z.infer<typeof ModelEventSchema>): UsageTokens | null {
   const usage = event.response?.usage;
   if (!usage) return null;
-  return UsageDeltaSchema.parse({
+  return UsageTokensSchema.parse({
     inputTokens: usage.input_tokens,
     cachedInputTokens: usage.input_tokens_details?.cached_tokens ?? 0,
     outputTokens: usage.output_tokens,
     reasoningTokens: usage.output_tokens_details?.reasoning_tokens ?? 0,
-    costMilliDollars: Math.ceil(
-      (usage.input_tokens * INPUT_MILLI_DOLLARS_PER_MILLION_TOKENS +
-        usage.output_tokens * OUTPUT_MILLI_DOLLARS_PER_MILLION_TOKENS) /
-        1_000_000,
-    ),
   });
 }
+
+function estimateUsage(body: string): UsageTokens {
+  return {
+    ...emptyUsage(),
+    inputTokens: Math.ceil(body.length / ESTIMATED_CHARACTERS_PER_TOKEN),
+    outputTokens: ESTIMATED_OUTPUT_TOKENS,
+  };
+}
+
+const isEmptyUsage = (usage: UsageTokens) => usage.inputTokens === 0 && usage.outputTokens === 0;
 
 const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
@@ -204,16 +212,21 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     deadlineAt: null,
     sandboxLost: false,
     reviewId: null,
-    budget: { balanceMilliDollars: 0 },
   };
 
   private budget: BudgetState = {
-    balanceMilliDollars: 0,
-    creditExpiresAt: null,
-    lastAcknowledgedUsageReportCount: 0,
-    accounting: { phase: 'idle', usage: emptyUsage() },
+    unreported: emptyUsage(),
+    pending: null,
+    running: null,
     blocked: null,
   };
+
+  /** Shared by concurrent callers so that only one report is in flight. */
+  private reporting: Promise<boolean> | null = null;
+  /** A rejected report is sent to Sentry once, not on every retry. */
+  private rejectedReportId: string | null = null;
+  /** When PrairieLearn last allowed inference; in memory, so a restarted object checks first. */
+  private allowedAt: number | null = null;
 
   /** Stop waits for confirmed usage before releasing execution. */
   private modelRequest: {
@@ -259,11 +272,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const common = {
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
-      budget: { balanceMilliDollars: this.budget.balanceMilliDollars },
     };
     // A credit block is shown once the sandbox is at rest; in-flight states still show progress.
     if (this.budget.blocked && ['offline', 'waiting_for_user'].includes(lifecycle.status)) {
-      return { status: 'blocked', ...this.budget.blocked, deadlineAt: null, ...common };
+      const { reason, retryAt } = this.budget.blocked;
+      return { status: 'blocked', reason, retryAt, deadlineAt: null, ...common };
     }
     return {
       ...(lifecycle.status === 'destroying' ? { status: 'suspending' as const } : lifecycle),
@@ -294,8 +307,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // A new object has no saved conversation yet. Leave the private record null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this._record) return;
-    // A provider request that was running when the object restarted has unknown usage.
-    if (this.budget.accounting.phase === 'running') this.blockBudget('usage_unavailable');
+    // A provider request that was running when the object restarted is charged its estimate.
+    if (this.budget.running) this.recordModelUsage(this.budget.running.requestId, null);
     this.setState(this.publicState);
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
     // reconstructing an in-flight operation. The remaining states need explicit recovery.
@@ -479,34 +492,26 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.modelRequest = null;
   }
 
-  private async tryStartModelRequest(requestId: string): Promise<boolean> {
-    if (!(await this.ensureCredit())) return false;
-    const accounting = this.budget.accounting;
-    if (accounting.phase !== 'idle') return false;
+  /** Unknown usage is charged its estimate rather than blocking the conversation. */
+  private recordModelUsage(requestId: string, usage: UsageTokens | null) {
+    const running = this.budget.running;
+    if (running?.requestId !== requestId) return;
+    if (!usage) logEvent('model_usage_estimated', { conversationId: this.name });
     this.saveBudget({
       ...this.budget,
-      accounting: { phase: 'running', requestId, usage: accounting.usage },
-    });
-    return true;
-  }
-
-  /** Null means final provider usage is unknown; zero usage means no generation occurred. */
-  private recordModelUsage(requestId: string, usage: UsageDelta | null) {
-    const accounting = this.budget.accounting;
-    if (accounting.phase !== 'running' || accounting.requestId !== requestId) return;
-    if (!usage) {
-      this.blockBudget('usage_unavailable');
-      this.finishModelRequest(requestId);
-      this.interruptForBudget();
-      return;
-    }
-    this.expireCredit();
-    this.saveBudget({
-      ...this.budget,
-      balanceMilliDollars: this.budget.balanceMilliDollars - usage.costMilliDollars,
-      accounting: { phase: 'idle', usage: addUsage(accounting.usage, usage) },
+      unreported: addUsage(this.budget.unreported, usage ?? running.estimate),
+      running: null,
     });
     this.finishModelRequest(requestId);
+    if (!this.budget.blocked && !this.decisionFresh(DECISION_REFRESH_MS)) {
+      void this.keepAliveWhile(() => this.reportUsage()).catch((error: unknown) =>
+        this.reportError(error),
+      );
+    }
+  }
+
+  private decisionFresh(maxAgeMs: number) {
+    return this.allowedAt !== null && Date.now() - this.allowedAt < maxAgeMs;
   }
 
   private saveBudget(next: BudgetState) {
@@ -515,45 +520,33 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (this._record) this.setState(this.publicState);
   }
 
-  private blockBudget(reason: BudgetBlock['reason']) {
-    this.saveBudget({ ...this.budget, blocked: { reason } });
+  private blockBudget(block: BudgetBlock) {
+    this.saveBudget({ ...this.budget, blocked: block });
   }
 
-  private expireCredit() {
-    if (this.budget.creditExpiresAt && Date.parse(this.budget.creditExpiresAt) <= Date.now()) {
-      this.saveBudget({
-        ...this.budget,
-        balanceMilliDollars: Math.min(0, this.budget.balanceMilliDollars),
-        creditExpiresAt: null,
-      });
+  /**
+   * Send usage since the last report and save PrairieLearn's decision for the next model request.
+   * Returns false if PrairieLearn could not be reached or refused the report; the same report is
+   * resent next time.
+   */
+  private reportUsage(): Promise<boolean> {
+    this.reporting ??= this.sendUsageReport().finally(() => {
+      this.reporting = null;
+    });
+    return this.reporting;
+  }
+
+  private async sendUsageReport() {
+    let report = this.budget.pending;
+    if (!report) {
+      report = {
+        reportId: crypto.randomUUID(),
+        model: this.record.config.model,
+        usage: this.budget.unreported,
+      };
+      this.saveBudget({ ...this.budget, pending: report, unreported: emptyUsage() });
     }
-  }
-
-  private async ensureCredit(): Promise<boolean> {
-    this.expireCredit();
-    while (
-      !this.budget.blocked &&
-      (this.budget.accounting.phase === 'reporting' || this.budget.balanceMilliDollars <= 0)
-    ) {
-      const accounting = this.budget.accounting;
-      if (accounting.phase === 'running') return false;
-      const request: BudgetRequest =
-        accounting.phase === 'reporting'
-          ? accounting.request
-          : {
-              usageReportCount: this.budget.lastAcknowledgedUsageReportCount + 1,
-              usageDelta: accounting.usage,
-              requestCredit: true,
-            };
-      this.saveBudget({ ...this.budget, accounting: { phase: 'reporting', request } });
-      await this.submitUsageReport(request);
-      this.expireCredit();
-    }
-    return !this.budget.blocked;
-  }
-
-  private async submitUsageReport(request: BudgetRequest) {
-    let result: BudgetResponse;
+    let response: Response;
     try {
       const url = new URL(
         `pl/api/course-agent/conversations/${this.name}/usage`,
@@ -561,72 +554,58 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           ? this.env.PL_SERVICE_URL
           : `${this.env.PL_SERVICE_URL}/`,
       );
-      const response = await fetch(url, {
+      response = await fetch(url, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify(report),
         signal: AbortSignal.timeout(10_000),
       });
-      if ([400, 404, 409].includes(response.status)) {
-        this.blockBudget(response.status === 404 ? 'access_revoked' : 'usage_unavailable');
-        return;
-      }
-      if (![200, 403, 429].includes(response.status)) {
-        throw new Error(`Usage report returned ${response.status}`);
-      }
-      const parsed = BudgetResponseSchema.safeParse(await response.json());
-      if (!parsed.success) {
-        this.blockBudget('usage_unavailable');
-        return;
-      }
-      result = parsed.data;
-      const allocation = result.allocation;
-      const expectedStatus = budgetResponseStatus(result);
-      const requestedCredit = allocation.status !== 'not_requested';
-      if (
-        result.usageReportCount !== request.usageReportCount ||
-        response.status !== expectedStatus ||
-        request.requestCredit !== requestedCredit
-      ) {
-        this.blockBudget('usage_unavailable');
-        return;
-      }
     } catch (error) {
-      console.error('Course agent usage report failed', error);
-      // A retry can succeed only if PL has not committed the frozen report.
-      this.blockBudget('budget_unavailable');
-      return;
+      logEvent('usage_report_unavailable', { conversationId: this.name, error: String(error) });
+      return false;
     }
-    this.expireCredit();
-    const allocation = result.allocation;
-    const next: BudgetState = {
+    if (response.status >= 500) {
+      logEvent('usage_report_unavailable', { conversationId: this.name, status: response.status });
+      return false;
+    }
+    if (response.status === 404) {
+      this.blockBudget({ reason: 'access_revoked' });
+      return true;
+    }
+    const decision = response.ok
+      ? UsageDecisionSchema.safeParse(await response.json().catch(() => null))
+      : null;
+    if (!decision?.success) {
+      // A rejected report is a configuration fault, such as a rotated token or an unpriced
+      // model. Keep the report pending so the conversation recovers once it is fixed.
+      if (this.rejectedReportId !== report.reportId) {
+        this.rejectedReportId = report.reportId;
+        this.reportError(new Error(`Usage report was rejected with ${response.status}`));
+      }
+      logEvent('usage_report_rejected', { conversationId: this.name, status: response.status });
+      return false;
+    }
+    this.saveBudget({
       ...this.budget,
-      lastAcknowledgedUsageReportCount: request.usageReportCount,
-      accounting: { phase: 'idle', usage: emptyUsage() },
-    };
-    if (allocation.status === 'granted' && Date.parse(allocation.expiresAt) > Date.now()) {
-      next.balanceMilliDollars += allocation.grantedMilliDollars;
-      next.creditExpiresAt = allocation.expiresAt;
-    } else if (allocation.status === 'denied') {
-      next.blocked =
-        allocation.reason === 'hourly_limit'
-          ? { reason: 'budget_exhausted', retryAt: allocation.retryAt }
-          : { reason: 'access_revoked' };
-    }
-    this.saveBudget(next);
+      pending: null,
+      blocked:
+        decision.data.status === 'allowed'
+          ? this.budget.blocked
+          : decision.data.reason === 'hourly_limit'
+            ? { reason: 'budget_exhausted', retryAt: decision.data.retryAt }
+            : { reason: 'access_revoked' },
+    });
+    this.allowedAt = decision.data.status === 'allowed' ? Date.now() : null;
+    return true;
   }
 
   private async forwardModelResponse(response: Response, requestId: string): Promise<Response> {
     if (!response.ok) {
-      // These HTTP rejections did not admit generation. A transport/server failure is uncertain.
-      if ([400, 401, 403, 404, 413, 422, 429].includes(response.status)) {
-        this.recordModelUsage(requestId, emptyUsage());
-      } else {
-        this.recordModelUsage(requestId, null);
-      }
+      // The provider does not bill a request it rejected or failed to serve.
+      this.recordModelUsage(requestId, emptyUsage());
       return response;
     }
     if (!response.headers.get('Content-Type')?.includes('text/event-stream')) {
@@ -712,28 +691,43 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const requestId = crypto.randomUUID();
     this.modelRequest = { requestId, settled: Promise.withResolvers<undefined>() };
     try {
-      if (!(await this.tryStartModelRequest(requestId))) {
+      const reached =
+        this.budget.blocked || this.decisionFresh(DECISION_TTL_MS)
+          ? true
+          : await this.reportUsage();
+      if (this.budget.blocked) {
         this.finishModelRequest(requestId);
-        if (!this.budget.blocked) return new Response('Execution stopped', { status: 409 });
+        if (!this.budget.blocked.interrupted) {
+          this.saveBudget({
+            ...this.budget,
+            blocked: { ...this.budget.blocked, interrupted: true },
+          });
+        }
         this.interruptForBudget();
         return Response.json(
           {
             error: {
               code: 'course_agent_budget_exhausted',
-              message: 'The course agent has no available credit.',
+              message: 'The course agent cannot use the model right now.',
             },
           },
           { status: 429 },
         );
+      }
+      if (!reached) {
+        this.finishModelRequest(requestId);
+        // Codex retries server errors, and its retry resends the pending report.
+        return new Response('Usage could not be recorded', { status: 503 });
       }
       if (
         this.active?.executionId !== executionId ||
         this.record.lifecycle.status === 'stopping' ||
         this.sandboxShutdown
       ) {
-        this.recordModelUsage(requestId, emptyUsage());
+        this.finishModelRequest(requestId);
         return new Response('Execution stopped', { status: 409 });
       }
+      this.saveBudget({ ...this.budget, running: { requestId, estimate: estimateUsage(body) } });
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
@@ -970,6 +964,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // Stop terminates native work, but admitted inference finishes accounting before reuse.
     // Aborting the provider stream here would discard its final usage.
     if (this.modelRequest) await this.modelRequest.settled.promise;
+    // Report the turn's last request now, so Stats and the hourly limit include it. This also
+    // runs while blocked: a request can finish after the decision that blocked the turn.
+    if (!isEmptyUsage(this.budget.unreported)) {
+      void this.keepAliveWhile(() => this.reportUsage()).catch((error: unknown) =>
+        this.reportError(error),
+      );
+    }
     if (this.active !== active) return;
     try {
       await active.stop;
@@ -1026,6 +1027,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     if (this.budget.blocked) {
       if (!explicit) return true;
+      // A block that arrived after a turn finished has no task to continue.
+      const interrupted = this.budget.blocked.interrupted === true;
       this.recovering = true;
       try {
         if (!(await this.renewCredit())) return false;
@@ -1033,7 +1036,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         this.recovering = false;
       }
       if (!this.record.review?.result) {
-        this.continueAfterCredit();
+        if (interrupted) this.continueAfterCredit();
         return true;
       }
     }
@@ -1045,15 +1048,26 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return true;
   }
 
-  /** Clear a credit block whose cause can be retried and obtain credit for the next request. */
+  /** Clear a credit block whose cause can be retried and confirm with PrairieLearn. */
   private async renewCredit() {
     const blocked = this.budget.blocked;
-    if (!blocked || blocked.reason === 'usage_unavailable' || blocked.reason === 'access_revoked') {
-      return false;
-    }
+    if (!blocked) return false;
     if (blocked.retryAt && Date.parse(blocked.retryAt) > Date.now()) return false;
     this.saveBudget({ ...this.budget, blocked: null });
-    return await this.ensureCredit();
+    if (!(await this.reportUsage())) {
+      // PrairieLearn did not answer, so nothing has changed.
+      this.saveBudget({ ...this.budget, blocked });
+      return false;
+    }
+    if (this.budget.blocked) {
+      // Denied again: keep whether a turn is still waiting to continue.
+      this.saveBudget({
+        ...this.budget,
+        blocked: { ...this.budget.blocked, interrupted: blocked.interrupted },
+      });
+      return false;
+    }
+    return true;
   }
 
   /** Like review delivery, the continuation claims the conversation before the SDK calls back. */

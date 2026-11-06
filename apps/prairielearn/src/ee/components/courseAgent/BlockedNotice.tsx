@@ -6,10 +6,8 @@ import { formatIntervalMinutes } from '@prairielearn/formatter';
 
 const blockedMessage = {
   budget_exhausted: 'Hourly AI usage limit reached.',
-  budget_unavailable: 'Could not reach the AI credit service. Resume to try again.',
-  usage_unavailable:
-    "Model usage could not be recorded. The course agent's changes are preserved. Contact support to recover this conversation.",
-  access_revoked: 'You no longer have access to run the course agent in this course.',
+  access_revoked:
+    'You no longer have access to run the course agent in this course. If your access is restored, Resume to continue.',
   startup_failed:
     'The course agent could not start. Resume to clear the incomplete setup, then send a new message.',
   runtime_failed:
@@ -37,7 +35,6 @@ export function BlockedNotice({
     return () => window.clearInterval(timer);
   }, [retryAt]);
   const remaining = retryAt ? Math.max(0, Date.parse(retryAt) - now) : 0;
-  const recoverable = !['usage_unavailable', 'access_revoked'].includes(state.reason);
   return (
     <Alert variant="warning">
       <p>
@@ -47,16 +44,14 @@ export function BlockedNotice({
             ? `You can retry in ${formatIntervalMinutes(remaining)}.`
             : 'You can now retry.')}
       </p>
-      {recoverable && (
-        <Button
-          variant="outline-dark"
-          size="sm"
-          disabled={disabled || remaining > 0}
-          onClick={onResume}
-        >
-          Resume
-        </Button>
-      )}
+      <Button
+        variant="outline-dark"
+        size="sm"
+        disabled={disabled || remaining > 0}
+        onClick={onResume}
+      >
+        Resume
+      </Button>
     </Alert>
   );
 }
