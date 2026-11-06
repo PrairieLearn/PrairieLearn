@@ -38,8 +38,7 @@ export function PageFooter() {
               target="_blank"
               rel="noreferrer"
             >
-              <i className="fab fa-github" aria-hidden="true" />{' '}
-              <span className="d-none d-sm-inline">GitHub</span>
+              <i className="fab fa-github" aria-hidden="true" />
             </a>
             <a
               href="https://www.linkedin.com/company/prairielearn/"
@@ -48,8 +47,7 @@ export function PageFooter() {
               target="_blank"
               rel="noreferrer"
             >
-              <i className="fab fa-linkedin" aria-hidden="true" />{' '}
-              <span className="d-none d-sm-inline">LinkedIn</span>
+              <i className="fab fa-linkedin" aria-hidden="true" />
             </a>
             <a
               href="https://www.instagram.com/prairielearn/"
@@ -58,8 +56,7 @@ export function PageFooter() {
               target="_blank"
               rel="noreferrer"
             >
-              <i className="fab fa-instagram" aria-hidden="true" />{' '}
-              <span className="d-none d-sm-inline">Instagram</span>
+              <i className="fab fa-instagram" aria-hidden="true" />
             </a>
           </div>
         </div>
