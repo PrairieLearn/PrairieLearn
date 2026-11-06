@@ -136,3 +136,16 @@ WHERE
   AND t.name = $topic
 RETURNING
   q.*;
+
+-- BLOCK sync_question_qid
+UPDATE questions
+SET
+  qid = $qid,
+  directory = $qid,
+  title = $title
+WHERE
+  course_id = $course_id
+  AND qid = $old_qid
+  AND deleted_at IS NULL
+RETURNING
+  *;

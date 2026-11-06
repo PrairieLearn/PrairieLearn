@@ -19,35 +19,40 @@ import { getDefaultTagsInUse, loadInfoFile } from './course-db.js';
 import { deduplicateByName } from './deduplicate.js';
 import { syncQuestionTags } from './fromDisk/tags.js';
 import { syncTopics } from './fromDisk/topics.js';
+import { type QuestionRenameScope, verifyQuestionRename } from './questionRenameSync.js';
 import { CURRENT_SYNC_VERSION } from './version.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export interface QuestionSyncScope {
+interface QuestionFileSyncScope {
   kind: 'content' | 'metadata';
   qid: string;
   relativeFilePath: string;
 }
 
-export type QuestionSyncChange = Omit<QuestionSyncScope, 'kind'> &
-  (
-    | { kind: 'content' }
-    | { kind: 'title'; title: string }
-    | {
-        kind: 'metadata';
-        metadata: { title: string; tags: string[]; topic: string };
-        tagsChanged: boolean;
-        topicChanged: boolean;
-        courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
-      }
-  );
+export type QuestionSyncScope = QuestionFileSyncScope | QuestionRenameScope;
+
+export type QuestionSyncChange =
+  | (QuestionRenameScope & { oldQid: string; title: string })
+  | (Omit<QuestionFileSyncScope, 'kind'> &
+      (
+        | { kind: 'content' }
+        | { kind: 'title'; title: string }
+        | {
+            kind: 'metadata';
+            metadata: { title: string; tags: string[]; topic: string };
+            tagsChanged: boolean;
+            topicChanged: boolean;
+            courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
+          }
+      ));
 
 /** Called under the course lock, before invalidating the previous sync state. */
 export async function getQuestionSyncScope(
   course: Course,
   filePath: string,
   currentHash: string,
-): Promise<QuestionSyncScope | null> {
+): Promise<QuestionFileSyncScope | null> {
   const previous = course.last_successful_sync;
   if (
     previous?.commitHash !== currentHash ||
@@ -100,6 +105,9 @@ export async function getVerifiedQuestionChange({
     cwd: coursePath,
   });
   if (trackedFiles.split('\0').some((entry) => entry.startsWith('120000 '))) return null;
+  if (scope.kind === 'rename') {
+    return await verifyQuestionRename({ coursePath, oldHash, newHash, scope });
+  }
   const { stdout } = await execa(
     'git',
     ['diff', '--relative', '--no-renames', '--name-status', '-z', oldHash, newHash, '--', '.'],
